@@ -269,6 +269,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         warning_error(wi, "rlist should be >= 0");
     }
+    sprintf(err_buf, "nstlist can not be smaller than 0. (If you were trying to use the heuristic neighbour-list update scheme for efficient buffering for improved energy conservation, please use the Verlet cut-off scheme instead.)");
+    CHECK(ir->nstlist < 0);
 
     process_interaction_modifier(ir, &ir->coulomb_modifier);
     process_interaction_modifier(ir, &ir->vdw_modifier);
@@ -305,9 +307,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "rlistlong can not be shorter than rlist");
         }
-        if (IR_TWINRANGE(*ir) && ir->nstlist <= 0)
+        if (IR_TWINRANGE(*ir) && ir->nstlist == 0)
         {
-            warning_error(wi, "Can not have nstlist<=0 with twin-range interactions");
+            warning_error(wi, "Can not have nstlist == 0 with twin-range interactions");
         }
     }
 
@@ -879,10 +881,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
               (ir->ePBC     != epbcNONE) ||
               (ir->rcoulomb != 0.0)      || (ir->rvdw != 0.0));
 
-        if (ir->nstlist < 0)
-        {
-            warning_error(wi, "Can not have heuristic neighborlist updates without cut-off");
-        }
         if (ir->nstlist > 0)
         {
             warning_note(wi, "Simulating without cut-offs can be (slightly) faster with nstlist=0, nstype=simple and only one MPI rank");
@@ -1284,8 +1282,7 @@ nd %s",
     if (ir->cutoff_scheme == ecutsGROUP)
     {
         if (((ir->coulomb_modifier != eintmodNONE && ir->rcoulomb == ir->rlist) ||
-             (ir->vdw_modifier != eintmodNONE && ir->rvdw == ir->rlist)) &&
-            ir->nstlist != 1)
+             (ir->vdw_modifier != eintmodNONE && ir->rvdw == ir->rlist)))
         {
             warning_note(wi, "With exact cut-offs, rlist should be "
                          "larger than rcoulomb and rvdw, so that there "
@@ -1311,14 +1308,6 @@ nd %s",
     {
         warning_note(wi, "You have selected user tables with dispersion correction, the dispersion will be corrected to -C6/r^6 beyond rvdw_switch (the tabulated interaction between rvdw_switch and rvdw will not be double counted). Make sure that you really want dispersion correction to -C6/r^6.");
     }
-
-    if (ir->nstlist == -1)
-    {
-        sprintf(err_buf, "With nstlist=-1 rvdw and rcoulomb should be smaller than rlist to account for diffusion and possibly charge-group radii");
-        CHECK(ir->rvdw >= ir->rlist || ir->rcoulomb >= ir->rlist);
-    }
-    sprintf(err_buf, "nstlist can not be smaller than -1");
-    CHECK(ir->nstlist < -1);
 
     if (ir->eI == eiLBFGS && (ir->coulombtype == eelCUT || ir->vdwtype == evdwCUT)
         && ir->rvdw != 0)
