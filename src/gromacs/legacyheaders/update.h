@@ -137,7 +137,6 @@ void update_box(FILE             *fplog,
                 t_mdatoms        *md,
                 t_state          *state,
                 rvec              force[], /* forces on home particles */
-                matrix           *scale_tot,
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
                 gmx_update_t      upd);
