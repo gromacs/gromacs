@@ -160,14 +160,6 @@ void init_interaction_const_tables(FILE                *fp,
  * use with group kernels.
  */
 
-void init_interaction_const(FILE                 *fp,
-                            interaction_const_t **interaction_const,
-                            const t_forcerec     *fr,
-                            real                  rtab);
-/* Initializes the interaction constant data structure. Currently it
- * uses forcerec as input.
- */
-
 GMX_LIBMD_EXPORT
 void init_forcerec(FILE              *fplog,
                    const output_env_t oenv,
