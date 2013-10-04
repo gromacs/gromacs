@@ -669,6 +669,25 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
         nbv->grp[0].kernel_type == nbnxnk8x8x8_CUDA)
     {
         nbnxn_cuda_pme_loadbal_update_param(nbv->cu_nbv, ic);
+
+        /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
+         * also sharing texture references. To keep the code simple, we don't
+         * treat texture references as shared resources, but this means that
+         * the coulomb_tab texture ref will get updated by multiple threads.
+         * Hence, to ensure that the non-bonded kernels don't start before all
+         * texture binding operations are finished, we need to wait for all ranks
+         * to arrive here before continuing.
+         *
+         * Note that we could omit this barrier if GPUs are not shared (or
+         * texture objects are used), but as this is initialization code, there
+         * is not point in complicating things.
+         */
+#ifdef GMX_THREAD_MPI
+        if (PAR(cr))
+        {
+            gmx_barrier(cr);
+        }
+#endif /* GMX_THREAD_MPI */
     }
     else
     {

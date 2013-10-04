@@ -94,6 +94,7 @@ gmx_bool gmx_mpi_initialized(void);
  * when GROMACS was compiled without MPI support.
  */
 
+GMX_LIBGMX_EXPORT
 void gmx_barrier(const t_commrec *cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
 
