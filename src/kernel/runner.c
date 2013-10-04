@@ -1629,10 +1629,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if ((cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->bUseGPU)
     {
-        char gpu_err_str[STRLEN];
-
         /* free GPU memory and uninitialize GPU (by destroying the context) */
         nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
+    }
+
+#ifdef GMX_THREAD_MPI
+    if (cr->nnodes > 1)
+    {
+        gmx_barrier(cr);
+    }
+#endif /* GMX_THREAD_MPI */
+
+    if ((cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->bUseGPU)
+    {
+        char gpu_err_str[STRLEN];
 
         if (!free_gpu(gpu_err_str))
         {
