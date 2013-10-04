@@ -539,14 +539,36 @@ void nbnxn_cuda_init(FILE *fplog,
 
     init_plist(nb->plist[eintLocal]);
 
+    /* set device info, just point it to the right GPU among the detected ones */
+    nb->dev_info = &gpu_info->cuda_dev[get_gpu_device_id(gpu_info, my_gpu_index)];
+
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);
     CU_RET_ERR(stat, "cudaStreamCreate on stream[eintLocal] failed");
     if (nb->bUseTwoStreams)
     {
         init_plist(nb->plist[eintNonlocal]);
+
+        /* CUDA stream priority available in the CUDA RT 5.5 API.
+         * Note that the device we're running on does not have to support
+         * priorities, because we are querying the priority range which in this
+         * case will be a single value.
+         */
+#if CUDA_VERSION >= 5500
+        {
+            int highest_priority;
+            stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);
+            CU_RET_ERR(stat, "cudaDeviceGetStreamPriorityRange failed");
+
+            stat = cudaStreamCreateWithPriority(&nb->stream[eintNonlocal],
+                                                cudaStreamDefault,
+                                                highest_priority);
+            CU_RET_ERR(stat, "cudaStreamCreateWithPriority on stream[eintNonlocal] failed");
+        }
+#else
         stat = cudaStreamCreate(&nb->stream[eintNonlocal]);
         CU_RET_ERR(stat, "cudaStreamCreate on stream[eintNonlocal] failed");
+#endif
     }
 
     /* init events for sychronization (timing disabled for performance reasons!) */
@@ -554,9 +576,6 @@ void nbnxn_cuda_init(FILE *fplog,
     CU_RET_ERR(stat, "cudaEventCreate on nonlocal_done failed");
     stat = cudaEventCreateWithFlags(&nb->misc_ops_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_one failed");
-
-    /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = &gpu_info->cuda_dev[get_gpu_device_id(gpu_info, my_gpu_index)];
 
     /* On GPUs with ECC enabled, cudaStreamSynchronize shows a large overhead
      * (which increases with shorter time/step) caused by a known CUDA driver bug.
