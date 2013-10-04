@@ -1627,17 +1627,34 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                nthreads_pp,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
-    if ((cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->bUseGPU)
+
+    /* free GPU memory and uninitialize GPU (by destroying the context) */
+    if (fr->nbv != NULL && fr->nbv->bUseGPU)
     {
-        char gpu_err_str[STRLEN];
-
-        /* free GPU memory and uninitialize GPU (by destroying the context) */
-        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
-
-        if (!free_gpu(gpu_err_str))
+        if (cr->duty & DUTY_PP)
         {
-            gmx_warning("On node %d failed to free GPU #%d: %s",
-                        cr->nodeid, get_current_gpu_device_id(), gpu_err_str);
+            nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
+        }
+
+        /* With tMPI we need to wait for all ranks to finish deallocation before
+         * destroying the context in free_gpu() as some ranks may be shareing
+         * GPU and context. */
+#ifdef GMX_THREAD_MPI
+        if (PAR(cr))
+        {
+            gmx_barrier(cr);
+        }
+#endif /* GMX_THREAD_MPI */
+
+        if (cr->duty & DUTY_PP)
+        {
+            char gpu_err_str[STRLEN];
+
+            if (!free_gpu(gpu_err_str))
+            {
+                gmx_warning("On node %d failed to free GPU #%d: %s",
+                            cr->nodeid, get_current_gpu_device_id(), gpu_err_str);
+            }
         }
     }
 
