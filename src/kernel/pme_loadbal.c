@@ -669,6 +669,19 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
         nbv->grp[0].kernel_type == nbnxnk8x8x8_CUDA)
     {
         nbnxn_cuda_pme_loadbal_update_param(nbv->cu_nbv, ic);
+
+        /* With tMPI and GPUs we need to wait for all ranks to finish initializing
+         * the coulomb table before continuing as some ranks may be sharing GPU
+         * and context.
+         * Note that we could omit this barrier if GPUs are not shared, but as this
+         * is initialization code, there is not point in complicating things.
+         */
+#ifdef GMX_THREAD_MPI
+        if (PAR(cr) && nbv != NULL && nbv->bUseGPU)
+        {
+            gmx_barrier(cr);
+        }
+#endif /* GMX_THREAD_MPI */
     }
     else
     {

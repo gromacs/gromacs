@@ -2899,6 +2899,19 @@ void init_forcerec(FILE              *fp,
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, fr, rtab);
+
+    /* With tMPI and GPUs we need to wait for all ranks to finish initializing tables
+     * before continuing as some ranks may be sharing GPU and context.
+     * Note that we could omit this barrier if GPUs are not shared, but as this
+     * is initialization code, there is not point in complicating things.
+     */
+#ifdef GMX_THREAD_MPI
+    if (PAR(cr) && fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU)
+    {
+        gmx_barrier(cr);
+    }
+#endif /* GMX_THREAD_MPI */
+
     if (ir->eDispCorr != edispcNO)
     {
         calc_enervirdiff(fp, ir->eDispCorr, fr);
