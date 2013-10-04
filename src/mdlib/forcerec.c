@@ -2900,6 +2900,26 @@ void init_forcerec(FILE              *fp,
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, fr, rtab);
+
+    /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
+    * also sharing texture references. To keep the code simple, we don't
+    * treat texture references as shared resources, but this means that
+    * the coulomb_tab and nbfp texture refs will get updated by multiple threads.
+    * Hence, to ensure that the non-bonded kernels don't start before all
+    * texture binding operations are finished, we need to wait for all ranks
+    * to arrive here before continuing.
+    *
+    * Note that we could omit this barrier if GPUs are not shared (or
+    * texture objects are used), but as this is initialization code, there
+    * is not point in complicating things.
+    */
+#ifdef GMX_THREAD_MPI
+    if (PAR(cr) && fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU)
+    {
+        gmx_barrier(cr);
+    }
+#endif /* GMX_THREAD_MPI */
+
     if (ir->eDispCorr != edispcNO)
     {
         calc_enervirdiff(fp, ir->eDispCorr, fr);
