@@ -374,19 +374,11 @@ void gmx_check_hw_runconf_consistency(FILE *fplog,
 
             same_count = gmx_count_gpu_dev_shared(&hw_opt->gpu_opt);
 
-            if (btMPI && same_count > 0)
-            {
-                gmx_fatal(FARGS,
-                          "Invalid GPU assignment: can't share a GPU among multiple thread-MPI threads.\n"
-                          "Use MPI if you are sure that you want to assign a GPU to multiple threads.");
-            }
-
             if (same_count > 0)
             {
                 md_print_warn(cr, fplog,
                               "NOTE: Potentially sub-optimal launch configuration: you assigned %s to\n"
-                              "      multiple %s%s; this should be avoided as it can cause\n"
-                              "      performance loss.\n",
+                              "      multiple %s%s; this can cause performance loss.\n",
                               same_count > 1 ? "GPUs" : "a GPU", th_or_proc, btMPI ? "s" : "es");
             }
         }

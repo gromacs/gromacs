@@ -1788,10 +1788,11 @@ void init_interaction_const_tables(FILE                *fp,
     }
 }
 
-void init_interaction_const(FILE                 *fp,
-                            interaction_const_t **interaction_const,
-                            const t_forcerec     *fr,
-                            real                  rtab)
+static void init_interaction_const(FILE                 *fp,
+                                   const t_commrec      *cr,
+                                   interaction_const_t **interaction_const,
+                                   const t_forcerec     *fr,
+                                   real                  rtab)
 {
     interaction_const_t *ic;
     gmx_bool             bUsesSimpleTables = TRUE;
@@ -1876,6 +1877,25 @@ void init_interaction_const(FILE                 *fp,
     if (fr->nbv != NULL && fr->nbv->bUseGPU)
     {
         nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv->grp);
+
+        /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
+         * also sharing texture references. To keep the code simple, we don't
+         * treat texture references as shared resources, but this means that
+         * the coulomb_tab and nbfp texture refs will get updated by multiple threads.
+         * Hence, to ensure that the non-bonded kernels don't start before all
+         * texture binding operations are finished, we need to wait for all ranks
+         * to arrive here before continuing.
+         *
+         * Note that we could omit this barrier if GPUs are not shared (or
+         * texture objects are used), but as this is initialization code, there
+         * is not point in complicating things.
+         */
+#ifdef GMX_THREAD_MPI
+        if (PAR(cr))
+        {
+            gmx_barrier(cr);
+        }
+#endif /* GMX_THREAD_MPI */
     }
 
     bUsesSimpleTables = uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1);
@@ -2905,7 +2925,8 @@ void init_forcerec(FILE              *fp,
     }
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
-    init_interaction_const(fp, &fr->ic, fr, rtab);
+    init_interaction_const(fp, cr, &fr->ic, fr, rtab);
+
     if (ir->eDispCorr != edispcNO)
     {
         calc_enervirdiff(fp, ir->eDispCorr, fr);
