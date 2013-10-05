@@ -995,7 +995,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                     convert_moltype_couple(mi0, dcatt, *fudgeQQ,
                                                            opts->couple_lam0, opts->couple_lam1,
                                                            opts->bCoupleIntra,
-                                                           nb_funct, &(plist[nb_funct]));
+                                                           nb_funct, &(plist[nb_funct]),wi);
                                 }
                                 stupid_fill_block(&mi0->mols, mi0->atoms.nr, TRUE);
                                 mi0->bProcessed = TRUE;
