@@ -135,7 +135,7 @@ extern void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple,
                                    real fudgeQQ,
                                    int couple_lam0, int couple_lam1,
                                    gmx_bool bCoupleIntra,
-                                   int nb_funct, t_params *nbp);
+                                   int nb_funct, t_params *nbp, warninp_t wi);
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.
  */

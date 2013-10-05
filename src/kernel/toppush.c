@@ -2514,30 +2514,46 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,
 }
 
 static void convert_pairs_to_pairsQ(t_params *plist,
-                                    real fudgeQQ, t_atoms *atoms)
+                                    real fudgeQQ, t_atoms *atoms, warninp_t wi)
 {
     t_param *param;
     int      i;
     real     v, w;
+    char  errbuf[256];
 
-    /* Copy the pair list to the pairQ list */
-    plist[F_LJC14_Q] = plist[F_LJ14];
-    /* Empty the pair list */
-    plist[F_LJ14].nr    = 0;
-    plist[F_LJ14].param = NULL;
-    param               = plist[F_LJC14_Q].param;
-    for (i = 0; i < plist[F_LJC14_Q].nr; i++)
+    if ((plist[F_LJC14_Q].nr > 0) && (plist[F_LJ14].nr > 0))
     {
-        v             = param[i].c[0];
-        w             = param[i].c[1];
-        param[i].c[0] = fudgeQQ;
-        param[i].c[1] = atoms->atom[param[i].a[0]].q;
-        param[i].c[2] = atoms->atom[param[i].a[1]].q;
-        param[i].c[3] = v;
-        param[i].c[4] = w;
+        sprintf(errbuf, "You cannot use both pair function 1 and pair function 2 in the same molecule");
+        warning_error(wi, errbuf);
+    }
+    else if  ((plist[F_LJC14_Q].nr > 0) && (plist[F_LJ14].nr >= 0))
+    {
+        /*
+          We don't actually need to copy anything - all molecules
+          are already in the F_LJC14_Q pair list
+        */
+        return;
+    }
+    else
+    {
+        /* Copy the pair list to the pairQ list */
+        plist[F_LJC14_Q] = plist[F_LJ14];
+        /* Empty the pair list */
+        plist[F_LJ14].nr    = 0;
+        plist[F_LJ14].param = NULL;
+        param               = plist[F_LJC14_Q].param;
+        for (i = 0; i < plist[F_LJC14_Q].nr; i++)
+        {
+            v             = param[i].c[0];
+            w             = param[i].c[1];
+            param[i].c[0] = fudgeQQ;
+            param[i].c[1] = atoms->atom[param[i].a[0]].q;
+            param[i].c[2] = atoms->atom[param[i].a[1]].q;
+            param[i].c[3] = v;
+            param[i].c[4] = w;
+        }
     }
 }
-
 static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp)
 {
     int       n, ntype, i, j, k;
@@ -2640,11 +2656,11 @@ static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
 
 void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple, real fudgeQQ,
                             int couple_lam0, int couple_lam1,
-                            gmx_bool bCoupleIntra, int nb_funct, t_params *nbp)
+                            gmx_bool bCoupleIntra, int nb_funct, t_params *nbp, warninp_t wi)
 {
-    convert_pairs_to_pairsQ(mol->plist, fudgeQQ, &mol->atoms);
     if (!bCoupleIntra)
     {
+        convert_pairs_to_pairsQ(mol->plist, fudgeQQ, &mol->atoms,wi);
         generate_LJCpairsNB(mol, nb_funct, nbp);
         set_excl_all(&mol->excls);
     }
