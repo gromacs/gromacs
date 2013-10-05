@@ -2516,26 +2516,47 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,
 static void convert_pairs_to_pairsQ(t_params *plist,
                                     real fudgeQQ, t_atoms *atoms)
 {
-    t_param *param;
-    int      i;
-    real     v, w;
+    t_param *paramp1,*paramp2,*paramnew;
+    int      i,j,p1nr,p2nr,p2newnr;
 
-    /* Copy the pair list to the pairQ list */
-    plist[F_LJC14_Q] = plist[F_LJ14];
-    /* Empty the pair list */
+    /* Add the pair list to the pairQ list */
+    p1nr = plist[F_LJ14].nr;
+    p2nr = plist[F_LJC14_Q].nr;
+    p2newnr = p1nr + p2nr;
+    snew(paramnew,p2newnr);
+
+    paramp1             = plist[F_LJ14].param;
+    paramp2             = plist[F_LJC14_Q].param;
+
+    /* fill in the old P1 info */
+    for (i = 0; i < p2nr; i++)
+    {
+        for (j=0;j<5;j++) /* entries are 0-4 for F_LJC14_Q */
+        {
+            paramnew[i].c[j] = paramp2[i].c[j];
+        }
+    }
+    for (i = p2nr; i < p2newnr; i++)
+    {
+        j             = i-p1nr;
+        paramnew[i].c[0] = fudgeQQ;
+        paramnew[i].c[1] = atoms->atom[paramp1[j].a[0]].q;
+        paramnew[i].c[2] = atoms->atom[paramp1[j].a[1]].q;
+        paramnew[i].c[3] = paramp1[j].c[0];
+        paramnew[i].c[4] = paramp1[j].c[1];
+    }
+
+    /* free the old pairlists */
+    sfree(plist[F_LJC14_Q].param);
+    sfree(plist[F_LJ14].param);
+
+    /* now assign the new data to the location of the old array */
+    plist[F_LJC14_Q].param    = paramnew;
+
+    /* Empty the LJ14 pairlist */
     plist[F_LJ14].nr    = 0;
     plist[F_LJ14].param = NULL;
-    param               = plist[F_LJC14_Q].param;
-    for (i = 0; i < plist[F_LJC14_Q].nr; i++)
-    {
-        v             = param[i].c[0];
-        w             = param[i].c[1];
-        param[i].c[0] = fudgeQQ;
-        param[i].c[1] = atoms->atom[param[i].a[0]].q;
-        param[i].c[2] = atoms->atom[param[i].a[1]].q;
-        param[i].c[3] = v;
-        param[i].c[4] = w;
-    }
+
 }
 
 static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp)
@@ -2642,9 +2663,9 @@ void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple, real fudgeQQ,
                             int couple_lam0, int couple_lam1,
                             gmx_bool bCoupleIntra, int nb_funct, t_params *nbp)
 {
-    convert_pairs_to_pairsQ(mol->plist, fudgeQQ, &mol->atoms);
     if (!bCoupleIntra)
     {
+        convert_pairs_to_pairsQ(mol->plist, fudgeQQ, &mol->atoms);
         generate_LJCpairsNB(mol, nb_funct, nbp);
         set_excl_all(&mol->excls);
     }
