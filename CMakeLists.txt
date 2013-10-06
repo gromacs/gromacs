@@ -149,7 +149,6 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 include(gmxManageGPU)
 
 include(gmxDetectAcceleration)
-set(GMX_SUGGESTED_CPU_ACCELERATION "None")
 if(NOT DEFINED GMX_CPU_ACCELERATION)
     if(CMAKE_CROSSCOMPILING)
         if("${CMAKE_SYSTEM_NAME}" MATCHES "BlueGeneQ")
