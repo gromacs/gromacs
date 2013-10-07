@@ -148,7 +148,11 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind, gmx_constr_t constr,
+                 gmx_ekindata_t *ekind,
+                 gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                 gmx_constant_acceleration_t *constant_acceleration,
+                 t_cosine_acceleration *cosine_acceleration,
+                 gmx_constr_t constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
                  gmx_mtop_t *top_global, t_state *state_local,
@@ -205,28 +209,34 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
 /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
     if (bTemp || !bVV)
     {
-        if (ekind)
+        if (temperature_coupling_outputs)
         {
             for (j = 0; (j < inputrec->opts.ngtc); j++)
             {
                 if (bSumEkinhOld)
                 {
-                    itc0[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh_old[0]);
+                    itc0[j] = add_binr(rb, DIM*DIM, temperature_coupling_outputs->group_data[j].ekinh_old[0]);
                 }
                 if (bEkinAveVel && !bReadEkin)
                 {
-                    itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinf[0]);
+                    itc1[j] = add_binr(rb, DIM*DIM, temperature_coupling_outputs->group_data[j].ekinf[0]);
                 }
                 else if (!bReadEkin)
                 {
-                    itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh[0]);
+                    itc1[j] = add_binr(rb, DIM*DIM, temperature_coupling_outputs->group_data[j].ekinh[0]);
                 }
             }
-            /* these probably need to be put into one of these categories */
             where();
+        }
+        /* these probably need to be put into one of these categories */
+        if (ekind)
+        {
             idedl = add_binr(rb, 1, &(ekind->dekindl));
             where();
-            ica   = add_binr(rb, 1, &(ekind->cosacc.mvcos));
+        }
+        if (cosine_acceleration)
+        {
+            ica   = add_binr(rb, 1, &(cosine_acceleration->mvcos));
             where();
         }
     }
@@ -325,27 +335,33 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
     if (bTemp || !bVV)
     {
-        if (ekind)
+        if (temperature_coupling_outputs)
         {
             for (j = 0; (j < inputrec->opts.ngtc); j++)
             {
                 if (bSumEkinhOld)
                 {
-                    extract_binr(rb, itc0[j], DIM*DIM, ekind->tcstat[j].ekinh_old[0]);
+                    extract_binr(rb, itc0[j], DIM*DIM, temperature_coupling_outputs->group_data[j].ekinh_old[0]);
                 }
                 if (bEkinAveVel && !bReadEkin)
                 {
-                    extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinf[0]);
+                    extract_binr(rb, itc1[j], DIM*DIM, temperature_coupling_outputs->group_data[j].ekinf[0]);
                 }
                 else if (!bReadEkin)
                 {
-                    extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinh[0]);
+                    extract_binr(rb, itc1[j], DIM*DIM, temperature_coupling_outputs->group_data[j].ekinh[0]);
                 }
             }
-            extract_binr(rb, idedl, 1, &(ekind->dekindl));
-            extract_binr(rb, ica, 1, &(ekind->cosacc.mvcos));
-            where();
         }
+        if (ekind)
+        {
+            extract_binr(rb, idedl, 1, &(ekind->dekindl));
+        }
+        if (cosine_acceleration)
+        {
+            extract_binr(rb, ica, 1, &(cosine_acceleration->mvcos));
+        }
+        where();
     }
     if ((bPres || !bVV) && bFirstIterate)
     {

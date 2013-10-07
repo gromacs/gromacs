@@ -69,7 +69,8 @@ void set_deform_reference_box(gmx_update_t upd,
 void update_tcouple(gmx_large_int_t   step,
                     t_inputrec       *inputrec,
                     t_state          *state,
-                    gmx_ekindata_t   *ekind,
+                    gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                    gmx_constant_acceleration_t *constant_acceleration,
                     gmx_update_t      upd,
                     t_extmass        *MassQ,
                     t_mdatoms        *md
@@ -93,7 +94,9 @@ void update_coords(FILE             *fplog,
                    gmx_bool          bDoLR,
                    rvec             *f_lr,
                    t_fcdata         *fcd,
-                   gmx_ekindata_t   *ekind,
+                   gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                   gmx_constant_acceleration_t *constant_acceleration,
+                   t_cosine_acceleration *cosine_acceleration,
                    matrix            M,
                    gmx_update_t      upd,
                    gmx_bool          bInitStep,
@@ -111,7 +114,7 @@ void update_constraints(FILE             *fplog,
                         gmx_large_int_t   step,
                         real             *dvdlambda, /* FEP stuff */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
-                        gmx_ekindata_t   *ekind,
+                        gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
                         t_mdatoms        *md,
                         t_state          *state,
                         gmx_bool          bMolPBC,
@@ -142,8 +145,12 @@ void update_box(FILE             *fplog,
                 gmx_update_t      upd);
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveOld);
+void calc_ke_part(t_state *state, t_mdatoms *md,
+                  gmx_ekindata_t *ekind,
+                  gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                  gmx_constant_acceleration_t *constant_acceleration,
+                  t_cosine_acceleration *cosine_acceleration,
+                  t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveOld);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
@@ -165,17 +172,25 @@ void
 init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir);
 
 void
-update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind);
+update_ekinstate(ekinstate_t *ekinstate,
+                 const gmx_ekindata_t *ekind,
+                 const gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                 const t_cosine_acceleration *cosine_acceleration);
 
 void
 restore_ekinstate_from_state(t_commrec *cr,
-                             gmx_ekindata_t *ekind, ekinstate_t *ekinstate);
+                             gmx_ekindata_t *ekind,
+                             gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                             t_cosine_acceleration *cosine_acceleration,
+                             const ekinstate_t *ekinstate);
 
-void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt);
+void berendsen_tcoupl(t_inputrec *ir, gmx_temperature_coupling_outputs_t *temperature_coupling_outputs, real dt);
 
 void andersen_tcoupl(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock, gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac);
 
-void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
+void nosehoover_tcoupl(t_grpopts *opts,
+                       gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                       real dt,
                        double xi[], double vxi[], t_extmass *MassQ);
 
 t_state *init_bufstate(const t_state *template_state);
@@ -183,6 +198,7 @@ t_state *init_bufstate(const t_state *template_state);
 void destroy_bufstate(t_state *state);
 
 void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
+                    gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
                     gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
@@ -194,7 +210,9 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
 void NBaroT_trotter(t_grpopts *opts, real dt,
                     double xi[], double vxi[], real *veta, t_extmass *MassQ);
 
-void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
+void vrescale_tcoupl(t_inputrec *ir,
+                     gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                     real dt,
                      double therm_integral[],
                      gmx_rng_t rng);
 /* Compute temperature scaling. For V-rescale it is done in update. */
@@ -202,7 +220,9 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
 real vrescale_energy(t_grpopts *opts, double therm_integral[]);
 /* Returns the V-rescale contribution to the conserved energy */
 
-void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
+void rescale_velocities(gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                        gmx_constant_acceleration_t *constant_acceleration,
+                        t_mdatoms *mdatoms,
                         int start, int end, rvec v[]);
 /* Rescale the velocities with the scaling factor in ekind */
 

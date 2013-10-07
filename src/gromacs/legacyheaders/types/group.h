@@ -39,7 +39,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#if 0
+}
+#endif
 
 typedef struct {
     real    Th;             /* Temperature at half step        */
@@ -51,7 +53,12 @@ typedef struct {
     double  ekinscalef_nhc; /* Scaling factor for NHC- full step */
     double  ekinscaleh_nhc; /* Scaling factor for NHC- half step */
     double  vscale_nhc;     /* Scaling factor for NHC- velocity */
-} t_grp_tcstat;
+} gmx_temperature_coupling_group_outputs_t;
+
+typedef struct {
+    int                                       ngroups;    /* The number of T-coupling groups */
+    gmx_temperature_coupling_group_outputs_t *group_data; /* T-coupling data */
+} gmx_temperature_coupling_outputs_t;
 
 typedef struct {
     int     nat;    /* Number of atoms in this group		*/
@@ -62,25 +69,25 @@ typedef struct {
 } t_grp_acc;
 
 typedef struct {
-    real    cos_accel;  /* The acceleration for the cosine profile      */
-    real    mvcos;      /* The cos momenta of home particles            */
-    real    vcos;       /* The velocity of the cosine profile           */
-} t_cos_acc;
+    gmx_bool   bDoAcceleration; /* Whether acceleration will occur */
+    int        ngroups;         /* The number of acceleration groups */
+    t_grp_acc *group_data;      /* Acceleration data			*/
+} gmx_constant_acceleration_t;
 
 typedef struct {
-    gmx_bool         bNEMD;
-    int              ngtc;            /* The number of T-coupling groups      */
-    t_grp_tcstat    *tcstat;          /* T-coupling data            */
+    real    accel;  /* The acceleration for the cosine profile      */
+    real    mvcos;  /* The cos momenta of home particles            */
+    real    vcos;   /* The velocity of the cosine profile           */
+} t_cosine_acceleration;
+
+typedef struct {
     tensor         **ekin_work_alloc; /* Allocated locations for *_work members */
-    tensor         **ekin_work;       /* Work arrays for tcstat per thread    */
-    real           **dekindl_work;    /* Work location for dekindl per thread */
-    int              ngacc;           /* The number of acceleration groups    */
-    t_grp_acc       *grpstat;         /* Acceleration data			*/
+    tensor         **ekin_work;       /* Per-thread work buffers for accumulating tcstat */
+    real           **dekindl_work;    /* Per-thread work buffers for accumulating dekindl */
     tensor           ekin;            /* overall kinetic energy               */
     tensor           ekinh;           /* overall 1/2 step kinetic energy      */
     real             dekindl;         /* dEkin/dlambda at half step           */
     real             dekindl_old;     /* dEkin/dlambda at old half step       */
-    t_cos_acc        cosacc;          /* Cosine acceleration data             */
 } gmx_ekindata_t;
 
 #define GID(igid, jgid, gnr) ((igid < jgid) ? (igid*gnr+jgid) : (jgid*gnr+igid))
