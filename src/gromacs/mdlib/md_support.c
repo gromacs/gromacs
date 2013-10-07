@@ -60,7 +60,7 @@ gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
 {
     gmx_large_int_t steps_out;
 
-    if MASTER(cr)
+    if (MASTER(cr))
     {
         gmx_large_int_t *buf;
         int              s;
@@ -192,9 +192,18 @@ void init_global_signals(globsig_t *gs, const t_commrec *cr,
     }
 }
 
-void copy_coupling_state(t_state *statea, t_state *stateb,
-                         gmx_ekindata_t *ekinda, gmx_ekindata_t *ekindb, t_grpopts* opts)
+// Note this function will die when iteration goes away, so no need to
+// maintain it now
+void
+copy_coupling_state(t_state *statea,
+                    t_state *stateb,
+                    gmx_ekindata_t *ekinda,
+                    gmx_ekindata_t *ekindb,
+                    gmx_temperature_coupling_outputs_t *temperature_coupling_outputs_a,
+                    gmx_temperature_coupling_outputs_t *temperature_coupling_outputs_b,
+                    t_grpopts* opts)
 {
+    gmx_temperature_coupling_group_outputs_t *tcstat_a, *tcstat_b;
 
     /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
 
@@ -212,18 +221,23 @@ void copy_coupling_state(t_state *statea, t_state *stateb,
     stateb->ngtc       = statea->ngtc;
     stateb->nnhpres    = statea->nnhpres;
     stateb->veta       = statea->veta;
-    if (ekinda)
+    if (ekinda && ekindb)
     {
         copy_mat(ekinda->ekin, ekindb->ekin);
+    }
+    if (temperature_coupling_outputs_a && temperature_coupling_outputs_b)
+    {
+        tcstat_a = temperature_coupling_outputs_a->group_data;
+        tcstat_b = temperature_coupling_outputs_b->group_data;
         for (i = 0; i < stateb->ngtc; i++)
         {
-            ekindb->tcstat[i].T  = ekinda->tcstat[i].T;
-            ekindb->tcstat[i].Th = ekinda->tcstat[i].Th;
-            copy_mat(ekinda->tcstat[i].ekinh, ekindb->tcstat[i].ekinh);
-            copy_mat(ekinda->tcstat[i].ekinf, ekindb->tcstat[i].ekinf);
-            ekindb->tcstat[i].ekinscalef_nhc =  ekinda->tcstat[i].ekinscalef_nhc;
-            ekindb->tcstat[i].ekinscaleh_nhc =  ekinda->tcstat[i].ekinscaleh_nhc;
-            ekindb->tcstat[i].vscale_nhc     =  ekinda->tcstat[i].vscale_nhc;
+            tcstat_b[i].T  = tcstat_a[i].T;
+            tcstat_b[i].Th = tcstat_a[i].Th;
+            copy_mat(tcstat_a[i].ekinh, tcstat_b[i].ekinh);
+            copy_mat(tcstat_a[i].ekinf, tcstat_b[i].ekinf);
+            tcstat_b[i].ekinscalef_nhc =  tcstat_a[i].ekinscalef_nhc;
+            tcstat_b[i].ekinscaleh_nhc =  tcstat_a[i].ekinscaleh_nhc;
+            tcstat_b[i].vscale_nhc     =  tcstat_a[i].vscale_nhc;
         }
     }
     copy_rvecn(statea->x, stateb->x, 0, stateb->natoms);
@@ -278,6 +292,9 @@ real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass 
 
 void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
+                     gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                     gmx_constant_acceleration_t *constant_acceleration,
+                     t_cosine_acceleration *cosine_acceleration,
                      t_state *state, t_state *state_global, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
@@ -320,23 +337,21 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     if (bTemp)
     {
-        /* Non-equilibrium MD: this is parallellized, but only does communication
-         * when there really is NEMD.
+        /* Non-equilibrium MD (ie. only constant acceleration groups):
+         * this is parallellized, but only does communication when
+         * there really is constant acceleration.
          */
+        accumulate_u(cr, constant_acceleration);
 
-        if (PAR(cr) && (ekind->bNEMD))
-        {
-            accumulate_u(cr, &(ir->opts), ekind);
-        }
         debug_gmx();
         if (bReadEkin)
         {
-            restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
+            restore_ekinstate_from_state(cr, ekind, temperature_coupling_outputs, cosine_acceleration, &state_global->ekinstate);
         }
         else
         {
 
-            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel, bIterate);
+            calc_ke_part(state, mdatoms, ekind, temperature_coupling_outputs, constant_acceleration, cosine_acceleration, nrnb, bEkinAveVel, bIterate);
         }
 
         debug_gmx();
@@ -372,7 +387,11 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                            ir, ekind, constr, bStopCM ? vcm : NULL,
+                            ir, ekind,
+                            temperature_coupling_outputs,
+                            constant_acceleration,
+                            cosine_acceleration,
+                            constr, bStopCM ? vcm : NULL,
                             gs != NULL ? eglsNR : 0, gs_buf,
                             top_global, state,
                             *bSumEkinhOld, flags);
@@ -413,7 +432,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
     }
 
-    if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
+    if (!constant_acceleration->bDoAcceleration && debug && bTemp && (vcm->nr > 0))
     {
         correct_ekin(debug,
                      mdatoms->start, mdatoms->start+mdatoms->homenr,
@@ -433,7 +452,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bEner)
     {
         /* Calculate the amplitude of the cosine velocity profile */
-        ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
+        cosine_acceleration->vcos = cosine_acceleration->mvcos / mdatoms->tmass;
     }
 
     if (bTemp)
@@ -447,7 +466,10 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
            bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.
            If FALSE, we go ahead and erase over it.
          */
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
+        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),
+                                       ekind,
+                                       temperature_coupling_outputs,
+                                       &dvdl_ekin,
                                        bEkinAveVel, bScaleEkin);
         enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
 

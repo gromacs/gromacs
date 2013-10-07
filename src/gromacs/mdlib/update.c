@@ -127,9 +127,9 @@ typedef struct gmx_update
 
 
 static void do_update_md(int start, int nrend, double dt,
-                         t_grp_tcstat *tcstat,
+                         gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
                          double nh_vxi[],
-                         gmx_bool bNEMD, t_grp_acc *gstat, rvec accel[],
+                         gmx_bool bDoAcceleration, t_grp_acc *gstat, rvec accel[],
                          ivec nFreeze[],
                          real invmass[],
                          unsigned short ptype[], unsigned short cFREEZE[],
@@ -144,6 +144,7 @@ static void do_update_md(int start, int nrend, double dt,
     real   vn, vv, va, vb, vnrel;
     real   lg, vxi = 0, u;
     int    n, d;
+    gmx_temperature_coupling_group_outputs_t *tcstat = temperature_coupling_outputs->group_data;
 
     if (bNH || bPR)
     {
@@ -195,9 +196,9 @@ static void do_update_md(int start, int nrend, double dt,
     }
     else if (cFREEZE != NULL ||
              nFreeze[0][XX] || nFreeze[0][YY] || nFreeze[0][ZZ] ||
-             bNEMD)
+             bDoAcceleration)
     {
-        /* Update with Berendsen/v-rescale coupling and freeze or NEMD */
+        /* Update with Berendsen/v-rescale coupling and freeze or constant acceleration */
         for (n = start; n < nrend; n++)
         {
             w_dt = invmass[n]*dt;
@@ -367,13 +368,13 @@ static void do_update_vv_pos(int start, int nrend, double dt,
 } /* do_update_vv_pos */
 
 static void do_update_visc(int start, int nrend, double dt,
-                           t_grp_tcstat *tcstat,
+                           gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
                            double nh_vxi[],
                            real invmass[],
                            unsigned short ptype[], unsigned short cTC[],
                            rvec x[], rvec xprime[], rvec v[],
                            rvec f[], matrix M, matrix box, real
-                           cos_accel, real vcos,
+                           cosine_acceleration, real vcos,
                            gmx_bool bNH, gmx_bool bPR)
 {
     double imass, w_dt;
@@ -383,6 +384,7 @@ static void do_update_visc(int start, int nrend, double dt,
     real   fac, cosz;
     rvec   vrel;
     int    n, d;
+    gmx_temperature_coupling_group_outputs_t *tcstat = temperature_coupling_outputs->group_data;
 
     fac = 2*M_PI/(box[ZZ][ZZ]);
 
@@ -419,7 +421,7 @@ static void do_update_visc(int start, int nrend, double dt,
                                             - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
                     if (d == XX)
                     {
-                        vn += vc + dt*cosz*cos_accel;
+                        vn += vc + dt*cosz*cosine_acceleration;
                     }
                     v[n][d]        = vn;
                     xprime[n][d]   = x[n][d]+vn*dt;
@@ -456,7 +458,7 @@ static void do_update_visc(int start, int nrend, double dt,
                         /* Do not scale the cosine velocity profile */
                         vv           = vc + lg*(vn - vc + f[n][d]*w_dt);
                         /* Add the cosine accelaration profile */
-                        vv          += dt*cosz*cos_accel;
+                        vv          += dt*cosz*cosine_acceleration;
                     }
                     else
                     {
@@ -757,9 +759,9 @@ static void check_sd2_work_data_allocation(gmx_stochd_t *sd, int nrend)
 }
 
 static void do_update_sd2_Tconsts(gmx_stochd_t *sd,
-                                  int ngtc,
-                                  const real tau_t[],
-                                  const real ref_t[])
+                                  int           ngtc,
+                                  const real    tau_t[],
+                                  const real    ref_t[])
 {
     /* This is separated from the update below, because it is single threaded */
     gmx_sd_const_t *sdc;
@@ -975,13 +977,16 @@ static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
 #endif
 }
 
-static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
-                                gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel,
+static void calc_ke_part_normal(rvec v[], const t_mdatoms *md,
+                                gmx_ekindata_t *ekind,
+                                gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                                gmx_constant_acceleration_t *constant_acceleration,
+                                t_nrnb *nrnb, gmx_bool bEkinAveVel,
                                 gmx_bool bSaveEkinOld)
 {
     int           g;
-    t_grp_tcstat *tcstat  = ekind->tcstat;
-    t_grp_acc    *grpstat = ekind->grpstat;
+    t_grp_acc    *acc_group_data = constant_acceleration->group_data;
+    gmx_temperature_coupling_group_outputs_t *tcstat = temperature_coupling_outputs->group_data;
     int           nthread, thread;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
@@ -995,7 +1000,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
      * accumulated in acumulate_groups.
      * Now the partial global and groups ekin.
      */
-    for (g = 0; (g < opts->ngtc); g++)
+    for (g = 0; (g < temperature_coupling_outputs->ngroups); g++)
     {
 
         if (!bSaveEkinOld)
@@ -1036,7 +1041,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
         ekin_sum    = ekind->ekin_work[thread];
         dekindl_sum = ekind->dekindl_work[thread];
 
-        for (gt = 0; gt < opts->ngtc; gt++)
+        for (gt = 0; gt < temperature_coupling_outputs->ngroups; gt++)
         {
             clear_mat(ekin_sum[gt]);
         }
@@ -1058,7 +1063,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
 
             for (d = 0; (d < DIM); d++)
             {
-                v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
+                v_corrt[d]  = v[n][d] - acc_group_data[ga].u[d];
             }
             for (d = 0; (d < DIM); d++)
             {
@@ -1079,7 +1084,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
     ekind->dekindl = 0;
     for (thread = 0; thread < nthread; thread++)
     {
-        for (g = 0; g < opts->ngtc; g++)
+        for (g = 0; g < temperature_coupling_outputs->ngroups; g++)
         {
             if (bEkinAveVel)
             {
@@ -1100,24 +1105,25 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
 }
 
 static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
-                              t_grpopts *opts, t_mdatoms *md,
+                              t_mdatoms *md,
                               gmx_ekindata_t *ekind,
+                              gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                              t_cosine_acceleration    *cosine_acceleration,
                               t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     int           start = md->start, homenr = md->homenr;
     int           g, d, n, m, gt = 0;
     rvec          v_corrt;
     real          hm;
-    t_grp_tcstat *tcstat = ekind->tcstat;
-    t_cos_acc    *cosacc = &(ekind->cosacc);
     real          dekindl;
     real          fac, cosz;
     double        mvcos;
+    gmx_temperature_coupling_group_outputs_t *tcstat = temperature_coupling_outputs->group_data;
 
-    for (g = 0; g < opts->ngtc; g++)
+    for (g = 0; g < temperature_coupling_outputs->ngroups; g++)
     {
-        copy_mat(ekind->tcstat[g].ekinh, ekind->tcstat[g].ekinh_old);
-        clear_mat(ekind->tcstat[g].ekinh);
+        copy_mat(tcstat[g].ekinh, tcstat[g].ekinh_old);
+        clear_mat(tcstat[g].ekinh);
     }
     ekind->dekindl_old = ekind->dekindl;
 
@@ -1140,7 +1146,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
 
         copy_rvec(v[n], v_corrt);
         /* Subtract the profile for the kinetic energy */
-        v_corrt[XX] -= cosz*cosacc->vcos;
+        v_corrt[XX] -= cosz*cosine_acceleration->vcos;
         for (d = 0; (d < DIM); d++)
         {
             for (m = 0; (m < DIM); m++)
@@ -1161,22 +1167,26 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
             dekindl += 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
         }
     }
-    ekind->dekindl = dekindl;
-    cosacc->mvcos  = mvcos;
+    ekind->dekindl              = dekindl;
+    cosine_acceleration->mvcos  = mvcos;
 
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+void calc_ke_part(t_state *state, t_mdatoms *md,
+                  gmx_ekindata_t *ekind,
+                  gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                  gmx_constant_acceleration_t *constant_acceleration,
+                  t_cosine_acceleration *cosine_acceleration,
+                  t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
-    if (ekind->cosacc.cos_accel == 0)
+    if (cosine_acceleration->accel == 0)
     {
-        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+        calc_ke_part_normal(state->v, md, ekind, temperature_coupling_outputs, constant_acceleration, nrnb, bEkinAveVel, bSaveEkinOld);
     }
     else
     {
-        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(state->box, state->x, state->v, md, ekind, temperature_coupling_outputs, cosine_acceleration, nrnb, bEkinAveVel);
     }
 }
 
@@ -1193,48 +1203,56 @@ extern void init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir)
     ekinstate->mvcos   = 0;
 }
 
-void update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind)
+void update_ekinstate(ekinstate_t *ekinstate,
+                      const gmx_ekindata_t *ekind,
+                      const gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                      const t_cosine_acceleration *cosine_acceleration)
 {
     int i;
+    gmx_temperature_coupling_group_outputs_t *tcstat = temperature_coupling_outputs->group_data;
 
     for (i = 0; i < ekinstate->ekin_n; i++)
     {
-        copy_mat(ekind->tcstat[i].ekinh, ekinstate->ekinh[i]);
-        copy_mat(ekind->tcstat[i].ekinf, ekinstate->ekinf[i]);
-        copy_mat(ekind->tcstat[i].ekinh_old, ekinstate->ekinh_old[i]);
-        ekinstate->ekinscalef_nhc[i] = ekind->tcstat[i].ekinscalef_nhc;
-        ekinstate->ekinscaleh_nhc[i] = ekind->tcstat[i].ekinscaleh_nhc;
-        ekinstate->vscale_nhc[i]     = ekind->tcstat[i].vscale_nhc;
+        copy_mat(tcstat[i].ekinh, ekinstate->ekinh[i]);
+        copy_mat(tcstat[i].ekinf, ekinstate->ekinf[i]);
+        copy_mat(tcstat[i].ekinh_old, ekinstate->ekinh_old[i]);
+        ekinstate->ekinscalef_nhc[i] = tcstat[i].ekinscalef_nhc;
+        ekinstate->ekinscaleh_nhc[i] = tcstat[i].ekinscaleh_nhc;
+        ekinstate->vscale_nhc[i]     = tcstat[i].vscale_nhc;
     }
 
-    copy_mat(ekind->ekin, ekinstate->ekin_total);
+    copy_mat((rvec *) ekind->ekin, ekinstate->ekin_total);
     ekinstate->dekindl = ekind->dekindl;
-    ekinstate->mvcos   = ekind->cosacc.mvcos;
+    ekinstate->mvcos   = cosine_acceleration->mvcos;
 
 }
 
 void restore_ekinstate_from_state(t_commrec *cr,
-                                  gmx_ekindata_t *ekind, ekinstate_t *ekinstate)
+                                  gmx_ekindata_t *ekind,
+                                  gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                                  t_cosine_acceleration *cosine_acceleration,
+                                  const ekinstate_t *ekinstate)
 {
     int i, n;
+    gmx_temperature_coupling_group_outputs_t *tcstat = temperature_coupling_outputs->group_data;
 
     if (MASTER(cr))
     {
         for (i = 0; i < ekinstate->ekin_n; i++)
         {
-            copy_mat(ekinstate->ekinh[i], ekind->tcstat[i].ekinh);
-            copy_mat(ekinstate->ekinf[i], ekind->tcstat[i].ekinf);
-            copy_mat(ekinstate->ekinh_old[i], ekind->tcstat[i].ekinh_old);
-            ekind->tcstat[i].ekinscalef_nhc = ekinstate->ekinscalef_nhc[i];
-            ekind->tcstat[i].ekinscaleh_nhc = ekinstate->ekinscaleh_nhc[i];
-            ekind->tcstat[i].vscale_nhc     = ekinstate->vscale_nhc[i];
+            copy_mat(ekinstate->ekinh[i], tcstat[i].ekinh);
+            copy_mat(ekinstate->ekinf[i], tcstat[i].ekinf);
+            copy_mat(ekinstate->ekinh_old[i], tcstat[i].ekinh_old);
+            tcstat[i].ekinscalef_nhc = ekinstate->ekinscalef_nhc[i];
+            tcstat[i].ekinscaleh_nhc = ekinstate->ekinscaleh_nhc[i];
+            tcstat[i].vscale_nhc     = ekinstate->vscale_nhc[i];
         }
 
-        copy_mat(ekinstate->ekin_total, ekind->ekin);
+        copy_mat((rvec *) ekinstate->ekin_total, ekind->ekin);
 
-        ekind->dekindl      = ekinstate->dekindl;
-        ekind->cosacc.mvcos = ekinstate->mvcos;
-        n                   = ekinstate->ekin_n;
+        ekind->dekindl             = ekinstate->dekindl;
+        cosine_acceleration->mvcos = ekinstate->mvcos;
+        n                          = ekinstate->ekin_n;
     }
 
     if (PAR(cr))
@@ -1242,25 +1260,25 @@ void restore_ekinstate_from_state(t_commrec *cr,
         gmx_bcast(sizeof(n), &n, cr);
         for (i = 0; i < n; i++)
         {
-            gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinh[0][0]),
-                      ekind->tcstat[i].ekinh[0], cr);
-            gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinf[0][0]),
-                      ekind->tcstat[i].ekinf[0], cr);
-            gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinh_old[0][0]),
-                      ekind->tcstat[i].ekinh_old[0], cr);
+            gmx_bcast(DIM*DIM*sizeof(tcstat[i].ekinh[0][0]),
+                      tcstat[i].ekinh[0], cr);
+            gmx_bcast(DIM*DIM*sizeof(tcstat[i].ekinf[0][0]),
+                      tcstat[i].ekinf[0], cr);
+            gmx_bcast(DIM*DIM*sizeof(tcstat[i].ekinh_old[0][0]),
+                      tcstat[i].ekinh_old[0], cr);
 
-            gmx_bcast(sizeof(ekind->tcstat[i].ekinscalef_nhc),
-                      &(ekind->tcstat[i].ekinscalef_nhc), cr);
-            gmx_bcast(sizeof(ekind->tcstat[i].ekinscaleh_nhc),
-                      &(ekind->tcstat[i].ekinscaleh_nhc), cr);
-            gmx_bcast(sizeof(ekind->tcstat[i].vscale_nhc),
-                      &(ekind->tcstat[i].vscale_nhc), cr);
+            gmx_bcast(sizeof(tcstat[i].ekinscalef_nhc),
+                      &(tcstat[i].ekinscalef_nhc), cr);
+            gmx_bcast(sizeof(tcstat[i].ekinscaleh_nhc),
+                      &(tcstat[i].ekinscaleh_nhc), cr);
+            gmx_bcast(sizeof(tcstat[i].vscale_nhc),
+                      &(tcstat[i].vscale_nhc), cr);
         }
         gmx_bcast(DIM*DIM*sizeof(ekind->ekin[0][0]),
                   ekind->ekin[0], cr);
 
         gmx_bcast(sizeof(ekind->dekindl), &ekind->dekindl, cr);
-        gmx_bcast(sizeof(ekind->cosacc.mvcos), &ekind->cosacc.mvcos, cr);
+        gmx_bcast(sizeof(cosine_acceleration->mvcos), &cosine_acceleration->mvcos, cr);
     }
 }
 
@@ -1374,7 +1392,8 @@ static void combine_forces(int nstcalclr,
 void update_tcouple(gmx_large_int_t   step,
                     t_inputrec       *inputrec,
                     t_state          *state,
-                    gmx_ekindata_t   *ekind,
+                    gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                    gmx_constant_acceleration_t *constant_acceleration,
                     gmx_update_t      upd,
                     t_extmass        *MassQ,
                     t_mdatoms        *md)
@@ -1383,6 +1402,7 @@ void update_tcouple(gmx_large_int_t   step,
     gmx_bool   bTCouple = FALSE;
     real       dttc;
     int        i, start, end, homenr, offset;
+    gmx_temperature_coupling_group_outputs_t *tcstat = temperature_coupling_outputs->group_data;
 
     /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
     if (inputrec->etc != etcNO &&
@@ -1413,21 +1433,21 @@ void update_tcouple(gmx_large_int_t   step,
             case etcNO:
                 break;
             case etcBERENDSEN:
-                berendsen_tcoupl(inputrec, ekind, dttc);
+                berendsen_tcoupl(inputrec, temperature_coupling_outputs, dttc);
                 break;
             case etcNOSEHOOVER:
-                nosehoover_tcoupl(&(inputrec->opts), ekind, dttc,
+                nosehoover_tcoupl(&(inputrec->opts), temperature_coupling_outputs, dttc,
                                   state->nosehoover_xi, state->nosehoover_vxi, MassQ);
                 break;
             case etcVRESCALE:
-                vrescale_tcoupl(inputrec, ekind, dttc,
+                vrescale_tcoupl(inputrec, temperature_coupling_outputs, dttc,
                                 state->therm_integral, upd->sd->gaussrand[0]);
                 break;
         }
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
-            rescale_velocities(ekind, md, md->start, md->start+md->homenr, state->v);
+            rescale_velocities(temperature_coupling_outputs, constant_acceleration, md, md->start, md->start+md->homenr, state->v);
         }
     }
     else
@@ -1435,7 +1455,7 @@ void update_tcouple(gmx_large_int_t   step,
         /* Set the T scaling lambda to 1 to have no scaling */
         for (i = 0; (i < inputrec->opts.ngtc); i++)
         {
-            ekind->tcstat[i].lambda = 1.0;
+            tcstat[i].lambda = 1.0;
         }
     }
 }
@@ -1514,7 +1534,7 @@ void update_constraints(FILE             *fplog,
                         gmx_large_int_t   step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
-                        gmx_ekindata_t   *ekind,
+                        gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
                         t_mdatoms        *md,
                         t_state          *state,
                         gmx_bool          bMolPBC,
@@ -1584,7 +1604,7 @@ void update_constraints(FILE             *fplog,
         if (EI_VV(inputrec->eI) && bFirstHalf)
         {
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, ekind, cr, step, 1, md,
+                      inputrec, temperature_coupling_outputs, cr, step, 1, md,
                       state->x, state->v, state->v,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
@@ -1594,7 +1614,7 @@ void update_constraints(FILE             *fplog,
         else
         {
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, ekind, cr, step, 1, md,
+                      inputrec, temperature_coupling_outputs, cr, step, 1, md,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
@@ -1823,7 +1843,9 @@ void update_coords(FILE             *fplog,
                    gmx_bool          bDoLR,
                    rvec             *f_lr,
                    t_fcdata         *fcd,
-                   gmx_ekindata_t   *ekind,
+                   gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                   gmx_constant_acceleration_t *constant_acceleration,
+                   t_cosine_acceleration *cosine_acceleration,
                    matrix            M,
                    gmx_update_t      upd,
                    gmx_bool          bInitStep,
@@ -1926,11 +1948,13 @@ void update_coords(FILE             *fplog,
         switch (inputrec->eI)
         {
             case (eiMD):
-                if (ekind->cosacc.cos_accel == 0)
+                if (cosine_acceleration->accel == 0)
                 {
                     do_update_md(start_th, end_th, dt,
-                                 ekind->tcstat, state->nosehoover_vxi,
-                                 ekind->bNEMD, ekind->grpstat, inputrec->opts.acc,
+                                 temperature_coupling_outputs,
+                                 state->nosehoover_vxi,
+                                 constant_acceleration->bDoAcceleration,
+                                 constant_acceleration->group_data, inputrec->opts.acc,
                                  inputrec->opts.nFreeze,
                                  md->invmass, md->ptype,
                                  md->cFREEZE, md->cACC, md->cTC,
@@ -1940,12 +1964,13 @@ void update_coords(FILE             *fplog,
                 else
                 {
                     do_update_visc(start_th, end_th, dt,
-                                   ekind->tcstat, state->nosehoover_vxi,
+                                   temperature_coupling_outputs,
+                                   state->nosehoover_vxi,
                                    md->invmass, md->ptype,
                                    md->cTC, state->x, xprime, state->v, force, M,
                                    state->box,
-                                   ekind->cosacc.cos_accel,
-                                   ekind->cosacc.vcos,
+                                   cosine_acceleration->accel,
+                                   cosine_acceleration->vcos,
                                    bNH, bPR);
                 }
                 break;

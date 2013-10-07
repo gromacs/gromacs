@@ -92,7 +92,9 @@ typedef struct {
 
 static void *init_vetavars(t_vetavars *vars,
                            gmx_bool constr_deriv,
-                           real veta, real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal)
+                           real veta, real vetanew, t_inputrec *ir,
+                           gmx_temperature_coupling_outputs_t *temperature_coupling_output,
+                           gmx_bool bPscal)
 {
     double g;
     int    i;
@@ -116,7 +118,7 @@ static void *init_vetavars(t_vetavars *vars,
     if (constr_deriv)
     {
         snew(vars->vscale_nhc, ir->opts.ngtc);
-        if ((ekind == NULL) || (!bPscal))
+        if ((temperature_coupling_output == NULL) || (!bPscal))
         {
             for (i = 0; i < ir->opts.ngtc; i++)
             {
@@ -125,9 +127,9 @@ static void *init_vetavars(t_vetavars *vars,
         }
         else
         {
-            for (i = 0; i < ir->opts.ngtc; i++)
+            for (i = 0; i < temperature_coupling_output->ngroups; i++)
             {
-                vars->vscale_nhc[i] = ekind->tcstat[i].vscale_nhc;
+                vars->vscale_nhc[i] = temperature_coupling_output->group_data[i].vscale_nhc;
             }
         }
     }
@@ -305,7 +307,8 @@ static void pr_sortblock(FILE *fp, const char *title, int nsb, t_sortblock sb[])
 
 gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
-                   t_idef *idef, t_inputrec *ir, gmx_ekindata_t *ekind,
+                   t_idef *idef, t_inputrec *ir,
+                   gmx_temperature_coupling_outputs_t *temperature_coupling_output,
                    t_commrec *cr,
                    gmx_large_int_t step, int delta_step,
                    t_mdatoms *md,
@@ -344,7 +347,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     /* set constants for pressure control integration */
     init_vetavars(&vetavar, econq != econqCoord,
-                  veta, vetanew, ir, ekind, bPscal);
+                  veta, vetanew, ir, temperature_coupling_output, bPscal);
 
     if (ir->delta_t == 0)
     {

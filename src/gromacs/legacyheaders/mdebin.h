@@ -135,7 +135,9 @@ void upd_mdebin(t_mdebin       *md,
                 tensor          fvir,
                 tensor          vir,
                 tensor          pres,
-                gmx_ekindata_t *ekind,
+                gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                gmx_constant_acceleration_t *constant_acceleration,
+                t_cosine_acceleration *cosine_acceleration,
                 rvec            mu_tot,
                 gmx_constr_t    constr);
 

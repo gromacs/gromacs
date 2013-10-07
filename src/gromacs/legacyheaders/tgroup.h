@@ -43,30 +43,43 @@
 extern "C" {
 #endif
 
-void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
-                   gmx_ekindata_t *ekind);
-/* Allocate memory and set the grpnr array. */
+void
+init_temperature_coupling_outputs(const t_grpopts *opts,
+                                  gmx_temperature_coupling_outputs_t *temperature_coupling_outputs);
+/* Allocate memory and set up. */
+
+void
+init_constant_acceleration(const gmx_mtop_t *mtop,
+                           const t_grpopts *opts,
+                           gmx_constant_acceleration_t *const_acc);
+/* Allocate memory and set up. */
+
+void init_ekindata(const t_grpopts *opts,
+                   gmx_ekindata_t  *ekind);
+/* Allocate memory and set up. */
 
 void done_ekindata(gmx_ekindata_t *ekind);
 /* Free the memory */
 
-void accumulate_u(t_commrec *cr, t_grpopts *opts,
-                  gmx_ekindata_t *ekind);
+void accumulate_u(t_commrec *cr,
+                  gmx_constant_acceleration_t *constant_acceleration);
+/* Accumulate mean velocities of particles over all ranks?
+ * TODO fold this into the normal energy communication (if it survives) */
 
-/*extern void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps);*/
-/* Communicate subsystem - group velocities and subsystem ekin respectively
- * and sum them up. Return them in grps.
- */
-
-real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
+real sum_ekin(t_grpopts *opts,
+              gmx_ekindata_t *ekind,
+              gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+              real *dekindlambda,
               gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */
 
-void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
+void update_ekindata(int start, int homenr,
+                     gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                     gmx_constant_acceleration_t *constant_acceleration,
                      t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda);
-/* Do the update of group velocities (if bNEMD) and
+/* Do the update of group velocities (if constant acceleration) and
  * (partial) group ekin.
  */
 

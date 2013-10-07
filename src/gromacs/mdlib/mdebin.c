@@ -975,7 +975,9 @@ void upd_mdebin(t_mdebin       *md,
                 tensor          fvir,
                 tensor          vir,
                 tensor          pres,
-                gmx_ekindata_t *ekind,
+                gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                gmx_constant_acceleration_t *constant_acceleration,
+                t_cosine_acceleration *cosine_acceleration,
                 rvec            mu_tot,
                 gmx_constr_t    constr)
 {
@@ -1072,13 +1074,13 @@ void upd_mdebin(t_mdebin       *md,
     {
         add_ebin(md->ebin, md->imu, 3, mu_tot, bSum);
     }
-    if (ekind && ekind->cosacc.cos_accel != 0)
+    if (cosine_acceleration && cosine_acceleration->accel != 0)
     {
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
-        add_ebin(md->ebin, md->ivcos, 1, &(ekind->cosacc.vcos), bSum);
+        add_ebin(md->ebin, md->ivcos, 1, &(cosine_acceleration->vcos), bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
-        tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
+        tmp = 1/(cosine_acceleration->accel/(cosine_acceleration->vcos*PICO)
                  *dens*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
         add_ebin(md->ebin, md->ivisc, 1, &tmp, bSum);
     }
@@ -1103,11 +1105,11 @@ void upd_mdebin(t_mdebin       *md,
         }
     }
 
-    if (ekind)
+    if (temperature_coupling_outputs)
     {
         for (i = 0; (i < md->nTC); i++)
         {
-            md->tmp_r[i] = ekind->tcstat[i].T;
+            md->tmp_r[i] = temperature_coupling_outputs->group_data[i].T;
         }
         add_ebin(md->ebin, md->itemp, md->nTC, md->tmp_r, bSum);
 
@@ -1159,17 +1161,17 @@ void upd_mdebin(t_mdebin       *md,
         {
             for (i = 0; (i < md->nTC); i++)
             {
-                md->tmp_r[i] = ekind->tcstat[i].lambda;
+                md->tmp_r[i] = temperature_coupling_outputs->group_data[i].lambda;
             }
             add_ebin(md->ebin, md->itc, md->nTC, md->tmp_r, bSum);
         }
     }
 
-    if (ekind && md->nU > 1)
+    if (constant_acceleration && md->nU > 1)
     {
         for (i = 0; (i < md->nU); i++)
         {
-            copy_rvec(ekind->grpstat[i].u, md->tmp_v[i]);
+            copy_rvec(constant_acceleration->group_data[i].u, md->tmp_v[i]);
         }
         add_ebin(md->ebin, md->iu, 3*md->nU, md->tmp_v[0], bSum);
     }
