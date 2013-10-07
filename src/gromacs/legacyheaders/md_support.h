@@ -117,7 +117,11 @@ void copy_coupling_state(t_state *statea, t_state *stateb,
 /* Copy stuff from state A to state B */
 
 void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir,
-                     t_forcerec *fr, gmx_ekindata_t *ekind,
+                     t_forcerec *fr,
+                     gmx_ekindata_t *ekind,
+                     gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                     gmx_constant_acceleration_t *constant_acceleration,
+                     t_cosine_acceleration *cosine_acceleration,
                      t_state *state, t_state *state_global, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,

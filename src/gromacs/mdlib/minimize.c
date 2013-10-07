@@ -765,7 +765,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcMoveE);
 
         global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                    inputrec, NULL, NULL, NULL, 1, &terminate,
+                    inputrec, NULL, NULL, NULL, NULL, NULL, NULL, 1, &terminate,
                     top_global, &ems->s, FALSE,
                     CGLO_ENERGY |
                     CGLO_PRESSURE |
@@ -1037,8 +1037,9 @@ double do_cg(FILE *fplog, t_commrec *cr,
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                   mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
-                   NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                   mdatoms->tmass, enerd, &s_min->s,
+                   inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
+                   NULL, NULL, vir, pres, NULL, NULL, NULL, mu_tot, constr);
 
         print_ebin_header(fplog, step, step, s_min->s.lambda[efptFEP]);
         print_ebin(outf->fp_ene, TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
@@ -1467,8 +1468,9 @@ double do_cg(FILE *fplog, t_commrec *cr,
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                       mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
-                       NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                       mdatoms->tmass, enerd, &s_min->s,
+                       inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
+                       NULL, NULL, vir, pres, NULL, NULL, NULL, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
@@ -1731,8 +1733,9 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                   mdatoms->tmass, enerd, state, inputrec->fepvals, inputrec->expandedvals, state->box,
-                   NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                   mdatoms->tmass, enerd, state,
+                   inputrec->fepvals, inputrec->expandedvals, state->box,
+                   NULL, NULL, vir, pres, NULL, NULL, NULL, mu_tot, constr);
 
         print_ebin_header(fplog, step, step, state->lambda[efptFEP]);
         print_ebin(outf->fp_ene, TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
@@ -2257,8 +2260,9 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                       mdatoms->tmass, enerd, state, inputrec->fepvals, inputrec->expandedvals, state->box,
-                       NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                       mdatoms->tmass, enerd, state,
+                       inputrec->fepvals, inputrec->expandedvals, state->box,
+                       NULL, NULL, vir, pres, NULL, NULL, NULL, mu_tot, constr);
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
             if (do_log)
@@ -2468,8 +2472,9 @@ double do_steep(FILE *fplog, t_commrec *cr,
             {
                 /* Store the new (lower) energies  */
                 upd_mdebin(mdebin, FALSE, FALSE, (double)count,
-                           mdatoms->tmass, enerd, &s_try->s, inputrec->fepvals, inputrec->expandedvals,
-                           s_try->s.box, NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                           mdatoms->tmass, enerd, &s_try->s,
+                           inputrec->fepvals, inputrec->expandedvals,
+                           s_try->s.box, NULL, NULL, vir, pres, NULL, NULL, NULL, mu_tot, constr);
                 print_ebin(outf->fp_ene, TRUE,
                            do_per_step(steps_accepted, inputrec->nstdisreout),
                            do_per_step(steps_accepted, inputrec->nstorireout),
@@ -2608,7 +2613,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     rvec                 mu_tot;
     rvec                *fneg, *dfdx;
     gmx_bool             bSparse; /* use sparse matrix storage format */
-    size_t               sz=0;
+    size_t               sz = 0;
     gmx_sparsematrix_t * sparse_matrix           = NULL;
     real           *     full_matrix             = NULL;
     em_state_t       *   state_work;

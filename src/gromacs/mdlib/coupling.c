@@ -85,7 +85,9 @@ static const double* sy_const[] = {
    };*/
 
 /* these integration routines are only referenced inside this file */
-static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real dtfull,
+static void NHC_trotter(t_grpopts *opts, int nvar,
+                        gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                        real dtfull,
                         double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
 
 {
@@ -94,7 +96,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
     int           i, j, mi, mj, jmax;
     double        Ekin, Efac, reft, kT, nd;
     double        dt;
-    t_grp_tcstat *tcstat;
+    gmx_temperature_coupling_group_outputs_t *tcstat;
     double       *ivxi, *ixi;
     double       *iQinv;
     double       *GQ;
@@ -132,7 +134,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
         else
         {
             iQinv  = &(MassQ->Qinv[i*nh]);
-            tcstat = &ekind->tcstat[i];
+            tcstat = &temperature_coupling_outputs->group_data[i];
             nd     = opts->nrdf[i];
             reft   = max(0.0, opts->ref_t[i]);
             if (bEkinAveVel)
@@ -221,7 +223,9 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
 }
 
 static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
-                         gmx_ekindata_t *ekind, tensor vir, real pcorr, t_extmass *MassQ)
+                         gmx_ekindata_t *ekind,
+                         gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                         tensor vir, real pcorr, t_extmass *MassQ)
 {
 
     real   pscal;
@@ -256,7 +260,7 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     }
     /* alpha factor for phase space volume, then multiply by the ekin scaling factor.  */
     alpha  = 1.0 + DIM/((double)ir->opts.nrdf[0]);
-    alpha *= ekind->tcstat[0].ekinscalef_nhc;
+    alpha *= temperature_coupling_outputs->group_data[0].ekinscalef_nhc;
     msmul(ekind->ekin, alpha, ekinmod);
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
@@ -682,7 +686,9 @@ void berendsen_pscale(t_inputrec *ir, matrix mu,
     inc_nrnb(nrnb, eNR_PCOUPL, nr_atoms);
 }
 
-void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
+void berendsen_tcoupl(t_inputrec *ir,
+                      gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                      real dt)
 {
     t_grpopts *opts;
     int        i;
@@ -694,28 +700,28 @@ void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
     {
         if (ir->eI == eiVV)
         {
-            T = ekind->tcstat[i].T;
+            T = temperature_coupling_outputs->group_data[i].T;
         }
         else
         {
-            T = ekind->tcstat[i].Th;
+            T = temperature_coupling_outputs->group_data[i].Th;
         }
 
         if ((opts->tau_t[i] > 0) && (T > 0.0))
         {
             reft                    = max(0.0, opts->ref_t[i]);
             lll                     = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-            ekind->tcstat[i].lambda = max(min(lll, 1.25), 0.8);
+            temperature_coupling_outputs->group_data[i].lambda = max(min(lll, 1.25), 0.8);
         }
         else
         {
-            ekind->tcstat[i].lambda = 1.0;
+            temperature_coupling_outputs->group_data[i].lambda = 1.0;
         }
 
         if (debug)
         {
             fprintf(debug, "TC: group %d: T: %g, Lambda: %g\n",
-                    i, T, ekind->tcstat[i].lambda);
+                    i, T, temperature_coupling_outputs->group_data[i].lambda);
         }
     }
 }
@@ -921,7 +927,9 @@ void andersen_tcoupl(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_rng_t rn
 }
 
 
-void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
+void nosehoover_tcoupl(t_grpopts *opts,
+                       gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                       real dt,
                        double xi[], double vxi[], t_extmass *MassQ)
 {
     int   i;
@@ -933,7 +941,7 @@ void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
     {
         reft     = max(0.0, opts->ref_t[i]);
         oldvxi   = vxi[i];
-        vxi[i]  += dt*MassQ->Qinv[i]*(ekind->tcstat[i].Th - reft);
+        vxi[i]  += dt*MassQ->Qinv[i]*(temperature_coupling_outputs->group_data[i].Th - reft);
         xi[i]   += dt*(oldvxi + vxi[i])*0.5;
     }
 }
@@ -965,13 +973,14 @@ void destroy_bufstate(t_state *state)
 }
 
 void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
+                    gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
                     gmx_enerdata_t *enerd, t_state *state,
                     tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
 {
 
     int             n, i, j, d, ntgrp, ngtc, gc = 0;
-    t_grp_tcstat   *tcstat;
+    gmx_temperature_coupling_group_outputs_t *tcstat;
     t_grpopts      *opts;
     gmx_large_int_t step_eff;
     real            ecorr, pcorr, dvdlcorr;
@@ -1030,17 +1039,20 @@ void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
         {
             case etrtBAROV:
             case etrtBAROV2:
-                boxv_trotter(ir, &(state->veta), dt, state->box, ekind, vir,
+                boxv_trotter(ir, &(state->veta), dt, state->box,
+                             ekind, temperature_coupling_outputs, vir,
                              enerd->term[F_PDISPCORR], MassQ);
                 break;
             case etrtBARONHC:
             case etrtBARONHC2:
-                NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
+                NHC_trotter(opts, state->nnhpres, temperature_coupling_outputs,
+                            dt, state->nhpres_xi,
                             state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE);
                 break;
             case etrtNHC:
             case etrtNHC2:
-                NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
+                NHC_trotter(opts, opts->ngtc, temperature_coupling_outputs,
+                            dt, state->nosehoover_xi,
                             state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
                 /* need to rescale the kinetic energies and velocities here.  Could
                    scale the velocities later, but we need them scaled in order to
@@ -1048,7 +1060,7 @@ void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
 
                 for (i = 0; i < ngtc; i++)
                 {
-                    tcstat                  = &ekind->tcstat[i];
+                    tcstat                  = &temperature_coupling_outputs->group_data[i];
                     tcstat->vscale_nhc      = scalefac[i];
                     tcstat->ekinscaleh_nhc *= (scalefac[i]*scalefac[i]);
                     tcstat->ekinscalef_nhc *= (scalefac[i]*scalefac[i]);
@@ -1102,7 +1114,6 @@ void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
 extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit)
 {
     int           n, i, j, d, ntgrp, ngtc, nnhpres, nh, gc = 0;
-    t_grp_tcstat *tcstat;
     t_grpopts    *opts;
     real          ecorr, pcorr, dvdlcorr;
     real          bmass, qmass, reft, kT, dt, ndj, nd;
@@ -1202,7 +1213,6 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
 int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter)
 {
     int           n, i, j, d, ntgrp, ngtc, nnhpres, nh, gc = 0;
-    t_grp_tcstat *tcstat;
     t_grpopts    *opts;
     real          ecorr, pcorr, dvdlcorr;
     real          bmass, qmass, reft, kT, dt, ndj, nd;
@@ -1611,7 +1621,9 @@ static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
         2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
 }
 
-void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
+void vrescale_tcoupl(t_inputrec *ir,
+                     gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                     real dt,
                      double therm_integral[], gmx_rng_t rng)
 {
     t_grpopts *opts;
@@ -1624,11 +1636,11 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
     {
         if (ir->eI == eiVV)
         {
-            Ek = trace(ekind->tcstat[i].ekinf);
+            Ek = trace(temperature_coupling_outputs->group_data[i].ekinf);
         }
         else
         {
-            Ek = trace(ekind->tcstat[i].ekinh);
+            Ek = trace(temperature_coupling_outputs->group_data[i].ekinh);
         }
 
         if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0)
@@ -1642,11 +1654,11 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
             /* Analytically Ek_new>=0, but we check for rounding errors */
             if (Ek_new <= 0)
             {
-                ekind->tcstat[i].lambda = 0.0;
+                temperature_coupling_outputs->group_data[i].lambda = 0.0;
             }
             else
             {
-                ekind->tcstat[i].lambda = sqrt(Ek_new/Ek);
+                temperature_coupling_outputs->group_data[i].lambda = sqrt(Ek_new/Ek);
             }
 
             therm_integral[i] -= Ek_new - Ek;
@@ -1654,12 +1666,12 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
             if (debug)
             {
                 fprintf(debug, "TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
-                        i, Ek_ref, Ek, Ek_new, ekind->tcstat[i].lambda);
+                        i, Ek_ref, Ek, Ek_new, temperature_coupling_outputs->group_data[i].lambda);
             }
         }
         else
         {
-            ekind->tcstat[i].lambda = 1.0;
+            temperature_coupling_outputs->group_data[i].lambda = 1.0;
         }
     }
 }
@@ -1678,23 +1690,24 @@ real vrescale_energy(t_grpopts *opts, double therm_integral[])
     return ener;
 }
 
-void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
+void rescale_velocities(gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                        gmx_constant_acceleration_t *constant_acceleration,
+                        t_mdatoms *mdatoms,
                         int start, int end, rvec v[])
 {
-    t_grp_acc      *gstat;
-    t_grp_tcstat   *tcstat;
+    t_grp_acc      *acc_group_data;
+
     unsigned short *cACC, *cTC;
     int             ga, gt, n, d;
     real            lg;
     rvec            vrel;
 
-    tcstat = ekind->tcstat;
     cTC    = mdatoms->cTC;
 
-    if (ekind->bNEMD)
+    if (constant_acceleration->bDoAcceleration)
     {
-        gstat  = ekind->grpstat;
-        cACC   = mdatoms->cACC;
+        acc_group_data  = constant_acceleration->group_data;
+        cACC            = mdatoms->cACC;
 
         ga = 0;
         gt = 0;
@@ -1709,11 +1722,11 @@ void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
                 gt   = cTC[n];
             }
             /* Only scale the velocity component relative to the COM velocity */
-            rvec_sub(v[n], gstat[ga].u, vrel);
-            lg = tcstat[gt].lambda;
+            rvec_sub(v[n], acc_group_data[ga].u, vrel);
+            lg = temperature_coupling_outputs->group_data[gt].lambda;
             for (d = 0; d < DIM; d++)
             {
-                v[n][d] = gstat[ga].u[d] + lg*vrel[d];
+                v[n][d] = acc_group_data[ga].u[d] + lg*vrel[d];
             }
         }
     }
@@ -1726,7 +1739,7 @@ void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
             {
                 gt   = cTC[n];
             }
-            lg = tcstat[gt].lambda;
+            lg = temperature_coupling_outputs->group_data[gt].lambda;
             for (d = 0; d < DIM; d++)
             {
                 v[n][d] *= lg;

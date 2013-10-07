@@ -185,6 +185,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     globsig_t         gs;
     gmx_rng_t         mcrng = NULL;
     gmx_groups_t     *groups;
+    gmx_temperature_coupling_outputs_t *temperature_coupling_outputs;
+    gmx_constant_acceleration_t *constant_acceleration;
+    t_cosine_acceleration *cosine_acceleration;
     gmx_ekindata_t   *ekind, *ekind_save;
     gmx_shellfc_t     shellfc;
     int               count, nconverged = 0;
@@ -324,14 +327,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* copy the state into df_history */
     copy_df_history(&df_history, &state_global->dfhist);
 
+    snew(temperature_coupling_outputs, 1);
+    init_temperature_coupling_outputs(&(ir->opts), temperature_coupling_outputs);
+
+    snew(constant_acceleration, 1);
+    init_constant_acceleration(top_global, &(ir->opts), constant_acceleration);
+
     /* Kinetic energy data */
     snew(ekind, 1);
-    init_ekindata(fplog, top_global, &(ir->opts), ekind);
+    init_ekindata(&(ir->opts), ekind);
     /* needed for iteration of constraints */
     snew(ekind_save, 1);
-    init_ekindata(fplog, top_global, &(ir->opts), ekind_save);
-    /* Copy the cos acceleration to the groups struct */
-    ekind->cosacc.cos_accel = ir->cos_accel;
+    init_ekindata(&(ir->opts), ekind_save);
+
+    snew(cosine_acceleration, 1);
+    cosine_acceleration->accel = ir->cos_accel;
 
     gstat = global_stat_init(ir);
     debug_gmx();
@@ -583,7 +593,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN : 0));
 
     bSumEkinhOld = FALSE;
-    compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
+    compute_globals(fplog, gstat, cr, ir, fr,
+                    ekind,
+                    temperature_coupling_outputs,
+                    constant_acceleration,
+                    cosine_acceleration,
+                    state, state_global, mdatoms, nrnb, vcm,
                     NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                     constr, NULL, FALSE, state->box,
                     top_global, &pcurr, &bSumEkinhOld, cglo_flags);
@@ -595,7 +610,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
            kinetic energy calculation.  This minimized excess variables, but
            perhaps loses some logic?*/
 
-        compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
+        compute_globals(fplog, gstat, cr, ir, fr,
+                        ekind,
+                        temperature_coupling_outputs,
+                        constant_acceleration,
+                        cosine_acceleration,
+                        state, state_global, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
                         top_global, &pcurr, &bSumEkinhOld,
@@ -607,7 +627,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         for (i = 0; (i < ir->opts.ngtc); i++)
         {
-            copy_mat(ekind->tcstat[i].ekinh, ekind->tcstat[i].ekinh_old);
+            copy_mat(temperature_coupling_outputs->group_data[i].ekinh,
+                     temperature_coupling_outputs->group_data[i].ekinh_old);
         }
     }
     if (ir->eI != eiVV)
@@ -1001,7 +1022,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* We need the kinetic energy at minus the half step for determining
              * the full step kinetic energy and possibly for T-coupling.*/
             /* This may not be quite working correctly yet . . . . */
-            compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
+            compute_globals(fplog, gstat, cr, ir, fr,
+                            ekind,
+                            temperature_coupling_outputs,
+                            constant_acceleration,
+                            cosine_acceleration,
+                            state, state_global, mdatoms, nrnb, vcm,
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
                             top_global, &pcurr, &bSumEkinhOld,
@@ -1129,7 +1155,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             else
             {
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
+                trotter_update(ir, step, ekind, temperature_coupling_outputs,
+                               enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
             /* If we are using twin-range interactions where the long-range component
@@ -1142,7 +1169,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
                           f, bUpdateDoLR, fr->f_twin, fcd,
-                          ekind, M, upd, bInitStep, etrtVELOCITY1,
+                          temperature_coupling_outputs,
+                          constant_acceleration,
+                          cosine_acceleration,
+                          M, upd, bInitStep, etrtVELOCITY1,
                           cr, nrnb, constr, &top->idef);
 
             if (bIterativeCase && do_per_step(step-1, ir->nstpcouple) && !bInitStep)
@@ -1177,7 +1207,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                            of veta.  */
 
                         veta_save = state->veta;
-                        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ0);
+                        trotter_update(ir, step, ekind, temperature_coupling_outputs,
+                                       enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ0);
                         vetanew     = state->veta;
                         state->veta = veta_save;
                     }
@@ -1186,7 +1217,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 bOK = TRUE;
                 if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
                 {
-                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir,
+                                       temperature_coupling_outputs, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, shake_vir,
                                        cr, nrnb, wcycle, upd, constr,
@@ -1224,7 +1256,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                    So we need information from the last step in the first half of the integration */
                 if (bGStat || do_per_step(step-1, nstglobalcomm))
                 {
-                    compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
+                    compute_globals(fplog, gstat, cr, ir, fr,
+                                    ekind,
+                                    temperature_coupling_outputs,
+                                    constant_acceleration,
+                                    cosine_acceleration,
+                                    state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, state->box,
                                     top_global, &pcurr, &bSumEkinhOld,
@@ -1251,7 +1288,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     if (bTrotter)
                     {
                         m_add(force_vir, shake_vir, total_vir); /* we need the un-dispersion corrected total vir here */
-                        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ2);
+                        trotter_update(ir, step, ekind,
+                                       temperature_coupling_outputs,
+                                       enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ2);
                     }
                     else
                     {
@@ -1261,7 +1300,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             /* We need the kinetic energy at minus the half step for determining
                              * the full step kinetic energy and possibly for T-coupling.*/
                             /* This may not be quite working correctly yet . . . . */
-                            compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
+                            compute_globals(fplog, gstat, cr, ir, fr,
+                                            ekind,
+                                            temperature_coupling_outputs,
+                                            constant_acceleration,
+                                            cosine_acceleration,
+                                            state, state_global, mdatoms, nrnb, vcm,
                                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                             constr, NULL, FALSE, state->box,
                                             top_global, &pcurr, &bSumEkinhOld,
@@ -1286,7 +1330,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (IR_NVT_TROTTER(ir) && ir->eI == eiVV)
                 {
                     /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
-                    enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, NULL, (ir->eI == eiVV), FALSE);
+                    enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind,
+                                                   temperature_coupling_outputs,
+                                                   NULL, (ir->eI == eiVV), FALSE);
                     enerd->term[F_EKIN] = trace(ekind->ekin);
                 }
             }
@@ -1398,7 +1444,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     }
                     else
                     {
-                        update_ekinstate(&state_global->ekinstate, ekind);
+                        update_ekinstate(&state_global->ekinstate,
+                                         ekind,
+                                         temperature_coupling_outputs,
+                                         cosine_acceleration);
                         state_global->ekinstate.bUpToDate = TRUE;
                     }
                     update_energyhistory(&state_global->enerhist, mdebin);
@@ -1550,7 +1599,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             if (!bInitStep)
             {
-                update_tcouple(step, ir, state, ekind, upd, &MassQ, mdatoms);
+                update_tcouple(step, ir, state,
+                               temperature_coupling_outputs,
+                               constant_acceleration,
+                               upd, &MassQ, mdatoms);
             }
             if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
             {
@@ -1559,7 +1611,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
                 if (constr && bIfRandomize)
                 {
-                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir,
+                                       temperature_coupling_outputs, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, constr,
@@ -1619,7 +1672,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         m_add(force_vir, shake_vir, total_vir);
                         clear_mat(shake_vir);
                     }
-                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ3);
+                    trotter_update(ir, step, ekind,
+                                   temperature_coupling_outputs,
+                                   enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ3);
                     /* We can only do Berendsen coupling after we have summed
                      * the kinetic energy or virial. Since the happens
                      * in global_state after update, we should only do it at
@@ -1628,7 +1683,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 else
                 {
-                    update_tcouple(step, ir, state, ekind, upd, &MassQ, mdatoms);
+                    update_tcouple(step, ir, state,
+                                   temperature_coupling_outputs,
+                                   constant_acceleration,
+                                   upd, &MassQ, mdatoms);
                     update_pcouple(fplog, step, ir, state, pcoupl_mu, M, bInitStep);
                 }
 
@@ -1639,7 +1697,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     /* velocity half-step update */
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, fcd,
-                                  ekind, M, upd, FALSE, etrtVELOCITY2,
+                                  temperature_coupling_outputs,
+                                  constant_acceleration,
+                                  cosine_acceleration,
+                                  M, upd, FALSE, etrtVELOCITY2,
                                   cr, nrnb, constr, &top->idef);
                 }
 
@@ -1656,10 +1717,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                               bUpdateDoLR, fr->f_twin, fcd,
-                              ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
+                              temperature_coupling_outputs,
+                              constant_acceleration,
+                              cosine_acceleration,
+                              M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
-                update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
+                update_constraints(fplog, step, &dvdl_constr, ir,
+                                   temperature_coupling_outputs, mdatoms, state,
                                    fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
@@ -1669,14 +1734,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     /* erase F_EKIN and F_TEMP here? */
                     /* just compute the kinetic energy at the half step to perform a trotter step */
-                    compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
+                    compute_globals(fplog, gstat, cr, ir, fr,
+                                    ekind,
+                                    temperature_coupling_outputs,
+                                    constant_acceleration,
+                                    cosine_acceleration,
+                                    state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, lastbox,
                                     top_global, &pcurr, &bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE
                                     );
                     wallcycle_start(wcycle, ewcUPDATE);
-                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
+                    trotter_update(ir, step, ekind,
+                                   temperature_coupling_outputs,
+                                   enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf, state->x, 0, state->natoms);
 
@@ -1684,7 +1756,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, fcd,
-                                  ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
+                                  temperature_coupling_outputs,
+                                  constant_acceleration,
+                                  cosine_acceleration,
+                                  M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                     wallcycle_stop(wcycle, ewcUPDATE);
 
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
@@ -1692,7 +1767,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      * to numerical errors, or are they important
                      * physically? I'm thinking they are just errors, but not completely sure.
                      * For now, will call without actually constraining, constr=NULL*/
-                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir,
+                                       temperature_coupling_outputs, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, NULL,
@@ -1766,7 +1842,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     gs.sig[eglsNABNSB] = nlh.nabnsb;
                 }
-                compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
+                compute_globals(fplog, gstat, cr, ir, fr,
+                                ekind,
+                                temperature_coupling_outputs,
+                                constant_acceleration,
+                                cosine_acceleration,
+                                state, state_global, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr,
                                 bFirstIterate ? &gs : NULL,
@@ -1870,7 +1951,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                t, mdatoms->tmass, enerd, state,
                                ir->fepvals, ir->expandedvals, lastbox,
                                shake_vir, force_vir, total_vir, pres,
-                               ekind, mu_tot, constr);
+                               temperature_coupling_outputs,
+                               constant_acceleration,
+                               cosine_acceleration,
+                               mu_tot, constr);
                 }
                 else
                 {

@@ -52,22 +52,48 @@
 #include "mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
-static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
+static void init_temperature_coupling_group_outputs(int ngtc, gmx_temperature_coupling_group_outputs_t tc[])
 {
     int i, j;
 
     for (i = 0; (i < ngtc); i++)
     {
-        tcstat[i].T = 0;
-        clear_mat(tcstat[i].ekinh);
-        clear_mat(tcstat[i].ekinh_old);
-        clear_mat(tcstat[i].ekinf);
+        tc[i].T = 0;
+        clear_mat(tc[i].ekinh);
+        clear_mat(tc[i].ekinh_old);
+        clear_mat(tc[i].ekinf);
     }
 }
 
-static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
+void init_temperature_coupling_outputs(const t_grpopts *opts,
+                                       gmx_temperature_coupling_outputs_t *temperature_coupling_outputs)
 {
-    gmx_groups_t           *groups;
+    int i;
+
+    if (debug)
+    {
+        fprintf(debug, "ngtc: %d\n", opts->ngtc);
+    }
+
+    temperature_coupling_outputs->ngroups = opts->ngtc;
+    snew(temperature_coupling_outputs->group_data, opts->ngtc);
+    init_temperature_coupling_group_outputs(opts->ngtc, temperature_coupling_outputs->group_data);
+    /* Set Berendsen tcoupl lambda's to 1,
+     * so runs without Berendsen coupling are not affected.
+     */
+    for (i = 0; i < opts->ngtc; i++)
+    {
+        temperature_coupling_outputs->group_data[i].lambda         = 1.0;
+        temperature_coupling_outputs->group_data[i].vscale_nhc     = 1.0;
+        temperature_coupling_outputs->group_data[i].ekinscaleh_nhc = 1.0;
+        temperature_coupling_outputs->group_data[i].ekinscalef_nhc = 1.0;
+    }
+
+}
+
+static void init_constant_acceleration_groups(const gmx_mtop_t *mtop, int ngacc, t_grp_acc *group_data)
+{
+    const gmx_groups_t     *groups;
     gmx_mtop_atomloop_all_t aloop;
     int                     i, grp;
     t_atom                 *atom;
@@ -83,44 +109,44 @@ static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
             {
                 gmx_incons("Input for acceleration groups wrong");
             }
-            gstat[grp].nat++;
+            group_data[grp].nat++;
             /* This will not work for integrator BD */
-            gstat[grp].mA += atom->m;
-            gstat[grp].mB += atom->mB;
+            group_data[grp].mA += atom->m;
+            group_data[grp].mB += atom->mB;
         }
     }
 }
 
-void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
-                   gmx_ekindata_t *ekind)
+void
+init_constant_acceleration(const gmx_mtop_t *mtop,
+                           const t_grpopts *opts,
+                           gmx_constant_acceleration_t *const_acc)
 {
-    int i;
-    int nthread, thread;
-#ifdef DEBUG
-    fprintf(log, "ngtc: %d, ngacc: %d, ngener: %d\n", opts->ngtc, opts->ngacc,
-            opts->ngener);
-#endif
+    if (debug)
+    {
+        fprintf(debug, "Number of acceleration groups: %d\n", opts->ngacc);
+    }
 
-    /* bNEMD tells if we should remove remove the COM velocity
+    /* bDoAcceleration tells if we should remove remove the COM velocity
      * from the velocities during velocity scaling in T-coupling.
      * Turn this on when we have multiple acceleration groups
      * or one accelerated group.
+     *
+     * TODO Why should this be on when there are multiple acceleration
+     * groups and perhaps all of their norms are zero?
      */
-    ekind->bNEMD = (opts->ngacc > 1 || norm(opts->acc[0]) > 0);
+    const_acc->bDoAcceleration = (opts->ngacc > 1 || norm(opts->acc[0]) > 0);
 
-    ekind->ngtc = opts->ngtc;
-    snew(ekind->tcstat, opts->ngtc);
-    init_grptcstat(opts->ngtc, ekind->tcstat);
-    /* Set Berendsen tcoupl lambda's to 1,
-     * so runs without Berendsen coupling are not affected.
-     */
-    for (i = 0; i < opts->ngtc; i++)
-    {
-        ekind->tcstat[i].lambda         = 1.0;
-        ekind->tcstat[i].vscale_nhc     = 1.0;
-        ekind->tcstat[i].ekinscaleh_nhc = 1.0;
-        ekind->tcstat[i].ekinscalef_nhc = 1.0;
-    }
+    const_acc->ngroups = opts->ngacc;
+    snew(const_acc->group_data, opts->ngacc);
+    init_constant_acceleration_groups(mtop, opts->ngacc, const_acc->group_data);
+}
+
+void init_ekindata(const t_grpopts *opts,
+                   gmx_ekindata_t  *ekind)
+{
+    int i;
+    int nthread, thread;
 
     nthread = gmx_omp_nthreads_get(emntUpdate);
 
@@ -136,77 +162,63 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
          * EKIN_WORK_BUFFER_SIZE*DIM*DIM*sizeof(real) = 72/144 bytes
          * buffer on both sides to avoid cache pollution.
          */
-        snew(ekind->ekin_work_alloc[thread], ekind->ngtc+2*EKIN_WORK_BUFFER_SIZE);
+        snew(ekind->ekin_work_alloc[thread], opts->ngtc+2*EKIN_WORK_BUFFER_SIZE);
         ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + EKIN_WORK_BUFFER_SIZE;
         /* Nasty hack so we can have the per-thread accumulation
          * variable for dekindl in the same thread-local cache lines
          * as the per-thread accumulation tensors for ekin[fh],
          * because they are accumulated in the same loop. */
-        ekind->dekindl_work[thread] = &(ekind->ekin_work[thread][ekind->ngtc][0][0]);
+        ekind->dekindl_work[thread] = &(ekind->ekin_work[thread][opts->ngtc][0][0]);
 #undef EKIN_WORK_BUFFER_SIZE
     }
-
-    ekind->ngacc = opts->ngacc;
-    snew(ekind->grpstat, opts->ngacc);
-    init_grpstat(mtop, opts->ngacc, ekind->grpstat);
 }
 
-void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
+void accumulate_u(t_commrec *cr,
+                  gmx_constant_acceleration_t *constant_acceleration)
 {
-    /* This routine will only be called when it's necessary */
     t_bin *rb;
     int    g;
 
+    if (!PAR(cr) || !constant_acceleration->bDoAcceleration)
+    {
+        return;
+    }
+
     rb = mk_bin();
 
-    for (g = 0; (g < opts->ngacc); g++)
+    for (g = 0; (g < constant_acceleration->ngroups); g++)
     {
-        add_binr(rb, DIM, ekind->grpstat[g].u);
+        add_binr(rb, DIM, constant_acceleration->group_data[g].u);
     }
     sum_bin(rb, cr);
 
-    for (g = 0; (g < opts->ngacc); g++)
+    for (g = 0; (g < constant_acceleration->ngroups); g++)
     {
-        extract_binr(rb, DIM*g, DIM, ekind->grpstat[g].u);
+        extract_binr(rb, DIM*g, DIM, constant_acceleration->group_data[g].u);
     }
     destroy_bin(rb);
 }
 
-/* I don't think accumulate_ekin is used anymore? */
-
-#if 0
-static void accumulate_ekin(t_commrec *cr, t_grpopts *opts,
-                            gmx_ekindata_t *ekind)
-{
-    int g;
-
-    if (PAR(cr))
-    {
-        for (g = 0; (g < opts->ngtc); g++)
-        {
-            gmx_sum(DIM*DIM, ekind->tcstat[g].ekinf[0], cr);
-        }
-    }
-}
-#endif
-
-void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
+// TODO find out if this is even called anywhere!!!
+void update_ekindata(int start, int homenr,
+                     gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+                     gmx_constant_acceleration_t *constant_acceleration,
                      t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda)
 {
     int  d, g, n;
     real mv;
 
     /* calculate mean velocities at whole timestep */
-    for (g = 0; (g < opts->ngtc); g++)
+    for (g = 0; (g < temperature_coupling_outputs->ngroups); g++)
     {
-        ekind->tcstat[g].T = 0;
+        temperature_coupling_outputs->group_data[g].T = 0;
     }
 
-    if (ekind->bNEMD)
+    if (constant_acceleration->bDoAcceleration)
     {
-        for (g = 0; (g < opts->ngacc); g++)
+        for (g = 0; (g < constant_acceleration->ngroups); g++)
         {
-            clear_rvec(ekind->grpstat[g].u);
+            clear_rvec(constant_acceleration->group_data[g].u);
         }
 
         g = 0;
@@ -218,28 +230,32 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
             }
             for (d = 0; (d < DIM); d++)
             {
-                mv                      = md->massT[n]*v[n][d];
-                ekind->grpstat[g].u[d] += mv;
+                mv                                         = md->massT[n]*v[n][d];
+                constant_acceleration->group_data[g].u[d] += mv;
             }
         }
 
-        for (g = 0; (g < opts->ngacc); g++)
+        for (g = 0; (g < constant_acceleration->ngroups); g++)
         {
             for (d = 0; (d < DIM); d++)
             {
-                ekind->grpstat[g].u[d] /=
-                    (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
+                constant_acceleration->group_data[g].u[d] /=
+                    (1-lambda)*constant_acceleration->group_data[g].mA +
+                    lambda*constant_acceleration->group_data[g].mB;
             }
         }
     }
 }
 
-real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
+real sum_ekin(t_grpopts *opts,
+              gmx_ekindata_t *ekind,
+              gmx_temperature_coupling_outputs_t *temperature_coupling_outputs,
+              real *dekindlambda,
               gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
     real          T, ek;
-    t_grp_tcstat *tcstat;
+    gmx_temperature_coupling_group_outputs_t *tcstat;
     real          nrdf, nd, *ndf;
 
     ngtc = opts->ngtc;
@@ -254,7 +270,7 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
     {
 
         nd     = ndf[i];
-        tcstat = &ekind->tcstat[i];
+        tcstat = &temperature_coupling_outputs->group_data[i];
         /* Sometimes a group does not have degrees of freedom, e.g.
          * when it consists of shells and virtual sites, then we just
          * set the temperatue to 0 and also neglect the kinetic
