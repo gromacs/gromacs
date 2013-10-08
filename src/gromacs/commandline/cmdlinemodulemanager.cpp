@@ -70,14 +70,103 @@
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
 
 //! Container type for mapping module names to module objects.
 typedef std::map<std::string, CommandLineModulePointer> CommandLineModuleMap;
+//! Smart pointer type for managing a CommandLineModuleGroup.
+typedef gmx_unique_ptr<internal::CommandLineModuleGroupData>::type
+    CommandLineModuleGroupDataPointer;
+//! Container type for keeping a list of module groups.
+typedef std::vector<CommandLineModuleGroupDataPointer>
+    CommandLineModuleGroupList;
 
 class CommandLineHelpModule;
+
+namespace internal
+{
+
+/*! \internal
+ * \brief
+ * Internal data for a CommandLineModuleManager module group.
+ *
+ * This class contains the state of a module group.  CommandLineModuleGroup
+ * provides the public interface to construct/alter the state, and
+ * CommandLineModuleManager and its associated classes use it for help output.
+ *
+ * \ingroup module_commandline
+ */
+class CommandLineModuleGroupData
+{
+    public:
+        /*! \brief
+         * Shorthand for a list of modules contained in the group.
+         *
+         * The first element in the contained pair contains the tag
+         * (gmx-something) of the module, and the second element contains the
+         * description.  The second element is never NULL.
+         */
+        typedef std::vector<std::pair<std::string, const char *> > ModuleList;
+
+        /*! \brief
+         * Constructs an empty module group.
+         *
+         * \param[in] modules  List of all modules
+         *     (used for checking and default descriptions).
+         * \param[in] title    Title of the group.
+         *
+         * Does not throw.
+         */
+        CommandLineModuleGroupData(const CommandLineModuleMap &modules,
+                                   const char                 *title)
+            : allModules_(modules), title_(title)
+        {
+        }
+
+        //! Returns the title for the group.
+        const char *title() const { return title_; }
+        //! Returns the list of modules in the group.
+        const ModuleList &modules() const { return modules_; }
+
+        /*! \brief
+         * Adds a module to the group.
+         *
+         * \param[in] name        Name of the module.
+         * \param[in] description Description of the module in this group.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * If \p description is NULL, the description returned by the module is
+         * used.
+         */
+        void addModule(const char *name, const char *description)
+        {
+            CommandLineModuleMap::const_iterator moduleIter = allModules_.find(name);
+            GMX_RELEASE_ASSERT(moduleIter != allModules_.end(),
+                               "Non-existent module added to a group");
+            if (description == NULL)
+            {
+                description = moduleIter->second->shortDescription();
+                GMX_RELEASE_ASSERT(description != NULL,
+                                   "Module without a description added to a group");
+            }
+            const char *const program =
+                ProgramInfo::getInstance().invariantProgramName().c_str();
+            std::string       tag(formatString("%s-%s", program, name));
+            modules_.push_back(std::make_pair(tag, description));
+        }
+
+    private:
+        const CommandLineModuleMap &allModules_;
+        const char                 *title_;
+        ModuleList                  modules_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineModuleGroupData);
+};
+
+}   // namespace internal
 
 namespace
 {
@@ -244,6 +333,10 @@ class ModuleHelpTopic : public HelpTopicInterface
 class HelpExportInterface
 {
     public:
+        //! Shorthand for a list of modules contained in a group.
+        typedef internal::CommandLineModuleGroupData::ModuleList
+            ModuleGroupContents;
+
         virtual ~HelpExportInterface() {};
 
         /*! \brief
@@ -269,6 +362,28 @@ class HelpExportInterface
          * etc.
          */
         virtual void finishModuleExport() = 0;
+
+        /*! \brief
+         * Called once before exporting module groups.
+         *
+         * Can, e.g., open a single output file for listing all the groups.
+         */
+        virtual void startModuleGroupExport() = 0;
+        /*! \brief
+         * Called to export the help for each module group.
+         *
+         * \param[in] title    Title for the group.
+         * \param[in] modules  List of modules in the group.
+         */
+        virtual void exportModuleGroup(const char                *title,
+                                       const ModuleGroupContents &modules) = 0;
+        /*! \brief
+         * Called after all module groups have been exported.
+         *
+         * Can close files opened in startModuleGroupExport(), write footers to them
+         * etc.
+         */
+        virtual void finishModuleGroupExport() = 0;
 };
 
 /********************************************************************
@@ -287,6 +402,14 @@ class HelpExportMan : public HelpExportInterface
         virtual void exportModuleHelp(const std::string                &tag,
                                       const CommandLineModuleInterface &module);
         virtual void finishModuleExport() {}
+
+        virtual void startModuleGroupExport() {}
+        virtual void exportModuleGroup(const char                * /*title*/,
+                                       const ModuleGroupContents & /*modules*/) {}
+        virtual void finishModuleGroupExport() {}
+
+    private:
+        boost::scoped_ptr<File> indexFile_;
 };
 
 void HelpExportMan::exportModuleHelp(const std::string                &tag,
@@ -335,11 +458,16 @@ class HelpExportHtml : public HelpExportInterface
                                       const CommandLineModuleInterface &module);
         virtual void finishModuleExport();
 
+        virtual void startModuleGroupExport();
+        virtual void exportModuleGroup(const char                *title,
+                                       const ModuleGroupContents &modules);
+        virtual void finishModuleGroupExport();
+
     private:
         void writeHtmlHeader(File *file, const std::string &title) const;
         void writeHtmlFooter(File *file) const;
 
-        boost::scoped_ptr<File>  byNameFile_;
+        boost::scoped_ptr<File>  indexFile_;
         HelpLinks                links_;
 };
 
@@ -360,9 +488,9 @@ HelpExportHtml::HelpExportHtml()
 
 void HelpExportHtml::startModuleExport()
 {
-    byNameFile_.reset(new File("byname.html", "w"));
-    writeHtmlHeader(byNameFile_.get(), "GROMACS Programs by Name");
-    byNameFile_->writeLine("<H3>GROMACS Programs Alphabetically</H3>");
+    indexFile_.reset(new File("byname.html", "w"));
+    writeHtmlHeader(indexFile_.get(), "GROMACS Programs by Name");
+    indexFile_->writeLine("<H3>GROMACS Programs Alphabetically</H3>");
 }
 
 void HelpExportHtml::exportModuleHelp(const std::string                &tag,
@@ -381,15 +509,45 @@ void HelpExportHtml::exportModuleHelp(const std::string                &tag,
     writeHtmlFooter(&file);
     file.close();
 
-    byNameFile_->writeLine(formatString("<a href=\"%s.html\">%s</a> - %s<br>",
-                                        tag.c_str(), displayName.c_str(),
-                                        module.shortDescription()));
+    indexFile_->writeLine(formatString("<a href=\"%s.html\">%s</a> - %s<br>",
+                                       tag.c_str(), displayName.c_str(),
+                                       module.shortDescription()));
 }
 
 void HelpExportHtml::finishModuleExport()
 {
-    writeHtmlFooter(byNameFile_.get());
-    byNameFile_->close();
+    writeHtmlFooter(indexFile_.get());
+    indexFile_->close();
+}
+
+void HelpExportHtml::startModuleGroupExport()
+{
+    indexFile_.reset(new File("bytopic.html", "w"));
+    writeHtmlHeader(indexFile_.get(), "GROMACS Programs by Topic");
+    indexFile_->writeLine("<H3>GROMACS Programs by Topic</H3>");
+}
+
+void HelpExportHtml::exportModuleGroup(const char                *title,
+                                       const ModuleGroupContents &modules)
+{
+    indexFile_->writeLine(formatString("<H4>%s</H4>", title));
+
+    ModuleGroupContents::const_iterator module;
+    for (module = modules.begin(); module != modules.end(); ++module)
+    {
+        const std::string     &tag(module->first);
+        std::string            displayName(tag);
+        std::replace(displayName.begin(), displayName.end(), '-', ' ');
+        indexFile_->writeLine(formatString("<a href=\"%s.html\">%s</a> - %s<br>",
+                                           tag.c_str(), displayName.c_str(),
+                                           module->second));
+    }
+}
+
+void HelpExportHtml::finishModuleGroupExport()
+{
+    writeHtmlFooter(indexFile_.get());
+    indexFile_->close();
 }
 
 void HelpExportHtml::writeHtmlHeader(File *file, const std::string &title) const
@@ -451,9 +609,11 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * Creates a command-line help module.
          *
          * \param[in] modules  List of modules for to use for module listings.
+         * \param[in] groups   List of module groups.
          * \throws    std::bad_alloc if out of memory.
          */
-        explicit CommandLineHelpModule(const CommandLineModuleMap &modules);
+        CommandLineHelpModule(const CommandLineModuleMap       &modules,
+                              const CommandLineModuleGroupList &groups);
 
         /*! \brief
          * Adds a top-level help topic.
@@ -495,6 +655,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
 
         boost::scoped_ptr<RootHelpTopic>  rootTopic_;
         const CommandLineModuleMap       &modules_;
+        const CommandLineModuleGroupList &groups_;
 
         CommandLineHelpContext           *context_;
         const CommandLineModuleInterface *moduleOverride_;
@@ -503,8 +664,10 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
 };
 
-CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleMap &modules)
-    : rootTopic_(new RootHelpTopic(modules)), modules_(modules),
+CommandLineHelpModule::CommandLineHelpModule(
+        const CommandLineModuleMap       &modules,
+        const CommandLineModuleGroupList &groups)
+    : rootTopic_(new RootHelpTopic(modules)), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false)
 {
 }
@@ -601,6 +764,14 @@ void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
         }
     }
     exporter->finishModuleExport();
+
+    exporter->startModuleGroupExport();
+    CommandLineModuleGroupList::const_iterator group;
+    for (group = groups_.begin(); group != groups_.end(); ++group)
+    {
+        exporter->exportModuleGroup((*group)->title(), (*group)->modules());
+    }
+    exporter->finishModuleGroupExport();
 }
 
 namespace
@@ -788,6 +959,14 @@ class CommandLineModuleManager::Impl
          * Owns the contained modules.
          */
         CommandLineModuleMap         modules_;
+        /*! \brief
+         * List of groupings for modules for help output.
+         *
+         * Owns the contained module group data objects.
+         * CommandLineModuleGroup objects point to the data objects contained
+         * here.
+         */
+        CommandLineModuleGroupList   moduleGroups_;
         //! Information about the currently running program.
         ProgramInfo                 &programInfo_;
         /*! \brief
@@ -831,7 +1010,7 @@ void CommandLineModuleManager::Impl::ensureHelpModuleExists()
 {
     if (helpModule_ == NULL)
     {
-        helpModule_ = new CommandLineHelpModule(modules_);
+        helpModule_ = new CommandLineHelpModule(modules_, moduleGroups_);
         addModule(CommandLineModulePointer(helpModule_));
     }
 }
@@ -994,6 +1173,15 @@ void CommandLineModuleManager::addModuleCMain(
     addModule(move(module));
 }
 
+CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
+        const char *title)
+{
+    CommandLineModuleGroupDataPointer group(
+            new internal::CommandLineModuleGroupData(impl_->modules_, title));
+    impl_->moduleGroups_.push_back(move(group));
+    return CommandLineModuleGroup(impl_->moduleGroups_.back().get());
+}
+
 void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 {
     impl_->ensureHelpModuleExists();
@@ -1066,6 +1254,21 @@ int CommandLineModuleManager::runAsMainCMain(
 {
     CMainCommandLineModule module(argv[0], NULL, mainFunction);
     return runAsMainSingleModule(argc, argv, &module);
+}
+
+/********************************************************************
+ * CommandLineModuleGroup
+ */
+
+void CommandLineModuleGroup::addModule(const char *name)
+{
+    impl_->addModule(name, NULL);
+}
+
+void CommandLineModuleGroup::addModuleWithDescription(const char *name,
+                                                      const char *description)
+{
+    impl_->addModule(name, description);
 }
 
 } // namespace gmx
