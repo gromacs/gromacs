@@ -50,12 +50,18 @@
 namespace gmx
 {
 
+class CommandLineModuleGroup;
 class CommandLineModuleInterface;
 class ProgramInfo;
 
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
     CommandLineModulePointer;
+
+namespace internal
+{
+class CommandLineModuleGroupData;
+}   // namespace internal
 
 /*! \brief
  * Implements a wrapper command-line interface for multiple modules.
@@ -235,7 +241,20 @@ class CommandLineModuleManager
         }
 
         /*! \brief
-         * Make given help topic available through the manager's help module.
+         * Adds a group for modules to use in help output.
+         *
+         * \param[in] title  Short title for the group.
+         * \returns   Handle that can be used to add modules to the group.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Creates a group that is used to structure the list of all modules in
+         * help output.  Modules are added to the group using the returned
+         * object.
+         */
+        CommandLineModuleGroup addModuleGroup(const char *title);
+
+        /*! \brief
+         * Makes given help topic available through the manager's help module.
          *
          * \param[in]  topic  Help topic to add.
          * \throws     std::bad_alloc if out of memory.
@@ -263,6 +282,58 @@ class CommandLineModuleManager
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
+};
+
+/*! \brief
+ * Handle to add content to a group added with
+ * CommandLineModuleManager::addModuleGroup().
+ *
+ * This class only provides a public interface to construct a module group for
+ * CommandLineModuleManager, and has semantics similar to a pointer: copies all
+ * point to the same group.  The actual state of the group is maintained in an
+ * internal implementation class.
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
+class CommandLineModuleGroup
+{
+    public:
+        /*! \cond internal */
+        //! Shorthand for the implementation type that holds all the data.
+        typedef internal::CommandLineModuleGroupData Impl;
+
+        //! Creates a new group (only called by CommandLineModuleManager).
+        explicit CommandLineModuleGroup(Impl *impl) : impl_(impl) {}
+        //! \endcond
+
+        /*! \brief
+         * Adds a module to this group.
+         *
+         * \param[in] name  Name of the module.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This works as addModuleWithDescription(), but uses the short
+         * description of the module itself as the description.
+         *
+         * \see addModuleWithDescription()
+         */
+        void addModule(const char *name);
+        /*! \brief
+         * Adds a module to this group with a custom description.
+         *
+         * \param[in] name        Name of the module.
+         * \param[in] description Description of the module in this group.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * \p name must name a module added into the CommandLineModuleManager.
+         * It is possible to add the same module into multiple groups.
+         */
+        void addModuleWithDescription(const char *name, const char *description);
+
+    private:
+        //! Pointer to the data owned by CommandLineModuleManager.
+        Impl                     *impl_;
 };
 
 } // namespace gmx
