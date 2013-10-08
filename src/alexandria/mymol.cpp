@@ -521,7 +521,8 @@ static void do_init_mtop(gmx_poldata_t pd,
     mtop_->molblock[0].nmol       = 1;
     mtop_->molblock[0].type       = 0;
     mtop_->molblock[0].natoms_mol = atoms->nr;
-
+    mtop_->groups.grps[egcENER].nr = 1;
+    
     //! Count the number of types in this molecule, at least 1 assuming there is one atom
     int ntype = 1;
     for (int i = 1; (i < atoms->nr); i++)
@@ -756,6 +757,7 @@ static void fill_inputrec(t_inputrec *ir)
     ir->vdwtype       = evdwCUT;
     ir->coulombtype   = eelCUT;
     ir->eDispCorr     = edispcNO;
+    snew(ir->opts.egp_flags, 1);
     snew(ir->fepvals, 1);
 }
 

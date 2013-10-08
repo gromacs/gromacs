@@ -571,10 +571,37 @@ void OptParam::MkInvGt()
     }
 }
 
+static void dump_csv(int nD,
+                     char *ctest[],
+                     std::vector<alexandria::MyMol> &_mymol,
+                     double **a,
+                     double *x)
+{
+    FILE *csv = ffopen("out.csv", "w");
+    fprintf(csv, "\"\",");
+    for (int j = 0; (j < nD); j++)
+    {
+        fprintf(csv, "\"%s\",", ctest[j]);
+    }
+    fprintf(csv, "\n");
+    int i = 0;
+    for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
+         (mymol < _mymol.end()); mymol++)
+    {
+        fprintf(csv, "\"%s\",", mymol->GetMolname().c_str());
+        for (int j = 0; (j < nD); j++)
+        {
+            fprintf(csv, "%g,", a[i][j]);
+        }
+        fprintf(csv, "%.3f\n", x[i]);
+        i++;
+    }
+    fclose(csv);
+
+}
 void OptParam::GetDissociationEnergy(FILE *fplog)
 {
-    FILE      *csv;
-    int        nD, nMol, ftb, gt, gti, i, j, ai, aj, niter, row;
+    int        nD, nMol, ftb, gt, gti, ai, aj, niter, row;
     char     **ctest;
     char       buf[STRLEN];
     double   **a, **at, **ata;
@@ -604,11 +631,11 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
     ftb = gmx_poldata_get_bond_ftype(_pd);
-    j   = 0;
+    int j   = 0;
     for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
          (mymol < _mymol.end()); mymol++, j++)
     {
-        for (i = 0; (i < mymol->ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
+        for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
         {
             ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
             aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
@@ -638,49 +665,66 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
         }
         x[j] = mymol->Emol;
     }
-    csv = ffopen("out.csv", "w");
-    i   = 0;
-    fprintf(csv, "\"\",");
-    for (j = 0; (j < nD); j++)
-    {
-        fprintf(csv, "\"%s\",", ctest[j]);
-    }
-    fprintf(csv, "\n");
-    for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
-         (mymol < _mymol.end()); mymol++)
-    {
-        fprintf(csv, "\"%s\",", mymol->GetMolname().c_str());
-        for (j = 0; (j < nD); j++)
-        {
-            fprintf(csv, "%g,", a[i][j]);
-        }
-        fprintf(csv, "%.3f\n", x[i]);
-        i++;
-    }
-    fclose(csv);
 
+    //double chi22 = multi_regression(stderr, nD, x, nMol, a, fpp);
+    //fprintf(stderr, "chi22 = %g\n", chi22);
+    
     matrix_multiply(debug, nMol, nD, a, at, ata);
+    dump_csv(nD, ctest, _mymol, a, x);
     if ((row = matrix_invert(debug, nD, ata)) != 0)
     {
-        gmx_fatal(FARGS, "Matrix inversion failed. Incorrect row = %d, nD = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
-                  row, nD);
+        int k = row - 1;
+        for(int m = 0; (m < nD); m++) 
+        {
+            if (m == k)
+            {
+                continue;
+            }
+            bool bSame = true;
+            double bfac1 = 0, bfac2 = 0;
+            for(int l = 0; bSame && (l < nMol); l++)
+            {
+                if ((a[m][l] != 0) || (a[k][l] != 0))
+                {
+                    if (a[m][l] != 0)
+                    {
+                        bfac2 = (1.0*a[k][l])/a[m][l];
+                        if ((bfac1 == 0) && (bfac2 != 0))
+                        {
+                            bfac1 = bfac2;
+                        }
+                        else if (bfac1 != 0)
+                        {
+                            bSame = (bfac1 == bfac2);
+                        }
+                    }
+                }
+            }
+            if (bSame)
+            {
+                gmx_fatal(FARGS, "Colums %d and %d are identical bfac1 = %g",
+                          k + 1, m + 1, bfac1);
+            }
+        }
+        gmx_fatal(FARGS, "Matrix inversion failed. Incorrect column = %d (%s), nD = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
+                  row, ctest[row-1], nD);
     }
     a0    = 0;
     niter = 0;
     do
     {
-        for (i = 0; (i < nD); i++)
+        for (int i = 0; (i < nD); i++)
         {
             atx[i] = 0;
-            for (j = 0; (j < nMol); j++)
+            for (int j = 0; (j < nMol); j++)
             {
                 atx[i] += at[i][j]*(x[j]-a0);
             }
         }
-        for (i = 0; (i < nD); i++)
+        for (int i = 0; (i < nD); i++)
         {
             fpp[i] = 0;
-            for (j = 0; (j < nD); j++)
+            for (int j = 0; (j < nD); j++)
             {
                 fpp[i] += ata[i][j]*atx[j];
             }
@@ -692,7 +736,7 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
             for (j = 0; (j < nMol); j++)
             {
                 ax = a0;
-                for (i = 0; (i < nD); i++)
+                for (int i = 0; (i < nD); i++)
                 {
                     ax += fpp[i]*a[j][i];
                 }
@@ -708,7 +752,7 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
     }
     while ((fabs(da0) > 1e-5) && (niter < 1000));
 
-    for (i = 0; (i < nD); i++)
+    for (int i = 0; (i < nD); i++)
     {
         _bad[ebtsBONDS][i].param[0] = -fpp[i];
         if (fplog)
