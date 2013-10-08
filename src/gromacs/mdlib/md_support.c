@@ -283,12 +283,12 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
                      globsig_t *gs, gmx_bool bInterSimGS,
-                     matrix box, gmx_mtop_t *top_global, real *pcurr,
+                     matrix box, gmx_mtop_t *top_global,
                      gmx_bool *bSumEkinhOld, int flags)
 {
     int      i, gsi;
     real     gs_buf[eglsNR];
-    tensor   corr_vir, corr_pres, shakeall_vir;
+    tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp, bVV;
     gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
              bFirstIterate, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
@@ -490,7 +490,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         m_add(pres, corr_pres, pres);
         enerd->term[F_PDISPCORR] = prescorr;
         enerd->term[F_PRES]     += prescorr;
-        *pcurr                   = enerd->term[F_PRES];
     }
 }
 

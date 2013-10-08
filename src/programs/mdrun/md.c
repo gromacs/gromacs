@@ -195,19 +195,15 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
-    real              mu_aver = 0, dvdl_constr;
-    int               a0, a1, gnx = 0, ii;
-    atom_id          *grpindex = NULL;
-    char             *grpname;
-    rvec             *xcopy   = NULL, *vcopy = NULL, *cbuf = NULL;
-    matrix            boxcopy = {{0}}, lastbox;
-    tensor            tmpvir;
-    real              fom, oldfom, veta_save, pcurr, scalevir, tracevir;
+    real              dvdl_constr;
+    int               a0, a1;
+    rvec             *cbuf = NULL;
+    matrix            lastbox;
+    real              veta_save, scalevir, tracevir;
     real              vetanew = 0;
     int               lamnew  = 0;
     /* for FEP */
     int               nstfep;
-    real              rate;
     double            cycles;
     real              saved_conserved_quantity = 0;
     real              last_ekin                = 0;
@@ -586,7 +582,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                     NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                     constr, NULL, FALSE, state->box,
-                    top_global, &pcurr, &bSumEkinhOld, cglo_flags);
+                    top_global, &bSumEkinhOld, cglo_flags);
     if (ir->eI == eiVVAK)
     {
         /* a second call to get the half step temperature initialized as well */
@@ -598,7 +594,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
-                        top_global, &pcurr, &bSumEkinhOld,
+                        top_global, &bSumEkinhOld,
                         cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
     }
 
@@ -1004,7 +1000,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
-                            top_global, &pcurr, &bSumEkinhOld,
+                            top_global, &bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
@@ -1227,7 +1223,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, state->box,
-                                    top_global, &pcurr, &bSumEkinhOld,
+                                    top_global, &bSumEkinhOld,
                                     cglo_flags
                                     | CGLO_ENERGY
                                     | (bTemp ? CGLO_TEMPERATURE : 0)
@@ -1264,7 +1260,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                             constr, NULL, FALSE, state->box,
-                                            top_global, &pcurr, &bSumEkinhOld,
+                                            top_global, &bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
                         }
                     }
@@ -1672,7 +1668,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, lastbox,
-                                    top_global, &pcurr, &bSumEkinhOld,
+                                    top_global, &bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE
                                     );
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1773,7 +1769,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 (step_rel % gs.nstms == 0) &&
                                 (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
                                 lastbox,
-                                top_global, &pcurr, &bSumEkinhOld,
+                                top_global, &bSumEkinhOld,
                                 cglo_flags
                                 | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
                                 | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
