@@ -41,6 +41,7 @@
  */
 #include "gromacs/trajectoryanalysis/modules.h"
 
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #include "modules/angle.h"
@@ -67,11 +68,13 @@ namespace
  * \ingroup module_trajectoryanalysis
  */
 template <class ModuleInfo>
-void registerModule(CommandLineModuleManager *manager)
+void registerModule(CommandLineModuleManager *manager,
+                    CommandLineModuleGroup    group)
 {
     TrajectoryAnalysisCommandLineRunner::registerModule(
             manager, ModuleInfo::name, ModuleInfo::shortDescription,
             &ModuleInfo::create);
+    group.addModule(ModuleInfo::name);
 }
 
 }   // namespace
@@ -79,10 +82,11 @@ void registerModule(CommandLineModuleManager *manager)
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
     using namespace gmx::analysismodules;
-    registerModule<AngleInfo>(manager);
-    registerModule<DistanceInfo>(manager);
-    registerModule<FreeVolumeInfo>(manager);
-    registerModule<SelectInfo>(manager);
+    CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
+    registerModule<AngleInfo>(manager, group);
+    registerModule<DistanceInfo>(manager, group);
+    registerModule<FreeVolumeInfo>(manager, group);
+    registerModule<SelectInfo>(manager, group);
 }
 
 } // namespace gmx
