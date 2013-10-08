@@ -137,6 +137,16 @@ real calc_lie(t_liedata *ld, t_energy ee[], real lie_lj, real lie_qq,
         qq_tot += ee[ld->qq[i]].e;
     }
 
+    /* Sanity check to make sure input values are sound *
+     * If all these terms are zero, the user probably did
+     * not carry out the correct calculations or provide the
+     * right input.
+     */
+    if (lj_tot == 0 && qq_tot == 0 && lie_lj == 0 && lie_qq == 0)
+    {
+        gmx_fatal(FARGS, "All input values are zero.");
+    }
+
     /* And now the great LIE formula: */
     return fac_lj*(lj_tot-lie_lj)+fac_qq*(qq_tot-lie_qq);
 }
@@ -145,8 +155,13 @@ int gmx_lie(int argc, char *argv[])
 {
     const char        *desc[] = {
         "[TT]g_lie[tt] computes a free energy estimate based on an energy analysis",
-        "from. One needs an energy file with the following components:",
-        "Coul (A-B) LJ-SR (A-B) etc."
+        "from nonbonded energies. One needs an energy file with the following components:",
+        "Coul-(A-B) LJ-SR (A-B) etc.[PAR]",
+        "To utilize [TT]g_lie[tt] correctly, two simulations are required: one with the",
+        "molecule of interest bound to its receptor and one with the molecule in water.",
+        "Both need to utilize [TT]energygrps[tt] such that Coul-SR(A-B), LJ-SR(A-B), etc. terms",
+        "are written to the [TT].edr[tt] file. Values from the molecule-in-water simulation",
+        "are necessary for supplying suitable values for -Elj and -Eqq."
     };
     static real        lie_lj = 0, lie_qq = 0, fac_lj = 0.181, fac_qq = 0.5;
     static const char *ligand = "none";
