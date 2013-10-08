@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
  */
 #include "gromacs/trajectoryanalysis/modules.h"
 
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #include "modules/angle.h"
@@ -67,10 +68,12 @@ namespace
  * \ingroup module_trajectoryanalysis
  */
 template <class ModuleType>
-void registerModule(CommandLineModuleManager *manager)
+void registerModule(CommandLineModuleManager *manager,
+                    CommandLineModuleGroup    group)
 {
     TrajectoryAnalysisCommandLineRunner::registerModule<ModuleType>(
             manager, ModuleType::name, ModuleType::shortDescription);
+    group.addModule(ModuleType::name);
 }
 
 }   // namespace
@@ -78,10 +81,11 @@ void registerModule(CommandLineModuleManager *manager)
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
     using namespace gmx::analysismodules;
-    registerModule<Angle>(manager);
-    registerModule<Distance>(manager);
-    registerModule<FreeVolume>(manager);
-    registerModule<Select>(manager);
+    CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
+    registerModule<Angle>(manager, group);
+    registerModule<Distance>(manager, group);
+    registerModule<FreeVolume>(manager, group);
+    registerModule<Select>(manager, group);
 }
 
 } // namespace gmx
