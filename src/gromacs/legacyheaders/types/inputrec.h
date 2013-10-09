@@ -303,9 +303,11 @@ typedef struct {
     int             pme_order;            /* interpolation order for PME                  */
     real            ewald_rtol;           /* Real space tolerance for Ewald, determines   */
                                           /* the real/reciprocal space relative weight    */
+    real            ewald_rtol_lj;        /* Real space tolerance for LJ-Ewald            */
     int             ewald_geometry;       /* normal/3d ewald, or pseudo-2d LR corrections */
     real            epsilon_surface;      /* Epsilon for PME dipole correction            */
     gmx_bool        bOptFFT;              /* optimize the fft plan at start               */
+    int             ljpme_comb;           /* Type of combination rule in LJ-PME          */
     int             ePBC;                 /* Type of periodic boundary conditions		*/
     int             bPeriodicMols;        /* Periodic molecules                           */
     gmx_bool        bContinuation;        /* Continuation run: starting state is correct	*/

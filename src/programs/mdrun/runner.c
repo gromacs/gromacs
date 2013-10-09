@@ -930,13 +930,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int             npme_major, npme_minor;
     real            tmpr1, tmpr2;
     t_nrnb         *nrnb;
-    gmx_mtop_t     *mtop       = NULL;
-    t_mdatoms      *mdatoms    = NULL;
-    t_forcerec     *fr         = NULL;
-    t_fcdata       *fcd        = NULL;
-    real            ewaldcoeff = 0;
-    gmx_pme_t      *pmedata    = NULL;
-    gmx_vsite_t    *vsite      = NULL;
+    gmx_mtop_t     *mtop         = NULL;
+    t_mdatoms      *mdatoms      = NULL;
+    t_forcerec     *fr           = NULL;
+    t_fcdata       *fcd          = NULL;
+    real            ewaldcoeff_q = 0, ewaldcoeff_lj = 0;
+    gmx_pme_t      *pmedata      = NULL;
+    gmx_vsite_t    *vsite        = NULL;
     gmx_constr_t    constr;
     int             i, m, nChargePerturbed = -1, status, nalloc;
     char           *gro;
@@ -1160,14 +1160,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         Flags |= MD_PARTDEC;
     }
 
-    if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC))
+    if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)) || (Flags & MD_PARTDEC))
     {
         if (cr->npmenodes > 0)
         {
-            if (!EEL_PME(inputrec->coulombtype))
+            if (!EEL_PME(inputrec->coulombtype) && !EVDW_PME(inputrec->vdwtype))
             {
                 gmx_fatal_collective(FARGS, cr, NULL,
-                                     "PME nodes are requested, but the system does not use PME electrostatics");
+                                     "PME nodes are requested, but the system does not use PME electrostatics or LJ-PME");
             }
             if (Flags & MD_PARTDEC)
             {
@@ -1463,10 +1463,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             }
         }
 
-        if (EEL_PME(fr->eeltype))
+        if (EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
-            ewaldcoeff = fr->ewaldcoeff;
-            pmedata    = &fr->pmedata;
+            ewaldcoeff_q  = fr->ewaldcoeff_q;
+            ewaldcoeff_lj = fr->ewaldcoeff_lj;
+            pmedata       = &fr->pmedata;
         }
         else
         {
@@ -1480,7 +1481,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* We don't need the state */
         done_state(state);
 
-        ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
+        ewaldcoeff_q  = calc_ewaldcoeff_q(inputrec->rcoulomb, inputrec->ewald_rtol);
+        ewaldcoeff_lj = calc_ewaldcoeff_lj(inputrec->rvdw, inputrec->ewald_rtol_lj);
         snew(pmedata, 1);
     }
 
@@ -1499,7 +1501,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
-    if (EEL_PME(inputrec->coulombtype))
+    if (EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
     {
         if (mdatoms)
         {
@@ -1591,7 +1593,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     else
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, &runtime, ewaldcoeff, inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, &runtime, ewaldcoeff_q, ewaldcoeff_lj, inputrec);
     }
 
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))

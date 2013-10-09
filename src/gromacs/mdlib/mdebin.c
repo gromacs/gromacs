@@ -223,6 +223,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             md->bEner[i] = EEL_FULL(ir->coulombtype);
         }
+        else if (i == F_LJ_RECIP)
+        {
+            md->bEner[i] = EVDW_PME(ir->vdwtype);
+        }
         else if (i == F_LJ14)
         {
             md->bEner[i] = b14;

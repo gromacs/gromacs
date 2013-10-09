@@ -146,7 +146,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4W4_VF_avx_256_single
     vdwtype          = mdatoms->typeA;
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 
@@ -1608,7 +1608,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4W4_F_avx_256_single
     vdwtype          = mdatoms->typeA;
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 

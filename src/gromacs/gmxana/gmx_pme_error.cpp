@@ -873,7 +873,7 @@ static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *st
     }
     else
     {
-        info->ewald_beta[0]  = calc_ewaldcoeff(info->rcoulomb[0], info->ewald_rtol[0]);
+        info->ewald_beta[0]  = calc_ewaldcoeff_q(info->rcoulomb[0], info->ewald_rtol[0]);
     }
 
     /* Check if PME was chosen */
