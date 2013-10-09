@@ -56,6 +56,19 @@
 
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
 
+#if GMX_SIMD_WIDTH_HERE > 4
+static const int nbfp_stride = 4;
+#else
+static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
+#endif
+
+/* Align a stack-based thread-local working array. */
+static gmx_inline int *
+prepare_table_load_buffer(const int *array)
+{
+    return NULL;
+}
+
 #include "nbnxn_kernel_simd_utils_ref.h"
 
 #else /* GMX_SIMD_REFERENCE_PLAIN_C */
