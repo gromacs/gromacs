@@ -124,15 +124,6 @@ Berk, 2xnn.c had the following code, but I think it is safe to remove now, given
 #endif /* GMX_DOUBLE */
 
 #endif /* defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE */
-
-#else  /* GMX_X86_SSE2 */
-
-#if GMX_SIMD_WIDTH_HERE > 4
-static const int nbfp_stride = 4;
-#else
-static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
-#endif
-
 #endif /* GMX_X86_SSE2 */
 #endif /* GMX_SIMD_REFERENCE_PLAIN_C */
 

@@ -42,6 +42,19 @@ typedef gmx_simd_ref_epi32            gmx_simd_ref_exclfilter;
 static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
 
 #if GMX_SIMD_WIDTH_HERE > 4
+static const int nbfp_stride = 4;
+#else
+static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
+#endif
+
+/* Align a stack-based thread-local working array. */
+static gmx_inline int *
+prepare_table_load_buffer(const int *array)
+{
+    return NULL;
+}
+
+#if GMX_SIMD_WIDTH_HERE > 4
 /* The 4xn kernel operates on 4-wide i-force registers */
 
 /* float/double SIMD register type */
@@ -444,7 +457,7 @@ gmx_simd_ref_load1_exclfilter(int src)
 }
 
 static gmx_inline gmx_simd_ref_exclfilter
-gmx_simd_ref_load_exclusion_filter(const unsigned *src)
+gmx_simd_ref_load_exclusion_filter(const int *src)
 {
     gmx_simd_ref_exclfilter a;
     int                     i;
