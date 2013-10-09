@@ -54,7 +54,8 @@ enum {
 int gmx_pme_init(gmx_pme_t *pmedata, t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
                  t_inputrec *ir, int homenr,
-                 gmx_bool bFreeEnergy, gmx_bool bReproducible, int nthread);
+                 gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
+                 gmx_bool bReproducible, int nthread);
 /* Initialize the pme data structures resepectively.
  * Return value 0 indicates all well, non zero is an error code.
  */
@@ -77,19 +78,32 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
 #define GMX_PME_CALC_ENER_VIR (1<<3)
 /* This forces the grid to be backtransformed even without GMX_PME_CALC_F */
 #define GMX_PME_CALC_POT      (1<<4)
+
+/* These are sent using the routines in pme_pp.c and shouldn't conflict with
+ * the flags used there
+ */
+#define GMX_PME_DO_COULOMB    (1<<13)
+#define GMX_PME_DO_LJ         (1<<14)
+#define GMX_PME_LJ_LB         (1<<15)
+
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
 
 int gmx_pme_do(gmx_pme_t pme,
                int start,       int homenr,
                rvec x[],        rvec f[],
                real chargeA[],  real chargeB[],
+               real c6A[],      real c6B[],
+               real sigmaA[],   real sigmaB[],
                matrix box,      t_commrec *cr,
                int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-               matrix lrvir,    real ewaldcoeff,
-               real *energy,    real lambda,
-               real *dvdlambda, int flags);
-/* Do a PME calculation for the long range electrostatics.
+               matrix vir_q,    real ewaldcoeff_q,
+               matrix vir_lj,   real ewaldcoeff_lj,
+               real *energy_q,  real *energy_lj,
+               real lambda_q, real lambda_lj,
+               real *dvdlambda_q, real *dvdlambda_lj,
+               int flags);
+/* Do a PME calculation for the long range electrostatics and/or LJ.
  * flags, defined above, determine which parts of the calculation are performed.
  * Return value 0 indicates all well, non zero is an error code.
  */
@@ -98,7 +112,7 @@ int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,     t_nrnb *mynrnb,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                real ewaldcoeff,
+                real ewaldcoeff_q, real ewaldcoeff_lj,
                 t_inputrec *ir);
 /* Called on the nodes that do PME exclusively (as slaves)
  */
@@ -136,28 +150,31 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 /* Initialize the PME-only side of the PME <-> PP communication */
 
 void gmx_pme_send_q(t_commrec *cr,
-                    gmx_bool bFreeEnergy, real *chargeA, real *chargeB,
+                    gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj, real *chargeA, real *chargeB,
+                    real *c6A, real *c6B, real *sigmaA, real *sigmaB,
                     int maxshift_x, int maxshift_y);
 /* Send the charges and maxshift to out PME-only node. */
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-                    gmx_bool bFreeEnergy, real lambda,
-                    gmx_bool bEnerVir,
+                    gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
+                    real lambda_q, real lambda_lj,
+                    gmx_bool bEnerVir, int pme_flags,
                     gmx_large_int_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
 void gmx_pme_send_finish(t_commrec *cr);
 /* Tell our PME-only node to finish */
 
-void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff);
+void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj);
 /* Tell our PME-only node to switch to a new grid size */
 
 void gmx_pme_send_resetcounters(t_commrec *cr, gmx_large_int_t step);
 /* Tell our PME-only node to reset all cycle and flop counters */
 
 void gmx_pme_receive_f(t_commrec *cr,
-                       rvec f[], matrix vir,
-                       real *energy, real *dvdlambda,
+                       rvec f[], matrix vir_q, real *energy_q,
+                       matrix vir_lj, real *energy_lj,
+                       real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
 
@@ -172,12 +189,15 @@ enum {
 int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
                      int *natoms,
                      real **chargeA, real **chargeB,
+                     real **c6A, real **c6B,
+                     real **sigmaA, real **sigmaB,
                      matrix box, rvec **x, rvec **f,
                      int *maxshift_x, int *maxshift_y,
-                     gmx_bool *bFreeEnergy, real *lambda,
-                     gmx_bool *bEnerVir,
+                     gmx_bool *bFreeEnergy_q, gmx_bool *bFreeEnergy_lj,
+                     real *lambda_q, real *lambda_lj,
+                     gmx_bool *bEnerVir, int *pme_flags,
                      gmx_large_int_t *step,
-                     ivec grid_size, real *ewaldcoeff);
+                     ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
 ;
 /* With return value:
  * pmerecvqxX:             all parameters set, chargeA and chargeB can be NULL
@@ -187,8 +207,9 @@ int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
  */
 
 void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
-                                 rvec *f, matrix vir,
-                                 real energy, real dvdlambda,
+                                 rvec *f, matrix vir_q, real energy_q,
+                                 matrix vir_lj, real energy_lj,
+                                 real dvdlambda_q, real dvdlambda_lj,
                                  float cycles);
 /* Send the PME mesh force, virial and energy to the PP-only nodes */
 

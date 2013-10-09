@@ -157,7 +157,7 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
                    const atom_nonbonded_kinetic_prop_t *prop,
                    int nmol)
 {
-    verletbuf_atomtype_t *att;
+    verletbuf_atomtype_t   *att;
     int                     natt, i;
 
     if (prop->mass == 0)
@@ -188,10 +188,10 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
     }
 }
 
-static void get_vsite_masses(const gmx_moltype_t *moltype,
+static void get_vsite_masses(const gmx_moltype_t  *moltype,
                              const gmx_ffparams_t *ffparams,
-                             real *vsite_m,
-                             int *n_nonlin_vsite)
+                             real                 *vsite_m,
+                             int                  *n_nonlin_vsite)
 {
     int            ft, i;
     const t_ilist *il;
@@ -400,7 +400,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             }
             prop[a].type     = atoms->atom[a].type;
             prop[a].q        = atoms->atom[a].q;
-             /* We consider an atom constrained, #DOF=2, when it is
+            /* We consider an atom constrained, #DOF=2, when it is
              * connected with constraints to (at least one) atom with
              * a mass of more than 0.4x its own mass. This is not a critical
              * parameter, since with roughly equal masses the unconstrained
@@ -422,7 +422,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
         {
             fprintf(debug, "type %d: m %5.2f t %d q %6.3f con %d con_m %5.3f con_l %5.3f n %d\n",
                     a, att[a].prop.mass, att[a].prop.type, att[a].prop.q,
-                    att[a].prop.bConstr, att[a].prop.con_mass, att[a].prop.con_len, 
+                    att[a].prop.bConstr, att[a].prop.con_mass, att[a].prop.con_len,
                     att[a].n);
         }
     }
@@ -442,10 +442,10 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
  * into account. If an atom has multiple constraints, this will result in
  * an overestimate of the displacement, which gives a larger drift and buffer.
  */
-static void constrained_atom_sigma2(real kT_fac,
+static void constrained_atom_sigma2(real                                 kT_fac,
                                     const atom_nonbonded_kinetic_prop_t *prop,
-                                    real *sigma2_2d,
-                                    real *sigma2_3d)
+                                    real                                *sigma2_2d,
+                                    real                                *sigma2_3d)
 {
     real sigma2_rot;
     real com_dist;
@@ -507,10 +507,10 @@ static void constrained_atom_sigma2(real kT_fac,
     *sigma2_3d = kT_fac/(prop->mass + prop->con_mass);
 }
 
-static void get_atom_sigma2(real kT_fac,
+static void get_atom_sigma2(real                                 kT_fac,
                             const atom_nonbonded_kinetic_prop_t *prop,
-                            real *sigma2_2d,
-                            real *sigma2_3d)
+                            real                                *sigma2_2d,
+                            real                                *sigma2_3d)
 {
     if (prop->bConstr)
     {
@@ -573,7 +573,7 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             tj = att[j].prop.type;
 
             /* Add up the up to four independent variances */
-            s2 = s2i_2d + s2i_3d + s2j_2d + s2j_3d; 
+            s2 = s2i_2d + s2i_3d + s2j_2d + s2j_3d;
 
             /* Note that attractive and repulsive potentials for individual
              * pairs will partially cancel.
@@ -789,6 +789,20 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         md_ljr = reppow*pow(ir->rvdw, -(reppow+1));
         /* The contribution of the second derivative is negligible */
     }
+    else if (EVDW_PME(ir->vdwtype))
+    {
+        real b, r, br, br2, br4, br6;
+        b        = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
+        r        = ir->rvdw;
+        br       = b*r;
+        br2      = br*br;
+        br4      = br2*br2;
+        br6      = br4*br2;
+        /* -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2), see LJ-PME equations in manual] and r^-reppow */
+        md_ljd   = -exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*pow(r, -7.0);
+        md_ljr   = reppow*pow(r, -(reppow+1));
+        /* The contribution of the second derivative is negligible */
+    }
     else
     {
         gmx_fatal(FARGS, "Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
@@ -832,7 +846,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     {
         real b, rc, br;
 
-        b     = calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+        b     = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
         rc    = ir->rcoulomb;
         br    = b*rc;
         md_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));

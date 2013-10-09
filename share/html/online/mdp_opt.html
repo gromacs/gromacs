@@ -738,6 +738,16 @@ A value of 0 means infinity.</dd>
 <dd>Twin range cut-offs with neighbor list cut-off <b>rlist</b> and
 VdW cut-off <b>rvdw</b>,
 where <b>rvdw</b> <tt>&ge;</tt> <b>rlist</b>.</dd>
+
+<dt><b>PME</b></dt>
+<dd>Fast smooth Particle-mesh Ewald (SPME) for VdW interactions. The
+grid dimensions are controlled with <b>fourierspacing</b> in the same
+way as for electrostatics, and the interpolation order is controlled
+with <b>pme-order</b>. The relative accuracy of direct/reciprocal
+space is controlled by <b>ewald-rtol-lj</b>, and the specific
+combination rules that are to be used by the reciprocal routine are
+set using <b>lj-pme-comb-rule</b>.</dd>
+
 <dt><b>Shift</b></dt>
 <dd>The LJ (not Buckingham) potential is decreased over the whole
 range and the forces decay smoothly to zero between <b>rvdw-switch</b>
@@ -861,6 +871,14 @@ by the same factor.</dd>
 <b>rcoulomb</b> is given by <b>ewald-rtol</b>.
 Decreasing this will give a more accurate direct sum,
 but then you need more wave vectors for the reciprocal sum.</dd>
+
+<dt><b>ewald-rtol-lj (1e-3)</b></dt>
+<dd>When doing PME for VdW-interactions, <b>ewald-rtol-lj</b> is used
+to control the relative strength of the dispersion potential at <b>rvdw</b> in
+the same way as <b>ewald-rtol</b> controls the electrostatic potential.</dd>
+
+<dt><b>lj-pme-comb-rule (geometric)</b></dt>
+<dd>The combination rules used to combine VdW-parameters in the reciprocal part of LJ-PME.</dd>
 
 <dt><b>ewald-geometry: (3d)</b></dt>
 <dd><dl compact>
