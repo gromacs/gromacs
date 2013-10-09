@@ -111,14 +111,14 @@
     unsigned      *exclusion_filter;
     gmx_exclfilter filter_S0, filter_S2;
 
-    gmx_mm_pr   zero_S = gmx_set1_pr(0);
+    gmx_mm_pr      zero_S = gmx_set1_pr(0);
 
-    gmx_mm_pr   one_S = gmx_set1_pr(1.0);
-    gmx_mm_pr   iq_S0 = gmx_setzero_pr();
-    gmx_mm_pr   iq_S2 = gmx_setzero_pr();
-    gmx_mm_pr   mrc_3_S;
+    gmx_mm_pr      one_S = gmx_set1_pr(1.0);
+    gmx_mm_pr      iq_S0 = gmx_setzero_pr();
+    gmx_mm_pr      iq_S2 = gmx_setzero_pr();
+    gmx_mm_pr      mrc_3_S;
 #ifdef CALC_ENERGIES
-    gmx_mm_pr   hrc_3_S, moh_rc_S;
+    gmx_mm_pr      hrc_3_S, moh_rc_S;
 #endif
 
 #ifdef CALC_COUL_TAB
@@ -260,8 +260,8 @@
 #endif /* CALC_COUL_TAB */
 
 #ifdef CALC_COUL_EWALD
-    beta2_S = gmx_set1_pr(ic->ewaldcoeff*ic->ewaldcoeff);
-    beta_S  = gmx_set1_pr(ic->ewaldcoeff);
+    beta2_S = gmx_set1_pr(ic->ewaldcoeff_q*ic->ewaldcoeff_q);
+    beta_S  = gmx_set1_pr(ic->ewaldcoeff_q);
 #endif
 
 #if (defined CALC_COUL_TAB || defined CALC_COUL_EWALD) && defined CALC_ENERGIES
@@ -417,7 +417,7 @@
 #endif
 #ifdef CALC_COUL_EWALD
             /* beta/sqrt(pi) */
-            Vc_sub_self = 0.5*ic->ewaldcoeff*M_2_SQRTPI;
+            Vc_sub_self = 0.5*ic->ewaldcoeff_q*M_2_SQRTPI;
 #endif
 
             for (ia = 0; ia < UNROLLI; ia++)
