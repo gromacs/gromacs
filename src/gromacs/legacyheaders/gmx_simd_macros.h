@@ -291,6 +291,7 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #define gmx_sincos_pr     gmx_mm_sincos_ps
 #define gmx_acos_pr       gmx_mm_acos_ps
 #define gmx_atan2_pr      gmx_mm_atan2_ps
+#define gmx_erfc_pr       gmx_mm_erfc_ps
 
 #else /* ifndef GMX_DOUBLE */
 
@@ -366,6 +367,7 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #define gmx_sincos_pr     gmx_mm_sincos_pd
 #define gmx_acos_pr       gmx_mm_acos_pd
 #define gmx_atan2_pr      gmx_mm_atan2_pd
+#define gmx_erfc_pr       gmx_mm_erfc_pd
 
 #endif /* ifndef GMX_DOUBLE */
 
@@ -434,6 +436,7 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #define gmx_sincos_pr     gmx_mm256_sincos_ps
 #define gmx_acos_pr       gmx_mm256_acos_ps
 #define gmx_atan2_pr      gmx_mm256_atan2_ps
+#define gmx_erfc_pr       gmx_mm256_erfc_ps
 
 #else /* ifndef GMX_DOUBLE */
 
@@ -497,6 +500,7 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #define gmx_sincos_pr     gmx_mm256_sincos_pd
 #define gmx_acos_pr       gmx_mm256_acos_pd
 #define gmx_atan2_pr      gmx_mm256_atan2_pd
+#define gmx_erfc_pr       gmx_mm256_erfc_pd
 
 #endif /* ifndef GMX_DOUBLE */
 
@@ -753,6 +757,8 @@ static gmx_inline gmx_mm_pr gmx_always_inline gmx_atan2_pr(gmx_mm_pr a, gmx_mm_p
 #endif
 #endif
 }
+
+/* TODO: gmx_mm_erfc_p[sd] should be generalized using gmx_*_pr, so that it just works on BlueGene */
 
 static gmx_inline int gmx_always_inline
 gmx_anytrue_pb(gmx_mm_pb a)

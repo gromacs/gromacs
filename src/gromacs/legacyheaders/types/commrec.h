@@ -147,7 +147,7 @@ typedef struct {
     gmx_bool               pme_receive_vir_ener;
     gmx_pme_comm_n_box_p_t cnb;
     int                    nreq_pme;
-    MPI_Request            req_pme[4];
+    MPI_Request            req_pme[8];
 
 
     /* The communication setup, identical for each cell, cartesian index */

@@ -61,6 +61,7 @@ extern const char *eintmod_names[eintmodNR+1];
 extern const char *eel_names[eelNR+1];
 extern const char *eewg_names[eewgNR+1];
 extern const char *evdw_names[evdwNR+1];
+extern const char *eljpme_names[eljpmeNR+1];
 extern const char *econstr_names[econtNR+1];
 extern const char *ptype_str[eptNR+1];
 extern const char *egrp_nm[egNR+1];
@@ -149,6 +150,7 @@ extern const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1];
 #define EADRESSTYPE(e) ENUM_NAME(e, eAdressNR, eAdresstype_names)
 #define EADRESSICTYPE(e) ENUM_NAME(e, eAdressICNR, eAdressICtype_names)
 #define EADRESSSITETYPE(e) ENUM_NAME(e, eAdressSITENR, eAdressSITEtype_names)
+#define ELJPMECOMBNAMES(e) ENUM_NAME(e, eljpmeNR, eljpme_names)
 
 #ifdef __cplusplus
 }
