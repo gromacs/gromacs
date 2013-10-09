@@ -45,6 +45,12 @@ extern "C" {
 void
 gmx_mtop_finalize(gmx_mtop_t *mtop);
 
+/* Counts the number of atoms of each type. State should be 0 for
+ * state A and 1 for state B types.  typecount should have at
+ * least mtop->ffparams.atnr elements.
+ */
+void
+gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]);
 
 /* Returns the total number of charge groups in mtop */
 int
