@@ -50,7 +50,7 @@
 
 
 /* Uncomment the next line, without other SIMD active, for testing plain-C */
-/* #define GMX_SIMD_REFERENCE_PLAIN_C */
+#define GMX_SIMD_REFERENCE_PLAIN_C
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
 /* Plain C SIMD reference implementation, also serves as documentation */
 #define GMX_HAVE_SIMD_MACROS
@@ -59,7 +59,7 @@
  * For the nbnxn 4xn kernels all widths (2, 4 and 8) are supported.
  * The nbnxn 2xnn kernels are currently not supported.
  */
-#define GMX_SIMD_REF_WIDTH  4
+#define GMX_SIMD_REF_WIDTH  16
 
 /* Include plain-C reference implementation, also serves as documentation */
 #include "gmx_simd_ref.h"

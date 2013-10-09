@@ -53,9 +53,9 @@ extern "C" {
  * The 4xN reference kernels support 2-, 4- and 8-way SIMD.
  * The 2x(N+N) reference kernels support 8- and 16-way SIMD.
  */
-/* #define GMX_NBNXN_SIMD */
+#define GMX_NBNXN_SIMD
 /* #define GMX_NBNXN_SIMD_4XN */
-/* #define GMX_NBNXN_SIMD_2XNN */
+#define GMX_NBNXN_SIMD_2XNN
 
 
 #ifdef GMX_X86_SSE2
