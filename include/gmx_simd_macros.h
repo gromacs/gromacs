@@ -56,8 +56,7 @@
 #define GMX_HAVE_SIMD_MACROS
 
 /* In general the reference SIMD supports any SIMD width, including 1.
- * For the nbnxn 4xn kernels all widths (2, 4 and 8) are supported.
- * The nbnxn 2xnn kernels are currently not supported.
+ * See types/nb_verlet.h for details 
  */
 #define GMX_SIMD_REF_WIDTH  4
 
