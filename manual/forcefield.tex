@@ -2201,132 +2201,6 @@ only the mass of the A-state is used for the weight
 \newcommand{\avcsix}{\left< C_6 \right>}
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
-\section{Dispersion correction\index{dispersion correction}}
-In this section, we derive long-range corrections due to the use of a
-cut-off for Lennard-Jones or Buckingham interactions.
-We assume that the cut-off is
-so long that the repulsion term can safely be neglected, and therefore
-only the dispersion term is taken into account. Due to the nature of
-the dispersion interaction (we are truncating a potential proportional
-to $-r^{-6}$), energy and pressure corrections are both negative. While
-the energy correction is usually small, it may be important for free
-energy calculations where differences between two different Hamiltonians
-are considered. In contrast, the pressure correction is very large and
-can not neglected under any circumstances where a correct pressure is
-required, especially for any pressure simulations. Although it is, in
-principle, possible to parameterize a force field such that the pressure
-is close to the desired experimental value without correction, such a
-method makes the parameterization dependent on the cut-off and is therefore
-undesirable.
-
-\subsection{Energy}
-\label{sec:ecorr}
-The long-range contribution of the dispersion interaction to the
-virial can be derived analytically, if we assume a homogeneous
-system beyond the cut-off distance $r_c$. The dispersion energy
-between two particles is written as:
-\beq
-V(\rij)	~=~	- C_6\,\rij^{-6}
-\eeq
-and the corresponding force is:
-\beq
-\Fvij	~=~	- 6\,C_6\,\rij^{-8}\rvij
-\eeq
-In a periodic system it is not easy to calculate the full potentials,
-so usually a cut-off is applied, which can be abrupt or smooth.
-We will call the potential and force with cut-off $V_c$ and $\ve{F}_c$.
-The long-range contribution to the dispersion energy
-in a system with $N$ particles and particle density $\rho$ = $N/V$ is:
-\beq
-\label{eqn:enercorr}
-V_{lr}  ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 g(r) \left( V(r) -V_c(r) \right) {\dr}
-\eeq
-We will integrate this for the shift function, which is the most general
-form of van der Waals interaction available in {\gromacs}.
-The shift function has a constant difference $S$ from 0 to $r_1$
-and is 0 beyond the cut-off distance $r_c$.
-We can integrate \eqnref{enercorr}, assuming that the density in the sphere
-within $r_1$ is equal to the global density and
-the radial distribution function $g(r)$ is 1 beyond $r_1$:
-\bea
-\nonumber
-V_{lr}  &=& \half N \left(
-  \rho\int_0^{r_1}  4\pi r^2 g(r) \, C_6 \,S\,{\dr}
-+ \rho\int_{r_1}^{r_c}  4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
-+ \rho\int_{r_c}^{\infty}  4\pi r^2 V(r) \, {\dr}
-\right) \\
-& = & \half N \left(\left(\frac{4}{3}\pi \rho r_1^{3} - 1\right) C_6 \,S
-+ \rho\int_{r_1}^{r_c} 4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
--\frac{4}{3} \pi N \rho\, C_6\,r_c^{-3}
-\right)
-\eea
-where the term $-1$ corrects for the self-interaction.
-For a plain cut-off we only need to assume that $g(r)$ is 1 beyond $r_c$
-and the correction reduces to~\cite{Allen87}:
-\bea
-V_{lr} & = & -\frac{2}{3} \pi N \rho\, C_6\,r_c^{-3}
-\eea
-If we consider, for example, a box of pure water, simulated with a cut-off
-of 0.9 nm and a density of 1 g cm$^{-3}$ this correction is 
-$-0.75$ kJ mol$^{-1}$ per molecule.
-
-For a homogeneous mixture we need to define 
-an {\em average dispersion constant}:
-\beq
-\label{eqn:avcsix}
-\avcsix	= \frac{2}{N(N-1)}\sum_i^N\sum_{j>i}^N C_6(i,j)\\
-\eeq
-In {\gromacs}, excluded pairs of atoms do not contribute to the average.
-
-In the case of inhomogeneous simulation systems, {\eg} a system with a
-lipid interface, the energy correction can be applied if 
-$\avcsix$ for both components is comparable.
-
-\subsection{Virial and pressure}
-The scalar virial of the system due to the dispersion interaction between
-two particles $i$ and $j$ is given by:
-\beq
-\Xi	~=~	-\half \rvij \cdot \Fvij ~=~	3\,C_6\,\rij^{-6}
-\eeq
-The pressure is given by:
-\beq
-P	~=~	\frac{2}{3\,V}\left(E_{kin} - \Xi\right)
-\eeq
-The long-range correction to the virial is given by:
-\beq
-\Xi_{lr} ~=~ \half N \rho \int_0^{\infty} 4\pi r^2 g(r) (\Xi -\Xi_c) \,\dr
-\eeq
-We can again integrate the long-range contribution to the 
-virial assuming $g(r)$ is 1 beyond $r_1$:
-\bea
-\Xi_{lr}&=&	\half N \rho \left(
-    \int_{r_1}^{r_c}  4 \pi r^2 (\Xi -\Xi_c)  \,\dr
-  + \int_{r_c}^{\infty} 4 \pi r^2 3\,C_6\,\rij^{-6}\,  \dr
-\right)	\nonumber\\
-        &=&     \half N \rho \left(
-    \int_{r_1}^{r_c} 4 \pi r^2 (\Xi -\Xi_c) \, \dr
-  + 4 \pi C_6 \, r_c^{-3} \right)
-\eea
-For a plain cut-off the correction to the pressure is~\cite{Allen87}:
-\beq
-P_{lr}	~=~	-\frac{4}{3} \pi C_6\, \rho^2 r_c^{-3}
-\eeq
-Using the same example of a water box, the correction to the virial is
-0.75 kJ mol$^{-1}$ per molecule,
-the corresponding correction to the pressure for 
-SPC water is approximately $-280$ bar.
-
-For homogeneous mixtures, we can again use the average dispersion constant
-$\avcsix$ (\eqnref{avcsix}):
-\beq
-P_{lr}	~=~	-\frac{4}{3} \pi \avcsix \rho^2 r_c^{-3}
-\label{eqn:pcorr}
-\eeq
-For inhomogeneous systems, \eqnref{pcorr} can be applied under the same
-restriction as holds for the energy (see \secref{ecorr}).
-%} % Brace matches ifthenelse test for gmxlite
-
-%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Long Range Electrostatics}
 \label{sec:lr_elstat}
 \subsection{Ewald summation\index{Ewald sum}}
@@ -2335,14 +2209,14 @@ The total electrostatic energy of $N$ particles and their periodic
 images\index{periodic boundary conditions} is given by
 \begin{equation}
 V=\frac{f}{2}\sum_{n_x}\sum_{n_y}
-\sum_{n_{z}*} \sum_{i}^{N} \sum_{j}^{N} 
+\sum_{n_{z}*} \sum_{i}^{N} \sum_{j}^{N}
 \frac{q_i q_j}{{\bf r}_{ij,{\bf n}}}.
 \label{eqn:totalcoulomb}
 \end{equation}
 $(n_x,n_y,n_z)={\bf n}$ is the box index vector, and the star indicates that
 terms with $i=j$ should be omitted when $(n_x,n_y,n_z)=(0,0,0)$. The
 distance ${\bf r}_{ij,{\bf n}}$ is the real distance between the charges and
-not the minimum-image. This sum is conditionally convergent, but 
+not the minimum-image. This sum is conditionally convergent, but
 very slow.
 
 Ewald summation was first introduced as a method to calculate
@@ -2352,10 +2226,10 @@ slowly-converging sum \eqnref{totalcoulomb} into two
 quickly-converging terms and a constant term:
 \begin{eqnarray}
 V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
-V_{dir} &=& \frac{f}{2} \sum_{i,j}^{N} 
+V_{dir} &=& \frac{f}{2} \sum_{i,j}^{N}
 \sum_{n_x}\sum_{n_y}
 \sum_{n_{z}*} q_i q_j \frac{\mbox{erfc}(\beta {r}_{ij,{\bf n}} )}{{r}_{ij,{\bf n}}} \\[0.5ex]
-V_{rec} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j 
+V_{rec} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j
 \sum_{m_x}\sum_{m_y}
 \sum_{m_{z}*} \frac{\exp{\left( -(\pi {\bf m}/\beta)^2 + 2 \pi i
       {\bf m} \cdot ({\bf r}_i - {\bf r}_j)\right)}}{{\bf m}^2} \\[0.5ex]
@@ -2364,10 +2238,10 @@ V_{0} &=& -\frac{f \beta}{\sqrt{\pi}}\sum_{i}^{N} q_i^2,
 where $\beta$ is a parameter that determines the relative weight of the
 direct and reciprocal sums and ${\bf m}=(m_x,m_y,m_z)$.
 In this way we can use a short cut-off (of the order of $1$~nm) in the direct space sum and a
-short cut-off in the reciprocal space sum ({\eg} 10 wave vectors in each 
+short cut-off in the reciprocal space sum ({\eg} 10 wave vectors in each
 direction). Unfortunately, the computational cost of the reciprocal
 part of the sum increases as $N^2$
-(or $N^{3/2}$ with a slightly better algorithm) and it is therefore not 
+(or $N^{3/2}$ with a slightly better algorithm) and it is therefore not
 realistic for use in large systems.
 
 \subsubsection{Using Ewald}
@@ -2392,7 +2266,7 @@ direction. With a 3-nm cubic box this example would use $11$ wave vectors
 is the relative strength of the electrostatic interaction at the
 cut-off. Decreasing this gives you a more accurate direct sum, but a
 less accurate reciprocal sum.
- 
+
 \subsection{\normindex{PME}}
 \label{sec:pme}
 Particle-mesh Ewald is a method proposed by Tom
@@ -2407,7 +2281,7 @@ k-space.
 
 The potential at the grid points is calculated by inverse
 transformation, and by using the interpolation factors we get the
-forces on each atom. 
+forces on each atom.
 
 The PME algorithm scales as $N \log(N)$, and is substantially faster
 than ordinary Ewald summation on medium to large systems. On very
@@ -2483,7 +2357,7 @@ prime numbers for grid dimensions.
 The FFT code used in {\gromacs} is
 optimized for grid sizes of the form $2^a 3^b 5^c 7^d 11^e 13^f$,
 where $e+f$ is $0$ or $1$ and the other exponents arbitrary. (See
-further the documentation of the FFT algorithms at 
+further the documentation of the FFT algorithms at
 \href{http://www.fftw.org}{www.fftw.org}.
 
 It is also possible to optimize the transforms for the current problem
@@ -2499,15 +2373,15 @@ in your {\tt .mdp} file.
 When running in parallel, the grid must be communicated several times,
 thus hurting scaling performance. With PME you can improve this
 by increasing grid spacing while simultaneously increasing the
-interpolation to {\eg} sixth order. 
+interpolation to {\eg} sixth order.
 Since the interpolation is entirely local, doing so will
 improve the scaling in most cases.
 
 %
-% Temporarily removed since I am not sure about the state of the testlr 
+% Temporarily removed since I am not sure about the state of the testlr
 % program...
 %
-%It is possible to test the accuracy of your settings using the program 
+%It is possible to test the accuracy of your settings using the program
 %{\tt\normindex{testlr}} in the {\tt src/gmxlib} dir. This program computes
 %forces and potentials using PPPM and an Ewald implementation and gives the
 %absolute and RMS errors in both:
@@ -2530,6 +2404,224 @@ improve the scaling in most cases.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
+\section{Long Range Van der Waals interactions}
+\subsection{Dispersion correction\index{dispersion correction}}
+In this section, we derive long-range corrections due to the use of a
+cut-off for Lennard-Jones or Buckingham interactions.
+We assume that the cut-off is
+so long that the repulsion term can safely be neglected, and therefore
+only the dispersion term is taken into account. Due to the nature of
+the dispersion interaction (we are truncating a potential proportional
+to $-r^{-6}$), energy and pressure corrections are both negative. While
+the energy correction is usually small, it may be important for free
+energy calculations where differences between two different Hamiltonians
+are considered. In contrast, the pressure correction is very large and
+can not be neglected under any circumstances where a correct pressure is
+required, especially for any NPT simulations. Although it is, in
+principle, possible to parameterize a force field such that the pressure
+is close to the desired experimental value without correction, such a
+method makes the parameterization dependent on the cut-off and is therefore
+undesirable.
+
+\subsubsection{Energy}
+\label{sec:ecorr}
+The long-range contribution of the dispersion interaction to the
+virial can be derived analytically, if we assume a homogeneous
+system beyond the cut-off distance $r_c$. The dispersion energy
+between two particles is written as:
+\beq
+V(\rij) ~=~- C_6\,\rij^{-6}
+\eeq
+and the corresponding force is:
+\beq
+\Fvij ~=~- 6\,C_6\,\rij^{-8}\rvij
+\eeq
+In a periodic system it is not easy to calculate the full potentials,
+so usually a cut-off is applied, which can be abrupt or smooth.
+We will call the potential and force with cut-off $V_c$ and $\ve{F}_c$.
+The long-range contribution to the dispersion energy
+in a system with $N$ particles and particle density $\rho$ = $N/V$ is:
+\beq
+\label{eqn:enercorr}
+V_{lr} ~=~ \half N \rho\int_0^{\infty}   4\pi r^2 g(r) \left( V(r) -V_c(r) \right) {\dr}
+\eeq
+We will integrate this for the shift function, which is the most general
+form of van der Waals interaction available in {\gromacs}.
+The shift function has a constant difference $S$ from 0 to $r_1$
+and is 0 beyond the cut-off distance $r_c$.
+We can integrate \eqnref{enercorr}, assuming that the density in the sphere
+within $r_1$ is equal to the global density and
+the radial distribution function $g(r)$ is 1 beyond $r_1$:
+\bea
+\nonumber
+V_{lr}  &=& \half N \left(
+  \rho\int_0^{r_1}  4\pi r^2 g(r) \, C_6 \,S\,{\dr}
++ \rho\int_{r_1}^{r_c}  4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
++ \rho\int_{r_c}^{\infty}  4\pi r^2 V(r) \, {\dr}
+\right) \\
+& = & \half N \left(\left(\frac{4}{3}\pi \rho r_1^{3} - 1\right) C_6 \,S
++ \rho\int_{r_1}^{r_c} 4\pi r^2 \left( V(r) -V_c(r) \right) {\dr}
+-\frac{4}{3} \pi N \rho\, C_6\,r_c^{-3}
+\right)
+\eea
+where the term $-1$ corrects for the self-interaction.
+For a plain cut-off we only need to assume that $g(r)$ is 1 beyond $r_c$
+and the correction reduces to~\cite{Allen87}:
+\bea
+V_{lr} & = & -\frac{2}{3} \pi N \rho\, C_6\,r_c^{-3}
+\eea
+If we consider, for example, a box of pure water, simulated with a cut-off
+of 0.9 nm and a density of 1 g cm$^{-3}$ this correction is
+$-0.75$ kJ mol$^{-1}$ per molecule.
+
+For a homogeneous mixture we need to define
+an {\em average dispersion constant}:
+\beq
+\label{eqn:avcsix}
+\avcsix	= \frac{2}{N(N-1)}\sum_i^N\sum_{j>i}^N C_6(i,j)\\
+\eeq
+In {\gromacs}, excluded pairs of atoms do not contribute to the average.
+
+In the case of inhomogeneous simulation systems, {\eg} a system with a
+lipid interface, the energy correction can be applied if
+$\avcsix$ for both components is comparable.
+
+\subsubsection{Virial and pressure}
+The scalar virial of the system due to the dispersion interaction between
+two particles $i$ and $j$ is given by:
+\beq
+\Xi~=~-\half \rvij \cdot \Fvij ~=~ 3\,C_6\,\rij^{-6}
+\eeq
+The pressure is given by:
+\beq
+P~=~\frac{2}{3\,V}\left(E_{kin} - \Xi\right)
+\eeq
+The long-range correction to the virial is given by:
+\beq
+\Xi_{lr} ~=~ \half N \rho \int_0^{\infty} 4\pi r^2 g(r) (\Xi -\Xi_c) \,\dr
+\eeq
+We can again integrate the long-range contribution to the
+virial assuming $g(r)$ is 1 beyond $r_1$:
+\bea
+\Xi_{lr}&=&	\half N \rho \left(
+    \int_{r_1}^{r_c}  4 \pi r^2 (\Xi -\Xi_c)  \,\dr
+  + \int_{r_c}^{\infty} 4 \pi r^2 3\,C_6\,\rij^{-6}\,  \dr
+\right)	\nonumber\\
+        &=&     \half N \rho \left(
+    \int_{r_1}^{r_c} 4 \pi r^2 (\Xi -\Xi_c) \, \dr
+  + 4 \pi C_6 \, r_c^{-3} \right)
+\eea
+For a plain cut-off the correction to the pressure is~\cite{Allen87}:
+\beq
+P_{lr}~=~-\frac{4}{3} \pi C_6\, \rho^2 r_c^{-3}
+\eeq
+Using the same example of a water box, the correction to the virial is
+0.75 kJ mol$^{-1}$ per molecule,
+the corresponding correction to the pressure for 
+SPC water is approximately $-280$ bar.
+
+For homogeneous mixtures, we can again use the average dispersion constant
+$\avcsix$ (\eqnref{avcsix}):
+\beq
+P_{lr}~=~-\frac{4}{3} \pi \avcsix \rho^2 r_c^{-3}
+\label{eqn:pcorr}
+\eeq
+For inhomogeneous systems, \eqnref{pcorr} can be applied under the same
+restriction as holds for the energy (see \secref{ecorr}).
+
+\subsection{Lennard-Jones PME\index{LJ-PME}}
+
+In order to treat systems, using Lennard-Jones potentials, that are
+non-homogeneous outside of the cut-off distance, we can instead use
+the Particle-mesh Ewald method as discussed for electrostatics above.
+In this case the modified Ewald equations become
+\begin{eqnarray}
+V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
+V_{dir} &=& -\frac{1}{2} \sum_{i,j}^{N}
+\sum_{n_x}\sum_{n_y}
+\sum_{n_{z}*} \frac{C_{ij}^{(6)}g(\beta {r}_{ij,{\bf n}})}{{r_{ij,{\bf n}}}^6} \\[0.5ex]
+V_{rec} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
+f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C_{ij}^{(6)} {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
+V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C_{ii}^{(6)},
+\end{eqnarray}
+
+where ${\bf m}=(m_x,m_y,m_z)$, $\beta$ is the parameter determining the weight between
+direct and reciprocal space, and ${C_{ij}}^{(6)}$ is the combined dispersion
+parameter for particle $i$ and $j$. The star indicates that terms
+with $i = j$ should be omitted when $((n_x,n_y,n_z)=(0,0,0))$, and
+${\bf r}_{ij,{\bf n}}$ is the real distance between the particles.
+Following the derivation by Essmann~\cite{Essmann95}, the functions $f$ and $g$ introduced above are defined as
+\begin{eqnarray}
+f(x)&=&1/3\left[(1-2x^2){\mathrm{exp}}(-x^2) + 2{x^3}\sqrt{\pi}\,{\mathrm{erfc}}(x) \right] \\
+g(x)&=&{\mathrm{exp}}(-x^2)(1+x^2+\frac{x^4}{2}).
+\end{eqnarray}
+
+The above methodology works fine as long as the dispersion parameters can be factorized in the same
+way as the charges for electrostatics
+\begin{equation}
+C_{ij}^{(6)} = \left({C_{ii}^{(6)} \, C_{jj}^{(6)}}\right)^{1/2}
+\end{equation}
+For Lorentz-Berthelot combination rules, the reciprocal part of this sum has to be calculated
+seven times due to the splitting of the dispersion parameter according to
+\begin{equation}
+C_{ij}^{(6)}=(\sigma_i+\sigma_j)^6=\sum_{n=0}^{6} P_{n}\sigma_{i}^{n}\sigma_{j}^{(6-n)},
+\end{equation}
+for $P_{n}$ the Pascal triangle coefficients. This introduces a
+non-negligible cost to the reciprocal part, requiring seven separate
+FFTs, and therefore this have been the limiting factor in previous
+attempts to implement LJ-PME. A solution to this problem is to
+approximate the interaction parameters in reciprocal space using
+geometrical combination rules.  This will preserve a well-defined
+Hamiltonian and significantly increase the performance of the
+simulations.
+
+\begin{figure}
+\centerline{\includegraphics[width=15cm]{plots/ljpmedifference}}
+\caption {Dispersion potential between phosphorous and oxygen, The total, real and
+reciprocal parts of the total dispersion are shown. The reciprocal parts are calculated
+using either LB or geometric rules. The difference introduced by the use of the
+geometric approximation in the reciprocal part is small compared to the total
+interaction energy.}
+\label{fig:ljpmedifference}
+\end{figure}
+
+This approximation does introduce some errors, but since the
+difference is located in the interactions calculated in reciprocal
+space, the effect will be very small compared to the total interaction
+energy (see \figref{ljpmedifference}). The relative error in
+the total dispersion energy will stay below 0.5\% in a lipid bilayer
+simulation, when using a real space cut-off of 1.0 nm. A more
+thorough discussion of this can be found in \cite{Wennberg13}.
+
+\subsubsection{Using LJ-PME}
+To use Particle-mesh Ewald summation for Lennard-Jones interactions in {\gromacs}, specify the
+following lines in your {\tt .mdp} file:
+\begin{verbatim}
+vdwtype          = PME
+rvdw             = 1.0
+rlist            = 1.0
+rcoulomb         = 1.0
+fourierspacing   = 0.12
+pme-order        = 4
+ewald-rtol-lj    = 0.001
+lj-pme-comb-rule = geometric
+\end{verbatim}
+
+The {\tt fourierspacing} and {\tt pme-order} are the same parameters
+as is used for electrostatic PME, and {\tt ewald-rtol-lj} controls
+splitting between real and reciprocal space in the same way as
+{\tt ewald-rtol}.  In addition to this, the combination rule to be used
+in reciprocal space is determined by {\tt lj-pme-comb-rule}. If the
+current force field uses Lorentz-Berthelot combination rules, it is
+possible to set {\tt lj-pme-comb-rule = geometric} in order to gain a
+significant increase in performance for a small loss in accuracy. The
+details of this approximation can be found in the section above.  The
+implementation of LJ-PME is currently unsupported together with the
+Verlet cut-off scheme and/or free energy calculations. These features
+will be added in upcoming releases
+%} % Brace matches ifthenelse test for gmxlite
 
 \section{Force field\index{force field}}
 \label{sec:ff}

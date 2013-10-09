@@ -111,9 +111,9 @@ void ns(FILE              *fp,
 }
 
 static void reduce_thread_forces(int n, rvec *f,
-                                 tensor vir,
-                                 real *Vcorr,
-                                 int efpt_ind, real *dvdl,
+                                 tensor vir_q, tensor vir_lj,
+                                 real *Vcorr_q, real *Vcorr_lj,
+                                 real *dvdl_q, real *dvdl_lj,
                                  int nthreads, f_thread_t *f_t)
 {
     int t, i;
@@ -129,9 +129,12 @@ static void reduce_thread_forces(int n, rvec *f,
     }
     for (t = 1; t < nthreads; t++)
     {
-        *Vcorr += f_t[t].Vcorr;
-        *dvdl  += f_t[t].dvdl[efpt_ind];
-        m_add(vir, f_t[t].vir, vir);
+        *Vcorr_q  += f_t[t].Vcorr_q;
+        *Vcorr_lj += f_t[t].Vcorr_lj;
+        *dvdl_q   += f_t[t].dvdl[efptCOUL];
+        *dvdl_lj  += f_t[t].dvdl[efptVDW];
+        m_add(vir_q, f_t[t].vir_q, vir_q);
+        m_add(vir_lj, f_t[t].vir_lj, vir_lj);
     }
 }
 
@@ -173,6 +176,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     char        buf[22];
     double      clam_i, vlam_i;
     real        dvdl_dum[efptNR], dvdl_nb[efptNR], lam_i[efptNR];
+    real        dvdl_q, dvdl_lj;
 
 #ifdef GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
@@ -342,8 +346,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 
     if (bSepDVDL)
     {
-        real V_short_range = 0;
-        real dvdl_short_range;
+        real V_short_range    = 0;
+        real dvdl_short_range = 0;
 
         for (i = 0; i < enerd->grpp.nener; i++)
         {
@@ -389,7 +393,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     /* Check whether we need to do bondeds or correct for exclusions */
     if (fr->bMolPBC &&
         ((flags & GMX_FORCE_BONDED)
-         || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)))
+         || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)))
     {
         /* Since all atoms are in the rectangular or triclinic unit-cell,
          * only single box vector shifts (2 in x) are required.
@@ -438,7 +442,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     where();
 
     *cycles_pme = 0;
-    if (EEL_FULL(fr->eeltype))
+    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
         real Vlr             = 0, Vcorr = 0;
         real dvdl_long_range = 0;
@@ -451,19 +455,32 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             svmul(ir->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
             box_size[ZZ] *= ir->wall_ewald_zfac;
         }
+    }
 
-        clear_mat(fr->vir_el_recip);
+    /* Do long-range electrostatics and/or LJ-PME, including related short-range
+     * corrections.
+     */
 
-        if (fr->bEwald)
+    clear_mat(fr->vir_el_recip);
+    clear_mat(fr->vir_lj_recip);
+
+    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
+    {
+        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
+        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
+        int  status            = 0;
+
+        if (EEL_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
-            real dvdl_long_range_correction = 0;
-
+            real dvdl_long_range_correction_q   = 0;
+            real dvdl_long_range_correction_lj  = 0;
             /* With the Verlet scheme exclusion forces are calculated
              * in the non-bonded kernel.
              */
             /* The TPI molecule does not have exclusions with the rest
-             * of the system and no intra-molecular PME grid contributions
-             * will be calculated in gmx_pme_calc_energy.
+             * of the system and no intra-molecular PME grid
+             * contributions will be calculated in
+             * gmx_pme_calc_energy.
              */
             if ((ir->cutoff_scheme == ecutsGROUP && fr->n_tpi == 0) ||
                 ir->ewald_geometry != eewg3D ||
@@ -484,150 +501,191 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 {
                     int     s, e, i;
                     rvec   *fnv;
-                    tensor *vir;
-                    real   *Vcorrt, *dvdlt;
+                    tensor *vir_q, *vir_lj;
+                    real   *Vcorrt_q, *Vcorrt_lj, *dvdlt_q, *dvdlt_lj;
                     if (t == 0)
                     {
-                        fnv    = fr->f_novirsum;
-                        vir    = &fr->vir_el_recip;
-                        Vcorrt = &Vcorr;
-                        dvdlt  = &dvdl_long_range_correction;
+                        fnv       = fr->f_novirsum;
+                        vir_q     = &fr->vir_el_recip;
+                        vir_lj    = &fr->vir_lj_recip;
+                        Vcorrt_q  = &Vcorr_q;
+                        Vcorrt_lj = &Vcorr_lj;
+                        dvdlt_q   = &dvdl_long_range_correction_q;
+                        dvdlt_lj  = &dvdl_long_range_correction_lj;
                     }
                     else
                     {
-                        fnv    = fr->f_t[t].f;
-                        vir    = &fr->f_t[t].vir;
-                        Vcorrt = &fr->f_t[t].Vcorr;
-                        dvdlt  = &fr->f_t[t].dvdl[efptCOUL];
+                        fnv       = fr->f_t[t].f;
+                        vir_q     = &fr->f_t[t].vir_q;
+                        vir_lj    = &fr->f_t[t].vir_lj;
+                        Vcorrt_q  = &fr->f_t[t].Vcorr_q;
+                        Vcorrt_lj = &fr->f_t[t].Vcorr_lj;
+                        dvdlt_q   = &fr->f_t[t].dvdl[efptCOUL];
+                        dvdlt_lj  = &fr->f_t[t].dvdl[efptVDW];
                         for (i = 0; i < fr->natoms_force; i++)
                         {
                             clear_rvec(fnv[i]);
                         }
-                        clear_mat(*vir);
+                        clear_mat(*vir_q);
+                        clear_mat(*vir_lj);
                     }
-                    *dvdlt  = 0;
-                    *Vcorrt =
-                        ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
-                                           cr, t, fr,
-                                           md->chargeA,
-                                           md->nChargePerturbed ? md->chargeB : NULL,
-                                           ir->cutoff_scheme != ecutsVERLET,
-                                           excl, x, bSB ? boxs : box, mu_tot,
-                                           ir->ewald_geometry,
-                                           ir->epsilon_surface,
-                                           fnv, *vir,
-                                           lambda[efptCOUL], dvdlt);
+                    *dvdlt_q  = 0;
+                    *dvdlt_lj = 0;
+                    ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
+                                       cr, t, fr,
+                                       md->chargeA,
+                                       md->nChargePerturbed ? md->chargeB : NULL,
+                                       md->c6A,
+                                       md->nChargePerturbed ? md->c6B : NULL,
+                                       md->sigmaA,
+                                       md->nChargePerturbed ? md->sigmaB : NULL,
+                                       md->sigma3A,
+                                       md->nChargePerturbed ? md->sigma3B : NULL,
+                                       ir->cutoff_scheme != ecutsVERLET,
+                                       excl, x, bSB ? boxs : box, mu_tot,
+                                       ir->ewald_geometry,
+                                       ir->epsilon_surface,
+                                       fnv, *vir_q, *vir_lj,
+                                       Vcorrt_q, Vcorrt_lj,
+                                       lambda[efptCOUL], lambda[efptVDW],
+                                       dvdlt_q, dvdlt_lj);
                 }
                 if (nthreads > 1)
                 {
                     reduce_thread_forces(fr->natoms_force, fr->f_novirsum,
-                                         fr->vir_el_recip,
-                                         &Vcorr, efptCOUL, &dvdl_long_range_correction,
+                                         fr->vir_el_recip, fr->vir_lj_recip,
+                                         &Vcorr_q, &Vcorr_lj,
+                                         &dvdl_long_range_correction_q,
+                                         &dvdl_long_range_correction_lj,
                                          nthreads, fr->f_t);
                 }
-
                 wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
 
             if (fr->n_tpi == 0)
             {
-                Vcorr += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
-                                                 &dvdl_long_range_correction,
-                                                 fr->vir_el_recip);
+                Vcorr_q += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
+                                                   &dvdl_long_range_correction_q,
+                                                   fr->vir_el_recip);
             }
 
-            PRINT_SEPDVDL("Ewald excl./charge/dip. corr.", Vcorr,
-                          dvdl_long_range_correction);
-            enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction;
+            PRINT_SEPDVDL("Ewald excl./charge/dip. corr.", Vcorr_q, dvdl_long_range_correction_q);
+            PRINT_SEPDVDL("Ewald excl. corr. LJ", Vcorr_lj, dvdl_long_range_correction_lj);
+            enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction_q;
+            enerd->dvdl_lin[efptVDW]  += dvdl_long_range_correction_lj;
         }
 
-        switch (fr->eeltype)
+        if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)))
         {
-            case eelPME:
-            case eelPMESWITCH:
-            case eelPMEUSER:
-            case eelPMEUSERSWITCH:
-            case eelP3M_AD:
-                if (cr->duty & DUTY_PME)
+            if (cr->duty & DUTY_PME)
+            {
+                /* Do reciprocal PME for Coulomb and/or LJ. */
+                assert(fr->n_tpi >= 0);
+                if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
-                    assert(fr->n_tpi >= 0);
-                    if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+                    pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                    if (EEL_PME(fr->eeltype))
                     {
-                        pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
-                        if (flags & GMX_FORCE_FORCES)
+                        pme_flags     |= GMX_PME_DO_COULOMB;
+                    }
+                    if (EVDW_PME(fr->vdwtype))
+                    {
+                        pme_flags |= GMX_PME_DO_LJ;
+                        if (fr->ljpme_combination_rule == eljpmeLB)
                         {
-                            pme_flags |= GMX_PME_CALC_F;
+                            /*Lorentz-Berthelot Comb. Rules in LJ-PME*/
+                            pme_flags |= GMX_PME_LJ_LB;
                         }
-                        if (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY))
-                        {
-                            pme_flags |= GMX_PME_CALC_ENER_VIR;
-                        }
-                        if (fr->n_tpi > 0)
-                        {
-                            /* We don't calculate f, but we do want the potential */
-                            pme_flags |= GMX_PME_CALC_POT;
-                        }
-                        wallcycle_start(wcycle, ewcPMEMESH);
-                        status = gmx_pme_do(fr->pmedata,
-                                            md->start, md->homenr - fr->n_tpi,
-                                            x, fr->f_novirsum,
-                                            md->chargeA, md->chargeB,
-                                            bSB ? boxs : box, cr,
-                                            DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
-                                            DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
-                                            nrnb, wcycle,
-                                            fr->vir_el_recip, fr->ewaldcoeff,
-                                            &Vlr, lambda[efptCOUL], &dvdl_long_range,
-                                            pme_flags);
-                        *cycles_pme = wallcycle_stop(wcycle, ewcPMEMESH);
-
-                        /* We should try to do as little computation after
-                         * this as possible, because parallel PME synchronizes
-                         * the nodes, so we want all load imbalance of the rest
-                         * of the force calculation to be before the PME call.
-                         * DD load balancing is done on the whole time of
-                         * the force call (without PME).
-                         */
+                    }
+                    if (flags & GMX_FORCE_FORCES)
+                    {
+                        pme_flags |= GMX_PME_CALC_F;
+                    }
+                    if (flags & GMX_FORCE_VIRIAL)
+                    {
+                        pme_flags |= GMX_PME_CALC_ENER_VIR;
                     }
                     if (fr->n_tpi > 0)
                     {
-                        /* Determine the PME grid energy of the test molecule
-                         * with the PME grid potential of the other charges.
-                         */
-                        gmx_pme_calc_energy(fr->pmedata, fr->n_tpi,
-                                            x + md->homenr - fr->n_tpi,
-                                            md->chargeA + md->homenr - fr->n_tpi,
-                                            &Vlr);
+                        /* We don't calculate f, but we do want the potential */
+                        pme_flags |= GMX_PME_CALC_POT;
                     }
-                    PRINT_SEPDVDL("PME mesh", Vlr, dvdl_long_range);
+                    wallcycle_start(wcycle, ewcPMEMESH);
+                    status = gmx_pme_do(fr->pmedata,
+                                        md->start, md->homenr - fr->n_tpi,
+                                        x, fr->f_novirsum,
+                                        md->chargeA, md->chargeB,
+                                        md->c6A, md->c6B,
+                                        md->sigmaA, md->sigmaB,
+                                        bSB ? boxs : box, cr,
+                                        DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
+                                        DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
+                                        nrnb, wcycle,
+                                        fr->vir_el_recip, fr->ewaldcoeff_q,
+                                        fr->vir_lj_recip, fr->ewaldcoeff_lj,
+                                        &Vlr_q, &Vlr_lj,
+                                        lambda[efptCOUL], lambda[efptVDW],
+                                        &dvdl_long_range_q, &dvdl_long_range_lj, pme_flags);
+                    *cycles_pme = wallcycle_stop(wcycle, ewcPMEMESH);
+                    if (status != 0)
+                    {
+                        gmx_fatal(FARGS, "Error %d in reciprocal PME routine", status);
+                    }
+                    /* We should try to do as little computation after
+                     * this as possible, because parallel PME synchronizes
+                     * the nodes, so we want all load imbalance of the
+                     * rest of the force calculation to be before the PME
+                     * call.  DD load balancing is done on the whole time
+                     * of the force call (without PME).
+                     */
                 }
-                break;
-            case eelEWALD:
-                Vlr = do_ewald(ir, x, fr->f_novirsum,
-                               md->chargeA, md->chargeB,
-                               box_size, cr, md->homenr,
-                               fr->vir_el_recip, fr->ewaldcoeff,
-                               lambda[efptCOUL], &dvdl_long_range, fr->ewald_table);
-                PRINT_SEPDVDL("Ewald long-range", Vlr, dvdl_long_range);
-                break;
-            default:
-                gmx_fatal(FARGS, "No such electrostatics method implemented %s",
-                          eel_names[fr->eeltype]);
+                if (fr->n_tpi > 0)
+                {
+                    if (EVDW_PME(ir->vdwtype))
+                    {
+
+                        gmx_fatal(FARGS, "Test particle insertion not implemented with LJ-PME");
+                    }
+                    /* Determine the PME grid energy of the test molecule
+                     * with the PME grid potential of the other charges.
+                     */
+                    gmx_pme_calc_energy(fr->pmedata, fr->n_tpi,
+                                        x + md->homenr - fr->n_tpi,
+                                        md->chargeA + md->homenr - fr->n_tpi,
+                                        &Vlr_q);
+                }
+                PRINT_SEPDVDL("PME mesh", Vlr_q + Vlr_lj, dvdl_long_range_q+dvdl_long_range_lj);
+            }
         }
-        if (status != 0)
+
+        if (!EEL_PME(fr->eeltype) && EEL_EWALD(fr->eeltype))
         {
-            gmx_fatal(FARGS, "Error %d in long range electrostatics routine %s",
-                      status, EELTYPE(fr->eeltype));
+            Vlr_q = do_ewald(ir, x, fr->f_novirsum,
+                             md->chargeA, md->chargeB,
+                             box_size, cr, md->homenr,
+                             fr->vir_el_recip, fr->ewaldcoeff_q,
+                             lambda[efptCOUL], &dvdl_long_range_q, fr->ewald_table);
+            PRINT_SEPDVDL("Ewald long-range", Vlr_q, dvdl_long_range_q);
+        }
+        else if (!EEL_EWALD(fr->eeltype))
+        {
+            gmx_fatal(FARGS, "No such electrostatics method implemented %s",
+                      eel_names[fr->eeltype]);
         }
         /* Note that with separate PME nodes we get the real energies later */
-        enerd->dvdl_lin[efptCOUL] += dvdl_long_range;
-        enerd->term[F_COUL_RECIP]  = Vlr + Vcorr;
+        enerd->dvdl_lin[efptCOUL] += dvdl_long_range_q;
+        enerd->dvdl_lin[efptVDW]  += dvdl_long_range_lj;
+        enerd->term[F_COUL_RECIP]  = Vlr_q + Vcorr_q;
+        enerd->term[F_LJ_RECIP]    = Vlr_lj + Vcorr_lj;
         if (debug)
         {
-            fprintf(debug, "Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
-                    Vlr, Vcorr, enerd->term[F_COUL_RECIP]);
+            fprintf(debug, "Vlr_q = %g, Vcorr_q = %g, Vlr_corr_q = %g\n",
+                    Vlr_q, Vcorr_q, enerd->term[F_COUL_RECIP]);
             pr_rvecs(debug, 0, "vir_el_recip after corr", fr->vir_el_recip, DIM);
             pr_rvecs(debug, 0, "fshift after LR Corrections", fr->fshift, SHIFTS);
+            fprintf(debug, "Vlr_lj: %g, Vcorr_lj = %g, Vlr_corr_lj = %g\n",
+                    Vlr_lj, Vcorr_lj, enerd->term[F_LJ_RECIP]);
+            pr_rvecs(debug, 0, "vir_lj_recip after corr", fr->vir_lj_recip, DIM);
         }
     }
     else

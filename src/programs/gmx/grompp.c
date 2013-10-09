@@ -1578,6 +1578,11 @@ int gmx_grompp(int argc, char *argv[])
 
         /* Remove all charge groups */
         gmx_mtop_remove_chargegroups(sys);
+
+        if (EVDW_PME(ir->vdwtype))
+        {
+            gmx_fatal(FARGS, "LJ-PME not implemented together with verlet-scheme!");
+        }
     }
 
     if (count_constraints(sys, mi, wi) && (ir->eConstrAlg == econtSHAKE))
@@ -1784,6 +1789,7 @@ int gmx_grompp(int argc, char *argv[])
     {
         pr_symtab(debug, 0, "After index", &sys->symtab);
     }
+
     triple_check(mdparin, ir, sys, wi);
     close_symtab(&sys->symtab);
     if (debug)
@@ -1825,7 +1831,7 @@ int gmx_grompp(int argc, char *argv[])
         check_chargegroup_radii(sys, ir, state.x, wi);
     }
 
-    if (EEL_FULL(ir->coulombtype))
+    if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         /* Calculate the optimal grid dimensions */
         copy_mat(state.box, box);
@@ -1852,6 +1858,11 @@ int gmx_grompp(int argc, char *argv[])
        potentially conflict if not handled correctly. */
     if (ir->efep != efepNO)
     {
+        if (EVDW_PME(ir->vdwtype))
+        {
+            gmx_fatal(FARGS, "LJ-PME not implemented together with free energy calculations!");
+        }
+
         state.fep_state = ir->fepvals->init_fep_state;
         for (i = 0; i < efptNR; i++)
         {
