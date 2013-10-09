@@ -50,7 +50,7 @@
 #include "writeps.h"
 #include "macros.h"
 
-real calc_ewaldcoeff(real rc, real dtol)
+real calc_ewaldcoeff_q(real rc, real dtol)
 {
     real x = 5, low, high;
     int  n, i = 0;
@@ -81,50 +81,107 @@ real calc_ewaldcoeff(real rc, real dtol)
     return x;
 }
 
+static real ewald_function_lj(real x, real rc)
+{
+    real xrc, xrc2, xrc4, factor;
+    xrc  = x*rc;
+    xrc2 = xrc*xrc;
+    xrc4 = xrc2*xrc2;
+#ifdef GMX_DOUBLE
+    factor = exp(-xrc2)*(1 + xrc2 + xrc4/2.0);
+#else
+    factor = expf(-xrc2)*(1 + xrc2 + xrc4/2.0);
+#endif
 
+    return factor;
+}
 
-real ewald_LRcorrection(int start, int end,
+real calc_ewaldcoeff_lj(real rc, real dtol)
+{
+    real x = 5, low, high;
+    int  n, i = 0;
+
+    do
+    {
+        i++;
+        x *= 2.0;
+    }
+    while (ewald_function_lj(x, rc) > dtol);
+
+    n    = i + 60; /* search tolerance is 2^-60 */
+    low  = 0;
+    high = x;
+    for (i = 0; i < n; ++i)
+    {
+        x = (low + high) / 2.0;
+        if (ewald_function_lj(x, rc) > dtol)
+        {
+            low = x;
+        }
+        else
+        {
+            high = x;
+        }
+    }
+    return x;
+}
+
+void ewald_LRcorrection(int start, int end,
                         t_commrec *cr, int thread, t_forcerec *fr,
                         real *chargeA, real *chargeB,
+                        real *C6A, real *C6B,
+                        real *sigmaA, real *sigmaB,
+                        real *sigma3A, real *sigma3B,
                         gmx_bool calc_excl_corr,
                         t_blocka *excl, rvec x[],
                         matrix box, rvec mu_tot[],
                         int ewald_geometry, real epsilon_surface,
-                        rvec *f, tensor vir,
-                        real lambda, real *dvdlambda)
+                        rvec *f, tensor vir_q, tensor vir_lj,
+                        real *Vcorr_q, real *Vcorr_lj,
+                        real lambda_q, real lambda_lj,
+                        real *dvdlambda_q, real *dvdlambda_lj)
 {
     int      i, i1, i2, j, k, m, iv, jv, q;
     atom_id *AA;
-    double   q2sumA, q2sumB, Vexcl, dvdl_excl; /* Necessary for precision */
+    double   Vexcl_q, dvdl_excl_q, dvdl_excl_lj; /* Necessary for precision */
+    double   Vexcl_lj;
     real     one_4pi_eps;
     real     v, vc, qiA, qiB, dr, dr2, rinv, fscal, enercorr;
-    real     Vself[2], Vdipole[2], rinv2, ewc = fr->ewaldcoeff, ewcdr;
+    real     Vself_q[2], Vself_lj[2], Vdipole[2], rinv2, ewc_q = fr->ewaldcoeff_q, ewcdr;
+    real     ewc_lj = fr->ewaldcoeff_lj;
+    real     c6Ai, c6Bi, c6A = 0, c6B = 0, ewcdr2, ewcdr4, ewcdr5, c6L, rinv6;
     rvec     df, dx, mutot[2], dipcorrA, dipcorrB;
-    tensor   dxdf;
+    tensor   dxdf_q, dxdf_lj;
     real     vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-    real     L1, dipole_coeff, qqA, qqB, qqL, vr0;
+    real     L1_q, L1_lj, dipole_coeff, qqA, qqB, qqL, vr0_q, vr0_lj;
     /*#define TABLES*/
+    /*TODO: TABLES variable never set, coulvdwtab only exists here, this should be investigated*/
 #ifdef TABLES
     real        tabscale = fr->tabscale;
     real        eps, eps2, VV, FF, F, Y, Geps, Heps2, Fp, fijC, r1t;
     real       *VFtab = fr->coulvdwtab;
     int         n0, n1, nnn;
 #endif
-    gmx_bool    bFreeEnergy = (chargeB != NULL);
-    gmx_bool    bMolPBC     = fr->bMolPBC;
+    gmx_bool    bFreeEnergy  = (chargeB != NULL);
+    gmx_bool    bMolPBC      = fr->bMolPBC;
+    gmx_bool    bDoingLBRule = (fr->ljpme_comb == eljpmeLB);
 
-    one_4pi_eps = ONE_4PI_EPS0/fr->epsilon_r;
-    vr0         = ewc*M_2_SQRTPI;
+    one_4pi_eps   = ONE_4PI_EPS0/fr->epsilon_r;
+    vr0_q         = ewc_q*M_2_SQRTPI;
+    if (EVDW_PME(fr->vdwtype))
+    {
+        vr0_lj        = -pow(ewc_lj, 6)/6.0;
+    }
 
-    AA         = excl->a;
-    Vexcl      = 0;
-    dvdl_excl  = 0;
-    q2sumA     = 0;
-    q2sumB     = 0;
-    Vdipole[0] = 0;
-    Vdipole[1] = 0;
-    L1         = 1.0-lambda;
-
+    AA           = excl->a;
+    Vexcl_q      = 0;
+    Vexcl_lj     = 0;
+    dvdl_excl_q  = 0;
+    dvdl_excl_lj = 0;
+    Vdipole[0]   = 0;
+    Vdipole[1]   = 0;
+    L1_q         = 1.0-lambda_q;
+    L1_lj        = 1.0-lambda_lj;
     /* Note that we have to transform back to gromacs units, since
      * mu_tot contains the dipole in debye units (for output).
      */
@@ -166,15 +223,25 @@ real ewald_LRcorrection(int start, int end,
         fprintf(debug, "mutot   = %8.3f  %8.3f  %8.3f\n",
                 mutot[0][XX], mutot[0][YY], mutot[0][ZZ]);
     }
-
-    clear_mat(dxdf);
-    if ((calc_excl_corr || dipole_coeff != 0) && !bFreeEnergy)
+    clear_mat(dxdf_q);
+    if (EVDW_PME(fr->vdwtype))
+    {
+        clear_mat(dxdf_lj);
+    }
+    if ((calc_excl_corr || dipole_coeff != 0 || EVDW_PME(fr->vdwtype)) && !bFreeEnergy)
     {
         for (i = start; (i < end); i++)
         {
             /* Initiate local variables (for this i-particle) to 0 */
             qiA = chargeA[i]*one_4pi_eps;
-
+            if (EVDW_PME(fr->vdwtype))
+            {
+                c6Ai = C6A[i];
+                if (bDoingLBRule)
+                {
+                    c6Ai *= sigma3A[i];
+                }
+            }
             if (calc_excl_corr)
             {
                 i1  = excl->index[i];
@@ -185,18 +252,27 @@ real ewald_LRcorrection(int start, int end,
                 {
                     k = AA[j];
                     /*
-                     * First we must test whether k <> i, and then, because the
-                     * exclusions are all listed twice i->k and k->i we must select
-                     * just one of the two.
-                     * As a minor optimization we only compute forces when the charges
-                     * are non-zero.
+                     * First we must test whether k <> i, and then,
+                     * because the exclusions are all listed twice i->k
+                     * and k->i we must select just one of the two.  As
+                     * a minor optimization we only compute forces when
+                     * the charges are non-zero.
                      */
                     if (k > i)
                     {
                         qqA = qiA*chargeA[k];
-                        if (qqA != 0.0)
+                        if (EVDW_PME(fr->vdwtype))
+                        {
+                            c6A  = c6Ai * C6A[k];
+                            if (bDoingLBRule)
+                            {
+                                c6A *= pow(0.5*(sigmaA[i]+sigmaA[k]), 6)*sigma3A[k];
+                            }
+                        }
+                        if (qqA != 0.0 || c6A != 0.0)
                         {
                             rvec_sub(x[i], x[k], dx);
+                            fscal = 0;
                             if (bMolPBC)
                             {
                                 /* Cheap pbc_dx, assume excluded pairs are at short distance. */
@@ -213,77 +289,106 @@ real ewald_LRcorrection(int start, int end,
                                 }
                             }
                             dr2 = norm2(dx);
-                            /* Distance between two excluded particles may be zero in the
-                             * case of shells
+                            /* Distance between two excluded particles
+                             * may be zero in the case of shells
                              */
                             if (dr2 != 0)
                             {
                                 rinv              = gmx_invsqrt(dr2);
                                 rinv2             = rinv*rinv;
                                 dr                = 1.0/rinv;
+                                if (qqA != 0.0)
+                                {
 #ifdef TABLES
-                                r1t               = tabscale*dr;
-                                n0                = r1t;
-                                assert(n0 >= 3);
-                                n1                = 12*n0;
-                                eps               = r1t-n0;
-                                eps2              = eps*eps;
-                                nnn               = n1;
-                                Y                 = VFtab[nnn];
-                                F                 = VFtab[nnn+1];
-                                Geps              = eps*VFtab[nnn+2];
-                                Heps2             = eps2*VFtab[nnn+3];
-                                Fp                = F+Geps+Heps2;
-                                VV                = Y+eps*Fp;
-                                FF                = Fp+Geps+2.0*Heps2;
-                                vc                = qqA*(rinv-VV);
-                                fijC              = qqA*FF;
-                                Vexcl            += vc;
-
-                                fscal             = vc*rinv2+fijC*tabscale*rinv;
-                                /* End of tabulated interaction part */
+                                    r1t               = tabscale*dr;
+                                    n0                = r1t;
+                                    assert(n0 >= 3);
+                                    n1                = 12*n0;
+                                    eps               = r1t-n0;
+                                    eps2              = eps*eps;
+                                    nnn               = n1;
+                                    Y                 = VFtab[nnn];
+                                    F                 = VFtab[nnn+1];
+                                    Geps              = eps*VFtab[nnn+2];
+                                    Heps2             = eps2*VFtab[nnn+3];
+                                    Fp                = F+Geps+Heps2;
+                                    VV                = Y+eps*Fp;
+                                    FF                = Fp+Geps+2.0*Heps2;
+                                    vc                = qqA*(rinv-VV);
+                                    fijC              = qqA*FF;
+                                    Vexcl_q          += vc;
+                                    fscal             = vc*rinv2+fijC*tabscale*rinv;
+                                    /* End of tabulated interaction part */
 #else
-
-                                /* This is the code you would want instead if not using
-                                 * tables:
-                                 */
-                                ewcdr   = ewc*dr;
-                                vc      = qqA*gmx_erf(ewcdr)*rinv;
-                                Vexcl  += vc;
+                                    /* This is the code you would want
+                                     * instead if not using tables:
+                                     */
+                                    ewcdr    = ewc_q*dr;
+                                    vc       = qqA*gmx_erf(ewcdr)*rinv;
+                                    Vexcl_q += vc;
 #ifdef GMX_DOUBLE
-                                /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
+                                    /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
 #define       R_ERF_R_INACC 0.006
 #else
-                                /* Relative accuracy at R_ERF_R_INACC of 2e-5 */
+                                    /* Relative accuracy at R_ERF_R_INACC of 2e-5 */
 #define       R_ERF_R_INACC 0.1
 #endif
-                                if (ewcdr > R_ERF_R_INACC)
-                                {
-                                    fscal = rinv2*(vc - qqA*ewc*M_2_SQRTPI*exp(-ewcdr*ewcdr));
-                                }
-                                else
-                                {
-                                    /* Use a fourth order series expansion for small ewcdr */
-                                    fscal = ewc*ewc*qqA*vr0*(2.0/3.0 - 0.4*ewcdr*ewcdr);
-                                }
-#endif
-                                /* The force vector is obtained by multiplication with the
-                                 * distance vector
-                                 */
-                                svmul(fscal, dx, df);
-                                rvec_inc(f[k], df);
-                                rvec_dec(f[i], df);
-                                for (iv = 0; (iv < DIM); iv++)
-                                {
-                                    for (jv = 0; (jv < DIM); jv++)
+                                    if (ewcdr > R_ERF_R_INACC)
                                     {
-                                        dxdf[iv][jv] += dx[iv]*df[jv];
+                                        fscal = rinv2*(vc - qqA*ewc_q*M_2_SQRTPI*exp(-ewcdr*ewcdr));
+                                    }
+                                    else
+                                    {
+                                        /* Use a fourth order series expansion for small ewcdr */
+                                        fscal = ewc_q*ewc_q*qqA*vr0_q*(2.0/3.0 - 0.4*ewcdr*ewcdr);
+                                    }
+#endif
+                                    /* The force vector is obtained by multiplication with
+                                     * the distance vector
+                                     */
+                                    svmul(fscal, dx, df);
+                                    rvec_inc(f[k], df);
+                                    rvec_dec(f[i], df);
+                                    for (iv = 0; (iv < DIM); iv++)
+                                    {
+                                        for (jv = 0; (jv < DIM); jv++)
+                                        {
+                                            dxdf_q[iv][jv] += dx[iv]*df[jv];
+                                        }
+                                    }
+                                }
+
+                                if (c6A != 0.0)
+                                {
+                                    rinv6     = rinv2*rinv2*rinv2;
+                                    ewcdr     = ewc_lj*dr;
+                                    ewcdr2    = ewcdr*ewcdr;
+                                    ewcdr4    = ewcdr2*ewcdr2;
+                                    ewcdr5    = ewcdr4*ewcdr;
+                                    vc        = -c6A*rinv6*(1.0 - exp(-ewcdr2)*(1 + ewcdr2 + 0.5*ewcdr4));
+                                    Vexcl_lj += vc;
+                                    fscal     = 6.0*vc*rinv + c6A*rinv6*exp(-ewcdr2)*ewc_lj*ewcdr5;
+
+                                    /* The force vector is obtained by
+                                     * multiplication with the distance
+                                     * vector
+                                     */
+                                    svmul(fscal, dx, df);
+                                    rvec_inc(f[k], df);
+                                    rvec_dec(f[i], df);
+                                    for (iv = 0; (iv < DIM); iv++)
+                                    {
+                                        for (jv = 0; (jv < DIM); jv++)
+                                        {
+                                            dxdf_lj[iv][jv] += dx[iv]*df[jv];
+                                        }
                                     }
                                 }
                             }
                             else
                             {
-                                Vexcl += qqA*vr0;
+                                Vexcl_q  += qqA*vr0_q;
+                                Vexcl_lj += c6A*vr0_lj;
                             }
                         }
                     }
@@ -299,14 +404,23 @@ real ewald_LRcorrection(int start, int end,
             }
         }
     }
-    else if (calc_excl_corr || dipole_coeff != 0)
+    else if (calc_excl_corr || dipole_coeff != 0 || EVDW_PME(fr->vdwtype))
     {
         for (i = start; (i < end); i++)
         {
             /* Initiate local variables (for this i-particle) to 0 */
             qiA = chargeA[i]*one_4pi_eps;
             qiB = chargeB[i]*one_4pi_eps;
-
+            if (EVDW_PME(fr->vdwtype))
+            {
+                c6Ai = C6A[i];
+                c6Bi = C6B[i];
+                if (bDoingLBRule)
+                {
+                    c6Ai *= sigma3A[i];
+                    c6Bi *= sigma3B[i];
+                }
+            }
             if (calc_excl_corr)
             {
                 i1  = excl->index[i];
@@ -320,9 +434,24 @@ real ewald_LRcorrection(int start, int end,
                     {
                         qqA = qiA*chargeA[k];
                         qqB = qiB*chargeB[k];
-                        if (qqA != 0.0 || qqB != 0.0)
+                        if (EVDW_PME(fr->vdwtype))
                         {
-                            qqL = L1*qqA + lambda*qqB;
+                            c6A = c6Ai*C6A[k];
+                            c6B = c6Bi*C6B[k];
+                            if (bDoingLBRule)
+                            {
+                                qqA *= pow(0.5*(sigmaA[i]+sigmaA[k]), 6)*sigma3A[k];
+                                qqB *= pow(0.5*(sigmaB[i]+sigmaB[k]), 6)*sigma3B[k];
+                            }
+                        }
+                        if (qqA != 0.0 || qqB != 0.0 || c6A != 0.0 || c6B != 0.0)
+                        {
+                            fscal = 0;
+                            qqL   = L1_q*qqA + lambda_q*qqB;
+                            if (EVDW_PME(fr->vdwtype))
+                            {
+                                c6L = L1_lj*c6A + lambda_lj*c6B;
+                            }
                             rvec_sub(x[i], x[k], dx);
                             if (bMolPBC)
                             {
@@ -342,29 +471,59 @@ real ewald_LRcorrection(int start, int end,
                             dr2 = norm2(dx);
                             if (dr2 != 0)
                             {
-                                rinv   = gmx_invsqrt(dr2);
-                                rinv2  = rinv*rinv;
-                                dr     = 1.0/rinv;
-                                v      = gmx_erf(ewc*dr)*rinv;
-                                vc     = qqL*v;
-                                Vexcl += vc;
-                                fscal  = rinv2*(vc-qqL*ewc*M_2_SQRTPI*exp(-ewc*ewc*dr2));
-                                svmul(fscal, dx, df);
-                                rvec_inc(f[k], df);
-                                rvec_dec(f[i], df);
-                                for (iv = 0; (iv < DIM); iv++)
+                                rinv    = gmx_invsqrt(dr2);
+                                rinv2   = rinv*rinv;
+                                dr      = 1.0/rinv;
+                                if (qqA != 0.0 || qqB != 0.0)
                                 {
-                                    for (jv = 0; (jv < DIM); jv++)
+                                    v            = gmx_erf(ewc_q*dr)*rinv;
+                                    vc           = qqL*v;
+                                    Vexcl_q     += vc;
+                                    fscal        = rinv2*(vc-qqL*ewc_q*M_2_SQRTPI*exp(-ewc_q*ewc_q*dr2));
+                                    dvdl_excl_q += (qqB - qqA)*v;
+
+                                    svmul(fscal, dx, df);
+                                    rvec_inc(f[k], df);
+                                    rvec_dec(f[i], df);
+                                    for (iv = 0; (iv < DIM); iv++)
                                     {
-                                        dxdf[iv][jv] += dx[iv]*df[jv];
+                                        for (jv = 0; (jv < DIM); jv++)
+                                        {
+                                            dxdf_q[iv][jv] += dx[iv]*df[jv];
+                                        }
                                     }
                                 }
-                                dvdl_excl += (qqB - qqA)*v;
+
+                                if ((c6A != 0.0 || c6B != 0.0) && EVDW_PME(fr->vdwtype))
+                                {
+                                    rinv6         = rinv2*rinv2*rinv2;
+                                    ewcdr         = ewc_lj*dr;
+                                    ewcdr2        = ewcdr*ewcdr;
+                                    ewcdr4        = ewcdr2*ewcdr2;
+                                    ewcdr5        = ewcdr4*ewcdr;
+                                    v             = -rinv6*(1.0 - exp(-ewcdr2)*(1 + ewcdr2 + 0.5*ewcdr4));
+                                    vc            = c6L*v;
+                                    Vexcl_lj     += vc;
+                                    fscal         = 6.0*vc*rinv + c6L*rinv6*exp(-ewcdr2)*ewc_lj*ewcdr5;
+                                    dvdl_excl_lj += (c6B - c6A)*v;
+                                    svmul(fscal, dx, df);
+                                    rvec_inc(f[k], df);
+                                    rvec_dec(f[i], df);
+                                    for (iv = 0; (iv < DIM); iv++)
+                                    {
+                                        for (jv = 0; (jv < DIM); jv++)
+                                        {
+                                            dxdf_lj[iv][jv] += dx[iv]*df[jv];
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
-                                Vexcl     +=         qqL*vr0;
-                                dvdl_excl += (qqB - qqA)*vr0;
+                                Vexcl_q      += qqL*vr0_q;
+                                dvdl_excl_q  += (qqB - qqA)*vr0_q;
+                                Vexcl_lj     += c6L*vr0_lj;
+                                dvdl_excl_lj += (c6B - c6A)*vr0_lj;
                             }
                         }
                     }
@@ -375,8 +534,8 @@ real ewald_LRcorrection(int start, int end,
             {
                 for (j = 0; (j < DIM); j++)
                 {
-                    f[i][j] -= L1*dipcorrA[j]*chargeA[i]
-                        + lambda*dipcorrB[j]*chargeB[i];
+                    f[i][j] -= L1_q*dipcorrA[j]*chargeA[i]
+                        + lambda_q*dipcorrB[j]*chargeB[i];
                 }
             }
         }
@@ -385,13 +544,16 @@ real ewald_LRcorrection(int start, int end,
     {
         for (jv = 0; (jv < DIM); jv++)
         {
-            vir[iv][jv] += 0.5*dxdf[iv][jv];
+            vir_q[iv][jv]  += 0.5*dxdf_q[iv][jv];
+            vir_lj[iv][jv] += 0.5*dxdf_lj[iv][jv];
         }
     }
 
+    Vself_q[0]  = 0;
+    Vself_q[1]  = 0;
+    Vself_lj[0] = 0;
+    Vself_lj[1] = 0;
 
-    Vself[0] = 0;
-    Vself[1] = 0;
     /* Global corrections only on master process */
     if (MASTER(cr) && thread == 0)
     {
@@ -400,7 +562,11 @@ real ewald_LRcorrection(int start, int end,
             if (calc_excl_corr)
             {
                 /* Self-energy correction */
-                Vself[q] = ewc*one_4pi_eps*fr->q2sum[q]*M_1_SQRTPI;
+                Vself_q[q] = ewc_q*one_4pi_eps*fr->q2sum[q]*M_1_SQRTPI;
+                if (EVDW_PME(fr->vdwtype))
+                {
+                    Vself_lj[q] = -pow(ewc_lj, 6)*fr->c6sum[q]/12;
+                }
             }
 
             /* Apply surface dipole correction:
@@ -419,39 +585,45 @@ real ewald_LRcorrection(int start, int end,
             }
         }
     }
-
     if (!bFreeEnergy)
     {
-        enercorr = Vdipole[0] - Vself[0] - Vexcl;
+        *Vcorr_q = Vdipole[0] - Vself_q[0] - Vexcl_q;
+        if (EVDW_PME(fr->vdwtype))
+        {
+            *Vcorr_lj = -Vself_lj[0] - Vexcl_lj;
+        }
     }
     else
     {
-        enercorr = L1*(Vdipole[0] - Vself[0])
-            + lambda*(Vdipole[1] - Vself[1])
-            - Vexcl;
-        *dvdlambda += Vdipole[1] - Vself[1]
-            - (Vdipole[0] - Vself[0]) - dvdl_excl;
+        *Vcorr_q = L1_q*(Vdipole[0] - Vself_q[0])
+            + lambda_q*(Vdipole[1] - Vself_q[1])
+            - Vexcl_q;
+        *dvdlambda_q += Vdipole[1] - Vself_q[1]
+            - (Vdipole[0] - Vself_q[0]) - dvdl_excl_q;
+        if (EVDW_PME(fr->vdwtype))
+        {
+            *Vcorr_lj      = -(L1_lj*Vself_lj[0] + lambda_lj*Vself_lj[1]) - Vexcl_lj;
+            *dvdlambda_lj += -Vself_lj[0] + Vself_lj[1] - dvdl_excl_lj;
+        }
     }
 
     if (debug)
     {
         fprintf(debug, "Long Range corrections for Ewald interactions:\n");
         fprintf(debug, "start=%d,natoms=%d\n", start, end-start);
-        fprintf(debug, "q2sum = %g, Vself=%g\n",
-                L1*q2sumA+lambda*q2sumB, L1*Vself[0]+lambda*Vself[1]);
-        fprintf(debug, "Long Range correction: Vexcl=%g\n", Vexcl);
+        fprintf(debug, "q2sum = %g, Vself_q=%g c6sum = %g, Vself_lj=%g\n",
+                L1_q*fr->q2sum[0]+lambda_q*fr->q2sum[1], L1_q*Vself_q[0]+lambda_q*Vself_q[1], L1_lj*fr->c6sum[0]+lambda_lj*fr->c6sum[1], L1_lj*Vself_lj[0]+lambda_lj*Vself_lj[1]);
+        fprintf(debug, "Electrostatic Long Range correction: Vexcl=%g\n", Vexcl_q);
+        fprintf(debug, "Lennard-Jones Long Range correction: Vexcl=%g\n", Vexcl_lj);
         if (MASTER(cr) && thread == 0)
         {
             if (epsilon_surface > 0 || ewald_geometry == eewg3DC)
             {
                 fprintf(debug, "Total dipole correction: Vdipole=%g\n",
-                        L1*Vdipole[0]+lambda*Vdipole[1]);
+                        L1_q*Vdipole[0]+lambda_q*Vdipole[1]);
             }
         }
     }
-
-    /* Return the correction to the energy */
-    return enercorr;
 }
 
 real ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda,
@@ -467,7 +639,7 @@ real ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda,
         /* Apply charge correction */
         vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
 
-        fac = M_PI*ONE_4PI_EPS0/(fr->epsilon_r*2.0*vol*vol*sqr(fr->ewaldcoeff));
+        fac = M_PI*ONE_4PI_EPS0/(fr->epsilon_r*2.0*vol*vol*sqr(fr->ewaldcoeff_q));
 
         qs2A = fr->qsum[0]*fr->qsum[0];
         qs2B = fr->qsum[1]*fr->qsum[1];
