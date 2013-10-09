@@ -86,8 +86,13 @@ const char *eewg_names[eewgNR+1] = {
     "3d", "3dc", NULL
 };
 
+const char *eljpme_names[eljpmeNR+1] = {
+    "LB", "Geometric", NULL
+};
+
 const char *evdw_names[evdwNR+1] = {
-    "Cut-off", "Switch", "Shift", "User", "Encad-shift", NULL
+    "Cut-off", "Switch", "Shift", "User", "Encad-shift",
+    "PME", "PME-Switch", "PME-User", "PME-User-Switch", NULL
 };
 
 const char *econstr_names[econtNR+1] = {

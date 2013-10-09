@@ -61,6 +61,7 @@ extern const char *eintmod_names[eintmodNR+1];
 extern const char *eel_names[eelNR+1];
 extern const char *eewg_names[eewgNR+1];
 extern const char *evdw_names[evdwNR+1];
+extern const char *eljpme_names[eljpmeNR+1];
 extern const char *econstr_names[econtNR+1];
 extern const char *ptype_str[eptNR+1];
 extern const char *egrp_nm[egNR+1];

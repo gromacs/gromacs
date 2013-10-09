@@ -6835,7 +6835,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
         comm->npmenodes = dd->nnodes;
     }
 
-    if (EEL_PME(ir->coulombtype))
+    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         /* The following choices should match those
          * in comm_cost_est in domdec_setup.c.
@@ -7334,7 +7334,7 @@ void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
         snew(comm->dth, comm->nth);
     }
 
-    if (EEL_PME(ir->coulombtype))
+    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         init_ddpme(dd, &comm->ddpme[0], 0);
         if (comm->npmedecompdim >= 2)
@@ -9687,9 +9687,11 @@ void dd_partition_system(FILE                *fplog,
 
     if (!(cr->duty & DUTY_PME))
     {
-        /* Send the charges to our PME only node */
+        /* Send the charges and/or c6/sigmas to our PME only node */
         gmx_pme_send_q(cr, mdatoms->nChargePerturbed,
                        mdatoms->chargeA, mdatoms->chargeB,
+                       mdatoms->c6A, mdatoms->c6B,
+                       mdatoms->sigmaA, mdatoms->sigmaB,
                        dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
     }
 
