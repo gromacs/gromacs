@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -40,6 +41,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <assert.h>
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -593,7 +595,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         sprintf(err_buf, "Can only use expanded ensemble with md-vv for now; should be supported for other integrators in 5.0");
         CHECK(!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED));
-        
+
         sprintf(err_buf, "Free-energy not implemented for Ewald");
         CHECK(ir->coulombtype == eelEWALD);
 
@@ -1126,7 +1128,24 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    if (EEL_PME(ir->coulombtype))
+    if (EVDW_PME(ir->vdwtype))
+    {
+        if (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype))
+        {
+            sprintf(err_buf, "With vdwtype = %s, rvdw must be <= rlist",
+                    evdw_names[ir->vdwtype]);
+            CHECK(ir->rvdw > ir->rlist);
+        }
+        else
+        {
+            sprintf(err_buf,
+                    "With vdwtype = %s, rvdw must be equal to rlist\n",
+                    evdw_names[ir->vdwtype]);
+            CHECK(ir->rvdw != ir->rlist);
+        }
+    }
+
+    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         if (ir->pme_order < 3)
         {
@@ -1815,6 +1834,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("EWALD/PME/PPPM parameters");
     ITYPE ("pme-order",   ir->pme_order,   4);
     RTYPE ("ewald-rtol",  ir->ewald_rtol, 0.00001);
+    RTYPE ("ewald-rtol-lj", ir->ewald_rtol_lj, 0.001);
+    EETYPE("lj-pme-comb-rule", ir->ljpme_combination_rule, eljpme_names);
     EETYPE("ewald-geometry", ir->ewald_geometry, eewg_names);
     RTYPE ("epsilon-surface", ir->epsilon_surface, 0.0);
     EETYPE("optimize-fft", ir->bOptFFT,  yesno_names);
@@ -3535,6 +3556,146 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
     return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
 }
 
+static void
+check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
+                                   gmx_bool *bC6ParametersWorkWithGeometricRules,
+                                   gmx_bool *bC6ParametersWorkWithLBRules,
+                                   gmx_bool *bLBRulesPossible)
+{
+    int           ntypes, tpi, tpj, thisLBdiff, thisgeomdiff;
+    int          *typecount;
+    real          tol;
+#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
+    long long int npair, npair_ij;
+#else
+    double        npair, npair_ij;
+#endif
+    double        geometricdiff, LBdiff;
+    double        c6i, c6j, c12i, c12j;
+    double        c6, c6_geometric, c6_LB;
+    double        sigmai, sigmaj, epsi, epsj;
+    gmx_bool      bCanDoLBRules, bCanDoGeometricRules;
+    const char   *ptr;
+
+    /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
+     * force-field floating point parameters.
+     */
+    tol = 1e-5;
+    ptr = getenv("GMX_LJCOMB_TOL");
+    if (ptr != NULL)
+    {
+        double dbl;
+
+        sscanf(ptr, "%lf", &dbl);
+        tol = dbl;
+    }
+
+    *bC6ParametersWorkWithLBRules         = TRUE;
+    *bC6ParametersWorkWithGeometricRules  = TRUE;
+    bCanDoLBRules                         = TRUE;
+    bCanDoGeometricRules                  = TRUE;
+    npair                                 = 0;
+    ntypes                                = mtop->ffparams.atnr;
+    snew(typecount, ntypes);
+    gmx_mtop_count_atomtypes(mtop, state, typecount);
+    geometricdiff           = LBdiff = 0.0;
+    *bLBRulesPossible       = TRUE;
+    for (tpi = 0; tpi < ntypes; ++tpi)
+    {
+        c6i  = mtop->ffparams.iparams[(ntypes + 1) * tpi].lj.c6;
+        c12i = mtop->ffparams.iparams[(ntypes + 1) * tpi].lj.c12;
+        for (tpj = tpi; tpj < ntypes; ++tpj)
+        {
+            c6j          = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c6;
+            c12j         = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c12;
+            c6           = mtop->ffparams.iparams[ntypes * tpi + tpj].lj.c6;
+            c6_geometric = sqrt(c6i * c6j);
+            if (!gmx_numzero(c6_geometric))
+            {
+                if (!gmx_numzero(c12i) && !gmx_numzero(c12j))
+                {
+                    sigmai   = pow(c12i / c6i, 1.0/6.0);
+                    sigmaj   = pow(c12j / c6j, 1.0/6.0);
+                    epsi     = c6i * c6i /(4.0 * c12i);
+                    epsj     = c6j * c6j /(4.0 * c12j);
+                    c6_LB    = 4.0 * pow(epsi * epsj, 1.0/2.0) * pow(0.5 * (sigmai + sigmaj), 6);
+                }
+                else
+                {
+                    *bLBRulesPossible = FALSE;
+                    c6_LB             = c6_geometric;
+                }
+                bCanDoLBRules = gmx_within_tol(c6_LB, c6, tol);
+            }
+
+            if (FALSE == bCanDoLBRules)
+            {
+                *bC6ParametersWorkWithLBRules = FALSE;
+            }
+
+            bCanDoGeometricRules = gmx_within_tol(c6_geometric, c6, tol);
+
+            if (FALSE == bCanDoGeometricRules)
+            {
+                *bC6ParametersWorkWithGeometricRules = FALSE;
+            }
+        }
+    }
+    sfree(typecount);
+}
+
+static void
+check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
+                        warninp_t wi)
+{
+    char     err_buf[256];
+    gmx_bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
+
+    check_combination_rule_differences(mtop, 0,
+                                       &bC6ParametersWorkWithGeometricRules,
+                                       &bC6ParametersWorkWithLBRules,
+                                       &bLBRulesPossible);
+    if (ir->ljpme_combination_rule == eljpmeLB)
+    {
+        if (FALSE == bC6ParametersWorkWithLBRules || FALSE == bLBRulesPossible)
+        {
+            warning(wi, "You are using arithmetic-geometric combination rules "
+                    "in LJ-PME, but your non-bonded C6 parameters do not "
+                    "follow these rules.");
+        }
+    }
+    else
+    {
+        if (FALSE == bC6ParametersWorkWithGeometricRules)
+        {
+            if (ir->eDispCorr != edispcNO)
+            {
+                warning_note(wi, "You are using geometric combination rules in "
+                             "LJ-PME, but your non-bonded C6 parameters do "
+                             "not follow these rules. "
+                             "If your force field uses Lorentz-Berthelot combination rules this "
+                             "will introduce small errors in the forces and energies in "
+                             "your simulations. Dispersion correction will correct total "
+                             "energy and/or pressure, but not forces or surface tensions. "
+                             "Please check the LJ-PME section in the manual "
+                             "before proceeding further.");
+            }
+            else
+            {
+                warning_note(wi, "You are using geometric combination rules in "
+                             "LJ-PME, but your non-bonded C6 parameters do "
+                             "not follow these rules. "
+                             "If your force field uses Lorentz-Berthelot combination rules this "
+                             "will introduce small errors in the forces and energies in "
+                             "your simulations. Consider using dispersion correction "
+                             "for the total energy and pressure. "
+                             "Please check the LJ-PME section in the manual "
+                             "before proceeding further.");
+            }
+        }
+    }
+}
+
 void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
@@ -3605,6 +3766,12 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                     EELTYPE(eelPME));
             warning_note(wi, err_buf);
         }
+    }
+
+    /* Check if combination rules used in LJ-PME are the same as in the force field */
+    if (EVDW_PME(ir->vdwtype))
+    {
+        check_combination_rules(ir, sys, wi);
     }
 
     /* Generalized reaction field */

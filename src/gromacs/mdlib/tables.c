@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -68,6 +69,7 @@ enum {
     etabEwaldSwitch,
     etabEwaldUser,
     etabEwaldUserSwitch,
+    etabLJ6Ewald,
     etabLJ6Switch,
     etabLJ12Switch,
     etabCOULSwitch,
@@ -103,6 +105,7 @@ static const t_tab_props tprops[etabNR] = {
     { "Ewald-Switch", TRUE },
     { "Ewald-User", TRUE },
     { "Ewald-User-Switch", TRUE },
+    { "LJ6Ewald", FALSE },
     { "LJ6Switch", FALSE },
     { "LJ12Switch", FALSE },
     { "COULSwitch", TRUE },
@@ -110,7 +113,7 @@ static const t_tab_props tprops[etabNR] = {
     { "LJ12-Encad shift", FALSE },
     { "COUL-Encad shift",  TRUE },
     { "EXPMIN", FALSE },
-    { "USER", FALSE }
+    { "USER", FALSE },
 };
 
 /* Index in the table that says which function to use */
@@ -747,11 +750,13 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
     double   ksw, swi, swi1;
     /* Temporary parameters */
     gmx_bool bSwitch, bShift;
-    double   ewc = fr->ewaldcoeff;
+    double   ewc   = fr->ewaldcoeff_q;
+    double   ewclj = fr->ewaldcoeff_lj;
 
     bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) ||
                (tp == etabCOULSwitch) ||
                (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch));
+
     bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) ||
                (tp == etabShift));
 
@@ -938,9 +943,13 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
                 break;
             case etabEwaldUser:
             case etabEwaldUserSwitch:
-                /* Only calculate minus the reciprocal space contribution */
+                /* Only calculate the negative of the reciprocal space contribution */
                 Vtab  = -gmx_erf(ewc*r)/r;
                 Ftab  = -gmx_erf(ewc*r)/r2+exp(-(ewc*ewc*r2))*ewc*M_2_SQRTPI/r;
+                break;
+            case etabLJ6Ewald:
+                Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
+                Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*pow5(ewclj)*ewclj*r2*r2*r;
                 break;
             case etabRF:
             case etabRF_ZERO:
@@ -1142,6 +1151,10 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
             case evdwENCADSHIFT:
                 tabsel[etiLJ6]  = etabLJ6Encad;
                 tabsel[etiLJ12] = etabLJ12Encad;
+                break;
+            case evdwPME:
+                tabsel[etiLJ6]  = etabLJ6Ewald;
+                tabsel[etiLJ12] = etabLJ12;
                 break;
             default:
                 gmx_fatal(FARGS, "Invalid vdwtype %d in %s line %d", vdwtype,

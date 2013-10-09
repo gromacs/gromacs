@@ -175,7 +175,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_repl_ex_t     repl_ex = NULL;
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
-    t_mdebin         *mdebin = NULL;
+    t_mdebin         *mdebin   = NULL;
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
     gmx_enerdata_t   *enerd;
@@ -189,8 +189,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_ekindata_t   *ekind, *ekind_save;
     gmx_shellfc_t     shellfc;
     int               count, nconverged = 0;
-    real              timestep = 0;
-    double            tcount   = 0;
+    real              timestep   = 0;
+    double            tcount     = 0;
     gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
     gmx_bool          bAppend;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
@@ -435,7 +435,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (ir->bExpanded)
     {
-        init_expanded_ensemble(bStateFromCP,ir,&mcrng,&state->dfhist);
+        init_expanded_ensemble(bStateFromCP, ir, &mcrng, &state->dfhist);
     }
 
     if (MASTER(cr))
@@ -495,14 +495,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
-    /* PME tuning is only supported with GPUs or PME nodes and not with rerun.
+    /* PME tuning is only supported with GPUs or PME nodes and not with rerun or LJ-PME.
      * With perturbed charges with soft-core we should not change the cut-off.
      */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
         ( (fr->cutoff_scheme == ecutsVERLET && fr->nbv->bUseGPU) || !(cr->duty & DUTY_PME)) &&
         !(ir->efep != efepNO && mdatoms->nChargePerturbed > 0 && ir->fepvals->bScCoul) &&
-        !bRerunMD)
+        !bRerunMD && !EVDW_PME(fr->vdwtype))
     {
         pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata);
         cycles_pmes = 0;
@@ -1318,7 +1318,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, mcrng, state->v, mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
-            copy_df_history(&state_global->dfhist,&state->dfhist);
+            copy_df_history(&state_global->dfhist, &state->dfhist);
         }
 
         /* Now we have the energies and forces corresponding to the
@@ -1904,11 +1904,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                          step);
 
                     /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
-                    fr->ewaldcoeff = fr->ic->ewaldcoeff;
-                    fr->rlist      = fr->ic->rlist;
-                    fr->rlistlong  = fr->ic->rlistlong;
-                    fr->rcoulomb   = fr->ic->rcoulomb;
-                    fr->rvdw       = fr->ic->rvdw;
+                    fr->ewaldcoeff_q = fr->ic->ewaldcoeff_q;
+                    fr->rlist        = fr->ic->rlist;
+                    fr->rlistlong    = fr->ic->rlistlong;
+                    fr->rcoulomb     = fr->ic->rcoulomb;
+                    fr->rvdw         = fr->ic->rvdw;
                 }
                 cycles_pmes = 0;
             }
