@@ -149,7 +149,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_avx_256_single
     vftabscale       = _mm256_set1_ps(kernel_data->table_vdw->scale);
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 
@@ -1415,7 +1415,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_avx_256_single
     vftabscale       = _mm256_set1_ps(kernel_data->table_vdw->scale);
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 

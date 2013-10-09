@@ -1,19 +1,37 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 1991-2008 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- * This file is part of Gromacs        Copyright (c) 1991-2008
- * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -6926,7 +6944,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
         comm->npmenodes = dd->nnodes;
     }
 
-    if (EEL_PME(ir->coulombtype))
+    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         /* The following choices should match those
          * in comm_cost_est in domdec_setup.c.
@@ -7425,7 +7443,7 @@ void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
         snew(comm->dth, comm->nth);
     }
 
-    if (EEL_PME(ir->coulombtype))
+    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         init_ddpme(dd, &comm->ddpme[0], 0);
         if (comm->npmedecompdim >= 2)
@@ -9778,10 +9796,12 @@ void dd_partition_system(FILE                *fplog,
 
     if (!(cr->duty & DUTY_PME))
     {
-        /* Send the charges to our PME only node */
-        gmx_pme_send_q(cr, mdatoms->nChargePerturbed,
-                       mdatoms->chargeA, mdatoms->chargeB,
-                       dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
+        /* Send the charges and/or c6/sigmas to our PME only node */
+        gmx_pme_send_parameters(cr, mdatoms->nChargePerturbed, mdatoms->nTypePerturbed,
+                                mdatoms->chargeA, mdatoms->chargeB,
+                                mdatoms->c6A, mdatoms->c6B,
+                                mdatoms->sigmaA, mdatoms->sigmaB,
+                                dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
     }
 
     if (constr)

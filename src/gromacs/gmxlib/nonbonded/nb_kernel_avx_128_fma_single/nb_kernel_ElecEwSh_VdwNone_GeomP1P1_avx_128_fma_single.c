@@ -112,7 +112,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomP1P1_VF_avx_128_fma_single
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm_mul_ps(beta,beta);
     beta3            = _mm_mul_ps(beta,beta2);
     ewtab            = fr->ic->tabq_coul_FDV0;
@@ -439,7 +439,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomP1P1_F_avx_128_fma_single
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm_mul_ps(beta,beta);
     beta3            = _mm_mul_ps(beta,beta2);
     ewtab            = fr->ic->tabq_coul_F;
