@@ -1079,7 +1079,7 @@ double OptParam::CalcDeviation()
             }
             else
             {
-                do_force(stdout, _cr, mymol->inputrec_, 0,
+                do_force(debug, _cr, mymol->inputrec_, 0,
                          &my_nrnb, wcycle, mymol->ltop_,
                          &(mymol->mtop_->groups),
                          mymol->box, mymol->x_, NULL,
