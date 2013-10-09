@@ -275,8 +275,8 @@
 #endif /* CALC_COUL_TAB */
 
 #ifdef CALC_COUL_EWALD
-    beta2_S = gmx_set1_pr(ic->ewaldcoeff*ic->ewaldcoeff);
-    beta_S  = gmx_set1_pr(ic->ewaldcoeff);
+    beta2_S = gmx_set1_pr(ic->ewaldcoeff_q*ic->ewaldcoeff_q);
+    beta_S  = gmx_set1_pr(ic->ewaldcoeff_q);
 #endif
 
 #if (defined CALC_COUL_TAB || defined CALC_COUL_EWALD) && defined CALC_ENERGIES
@@ -435,7 +435,7 @@
 #endif
 #ifdef CALC_COUL_EWALD
             /* beta/sqrt(pi) */
-            Vc_sub_self = 0.5*ic->ewaldcoeff*M_2_SQRTPI;
+            Vc_sub_self = 0.5*ic->ewaldcoeff_q*M_2_SQRTPI;
 #endif
 
             for (ia = 0; ia < UNROLLI; ia++)

@@ -73,6 +73,34 @@ void gmx_mtop_finalize(gmx_mtop_t *mtop)
     mtop->maxresnr = gmx_mtop_maxresnr(mtop, mtop->maxres_renum);
 }
 
+void gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[])
+{
+    int      i, mb, nmol, tpi;
+    t_atoms *atoms;
+
+    for (i = 0; i < mtop->ffparams.atnr; ++i)
+    {
+        typecount[i] = 0;
+    }
+    for (mb = 0; mb < mtop->nmolblock; ++mb)
+    {
+        nmol  = mtop->molblock[mb].nmol;
+        atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
+        for (i = 0; i < atoms->nr; ++i)
+        {
+            if (state == 0)
+            {
+                tpi = atoms->atom[i].type;
+            }
+            else
+            {
+                tpi = atoms->atom[i].typeB;
+            }
+            typecount[tpi] += nmol;
+        }
+    }
+}
+
 int ncg_mtop(const gmx_mtop_t *mtop)
 {
     int ncg;

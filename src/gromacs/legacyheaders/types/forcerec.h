@@ -178,9 +178,11 @@ typedef struct {
     rvec             *fshift;
     real              ener[F_NRE];
     gmx_grppairener_t grpp;
-    real              Vcorr;
+    real              Vcorr_q;
+    real              Vcorr_lj;
     real              dvdl[efptNR];
-    tensor            vir;
+    tensor            vir_q;
+    tensor            vir_lj;
 } f_thread_t;
 
 typedef struct {
@@ -234,6 +236,7 @@ typedef struct {
     /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
     double qsum[2];
     double q2sum[2];
+    double c6sum[2];
     rvec   mu_tot[2];
 
     /* Dispersion correction stuff */
@@ -343,11 +346,14 @@ typedef struct {
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
     gmx_pme_t pmedata;
+    int       ljpme_comb;
     tensor    vir_el_recip;
+    tensor    vir_lj_recip;
 
     /* PME/Ewald stuff */
     gmx_bool    bEwald;
-    real        ewaldcoeff;
+    real        ewaldcoeff_q;
+    real        ewaldcoeff_lj;
     ewald_tab_t ewald_table;
 
     /* Virial Stuff */
