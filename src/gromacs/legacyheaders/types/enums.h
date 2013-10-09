@@ -110,6 +110,7 @@ enum {
 #define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC || (e) == eelRF_ZERO )
 
 #define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)
+#define EEL_EWALD(e)  (EEL_PME(e) || (e) == eelEWALD)
 #define EEL_FULL(e) (EEL_PME(e) || (e) == eelPOISSON || (e) == eelEWALD)
 
 #define EEL_SWITCHED(e) ((e) == eelSWITCH || (e) == eelSHIFT || (e) == eelENCADSHIFT || (e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
@@ -121,8 +122,15 @@ enum {
 #define EEL_MIGHT_BE_ZERO_AT_CUTOFF(e) (EEL_IS_ZERO_AT_CUTOFF(e) || (e) == eelUSER || (e) == eelPMEUSER)
 
 enum {
-    evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwNR
+    evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT,
+    evdwPME, evdwPMESWITCH, evdwPMEUSER, evdwPMEUSERSWITCH, evdwNR
 };
+
+enum {
+    eljpmeGEOM, eljpmeLB, eljpmeNR
+};
+
+#define EVDW_PME(e) ((e) == evdwPME || (e) == evdwPMESWITCH || (e) == evdwPMEUSER || (e) == evdwPMEUSERSWITCH)
 
 #define EVDW_SWITCHED(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT)
 

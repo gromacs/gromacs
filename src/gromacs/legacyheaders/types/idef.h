@@ -98,6 +98,7 @@ enum {
     F_COUL_LR,
     F_RF_EXCL,
     F_COUL_RECIP,
+    F_LJ_RECIP,
     F_DPD,
     F_POLARIZATION,
     F_WATER_POL,

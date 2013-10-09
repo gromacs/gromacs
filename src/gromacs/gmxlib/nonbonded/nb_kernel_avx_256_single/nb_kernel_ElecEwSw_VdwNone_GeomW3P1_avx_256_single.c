@@ -124,7 +124,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_VF_avx_256_single
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 
@@ -854,7 +854,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3P1_F_avx_256_single
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 
