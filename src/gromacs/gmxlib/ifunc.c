@@ -130,6 +130,7 @@ const t_interaction_function interaction_function[F_NRE] =
     def_nofc    ("COUL_LR",  "Coulomb (LR)"                                         ),
     def_nofc    ("RF_EXCL",  "RF excl."                                             ),
     def_nofc    ("COUL_RECIP", "Coul. recip."                                       ),
+    def_nofc    ("LJ_RECIP", "LJ recip."                                            ),
     def_nofc    ("DPD",      "DPD"                                                  ),
     def_bondnb  ("POLARIZATION", "Polarization", 2, 1, 0,  0,          polarize      ),
     def_bonded  ("WATERPOL", "Water Pol.",      5, 6, 0,  eNR_WPOL,   water_pol     ),
