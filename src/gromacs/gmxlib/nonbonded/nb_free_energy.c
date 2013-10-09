@@ -134,7 +134,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     facel               = fr->epsfac;
     krf                 = fr->k_rf;
     crf                 = fr->c_rf;
-    ewc                 = fr->ewaldcoeff;
+    ewc                 = fr->ewaldcoeff_q;
     Vc                  = kernel_data->energygrp_elec;
     typeA               = mdatoms->typeA;
     typeB               = mdatoms->typeB;

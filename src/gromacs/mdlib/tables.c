@@ -68,6 +68,7 @@ enum {
     etabEwaldSwitch,
     etabEwaldUser,
     etabEwaldUserSwitch,
+    etabLJ6Ewald,
     etabLJ6Switch,
     etabLJ12Switch,
     etabCOULSwitch,
@@ -103,6 +104,7 @@ static const t_tab_props tprops[etabNR] = {
     { "Ewald-Switch", TRUE },
     { "Ewald-User", TRUE },
     { "Ewald-User-Switch", TRUE },
+    { "LJ6Ewald", FALSE },
     { "LJ6Switch", FALSE },
     { "LJ12Switch", FALSE },
     { "COULSwitch", TRUE },
@@ -110,7 +112,7 @@ static const t_tab_props tprops[etabNR] = {
     { "LJ12-Encad shift", FALSE },
     { "COUL-Encad shift",  TRUE },
     { "EXPMIN", FALSE },
-    { "USER", FALSE }
+    { "USER", FALSE },
 };
 
 /* Index in the table that says which function to use */
@@ -747,11 +749,13 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
     double   ksw, swi, swi1;
     /* Temporary parameters */
     gmx_bool bSwitch, bShift;
-    double   ewc = fr->ewaldcoeff;
+    double   ewc   = fr->ewaldcoeff_q;
+    double   ewclj = fr->ewaldcoeff_lj;
 
     bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) ||
                (tp == etabCOULSwitch) ||
                (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch));
+
     bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) ||
                (tp == etabShift));
 
@@ -938,9 +942,13 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
                 break;
             case etabEwaldUser:
             case etabEwaldUserSwitch:
-                /* Only calculate minus the reciprocal space contribution */
+                /* Only calculate the negative of the reciprocal space contribution */
                 Vtab  = -gmx_erf(ewc*r)/r;
                 Ftab  = -gmx_erf(ewc*r)/r2+exp(-(ewc*ewc*r2))*ewc*M_2_SQRTPI/r;
+                break;
+            case etabLJ6Ewald:
+                Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
+                Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*pow5(ewclj)*ewclj*r2*r2*r;
                 break;
             case etabRF:
             case etabRF_ZERO:
@@ -1142,6 +1150,10 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
             case evdwENCADSHIFT:
                 tabsel[etiLJ6]  = etabLJ6Encad;
                 tabsel[etiLJ12] = etabLJ12Encad;
+                break;
+            case evdwPME:
+                tabsel[etiLJ6]  = etabLJ6Ewald;
+                tabsel[etiLJ12] = etabLJ12;
                 break;
             default:
                 gmx_fatal(FARGS, "Invalid vdwtype %d in %s line %d", vdwtype,

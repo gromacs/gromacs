@@ -56,7 +56,8 @@ typedef struct {
     real rlistlong;
 
     /* PME/Ewald */
-    real ewaldcoeff;
+    real ewaldcoeff_q;
+    real ewaldcoeff_lj;
     real sh_ewald;   /* For shifting the Ewald potential */
 
     /* Dielectric constant resp. multiplication factor for charges */

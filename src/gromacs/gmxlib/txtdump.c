@@ -762,9 +762,11 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PI("nkz", ir->nkz);
         PI("pme-order", ir->pme_order);
         PR("ewald-rtol", ir->ewald_rtol);
+        PR("ewald-rtol-lj", ir->ewald_rtol_lj);
         PR("ewald-geometry", ir->ewald_geometry);
         PR("epsilon-surface", ir->epsilon_surface);
         PS("optimize-fft", EBOOL(ir->bOptFFT));
+        PS("lj-pme-comb-rule", ELJPMECOMBNAMES(ir->ljpme_combination_rule));
         PS("ePBC", EPBC(ir->ePBC));
         PS("bPeriodicMols", EBOOL(ir->bPeriodicMols));
         PS("bContinuation", EBOOL(ir->bContinuation));
