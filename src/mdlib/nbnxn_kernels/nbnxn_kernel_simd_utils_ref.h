@@ -444,7 +444,7 @@ gmx_simd_ref_load1_exclfilter(int src)
 }
 
 static gmx_inline gmx_simd_ref_exclfilter
-gmx_simd_ref_load_exclusion_filter(const unsigned *src)
+gmx_simd_ref_load_exclusion_filter(const int *src)
 {
     gmx_simd_ref_exclfilter a;
     int                     i;
