@@ -176,7 +176,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
             else
             {
                 /* last factor 1/sqrt(pi) */
-                vctot *= -facel*iconst->ewaldcoeff*M_1_SQRTPI;
+                vctot *= -facel*iconst->ewaldcoeff_q*M_1_SQRTPI;
             }
         }
 
@@ -284,7 +284,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
                                     if (bEner)
                                     {
-                                        vcoul = qq*((int_bit - gmx_erf(iconst->ewaldcoeff*r))*rinv - int_bit*iconst->sh_ewald);
+                                        vcoul = qq*((int_bit - gmx_erf(iconst->ewaldcoeff_q*r))*rinv - int_bit*iconst->sh_ewald);
                                     }
                                 }
 

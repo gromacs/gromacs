@@ -207,7 +207,7 @@ void
 
     /* #if 'Ewald' in KERNEL_ELEC */
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm_mul_ps(beta,beta);
     beta3            = _mm_mul_ps(beta,beta2);
     /*     #if KERNEL_VF=='Force' and KERNEL_MOD_ELEC!='PotentialSwitch' */

@@ -266,7 +266,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
 
     ntypes  = nbat->ntype;
 
-    nbp->ewald_beta = ic->ewaldcoeff;
+    nbp->ewald_beta = ic->ewaldcoeff_q;
     nbp->sh_ewald   = ic->sh_ewald;
     nbp->epsfac     = ic->epsfac;
     nbp->two_k_rf   = 2.0 * ic->k_rf;
@@ -344,7 +344,7 @@ void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
 
     nbp->rlist_sq       = ic->rlist * ic->rlist;
     nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
-    nbp->ewald_beta     = ic->ewaldcoeff;
+    nbp->ewald_beta     = ic->ewaldcoeff_q;
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  cu_nb->dev_info);
