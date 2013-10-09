@@ -52,9 +52,11 @@ init_ewald_tab(ewald_tab_t *et, const t_inputrec *ir,
 /* initialize the ewald table (as found in the t_forcerec) */
 
 real
-calc_ewaldcoeff(real rc, real dtol);
+calc_ewaldcoeff_q(real rc, real dtol);
 /* Determines the Ewald parameter, both for Ewald and PME */
 
+extern real calc_ewaldcoeff_lj(real rc, real dtol);
+/* Determines the Ewald parameters for LJ-PME */
 
 real
 do_ewald(t_inputrec *ir,
@@ -67,18 +69,23 @@ do_ewald(t_inputrec *ir,
          ewald_tab_t et);
 /* Do an Ewald calculation for the long range electrostatics. */
 
-real
+void
 ewald_LRcorrection(int start, int end,
                    t_commrec *cr, int thread, t_forcerec *fr,
                    real *chargeA, real *chargeB,
+                   real *C6A, real *C6B,
+                   real *sigmaA, real *sigmaB,
+                   real *sigma3A, real *sigma3B,
                    gmx_bool calc_excl_corr,
                    t_blocka *excl, rvec x[],
                    matrix box, rvec mu_tot[],
                    int ewald_geometry, real epsilon_surface,
-                   rvec *f, tensor vir,
+                   rvec *f, tensor vir_q, tensor vir_lj,
+                   real *Vcorr_q, real *Vcorr_lj,
                    real lambda, real *dvdlambda);
-/* Calculate the Long range correction to the Ewald sum,
- * due to excluded pairs and/or surface dipole terms.
+/* Calculate the Long range correction to the Ewald sums,
+ * electrostatic and/or LJ, due to excluded pairs and/or
+ * surface dipole terms.
  */
 
 real

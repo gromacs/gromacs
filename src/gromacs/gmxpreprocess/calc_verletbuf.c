@@ -789,6 +789,20 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         md_ljr = reppow*pow(ir->rvdw, -(reppow+1));
         /* The contribution of the second derivative is negligible */
     }
+    else if (EVDW_PME(ir->vdwtype))
+    {
+        real b, r, br, br2, br4, br6;
+        b        = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
+        r        = ir->rvdw;
+        br       = b*r;
+        br2      = br*br;
+        br4      = br2*br2;
+        br6      = br4*br2;
+        /* -dV/dr of -r^-6 and r^-repporw */
+        md_ljd   = -exp(-br2)*(br6 + 3*br4 + 6*br2 + 6)*pow(r, -7);
+        md_ljr   = reppow*pow(r, -(reppow+1));
+        /* The contribution of the second derivative is negligible */
+    }
     else
     {
         gmx_fatal(FARGS, "Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
@@ -832,7 +846,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     {
         real b, rc, br;
 
-        b     = calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+        b     = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
         rc    = ir->rcoulomb;
         br    = b*rc;
         md_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));

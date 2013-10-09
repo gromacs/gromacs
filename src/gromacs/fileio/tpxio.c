@@ -74,7 +74,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 92;
+static const int tpx_version = 93;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -967,6 +967,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->pme_order);
     gmx_fio_do_real(fio, ir->ewald_rtol);
 
+    if (file_version >= 93)
+    {
+        gmx_fio_do_real(fio, ir->ewald_rtol_lj);
+    }
+    else
+    {
+        ir->ewald_rtol_lj = ir->ewald_rtol;
+    }
+
     if (file_version >= 24)
     {
         gmx_fio_do_int(fio, ir->ewald_geometry);
@@ -991,6 +1000,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
 
     gmx_fio_do_gmx_bool(fio, ir->bOptFFT);
 
+    if (file_version >= 93)
+    {
+        gmx_fio_do_int(fio, ir->ljpme_comb);
+    }
     gmx_fio_do_gmx_bool(fio, ir->bContinuation);
     gmx_fio_do_int(fio, ir->etc);
     /* before version 18, ir->etc was a gmx_bool (ir->btc),

@@ -58,6 +58,7 @@ typedef struct {
     gmx_bool               bOrires;
     real                  *massA, *massB, *massT, *invmass;
     real                  *chargeA, *chargeB;
+    real                  *c6A, *c6B, *sigmaA, *sigmaB, *sigma3A, *sigma3B;
     gmx_bool              *bPerturbed;
     int                   *typeA, *typeB;
     unsigned short        *ptype;
