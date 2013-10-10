@@ -899,7 +899,7 @@ int main(int argc, char *argv[])
         { efXVG, "-conv", "convergence", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static int            nrun         = 1, maxiter = 100, reinit = 0, seed = 1993;
+    static int            nrun         = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data = 3, compress = 1;
     static real           tol          = 1e-3, stol = 1e-6, watoms = 1;
     static gmx_bool       bRandom      = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
@@ -931,6 +931,8 @@ int main(int argc, char *argv[])
           "Algorithm used for charge generation" },
         { "-fixchi", FALSE, etSTR,  {&fixchi},
           "Electronegativity for this element is fixed. Set to FALSE if you want this variable as well, but read the help text above." },
+        { "-seed",   FALSE, etINT,  {&seed},
+          "Random number seed. If zero, a seed will be generated." },
         { "-j0",    FALSE, etREAL, {&J0_0},
           "Minimum value that J0 (eV) can obtain in fitting" },
         { "-chi0",    FALSE, etREAL, {&Chi0_0},
@@ -963,8 +965,6 @@ int main(int argc, char *argv[])
           "Space-separated list of elements to optimize, e.g. \"H C Br\". The other available elements in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
         { "-const_elem",  FALSE, etSTR, {&const_elem},
           "Space-separated list of elements to include but keep constant, e.g. \"O N\". These elements from gentop.dat are left unmodified" },
-        { "-seed", FALSE, etINT, {&seed},
-          "Random number seed for reinit" },
         { "-random", FALSE, etBOOL, {&bRandom},
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-watoms", FALSE, etREAL, {&watoms},
@@ -1045,13 +1045,17 @@ int main(int argc, char *argv[])
             J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
             fc_bound, fc_mu, fc_quad, fc_charge,
             fc_esp, 1, 1, fixchi, bOptHfac, hfac, bPol, bFitZeta);
+    if (0 == seed)
+    {
+        seed = gmx_rng_make_seed();
+    }
     md.Read(fp ? fp : (debug ? debug : NULL),
             opt2fn("-f", NFILE, fnm),
             opt2fn_null("-d", NFILE, fnm),
             minimum_data, bZero,
             opt_elem, const_elem,
             lot, bCharged, oenv, gms, th_toler, ph_toler, dip_toler,
-            TRUE, TRUE, TRUE, watoms, TRUE);
+            TRUE, TRUE, TRUE, watoms, TRUE, seed);
 
     optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),
                     &md, maxiter, tol, nrun, step, seed,

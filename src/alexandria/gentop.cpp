@@ -217,6 +217,7 @@ int main(int argc, char *argv[])
     static gmx_bool    bGenVSites    = FALSE, bSkipVSites = TRUE;
     static char       *molnm         = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
     static int         maxpot        = 0;
+    static int         seed          = 0;
     static const char *cqgen[]       = {
         NULL, "None",
         "AXp", "AXs", "AXg", "ESP", "RESP",
@@ -262,6 +263,8 @@ int main(int argc, char *argv[])
           "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" },
         { "-pbc",    FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions." },
+        { "-seed",   FALSE, etINT,  {&seed},
+          "Random number seed. If zero, a seed will be generated." },
         { "-conect", FALSE, etBOOL, {&bCONECT},
           "HIDDENUse CONECT records in an input pdb file to signify bonds" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
@@ -466,14 +469,18 @@ int main(int argc, char *argv[])
     mymol.SetForceField(forcefield);
 
     imm = mymol.GenerateTopology(aps, pd, lot, iModel, bAddShells, nexcl);
-
+    if (0 == seed)
+    {
+        seed = gmx_rng_make_seed();
+    }
+    
     if (immOK == imm)
     {
         mymol.gr_ = gmx_resp_init(iModel, bAXpRESP, qweight, bhyper, mymol.GetCharge(),
                                   zmin, zmax, delta_z,
                                   bZatype, watoms, rDecrZeta, bRandZeta, bRandQ,
                                   penalty_fac, bFitZeta,
-                                  bEntropy, dzatoms);
+                                  bEntropy, dzatoms, seed);
         if (NULL == mymol.gr_)
         {
             imm = immRespInit;

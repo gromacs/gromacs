@@ -66,6 +66,7 @@ typedef struct gmx_resp
     bool   bAXpRESP;
     ivec   nxyz;
     real   qfac,b_hyper,zmin,zmax,delta_z,qmin,qmax,rDecrZeta;
+    unsigned int seed;
     int    nparam; /* Total number of parameters */
     gmx_ra *ra;
     char   **dzatoms;
@@ -90,7 +91,8 @@ gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
                          real zmin,real zmax,real delta_z,bool bZatyp,
                          real watoms,real rDecrZeta,
                          bool bRandZeta,bool bRandQ,real penalty_fac,bool bFitZeta,
-                         bool bEntropy,const char *dzatoms);
+                         bool bEntropy,const char *dzatoms,
+                         unsigned int seed);
 				
 void gmx_resp_statistics(gmx_resp_t gr,int len,char buf[]);
   

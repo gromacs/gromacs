@@ -1583,7 +1583,7 @@ int main(int argc, char *argv[])
         { efXVG, "-epot", "param-epot", ffWRITE }
     };
 #define NFILE asize(fnm)
-    static int            nrun         = 1, maxiter = 100, reinit = 0, seed = 1993;
+    static int            nrun         = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data = 3, compress = 0;
     static real           tol          = 1e-3, stol = 1e-6, watoms = 1;
     static gmx_bool       bRandom      = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
@@ -1730,13 +1730,17 @@ int main(int argc, char *argv[])
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
              fc_bound, fc_mu, fc_quad, fc_charge,
              fc_esp, fc_epot, fc_force, fixchi, bOptHfac, hfac, bPol, bFitZeta);
+    if (0 == seed)
+    {
+        seed = gmx_rng_make_seed();
+    }
     opt.Read(fp ? fp : (debug ? debug : NULL),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              minimum_data, bZero,
              opt_elem, const_elem,
              lot, bCharged, oenv, gms, th_toler, ph_toler, dip_toler,
-             TRUE, TRUE, TRUE, watoms, FALSE);
+             TRUE, TRUE, TRUE, watoms, FALSE, seed);
 
     check_support(fp, opt._mymol, opt._pd, bOpt);
 

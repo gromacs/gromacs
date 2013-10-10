@@ -473,7 +473,8 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                   output_env_t oenv, gmx_molselect_t gms,
                   real th_toler, real ph_toler, real dip_toler,
                   gmx_bool bH14, gmx_bool bAllDihedrals, gmx_bool bRemoveDoubleDihedrals,
-                  real watoms, gmx_bool bCheckSupport)
+                  real watoms, gmx_bool bCheckSupport,
+                  unsigned int seed)
 {
     int                              i, n, nwarn = 0, nmol_cpu;
     int                              nexcl, imm_count[immNR];
@@ -555,7 +556,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                                                   1, 100, 5,
                                                   TRUE, watoms, 5, TRUE, TRUE,
                                                   1, TRUE,
-                                                  TRUE, NULL);
+                                                  TRUE, NULL, seed);
                         if (NULL == mpnew.gr_)
                         {
                             imm = immRespInit;
@@ -642,7 +643,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                                           1, 100, 5,
                                           TRUE, watoms, 5, TRUE, TRUE,
                                           1, TRUE,
-                                          TRUE, NULL);
+                                          TRUE, NULL, seed);
                 if (NULL == mpnew.gr_)
                 {
                     imm = immRespInit;

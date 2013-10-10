@@ -147,7 +147,7 @@ gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
                          real zmin,real zmax,real delta_z,bool bZatype,
                          real watoms,real rDecrZeta,bool bRandZeta,
                          bool bRandQ,real penalty_fac,bool bFitZeta,bool bEntropy,
-                         const char *dzatoms)
+                         const char *dzatoms, unsigned int seed)
 {
     gmx_resp_t gr;
     
@@ -170,6 +170,7 @@ gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
     gr->nrho      = 0;
     gr->natom     = 0;
     gr->natype    = 0;
+    gr->seed      = seed;
     gr->bEntropy  = bEntropy;
     gr->bZatype   = bZatype;
     gr->rDecrZeta = rDecrZeta;
@@ -859,7 +860,9 @@ const char *gmx_resp_get_stoichiometry(gmx_resp_t gr)
 
 static void get_set_vector(gmx_resp_t gr,
                            bool bSet,
-                           bool bRandQ,bool bRandZeta,
+                           bool bRandQ,
+                           bool bRandZeta,
+                           unsigned int seed,
                            double *nmx)
 {
     int    i,n,zz,zzz,nrest;
@@ -867,7 +870,9 @@ static void get_set_vector(gmx_resp_t gr,
     gmx_rng_t rnd=NULL;
     
     if (bSet && (bRandQ || bRandZeta))
-        rnd = gmx_rng_init(gmx_rng_make_seed());
+    {
+        rnd = gmx_rng_init(seed);
+    }
     gr->penalty = 0;
     n           = 0;
     qtot        = 0;
@@ -1166,7 +1171,7 @@ static double charge_function(void *params,double v[])
     double rms = 0;
     real wtot;
     
-    get_set_vector(gr,false,false,false,v);
+    get_set_vector(gr,false,false,false,gr->seed,v);
     gmx_resp_calc_pot(gr);
     gmx_resp_calc_penalty(gr);
     rms = gmx_resp_get_rms(gr,&wtot);
@@ -1195,7 +1200,7 @@ int gmx_resp_optimize_charges(FILE *fp,gmx_resp_t gr,int maxiter,
     
     snew(param,gr->nparam);
     
-    get_set_vector(gr,true,gr->bRandQ,gr->bRandZeta,param);
+    get_set_vector(gr,true,gr->bRandQ,gr->bRandZeta,gr->seed,param);
 
     bConv = nmsimplex(fp,(void *)gr,charge_function,param,gr->nparam,
                       toler,1,maxiter,&ccc);
@@ -1211,7 +1216,7 @@ int gmx_resp_optimize_charges(FILE *fp,gmx_resp_t gr,int maxiter,
     else
         *rms = gr->rms;
     
-    get_set_vector(gr,false,false,false,param);
+    get_set_vector(gr,false,false,false,gr->seed,param);
 
     sfree(param);
 
