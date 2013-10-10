@@ -935,16 +935,16 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
 #else
             for (j = 0; j < NNBSBB_C; j++)
             {
-                grid->bbj[c2].lower[j] = min(bb[c2*2].lower[j],
-                                             bb[c2*2].lower[j]);
-                grid->bbj[c2].upper[j] = max(bb[c2*2].upper[j],
-                                             bb[c2*2].upper[j]);
+                grid->bbj[c2].lower[j] = min(bb[c2*2+0].lower[j],
+                                             bb[c2*2+1].lower[j]);
+                grid->bbj[c2].upper[j] = max(bb[c2*2+0].upper[j],
+                                             bb[c2*2+1].upper[j]);
             }
 #endif
         }
         if (((grid->cxy_na[i]+3)>>2) & 1)
         {
-            /* Copy the last bb for odd bb count in this column */
+            /* The bb count in this column is odd: duplicate the last bb */
             for (j = 0; j < NNBSBB_C; j++)
             {
                 grid->bbj[c2].lower[j] = bb[c2*2].lower[j];
