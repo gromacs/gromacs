@@ -67,10 +67,6 @@ static const char * const gpu_detect_res_str[] =
  * The gmx_hardware_detect module initializes it. */
 typedef struct
 {
-    gmx_bool             bUserSet;      /* true if the GPUs in cuda_dev_use are manually provided by the user */
-
-    int                  ncuda_dev_use; /* number of devices selected to be used */
-    int                 *cuda_dev_use;  /* index of the devices selected to be used */
     int                  ncuda_dev;     /* total number of devices detected */
     cuda_dev_info_ptr_t  cuda_dev;      /* devices detected in the system (per node) */
 } gmx_gpu_info_t;
@@ -81,7 +77,6 @@ typedef struct
  *       (i.e. must be able to be shared among all threads) */
 typedef struct
 {
-    gmx_bool        bCanUseGPU;          /* True if compatible GPUs are detected during hardware detection */
     gmx_gpu_info_t  gpu_info;            /* Information about GPUs detected in the system */
 
     gmx_cpuid_t     cpuid_info;          /* CPUID information about CPU detected;
@@ -90,10 +85,41 @@ typedef struct
     int             nthreads_hw_avail;   /* Number of hardware threads available; this number
                                             is based on the number of CPUs reported as available
                                             by the OS at the time of detection. */
-    gmx_bool        bConsistencyChecked; /* whether
-                                            gmx_check_hw_runconf_consistency()
-                                            has been run with this hw_info */
 } gmx_hw_info_t;
+
+
+/* The options for the thread affinity setting, default: auto */
+enum {
+    threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
+};
+
+/* GPU device selection information -- for now with only CUDA devices */
+typedef struct
+{
+    gmx_bool bCanUseGPU;     /* Do we have a GPU and can we use it? */
+
+    char     *gpu_id;        /* GPU id's to use, each specified as chars */
+    gmx_bool  bUserSet;      /* true if the GPUs in cuda_dev_use are manually provided by the user */
+
+    int       ncuda_dev_use; /* number of devices selected to be used */
+    int      *cuda_dev_use;  /* index of the devices selected to be used */
+} gmx_gpu_opt_t;
+
+/* Threading and GPU options, can be set automatically or by the user */
+typedef struct {
+    int      nthreads_tot;        /* Total number of threads requested (TMPI) */
+    int      nthreads_tmpi;       /* Number of TMPI threads requested         */
+    int      nthreads_omp;        /* Number of OpenMP threads requested       */
+    int      nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
+    int      thread_affinity;     /* Thread affinity switch, see enum above   */
+    int      core_pinning_stride; /* Logical core pinning stride              */
+    int      core_pinning_offset; /* Logical core pinning offset              */
+
+    gmx_gpu_opt_t gpu_opt;        /* The GPU options                          */
+
+    gmx_bool bConsistencyChecked; /* whether gmx_check_hw_runconf_consistency()
+                                     has been run with hw_info and this hw_opt */
+} gmx_hw_opt_t;
 
 #ifdef __cplusplus
 }
