@@ -1486,7 +1486,9 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
     FILE  *xfp;
     int    i;
     double msd;
-
+    gmx_stats_t gst;
+    
+    gst = gmx_stats_init();
     if (NULL != xvg)
     {
         xfp = xvgropen(xvg, "Entalpy of Formation", "Experiment (kJ/mol)", "Calculated (kJ/mol)",
@@ -1507,10 +1509,10 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
         msd += sqr(mi->Emol-mi->Ecalc);
+        gmx_stats_add_point(gst, mi->Hform, mi->Hform + DeltaE, 0, 0);
         if (NULL != xvg)
         {
-            fprintf(xfp, "%10g  %10g\n", mi->Hform,
-                    mi->Ecalc+mi->Hform-mi->Emol);
+            fprintf(xfp, "%10g  %10g\n", mi->Hform, mi->Hform + DeltaE);
         }
     }
     fprintf(fp, "\n");
@@ -1521,6 +1523,13 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         xvgrclose(xfp);
         do_view(oenv, xvg, NULL);
     }
+    {
+        real a, b, da, db, chi2, Rfit;
+        gmx_stats_get_ab(gst, 1, &a, &b, &da, &db, &chi2, &Rfit);
+        fprintf(fp, "Regression analysis fit to y = ax + b:\n");
+        fprintf(fp, "a = %.3f  b = %3f  R2 = %.1f%%  chi2 = %.1f\n", a, b, Rfit*100, chi2);
+    }                
+    gmx_stats_done(gst);
 }
 }
 
