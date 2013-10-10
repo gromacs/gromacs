@@ -52,18 +52,27 @@ extern "C" {
 /* return a pointer to a global hwinfo structure. */
 GMX_LIBGMX_EXPORT
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
-                                   gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
-                                   const char *gpu_id);
+                                   gmx_bool bDetectGPUs);
 
 GMX_LIBGMX_EXPORT
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
-/* Check the thread count + GPU assignment. This function must
-   either be run by all threads that persist (i.e. all tmpi threads),
-   or be run before they are created.  */
 GMX_LIBGMX_EXPORT
-void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
-                                      const t_commrec *cr, int ntmpi_requsted,
+void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
+
+GMX_LIBGMX_EXPORT
+void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
+                        const gmx_gpu_info_t *gpu_info,
+                        gmx_bool bForceUseGPU,
+                        gmx_gpu_opt_t *gpu_opt);
+
+/* Check the consistency of hw_opt with hwinfo.
+   This function should be called once on each MPI rank. */
+GMX_LIBGMX_EXPORT
+void gmx_check_hw_runconf_consistency(FILE *fplog,
+                                      const gmx_hw_info_t *hwinfo,
+                                      const t_commrec *cr,
+                                      const gmx_hw_opt_t *hw_opt,
                                       gmx_bool bUseGPU);
 #endif
 
@@ -71,11 +80,11 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
 /* Check whether a GPU is shared among ranks, and return the number of shared
    gpus
 
-   hwinfo        = the hwinfo struct
+   gpu_opt       = the gpu options struct
 
    returns: The number of GPUs shared among ranks, or 0 */
 GMX_LIBGMX_EXPORT
-int gmx_count_gpu_dev_shared(const gmx_gpu_info_t *gpu_info);
+int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt);
 
 
 #ifdef __cplusplus

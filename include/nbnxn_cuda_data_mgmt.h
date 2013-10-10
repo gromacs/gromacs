@@ -60,7 +60,9 @@ extern "C" {
 FUNC_QUALIFIER
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
-                     const gmx_gpu_info_t *gpu_info, int my_gpu_index,
+                     const gmx_gpu_info_t *gpu_info,
+                     const gmx_gpu_opt_t *gpu_opt,
+                     int my_gpu_index,
                      /* true of both local and non-local are don on GPU */
                      gmx_bool bLocalAndNonlocal) FUNC_TERM
 
