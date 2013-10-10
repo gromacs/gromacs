@@ -451,7 +451,12 @@ int cmain(int argc, char *argv[])
     output_env_t  oenv                  = NULL;
     const char   *deviceOptions         = "";
 
-    gmx_hw_opt_t  hw_opt = {0, 0, 0, 0, threadaffSEL, 0, 0, NULL};
+    /* Non transparent initialization of a complex gmx_hw_opt_t struct.
+     * But unfortunately we are not allowed to call a function here,
+     * since declarations follow below.
+     */
+    gmx_hw_opt_t  hw_opt = { 0, 0, 0, 0, threadaffSEL, 0, 0,
+                             { NULL, FALSE, 0, NULL } };
 
     t_pargs       pa[] = {
 
@@ -477,7 +482,7 @@ int cmain(int argc, char *argv[])
           "The starting logical core number for pinning to cores; used to avoid pinning threads from different mdrun instances to the same core" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_id},
+        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_opt.gpu_id},
           "List of GPU id's to use" },
         { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
           "Check for all bonded interactions with DD" },
