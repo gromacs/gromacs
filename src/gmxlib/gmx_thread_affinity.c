@@ -50,7 +50,6 @@
 #include "gmx_cpuid.h"
 #include "gmx_omp.h"
 #include "gmx_omp_nthreads.h"
-#include "mdrun.h"
 #include "md_logging.h"
 #include "statutil.h"
 #include "gmx_thread_affinity.h"
