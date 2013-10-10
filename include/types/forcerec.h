@@ -200,6 +200,7 @@ typedef struct {
     rvec                 posres_comB;
 
     const gmx_hw_info_t *hwinfo;
+    const gmx_gpu_opt_t *gpu_opt;
     gmx_bool             use_cpu_acceleration;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
