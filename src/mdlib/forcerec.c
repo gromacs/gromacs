@@ -1661,7 +1661,8 @@ static void pick_nbnxn_resources(FILE                *fp,
                                  const gmx_hw_info_t *hwinfo,
                                  gmx_bool             bDoNonbonded,
                                  gmx_bool            *bUseGPU,
-                                 gmx_bool            *bEmulateGPU)
+                                 gmx_bool            *bEmulateGPU,
+                                 const gmx_gpu_opt_t *gpu_opt)
 {
     gmx_bool bEmulateGPUEnvVarSet;
     char     gpu_err_str[STRLEN];
@@ -1682,11 +1683,11 @@ static void pick_nbnxn_resources(FILE                *fp,
      * Note that you should freezing the system as otherwise it will explode.
      */
     *bEmulateGPU = (bEmulateGPUEnvVarSet ||
-                    (!bDoNonbonded && hwinfo->bCanUseGPU));
+                    (!bDoNonbonded && gpu_opt->bCanUseGPU));
 
     /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
      */
-    if (hwinfo->bCanUseGPU && !(*bEmulateGPU))
+    if (gpu_opt->bCanUseGPU && !(*bEmulateGPU))
     {
         /* Each PP node will use the intra-node id-th device from the
          * list of detected/selected GPUs. */
@@ -1696,7 +1697,8 @@ static void pick_nbnxn_resources(FILE                *fp,
              * we have all the GPUs we need. If it still does, we'll bail. */
             gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, cr->rank_pp_intranode),
+                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
+                                        cr->rank_pp_intranode),
                       gpu_err_str);
         }
 
@@ -1897,7 +1899,8 @@ static void init_nb_verlet(FILE                *fp,
     pick_nbnxn_resources(fp, cr, fr->hwinfo,
                          fr->bNonbonded,
                          &nbv->bUseGPU,
-                         &bEmulateGPU);
+                         &bEmulateGPU,
+                         fr->gpu_opt);
 
     nbv->nbs = NULL;
 
@@ -2058,7 +2061,7 @@ void init_forcerec(FILE              *fp,
          * In mdrun, hwinfo has already been set before calling init_forcerec.
          * Here we ignore GPUs, as tools will not use them anyhow.
          */
-        fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE, FALSE, NULL);
+        fr->hwinfo = gmx_detect_hardware(fp, cr);
     }
 
     /* By default we turn acceleration on, but it might be turned off further down... */

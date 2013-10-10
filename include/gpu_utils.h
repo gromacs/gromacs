@@ -72,8 +72,10 @@ FUNC_QUALIFIER
 void pick_compatible_gpus(gmx_gpu_info_t *gpu_info) FUNC_TERM_VOID
 
 FUNC_QUALIFIER
-gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
-                                const int *requested_devs, int count) FUNC_TERM_INT
+gmx_bool check_select_cuda_gpus(int *checkres,
+                                const gmx_gpu_info_t *gpu_info,
+                                const int *requested_devs, int count,
+                                gmx_gpu_opt_t *gpu_opt) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 void free_gpu_info(const gmx_gpu_info_t *gpu_info) FUNC_TERM_VOID
@@ -89,7 +91,9 @@ FUNC_QUALIFIER
 int get_current_gpu_device_id(void) FUNC_TERM_INT
 
 FUNC_QUALIFIER
-int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_INT
+int get_gpu_device_id(const gmx_gpu_info_t *gpu_info,
+                      const gmx_gpu_opt_t *gpu_opt,
+                      int index) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_VOID
