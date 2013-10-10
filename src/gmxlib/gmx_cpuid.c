@@ -1105,7 +1105,8 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
 
 int
 gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
-                             FILE *        log)
+                             FILE *        log,
+                             int           print_to_stderr)
 {
     int                           rc;
     char                          str[1024];
@@ -1140,9 +1141,12 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
                     gmx_cpuid_acceleration_string[acc],
                     gmx_cpuid_acceleration_string[compiled_acc]);
         }
-        printf("Compiled acceleration: %s (Gromacs could use %s on this machine, which is better)\n",
-               gmx_cpuid_acceleration_string[compiled_acc],
-               gmx_cpuid_acceleration_string[acc]);
+        if (print_to_stderr)
+        {
+            fprintf(stderr, "Compiled acceleration: %s (Gromacs could use %s on this machine, which is better)\n",
+                   gmx_cpuid_acceleration_string[compiled_acc],
+                   gmx_cpuid_acceleration_string[acc]);
+        }
     }
     return rc;
 }
