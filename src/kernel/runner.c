@@ -112,7 +112,7 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #ifdef GMX_THREAD_MPI
 struct mdrunner_arglist
 {
-    gmx_hw_opt_t   *hw_opt;
+    gmx_hw_opt_t    hw_opt;
     FILE           *fplog;
     t_commrec      *cr;
     int             nfile;
@@ -170,7 +170,7 @@ static void mdrunner_start_fn(void *arg)
         fplog = mc.fplog;
     }
 
-    mda->ret = mdrunner(mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
+    mda->ret = mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
                         mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
                         mc.ddxyz, mc.dd_node_order, mc.rdd,
                         mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
@@ -215,7 +215,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     fnmn = dup_tfn(nfile, fnm);
 
     /* fill the data structure to pass as void pointer to thread start fn */
-    mda->hw_opt         = hw_opt;
+    /* hw_opt contains pointers, which should all be NULL at this stage */
+    mda->hw_opt         = *hw_opt;
     mda->fplog          = fplog;
     mda->cr             = cr;
     mda->nfile          = nfile;
@@ -370,10 +371,11 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         nthreads_tot_max = nthreads_hw;
     }
 
-    bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET && hwinfo->bCanUseGPU);
+    bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET &&
+                  hwinfo->gpu_info.ncuda_dev_compatible > 0);
     if (bCanUseGPU)
     {
-        ngpu = hwinfo->gpu_info.ncuda_dev_use;
+        ngpu = hwinfo->gpu_info.ncuda_dev_compatible;
     }
     else
     {
@@ -628,7 +630,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 }
 
 static void prepare_verlet_scheme(FILE                *fplog,
-                                  const gmx_hw_info_t *hwinfo,
+                                  gmx_bool             bCanUseGPU,
                                   t_commrec           *cr,
                                   const char          *nbpu_opt,
                                   t_inputrec          *ir,
@@ -640,7 +642,7 @@ static void prepare_verlet_scheme(FILE                *fplog,
      * as here we don't know how many GPUs we will use yet.
      * We check for a GPU on all processes later.
      */
-    *bUseGPU = hwinfo->bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
+    *bUseGPU = bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
 
     if (ir->verletbuf_drift > 0)
     {
@@ -865,7 +867,7 @@ static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
                 hw_opt->nthreads_tmpi,
                 hw_opt->nthreads_omp,
                 hw_opt->nthreads_omp_pme,
-                hw_opt->gpu_id != NULL ? hw_opt->gpu_id : "");
+                hw_opt->gpu_opt.gpu_id != NULL ? hw_opt->gpu_opt.gpu_id : "");
 
     }
 }
@@ -973,8 +975,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
-    hwinfo = gmx_detect_hardware(fplog, cr,
-                                 bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
+    hwinfo = gmx_detect_hardware(fplog, cr, bTryUseGPU);
 
 
     snew(state, 1);
@@ -995,11 +996,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            prepare_verlet_scheme(fplog, hwinfo, cr, nbpu_opt,
+            prepare_verlet_scheme(fplog,
+                                  hwinfo->gpu_info.ncuda_dev_compatible > 0,
+                                  cr, nbpu_opt,
                                   inputrec, mtop, state->box,
                                   &minf.bUseGPU);
         }
-        else if (hwinfo->bCanUseGPU)
+        else if (hwinfo->gpu_info.ncuda_dev_compatible > 0)
         {
             md_print_warn(cr, fplog,
                           "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
@@ -1373,9 +1376,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-    /* check consistency and decide on the number of gpus to use. */
-    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt->nthreads_tmpi,
-                                     minf.bUseGPU);
+    if (bForceUseGPU || bTryUseGPU)
+    {
+        /* Select GPU id's to use */
+        select_gpu_ids(fplog, cr, &hwinfo->gpu_info, bForceUseGPU,
+                       &hw_opt->gpu_opt);
+    }
+
+    /* check consistency of CPU acceleration and number of GPUs selected */
+    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, minf.bUseGPU);
 
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is
@@ -1417,8 +1426,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
 
         /* Initiate forcerecord */
-        fr         = mk_forcerec();
-        fr->hwinfo = hwinfo;
+        fr          = mk_forcerec();
+        fr->hwinfo  = hwinfo;
+        fr->gpu_opt = &hw_opt->gpu_opt;
         init_forcerec(fplog, oenv, fr, fcd, inputrec, mtop, cr, box, FALSE,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tabletf", nfile, fnm),
