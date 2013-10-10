@@ -93,22 +93,6 @@ enum {
     ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
-/* The options for the thread affinity setting, default: auto */
-enum {
-    threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
-};
-
-typedef struct {
-    int      nthreads_tot;        /* Total number of threads requested (TMPI) */
-    int      nthreads_tmpi;       /* Number of TMPI threads requested         */
-    int      nthreads_omp;        /* Number of OpenMP threads requested       */
-    int      nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
-    int      thread_affinity;     /* Thread affinity switch, see enum above   */
-    int      core_pinning_stride; /* Logical core pinning stride              */
-    int      core_pinning_offset; /* Logical core pinning offset              */
-    char    *gpu_id;              /* GPU id's to use, each specified as chars */
-} gmx_hw_opt_t;
-
 /* Variables for temporary use with the deform option,
  * used in runner.c and md.c.
  * (These variables should be stored in the tpx file.)
