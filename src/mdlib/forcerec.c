@@ -1662,7 +1662,8 @@ static void pick_nbnxn_resources(FILE                *fp,
                                  const gmx_hw_info_t *hwinfo,
                                  gmx_bool             bDoNonbonded,
                                  gmx_bool            *bUseGPU,
-                                 gmx_bool            *bEmulateGPU)
+                                 gmx_bool            *bEmulateGPU,
+                                 const gmx_gpu_opt_t *gpu_opt)
 {
     gmx_bool bEmulateGPUEnvVarSet;
     char     gpu_err_str[STRLEN];
@@ -1683,21 +1684,24 @@ static void pick_nbnxn_resources(FILE                *fp,
      * Note that you should freezing the system as otherwise it will explode.
      */
     *bEmulateGPU = (bEmulateGPUEnvVarSet ||
-                    (!bDoNonbonded && hwinfo->bCanUseGPU));
+                    (!bDoNonbonded &&
+                     gpu_opt->ncuda_dev_use > 0));
 
     /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
      */
-    if (hwinfo->bCanUseGPU && !(*bEmulateGPU))
+    if (gpu_opt->ncuda_dev_use > 0 && !(*bEmulateGPU))
     {
         /* Each PP node will use the intra-node id-th device from the
          * list of detected/selected GPUs. */
-        if (!init_gpu(cr->rank_pp_intranode, gpu_err_str, &hwinfo->gpu_info))
+        if (!init_gpu(cr->rank_pp_intranode, gpu_err_str,
+                      &hwinfo->gpu_info, gpu_opt))
         {
             /* At this point the init should never fail as we made sure that
              * we have all the GPUs we need. If it still does, we'll bail. */
             gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, cr->rank_pp_intranode),
+                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
+                                        cr->rank_pp_intranode),
                       gpu_err_str);
         }
 
@@ -1898,7 +1902,8 @@ static void init_nb_verlet(FILE                *fp,
     pick_nbnxn_resources(fp, cr, fr->hwinfo,
                          fr->bNonbonded,
                          &nbv->bUseGPU,
-                         &bEmulateGPU);
+                         &bEmulateGPU,
+                         fr->gpu_opt);
 
     nbv->nbs = NULL;
 
@@ -1946,7 +1951,8 @@ static void init_nb_verlet(FILE                *fp,
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
         nbnxn_cuda_init(fp, &nbv->cu_nbv,
-                        &fr->hwinfo->gpu_info, cr->rank_pp_intranode,
+                        &fr->hwinfo->gpu_info, fr->gpu_opt,
+                        cr->rank_pp_intranode,
                         (nbv->ngrp > 1) && !bHybridGPURun);
 
         if ((env = getenv("GMX_NB_MIN_CI")) != NULL)
@@ -2059,7 +2065,7 @@ void init_forcerec(FILE              *fp,
          * In mdrun, hwinfo has already been set before calling init_forcerec.
          * Here we ignore GPUs, as tools will not use them anyhow.
          */
-        fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE, FALSE, NULL);
+        fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE);
     }
 
     /* By default we turn acceleration on, but it might be turned off further down... */

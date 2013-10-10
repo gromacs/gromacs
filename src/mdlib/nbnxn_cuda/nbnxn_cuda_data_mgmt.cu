@@ -505,7 +505,9 @@ static int pick_nbnxn_kernel_version(FILE            *fplog,
 
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
-                     const gmx_gpu_info_t *gpu_info, int my_gpu_index,
+                     const gmx_gpu_info_t *gpu_info,
+                     const gmx_gpu_opt_t *gpu_opt,
+                     int my_gpu_index,
                      gmx_bool bLocalAndNonlocal)
 {
     cudaError_t stat;
@@ -540,7 +542,7 @@ void nbnxn_cuda_init(FILE *fplog,
     init_plist(nb->plist[eintLocal]);
 
     /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = &gpu_info->cuda_dev[get_gpu_device_id(gpu_info, my_gpu_index)];
+    nb->dev_info = &gpu_info->cuda_dev[get_gpu_device_id(gpu_info, gpu_opt, my_gpu_index)];
 
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);
@@ -626,7 +628,7 @@ void nbnxn_cuda_init(FILE *fplog,
          *   - GPUs are not being shared.
          */
         bool bShouldUsePollSync = (bX86 && bTMPIAtomics &&
-                                   (gmx_count_gpu_dev_shared(gpu_info) < 1));
+                                   (gmx_count_gpu_dev_shared(gpu_opt) < 1));
 
         if (bStreamSync)
         {
