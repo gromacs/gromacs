@@ -297,11 +297,13 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                    cpuid);
 
 /* Check if this binary was compiled with the same acceleration as we
  * would suggest for the current hardware. Always print stats to the log file
- * if it is non-NULL, and print a warning in stdout if we don't have a match.
+ * if it is non-NULL, and if we don't have a match, print a warning in log
+ * (if non-NULL) and if print_to_stderr!=0 also to stderr.
  */
 int
 gmx_cpuid_acceleration_check    (gmx_cpuid_t                cpuid,
-                                 FILE *                     log);
+                                 FILE *                     log,
+                                 int                        print_to_stderr);
 
 
 /* Release resources used by data structure. Note that the pointer to the
