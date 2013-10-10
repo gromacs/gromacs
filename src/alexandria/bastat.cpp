@@ -525,9 +525,6 @@ int main(int argc, char *argv[])
     parse_common_args(&argc, argv, PCA_CAN_VIEW,
                       NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
 
-#ifndef GMX_THREAD_MPI
-    nthreads = 1;
-#endif
     if (qgen[0])
     {
         iModel = name2eemtype(qgen[0]);

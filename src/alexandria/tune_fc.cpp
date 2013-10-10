@@ -1099,17 +1099,9 @@ double OptParam::CalcDeviation()
             mymol->Force2     /= mymol->NAtom();
             _ener[ermsForce2] += _fc[ermsForce2]*mymol->Force2;
             mymol->Ecalc       = mymol->enerd_.term[F_EPOT];
-            if (0)
-            {
-                for (int ii = 0; (ii < F_NRE); ii++)
-                {
-                    printf("ener %-12s = %g\n", interaction_function[ii].name,
-                           mymol->enerd_.term[ii]);
-                }
-                exit(1);
-            }
-            ener             = sqr(mymol->Ecalc-mymol->Emol);
-            _ener[ermsEPOT] += _fc[ermsEPOT]*ener/_nmol_support;
+            ener               = sqr(mymol->Ecalc-mymol->Emol);
+            _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
+            
             if (NULL != debug)
             {
                 fprintf(debug, "%s ener %g Epot %g Force2 %g\n", mymol->GetMolname().c_str(), ener,
@@ -1602,7 +1594,6 @@ int main(int argc, char *argv[])
     static bool           bOpt[ebtsNR] = { true, false, false, false, false, false };
     static real           beta0        = 0, D0 = 0, beta_min = 10, D0_min = 50, temperature;
     static int            nprint       = 10;
-    static int            nthreads     = 0; /* set to determine # of threads automatically */
     t_pargs               pa[]         = {
         { "-tol",   FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
@@ -1666,10 +1657,6 @@ int main(int argc, char *argv[])
           "Minimum angle to be considered a linear A-B-C bond" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
           "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
-#ifdef GMX_THREAD_MPI
-        { "-nt",      FALSE, etINT, {&nthreads},
-          "Number of threads to start (0 is guess)" },
-#endif
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
@@ -1684,12 +1671,12 @@ int main(int argc, char *argv[])
 
     cr = init_par();
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
-#ifndef GMX_THREAD_MPI
-    nthreads = 1;
-#endif
     if (cqgen[0])
     {
         iModel = name2eemtype(cqgen[0]);
