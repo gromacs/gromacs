@@ -3,9 +3,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -14,7 +14,7 @@
 #
 # GROMACS is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 # official version at http://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org
+# the research papers on the package. Check out http://www.gromacs.org.
 
 # This script is used by the GROMACS developers to build most of the
 # files from which the nbnxn kernels are compiled. It is not called at
@@ -72,6 +72,7 @@
 # kernel logic. A run-time error occurs if an inappropriate kernel
 # dispatcher function is called (but that is normally impossible).
 
+import re
 import sys
 import os
 import collections # Requires Python 2.7
@@ -85,6 +86,15 @@ FileHeader += """/*
  */
 
 """
+
+def read_kernel_template(filename):
+    with open(filename, "r") as TemplateFile:
+        TemplateText = TemplateFile.read()
+    copyright_re = r'/\*\n \* This file is part of the GROMACS molecular simulation package\.\n( \*.*\n)* \*/\n'
+    match = re.match(copyright_re, TemplateText)
+    if match:
+        TemplateText = TemplateText[match.end():]
+    return TemplateText
 
 # The dict order must match the order of an enumeration in
 # nbnxn_kernel_simd_template.c.pre
@@ -139,11 +149,8 @@ VerletKernelTypeDict = {
     },
 }
 
-with open ("nbnxn_kernel_simd_template.c.pre", "r") as KernelDispatcherTemplateFile:
-    KernelDispatcherTemplate = KernelDispatcherTemplateFile.read()
-
-with open ("nbnxn_kernel_simd_template.h.pre", "r") as KernelsHeaderTemplateFile:
-    KernelsHeaderTemplate =  KernelsHeaderTemplateFile.read()
+KernelDispatcherTemplate = read_kernel_template("nbnxn_kernel_simd_template.c.pre")
+KernelsHeaderTemplate = read_kernel_template("nbnxn_kernel_simd_template.h.pre")
 
 # For each Verlet kernel type, write three kinds of files:
 #   a header file defining the functions for all the kernels,
@@ -156,8 +163,7 @@ for type in VerletKernelTypeDict:
     KernelsHeaderFileName = "{0}.h".format(KernelNamePrefix)
     KernelFunctionLookupTable = {}
     KernelDeclarations = ''
-    with open ("{1}_kernel.c.pre".format(DirName,KernelNamePrefix), "r") as KernelTemplateFile:
-        KernelTemplate =  KernelTemplateFile.read()
+    KernelTemplate = read_kernel_template("{0}_kernel.c.pre".format(KernelNamePrefix))
 
     # Loop over all kernels
     for ener in EnergiesComputationDict:
