@@ -1670,7 +1670,10 @@ int main(int argc, char *argv[])
     opt_mask_t           *omt = NULL;
 
     cr = init_par();
-
+    if (MASTER(cr)) 
+    {
+        printf("There are %d threads/processes.\n", cr->nnodes);
+    }
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
