@@ -1063,10 +1063,11 @@ angles_noener_simd(int nbonds,
     gmx_mm_pr      rijx_S, rijy_S, rijz_S;
     gmx_mm_pr      rkjx_S, rkjy_S, rkjz_S;
     gmx_mm_pr      one_S;
+    gmx_mm_pr      min_one_plus_eps_S;
     gmx_mm_pr      rij_rkj_S;
     gmx_mm_pr      nrij2_S, nrij_1_S;
     gmx_mm_pr      nrkj2_S, nrkj_1_S;
-    gmx_mm_pr      cos_S, sin_S;
+    gmx_mm_pr      cos_S, invsin_S;
     gmx_mm_pr      theta_S;
     gmx_mm_pr      st_S, sth_S;
     gmx_mm_pr      cik_S, cii_S, ckk_S;
@@ -1082,6 +1083,9 @@ angles_noener_simd(int nbonds,
     set_pbc_simd(pbc,&pbc_simd);
 
     one_S = gmx_set1_pr(1.0);
+
+    /* The smallest number > -1 */
+    min_one_plus_eps_S = gmx_set1_pr(-1.0 + 2*GMX_REAL_EPS);
 
     /* nbonds is the number of angles times nfa1, here we step UNROLL angles */
     for (i = 0; (i < nbonds); i += UNROLL*nfa1)
@@ -1141,12 +1145,21 @@ angles_noener_simd(int nbonds,
 
         cos_S     = gmx_mul_pr(rij_rkj_S, gmx_mul_pr(nrij_1_S, nrkj_1_S));
 
+        /* To allow for 180 degrees, we take the max of cos and -1 + 1bit,
+         * so we can safely get the 1/sin from 1/sqrt(1 - cos^2).
+         * This also ensures that rounding errors would cause the argument
+         * of gmx_acos_pr to be < -1.
+         * Note that we do not take precautions for cos(0)=1, so the outer
+         * atoms in an angle should not be on top of each other.
+         */
+        cos_S     = gmx_max_pr(cos_S, min_one_plus_eps_S);
+
         theta_S   = gmx_acos_pr(cos_S);
 
-        sin_S     = gmx_invsqrt_pr(gmx_max_pr(gmx_sub_pr(one_S, gmx_mul_pr(cos_S, cos_S)),
-                                              gmx_setzero_pr()));
+        invsin_S  = gmx_invsqrt_pr(gmx_sub_pr(one_S, gmx_mul_pr(cos_S, cos_S)));
+
         st_S      = gmx_mul_pr(gmx_mul_pr(k_S, gmx_sub_pr(theta0_S, theta_S)),
-                               sin_S);
+                               invsin_S);
         sth_S     = gmx_mul_pr(st_S, cos_S);
 
         cik_S     = gmx_mul_pr(st_S,  gmx_mul_pr(nrij_1_S, nrkj_1_S));
@@ -1521,8 +1534,18 @@ dih_angle_simd(const rvec *x,
     gmx_mm_pr ipr_S;
     gmx_mm_pr iprm_S, iprn_S;
     gmx_mm_pr nrkj2_S, nrkj_1_S, nrkj_2_S, nrkj_S;
+    gmx_mm_pr toler_S;
     gmx_mm_pr p_S, q_S;
-    gmx_mm_pr fmin_S = gmx_set1_pr(GMX_FLOAT_MIN);
+    gmx_mm_pr nrkj2_min_S;
+    gmx_mm_pr real_eps_S;
+
+    /* Used to avoid division by zero.
+     * We take into acount that we multiply the result by real_eps_S.
+     */
+    nrkj2_min_S = gmx_set1_pr(GMX_REAL_MIN/(2*GMX_REAL_EPS));
+
+    /* The value of the last significant bit (GMX_REAL_EPS is half of that) */
+    real_eps_S  = gmx_set1_pr(2*GMX_REAL_EPS);
 
     for (s = 0; s < UNROLL; s++)
     {
@@ -1581,13 +1604,19 @@ dih_angle_simd(const rvec *x,
     /* Avoid division by zero. When zero, the result is multiplied by 0
      * anyhow, so the 3 max below do not affect the final result.
      */
-    nrkj2_S    = gmx_max_pr(nrkj2_S, fmin_S);
+    nrkj2_S    = gmx_max_pr(nrkj2_S, nrkj2_min_S);
     nrkj_1_S   = gmx_invsqrt_pr(nrkj2_S);
     nrkj_2_S   = gmx_mul_pr(nrkj_1_S, nrkj_1_S);
     nrkj_S     = gmx_mul_pr(nrkj2_S, nrkj_1_S);
 
-    iprm_S     = gmx_max_pr(iprm_S, fmin_S);
-    iprn_S     = gmx_max_pr(iprn_S, fmin_S);
+    toler_S    = gmx_mul_pr(nrkj2_S, real_eps_S);
+
+    /* Here the plain-C code uses a conditional, but we can't do that in SIMD.
+     * So we take a max with the tolerance instead. Since we multiply with
+     * m or n later, the max does not affect the results.
+     */
+    iprm_S     = gmx_max_pr(iprm_S, toler_S);
+    iprn_S     = gmx_max_pr(iprn_S, toler_S);
     *nrkj_m2_S = gmx_mul_pr(nrkj_S, gmx_inv_pr(iprm_S));
     *nrkj_n2_S = gmx_mul_pr(nrkj_S, gmx_inv_pr(iprn_S));
 
