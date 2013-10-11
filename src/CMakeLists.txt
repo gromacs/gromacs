@@ -15,6 +15,9 @@ endif (BUILD_TESTING)
 add_subdirectory(gromacs)
 add_subdirectory(programs)
 
-if (NOT GMX_FAHCORE)
-    add_subdirectory(contrib)
+if(NOT GMX_FAHCORE)
+  add_subdirectory(contrib)
 endif()
+
+# Set global variable from the local variable's value
+set(TARGETS_NEEDED_BY_MANUAL_BUILD ${TARGETS_NEEDED_BY_MANUAL_BUILD} PARENT_SCOPE)

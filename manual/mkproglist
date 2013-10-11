@@ -1,0 +1,50 @@
+#!/bin/bash
+
+TEXIDX=proglist.tex
+PROGFILE=$1
+
+if [ ! -f $PROGFILE ]; then
+    echo "Error: Can't find programs.txt"
+    exit 1
+fi
+
+echo "generating latex page ${TEXIDX} from ${PROGFILE}"
+
+rm -f ${TEXIDX}
+
+touch ${TEXIDX}
+
+longest=g_helixorient
+
+cat >> ${TEXIDX} << HEADER
+\newlength{\proglistwidth}
+\newsavebox{\proglistsavebox}
+\savebox{\proglistsavebox}{\ttfamily\small $longest}
+\settowidth{\proglistwidth}{\usebox{\proglistsavebox}}
+
+\begin{description}[font=\bfseries\large]
+HEADER
+
+awk -F '|' -v longest="$longest" '{\
+  gsub("_","_",$0);\
+  gsub("%","\\%",$0);\
+  if (NF) {\
+    if ( $1 == "LONGEST" ) {\
+      longest = $2;\
+    } else if ( $1 == "HEAD" ) {\
+      printf("\\item[%s] \\ \n",$2);\
+      printf("\\begin{description}[font=\\ttfamily\\small, style=nextline, leftmargin=\\proglistwidth, noitemsep, labelsep=0pt]\n");\
+    } else if ( $1 == "END" ) {\
+      printf("\\end{description}\n\n");\
+    } else {\
+      printf("\\item[%s] %s \n",$1,$2);\
+    }\
+  }\
+}' $PROGFILE | sed -e 's/e\.g\./{\\eg}/g' >> $TEXIDX
+cat >> $TEXIDX << FOOTER
+\end{description}
+
+FOOTER
+
+echo ""
+#last line
