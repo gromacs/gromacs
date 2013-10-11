@@ -1,0 +1,83 @@
+
+if(${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+    # UseLATEX.cmake does not work with an in-source build
+    message(STATUS "Cannot build the manual when building in the source directory")
+    set(MANUAL_BUILD_IS_POSSIBLE OFF)
+else()
+    INCLUDE(UseLATEX.cmake)
+
+    if(NOT PDFLATEX_COMPILER OR NOT IMAGEMAGICK_CONVERT)
+        # No pdflatex was found, so don't build the manual.
+        message(STATUS "A required dependency of the manual (pdflatex, ImageMagick's convert) was not found, so the manual build will not be available")
+        set(MANUAL_BUILD_IS_POSSIBLE OFF)
+
+        # TODO Later, identify other dependencies like bibtex,
+        # make_index, date, some graphics conversion program,
+        # etc. Perhaps patch UseLATEX.cmake and contribute upstream.
+    else()
+        set(MANUAL_BUILD_IS_POSSIBLE ON)
+    endif()
+endif()
+
+if(MANUAL_BUILD_IS_POSSIBLE)
+    LATEX_GET_OUTPUT_PATH(output_dir)
+
+    # This helps make the index look decent.
+    set(MAKEINDEX_COMPILER_FLAGS -s ${CMAKE_CURRENT_SOURCE_DIR}/hfill.ist)
+    # UseLATEX.cmake is hacked to call Anton Feenstra's subindex script
+    # to improve the index generation. Don't replace UseLATEX.cmake
+    # blindly from upstream!
+
+    # Here follows various custom CMake "commands" that call our various
+    # GROMACS helper scripts to make bits of the manual from the installed
+    # binaries and/or source distribution, as appropriate.
+    #
+    # Only files that can be built should be listed in DEPENDS. Makefile
+    # rules are generated for those files.
+    #
+    # The .mdp options section is now intended to be built directly
+    # from a GROMACS source directory. This facilitates drafting
+    # updates in that HTML file without copying files by hand.
+
+    ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/mdp_opt.tex
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/mkmdp ARGS ${CMAKE_SOURCE_DIR}/share/html
+        DEPENDS mkmdp ${CMAKE_SOURCE_DIR}/share/html/online/mdp_opt.html
+        )
+
+    ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/proglist.tex
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/mkproglist ARGS ${CMAKE_SOURCE_DIR}/admin/programs.txt
+        DEPENDS mkproglist ${CMAKE_SOURCE_DIR}/admin/programs.txt
+        )
+
+    # Finally, the command to build the manual.
+
+    ADD_LATEX_DOCUMENT(gromacs.tex
+        # Normal LaTeX \included files
+        INPUTS algorithms.tex  defunits.tex    implement.tex  macros.tex     special.tex
+        analyse.tex     files.tex       gmxpar.tex     install.tex    topology.tex
+        averages.tex    forcefield.tex  gromacs.tex    intro.tex      programs.tex
+
+        # CMake does variable replacement in these files
+        CONFIGURE macros.tex
+
+        # These files we're responsible for creating in the
+        # add_custom_targets() above. They should not be in the git
+        # repository, or its directory, or the dependencies will not work
+        # properly.
+        DEPENDS proglist.tex mdp_opt.tex
+
+        BIBFILES monster.bib unpubl.bib
+        IMAGE_DIRS plots
+        DEFAULT_PDF
+        USE_INDEX
+        )
+endif()
+
+if(MANUAL_BUILD_IS_POSSIBLE)
+    # An explicit "make manual" will still be required for the manual
+    # to be built.
+    add_custom_target(manual DEPENDS pdf)
+else()
+    # TODO Arrange for the "make manual" target to explain that this can't
+    # be done
+endif()

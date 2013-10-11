@@ -1284,3 +1284,15 @@ IF(BUILD_TESTING)
     endif()
     #TODO: Add warning if NOT REGRESSIONTEST_PATH OR NOT GMX_XML that regression/unit tests are not run.
 ENDIF()
+
+########################################################################
+# Manual                                                               #
+########################################################################
+
+option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
+mark_as_advanced(GMX_BUILD_MANUAL)
+if(GMX_BUILD_MANUAL)
+    # Make sure we only do detection of manual-building dependencies
+    # when the user opted in for that.
+    add_subdirectory(manual)
+endif()
