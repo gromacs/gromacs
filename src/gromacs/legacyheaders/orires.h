@@ -49,8 +49,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec x[],
                  const t_inputrec *ir,
                  const t_commrec *cr, t_oriresdata *od,
-                 t_state *state,
-                 gmx_bool bIsParticleDecomposition);
+                 t_state *state);
 /* Decides whether orientation restraints can work, and initializes
    all the orientation restraint stuff in *od (and assumes *od is
    already allocated. */

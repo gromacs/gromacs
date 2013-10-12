@@ -47,7 +47,6 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"
-#include "mvdata.h"
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
@@ -72,7 +71,6 @@
 #include "copyrite.h"
 #include "gromacs/random/random.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "genborn.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
@@ -463,7 +461,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
     char buf[STEPSTRSIZE];
 
     pf2 = sqr(pforce);
-    for (i = md->start; i < md->start+md->homenr; i++)
+    for (i = 0; i < md->homenr; i++)
     {
         fn2 = norm2(f[i]);
         /* We also catch NAN, if the compiler does not optimize this away. */
@@ -512,7 +510,7 @@ static void post_process_forces(t_commrec *cr,
             }
             else
             {
-                sum_forces(mdatoms->start, mdatoms->start+mdatoms->homenr,
+                sum_forces(0, mdatoms->homenr,
                            f, fr->f_novirsum);
             }
             if (EEL_FULL(fr->eeltype))
@@ -704,7 +702,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     nbv             = fr->nbv;
     nb_kernel_type  = fr->nbv->grp[0].kernel_type;
 
-    start  = mdatoms->start;
+    start  = 0;
     homenr = mdatoms->homenr;
 
     bSepDVDL = (fr->bSepDVDL && do_per_step(step, inputrec->nstlog));
@@ -1056,13 +1054,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     reset_enerdata(fr, bNS, enerd, MASTER(cr));
     clear_rvecs(SHIFTS, fr->fshift);
 
-    if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr) && !(cr->duty & DUTY_PME))
     {
-        if (!(cr->duty & DUTY_PME))
-        {
-            wallcycle_start(wcycle, ewcPPDURINGPME);
-            dd_force_flop_start(cr->dd, nrnb);
-        }
+        wallcycle_start(wcycle, ewcPPDURINGPME);
+        dd_force_flop_start(cr->dd, nrnb);
     }
 
     if (inputrec->bRot)
@@ -1262,37 +1257,31 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (bDoForces)
+    if (bDoForces && DOMAINDECOMP(cr))
     {
         /* Communicate the forces */
-        if (PAR(cr))
+        wallcycle_start(wcycle, ewcMOVEF);
+        dd_move_f(cr->dd, f, fr->fshift);
+        /* Do we need to communicate the separate force array
+         * for terms that do not contribute to the single sum virial?
+         * Position restraints and electric fields do not introduce
+         * inter-cg forces, only full electrostatics methods do.
+         * When we do not calculate the virial, fr->f_novirsum = f,
+         * so we have already communicated these forces.
+         */
+        if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
+            (flags & GMX_FORCE_VIRIAL))
         {
-            wallcycle_start(wcycle, ewcMOVEF);
-            if (DOMAINDECOMP(cr))
-            {
-                dd_move_f(cr->dd, f, fr->fshift);
-                /* Do we need to communicate the separate force array
-                 * for terms that do not contribute to the single sum virial?
-                 * Position restraints and electric fields do not introduce
-                 * inter-cg forces, only full electrostatics methods do.
-                 * When we do not calculate the virial, fr->f_novirsum = f,
-                 * so we have already communicated these forces.
-                 */
-                if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
-                    (flags & GMX_FORCE_VIRIAL))
-                {
-                    dd_move_f(cr->dd, fr->f_novirsum, NULL);
-                }
-                if (bSepLRF)
-                {
-                    /* We should not update the shift forces here,
-                     * since f_twin is already included in f.
-                     */
-                    dd_move_f(cr->dd, fr->f_twin, NULL);
-                }
-            }
-            wallcycle_stop(wcycle, ewcMOVEF);
+            dd_move_f(cr->dd, fr->f_novirsum, NULL);
         }
+        if (bSepLRF)
+        {
+            /* We should not update the shift forces here,
+             * since f_twin is already included in f.
+             */
+            dd_move_f(cr->dd, fr->f_twin, NULL);
+        }
+        wallcycle_stop(wcycle, ewcMOVEF);
     }
 
     if (bUseOrEmulGPU)
@@ -1380,7 +1369,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(mdatoms->start, mdatoms->homenr, x, f,
+            calc_virial(0, mdatoms->homenr, x, f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
@@ -1446,32 +1435,25 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     t_pbc      pbc;
     float      cycles_pme, cycles_force;
 
-    start  = mdatoms->start;
+    start  = 0;
     homenr = mdatoms->homenr;
 
     bSepDVDL = (fr->bSepDVDL && do_per_step(step, inputrec->nstlog));
 
     clear_mat(vir_force);
 
-    if (PARTDECOMP(cr))
+    cg0 = 0;
+    if (DOMAINDECOMP(cr))
     {
-        pd_cg_range(cr, &cg0, &cg1);
+        cg1 = cr->dd->ncg_tot;
     }
     else
     {
-        cg0 = 0;
-        if (DOMAINDECOMP(cr))
-        {
-            cg1 = cr->dd->ncg_tot;
-        }
-        else
-        {
-            cg1 = top->cgs.nr;
-        }
-        if (fr->n_tpi > 0)
-        {
-            cg1--;
-        }
+        cg1 = top->cgs.nr;
+    }
+    if (fr->n_tpi > 0)
+    {
+        cg1--;
     }
 
     bStateChanged  = (flags & GMX_FORCE_STATECHANGED);
@@ -1532,16 +1514,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         inc_nrnb(nrnb, eNR_CGCM, homenr);
     }
 
-    if (bCalcCGCM)
+    if (bCalcCGCM && gmx_debug_at)
     {
-        if (PAR(cr))
-        {
-            move_cgcm(fplog, cr, fr->cg_cm);
-        }
-        if (gmx_debug_at)
-        {
-            pr_rvecs(debug, 0, "cgcm", fr->cg_cm, top->cgs.nr);
-        }
+        pr_rvecs(debug, 0, "cgcm", fr->cg_cm, top->cgs.nr);
     }
 
 #ifdef GMX_MPI
@@ -1588,17 +1563,10 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 #endif /* GMX_MPI */
 
     /* Communicate coordinates and sum dipole if necessary */
-    if (PAR(cr))
+    if (DOMAINDECOMP(cr))
     {
         wallcycle_start(wcycle, ewcMOVEX);
-        if (DOMAINDECOMP(cr))
-        {
-            dd_move_x(cr->dd, box, x);
-        }
-        else
-        {
-            move_x(cr, x, nrnb);
-        }
+        dd_move_x(cr->dd, box, x);
         wallcycle_stop(wcycle, ewcMOVEX);
     }
 
@@ -1689,13 +1657,10 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                        x, box, fr, &top->idef, graph, fr->born);
     }
 
-    if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr) && !(cr->duty & DUTY_PME))
     {
-        if (!(cr->duty & DUTY_PME))
-        {
-            wallcycle_start(wcycle, ewcPPDURINGPME);
-            dd_force_flop_start(cr->dd, nrnb);
-        }
+        wallcycle_start(wcycle, ewcPPDURINGPME);
+        dd_force_flop_start(cr->dd, nrnb);
     }
 
     if (inputrec->bRot)
@@ -1830,39 +1795,28 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
 
         /* Communicate the forces */
-        if (PAR(cr))
+        if (DOMAINDECOMP(cr))
         {
             wallcycle_start(wcycle, ewcMOVEF);
-            if (DOMAINDECOMP(cr))
+            dd_move_f(cr->dd, f, fr->fshift);
+            /* Do we need to communicate the separate force array
+             * for terms that do not contribute to the single sum virial?
+             * Position restraints and electric fields do not introduce
+             * inter-cg forces, only full electrostatics methods do.
+             * When we do not calculate the virial, fr->f_novirsum = f,
+             * so we have already communicated these forces.
+             */
+            if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
+                (flags & GMX_FORCE_VIRIAL))
             {
-                dd_move_f(cr->dd, f, fr->fshift);
-                /* Do we need to communicate the separate force array
-                 * for terms that do not contribute to the single sum virial?
-                 * Position restraints and electric fields do not introduce
-                 * inter-cg forces, only full electrostatics methods do.
-                 * When we do not calculate the virial, fr->f_novirsum = f,
-                 * so we have already communicated these forces.
-                 */
-                if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
-                    (flags & GMX_FORCE_VIRIAL))
-                {
-                    dd_move_f(cr->dd, fr->f_novirsum, NULL);
-                }
-                if (bSepLRF)
-                {
-                    /* We should not update the shift forces here,
-                     * since f_twin is already included in f.
-                     */
-                    dd_move_f(cr->dd, fr->f_twin, NULL);
-                }
+                dd_move_f(cr->dd, fr->f_novirsum, NULL);
             }
-            else
+            if (bSepLRF)
             {
-                pd_move_f(cr, f, nrnb);
-                if (bSepLRF)
-                {
-                    pd_move_f(cr, fr->f_twin, nrnb);
-                }
+                /* We should not update the shift forces here,
+                 * since f_twin is already included in f.
+                 */
+                dd_move_f(cr->dd, fr->f_twin, NULL);
             }
             wallcycle_stop(wcycle, ewcMOVEF);
         }
@@ -1890,7 +1844,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(mdatoms->start, mdatoms->homenr, x, f,
+            calc_virial(0, mdatoms->homenr, x, f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
@@ -2003,8 +1957,8 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
 
     snew(savex, state->natoms);
 
-    start = md->start;
-    end   = md->homenr + start;
+    start = 0;
+    end   = md->homenr;
 
     if (debug)
     {
@@ -2576,33 +2530,6 @@ void finish_run(FILE *fplog, t_commrec *cr,
     {
         print_dd_statistics(cr, inputrec, fplog);
     }
-
-#ifdef GMX_MPI
-    if (PARTDECOMP(cr))
-    {
-        if (MASTER(cr))
-        {
-            t_nrnb     *nrnb_all;
-            int         s;
-            MPI_Status  stat;
-
-            snew(nrnb_all, cr->nnodes);
-            nrnb_all[0] = *nrnb;
-            for (s = 1; s < cr->nnodes; s++)
-            {
-                MPI_Recv(nrnb_all[s].n, eNRNB, MPI_DOUBLE, s, 0,
-                         cr->mpi_comm_mysim, &stat);
-            }
-            pr_load(fplog, cr, nrnb_all);
-            sfree(nrnb_all);
-        }
-        else
-        {
-            MPI_Send(nrnb->n, eNRNB, MPI_DOUBLE, MASTERRANK(cr), 0,
-                     cr->mpi_comm_mysim);
-        }
-    }
-#endif
 
     if (SIMMASTER(cr))
     {

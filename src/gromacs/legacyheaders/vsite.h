@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,19 +47,6 @@ extern "C" {
 #endif
 
 typedef struct {
-    int *      left_import_construct;
-    int        left_import_nconstruct;
-    int *      left_export_construct;
-    int        left_export_nconstruct;
-    int *      right_import_construct;
-    int        right_import_nconstruct;
-    int *      right_export_construct;
-    int        right_export_nconstruct;
-    rvec *     send_buf;
-    rvec *     recv_buf;
-} t_comm_vsites;
-
-typedef struct {
     t_ilist ilist[F_NRE];     /* vsite ilists for this thread            */
     rvec    fshift[SHIFTS];   /* fshift accumulation buffer              */
     matrix  dxdf;             /* virial dx*df accumulation buffer        */
@@ -72,8 +59,6 @@ typedef struct {
     int              ***vsite_pbc_molt;       /* The pbc atoms for intercg vsites        */
     int               **vsite_pbc_loc;        /* The local pbc atoms                     */
     int                *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
-    gmx_bool            bPDvsitecomm;         /* Do we need vsite communication with PD? */
-    t_comm_vsites      *vsitecomm;            /* The PD vsite communication struct       */
     int                 nthreads;             /* Number of threads used for vsites       */
     gmx_vsite_thread_t *tdata;                /* Thread local vsites and work structs    */
     int                *th_ind;               /* Work array                              */
@@ -84,7 +69,7 @@ void construct_vsites(gmx_vsite_t *vsite,
                       rvec x[],
                       real dt, rvec v[],
                       t_iparams ip[], t_ilist ilist[],
-                      int ePBC, gmx_bool bMolPBC, t_graph *graph,
+                      int ePBC, gmx_bool bMolPBC,
                       t_commrec *cr, matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the local system.
