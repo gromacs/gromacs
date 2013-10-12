@@ -48,7 +48,6 @@
 #include "physics.h"
 #include "vec.h"
 #include "maths.h"
-#include "mvdata.h"
 #include "main.h"
 #include "force.h"
 #include "vcm.h"
@@ -62,7 +61,6 @@
 #include "trnio.h"
 #include "statutil.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "constr.h"
 #include "checkpoint.h"
 #include "xvgr.h"
@@ -429,16 +427,6 @@ int do_per_step(gmx_large_int_t step, gmx_large_int_t nstep)
     }
 }
 
-static void moveit(t_commrec *cr, rvec xx[])
-{
-    if (!xx)
-    {
-        return;
-    }
-
-    move_rvecs(cr, FALSE, FALSE, xx, NULL, (cr->nnodes-cr->npmenodes)-1, NULL);
-}
-
 gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                           const t_commrec *cr, const t_inputrec *ir,
                           const output_env_t oenv)
@@ -567,8 +555,6 @@ void write_traj(FILE *fplog, t_commrec *cr,
     rvec         *local_v;
     rvec         *global_v;
 
-#define MX(xvf) moveit(cr, xvf)
-
     /* MRS -- defining these variables is to manage the difference
      * between half step and full step velocities, but there must be a better way . . . */
 
@@ -614,63 +600,6 @@ void write_traj(FILE *fplog, t_commrec *cr,
             copy_mat(state_local->svir_prev, state_global->svir_prev);
             copy_mat(state_local->fvir_prev, state_global->fvir_prev);
             copy_mat(state_local->pres_prev, state_global->pres_prev);
-        }
-        if (cr->nnodes > 1)
-        {
-            /* Particle decomposition, collect the data on the master node */
-            if (mdof_flags & MDOF_CPT)
-            {
-                if (state_local->flags & (1<<estX))
-                {
-                    MX(state_global->x);
-                }
-                if (state_local->flags & (1<<estV))
-                {
-                    MX(state_global->v);
-                }
-                if (state_local->flags & (1<<estSDX))
-                {
-                    MX(state_global->sd_X);
-                }
-                if (state_global->nrngi > 1)
-                {
-                    if (state_local->flags & (1<<estLD_RNG))
-                    {
-#ifdef GMX_MPI
-                        MPI_Gather(state_local->ld_rng,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                                   state_global->ld_rng,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                                   MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-                    }
-                    if (state_local->flags & (1<<estLD_RNGI))
-                    {
-#ifdef GMX_MPI
-                        MPI_Gather(state_local->ld_rngi,
-                                   sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                                   state_global->ld_rngi,
-                                   sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                                   MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-                    }
-                }
-            }
-            else
-            {
-                if (mdof_flags & (MDOF_X | MDOF_XTC))
-                {
-                    MX(state_global->x);
-                }
-                if (mdof_flags & MDOF_V)
-                {
-                    MX(global_v);
-                }
-            }
-            if (mdof_flags & MDOF_F)
-            {
-                MX(f_global);
-            }
         }
     }
 

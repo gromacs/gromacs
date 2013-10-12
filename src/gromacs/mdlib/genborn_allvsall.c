@@ -37,7 +37,6 @@
 #include "vec.h"
 #include "smalloc.h"
 
-#include "partdec.h"
 #include "network.h"
 #include "physics.h"
 #include "genborn.h"
@@ -529,11 +528,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
         born->gpol_still_work[i] += gpi;
     }
 
-    /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, born->gpol_still_work, cr);
-    }
+    /* Parallel summations would go here if ever implemented with DD */
 
     /* Calculate the radii */
     for (i = 0; i < natoms; i++)
@@ -886,11 +881,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
         born->gpol_hct_work[i] += sum_ai;
     }
 
-    /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, born->gpol_hct_work, cr);
-    }
+    /* Parallel summations would go here if ever implemented with DD */
 
     if (gb_algorithm == egbHCT)
     {

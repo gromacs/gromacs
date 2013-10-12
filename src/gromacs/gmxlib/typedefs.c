@@ -44,6 +44,7 @@
 #include "pbc.h"
 #include "macros.h"
 #include <string.h>
+#include "gmx_random.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
@@ -663,6 +664,38 @@ void done_state(t_state *state)
         sfree(state->nosehoover_vxi);
         sfree(state->therm_integral);
     }
+}
+
+t_state *serial_init_local_state(t_commrec *cr, t_state *state_global)
+{
+    int      i;
+    t_state *state_local;
+
+    snew(state_local, 1);
+
+    /* Copy all the contents */
+    *state_local = *state_global;
+    snew(state_local->lambda, efptNR);
+    /* local storage for lambda */
+    for (i = 0; i < efptNR; i++)
+    {
+        state_local->lambda[i] = state_global->lambda[i];
+    }
+    if (state_global->nrngi > 1)
+    {
+        /* With stochastic dynamics we need local storage for the random state */
+        if (state_local->flags & (1<<estLD_RNG))
+        {
+            state_local->nrng = gmx_rng_n();
+            snew(state_local->ld_rng, state_local->nrng);
+        }
+        if (state_local->flags & (1<<estLD_RNGI))
+        {
+            snew(state_local->ld_rngi, 1);
+        }
+    }
+
+    return state_local;
 }
 
 static void do_box_rel(t_inputrec *ir, matrix box_rel, matrix b, gmx_bool bInit)
