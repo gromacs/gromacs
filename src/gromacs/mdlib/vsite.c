@@ -44,12 +44,10 @@
 #include "smalloc.h"
 #include "nrnb.h"
 #include "vec.h"
-#include "mvdata.h"
 #include "network.h"
 #include "mshift.h"
 #include "pbc.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "mtop_util.h"
 #include "gmx_omp_nthreads.h"
 #include "gmx_omp.h"
@@ -57,120 +55,6 @@
 /* Routines to send/recieve coordinates and force
  * of constructing atoms.
  */
-
-static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
-{
-    rvec *sendbuf;
-    rvec *recvbuf;
-    int   i, ia;
-
-    sendbuf = vsitecomm->send_buf;
-    recvbuf = vsitecomm->recv_buf;
-
-
-    /* Prepare pulse left by copying to send buffer */
-    for (i = 0; i < vsitecomm->left_export_nconstruct; i++)
-    {
-        ia = vsitecomm->left_export_construct[i];
-        copy_rvec(x[ia], sendbuf[i]);
-    }
-
-    /* Pulse coordinates left */
-    gmx_tx_rx_real(cr, GMX_LEFT, (real *)sendbuf, 3*vsitecomm->left_export_nconstruct, GMX_RIGHT, (real *)recvbuf, 3*vsitecomm->right_import_nconstruct);
-
-    /* Copy from receive buffer to coordinate array */
-    for (i = 0; i < vsitecomm->right_import_nconstruct; i++)
-    {
-        ia = vsitecomm->right_import_construct[i];
-        copy_rvec(recvbuf[i], x[ia]);
-    }
-
-    /* Prepare pulse right by copying to send buffer */
-    for (i = 0; i < vsitecomm->right_export_nconstruct; i++)
-    {
-        ia = vsitecomm->right_export_construct[i];
-        copy_rvec(x[ia], sendbuf[i]);
-    }
-
-    /* Pulse coordinates right */
-    gmx_tx_rx_real(cr, GMX_RIGHT, (real *)sendbuf, 3*vsitecomm->right_export_nconstruct, GMX_LEFT, (real *)recvbuf, 3*vsitecomm->left_import_nconstruct);
-
-    /* Copy from receive buffer to coordinate array */
-    for (i = 0; i < vsitecomm->left_import_nconstruct; i++)
-    {
-        ia = vsitecomm->left_import_construct[i];
-        copy_rvec(recvbuf[i], x[ia]);
-    }
-}
-
-
-static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
-{
-    rvec *sendbuf;
-    rvec *recvbuf;
-    int   i, ia;
-
-    sendbuf = vsitecomm->send_buf;
-    recvbuf = vsitecomm->recv_buf;
-
-    /* Prepare pulse right by copying to send buffer */
-    for (i = 0; i < vsitecomm->right_import_nconstruct; i++)
-    {
-        ia = vsitecomm->right_import_construct[i];
-        copy_rvec(f[ia], sendbuf[i]);
-        clear_rvec(f[ia]);     /* Zero it here after moving, just to simplify debug book-keeping... */
-    }
-
-    /* Pulse forces right */
-    gmx_tx_rx_real(cr, GMX_RIGHT, (real *)sendbuf, 3*vsitecomm->right_import_nconstruct, GMX_LEFT, (real *)recvbuf, 3*vsitecomm->left_export_nconstruct);
-
-    /* Copy from receive buffer to coordinate array */
-    for (i = 0; i < vsitecomm->left_export_nconstruct; i++)
-    {
-        ia = vsitecomm->left_export_construct[i];
-        rvec_inc(f[ia], recvbuf[i]);
-    }
-
-    /* Prepare pulse left by copying to send buffer */
-    for (i = 0; i < vsitecomm->left_import_nconstruct; i++)
-    {
-        ia = vsitecomm->left_import_construct[i];
-        copy_rvec(f[ia], sendbuf[i]);
-        clear_rvec(f[ia]);     /* Zero it here after moving, just to simplify debug book-keeping... */
-    }
-
-    /* Pulse coordinates left */
-    gmx_tx_rx_real(cr, GMX_LEFT, (real *)sendbuf, 3*vsitecomm->left_import_nconstruct, GMX_RIGHT, (real *)recvbuf, 3*vsitecomm->right_export_nconstruct);
-
-    /* Copy from receive buffer to coordinate array */
-    for (i = 0; i < vsitecomm->right_export_nconstruct; i++)
-    {
-        ia = vsitecomm->right_export_construct[i];
-        rvec_inc(f[ia], recvbuf[i]);
-    }
-
-    /* All forces are now on the home processors */
-}
-
-
-static void
-pd_clear_nonlocal_constructs(t_comm_vsites *vsitecomm, rvec f[])
-{
-    int i, ia;
-
-    for (i = 0; i < vsitecomm->left_import_nconstruct; i++)
-    {
-        ia = vsitecomm->left_import_construct[i];
-        clear_rvec(f[ia]);
-    }
-    for (i = 0; i < vsitecomm->right_import_nconstruct; i++)
-    {
-        ia = vsitecomm->right_import_construct[i];
-        clear_rvec(f[ia]);
-    }
-}
-
-
 
 static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
@@ -602,13 +486,10 @@ void construct_vsites(gmx_vsite_t *vsite,
                       t_commrec *cr, matrix box)
 {
     t_pbc     pbc, *pbc_null;
-    gmx_bool  bDomDec;
     int       nthreads;
 
-    bDomDec = cr && DOMAINDECOMP(cr);
-
     /* We only need to do pbc when we have inter-cg vsites */
-    if (ePBC != epbcNONE && (bDomDec || bMolPBC) && vsite->n_intercg_vsite)
+    if (ePBC != epbcNONE && ((cr && DOMAINDECOMP(cr)) || bMolPBC) && vsite->n_intercg_vsite)
     {
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step. But how often do we have vsites with full pbc?
@@ -620,32 +501,9 @@ void construct_vsites(gmx_vsite_t *vsite,
         pbc_null = NULL;
     }
 
-    if (cr)
+    if (cr && DOMAINDECOMP(cr))
     {
-        if (bDomDec)
-        {
             dd_move_x_vsites(cr->dd, box, x);
-        }
-        else if (vsite->bPDvsitecomm)
-        {
-            /* I'm not sure whether the periodicity and shift are guaranteed
-             * to be consistent between different nodes when running e.g. polymers
-             * in parallel. In this special case we thus unshift/shift,
-             * but only when necessary. This is to make sure the coordinates
-             * we move don't end up a box away...
-             */
-            if (graph != NULL)
-            {
-                unshift_self(graph, box, x);
-            }
-
-            move_construct_x(vsite->vsitecomm, x, cr);
-
-            if (graph != NULL)
-            {
-                shift_self(graph, box, x);
-            }
-        }
     }
 
     if (vsite->nthreads == 1)
@@ -1578,10 +1436,6 @@ void spread_vsite_f(gmx_vsite_t *vsite,
     {
         dd_clear_f_vsites(cr->dd, f);
     }
-    else if (PARTDECOMP(cr) && vsite->vsitecomm != NULL)
-    {
-        pd_clear_nonlocal_constructs(vsite->vsitecomm, f);
-    }
 
     if (vsite->nthreads == 1)
     {
@@ -1665,11 +1519,6 @@ void spread_vsite_f(gmx_vsite_t *vsite,
     if (DOMAINDECOMP(cr))
     {
         dd_move_f_vsites(cr->dd, f, fshift);
-    }
-    else if (vsite->bPDvsitecomm)
-    {
-        /* We only move forces here, and they are independent of shifts */
-        move_construct_f(vsite->vsitecomm, f, cr);
     }
 
     inc_nrnb(nrnb, eNR_VSITE2,   vsite_count(idef->il, F_VSITE2));
@@ -2168,19 +2017,14 @@ void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
             sfree(a2cg);
         }
 
-        if (PARTDECOMP(cr))
-        {
-            snew(vsite->vsitecomm, 1);
-            vsite->bPDvsitecomm =
-                setup_parallel_vsites(&(top->idef), cr, vsite->vsitecomm);
-        }
     }
 
     if (vsite->nthreads > 1)
     {
-        if (vsite->bHaveChargeGroups || PARTDECOMP(cr))
+        if (vsite->bHaveChargeGroups)
         {
-            gmx_incons("Can not use threads virtual sites combined with charge groups or particle decomposition");
+            // TODO should this be a gmx_fatal, not a gmx_incons?
+            gmx_incons("Can not use threaded virtual sites combined with charge groups");
         }
 
         split_vsites_over_threads(top->idef.il, md, !DOMAINDECOMP(cr), vsite);

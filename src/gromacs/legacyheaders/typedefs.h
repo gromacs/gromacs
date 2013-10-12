@@ -70,6 +70,7 @@
 #include "types/constr.h"
 #include "types/matrix.h"
 #include "types/oenv.h"
+#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,6 +135,7 @@ void init_energyhistory(energyhistory_t * enerhist);
 void done_energyhistory(energyhistory_t * enerhist);
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
+t_state *serial_init_local_state(t_commrec *cr, t_state *state_global);
 void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
 

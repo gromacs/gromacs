@@ -43,7 +43,6 @@
 #include "smalloc.h"
 #include "names.h"
 #include "confio.h"
-#include "mvdata.h"
 #include "txtdump.h"
 #include "vec.h"
 #include <time.h>
@@ -2658,12 +2657,6 @@ void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
     rvec    *xfit   = NULL, *xstart = NULL; /* dummy arrays to determine initial RMSDs  */
     rvec     fit_transvec;                  /* translation ... */
     matrix   fit_rotmat;                    /* ... and rotation from fit to reference structure */
-
-
-    if (!DOMAINDECOMP(cr) && PAR(cr) && MASTER(cr))
-    {
-        gmx_fatal(FARGS, "Please switch on domain decomposition to use essential dynamics in parallel.");
-    }
 
     if (MASTER(cr))
     {
