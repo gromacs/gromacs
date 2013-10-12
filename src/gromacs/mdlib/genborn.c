@@ -50,7 +50,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "names.h"
 #include "physics.h"
-#include "partdec.h"
 #include "domdec.h"
 #include "network.h"
 #include "gmx_fatal.h"
@@ -105,7 +104,7 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
     }
 }
 
-int init_gb_nblist(int natoms, t_nblist *nl)
+static int init_gb_nblist(int natoms, t_nblist *nl)
 {
     nl->maxnri      = natoms*4;
     nl->maxnrj      = 0;
@@ -129,47 +128,9 @@ int init_gb_nblist(int natoms, t_nblist *nl)
     return 0;
 }
 
-void gb_pd_send(t_commrec gmx_unused *cr, real gmx_unused *send_data, int gmx_unused nr)
-{
-#ifdef GMX_MPI
-    int  i, cur;
-    int *index, *sendc, *disp;
 
-    snew(sendc, cr->nnodes);
-    snew(disp, cr->nnodes);
-
-    index = pd_index(cr);
-    cur   = cr->nodeid;
-
-    /* Setup count/index arrays */
-    for (i = 0; i < cr->nnodes; i++)
-    {
-        sendc[i]  = index[i+1]-index[i];
-        disp[i]   = index[i];
-    }
-
-    /* Do communication */
-    MPI_Gatherv(send_data+index[cur], sendc[cur], GMX_MPI_REAL, send_data, sendc,
-                disp, GMX_MPI_REAL, 0, cr->mpi_comm_mygroup);
-    MPI_Bcast(send_data, nr, GMX_MPI_REAL, 0, cr->mpi_comm_mygroup);
-
-#endif
-}
-
-
-int init_gb_plist(t_params *p_list)
-{
-    p_list->nr    = 0;
-    p_list->param = NULL;
-
-    return 0;
-}
-
-
-
-int init_gb_still(const t_commrec *cr,
-                  const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
-                  gmx_genborn_t *born, int natoms)
+static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
+                         gmx_genborn_t *born, int natoms)
 {
 
     int   i, j, i1, i2, k, m, nbond, nang, ia, ib, ic, id, nb, idx, idx2, at;
@@ -186,28 +147,8 @@ int init_gb_still(const t_commrec *cr,
     snew(gp, natoms);
     snew(born->gpol_still_work, natoms+3);
 
-    if (PAR(cr))
-    {
-        if (PARTDECOMP(cr))
-        {
-            pd_at_range(cr, &at0, &at1);
-
-            for (i = 0; i < natoms; i++)
-            {
-                vsol[i] = gp[i] = 0;
-            }
-        }
-        else
-        {
             at0 = 0;
             at1 = natoms;
-        }
-    }
-    else
-    {
-        at0 = 0;
-        at1 = natoms;
-    }
 
     doffset = born->gb_doffset;
 
@@ -245,37 +186,13 @@ int init_gb_still(const t_commrec *cr,
         h      = ri*(1+ratio);
         term   = (M_PI/3.0)*h*h*(3.0*ri-h);
 
-        if (PARTDECOMP(cr))
-        {
-            vsol[ia] += term;
-        }
-        else
-        {
             born->vsolv_globalindex[ia] -= term;
-        }
 
         ratio  = (ri2-rj2-r*r)/(2*rj*r);
         h      = rj*(1+ratio);
         term   = (M_PI/3.0)*h*h*(3.0*rj-h);
 
-        if (PARTDECOMP(cr))
-        {
-            vsol[ib] += term;
-        }
-        else
-        {
             born->vsolv_globalindex[ib] -= term;
-        }
-    }
-
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, vsol, cr);
-
-        for (i = 0; i < natoms; i++)
-        {
-            born->vsolv_globalindex[i] = born->vsolv_globalindex[i]-vsol[i];
-        }
     }
 
     /* Get the self-, 1-2 and 1-3 polarization energies for analytical Still
@@ -301,18 +218,10 @@ int init_gb_still(const t_commrec *cr,
 
         r4 = r*r*r*r;
 
-        if (PARTDECOMP(cr))
-        {
-            gp[ia] += STILL_P2*born->vsolv_globalindex[ib]/r4;
-            gp[ib] += STILL_P2*born->vsolv_globalindex[ia]/r4;
-        }
-        else
-        {
             born->gpol_globalindex[ia] = born->gpol_globalindex[ia]+
                 STILL_P2*born->vsolv_globalindex[ib]/r4;
             born->gpol_globalindex[ib] = born->gpol_globalindex[ib]+
                 STILL_P2*born->vsolv_globalindex[ia]/r4;
-        }
     }
 
     /* 1-3 */
@@ -325,28 +234,10 @@ int init_gb_still(const t_commrec *cr,
         r  = idef->iparams[m].gb.st;
         r4 = r*r*r*r;
 
-        if (PARTDECOMP(cr))
-        {
-            gp[ia] += STILL_P3*born->vsolv[ib]/r4;
-            gp[ib] += STILL_P3*born->vsolv[ia]/r4;
-        }
-        else
-        {
             born->gpol_globalindex[ia] = born->gpol_globalindex[ia]+
                 STILL_P3*born->vsolv_globalindex[ib]/r4;
             born->gpol_globalindex[ib] = born->gpol_globalindex[ib]+
                 STILL_P3*born->vsolv_globalindex[ia]/r4;
-        }
-    }
-
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, gp, cr);
-
-        for (i = 0; i < natoms; i++)
-        {
-            born->gpol_globalindex[i] = born->gpol_globalindex[i]+gp[i];
-        }
     }
 
     sfree(vsol);
@@ -357,7 +248,7 @@ int init_gb_still(const t_commrec *cr,
 
 /* Initialize all GB datastructs and compute polarization energies */
 int init_gb(gmx_genborn_t **p_born,
-            const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
+            t_forcerec *fr, const t_inputrec *ir,
             const gmx_mtop_t *mtop, int gb_algorithm)
 {
     int             i, j, m, ai, aj, jj, natoms, nalloc;
@@ -440,7 +331,7 @@ int init_gb(gmx_genborn_t **p_born,
     /* If Still model, initialise the polarisation energies */
     if (gb_algorithm == egbSTILL)
     {
-        init_gb_still(cr, &(mtop->atomtypes), &(localtop->idef), &atoms,
+        init_gb_still(&(mtop->atomtypes), &(localtop->idef), &atoms,
                       born, natoms);
     }
 
@@ -482,7 +373,7 @@ int init_gb(gmx_genborn_t **p_born,
 
 
 static int
-calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
+calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                   rvec x[], t_nblist *nl,
                   gmx_genborn_t *born, t_mdatoms *md)
 {
@@ -580,11 +471,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top
     }
 
     /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, born->gpol_still_work, cr);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         dd_atom_sum_real(cr->dd, born->gpol_still_work);
     }
@@ -614,7 +501,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top
 
 
 static int
-calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
+calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 rvec x[], t_nblist *nl,
                 gmx_genborn_t *born, t_mdatoms *md)
 {
@@ -799,11 +686,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
     }
 
     /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, born->gpol_hct_work, cr);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         dd_atom_sum_real(cr->dd, born->gpol_hct_work);
     }
@@ -834,7 +717,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 }
 
 static int
-calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
+calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
     int   i, k, ai, aj, nj0, nj1, n, at0, at1;
@@ -1014,11 +897,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
     }
 
     /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, born->gpol_hct_work, cr);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         dd_atom_sum_real(cr->dd, born->gpol_hct_work);
     }
@@ -1115,7 +994,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
                 genborn_allvsall_calc_still_radii(fr, md, born, top, x[0], cr, &fr->AllvsAll_workgb);
             }
 #else
-            genborn_allvsall_calc_still_radii(fr, md, born, top, x[0], cr, &fr->AllvsAll_workgb);
+            genborn_allvsall_calc_still_radii(fr, md, born, top, x[0], &fr->AllvsAll_workgb);
 #endif
             /* 13 flops in outer loop, 47 flops in inner loop */
             inc_nrnb(nrnb, eNR_BORN_AVA_RADII_STILL, md->homenr*13+cnt*47);
@@ -1136,7 +1015,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
                 genborn_allvsall_calc_hct_obc_radii(fr, md, born, ir->gb_algorithm, top, x[0], cr, &fr->AllvsAll_workgb);
             }
 #else
-            genborn_allvsall_calc_hct_obc_radii(fr, md, born, ir->gb_algorithm, top, x[0], cr, &fr->AllvsAll_workgb);
+            genborn_allvsall_calc_hct_obc_radii(fr, md, born, ir->gb_algorithm, top, x[0], &fr->AllvsAll_workgb);
 #endif
             /* 24 flops in outer loop, 183 in inner */
             inc_nrnb(nrnb, eNR_BORN_AVA_RADII_HCT_OBC, md->homenr*24+cnt*183);
@@ -1162,7 +1041,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
             }
             else
             {
-                calc_gb_rad_still(cr, fr, born->nr, top, atype, x, nl, born, md);
+                calc_gb_rad_still(cr, fr, born->nr, top, x, nl, born, md);
             }
             break;
         case egbHCT:
@@ -1172,7 +1051,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
             }
             else
             {
-                calc_gb_rad_hct(cr, fr, born->nr, top, atype, x, nl, born, md);
+                calc_gb_rad_hct(cr, fr, born->nr, top, x, nl, born, md);
             }
             break;
         case egbOBC:
@@ -1182,7 +1061,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
             }
             else
             {
-                calc_gb_rad_obc(cr, fr, born->nr, top, atype, x, nl, born, md);
+                calc_gb_rad_obc(cr, fr, born->nr, top, x, nl, born, md);
             }
             break;
 
@@ -1254,13 +1133,13 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
     switch (ir->gb_algorithm)
     {
         case egbSTILL:
-            calc_gb_rad_still(cr, fr, born->nr, top, x, nl, born, md);
+            calc_gb_rad_still(cr, fr, top, x, nl, born, md);
             break;
         case egbHCT:
-            calc_gb_rad_hct(cr, fr, born->nr, top, x, nl, born, md);
+            calc_gb_rad_hct(cr, fr, top, x, nl, born, md);
             break;
         case egbOBC:
-            calc_gb_rad_obc(cr, fr, born->nr, top, x, nl, born, md);
+            calc_gb_rad_obc(cr, fr, top, x, nl, born, md);
             break;
 
         default:
@@ -1391,11 +1270,7 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
     int  i, ai, at0, at1;
     real rai, e, derb, q, q2, fi, rai_inv, vtot;
 
-    if (PARTDECOMP(cr))
-    {
-        pd_at_range(cr, &at0, &at1);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         at0 = 0;
         at1 = cr->dd->nat_home;
@@ -1445,11 +1320,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *
     /* To keep the compiler happy */
     factor = 0;
 
-    if (PARTDECOMP(cr))
-    {
-        pd_at_range(cr, &at0, &at1);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         at0 = 0;
         at1 = cr->dd->nat_home;
@@ -1653,11 +1524,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda, fr->epsfac);
 
     /* If parallel, sum the derivative of the potential w.r.t the born radii */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(md->nr, fr->dvda, cr);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         dd_atom_sum_real(cr->dd, fr->dvda);
         dd_atom_spread_real(cr->dd, fr->dvda);

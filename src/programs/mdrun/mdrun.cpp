@@ -180,8 +180,7 @@ int gmx_mdrun(int argc, char *argv[])
         "[PAR]",
         "When [TT]mdrun[tt] is started using MPI with more than 1 process",
         "or with thread-MPI with more than 1 thread, MPI parallelization is used.",
-        "By default domain decomposition is used, unless the [TT]-pd[tt]",
-        "option is set, which selects particle decomposition.",
+        "Domain decomposition is always used with MPI parallelism.",
         "[PAR]",
         "With domain decomposition, the spatial decomposition can be set",
         "with option [TT]-dd[tt]. By default [TT]mdrun[tt] selects a good decomposition.",
@@ -417,7 +416,6 @@ int gmx_mdrun(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* Command line options ! */
-    gmx_bool        bPartDec      = FALSE;
     gmx_bool        bDDBondCheck  = TRUE;
     gmx_bool        bDDBondComm   = TRUE;
     gmx_bool        bTunePME      = TRUE;
@@ -469,8 +467,6 @@ int gmx_mdrun(int argc, char *argv[])
 
     t_pargs         pa[] = {
 
-        { "-pd",      FALSE, etBOOL, {&bPartDec},
-          "Use particle decompostion" },
         { "-dd",      FALSE, etRVEC, {&realddxyz},
           "Domain decomposition grid, 0 is optimize" },
         { "-ddorder", FALSE, etENUM, {ddno_opt},
@@ -703,7 +699,6 @@ int gmx_mdrun(int argc, char *argv[])
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
     Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
-    Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
     Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);

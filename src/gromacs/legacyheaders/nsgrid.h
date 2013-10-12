@@ -106,9 +106,6 @@ void check_grid(t_grid *grid);
 
 void print_grid(FILE *log, t_grid *grid);
 
-void mv_grid(t_commrec *cr, t_grid *grid);
-/* Move the grid over processors */
-
 #ifdef __cplusplus
 }
 #endif

@@ -61,19 +61,6 @@ void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc);
  * The arrays in state are allocated when bAlloc is TRUE.
  */
 
-
-/* Routines for particle decomposition only in mvxvf.c */
-
-void move_cgcm(FILE *log, const t_commrec *cr, rvec cg_cm[]);
-
-void move_rvecs(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum, rvec vecs[], rvec buf[],
-                int shift, t_nrnb *nrnb);
-
-void move_x(const t_commrec *cr, rvec x[], t_nrnb *nrnb);
-
-void move_f(const t_commrec *cr, rvec f[], rvec fadd[],
-            t_nrnb *nrnb);
-
 #ifdef __cplusplus
 }
 #endif

@@ -174,7 +174,7 @@ void init_forcerec(FILE              *fplog,
  */
 
 void forcerec_set_excl_load(t_forcerec *fr,
-                            const gmx_localtop_t *top, const t_commrec *cr);
+                            const gmx_localtop_t *top);
 /* Set the exclusion load for the local exclusions and possibly threads */
 
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
