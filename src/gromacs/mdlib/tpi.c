@@ -63,7 +63,6 @@
 #include "force.h"
 #include "mdrun.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "gromacs/random/random.h"
 #include "physics.h"
 #include "xvgr.h"

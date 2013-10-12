@@ -44,7 +44,6 @@
 #include "vec.h"
 #include "smalloc.h"
 
-#include "partdec.h"
 #include "network.h"
 #include "physics.h"
 #include "genborn.h"
@@ -725,7 +724,7 @@ genborn_allvsall_setup(gmx_allvsallgb2_data_t     **  p_aadata,
         aadata->fz_align[i] = 0.0;
     }
 
-    setup_gb_exclusions_and_indices(aadata, top->idef.il, mdatoms->start, mdatoms->start+mdatoms->homenr, mdatoms->nr,
+    setup_gb_exclusions_and_indices(aadata, top->idef.il, 0, mdatoms->homenr, mdatoms->nr,
                                     bInclude12, bInclude13, bInclude14);
 }
 
@@ -804,8 +803,8 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec   *           fr,
     __m128d                 still_p4_SSE, still_p5inv_SSE, still_pip5_SSE;
 
     natoms              = mdatoms->nr;
-    ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
 
     n = 0;
 
@@ -1172,11 +1171,7 @@ genborn_allvsall_calc_still_radii_sse2_double(t_forcerec   *           fr,
         work[i-natoms] += work[i];
     }
 
-    /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, work, cr);
-    }
+    /* Parallel summations would go here if ever implemented with DD */
 
     factor  = 0.5 * ONE_4PI_EPS0;
     /* Calculate the radii - should we do all atoms, or just our local ones? */
@@ -1271,8 +1266,8 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec   *           fr,
     __m128d                 doffset_SSE, tmpSSE;
 
     natoms              = mdatoms->nr;
-    ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
 
     n = 0;
 
@@ -2229,12 +2224,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_double(t_forcerec   *           fr,
         work[i] += work[natoms+i];
     }
 
-    /* Parallel summations */
-
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, work, cr);
-    }
+    /* Parallel summations would go here if ever implemented in DD */
 
     if (gb_algorithm == egbHCT)
     {
@@ -2347,8 +2337,8 @@ genborn_allvsall_calc_chainrule_sse2_double(t_forcerec   *           fr,
     __m128d                 t1, t2, tmpSSE;
 
     natoms              = mdatoms->nr;
-    ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
 
     aadata = (gmx_allvsallgb2_data_t *)paadata;
 

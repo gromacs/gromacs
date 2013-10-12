@@ -62,7 +62,6 @@
 #include "repl_ex.h"
 #include "qmmm.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "coulomb.h"
 #include "constr.h"
 #include "mvdata.h"
@@ -1270,14 +1269,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(cr, inputrec, mtop);
-
-        /* This check needs to happen after get_nthreads_mpi() */
-        if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
-        {
-            gmx_fatal_collective(FARGS, cr, NULL,
-                                 "The Verlet cut-off scheme is not supported with particle decomposition.\n"
-                                 "You can achieve the same effect as particle decomposition by running in parallel using only OpenMP threads.");
-        }
     }
     if (fplog != NULL)
     {
@@ -1313,27 +1304,17 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
     }
 
-    if (can_use_allvsall(inputrec, TRUE, cr, fplog) && PAR(cr))
+    if (can_use_allvsall(inputrec, TRUE, cr, fplog) && DOMAINDECOMP(cr))
     {
-        /* Simple neighbour searching and (also?) all-vs-all loops
-         * do not work with domain decomposition. */
-        Flags |= MD_PARTDEC;
+        gmx_fatal(FARGS, "All-vs-all loops do not work with domain decomposition, use a single MPI rank");
     }
 
-    if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)) || (Flags & MD_PARTDEC))
+    if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
     {
         if (cr->npmenodes > 0)
         {
-            if (!EEL_PME(inputrec->coulombtype) && !EVDW_PME(inputrec->vdwtype))
-            {
                 gmx_fatal_collective(FARGS, cr, NULL,
                                      "PME nodes are requested, but the system does not use PME electrostatics or LJ-PME");
-            }
-            if (Flags & MD_PARTDEC)
-            {
-                gmx_fatal_collective(FARGS, cr, NULL,
-                                     "PME nodes are requested, but particle decomposition does not support separate PME nodes");
-            }
         }
 
         cr->npmenodes = 0;
@@ -1356,10 +1337,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog, mtop, inputrec, cr, Flags & MD_PARTDEC, fcd, state, repl_ex_nst > 0);
+    init_disres(fplog, mtop, inputrec, cr, fcd, state, repl_ex_nst > 0);
 
     init_orires(fplog, mtop, state->x, inputrec, cr, &(fcd->orires),
-                state, Flags & MD_PARTDEC);
+                state);
 
     if (DEFORM(*inputrec))
     {
@@ -1392,7 +1373,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (gmx_fexist_master(opt2fn_master("-cpi", nfile, fnm, cr), cr) )
         {
             load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                            cr, Flags & MD_PARTDEC, ddxyz,
+                            cr, ddxyz,
                             inputrec, state, &bReadRNG, &bReadEkin,
                             (Flags & MD_APPENDFILES),
                             (Flags & MD_APPENDFILESSET));
@@ -1441,8 +1422,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         ed = ed_open(mtop->natoms, &state->edsamstate, nfile, fnm, Flags, oenv, cr);
     }
 
-    if (PAR(cr) && !((Flags & MD_PARTDEC) ||
-                     EI_TPI(inputrec->eI) ||
+    if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, rdd, rconstr,
@@ -1464,11 +1444,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         cr->duty      = (DUTY_PP | DUTY_PME);
         npme_major    = 1;
         npme_minor    = 1;
-        /* NM and TPI perform single node energy calculations in parallel */
-        if (!(inputrec->eI == eiNM || EI_TPI(inputrec->eI)))
-        {
-            npme_major = cr->nnodes;
-        }
 
         if (inputrec->ePBC == epbcSCREW)
         {
@@ -1570,20 +1545,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     snew(nrnb, 1);
     if (cr->duty & DUTY_PP)
     {
-        /* For domain decomposition we allocate dynamically
-         * in dd_partition_system.
-         */
-        if (DOMAINDECOMP(cr))
-        {
-            bcast_state_setup(cr, state);
-        }
-        else
-        {
-            if (PAR(cr))
-            {
-                bcast_state(cr, state, TRUE);
-            }
-        }
+        bcast_state(cr, state);
 
         /* Initiate forcerecord */
         fr          = mk_forcerec();

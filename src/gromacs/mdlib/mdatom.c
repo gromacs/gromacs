@@ -127,9 +127,9 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 
     molblock = mtop->molblock;
 
-    /* Index==NULL indicates particle decomposition,
-     * unless we have an empty DD node, so also check for homenr and start.
-     * This should be signaled properly with an extra parameter or nindex==-1.
+    /* Index==NULL indicates no DD (unless we have a DD node with no
+     * atoms), so also check for homenr and start. This should be
+     * signaled properly with an extra parameter or nindex==-1.
      */
     if (index == NULL && (homenr > 0 || start > 0))
     {
@@ -410,7 +410,6 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 
     gmx_mtop_atomlookup_destroy(alook);
 
-    md->start  = start;
     md->homenr = homenr;
     md->lambda = 0;
 }

@@ -42,7 +42,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"
-#include "mvdata.h"
+#include "gromacs/fileio/confio.h"
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
@@ -65,7 +65,6 @@
 #include "xvgr.h"
 #include "gromacs/random/random.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "macros.h"
 
 #include "gromacs/fileio/confio.h"
@@ -1345,8 +1344,8 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
 
         /* we don't need to manipulate the ekind information, as it isn't due to be reset until the next step anyway */
 
-        nstart = mdatoms->start;
-        nend   = nstart + mdatoms->homenr;
+        nstart = 0;
+        nend   = mdatoms->homenr;
         for (n = nstart; n < nend; n++)
         {
             gt = 0;

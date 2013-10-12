@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,9 +105,6 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z);
 void check_grid(t_grid *grid);
 
 void print_grid(FILE *log, t_grid *grid);
-
-void mv_grid(t_commrec *cr, t_grid *grid);
-/* Move the grid over processors */
 
 #ifdef __cplusplus
 }
