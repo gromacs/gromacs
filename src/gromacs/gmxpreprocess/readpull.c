@@ -395,7 +395,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
 
     init_pull(NULL, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
     md = init_mdatoms(NULL, mtop, ir->efep);
-    atoms2md(mtop, ir, 0, NULL, 0, mtop->natoms, md);
+    atoms2md(mtop, ir, 0, NULL, mtop->natoms, md);
     if (ir->efep)
     {
         update_mdatoms(md, lambda);

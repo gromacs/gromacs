@@ -63,7 +63,6 @@
 #include "force.h"
 #include "mdrun.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "gromacs/random/random.h"
 #include "physics.h"
 #include "xvgr.h"
@@ -247,7 +246,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
         sscanf(dump_pdb, "%lf", &dump_ener);
     }
 
-    atoms2md(top_global, inputrec, 0, NULL, 0, top_global->natoms, mdatoms);
+    atoms2md(top_global, inputrec, 0, NULL, top_global->natoms, mdatoms);
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
     snew(enerd, 1);

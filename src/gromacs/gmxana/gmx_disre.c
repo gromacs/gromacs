@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -801,7 +801,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     ir.dr_tau = 0.0;
-    init_disres(fplog, &mtop, &ir, NULL, FALSE, &fcd, NULL, FALSE);
+    init_disres(fplog, &mtop, &ir, NULL, &fcd, NULL, FALSE);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5*natoms);
@@ -829,7 +829,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     mdatoms = init_mdatoms(fplog, &mtop, ir.efep != efepNO);
-    atoms2md(&mtop, &ir, 0, NULL, 0, mtop.natoms, mdatoms);
+    atoms2md(&mtop, &ir, 0, NULL, mtop.natoms, mdatoms);
     update_mdatoms(mdatoms, ir.fepvals->init_lambda);
     init_nrnb(&nrnb);
     if (ir.ePBC != epbcNONE)

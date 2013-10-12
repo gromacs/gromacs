@@ -6469,7 +6469,7 @@ static void check_dd_restrictions(t_commrec *cr, gmx_domdec_t *dd,
 
     if (ir->ns_type == ensSIMPLE)
     {
-        gmx_fatal(FARGS, "Domain decomposition does not support simple neighbor searching, use grid searching or use particle decomposition");
+        gmx_fatal(FARGS, "Domain decomposition does not support simple neighbor searching, use grid searching or run with one MPI rank");
     }
 
     if (ir->nstlist == 0)
@@ -9770,7 +9770,7 @@ void dd_partition_system(FILE                *fplog,
      */
     /* This call also sets the new number of home particles to dd->nat_home */
     atoms2md(top_global, ir,
-             comm->nat[ddnatCON], dd->gatindex, 0, dd->nat_home, mdatoms);
+             comm->nat[ddnatCON], dd->gatindex, dd->nat_home, mdatoms);
 
     /* Now we have the charges we can sort the FE interactions */
     dd_sort_local_top(dd, mdatoms, top_local);
