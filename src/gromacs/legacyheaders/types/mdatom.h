@@ -70,7 +70,6 @@ typedef struct {
     /* for QMMM, atomnumber contains atomic number of the atoms */
     gmx_bool              *bQM;
     /* The range of home atoms */
-    int                    start;
     int                    homenr;
     /* The lambda value used to create the contents of the struct */
     real                   lambda;

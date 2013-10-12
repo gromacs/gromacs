@@ -6469,7 +6469,7 @@ static void check_dd_restrictions(t_commrec *cr, gmx_domdec_t *dd,
 
     if (ir->ns_type == ensSIMPLE)
     {
-        gmx_fatal(FARGS, "Domain decomposition does not support simple neighbor searching, use grid searching or use particle decomposition");
+        gmx_fatal(FARGS, "Domain decomposition does not support simple neighbor searching, use grid searching or run with one MPI rank");
     }
 
     if (ir->nstlist == 0)

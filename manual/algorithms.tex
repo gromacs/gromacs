@@ -2803,27 +2803,6 @@ makes the simulation $N$ times faster. In practice this can only be
 achieved for a small number of processors. The scaling will depend
 a lot on the algorithms used. Also, different algorithms can have different
 restrictions on the interaction ranges between atoms.
-In {\gromacs} we have two types of parallelization: particle decomposition
-and domain decomposition. Particle decomposition is only useful for
-a few special cases. Domain decomposition, which is the default algorithm,
-will always be faster and scale better.
-
-\section{Particle decomposition\index{particle decomposition}}
-Particle decomposition, also called \index{force decomposition},
-is the simplest type of decomposition. At the start of the simulation,
-particles are assigned to processors. Then forces between particles
-need to be assigned to processors such that the force load is evenly balanced.
-This decomposition requires that each processor know the coordinates
-of at least half of the particles in the system.
-Thus for a high number of processors $N$, about $N \times N/2$ coordinates
-need to be communicated. Because of this quadratic relation
-particle decomposition does not scale well.
-
-Particle decomposition was the only method available before version 4
-of {\gromacs}. Now it is only useful in cases where domain decomposition
-does not work, such as systems with long-range bonded interactions,
-especially NMR distance or orientation restraints.
-With particle decomposition only whole molecules can be assigned to a processor.
 
 \section{Domain decomposition\index{domain decomposition}}
 Since most interactions in molecular simulations are local,
