@@ -59,7 +59,7 @@ extern "C" {
 
 /* Initialise GB stuff */
 int init_gb(gmx_genborn_t **p_born,
-            const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
+            t_forcerec *fr, const t_inputrec *ir,
             const gmx_mtop_t *mtop, int gb_algorithm);
 
 
@@ -72,10 +72,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
                   real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
                   real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph);
-
-
-
-void gb_pd_send(t_commrec *cr, real *send_data, int nr);
 
 
 

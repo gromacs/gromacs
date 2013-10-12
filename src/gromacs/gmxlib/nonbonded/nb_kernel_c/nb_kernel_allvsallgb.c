@@ -297,8 +297,8 @@ nb_kernel_allvsallgb(t_nblist gmx_unused *     nlist,
     vpol                = kernel_data->energygrp_polarization;
 
     natoms              = mdatoms->nr;
-    ni0                 = mdatoms->start;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
 
     aadata              = fr->AllvsAll_work;
     excl                = kernel_data->exclusions;

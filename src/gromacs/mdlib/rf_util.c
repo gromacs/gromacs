@@ -63,8 +63,8 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
     rvec        dx, df;
     atom_id    *AA;
     ivec        dt;
-    int         start = mdatoms->start;
-    int         end   = mdatoms->homenr+start;
+    int         start = 0;
+    int         end   = mdatoms->homenr;
     int         niat;
     gmx_bool    bMolPBC = fr->bMolPBC;
 

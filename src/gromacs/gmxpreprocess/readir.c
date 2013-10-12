@@ -840,7 +840,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
         if (ir->nstlist > 0)
         {
-            warning_note(wi, "Simulating without cut-offs is usually (slightly) faster with nstlist=0, nstype=simple and particle decomposition");
+            warning_note(wi, "Simulating without cut-offs can be (slightly) faster with nstlist=0, nstype=simple and only one MPI rank");
         }
     }
 

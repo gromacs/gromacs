@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,29 +50,9 @@ void bcast_ir_mtop(const t_commrec *cr,
 /* Broadcasts ir and mtop from the master to all nodes in cr->mpi_comm_mygroup.
  */
 
-void bcast_state_setup(const t_commrec *cr, t_state *state);
-/* Broadcasts the state sizes and flags
- * from the master to all nodes in cr->mpi_comm_mygroup.
- * The arrays are not broadcasted.
- */
-
-void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc);
+void bcast_state(const t_commrec *cr, t_state *state);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
- * The arrays in state are allocated when bAlloc is TRUE.
  */
-
-
-/* Routines for particle decomposition only in mvxvf.c */
-
-void move_cgcm(FILE *log, const t_commrec *cr, rvec cg_cm[]);
-
-void move_rvecs(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum, rvec vecs[], rvec buf[],
-                int shift, t_nrnb *nrnb);
-
-void move_x(const t_commrec *cr, rvec x[], t_nrnb *nrnb);
-
-void move_f(const t_commrec *cr, rvec f[], rvec fadd[],
-            t_nrnb *nrnb);
 
 #ifdef __cplusplus
 }

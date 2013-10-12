@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -224,8 +224,6 @@ typedef struct {
 
 } gmx_domdec_t;
 
-typedef struct gmx_partdec *gmx_partdec_p_t;
-
 typedef struct {
     int       nsim;
     int       sim;
@@ -272,9 +270,6 @@ typedef struct {
     /* For domain decomposition */
     gmx_domdec_t *dd;
 
-    /* For particle decomposition */
-    gmx_partdec_p_t pd;
-
     /* The duties of this node, see the defines above */
     int             duty;
 
@@ -297,10 +292,13 @@ typedef struct {
 #define RANK(cr, nodeid)    (nodeid)
 #define MASTERRANK(cr)     (0)
 
+/* Note that even with particle decomposition removed, the use of
+ * non-DD parallelization in TPI, NM and multi-simulations means that
+ * PAR(cr) and DOMAINDECOMP(cr) are not universally synonymous. In
+ * particular, DOMAINDECOMP(cr) == true indicates that there is more
+ * than one domain, not just that the dd algorithm is active. */
 #define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
-
-#define PARTDECOMP(cr)     ((cr)->pd != NULL)
 
 #define MULTISIM(cr)       ((cr)->ms)
 #define MSRANK(ms, nodeid)  (nodeid)

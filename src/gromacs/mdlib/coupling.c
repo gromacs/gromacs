@@ -1059,7 +1059,7 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                 /* but do we actually need the total? */
 
                 /* modify the velocities as well */
-                for (n = md->start; n < md->start+md->homenr; n++)
+                for (n = 0; n < md->homenr; n++)
                 {
                     if (md->cTC) /* does this conditional need to be here? is this always true?*/
                     {
