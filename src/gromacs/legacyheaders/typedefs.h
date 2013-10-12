@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,6 +135,7 @@ void init_energyhistory(energyhistory_t * enerhist);
 void done_energyhistory(energyhistory_t * enerhist);
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
+t_state *serial_init_local_state(t_state *state_global);
 void init_df_history(df_history_t *dfhist, int nlambda);
 void done_df_history(df_history_t *dfhist);
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);

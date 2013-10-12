@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,6 @@
 #include "vec.h"
 #include "network.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "pbc.h"
 #include <stdio.h>
 #include "gromacs/fileio/futil.h"
@@ -889,30 +888,4 @@ void print_grid(FILE *log, t_grid *grid)
         }
     }
     fflush(log);
-}
-
-void mv_grid(t_commrec *cr, t_grid *grid)
-{
-    int  i, start, nr;
-    int  cur = cr->nodeid;
-    int *ci, *cgindex;
-#define next ((cur+1) % (cr->nnodes-cr->npmenodes))
-
-    ci      = grid->cell_index;
-    cgindex = pd_cgindex(cr);
-    for (i = 0; (i < cr->nnodes-1); i++)
-    {
-        start = cgindex[cur];
-        nr    = cgindex[cur+1] - start;
-        gmx_tx(cr, GMX_LEFT, &(ci[start]), nr*sizeof(*ci));
-
-        start = cgindex[next];
-        nr    = cgindex[next+1] - start;
-        gmx_rx(cr, GMX_RIGHT, &(ci[start]), nr*sizeof(*ci));
-
-        gmx_tx_wait(cr);
-        gmx_rx_wait(cr);
-
-        cur = next;
-    }
 }

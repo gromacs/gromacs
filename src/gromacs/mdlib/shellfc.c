@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,14 +46,12 @@
 #include "txtdump.h"
 #include "force.h"
 #include "mdrun.h"
-#include "partdec.h"
 #include "mdatoms.h"
 #include "vsite.h"
 #include "network.h"
 #include "names.h"
 #include "constr.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "physics.h"
 #include "shellfc.h"
 #include "mtop_util.h"
@@ -540,18 +538,11 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
     int           a0, a1, *ind, nshell, i;
     gmx_domdec_t *dd = NULL;
 
-    if (PAR(cr))
+    if (DOMAINDECOMP(cr))
     {
-        if (DOMAINDECOMP(cr))
-        {
             dd = cr->dd;
             a0 = 0;
             a1 = dd->nat_home;
-        }
-        else
-        {
-            pd_at_range(cr, &a0, &a1);
-        }
     }
     else
     {
@@ -583,6 +574,7 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
             {
                 shell[nshell] = shfc->shell_gl[ind[i]];
             }
+
             /* With inter-cg shells we can no do shell prediction,
              * so we do not need the nuclei numbers.
              */
@@ -992,25 +984,17 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         force[i] = shfc->f[i];
     }
 
-    /* With particle decomposition this code only works
-     * when all particles involved with each shell are in the same cg.
-     */
-
+    /* When we had particle decomposition, this code only worked with
+     * PD when all particles involved with each shell were in the same
+     * charge group. Not sure if this is still relevant. */
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
     {
         /* This is the only time where the coordinates are used
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        if (PARTDECOMP(cr))
-        {
-            pd_cg_range(cr, &cg0, &cg1);
-        }
-        else
-        {
             cg0 = 0;
             cg1 = top->cgs.nr;
-        }
         put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
                                  &(top->cgs), state->x, fr->cg_cm);
         if (graph)
@@ -1136,7 +1120,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         {
             construct_vsites(vsite, pos[Min], inputrec->delta_t, state->v,
                              idef->iparams, idef->il,
-                             fr->ePBC, fr->bMolPBC, graph, cr, state->box);
+                             fr->ePBC, fr->bMolPBC, cr, state->box);
         }
 
         if (nflexcon)

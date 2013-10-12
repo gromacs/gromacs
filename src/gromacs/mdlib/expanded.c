@@ -42,7 +42,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"
-#include "mvdata.h"
+#include "gromacs/fileio/confio.h"
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
@@ -65,7 +65,6 @@
 #include "xvgr.h"
 #include "gromacs/random/random.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "macros.h"
 
 #include "gromacs/fileio/confio.h"

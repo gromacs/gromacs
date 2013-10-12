@@ -52,7 +52,6 @@
 #include "txtdump.h"
 #include "domdec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "partdec.h"
 #include "splitter.h"
 #include "mtop_util.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -224,9 +223,6 @@ static void write_constr_pdb(const char *fn, const char *title,
     char         *anm, *resnm;
 
     dd = NULL;
-    if (PAR(cr))
-    {
-        sprintf(fname, "%s_n%d.pdb", fn, cr->sim_nodeid);
         if (DOMAINDECOMP(cr))
         {
             dd = cr->dd;
@@ -234,6 +230,10 @@ static void write_constr_pdb(const char *fn, const char *title,
             start  = 0;
             homenr = dd_ac1;
         }
+
+    if (PAR(cr))
+    {
+        sprintf(fname, "%s_n%d.pdb", fn, cr->sim_nodeid);
     }
     else
     {
@@ -419,10 +419,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     if (cr->dd)
     {
         dd_move_x_constraints(cr->dd, box, x, xprime);
-    }
-    else if (PARTDECOMP(cr))
-    {
-        pd_move_x_constraints(cr, x, xprime);
     }
 
     if (constr->lincsd != NULL)
@@ -693,7 +689,7 @@ real constr_rmsd(struct gmx_constr *constr, gmx_bool bSD2)
     }
 }
 
-static void make_shake_sblock_pd(struct gmx_constr *constr,
+static void make_shake_sblock_serial(struct gmx_constr *constr,
                                  t_idef *idef, t_mdatoms *md)
 {
     int          i, j, m, ncons;
@@ -974,7 +970,7 @@ void set_constraints(struct gmx_constr *constr,
             }
             else
             {
-                make_shake_sblock_pd(constr, idef, md);
+                make_shake_sblock_serial(constr, idef, md);
             }
             if (ncons > constr->lagr_nalloc)
             {

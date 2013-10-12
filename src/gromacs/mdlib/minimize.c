@@ -65,7 +65,6 @@
 #include "md_support.h"
 #include "sim_util.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "mdatoms.h"
 #include "ns.h"
 #include "mtop_util.h"
@@ -312,7 +311,7 @@ void init_em(FILE *fplog, const char *title,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin)
 {
-    int  start, homenr, i;
+    int  i;
     real dvdl_constr;
 
     if (fplog)
@@ -367,20 +366,10 @@ void init_em(FILE *fplog, const char *title,
         }
         copy_mat(state_global->box, ems->s.box);
 
-        if (PAR(cr) && ir->eI != eiNM)
-        {
-            /* Initialize the particle decomposition and split the topology */
-            *top = split_system(fplog, top_global, ir, cr);
-
-            pd_cg_range(cr, &fr->cg0, &fr->hcg);
-        }
-        else
-        {
             *top = gmx_mtop_generate_local_top(top_global, ir);
-        }
         *f_global = *f;
 
-        forcerec_set_excl_load(fr, *top, cr);
+        forcerec_set_excl_load(fr, *top);
 
         setup_bonded_threading(fr, &(*top)->idef);
 
@@ -393,17 +382,7 @@ void init_em(FILE *fplog, const char *title,
             *graph = NULL;
         }
 
-        if (PARTDECOMP(cr))
-        {
-            pd_at_range(cr, &start, &homenr);
-            homenr -= start;
-        }
-        else
-        {
-            start  = 0;
-            homenr = top_global->natoms;
-        }
-        atoms2md(top_global, ir, 0, NULL, start, homenr, mdatoms);
+        atoms2md(top_global, ir, 0, NULL, 0, top_global->natoms, mdatoms);
         update_mdatoms(mdatoms, state_global->lambda[efptFEP]);
 
         if (vsite)
@@ -701,7 +680,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     if (bFirst ||
         (DOMAINDECOMP(cr) && ems->s.ddp_count < cr->dd->ddp_count))
     {
-        /* This the first state or an old state used before the last ns */
+        /* This is the first state or an old state used before the last ns */
         bNS = TRUE;
     }
     else
@@ -726,18 +705,15 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     {
         construct_vsites(vsite, ems->s.x, 1, NULL,
                          top->idef.iparams, top->idef.il,
-                         fr->ePBC, fr->bMolPBC, graph, cr, ems->s.box);
+                         fr->ePBC, fr->bMolPBC, cr, ems->s.box);
     }
 
-    if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr) && bNS)
     {
-        if (bNS)
-        {
             /* Repartition the domain decomposition */
             em_dd_partition_system(fplog, count, cr, top_global, inputrec,
                                    ems, top, mdatoms, fr, vsite, constr,
                                    nrnb, wcycle);
-        }
     }
 
     /* Calc force & energy on new trial position  */
@@ -1708,7 +1684,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     {
         construct_vsites(vsite, state->x, 1, NULL,
                          top->idef.iparams, top->idef.il,
-                         fr->ePBC, fr->bMolPBC, graph, cr, state->box);
+                         fr->ePBC, fr->bMolPBC, cr, state->box);
     }
 
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
