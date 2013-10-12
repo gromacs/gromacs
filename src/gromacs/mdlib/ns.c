@@ -2146,23 +2146,22 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     rvec          xi, *cgcm, grid_offset;
     real          r2, rs2, rvdw2, rcoul2, rm2, rl2, XI, YI, ZI, dcx, dcy, dcz, tmp1, tmp2;
     int          *i_egp_flags;
-    gmx_bool      bDomDec, bTriclinicX, bTriclinicY;
+    gmx_bool      bTriclinicX, bTriclinicY;
     ivec          ncpddc;
 
     ns = &fr->ns;
 
-    bDomDec = DOMAINDECOMP(cr);
-    if (bDomDec)
+    if (DOMAINDECOMP(cr))
     {
         dd = cr->dd;
     }
 
     bTriclinicX = ((YY < grid->npbcdim &&
-                    (!bDomDec || dd->nc[YY] == 1) && box[YY][XX] != 0) ||
+                    (!DOMAINDECOMP(cr) || dd->nc[YY] == 1) && box[YY][XX] != 0) ||
                    (ZZ < grid->npbcdim &&
-                    (!bDomDec || dd->nc[ZZ] == 1) && box[ZZ][XX] != 0));
+                    (!DOMAINDECOMP(cr) || dd->nc[ZZ] == 1) && box[ZZ][XX] != 0));
     bTriclinicY =  (ZZ < grid->npbcdim &&
-                    (!bDomDec || dd->nc[ZZ] == 1) && box[ZZ][YY] != 0);
+                    (!DOMAINDECOMP(cr) || dd->nc[ZZ] == 1) && box[ZZ][YY] != 0);
 
     cgsnr    = cgs->nr;
 
@@ -2238,7 +2237,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
          */
-        if (d >= ePBC2npbcdim(fr->ePBC) || (bDomDec && dd->nc[d] > 1))
+        if (d >= ePBC2npbcdim(fr->ePBC) || (DOMAINDECOMP(cr) && dd->nc[d] > 1))
         {
             shp[d] = 0;
         }
@@ -2290,7 +2289,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
         {
             /* make a normal neighbourlist */
 
-            if (bDomDec)
+            if (DOMAINDECOMP(cr))
             {
                 /* Get the j charge-group and dd cell shift ranges */
                 dd_get_ns_ranges(cr->dd, icg, &jcg0, &jcg1, sh0, sh1);
@@ -2666,7 +2665,6 @@ void init_ns(FILE *fplog, const t_commrec *cr,
     ns->bexcl     = NULL;
     if (!DOMAINDECOMP(cr))
     {
-        /* This could be reduced with particle decomposition */
         ns_realloc_natoms(ns, mtop->natoms);
     }
 
@@ -2770,14 +2768,8 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         }
         debug_gmx();
 
-        /* Don't know why this all is... (DvdS 3/99) */
-#ifndef SEGV
         start = 0;
         end   = cgs->nr;
-#else
-        start = fr->cg0;
-        end   = (cgs->nr+1)/2;
-#endif
 
         if (DOMAINDECOMP(cr))
         {
@@ -2791,12 +2783,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             fill_grid(NULL, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
             grid->icg0 = fr->cg0;
             grid->icg1 = fr->hcg;
-            debug_gmx();
-
-            if (PARTDECOMP(cr))
-            {
-                mv_grid(cr, grid);
-            }
             debug_gmx();
         }
 

@@ -48,7 +48,6 @@
 #include "physics.h"
 #include "vec.h"
 #include "maths.h"
-#include "mvdata.h"
 #include "main.h"
 #include "force.h"
 #include "vcm.h"
@@ -62,7 +61,6 @@
 #include "gromacs/fileio/trnio.h"
 #include "statutil.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "constr.h"
 #include "checkpoint.h"
 #include "xvgr.h"
@@ -428,4 +426,3 @@ int do_per_step(gmx_large_int_t step, gmx_large_int_t nstep)
         return 0;
     }
 }
-

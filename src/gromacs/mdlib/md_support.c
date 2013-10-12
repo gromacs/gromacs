@@ -760,23 +760,4 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
 
     *bNotLastFrame = (fr->natoms >= 0);
 
-    if (*bNotLastFrame && PARTDECOMP(cr))
-    {
-        /* x and v are the only variable size quantities stored in trr
-         * that are required for rerun (f is not needed).
-         */
-        if (bAlloc)
-        {
-            snew(fr->x, fr->natoms);
-            snew(fr->v, fr->natoms);
-        }
-        if (fr->bX)
-        {
-            gmx_bcast(fr->natoms*sizeof(fr->x[0]), fr->x[0], cr);
-        }
-        if (fr->bV)
-        {
-            gmx_bcast(fr->natoms*sizeof(fr->v[0]), fr->v[0], cr);
-        }
-    }
 }

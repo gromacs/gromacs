@@ -799,7 +799,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     ir.dr_tau = 0.0;
-    init_disres(fplog, &mtop, &ir, NULL, FALSE, &fcd, NULL, FALSE);
+    init_disres(fplog, &mtop, &ir, NULL, &fcd, NULL, FALSE);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5*natoms);

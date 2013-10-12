@@ -54,7 +54,7 @@
 #include "mtop_util.h"
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
-                 t_inputrec *ir, const t_commrec *cr, gmx_bool bPartDecomp,
+                 t_inputrec *ir, const t_commrec *cr,
                  t_fcdata *fcd, t_state *state, gmx_bool bIsREMD)
 {
     int                  fa, nmol, i, npair, np;
@@ -128,10 +128,11 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
         }
     }
 
-    if (cr && PAR(cr) && !bPartDecomp)
+    if (cr && PAR(cr))
     {
+        // TODO fix this
         /* Temporary check, will be removed when disre is implemented with DD */
-        const char *notestr = "NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
+        const char *notestr = "NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use a single MPI rank (probably with OpenMP)";
 
         if (MASTER(cr))
         {
@@ -145,7 +146,8 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
         if (dd->dr_tau != 0 || ir->eDisre == edrEnsemble || cr->ms != NULL ||
             dd->nres != dd->npair)
         {
-            gmx_fatal(FARGS, "Time or ensemble averaged or multiple pair distance restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+            // TODO fix this
+            gmx_fatal(FARGS, "Time or ensemble averaged or multiple pair distance restraints do not work (yet) with domain decomposition");
         }
         if (ir->nstdisreout != 0)
         {

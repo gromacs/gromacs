@@ -47,9 +47,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "names.h"
-#include "mvdata.h"
 #include "domdec.h"
-#include "partdec.h"
 
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
@@ -641,26 +639,6 @@ static void scale_velocities(t_state *state, real fac)
         {
             svmul(fac, state->v[i], state->v[i]);
         }
-    }
-}
-
-static void pd_collect_state(const t_commrec *cr, t_state *state)
-{
-    int shift;
-
-    if (debug)
-    {
-        fprintf(debug, "Collecting state before exchange\n");
-    }
-    shift = cr->nnodes - cr->npmenodes - 1;
-    move_rvecs(cr, FALSE, FALSE, state->x, NULL, shift, NULL);
-    if (state->v)
-    {
-        move_rvecs(cr, FALSE, FALSE, state->v, NULL, shift, NULL);
-    }
-    if (state->sd_X)
-    {
-        move_rvecs(cr, FALSE, FALSE, state->sd_X, NULL, shift, NULL);
     }
 }
 
@@ -1327,17 +1305,12 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
     if (bThisReplicaExchanged)
     {
         /* Exchange the states */
-
         if (PAR(cr))
         {
             /* Collect the global state on the master node */
             if (DOMAINDECOMP(cr))
             {
                 dd_collect_state(cr->dd, state_local, state);
-            }
-            else
-            {
-                pd_collect_state(cr, state);
             }
         }
         else
@@ -1379,11 +1352,6 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
         {
             /* Copy the global state to the local state data structure */
             copy_state_nonatomdata(state, state_local);
-
-            if (PAR(cr))
-            {
-                bcast_state(cr, state, FALSE);
-            }
         }
     }
 

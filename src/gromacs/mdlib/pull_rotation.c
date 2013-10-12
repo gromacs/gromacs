@@ -3682,11 +3682,6 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     rvec           *x_pbc = NULL; /* Space for the pbc-correct atom positions */
 
 
-    if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
-    {
-        gmx_fatal(FARGS, "Enforced rotation is only implemented for domain decomposition!");
-    }
-
     if (MASTER(cr) && bVerbose)
     {
         fprintf(stdout, "%s Initializing ...\n", RotStr);
