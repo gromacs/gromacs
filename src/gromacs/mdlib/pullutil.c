@@ -64,6 +64,7 @@ static void pull_set_pbcatom(t_commrec *cr, t_pullgrp *pg,
 
     if (cr && PAR(cr))
     {
+        // TODO redundant
         if (DOMAINDECOMP(cr))
         {
             if (!ga2la_get_home(cr->dd->ga2la, pg->pbcatom, &a))
