@@ -272,7 +272,7 @@ static void do_nsgrid(FILE *fp, gmx_bool bVerbose,
     snew(nFreeze, 2);
     snew(md, 1);
     md = init_mdatoms(fp, mtop, FALSE);
-    atoms2md(mtop, ir, 0, NULL, 0, mtop->natoms, md);
+    atoms2md(mtop, ir, 0, NULL, mtop->natoms, md);
     sfree(nFreeze);
 
     /* forcerec structure */

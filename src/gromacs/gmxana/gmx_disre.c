@@ -801,7 +801,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     ir.dr_tau = 0.0;
-    init_disres(fplog, &mtop, &ir, NULL, FALSE, &fcd, NULL, FALSE);
+    init_disres(fplog, &mtop, &ir, NULL, &fcd, NULL, FALSE);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5*natoms);
@@ -829,7 +829,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     mdatoms = init_mdatoms(fplog, &mtop, ir.efep != efepNO);
-    atoms2md(&mtop, &ir, 0, NULL, 0, mtop.natoms, mdatoms);
+    atoms2md(&mtop, &ir, 0, NULL, mtop.natoms, mdatoms);
     update_mdatoms(mdatoms, ir.fepvals->init_lambda);
     init_nrnb(&nrnb);
     if (ir.ePBC != epbcNONE)

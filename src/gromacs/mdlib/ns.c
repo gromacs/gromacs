@@ -2677,7 +2677,6 @@ void init_ns(FILE *fplog, const t_commrec *cr,
     ns->bexcl     = NULL;
     if (!DOMAINDECOMP(cr))
     {
-        /* This could be reduced with particle decomposition */
         ns_realloc_natoms(ns, mtop->natoms);
     }
 
@@ -2781,14 +2780,8 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         }
         debug_gmx();
 
-        /* Don't know why this all is... (DvdS 3/99) */
-#ifndef SEGV
         start = 0;
         end   = cgs->nr;
-#else
-        start = fr->cg0;
-        end   = (cgs->nr+1)/2;
-#endif
 
         if (DOMAINDECOMP(cr))
         {
@@ -2802,12 +2795,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             fill_grid(NULL, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
             grid->icg0 = fr->cg0;
             grid->icg1 = fr->hcg;
-            debug_gmx();
-
-            if (PARTDECOMP(cr))
-            {
-                mv_grid(cr, grid);
-            }
             debug_gmx();
         }
 

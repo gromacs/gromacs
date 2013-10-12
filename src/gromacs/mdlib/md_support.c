@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -347,7 +347,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM)
     {
-        calc_vcm_grp(mdatoms->start, mdatoms->homenr, mdatoms,
+        calc_vcm_grp(0, mdatoms->homenr, mdatoms,
                      state->x, state->v, vcm);
     }
 
@@ -418,7 +418,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
     {
         correct_ekin(debug,
-                     mdatoms->start, mdatoms->start+mdatoms->homenr,
+                     0, mdatoms->homenr,
                      state->v, vcm->group_p[0],
                      mdatoms->massT, mdatoms->tmass, ekind->ekin);
     }
@@ -427,7 +427,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bStopCM)
     {
         check_cm_grp(fplog, vcm, ir, 1);
-        do_stopcm_grp(mdatoms->start, mdatoms->homenr, mdatoms->cVCM,
+        do_stopcm_grp(0, mdatoms->homenr, mdatoms->cVCM,
                       state->x, state->v, vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }
@@ -762,23 +762,4 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
 
     *bNotLastFrame = (fr->natoms >= 0);
 
-    if (*bNotLastFrame && PARTDECOMP(cr))
-    {
-        /* x and v are the only variable size quantities stored in trr
-         * that are required for rerun (f is not needed).
-         */
-        if (bAlloc)
-        {
-            snew(fr->x, fr->natoms);
-            snew(fr->v, fr->natoms);
-        }
-        if (fr->bX)
-        {
-            gmx_bcast(fr->natoms*sizeof(fr->x[0]), fr->x[0], cr);
-        }
-        if (fr->bV)
-        {
-            gmx_bcast(fr->natoms*sizeof(fr->v[0]), fr->v[0], cr);
-        }
-    }
 }
