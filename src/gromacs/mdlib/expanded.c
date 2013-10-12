@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"
-#include "mvdata.h"
+#include "gromacs/fileio/confio.h"
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
@@ -65,7 +65,6 @@
 #include "xvgr.h"
 #include "gmx_random.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "macros.h"
 
 #include "gromacs/fileio/confio.h"

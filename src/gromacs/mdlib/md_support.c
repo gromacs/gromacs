@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -762,23 +762,4 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
 
     *bNotLastFrame = (fr->natoms >= 0);
 
-    if (*bNotLastFrame && PARTDECOMP(cr))
-    {
-        /* x and v are the only variable size quantities stored in trr
-         * that are required for rerun (f is not needed).
-         */
-        if (bAlloc)
-        {
-            snew(fr->x, fr->natoms);
-            snew(fr->v, fr->natoms);
-        }
-        if (fr->bX)
-        {
-            gmx_bcast(fr->natoms*sizeof(fr->x[0]), fr->x[0], cr);
-        }
-        if (fr->bV)
-        {
-            gmx_bcast(fr->natoms*sizeof(fr->v[0]), fr->v[0], cr);
-        }
-    }
 }

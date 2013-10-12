@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "names.h"
 #include "physics.h"
-#include "partdec.h"
 #include "domdec.h"
 #include "network.h"
 #include "gmx_fatal.h"
@@ -439,11 +438,7 @@ calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,
     }
 
     /* Sum up the polarization energy from other nodes */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, work, cr);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         dd_atom_sum_real(cr->dd, work);
     }
@@ -1232,11 +1227,7 @@ calc_gb_rad_hct_obc_sse2_single(t_commrec *cr, t_forcerec * fr, int natoms, gmx_
     }
 
     /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, work, cr);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         dd_atom_sum_real(cr->dd, work);
     }

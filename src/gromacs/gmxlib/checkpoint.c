@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1409,18 +1409,10 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     int                  flags_eks, flags_enh, flags_dfh, i;
     t_fileio            *ret;
 
-    if (PAR(cr))
+    if (DOMAINDECOMP(cr))
     {
-        if (DOMAINDECOMP(cr))
-        {
             nppnodes  = cr->dd->nnodes;
             npmenodes = cr->npmenodes;
-        }
-        else
-        {
-            nppnodes  = cr->nnodes;
-            npmenodes = 0;
-        }
     }
     else
     {
@@ -1681,7 +1673,7 @@ static void check_match(FILE *fplog,
                         char *version,
                         char *btime, char *buser, char *bhost, int double_prec,
                         char *fprog,
-                        t_commrec *cr, gmx_bool bPartDecomp, int npp_f, int npme_f,
+                        t_commrec *cr, int npp_f, int npme_f,
                         ivec dd_nc, ivec dd_nc_f)
 {
     int      npp;
@@ -1697,12 +1689,6 @@ static void check_match(FILE *fplog,
     check_string(fplog, "Program name", Program(), fprog, &mm);
 
     check_int   (fplog, "#nodes", cr->nnodes, npp_f+npme_f, &mm);
-    if (bPartDecomp)
-    {
-        dd_nc[XX] = 1;
-        dd_nc[YY] = 1;
-        dd_nc[ZZ] = 1;
-    }
     if (cr->nnodes > 1)
     {
         check_int (fplog, "#PME-nodes", cr->npmenodes, npme_f, &mm);
@@ -1737,7 +1723,7 @@ static void check_match(FILE *fplog,
 }
 
 static void read_checkpoint(const char *fn, FILE **pfplog,
-                            t_commrec *cr, gmx_bool bPartDecomp, ivec dd_nc,
+                            t_commrec *cr, ivec dd_nc,
                             int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadRNG, gmx_bool *bReadEkin,
                             int *simulation_part,
@@ -1779,12 +1765,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     fl.l_len    = 0;
     fl.l_pid    = 0;
 #endif
-
-    if (PARTDECOMP(cr))
-    {
-        gmx_fatal(FARGS,
-                  "read_checkpoint not (yet) supported with particle decomposition");
-    }
 
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, &file_version,
@@ -1869,11 +1849,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         nppnodes      = 1;
         cr->npmenodes = 0;
     }
-    else if (bPartDecomp)
-    {
-        nppnodes      = cr->nnodes;
-        cr->npmenodes = 0;
-    }
     else if (cr->nnodes == nppnodes_f + npmenodes_f)
     {
         if (cr->npmenodes < 0)
@@ -1956,7 +1931,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         if (MASTER(cr))
         {
             check_match(fplog, version, btime, buser, bhost, double_prec, fprog,
-                        cr, bPartDecomp, nppnodes_f, npmenodes_f, dd_nc, dd_nc_f);
+                        cr, nppnodes_f, npmenodes_f, dd_nc, dd_nc_f);
         }
     }
     ret             = do_cpt_state(gmx_fio_getxdr(fp), TRUE, fflags, state, *bReadRNG, NULL);
@@ -2174,7 +2149,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
 
 void load_checkpoint(const char *fn, FILE **fplog,
-                     t_commrec *cr, gmx_bool bPartDecomp, ivec dd_nc,
+                     t_commrec *cr, ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadRNG, gmx_bool *bReadEkin,
                      gmx_bool bAppend, gmx_bool bForceAppend)
@@ -2186,7 +2161,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
     {
         /* Read the state from the checkpoint file */
         read_checkpoint(fn, fplog,
-                        cr, bPartDecomp, dd_nc,
+                        cr, dd_nc,
                         ir->eI, &(ir->fepvals->init_fep_state), &step, &t, state, bReadRNG, bReadEkin,
                         &ir->simulation_part, bAppend, bForceAppend);
     }

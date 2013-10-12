@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1895,7 +1895,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     {
         dd->nbonded_local += nexcl;
 
-        forcerec_set_excl_load(fr, ltop, NULL);
+        forcerec_set_excl_load(fr, ltop);
     }
 
     ltop->atomtypes  = mtop->atomtypes;
@@ -2277,7 +2277,7 @@ static void get_cgcm_mol(gmx_moltype_t *molt, gmx_ffparams_t *ffparams,
     {
         construct_vsites(vsite, xs, 0.0, NULL,
                          ffparams->iparams, molt->ilist,
-                         epbcNONE, TRUE, NULL, NULL, NULL);
+                         epbcNONE, TRUE, NULL, NULL);
     }
 
     calc_cgcm(NULL, 0, molt->cgs.nr, &molt->cgs, xs, cg_cm);

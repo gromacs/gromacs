@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include "pbc.h"
 #include "macros.h"
 #include <string.h>
+#include "gmx_random.h"
 
 #include "gromacs/legacyheaders/thread_mpi/threads.h"
 
@@ -659,6 +660,38 @@ void done_state(t_state *state)
         sfree(state->nosehoover_vxi);
         sfree(state->therm_integral);
     }
+}
+
+t_state *serial_init_local_state(t_state *state_global)
+{
+    int      i;
+    t_state *state_local;
+
+    snew(state_local, 1);
+
+    /* Copy all the contents */
+    *state_local = *state_global;
+    snew(state_local->lambda, efptNR);
+    /* local storage for lambda */
+    for (i = 0; i < efptNR; i++)
+    {
+        state_local->lambda[i] = state_global->lambda[i];
+    }
+    if (state_global->nrngi > 1)
+    {
+        /* With stochastic dynamics we need local storage for the random state */
+        if (state_local->flags & (1<<estLD_RNG))
+        {
+            state_local->nrng = gmx_rng_n();
+            snew(state_local->ld_rng, state_local->nrng);
+        }
+        if (state_local->flags & (1<<estLD_RNGI))
+        {
+            snew(state_local->ld_rngi, 1);
+        }
+    }
+
+    return state_local;
 }
 
 static void do_box_rel(t_inputrec *ir, matrix box_rel, matrix b, gmx_bool bInit)

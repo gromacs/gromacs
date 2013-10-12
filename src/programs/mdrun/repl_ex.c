@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "names.h"
-#include "mvdata.h"
 #include "domdec.h"
-#include "partdec.h"
 
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
@@ -153,6 +151,19 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     if (ms == NULL || ms->nsim == 1)
     {
         gmx_fatal(FARGS, "Nothing to exchange with only one replica, maybe you forgot to set the -multi option of mdrun?");
+    }
+    if (!EI_DYNAMICS(ir->eI))
+    {
+        gmx_fatal(FARGS, "Replica exchange is only supported by dynamical simulations");
+        /* Note that PAR(cr) is defined by cr->nnodes > 1, which is
+         * distinct from MULTISIM(cr). A multi-simulation only runs
+         * with real MPI parallelism, but this does not imply PAR(cr)
+         * is true!
+         *
+         * Since we are using a dynamical integrator, the only
+         * decomposition is DD, so PAR(cr) and DOMAINDECOMP(cr) are
+         * synonymous. The only way for cr->nnodes > 1 to be true is
+         * if we are using DD. */
     }
 
     snew(re, 1);
@@ -642,26 +653,6 @@ static void scale_velocities(t_state *state, real fac)
         {
             svmul(fac, state->v[i], state->v[i]);
         }
-    }
-}
-
-static void pd_collect_state(const t_commrec *cr, t_state *state)
-{
-    int shift;
-
-    if (debug)
-    {
-        fprintf(debug, "Collecting state before exchange\n");
-    }
-    shift = cr->nnodes - cr->npmenodes - 1;
-    move_rvecs(cr, FALSE, FALSE, state->x, NULL, shift, NULL);
-    if (state->v)
-    {
-        move_rvecs(cr, FALSE, FALSE, state->v, NULL, shift, NULL);
-    }
-    if (state->sd_X)
-    {
-        move_rvecs(cr, FALSE, FALSE, state->sd_X, NULL, shift, NULL);
     }
 }
 
@@ -1317,7 +1308,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
      * each simulation know whether they need to participate in
      * collecting the state. Otherwise, they might as well get on with
      * the next thing to do. */
-    if (PAR(cr))
+    if (DOMAINDECOMP(cr))
     {
 #ifdef GMX_MPI
         MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MASTERRANK(cr),
@@ -1328,19 +1319,11 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
     if (bThisReplicaExchanged)
     {
         /* Exchange the states */
-
-        if (PAR(cr))
-        {
             /* Collect the global state on the master node */
             if (DOMAINDECOMP(cr))
             {
                 dd_collect_state(cr->dd, state_local, state);
             }
-            else
-            {
-                pd_collect_state(cr, state);
-            }
-        }
         else
         {
             copy_state_nonatomdata(state_local, state);
@@ -1380,11 +1363,6 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
         {
             /* Copy the global state to the local state data structure */
             copy_state_nonatomdata(state, state_local);
-
-            if (PAR(cr))
-            {
-                bcast_state(cr, state, FALSE);
-            }
         }
     }
 

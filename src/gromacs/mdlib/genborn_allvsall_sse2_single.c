@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
 #include "vec.h"
 #include "smalloc.h"
 
-#include "partdec.h"
 #include "network.h"
 #include "physics.h"
 #include "genborn.h"
@@ -1363,11 +1362,7 @@ genborn_allvsall_calc_still_radii_sse2_single(t_forcerec *           fr,
         work[i-natoms] += work[i];
     }
 
-    /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, work, cr);
-    }
+    /* Parallel summations would go here if ever implemented with DD */
 
     factor  = 0.5 * ONE_4PI_EPS0;
     /* Calculate the radii - should we do all atoms, or just our local ones? */
@@ -3165,12 +3160,7 @@ genborn_allvsall_calc_hct_obc_radii_sse2_single(t_forcerec *           fr,
         work[i] += work[natoms+i];
     }
 
-    /* Parallel summations */
-
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, work, cr);
-    }
+    /* Parallel summations would go here if ever implemented with DD */
 
     if (gb_algorithm == egbHCT)
     {
