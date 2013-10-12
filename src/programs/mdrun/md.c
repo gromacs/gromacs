@@ -66,12 +66,11 @@
 #include "qmmm.h"
 #include "domdec.h"
 #include "domdec_network.h"
-#include "partdec.h"
+#include "gromacs/gmxlib/topsort.h"
 #include "coulomb.h"
 #include "constr.h"
 #include "shellfc.h"
 #include "compute_io.h"
-#include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
@@ -363,25 +362,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
     else
     {
-        if (PAR(cr))
-        {
-            /* Initialize the particle decomposition and split the topology */
-            top = split_system(fplog, top_global, ir, cr);
-
-            pd_cg_range(cr, &fr->cg0, &fr->hcg);
-            pd_at_range(cr, &a0, &a1);
-        }
-        else
-        {
             top = gmx_mtop_generate_local_top(top_global, ir);
 
             a0 = 0;
             a1 = top_global->natoms;
-        }
 
-        forcerec_set_excl_load(fr, top, cr);
+        forcerec_set_excl_load(fr, top);
 
-        state    = partdec_init_local_state(cr, state_global);
+        state    = serial_init_local_state(state_global);
         f_global = f;
 
         atoms2md(top_global, ir, 0, NULL, a0, a1-a0, mdatoms);
@@ -402,11 +390,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         setup_bonded_threading(fr, &top->idef);
-
-        if (ir->pull && PAR(cr))
-        {
-            dd_make_local_pull_groups(NULL, ir->pull, mdatoms);
-        }
     }
 
     if (DOMAINDECOMP(cr))
@@ -470,12 +453,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 
     /* Initialize constraints */
-    if (constr)
+    if (constr && !DOMAINDECOMP(cr))
     {
-        if (!DOMAINDECOMP(cr))
-        {
             set_constraints(constr, top, ir, mdatoms, cr);
-        }
     }
 
     if (repl_ex_nst > 0)
@@ -544,7 +524,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* Construct the virtual sites for the initial configuration */
             construct_vsites(vsite, state->x, ir->delta_t, NULL,
                              top->idef.iparams, top->idef.il,
-                             fr->ePBC, fr->bMolPBC, graph, cr, state->box);
+                             fr->ePBC, fr->bMolPBC, cr, state->box);
         }
     }
 
@@ -817,7 +797,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if (bRerunMD)
         {
-            if (!(DOMAINDECOMP(cr) && !MASTER(cr)))
+            if (!DOMAINDECOMP(cr) || MASTER(cr))
             {
                 for (i = 0; i < state_global->natoms; i++)
                 {
@@ -853,7 +833,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 if (DOMAINDECOMP(cr))
                 {
-                    gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented for domain decomposition, use particle decomposition");
+                    //TODO fix this maybe
+                    gmx_fatal(FARGS, "Vsite recalculation with -rerun is not implemented in parallel(?)");
                 }
                 if (graph)
                 {
@@ -865,7 +846,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 construct_vsites(vsite, state->x, ir->delta_t, state->v,
                                  top->idef.iparams, top->idef.il,
-                                 fr->ePBC, fr->bMolPBC, graph, cr, state->box);
+                                 fr->ePBC, fr->bMolPBC, cr, state->box);
                 if (graph)
                 {
                     unshift_self(graph, state->box, state->x);
@@ -1631,7 +1612,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 construct_vsites(vsite, state->x, ir->delta_t, state->v,
                                  top->idef.iparams, top->idef.il,
-                                 fr->ePBC, fr->bMolPBC, graph, cr, state->box);
+                                 fr->ePBC, fr->bMolPBC, cr, state->box);
 
                 if (graph != NULL)
                 {

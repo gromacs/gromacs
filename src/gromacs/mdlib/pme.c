@@ -371,17 +371,6 @@ typedef struct gmx_pme {
     /* thread local work data for solve_pme */
     pme_work_t *work;
 
-    /* Work data for PME_redist */
-    gmx_bool redist_init;
-    int *    scounts;
-    int *    rcounts;
-    int *    sdispls;
-    int *    rdispls;
-    int *    sidx;
-    int *    idxa;
-    real *   redist_buf;
-    int      redist_buf_nalloc;
-
     /* Work data for sum_qgrid */
     real *   sum_qgrid_tmp;
     real *   sum_qgrid_dd_tmp;
@@ -696,121 +685,10 @@ static void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
     }
 }
 
-static void pmeredist_pd(gmx_pme_t pme, gmx_bool gmx_unused forw,
-                         int n, gmx_bool gmx_unused bXF, rvec gmx_unused *x_f,
-                         real gmx_unused *charge, pme_atomcomm_t *atc)
-/* Redistribute particle data for PME calculation */
-/* domain decomposition by x coordinate           */
-{
-    int *idxa;
-    int  i, ii;
-
-    if (FALSE == pme->redist_init)
-    {
-        snew(pme->scounts, atc->nslab);
-        snew(pme->rcounts, atc->nslab);
-        snew(pme->sdispls, atc->nslab);
-        snew(pme->rdispls, atc->nslab);
-        snew(pme->sidx, atc->nslab);
-        pme->redist_init = TRUE;
-    }
-    if (n > pme->redist_buf_nalloc)
-    {
-        pme->redist_buf_nalloc = over_alloc_dd(n);
-        srenew(pme->redist_buf, pme->redist_buf_nalloc*DIM);
-    }
-
-    pme->idxa = atc->pd;
-
-#ifdef GMX_MPI
-    if (forw && bXF)
-    {
-        /* forward, redistribution from pp to pme */
-
-        /* Calculate send counts and exchange them with other nodes */
-        for (i = 0; (i < atc->nslab); i++)
-        {
-            pme->scounts[i] = 0;
-        }
-        for (i = 0; (i < n); i++)
-        {
-            pme->scounts[pme->idxa[i]]++;
-        }
-        MPI_Alltoall( pme->scounts, 1, MPI_INT, pme->rcounts, 1, MPI_INT, atc->mpi_comm);
-
-        /* Calculate send and receive displacements and index into send
-           buffer */
-        pme->sdispls[0] = 0;
-        pme->rdispls[0] = 0;
-        pme->sidx[0]    = 0;
-        for (i = 1; i < atc->nslab; i++)
-        {
-            pme->sdispls[i] = pme->sdispls[i-1]+pme->scounts[i-1];
-            pme->rdispls[i] = pme->rdispls[i-1]+pme->rcounts[i-1];
-            pme->sidx[i]    = pme->sdispls[i];
-        }
-        /* Total # of particles to be received */
-        atc->n = pme->rdispls[atc->nslab-1] + pme->rcounts[atc->nslab-1];
-
-        pme_realloc_atomcomm_things(atc);
-
-        /* Copy particle coordinates into send buffer and exchange*/
-        for (i = 0; (i < n); i++)
-        {
-            ii = DIM*pme->sidx[pme->idxa[i]];
-            pme->sidx[pme->idxa[i]]++;
-            pme->redist_buf[ii+XX] = x_f[i][XX];
-            pme->redist_buf[ii+YY] = x_f[i][YY];
-            pme->redist_buf[ii+ZZ] = x_f[i][ZZ];
-        }
-        MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls,
-                      pme->rvec_mpi, atc->x, pme->rcounts, pme->rdispls,
-                      pme->rvec_mpi, atc->mpi_comm);
-    }
-    if (forw)
-    {
-        /* Copy charge into send buffer and exchange*/
-        for (i = 0; i < atc->nslab; i++)
-        {
-            pme->sidx[i] = pme->sdispls[i];
-        }
-        for (i = 0; (i < n); i++)
-        {
-            ii = pme->sidx[pme->idxa[i]];
-            pme->sidx[pme->idxa[i]]++;
-            pme->redist_buf[ii] = charge[i];
-        }
-        MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls, mpi_type,
-                      atc->q, pme->rcounts, pme->rdispls, mpi_type,
-                      atc->mpi_comm);
-    }
-    else   /* backward, redistribution from pme to pp */
-    {
-        MPI_Alltoallv(atc->f, pme->rcounts, pme->rdispls, pme->rvec_mpi,
-                      pme->redist_buf, pme->scounts, pme->sdispls,
-                      pme->rvec_mpi, atc->mpi_comm);
-
-        /* Copy data from receive buffer */
-        for (i = 0; i < atc->nslab; i++)
-        {
-            pme->sidx[i] = pme->sdispls[i];
-        }
-        for (i = 0; (i < n); i++)
-        {
-            ii          = DIM*pme->sidx[pme->idxa[i]];
-            x_f[i][XX] += pme->redist_buf[ii+XX];
-            x_f[i][YY] += pme->redist_buf[ii+YY];
-            x_f[i][ZZ] += pme->redist_buf[ii+ZZ];
-            pme->sidx[pme->idxa[i]]++;
-        }
-    }
-#endif
-}
-
-static void pme_dd_sendrecv(pme_atomcomm_t gmx_unused *atc,
-                            gmx_bool gmx_unused bBackward, int gmx_unused shift,
-                            void gmx_unused *buf_s, int gmx_unused nbyte_s,
-                            void gmx_unused *buf_r, int gmx_unused nbyte_r)
+static void pme_dd_sendrecv(pme_atomcomm_t *atc,
+                            gmx_bool bBackward, int shift,
+                            void *buf_s, int nbyte_s,
+                            void *buf_r, int nbyte_r)
 {
 #ifdef GMX_MPI
     int        dest, src;
@@ -3509,11 +3387,9 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
     snew(pme, 1);
 
-    pme->redist_init         = FALSE;
     pme->sum_qgrid_tmp       = NULL;
     pme->sum_qgrid_dd_tmp    = NULL;
     pme->buf_nalloc          = 0;
-    pme->redist_buf_nalloc   = 0;
 
     pme->nnodes              = 1;
     pme->bPPnode             = TRUE;
@@ -4779,10 +4655,6 @@ do_redist_x_q(gmx_pme_t pme, t_commrec *cr, int start, int homenr,
         {
             dd_pmeredist_x_q(pme, n_d, bFirst, x_d, q_d, atc);
         }
-        else
-        {
-            pmeredist_pd(pme, TRUE, n_d, bFirst, x_d, q_d, atc);
-        }
     }
 }
 
@@ -4928,7 +4800,37 @@ int gmx_pme_do(gmx_pme_t pme,
         else
         {
             wallcycle_start(wcycle, ewcPME_REDISTXF);
-            do_redist_x_q(pme, cr, start, homenr, bFirst, x, charge);
+            for (d = pme->ndecompdim-1; d >= 0; d--)
+            {
+                if (d == pme->ndecompdim-1)
+                {
+                    n_d = homenr;
+                    x_d = x + start;
+                    q_d = charge;
+                }
+                else
+                {
+                    n_d = pme->atc[d+1].n;
+                    x_d = atc->x;
+                    q_d = atc->q;
+                }
+                atc      = &pme->atc[d];
+                atc->npd = n_d;
+                if (atc->npd > atc->pd_nalloc)
+                {
+                    atc->pd_nalloc = over_alloc_dd(atc->npd);
+                    srenew(atc->pd, atc->pd_nalloc);
+                }
+                atc->maxshift = (atc->dimind == 0 ? maxshift_x : maxshift_y);
+                pme_calc_pidx_wrapper(n_d, pme->recipbox, x_d, atc);
+                where();
+
+                /* Redistribute x (only once) and qA or qB */
+                if (DOMAINDECOMP(cr))
+                {
+                    dd_pmeredist_x_q(pme, n_d, q == 0, x_d, q_d, atc);
+                }
+            }
             where();
 
             wallcycle_stop(wcycle, ewcPME_REDISTXF);
@@ -5364,10 +5266,6 @@ int gmx_pme_do(gmx_pme_t pme,
             {
                 dd_pmeredist_f(pme, atc, n_d, f_d,
                                d == pme->ndecompdim-1 && pme->bPPnode);
-            }
-            else
-            {
-                pmeredist_pd(pme, FALSE, n_d, TRUE, f_d, NULL, atc);
             }
         }
 

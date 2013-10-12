@@ -47,7 +47,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"
-#include "mvdata.h"
+//#include "confio.h"
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
@@ -72,7 +72,6 @@
 #include "copyrite.h"
 #include "gmx_random.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "genborn.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
@@ -1046,13 +1045,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     reset_enerdata(fr, bNS, enerd, MASTER(cr));
     clear_rvecs(SHIFTS, fr->fshift);
 
-    if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr) && !(cr->duty & DUTY_PME))
     {
-        if (!(cr->duty & DUTY_PME))
-        {
             wallcycle_start(wcycle, ewcPPDURINGPME);
             dd_force_flop_start(cr->dd, nrnb);
-        }
     }
 
     if (inputrec->bRot)
@@ -1258,6 +1254,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (PAR(cr))
         {
             wallcycle_start(wcycle, ewcMOVEF);
+            // TODO this is redundant with the enclosing PAR(cr), but remove only when cr->dd is guaranteed to be allocated
             if (DOMAINDECOMP(cr))
             {
                 dd_move_f(cr->dd, f, fr->fshift);
@@ -1443,12 +1440,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     clear_mat(vir_force);
 
-    if (PARTDECOMP(cr))
-    {
-        pd_cg_range(cr, &cg0, &cg1);
-    }
-    else
-    {
         cg0 = 0;
         if (DOMAINDECOMP(cr))
         {
@@ -1462,7 +1453,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         {
             cg1--;
         }
-    }
 
     bStateChanged  = (flags & GMX_FORCE_STATECHANGED);
     bNS            = (flags & GMX_FORCE_NS) && (fr->bAllvsAll == FALSE);
@@ -1524,10 +1514,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (bCalcCGCM)
     {
-        if (PAR(cr))
-        {
-            move_cgcm(fplog, cr, fr->cg_cm);
-        }
         if (gmx_debug_at)
         {
             pr_rvecs(debug, 0, "cgcm", fr->cg_cm, top->cgs.nr);
@@ -1581,13 +1567,10 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     if (PAR(cr))
     {
         wallcycle_start(wcycle, ewcMOVEX);
+        // TODO this is redundant with the enclosing PAR(cr)
         if (DOMAINDECOMP(cr))
         {
             dd_move_x(cr->dd, box, x);
-        }
-        else
-        {
-            move_x(cr, x, nrnb);
         }
         wallcycle_stop(wcycle, ewcMOVEX);
     }
@@ -1679,13 +1662,10 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                        x, box, fr, &top->idef, graph, fr->born);
     }
 
-    if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr) && !(cr->duty & DUTY_PME))
     {
-        if (!(cr->duty & DUTY_PME))
-        {
             wallcycle_start(wcycle, ewcPPDURINGPME);
             dd_force_flop_start(cr->dd, nrnb);
-        }
     }
 
     if (inputrec->bRot)
@@ -1823,6 +1803,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (PAR(cr))
         {
             wallcycle_start(wcycle, ewcMOVEF);
+            // TODO this is redundant with the enclosing PAR(cr)
             if (DOMAINDECOMP(cr))
             {
                 dd_move_f(cr->dd, f, fr->fshift);
@@ -1844,14 +1825,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                      * since f_twin is already included in f.
                      */
                     dd_move_f(cr->dd, fr->f_twin, NULL);
-                }
-            }
-            else
-            {
-                pd_move_f(cr, f, nrnb);
-                if (bSepLRF)
-                {
-                    pd_move_f(cr, fr->f_twin, nrnb);
                 }
             }
             wallcycle_stop(wcycle, ewcMOVEF);
@@ -2566,33 +2539,6 @@ void finish_run(FILE *fplog, t_commrec *cr,
     {
         print_dd_statistics(cr, inputrec, fplog);
     }
-
-#ifdef GMX_MPI
-    if (PARTDECOMP(cr))
-    {
-        if (MASTER(cr))
-        {
-            t_nrnb     *nrnb_all;
-            int         s;
-            MPI_Status  stat;
-
-            snew(nrnb_all, cr->nnodes);
-            nrnb_all[0] = *nrnb;
-            for (s = 1; s < cr->nnodes; s++)
-            {
-                MPI_Recv(nrnb_all[s].n, eNRNB, MPI_DOUBLE, s, 0,
-                         cr->mpi_comm_mysim, &stat);
-            }
-            pr_load(fplog, cr, nrnb_all);
-            sfree(nrnb_all);
-        }
-        else
-        {
-            MPI_Send(nrnb->n, eNRNB, MPI_DOUBLE, MASTERRANK(cr), 0,
-                     cr->mpi_comm_mysim);
-        }
-    }
-#endif
 
     if (SIMMASTER(cr))
     {

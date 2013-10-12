@@ -128,6 +128,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 
     molblock = mtop->molblock;
 
+    // TODO fix this comment
     /* Index==NULL indicates particle decomposition,
      * unless we have an empty DD node, so also check for homenr and start.
      * This should be signaled properly with an extra parameter or nindex==-1.
