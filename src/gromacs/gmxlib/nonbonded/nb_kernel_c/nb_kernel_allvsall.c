@@ -280,8 +280,8 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
     type                = mdatoms->typeA;
     facel               = fr->epsfac;
     natoms              = mdatoms->nr;
-    ni0                 = mdatoms->start;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
     aadata              = fr->AllvsAll_work;
     excl                = kernel_data->exclusions;
 

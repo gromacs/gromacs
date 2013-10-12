@@ -170,7 +170,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
             lamfac = 1;
             type   = md->typeA;
         }
-        for (i = md->start; i < md->start+md->homenr; i++)
+        for (i = 0; i < md->homenr; i++)
         {
             for (w = 0; w < nwall; w++)
             {
