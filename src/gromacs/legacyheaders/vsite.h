@@ -45,19 +45,6 @@ extern "C" {
 #endif
 
 typedef struct {
-    int *      left_import_construct;
-    int        left_import_nconstruct;
-    int *      left_export_construct;
-    int        left_export_nconstruct;
-    int *      right_import_construct;
-    int        right_import_nconstruct;
-    int *      right_export_construct;
-    int        right_export_nconstruct;
-    rvec *     send_buf;
-    rvec *     recv_buf;
-} t_comm_vsites;
-
-typedef struct {
     t_ilist ilist[F_NRE];     /* vsite ilists for this thread            */
     rvec    fshift[SHIFTS];   /* fshift accumulation buffer              */
     matrix  dxdf;             /* virial dx*df accumulation buffer        */
@@ -70,8 +57,6 @@ typedef struct {
     int              ***vsite_pbc_molt;       /* The pbc atoms for intercg vsites        */
     int               **vsite_pbc_loc;        /* The local pbc atoms                     */
     int                *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
-    gmx_bool            bPDvsitecomm;         /* Do we need vsite communication with PD? */
-    t_comm_vsites      *vsitecomm;            /* The PD vsite communication struct       */
     int                 nthreads;             /* Number of threads used for vsites       */
     gmx_vsite_thread_t *tdata;                /* Thread local vsites and work structs    */
     int                *th_ind;               /* Work array                              */

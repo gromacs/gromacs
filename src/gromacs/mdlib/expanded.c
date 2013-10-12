@@ -53,7 +53,6 @@
 #include "smalloc.h"
 #include "names.h"
 #include "confio.h"
-#include "mvdata.h"
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
@@ -78,7 +77,6 @@
 #include "xtcio.h"
 #include "gmx_random.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "gmx_wallcycle.h"
 #include "macros.h"
 

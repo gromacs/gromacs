@@ -222,8 +222,6 @@ typedef struct {
 
 } gmx_domdec_t;
 
-typedef struct gmx_partdec *gmx_partdec_p_t;
-
 typedef struct {
     int       nsim;
     int       sim;
@@ -270,9 +268,6 @@ typedef struct {
     /* For domain decomposition */
     gmx_domdec_t *dd;
 
-    /* For particle decomposition */
-    gmx_partdec_p_t pd;
-
     /* The duties of this node, see the defines above */
     int             duty;
 
@@ -297,8 +292,6 @@ typedef struct {
 
 #define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
-
-#define PARTDECOMP(cr)     ((cr)->pd != NULL)
 
 #define MULTISIM(cr)       ((cr)->ms)
 #define MSRANK(ms, nodeid)  (nodeid)

@@ -49,7 +49,6 @@
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "gmx_omp_nthreads.h"
@@ -530,10 +529,6 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     {
         nlocat = dd_constraints_nlocalatoms(cr->dd);
     }
-    else if (PARTDECOMP(cr))
-    {
-        nlocat = pd_constraints_nlocalatoms(cr->pd);
-    }
     else
     {
         nlocat = NULL;
@@ -620,8 +615,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 
     for (iter = 0; iter < lincsd->nIter; iter++)
     {
-        if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints) ||
-            PARTDECOMP(cr))
+        if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints))
         {
 #pragma omp barrier
 #pragma omp master
@@ -630,10 +624,6 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                 if (DOMAINDECOMP(cr))
                 {
                     dd_move_x_constraints(cr->dd, box, xp, NULL);
-                }
-                else
-                {
-                    pd_move_x_constraints(cr, xp, NULL);
                 }
             }
         }
@@ -1203,10 +1193,6 @@ void set_lincs(t_idef *idef, t_mdatoms *md,
         }
         start = 0;
     }
-    else if (PARTDECOMP(cr))
-    {
-        pd_get_constraint_range(cr->pd, &start, &natoms);
-    }
     else
     {
         start  = md->start;
@@ -1296,6 +1282,7 @@ void set_lincs(t_idef *idef, t_mdatoms *md,
             }
             li->blnr[con+1] = nconnect;
 
+            // TODO rephrase this?
             if (cr->dd == NULL)
             {
                 /* Order the blbnb matrix to optimize memory access */
@@ -1315,6 +1302,7 @@ void set_lincs(t_idef *idef, t_mdatoms *md,
     li->nc = con;
 
     li->ncc = li->blnr[con];
+    // TODO rephase this?
     if (cr->dd == NULL)
     {
         /* Since the matrix is static, we can free some memory */
@@ -1490,6 +1478,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     bOK = TRUE;
 
+    // TODO rephrase this?
     if (lincsd->nc == 0 && cr->dd == NULL)
     {
         if (bLog || bEner)

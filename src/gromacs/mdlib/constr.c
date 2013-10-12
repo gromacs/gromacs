@@ -51,7 +51,6 @@
 #include "txtdump.h"
 #include "domdec.h"
 #include "pdbio.h"
-#include "partdec.h"
 #include "splitter.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
@@ -220,9 +219,6 @@ static void write_constr_pdb(const char *fn, const char *title,
     char         *anm, *resnm;
 
     dd = NULL;
-    if (PAR(cr))
-    {
-        sprintf(fname, "%s_n%d.pdb", fn, cr->sim_nodeid);
         if (DOMAINDECOMP(cr))
         {
             dd = cr->dd;
@@ -230,6 +226,10 @@ static void write_constr_pdb(const char *fn, const char *title,
             start  = 0;
             homenr = dd_ac1;
         }
+
+    if (PAR(cr))
+    {
+        sprintf(fname, "%s_n%d.pdb", fn, cr->sim_nodeid);
     }
     else
     {
@@ -395,6 +395,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
      * Note that PBC for constraints is different from PBC for bondeds.
      * For constraints there is both forward and backward communication.
      */
+    // TODO rephrase use of cr->dd?
     if (ir->ePBC != epbcNONE &&
         (cr->dd || bMolPBC) && !(cr->dd && cr->dd->constraint_comm == NULL))
     {
@@ -412,13 +413,10 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     /* Communicate the coordinates required for the non-local constraints
      * for LINCS and/or SETTLE.
      */
+    // TODO rephrase use of cr->dd?
     if (cr->dd)
     {
         dd_move_x_constraints(cr->dd, box, x, xprime);
-    }
-    else if (PARTDECOMP(cr))
-    {
-        pd_move_x_constraints(cr, x, xprime);
     }
 
     if (constr->lincsd != NULL)
@@ -689,7 +687,7 @@ real constr_rmsd(struct gmx_constr *constr, gmx_bool bSD2)
     }
 }
 
-static void make_shake_sblock_pd(struct gmx_constr *constr,
+static void make_shake_sblock_serial(struct gmx_constr *constr,
                                  t_idef *idef, t_mdatoms *md)
 {
     int          i, j, m, ncons;
@@ -964,13 +962,13 @@ void set_constraints(struct gmx_constr *constr,
         }
         if (ir->eConstrAlg == econtSHAKE)
         {
-            if (cr->dd)
+            if (DOMAINDECOMP(cr))
             {
                 make_shake_sblock_dd(constr, &idef->il[F_CONSTR], &top->cgs, cr->dd);
             }
             else
             {
-                make_shake_sblock_pd(constr, idef, md);
+                make_shake_sblock_serial(constr, idef, md);
             }
             if (ncons > constr->lagr_nalloc)
             {
@@ -993,6 +991,7 @@ void set_constraints(struct gmx_constr *constr,
     }
 
     /* Make a selection of the local atoms for essential dynamics */
+    // TODO rephrase use of cr->dd?
     if (constr->ed && cr->dd)
     {
         dd_make_local_ed_indices(cr->dd, constr->ed);
@@ -1259,6 +1258,7 @@ gmx_constr_t init_constraints(FILE *fplog,
 
         if (ir->eConstrAlg == econtSHAKE)
         {
+            // TODO find out when bInterCGcons is turned on
             if (DOMAINDECOMP(cr) && cr->dd->bInterCGcons)
             {
                 gmx_fatal(FARGS, "SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
