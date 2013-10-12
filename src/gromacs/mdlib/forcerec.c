@@ -65,7 +65,6 @@
 #include "md_support.h"
 #include "md_logging.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
@@ -2699,7 +2698,7 @@ void init_forcerec(FILE              *fp,
         fr->gbtabr = 100;
         fr->gbtab  = make_gb_table(oenv, fr);
 
-        init_gb(&fr->born, cr, fr, ir, mtop, ir->gb_algorithm);
+        init_gb(&fr->born, fr, ir, mtop, ir->gb_algorithm);
 
         /* Copy local gb data (for dd, this is done in dd_partition_system) */
         if (!DOMAINDECOMP(cr))
@@ -2937,9 +2936,6 @@ void init_forcerec(FILE              *fp,
 
     if (!DOMAINDECOMP(cr))
     {
-        /* When using particle decomposition, the effect of the second argument,
-         * which sets fr->hcg, is corrected later in do_md and init_em.
-         */
         forcerec_set_ranges(fr, ncg_mtop(mtop), ncg_mtop(mtop),
                             mtop->natoms, mtop->natoms, mtop->natoms);
     }
@@ -3016,20 +3012,10 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
 }
 
 void forcerec_set_excl_load(t_forcerec *fr,
-                            const gmx_localtop_t *top, const t_commrec *cr)
+                            const gmx_localtop_t *top)
 {
     const int *ind, *a;
     int        t, i, j, ntot, n, ntarget;
-
-    if (cr != NULL && PARTDECOMP(cr))
-    {
-        /* No OpenMP with particle decomposition */
-        pd_at_range(cr,
-                    &fr->excl_load[0],
-                    &fr->excl_load[1]);
-
-        return;
-    }
 
     ind = top->excls.index;
     a   = top->excls.a;

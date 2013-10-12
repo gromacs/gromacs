@@ -50,7 +50,6 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
                                   gmx_genborn_t *        born,
                                   gmx_localtop_t *       top,
                                   real *                 x,
-                                  t_commrec *            cr,
                                   void *                 work);
 
 int
@@ -60,7 +59,6 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                                     int                    gb_algorithm,
                                     gmx_localtop_t *       top,
                                     real *                 x,
-                                    t_commrec *            cr,
                                     void *                 work);
 
 int

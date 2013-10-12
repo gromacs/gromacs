@@ -241,7 +241,10 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
     }
 }
 
-void bcast_state_setup(const t_commrec *cr, t_state *state)
+/* Broadcasts the state sizes and flags from the master to all nodes
+ * in cr->mpi_comm_mygroup. The arrays are not broadcasted.
+ */
+static void bcast_state_setup(const t_commrec *cr, t_state *state)
 {
     block_bc(cr, state->natoms);
     block_bc(cr, state->ngtc);
@@ -256,19 +259,31 @@ void bcast_state_setup(const t_commrec *cr, t_state *state)
     }
 }
 
-void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc)
+void bcast_state(const t_commrec *cr, t_state *state)
 {
     int i, nnht, nnhtp;
+    gmx_bool bAlloc;
+
+    if (!PAR(cr))
+    {
+        return;
+    }
 
     bcast_state_setup(cr, state);
+
+    if (DOMAINDECOMP(cr))
+    {
+        /* We allocate dynamically in dd_partition_system. */
+        return;
+    }
 
     nnht  = (state->ngtc)*(state->nhchainlength);
     nnhtp = (state->nnhpres)*(state->nhchainlength);
 
-    if (MASTER(cr))
-    {
-        bAlloc = FALSE;
-    }
+    /* We still need to allocate the arrays in state for non-master
+     * ranks, which is done (implicitly via bAlloc) in the dirty,
+     * dirty nblock_abc macro. */
+    bAlloc = !MASTER(cr);
     if (bAlloc)
     {
         state->nalloc = state->natoms;

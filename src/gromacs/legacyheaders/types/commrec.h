@@ -224,8 +224,6 @@ typedef struct {
 
 } gmx_domdec_t;
 
-typedef struct gmx_partdec *gmx_partdec_p_t;
-
 typedef struct {
     int       nsim;
     int       sim;
@@ -272,9 +270,6 @@ typedef struct {
     /* For domain decomposition */
     gmx_domdec_t *dd;
 
-    /* For particle decomposition */
-    gmx_partdec_p_t pd;
-
     /* The duties of this node, see the defines above */
     int             duty;
 
@@ -297,10 +292,11 @@ typedef struct {
 #define RANK(cr, nodeid)    (nodeid)
 #define MASTERRANK(cr)     (0)
 
+/* Note that even with particle decomposition removed, the use of
+ * non-DD parallelization in TPI, NM and multi-simulations means that
+ * PAR(cr) and DOMAINDECOMP(cr) are not universally synonymous. */
 #define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
-
-#define PARTDECOMP(cr)     ((cr)->pd != NULL)
 
 #define MULTISIM(cr)       ((cr)->ms)
 #define MSRANK(ms, nodeid)  (nodeid)
