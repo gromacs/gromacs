@@ -71,11 +71,6 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
                   real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
                   real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph);
 
-
-
-void gb_pd_send(t_commrec *cr, real *send_data, int nr);
-
-
 /* Functions for setting up the F_GB12,13,14 lists in grompp */
 int
 init_gb_plist(t_params *p_list);

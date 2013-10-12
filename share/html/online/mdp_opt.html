@@ -497,9 +497,8 @@ every <b>nstlist</b> steps.</dd>
 <dt><b>no</b></dt>
 <dd>Use no periodic boundary conditions, ignore the box.
 To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b><tt>=0</tt>.
-For best performance without cut-offs, use <b>nstlist</b><tt>=0</tt>,
-<b>ns-type</b><tt>=simple</tt>
-and particle decomposition instead of domain decomposition.</dd>
+For best performance without cut-offs on a single MPI rank,
+use <b>nstlist</b><tt>=0</tt>, <b>ns-type</b><tt>=simple</tt></dd>
 <dt><b>xy</b></dt>
 <dd>Use periodic boundary conditions in x and y directions only.
 This works only with <b>ns-type</b><tt>=grid</tt> and can be used
