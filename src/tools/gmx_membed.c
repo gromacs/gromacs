@@ -62,7 +62,7 @@ int gmx_membed(int argc, char *argv[])
         "files should also be merged. Consecutively, create a [TT].tpr[tt] file (input for [TT]g_membed[tt]) from these files,"
         "with the following options included in the [TT].mdp[tt] file.[BR]",
         " - [TT]integrator      = md[tt][BR]",
-        " - [TT]energygrp       = Protein[tt] (or other group that you want to insert)[BR]",
+        " - [TT]energygrps      = Protein[tt] (or other group that you want to insert)[BR]",
         " - [TT]freezegrps      = Protein[tt][BR]",
         " - [TT]freezedim       = Y Y Y[tt][BR]",
         " - [TT]energygrp_excl  = Protein Protein[tt][BR]",
