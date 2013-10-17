@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -214,14 +214,20 @@ const std::string &OptionInfo::name() const
     return option().name();
 }
 
-const std::string &OptionInfo::description() const
-{
-    return option().description();
-}
-
-const char *OptionInfo::type() const
+std::string OptionInfo::type() const
 {
     return option().typeString();
+}
+
+std::string OptionInfo::formatDescription() const
+{
+    std::string description(option().description());
+    std::string extraDescription(option().formatExtraDescription());
+    if (!extraDescription.empty())
+    {
+        description.append(extraDescription);
+    }
+    return description;
 }
 
 int OptionInfo::valueCount() const

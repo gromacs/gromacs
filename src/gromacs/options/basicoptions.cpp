@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -248,9 +248,9 @@ DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
 {
 }
 
-const char *DoubleOptionStorage::typeString() const
+std::string DoubleOptionStorage::typeString() const
 {
-    return isVector() ? "vector" : (isTime() ? "time" : "double");
+    return isVector() ? "vector" : (isTime() ? "time" : "real");
 }
 
 std::string DoubleOptionStorage::formatSingleValue(const double &value) const
@@ -349,7 +349,7 @@ FloatOptionStorage::FloatOptionStorage(const FloatOption &settings)
 {
 }
 
-const char *FloatOptionStorage::typeString() const
+std::string FloatOptionStorage::typeString() const
 {
     return isVector() ? "vector" : (isTime() ? "time" : "real");
 }
@@ -518,6 +518,25 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
         addValue(allowed_[settings.defaultEnumIndex_]);
         commitValues();
     }
+}
+
+std::string StringOptionStorage::formatExtraDescription() const
+{
+    std::string result;
+    if (!allowed_.empty())
+    {
+        result.append(": ");
+        ValueList::const_iterator i;
+        for (i = allowed_.begin(); i != allowed_.end(); ++i)
+        {
+            if (i != allowed_.begin())
+            {
+                result.append(", ");
+            }
+            result.append(*i);
+        }
+    }
+    return result;
 }
 
 std::string StringOptionStorage::formatSingleValue(const std::string &value) const

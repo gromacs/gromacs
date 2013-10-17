@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,7 +72,7 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
         }
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return "bool"; }
+        virtual std::string typeString() const { return "bool"; }
         virtual std::string formatSingleValue(const bool &value) const;
 
     private:
@@ -94,7 +94,7 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
         }
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const
+        virtual std::string typeString() const
         { return isVector() ? "vector" : "int"; }
         virtual std::string formatSingleValue(const int &value) const;
 
@@ -118,8 +118,7 @@ class Int64OptionStorage : public OptionStorageTemplate<gmx_int64_t>
         }
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const
-        { return "int"; }
+        virtual std::string typeString() const { return "int"; }
         virtual std::string formatSingleValue(const gmx_int64_t &value) const;
 
     private:
@@ -138,7 +137,7 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         explicit DoubleOptionStorage(const DoubleOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const;
+        virtual std::string typeString() const;
         virtual std::string formatSingleValue(const double &value) const;
 
         //! \copydoc DoubleOptionInfo::isTime()
@@ -165,7 +164,7 @@ class FloatOptionStorage : public OptionStorageTemplate<float>
         explicit FloatOptionStorage(const FloatOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const;
+        virtual std::string typeString() const;
         virtual std::string formatSingleValue(const float &value) const;
 
         //! \copydoc DoubleOptionStorage::isTime()
@@ -192,7 +191,9 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         explicit StringOptionStorage(const StringOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return allowed_.empty() ? "string" : "enum"; }
+        virtual std::string typeString() const
+        { return allowed_.empty() ? "string" : "enum"; }
+        virtual std::string formatExtraDescription() const;
         virtual std::string formatSingleValue(const std::string &value) const;
 
         //! \copydoc StringOptionInfo::allowedValues()

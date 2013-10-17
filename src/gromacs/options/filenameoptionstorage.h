@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,8 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         explicit FileNameOptionStorage(const FileNameOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return "file"; }
+        virtual std::string typeString() const;
+        virtual std::string formatExtraDescription() const;
         virtual std::string formatSingleValue(const std::string &value) const;
 
         //! \copydoc FileNameOptionInfo::isInputFile()

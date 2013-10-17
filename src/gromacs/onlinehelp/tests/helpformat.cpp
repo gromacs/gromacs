@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,6 +134,30 @@ TEST_F(TextTableFormatterTest, HandlesOverflowingLines)
     formatter_.addColumnLine(2, g_wrapText);
     formatter_.setColumnFirstLineOffset(2, 2);
     formatter_.addColumnLine(3, g_wrapText2);
+    checkText(formatter_.formatRow(), "FormattedRow3");
+}
+
+TEST_F(TextTableFormatterTest, HandlesLastColumnFolding)
+{
+    setupStandardColumns();
+    formatter_.setFoldLastColumnToNextLine(4);
+    formatter_.clear();
+    formatter_.addColumnLine(0, "foo");
+    formatter_.addColumnLine(1, "bar");
+    formatter_.addColumnLine(2, "text");
+    formatter_.addColumnLine(3, g_wrapText);
+    checkText(formatter_.formatRow(), "FormattedTable");
+    formatter_.clear();
+    formatter_.addColumnLine(0, "foo");
+    formatter_.addColumnLine(1, "bar");
+    formatter_.addColumnLine(2, "text");
+    formatter_.addColumnLine(3, g_wrapText2);
+    checkText(formatter_.formatRow(), "FormattedRow2");
+    formatter_.clear();
+    formatter_.addColumnLine(0, "foo");
+    formatter_.addColumnLine(1, "bar");
+    formatter_.addColumnLine(2, "text");
+    formatter_.addColumnLine(3, "A quick brown fox jumps");
     checkText(formatter_.formatRow(), "FormattedRow3");
 }
 
