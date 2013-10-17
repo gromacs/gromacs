@@ -48,6 +48,7 @@
 #include "statutil.h"
 #include <ctype.h>
 #include "macros.h"
+#include "string2.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -261,6 +262,41 @@ int gmx_node_rank(void)
 }
 
 
+int gmx_physicalnode_id_hash(void)
+{
+    int hash_int;
+
+#if !defined GMX_MPI || defined GMX_THREAD_MPI
+    /* We have a single physical node */
+    hash_int = 0;
+#else
+    int  resultlen;
+    char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
+
+    /* This procedure can only differentiate nodes with different names.
+     * Architectures where different physical nodes have identical names,
+     * such as IBM Blue Gene, should use an architecture specific solution.
+     */
+    MPI_Get_processor_name(mpi_hostname, &resultlen);
+
+    /* The string hash function returns an unsigned int. We cast to an int.
+     * Negative numbers are converted to positive by setting the sign bit to 0.
+     * This makes the hash one bit smaller.
+     * A 63-bit hash (with 64-bit int) should be enough for unique node hashes,
+     * even on a million node machine. 31 bits might not be enough though!
+     */
+    hash_int =
+        (int)gmx_string_fullhash_func(mpi_hostname, gmx_string_hash_init);
+    if (hash_int < 0)
+    {
+        hash_int -= INT_MIN;
+    }
+#endif
+    
+    return hash_int;
+}
+
+/* TODO: this function should be fully replaced by gmx_physicalnode_id_hash */
 int gmx_hostname_num()
 {
 #ifndef GMX_MPI
