@@ -100,6 +100,9 @@ int get_gpu_device_id(const gmx_gpu_info_t *gpu_info,
 FUNC_QUALIFIER
 void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_VOID
 
+FUNC_QUALIFIER
+size_t sizeof_cuda_dev_info(void) FUNC_TERM_INT
+
 #ifdef __cplusplus
 }
 #endif
