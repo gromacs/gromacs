@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,18 +58,25 @@ namespace
 
 class FileTypeRegistry;
 
+//! \addtogroup module_options
+//! \{
+
+//! Shorthand for a list of file extensions.
+typedef std::vector<const char *> ExtensionList;
+
 /********************************************************************
  * FileTypeHandler
  */
 
 /*! \internal \brief
  * Handles a single file type known to FileNameOptionStorage.
- *
- * \ingroup module_options
  */
 class FileTypeHandler
 {
     public:
+        //! Returns the list of extensions for this file type.
+        const ExtensionList &extensions() const { return extensions_; }
+
         //! Returns whether \p filename has a valid extension for this type.
         bool hasKnownExtension(const std::string &filename) const;
         //! Adds a default extension for this type to \p filename.
@@ -86,7 +93,7 @@ class FileTypeHandler
 
     private:
         //! Possible extensions for this file type.
-        std::vector<const char *> extensions_;
+        ExtensionList extensions_;
 
         /*! \brief
          * Needed for initialization; all initialization is handled by
@@ -138,8 +145,6 @@ FileTypeHandler::findFileWithExtension(const std::string &filename) const
 
 /*! \internal \brief
  * Singleton for managing static file type info for FileNameOptionStorage.
- *
- * \ingroup module_options
  */
 class FileTypeRegistry
 {
@@ -253,6 +258,8 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
     return typeHandler.addExtension(value);
 }
 
+//! \}
+
 }   // namespace
 
 /********************************************************************
@@ -277,6 +284,52 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
                                                   filetype_, false));
         }
     }
+}
+
+std::string FileNameOptionStorage::typeString() const
+{
+    const FileTypeRegistry       &registry    = FileTypeRegistry::instance();
+    const FileTypeHandler        &typeHandler = registry.handlerForType(filetype_);
+    const ExtensionList          &extensions  = typeHandler.extensions();
+    std::string                   result;
+    ExtensionList::const_iterator i;
+    int                           count = 0;
+    for (i = extensions.begin(); count < 2 && i != extensions.end(); ++i, ++count)
+    {
+        if (i != extensions.begin())
+        {
+            result.append("/");
+        }
+        result.append(*i);
+    }
+    if (i != extensions.end())
+    {
+        result.append("/...");
+    }
+    if (result.empty())
+    {
+        result = "file";
+    }
+    return result;
+}
+
+std::string FileNameOptionStorage::formatExtraDescription() const
+{
+    const FileTypeRegistry       &registry    = FileTypeRegistry::instance();
+    const FileTypeHandler        &typeHandler = registry.handlerForType(filetype_);
+    const ExtensionList          &extensions  = typeHandler.extensions();
+    std::string                   result;
+    if (extensions.size() > 2)
+    {
+        result.append(":");
+        ExtensionList::const_iterator i;
+        for (i = extensions.begin(); i != extensions.end(); ++i)
+        {
+            result.append(" ");
+            result.append((*i) + 1);
+        }
+    }
+    return result;
 }
 
 std::string FileNameOptionStorage::formatSingleValue(const std::string &value) const

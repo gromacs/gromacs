@@ -186,7 +186,6 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
                            .store(&impl_->ndxfile_)
                            .defaultBasename("index")
                            .description("Extra index groups"));
-    options->addOption(SelectionFileOption("sf"));
 
     // Add options for trajectory time control.
     options->addOption(DoubleOption("b").store(&impl_->startTime_).timeValue()
@@ -213,6 +212,8 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
         options->addOption(BooleanOption("pbc").store(&settings.impl_->bPBC)
                                .description("Use periodic boundary conditions for distance calculation"));
     }
+
+    options->addOption(SelectionFileOption("sf"));
 }
 
 
