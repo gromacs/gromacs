@@ -144,7 +144,7 @@ void
 Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "g_angle computes different types of angles between vectors.",
+        "[THISMODULE] computes different types of angles between vectors.",
         "It supports both vectors defined by two positions and normals of",
         "planes defined by three positions.",
         "The z axis or the local normal of a sphere can also be used as",
@@ -178,7 +178,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "With [TT]-g2 t0[tt], [TT]-group2[tt] is not necessary, and angles",
         "are calculated from the vectors as they are in the first frame.[PAR]",
         "There are three options for output:",
-        "[TT]-oav[tt] writes an xvgr file with the time and the average angle",
+        "[TT]-oav[tt] writes an xvg file with the time and the average angle",
         "for each frame.",
         "[TT]-oall[tt] writes all the individual angles.",
         "[TT]-oh[tt] writes a histogram of the angles. The bin width can be",
