@@ -887,3 +887,14 @@ int get_current_gpu_device_id(void)
 
     return gpuid;
 }
+
+/*! \brief Returns the size of the cuda_dev_info struct.
+ *
+ * The size of cuda_dev_info can be used for allocation and communication.
+ *
+ * \returns                 size in bytes of cuda_dev_info
+ */
+size_t sizeof_cuda_dev_info(void)
+{
+    return sizeof(cuda_dev_info);
+}
