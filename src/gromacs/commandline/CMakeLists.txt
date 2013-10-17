@@ -41,8 +41,6 @@ set(COMMANDLINE_PUBLIC_HEADERS
     pargs.h)
 gmx_install_headers(commandline ${COMMANDLINE_PUBLIC_HEADERS})
 
-# mdrun build does not include the selection machinery, which is used in the
-# tests
-if (BUILD_TESTING AND NOT GMX_BUILD_MDRUN_ONLY)
+if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

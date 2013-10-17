@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="FormattedTable"><![CDATA[
+Col1 Col2 Col3Wrap       Col4Wrap
+---------------------------------------
+foo  bar  text
+    A quick brown fox jumps over the
+    lazy dog
+]]></String>
+  <String Name="FormattedRow2"><![CDATA[
+foo  bar  text
+    A quick brown fox jumps
+    over the lazy dog
+]]></String>
+  <String Name="FormattedRow3"><![CDATA[
+foo  bar  text
+    A quick brown fox jumps
+]]></String>
+</ReferenceData>
