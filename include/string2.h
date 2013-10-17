@@ -136,12 +136,17 @@ extern const unsigned int
     gmx_string_hash_init;
 
 /* Return a hash of the string according to Dan J. Bernsteins algorithm.
- * This routine only uses characters for which isalnum(c) is true,
- * and all characters are converted to upper case.
  * On the first invocation for a new string, use the constant
  * gmx_string_hash_init for the second argument. If you want to create a hash
  * corresponding to several concatenated strings, provide the returned hash
  * value as hash_init for the second string, etc.
+ */
+unsigned int
+gmx_string_fullhash_func(const char *s, unsigned int hash_init);
+
+/* Identical to gmx_string_fullhash_func, except that
+ * this routine only uses characters for which isalnum(c) is true,
+ * and all characters are converted to upper case.
  */
 unsigned int
 gmx_string_hash_func(const char *s, unsigned int hash_init);
