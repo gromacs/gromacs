@@ -163,7 +163,7 @@ FreeVolume::initOptions(Options                    *options,
                         TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
-        "[THISMODULE] can calculate the free volume in a box as",
+        "[THISMODULE] calculates the free volume in a box as",
         "a function of time. The free volume is",
         "plotted as a fraction of the total volume.",
         "The program tries to insert a probe with a given radius,",
