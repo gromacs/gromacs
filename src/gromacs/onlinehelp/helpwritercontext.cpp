@@ -653,16 +653,23 @@ HelpWriterContext::substituteMarkupAndWrapToVector(
 
 void HelpWriterContext::writeTitle(const std::string &title) const
 {
-    if (outputFormat() != eHelpOutputFormat_Console)
-    {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "This output format is not implemented"));
-    }
     File &file = outputFile();
-    file.writeLine(toUpperCase(title));
-    file.writeLine();
+    switch (outputFormat())
+    {
+        case eHelpOutputFormat_Console:
+            file.writeLine(toUpperCase(title));
+            file.writeLine();
+            break;
+        case eHelpOutputFormat_Man:
+            file.writeLine(formatString(".SH %s", toUpperCase(title).c_str()));
+            break;
+        case eHelpOutputFormat_Html:
+            file.writeLine(formatString("<H3>%s</H3>", title.c_str()));
+            break;
+        default:
+            GMX_THROW(NotImplementedError(
+                              "This output format is not implemented"));
+    }
 }
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
@@ -674,6 +681,69 @@ void HelpWriterContext::writeTextBlock(const TextLineWrapperSettings &settings,
                                        const std::string             &text) const
 {
     outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
+}
+
+void HelpWriterContext::writeOptionListStart() const
+{
+    if (outputFormat() == eHelpOutputFormat_Html)
+    {
+        outputFile().writeLine("<dl>");
+    }
+}
+
+void HelpWriterContext::writeOptionItem(const std::string &name,
+                                        const std::string &args,
+                                        const std::string &description) const
+{
+    File &file = outputFile();
+    switch (outputFormat())
+    {
+        case eHelpOutputFormat_Console:
+        {
+            std::string             optionInfo = formatString(" %s %s", name.c_str(), args.c_str());
+            TextLineWrapperSettings settings;
+            settings.setIndent(5);
+            if (optionInfo.size() <= 26 && description.size() <= 50)
+            {
+                file.writeString(optionInfo);
+                settings.setFirstLineIndent(28 - static_cast<int>(optionInfo.size()));
+            }
+            else
+            {
+                file.writeLine(optionInfo);
+            }
+            writeTextBlock(settings, description);
+            break;
+        }
+        case eHelpOutputFormat_Man:
+            file.writeLine(formatString(".BI \"\\%s\" \" %s\"", name.c_str(), args.c_str()));
+            file.writeString("    ");
+            writeTextBlock(description);
+            file.writeLine();
+            break;
+        case eHelpOutputFormat_Html:
+        {
+            std::string substArgs =
+                substituteMarkupAndWrapToString(TextLineWrapperSettings(), args);
+            file.writeLine(formatString("<dt><b><tt>%s</tt></b> %s</dt>", name.c_str(),
+                                        substArgs.c_str()));
+            file.writeLine("<dd>");
+            writeTextBlock(description);
+            file.writeLine("</dd>");
+            break;
+        }
+        default:
+            GMX_THROW(NotImplementedError(
+                              "This output format is not implemented"));
+    }
+}
+
+void HelpWriterContext::writeOptionListEnd() const
+{
+    if (outputFormat() == eHelpOutputFormat_Html)
+    {
+        outputFile().writeLine("</dl>");
+    }
 }
 
 } // namespace gmx
