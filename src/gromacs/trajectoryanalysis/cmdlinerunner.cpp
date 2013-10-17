@@ -327,11 +327,6 @@ int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
 void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHelp(
         const CommandLineHelpContext &context) const
 {
-    // TODO: Implement #969.
-    if (context.writerContext().outputFormat() != eHelpOutputFormat_Console)
-    {
-        return;
-    }
     TrajectoryAnalysisModulePointer     module(factory_());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     runner.writeHelp(context);
