@@ -492,12 +492,88 @@ static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
     return ret;
 }
 
+static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr,
+                            gmx_gpu_info_t *gpu_info)
+{
+#ifdef GMX_LIB_MPI
+    int              rank_world;
+    MPI_Comm         physicalnode_comm;
+#endif
+    int              rank_local;
+
+    /* Under certain circumstances MPI ranks on the same physical node
+     * can not simultaneously access the same GPU(s). Therefore we run
+     * the detection only on one MPI rank per node and broadcast the info.
+     * Note that with thread-MPI only a single thread runs this code.
+     *
+     * TODO: We should also do CPU hardware detection only once on each
+     * physical node and broadcast it, instead of do it on every MPI rank.
+     */
+#ifdef GMX_LIB_MPI
+    /* A split of MPI_COMM_WORLD over physical nodes is only required here,
+     * so we create and destroy it locally.
+     */
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
+    MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(),
+                   rank_world, &physicalnode_comm);
+    MPI_Comm_rank(physicalnode_comm, &rank_local);
+#else
+    /* Here there should be only one process, check this */
+    assert(cr->nnodes == 1 && cr->sim_nodeid == 0);
+
+    rank_local = 0;
+#endif
+
+    if (rank_local == 0)
+    {
+        char detection_error[STRLEN], sbuf[STRLEN];
+
+        if (detect_cuda_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
+        {
+            if (detection_error != NULL && detection_error[0] != '\0')
+            {
+                sprintf(sbuf, ":\n      %s\n", detection_error);
+            }
+            else
+            {
+                sprintf(sbuf, ".");
+            }
+            md_print_warn(cr, fplog,
+                          "NOTE: Error occurred during GPU detection%s"
+                          "      Can not use GPU acceleration, will fall back to CPU kernels.\n",
+                          sbuf);
+        }
+    }
+
+#ifdef GMX_LIB_MPI
+    /* Broadcast the GPU info to the other ranks within this node */
+    MPI_Bcast(&hwinfo_g->gpu_info.ncuda_dev, 1, MPI_INT, 0, physicalnode_comm);
+
+    if (hwinfo_g->gpu_info.ncuda_dev > 0)
+    {
+        int cuda_dev_size;
+
+        cuda_dev_size = hwinfo_g->gpu_info.ncuda_dev*sizeof_cuda_dev_info();
+
+        if (rank_local > 0)
+        {
+            hwinfo_g->gpu_info.cuda_dev =
+                (cuda_dev_info_ptr_t)malloc(cuda_dev_size);
+        }
+        MPI_Bcast(hwinfo_g->gpu_info.cuda_dev, cuda_dev_size, MPI_BYTE,
+                  0, physicalnode_comm);
+        MPI_Bcast(&hwinfo_g->gpu_info.ncuda_dev_compatible, 1, MPI_INT,
+                  0, physicalnode_comm);
+    }
+
+    MPI_Comm_free(&physicalnode_comm);
+#endif
+}
+
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs)
 {
-    char             sbuf[STRLEN];
     gmx_hw_info_t   *hw;
-    gmx_gpu_info_t   gpuinfo_auto, gpuinfo_user;
     int              ret;
 
     /* make sure no one else is doing the same thing */
@@ -535,23 +611,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
              getenv("GMX_DISABLE_GPU_DETECTION") == NULL);
         if (hwinfo_g->gpu_info.bDetectGPUs)
         {
-            char detection_error[STRLEN];
-
-            if (detect_cuda_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
-            {
-                if (detection_error != NULL && detection_error[0] != '\0')
-                {
-                    sprintf(sbuf, ":\n      %s\n", detection_error);
-                }
-                else
-                {
-                    sprintf(sbuf, ".");
-                }
-                md_print_warn(cr, fplog,
-                              "NOTE: Error occurred during GPU detection%s"
-                              "      Can not use GPU acceleration, will fall back to CPU kernels.\n",
-                              sbuf);
-            }
+            gmx_detect_gpus(fplog, cr, &hwinfo_g->gpu_info);
         }
     }
     /* increase the reference counter */

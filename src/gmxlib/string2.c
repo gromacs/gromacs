@@ -391,6 +391,18 @@ const unsigned int
 
 
 unsigned int
+gmx_string_fullhash_func(const char *s, unsigned int hash_init)
+{
+    int c;
+
+    while ((c = (*s++)) != '\0')
+    {
+        hash_init = ((hash_init << 5) + hash_init) ^ c; /* (hash * 33) xor c */
+    }
+    return hash_init;
+}
+
+unsigned int
 gmx_string_hash_func(const char *s, unsigned int hash_init)
 {
     int c;
