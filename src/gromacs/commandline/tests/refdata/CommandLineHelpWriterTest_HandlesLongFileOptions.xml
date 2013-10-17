@@ -2,20 +2,18 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
-Option Filename     Type         Description
----------------------------------------------------------
--f                  Input        File name option with a long value
-       path/to/long/trajectory/name.xtc
--f2                 Input        File name option with a long value
-       path/to/long/trajectory.xtc
--lib                Input, Opt., Lib.
-       path/to/long/trajectory/name.xtc
-                                 File name option with a long value and type
--longfileopt        Input, Opt.  File name option with a long name
-       deffile.dat
--longfileopt2       Input, Opt., Lib.
-       path/to/long/file/name.dat
-                                 File name option with multiple long fields
+FILE OPTIONS
+
+ -f <path/to/long/trajectory/name.xtc> (Input)
+     File name option with a long value
+ -f2 <path/to/long/trajectory.xtc> (Input)
+     File name option with a long value
+ -lib <path/to/long/trajectory/name.xtc> (Input, Optional, Library)
+     File name option with a long value and type
+ -longfileopt <deffile.dat> (Input, Optional)
+     File name option with a long name
+ -longfileopt2 <path/to/long/file/name.dat> (Input, Optional, Library)
+     File name option with multiple long fields
 
 ]]></String>
 </ReferenceData>
