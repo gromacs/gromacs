@@ -48,6 +48,7 @@
 #include "statutil.h"
 #include <ctype.h>
 #include "macros.h"
+#include "string2.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -261,6 +262,29 @@ int gmx_node_rank(void)
 }
 
 
+int gmx_physicalnode_id_hash()
+{
+#if !defined GMX_MPI || defined GMX_THREAD_MPI
+    /* We have a single physical node */
+    return 0;
+#else
+    int  resultlen;
+    char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
+
+    /* This procedure can only differentiate nodes with different names.
+     * Architectures where different physical nodes have identical names,
+     * such as IBM Blue Gene, should use an architecture specific solution.
+     */
+    MPI_Get_processor_name(mpi_hostname, &resultlen);
+
+    /* A 64-bit hash should be enough to distinguish all nodes,
+     * even on a million node machine. 32 bits might not be enough though!
+     */
+    return gmx_string_fullhash_func(mpi_hostname, gmx_string_hash_init);
+#endif
+}
+
+/* TODO: this function should be fully replaced by gmx_physicalnode_id_hash */
 int gmx_hostname_num()
 {
 #ifndef GMX_MPI
