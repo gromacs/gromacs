@@ -232,6 +232,30 @@ class HelpWriterContext
          * and writes the result directly to the output file.
          */
         void writeTextBlock(const std::string &text) const;
+        /*! \brief
+         * Starts writing a list of options.
+         *
+         * Prints any necessary headers for a list of options formatted with
+         * writeOptionItem().
+         */
+        void writeOptionListStart() const;
+        /*! \brief
+         * Writes an entry for a single option into the output.
+         *
+         * \param[in] name  Name of the option.
+         * \param[in] args  Placeholder for values and other information about
+         *     the option (placed after \p name).
+         * \param[in] description  Full description of the option.
+         */
+        void writeOptionItem(const std::string &name, const std::string &args,
+                             const std::string &description) const;
+        /*! \brief
+         * Finishes writing a list of options.
+         *
+         * Prints any necessary footers for a list of options formatted with
+         * writeOptionItem().
+         */
+        void writeOptionListEnd() const;
 
     private:
         class Impl;

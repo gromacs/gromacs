@@ -250,7 +250,7 @@ DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
 
 const char *DoubleOptionStorage::typeString() const
 {
-    return isVector() ? "vector" : (isTime() ? "time" : "double");
+    return isVector() ? "vector" : (isTime() ? "time" : "real");
 }
 
 std::string DoubleOptionStorage::formatSingleValue(const double &value) const
