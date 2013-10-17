@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         SelectionOptionStorage(const SelectionOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return "sel"; }
+        virtual const char *typeString() const { return "selection(s)"; }
         virtual std::string formatSingleValue(const Selection &value) const;
 
         //! \copydoc SelectionOptionInfo::setManager()

@@ -54,10 +54,6 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionfileoption.h"
-#include "gromacs/selection/selectionoption.h"
-#include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/file.h"
 
 #include "testutils/stringtest.h"
@@ -143,9 +139,6 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
                           .description("Output file description")
                           .filetype(eftPlot).outputFile());
 
-    options.addOption(SelectionFileOption("sf"));
-    options.addOption(SelectionOption("sel").description("Selection option"));
-
     CommandLineHelpWriter writer(options);
     bHidden_ = true;
     checkHelp(&writer);
@@ -217,9 +210,11 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongOptions)
     checkHelp(&writer);
 }
 
-/*
+/* TODO: Add corresponding tests to either the selection module, or as part of
+ * trajectoryanalysis tests.
  * Tests help printing with selection options with values.
  */
+#if 0
 TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
 {
     using gmx::SelectionFileOption;
@@ -244,6 +239,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
     gmx::CommandLineHelpWriter writer(options);
     checkHelp(&writer);
 }
+#endif
 
 /*
  * Tests help printing for multiple sections.

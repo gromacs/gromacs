@@ -354,7 +354,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "With [TT]-g2 t0[tt], [TT]-group2[tt] is not necessary, and angles",
         "are calculated from the vectors as they are in the first frame.[PAR]",
         "There are three options for output:",
-        "[TT]-oav[tt] writes an xvgr file with the time and the average angle",
+        "[TT]-oav[tt] writes an xvg file with the time and the average angle",
         "for each frame.",
         "[TT]-oall[tt] writes all the individual angles.",
         "[TT]-oh[tt] writes a histogram of the angles. The bin width can be",
