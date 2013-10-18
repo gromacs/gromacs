@@ -95,9 +95,11 @@ set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PR
 mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
+include(gmxBuildTypeThreadSanitizer)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference." FORCE)
+    # There's no need to offer a user the choice of ThreadSanitizer
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
         "MinSizeRel" "RelWithDebInfo")
@@ -433,6 +435,10 @@ if(GMX_THREAD_MPI)
     set(MPI_IN_PLACE_EXISTS 1)
 endif(GMX_THREAD_MPI)
 tmpi_get_source_list(THREAD_MPI_SRC)
+# If atomics are manually disabled a define is needed because atomics.h doesn't depend on config.h
+if (TMPI_ATOMICS_DISABLED)
+   add_definitions(-DTMPI_ATOMICS_DISABLED)
+endif()
 
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
