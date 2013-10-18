@@ -98,22 +98,11 @@ gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters);
 /* Set reset_counters */
 
-/* Uncomment the next line to get extra cycle counters of sub parts */
-/* #define GMX_CYCLE_SUBCOUNTERS */
-
-#ifdef GMX_CYCLE_SUBCOUNTERS
-
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
 /* Set the start sub cycle count for ewcs */
 
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 /* Stop the sub cycle count for ewcs */
-
-#else
-/* Define the counter call to nothing to avoid any effect on performance */
-#define wallcycle_sub_start(wc, ewcs)
-#define wallcycle_sub_stop(wc, ewcs)
-#endif
 
 #ifdef __cplusplus
 }

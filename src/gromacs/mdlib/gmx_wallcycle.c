@@ -859,4 +859,9 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
     }
 }
 
+#else
+
+void wallcycle_sub_start(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs) {}
+void wallcycle_sub_stop(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs) {}
+
 #endif /* GMX_CYCLE_SUBCOUNTERS */
