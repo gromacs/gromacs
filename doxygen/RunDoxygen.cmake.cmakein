@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 set(DOXYGEN_EXECUTABLE   @DOXYGEN_EXECUTABLE@)
+set(DOXYGEN_DOT_FOUND    @DOXYGEN_DOT_FOUND@)
 set(DOXYGEN_MSCGEN_FOUND @DOXYGEN_MSCGEN_FOUND@)
 
 message("Running Doxygen...")
@@ -42,10 +43,18 @@ message("Running Doxygen...")
 execute_process(COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile-${DOCTYPE}
                 OUTPUT_QUIET)
 file(READ doxygen-${DOCTYPE}.log DOXYGEN_WARNINGS)
-string(STRIP "${DOXYGEN_WARNINGS}" DOXYGEN_WARNINGS)
 if (DOXYGEN_WARNINGS)
+    string(STRIP "${DOXYGEN_WARNINGS}" STRIPPED_WARNINGS)
     message("The following warnings were produced by Doxygen:")
-    message(${DOXYGEN_WARNINGS})
+    message("${STRIPPED_WARNINGS}")
+endif ()
+string(REGEX REPLACE
+       "warning:[^\n]*Consider increasing DOT_GRAPH_MAX_NODES.\n" ""
+       DOXYGEN_WARNINGS "${DOXYGEN_WARNINGS}")
+file(WRITE doxygen-${DOCTYPE}.log "${DOXYGEN_WARNINGS}")
+if (NOT DOXYGEN_DOT_FOUND)
+    message("NOTE: dot/graphviz was not available. "
+            "Please install it to produce graphs in the documentation.")
 endif ()
 if (NOT DOXYGEN_MSCGEN_FOUND)
     message("NOTE: mscgen was not available. "
