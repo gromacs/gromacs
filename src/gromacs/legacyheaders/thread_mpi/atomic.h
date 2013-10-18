@@ -86,6 +86,23 @@ extern "C"
 } /* Avoids screwing up auto-indentation */
 #endif
 
+/* Setting TMPI_ATOMICS manually permits the build to enforce that no
+ * atomic operations are used. This is used when building to run
+ * ThreadSanitzer.
+ *
+ * It could also be useful as a temporary measure on some
+ * compiler+hardware for which the detection below fails to produce a
+ * correct result. Performance will be greatly improved by using
+ * whatever atomic operations are available, so make sure such a
+ * measure is only temporary! */
+#ifndef TMPI_ATOMICS
+
+#ifndef DOXYGEN
+#define TMPI_NO_ATOMICS
+#endif
+
+#else
+
 /* first check for gcc/icc platforms.
    Some compatible compilers, like icc on linux+mac will take this path,
    too */
@@ -156,16 +173,24 @@ extern "C"
 
 
 #else
+
+#ifndef DOXYGEN
+/** Indicates that no support for atomic operations is present. */
+#define TMPI_NO_ATOMICS
+#endif
+
+#endif /* platform-specific checks */
+
+#endif /* TMPI_NO_ATOMICS */
+
+#ifdef TMPI_NO_ATOMICS
+
 /* No atomic operations, use mutex fallback. Documentation is in x86 section */
 
 #ifdef TMPI_CHECK_ATOMICS
 #error No atomic operations implemented for this cpu/compiler combination.
 #endif
 
-#ifndef DOXYGEN
-/** Indicates that no support for atomic operations is present. */
-#define TMPI_NO_ATOMICS
-#endif
 
 /** Memory barrier operation
 
@@ -587,7 +612,7 @@ TMPI_EXPORT
 void tMPI_Spinlock_wait(tMPI_Spinlock_t *x);
 
 
-#endif /* platform-specific checks */
+#endif /* TMPI_NO_ATOMICS */
 
 /* now define all the atomics that are not avaible natively. These
    are done on the assumption that a native CAS does exist. */
