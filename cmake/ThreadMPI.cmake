@@ -52,6 +52,7 @@ MACRO(TMPI_TEST_ATOMICS INCDIR)
         endif(TEST_ATOMICS)
         set(TMPI_ATOMICS ${TEST_ATOMICS} CACHE INTERNAL "Whether atomic operations are found")
         set(TMPI_ATOMICS_INCDIR ${INCDIR} CACHE INTERNAL "Atomic operations check include dir")
+        set(TMPI_ATOMICS_WERE_CHECKED 1 CACHE INTERNAL "Whether an atomic operations check has run")
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TMPI_TEST_ATOMICS VARIABLE)
 
@@ -114,15 +115,28 @@ ENDMACRO(TMPI_ENABLE_CXX)
 
 # Turns on thread_mpi MPI functions.
 MACRO(TMPI_ENABLE)
-    # first check whether threads and atomics are available.
+    # Check whether threads and atomics are available.
     if(NOT TMPI_ATOMICS)
-        # check again, to allow the user to fix this.
-        unset(TMPI_ATOMICS CACHE)
-        TMPI_TEST_ATOMICS(${TMPI_ATOMICS_INCDIR})
-    endif(NOT TMPI_ATOMICS)
+        # TMPI_ATOMICS might be undefined (because no detection has
+        # run yet), off (because the build type requires the use of no
+        # atomics, e.g. TSan build), or reflects the (cached) result
+        # of the last detection.
+        if(TMPI_ATOMICS_WERE_CHECKED)
+            # If a previous check failed, we want to be able to check
+            # again, in case the user has been able to fix this without
+            # needing to delete the cache.
+            unset(TMPI_ATOMICS CACHE)
+            TMPI_TEST_ATOMICS(${TMPI_ATOMICS_INCDIR})
+            if(NOT TMPI_ATOMICS)
+                set(_warning_message_prefix "Atomic operations were not found for this CPU+compiler combination.")
+            endif()
+        else()
+            set(_warning_message_prefix "No atomic operations will be used by this build. The use of no atomics is required for the ThreadSanitzer build, but if you are seeing this message any other time, read on.")
+        endif()
+    endif()
     if(NOT TMPI_ATOMICS)
-        message(WARNING "Atomic operations not found for this CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
-    endif(NOT TMPI_ATOMICS)
+        message(WARNING "${_warning_message_prefix} Thread support will be unbearably slow: you may wish to disable thread-MPI and/or OpenMP. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
+    endif()
 
     set(TMPI_ENABLED 1)
 
