@@ -25,6 +25,9 @@ set_target_properties(alexandria PROPERTIES OUTPUT_NAME "alexandria${GMX_LIBS_SU
 
 list(APPEND GMX_EXTRA_LIBRARIES alexandria libgromacs)
 
+add_executable(testrandom testrandom.c)
+target_link_libraries(testrandom ${GMX_EXTRA_LIBRARIES})
+set_target_properties(testrandom PROPERTIES OUTPUT_NAME "testrandom${GMX_BINARY_SUFFIX}")
 add_executable(g_poldata_test g_poldata_test.cpp)
 target_link_libraries(g_poldata_test ${GMX_EXTRA_LIBRARIES})
 set_target_properties(g_poldata_test PROPERTIES OUTPUT_NAME "g_poldata_test${GMX_BINARY_SUFFIX}")
