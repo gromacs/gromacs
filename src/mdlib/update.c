@@ -834,7 +834,7 @@ static void calc_ke_part_normal(rvec x[],rvec v_old[],rvec v[],
     
     dekindl = 0;
     
-    if(localp->CGlocalp)
+    if(localp != NULL && localp->CGlocalp)
     {
         for(icg=0; icg<cgs->nr; icg++) 
         {
@@ -999,7 +999,7 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v_old[],rvec v[],
     dekindl = 0;
     
     
-    if(localp->CGlocalp)
+    if(localp != NULL && localp->CGlocalp)
     {
         for(icg=0; icg<cgs->nr; icg++) 
         {

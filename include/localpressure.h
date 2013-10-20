@@ -11,7 +11,10 @@ typedef struct
     int        nz;
     matrix *   current_grid;   /* allocated length is nx*ny*nz */
     matrix *   sum_grid;
+    matrix *   sum_grid_total;
+    matrix *   tmp_grid;
     int        nframes;
+    int        nframes_total;
     real       spacing;
     matrix     box;
     matrix     invbox;

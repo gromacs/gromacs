@@ -237,6 +237,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                  enerd->grpp.ener[egCOULSR],
 				 enerd->grpp.ener[egGB],box_size,nrnb,
                  lambda,&dvdlambda,-1,-1,localp_grid,donb_flags);
+
     /* If we do foreign lambda and we have soft-core interactions
      * we have to recalculate the (non-linear) energies contributions.
      */
@@ -263,7 +264,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         destroy_enerdata(&ed_lam);
     }
     where();
-	
+
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
@@ -341,6 +342,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     }
     debug_gmx();
     
+
     if (flags & GMX_FORCE_BONDED)
     {
         GMX_MPE_LOG(ev_calc_bonds_start);
@@ -348,7 +350,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
                    fr->bSepDVDL && do_per_step(step,ir->nstlog),step,localp_grid);
-        
+
         /* Check if we have to determine energy differences
          * at foreign lambda's.
          */
@@ -538,7 +540,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     RF_excl_correction(fplog,fr,graph,md,excl,x,f,
                                        fr->fshift,&pbc,lambda,&dvdlambda,localp_grid);
             }
-            
             enerd->dvdl_lin += dvdlambda;
             PRINT_SEPDVDL("RF exclusion correction",
                           enerd->term[F_RF_EXCL],dvdlambda);

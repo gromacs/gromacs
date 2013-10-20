@@ -24,7 +24,7 @@
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
  * 
@@ -823,7 +823,7 @@ static int lcd4(int i1,int i2,int i3,int i4)
     return nst;
 }
 
-void localp_initialize(gmx_localp_grid_t *localp_grid, int ngrid, real spacing)
+void localp_initialize(gmx_localp_grid_t *localp_grid, int ngrid, real spacing, gmx_bool bFirst)
 {
     int i,j,k;
     
@@ -835,38 +835,77 @@ void localp_initialize(gmx_localp_grid_t *localp_grid, int ngrid, real spacing)
     }
     localp_grid->nframes = 0;
     localp_grid->spacing = spacing;
+    
+    if(bFirst)
+    {
+        for(i=0;i<ngrid;i++)
+        {
+            for(j=0;j<DIM;j++)
+                for(k=0;k<DIM;k++)
+                    localp_grid->sum_grid_total[i][j][k] =0;
+        }
+        localp_grid->nframes_total = 0;
+    }
 }
 
-int write_localp_grid(int nfile,const t_filenm fnm[],gmx_localp_grid_t *localp_grid, t_state *state,int frameindex)
+int write_localp_grid(int nfile,const t_filenm fnm[],int step, gmx_localp_grid_t *localp_grid, t_state *state,int frameindex, gmx_bool bLast)
 {
     int i,j,k,ngrid;
     char buf[1024];
     FILE *fplocal;
-    real ccc;
     
-    snprintf(buf,1024,"%s%d",opt2fn("-olp",nfile,fnm),frameindex);
-    
-    printf("\n\nDumping local pressure based on %d frames to %s...\n",
-           localp_grid->nframes,buf);
-    fplocal=fopen(buf,"w"); /* localpressure.dat by default */
-    i=(sizeof(real)==sizeof(double)) ? 1 : 0;
-    fwrite(&i,sizeof(int),1,fplocal); /* 1 if double, 0 if single precision */
-    fwrite(&localp_grid->box,sizeof(real),9,fplocal);
-    fwrite(&localp_grid->nx,sizeof(int),1,fplocal);
-    fwrite(&localp_grid->ny,sizeof(int),1,fplocal);
-    fwrite(&localp_grid->nz,sizeof(int),1,fplocal);
-    ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
-    ccc = ngrid*PRESFAC*2.0/det(state->box)/localp_grid->nframes;
-    
-    for(i=0;i<ngrid;i++)
+    if(!bLast)
     {
-        for(j=0;j<DIM;j++)
-            for(k=0;k<DIM;k++)
-                localp_grid->sum_grid[i][j][k]*=ccc;
+        snprintf(buf,1024,"%s%d",opt2fn("-olp",nfile,fnm),frameindex);
+        
+        printf("\n\nStep %d: Dumping local pressure based on %d frames to %s...\n",
+               step,localp_grid->nframes,buf);
+        fplocal=fopen(buf,"w"); /* localpressure.dat by default */
+        i=(sizeof(real)==sizeof(double)) ? 1 : 0;
+        fwrite(&i,sizeof(int),1,fplocal); /* 1 if double, 0 if single precision */
+        fwrite(&localp_grid->box,sizeof(real),9,fplocal);
+        fwrite(&localp_grid->nx,sizeof(int),1,fplocal);
+        fwrite(&localp_grid->ny,sizeof(int),1,fplocal);
+        fwrite(&localp_grid->nz,sizeof(int),1,fplocal);
+        ngrid = localp_grid->nx*localp_grid->ny*localp_grid->nz;
+
+        for(i=0;i<ngrid;i++)
+        {
+            for(j=0;j<DIM;j++)
+                for(k=0;k<DIM;k++)
+                {
+                    localp_grid->tmp_grid[i][j][k]        = localp_grid->sum_grid[i][j][k]/localp_grid->nframes;
+                }
+        }
+        fwrite(localp_grid->tmp_grid,sizeof(matrix),ngrid,fplocal);
+        fclose(fplocal);
     }
-    
-    fwrite(localp_grid->sum_grid,sizeof(matrix),ngrid,fplocal);
-    fclose(fplocal);
+    else
+    {
+        /* Last frame */
+        snprintf(buf,1024,"%s",opt2fn("-olp",nfile,fnm));
+        
+        printf("\n\nStep %d: Dumping total average local pressure (all %d frames) to %s...\n",
+               step,localp_grid->nframes_total,buf);
+        fplocal=fopen(buf,"w"); /* localpressure.dat by default */
+        i=(sizeof(real)==sizeof(double)) ? 1 : 0;
+        fwrite(&i,sizeof(int),1,fplocal); /* 1 if double, 0 if single precision */
+        fwrite(&localp_grid->box,sizeof(real),9,fplocal);
+        fwrite(&localp_grid->nx,sizeof(int),1,fplocal);
+        fwrite(&localp_grid->ny,sizeof(int),1,fplocal);
+        fwrite(&localp_grid->nz,sizeof(int),1,fplocal);
+        ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
+        
+        for(i=0;i<ngrid;i++)
+        {
+            for(j=0;j<DIM;j++)
+                for(k=0;k<DIM;k++)
+                    localp_grid->tmp_grid[i][j][k] = localp_grid->sum_grid_total[i][j][k]/localp_grid->nframes_total;
+        }
+        
+        fwrite(localp_grid->tmp_grid,sizeof(matrix),ngrid,fplocal);
+        fclose(fplocal);
+    }
     return frameindex;
 }
 
@@ -1158,7 +1197,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0;
-    gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
+    gmx_bool       bGStatEveryStep,bGStat,bNstEner,bNstLocalp,bCalcEnerPres;
     gmx_bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
@@ -1485,11 +1524,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         printf("Note that this version is seriously hacked. If you have any questions\n");
         printf("specifically about local pressure stuff you can send them to lindahl@cbr.su.se,\n");
         printf("but we don't support this version like the normal code - use at your own risk.\n\n");
-        printf("and... have fun! /Peter & Erik\n\n\n");
+        printf("and... have fun!\n\n\n");
+        
+        /* Frequency of writing localpressure must be a multiple of nstcalcenergy */
+        if(nstlocalp%ir->nstcalcenergy != 0)
+        {
+            printf("FATAL ERROR: The frequency of writing the localpressure (mdrun option -nstlp, currently %d)\n"
+                   "must be a multiple of mdp option nstcalcenergy (currently %d).\n\n",
+                   nstlocalp,ir->nstcalcenergy);
+            exit(1);
+        }
         
         if (PAR(cr))
         {
-            printf("Localpressure does not support parallel simulations!\n");
+            printf("FATAL ERROR: Localpressure does not support parallel simulations!\n");
             printf("Instead, write your trajectory every 100-1000 steps without localpressure\n"
                    "and then use the -rerun option to mdrun to get localP for these frames!\n");
             exit(1);
@@ -1527,10 +1575,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                localpgridspacing,localp_grid->nx,localp_grid->ny,localp_grid->nz,ngrid);
         
         snew(localp_grid->current_grid,ngrid);
-        
         snew(localp_grid->sum_grid,ngrid);
-        
-        localp_initialize(localp_grid,ngrid,localpgridspacing);
+        snew(localp_grid->sum_grid_total,ngrid);
+        snew(localp_grid->tmp_grid,ngrid);
+
+        localp_initialize(localp_grid,ngrid,localpgridspacing,TRUE);
 
         localp_grid->CGlocalp = ((Flags & MD_NBLISTCG) != 0);
         copy_mat(state->box,localp_grid->box);
@@ -2009,14 +2058,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* We need the kinetic energy at minus the half step for determining
              * the full step kinetic energy and possibly for T-coupling.*/
             /* This may not be quite working correctly yet . . . . */
+            
+            /* Here we do not want any contributions to the local pressure, so we provide a NULL pointer instead */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,v_old,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
                             constr,NULL,FALSE,state->box,
-                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,localp_grid,&top->cgs,
+                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,NULL,&top->cgs,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
-        
+
         /* Ionize the atoms if necessary */
         if (bIonize)
         {
@@ -2060,7 +2111,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
-        bNstEner = do_per_step(step,ir->nstcalcenergy);
+        bNstEner   = do_per_step(step,ir->nstcalcenergy);
+        bNstLocalp = do_per_step(step,nstlocalp);
+
         bCalcEnerPres =
             (bNstEner ||
              (ir->epc != epcNO && do_per_step(step,ir->nstpcouple)));
@@ -2121,7 +2174,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              * This is parallellized as well, and does communication too. 
              * Check comments in sim_util.c
              */
-        
+
             do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
                      state->box,state->x,&state->hist,
                      f,force_vir,mdatoms,enerd,fcd,
@@ -2129,7 +2182,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,localp_grid,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
-    
+        
         GMX_BARRIER(cr->mpi_comm_mygroup);
         
         if (bTCR)
@@ -2937,24 +2990,33 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             step_rel++;
         }
         
-        if(localp_grid && bNstEner)
+        if(bNstEner && localp_grid!=NULL)
         {
-            /* Sum grid virial data */
+            /* We always calculate the local virial when updating the energy */
             ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
+            ccc = ngrid*PRESFAC*2.0/det(state->box);
+            
+            /* Sum grid virial data */
             for(i=0;i<ngrid;i++)
             {
                 for(j=0;j<DIM;j++)
                     for(k=0;k<DIM;k++)
-                        localp_grid->sum_grid[i][j][k] += localp_grid->current_grid[i][j][k];
+                    {
+                        localp_grid->sum_grid[i][j][k]       += ccc*localp_grid->current_grid[i][j][k];
+                        localp_grid->sum_grid_total[i][j][k] += ccc*localp_grid->current_grid[i][j][k];
+                    }
             }
             localp_grid->nframes++;
-            if (do_per_step(step,nstlocalp))
+            localp_grid->nframes_total++;
+
+            /* Should we write it to file this step? */
+            if (bNstLocalp)
             {
-                write_localp_grid(nfile,fnm,localp_grid, state,localp_frame_index);
-                localp_initialize(localp_grid, ngrid, localpgridspacing);
+                write_localp_grid(nfile,fnm,step,localp_grid, state,localp_frame_index,FALSE);
+                localp_initialize(localp_grid, ngrid, localpgridspacing,FALSE);
+
                 localp_frame_index++;
             }
-            
         }
         
         cycles = wallcycle_stop(wcycle,ewcSTEP);
@@ -2977,14 +3039,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
-    write_localp_grid(nfile,fnm,localp_grid, state,localp_frame_index);
+    /* Are there any remaining partial frames to write? */
+    if (localp_grid->nframes>0)
+    {
+        write_localp_grid(nfile,fnm,step,localp_grid, state,localp_frame_index,FALSE);
+    }
+    write_localp_grid(nfile,fnm,step,localp_grid, state,localp_frame_index,TRUE);
     /* release it */
 	sfree(localp_grid->sum_grid);
+	sfree(localp_grid->sum_grid_total);
 	sfree(localp_grid->current_grid);
+	sfree(localp_grid->tmp_grid);
 	sfree(localp_grid);
 	sfree(v_old);
-	
-    
+
     /* Stop the time */
     runtime_end(runtime);
     
@@ -2998,7 +3066,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Tell the PME only node to finish */
         gmx_pme_finish(cr);
     }
-    
+
     if (MASTER(cr))
     {
         if (ir->nstcalcenergy > 0 && !bRerunMD) 

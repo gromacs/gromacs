@@ -722,14 +722,14 @@ void do_force(FILE *fplog,t_commrec *cr,
         inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
     }
 
-    /* Compute the bonded and non-bonded energies and optionally forces */    
+    /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
                       lambda,graph,&(top->excls),fr->mu_tot,
                       flags,&cycles_pme,localp_grid);
-    
+
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
     GMX_BARRIER(cr->mpi_comm_mygroup);
     
@@ -1244,12 +1244,14 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             *prescorr += spres;
         }
         
-        ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
-        
-        for(i=0;i<ngrid;i++)
+        if(localp_grid!=NULL)
         {
-            for(m=0; m<DIM; m++)
-                localp_grid->current_grid[i][m][m] -= svir/ngrid;
+            ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
+            for(i=0;i<ngrid;i++)
+            {
+                for(m=0; m<DIM; m++)
+                    localp_grid->current_grid[i][m][m] -= svir/ngrid;
+            }
         }
         
         /* Can't currently control when it prints, for now, just print when degugging */
