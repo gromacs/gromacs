@@ -23,7 +23,7 @@ main(int argc, char **argv)
     
     
     fread(&bdouble,sizeof(int),1,fp);
-    printf("Reading %d precision local pressure file...\n", bdouble ? "double" : "single");
+    printf("Reading %s precision local pressure file...\n", bdouble ? "double" : "single");
 
     if(bdouble)
     {
