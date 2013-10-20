@@ -22,6 +22,10 @@ endif()
 if(MANUAL_BUILD_IS_POSSIBLE)
     LATEX_GET_OUTPUT_PATH(output_dir)
 
+    # Avoid generating a global "html" target that clashes with the
+    # html target from program generaion of help text in share/html.
+    set(HTML2LATEX_CONVERTER off)
+
     # This helps make the index look decent.
     set(MAKEINDEX_COMPILER_FLAGS -s ${CMAKE_CURRENT_SOURCE_DIR}/hfill.ist)
     # UseLATEX.cmake is hacked to call Anton Feenstra's subindex script
