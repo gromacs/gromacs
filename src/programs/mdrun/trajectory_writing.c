@@ -62,7 +62,6 @@ do_trajectory_writing(FILE           *fplog,
                       gmx_mdoutf_t   *outf,
                       t_mdebin       *mdebin,
                       gmx_ekindata_t *ekind,
-                      df_history_t    df_history,
                       rvec           *f,
                       rvec           *f_global,
                       gmx_wallcycle_t wcycle,
@@ -147,14 +146,6 @@ do_trajectory_writing(FILE           *fplog,
                     state_global->ekinstate.bUpToDate = TRUE;
                 }
                 update_energyhistory(&state_global->enerhist, mdebin);
-                if (ir->efep != efepNO || ir->bSimTemp)
-                {
-                    state_global->fep_state = state->fep_state;     /* MRS: seems kludgy. The code should be
-                                                                       structured so this isn't necessary.
-                                                                       Note this reassignment is only necessary
-                                                                       for single threads.*/
-                    copy_df_history(&state_global->dfhist, &df_history);
-                }
             }
         }
         write_traj(fplog, cr, outf, mdof_flags, top_global,

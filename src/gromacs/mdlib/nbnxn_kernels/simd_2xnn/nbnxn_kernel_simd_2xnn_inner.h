@@ -251,7 +251,9 @@
     ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-    gmx_load_simd_2xnn_interactions(l_cj[cjind].excl, filter_S0, filter_S2, &interact_S0, &interact_S2);
+    gmx_load_simd_2xnn_interactions(l_cj[cjind].excl,
+                                    filter_S0, filter_S2,
+                                    &interact_S0, &interact_S2);
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
@@ -694,24 +696,28 @@
 #endif /* CALC_ENERGIES */
 
 #ifdef CALC_LJ
-    fscal_S0    = gmx_mul_pr(rinvsq_S0,
 #ifdef CALC_COULOMB
+    fscal_S0    = gmx_mul_pr(rinvsq_S0,
                              gmx_add_pr(frcoul_S0,
-#else
-                             (
-#endif
                                         gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
+#else
+    fscal_S0    = gmx_mul_pr(rinvsq_S0,
+                             (
+                                        gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
+#endif
 #else
     fscal_S0    = gmx_mul_pr(rinvsq_S0, frcoul_S0);
 #endif /* CALC_LJ */
 #if defined CALC_LJ && !defined HALF_LJ
-    fscal_S2    = gmx_mul_pr(rinvsq_S2,
 #ifdef CALC_COULOMB
+    fscal_S2    = gmx_mul_pr(rinvsq_S2,
                              gmx_add_pr(frcoul_S2,
-#else
-                             (
-#endif
                                         gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
+#else
+    fscal_S2    = gmx_mul_pr(rinvsq_S2,
+                             (
+                                        gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
+#endif
 #else
     /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */
     fscal_S2    = gmx_mul_pr(rinvsq_S2, frcoul_S2);

@@ -165,13 +165,15 @@ gmx_integrator_t do_tpi;
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
+void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rng_t *mcrng, df_history_t *dfhist);
+
 int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, df_history_t *dfhist,
+                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              gmx_large_int_t step, gmx_rng_t mcrng,
                              rvec *v, t_mdatoms *mdatoms);
 
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                               int nlam, int frequency, gmx_large_int_t step);
+                               int fep_state, int frequency, gmx_large_int_t step);
 
 void get_mc_state(gmx_rng_t rng, t_state *state);
 
@@ -219,7 +221,6 @@ do_trajectory_writing(FILE           *fplog,
                       gmx_mdoutf_t   *outf,
                       t_mdebin       *mdebin,
                       gmx_ekindata_t *ekind,
-                      df_history_t    df_history,
                       rvec           *f,
                       rvec           *f_global,
                       gmx_wallcycle_t wcycle,

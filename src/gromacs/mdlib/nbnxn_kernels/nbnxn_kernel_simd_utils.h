@@ -56,6 +56,20 @@
 
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
 
+/* Set the stride for the lookup of the two LJ parameters from their
+ * (padded) array.
+ * Note that currently only arrays with stride 2 and 4 are available.
+ * Since the reference code does not require alignment, we can always use 2.
+ */
+static const int nbfp_stride = 2;
+
+/* Align a stack-based thread-local working array. */
+static gmx_inline int *
+prepare_table_load_buffer(const int *array)
+{
+    return NULL;
+}
+
 #include "nbnxn_kernel_simd_utils_ref.h"
 
 #else /* GMX_SIMD_REFERENCE_PLAIN_C */
@@ -64,10 +78,9 @@
 /* Include x86 SSE2 compatible SIMD functions */
 
 /* Set the stride for the lookup of the two LJ parameters from their
-   (padded) array. Only strides of 2 and 4 are currently supported. */
-#if defined GMX_NBNXN_SIMD_2XNN
-static const int nbfp_stride = 4;
-#elif defined GMX_DOUBLE
+ * (padded) array. We use the minimum supported SIMD memory alignment.
+ */
+#if defined GMX_DOUBLE
 static const int nbfp_stride = 2;
 #else
 static const int nbfp_stride = 4;
@@ -132,6 +145,15 @@ static const int nbfp_stride = 4;
 #else
 static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
 #endif
+
+/* We use the FDV0 table layout when we can use aligned table loads */
+#if GMX_SIMD_WIDTH_HERE == 4
+#define TAB_FDV0
+#endif
+
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+#include "nbnxn_kernel_simd_utils_ibm_qpx.h"
+#endif /* GMX_CPU_ACCELERATION_IBM_QPX */
 
 #endif /* GMX_X86_SSE2 */
 #endif /* GMX_SIMD_REFERENCE_PLAIN_C */

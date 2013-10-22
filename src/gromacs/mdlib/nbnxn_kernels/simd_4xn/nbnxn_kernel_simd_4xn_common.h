@@ -39,6 +39,10 @@
 #include "maths.h"
 #endif
 
+#ifndef GMX_SIMD_J_UNROLL_SIZE
+#error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
+#endif
+
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
@@ -73,17 +77,28 @@ gmx_load_simd_4xn_interactions(int            excl,
                                gmx_exclfilter filter_S1,
                                gmx_exclfilter filter_S2,
                                gmx_exclfilter filter_S3,
+                               const char    *interaction_mask_indices,
+                               real          *simd_interaction_array,
                                gmx_mm_pb     *interact_S0,
                                gmx_mm_pb     *interact_S1,
                                gmx_mm_pb     *interact_S2,
                                gmx_mm_pb     *interact_S3)
 {
+#ifdef GMX_X86_SSE2
     /* Load integer interaction mask */
     gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
     *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
     *interact_S1  = gmx_checkbitmask_pb(mask_pr_S, filter_S1);
     *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
     *interact_S3  = gmx_checkbitmask_pb(mask_pr_S, filter_S3);
+#endif
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+    const int size = GMX_SIMD_WIDTH_HERE * sizeof(real);
+    *interact_S0  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[0], simd_interaction_array);
+    *interact_S1  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[1], simd_interaction_array);
+    *interact_S2  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[2], simd_interaction_array);
+    *interact_S3  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[3], simd_interaction_array);
+#endif
 }
 
 /* All functionality defines are set here, except for:
