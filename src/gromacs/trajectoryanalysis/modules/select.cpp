@@ -57,6 +57,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/lifetime.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -246,19 +247,59 @@ void IndexFileWriterModule::dataFinished()
     closeFile();
 }
 
-}       // namespace
-
-
 /********************************************************************
  * Select
  */
 
-const char Select::name[]             = "select";
-const char Select::shortDescription[] =
-    "Print general information about selections";
+class Select : public TrajectoryAnalysisModule
+{
+    public:
+        Select();
+
+        virtual void initOptions(Options                    *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(Options                    *options,
+                                     TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
+
+    private:
+        SelectionList                       sel_;
+        SelectionOptionInfo                *selOpt_;
+
+        std::string                         fnSize_;
+        std::string                         fnFrac_;
+        std::string                         fnIndex_;
+        std::string                         fnNdx_;
+        std::string                         fnMask_;
+        std::string                         fnOccupancy_;
+        std::string                         fnPDB_;
+        std::string                         fnLifetime_;
+        bool                                bTotNorm_;
+        bool                                bFracNorm_;
+        bool                                bResInd_;
+        bool                                bCumulativeLifetimes_;
+        std::string                         resNumberType_;
+        std::string                         pdbAtoms_;
+
+        const TopologyInformation          *top_;
+        std::vector<int>                    totsize_;
+        AnalysisData                        sdata_;
+        AnalysisData                        cdata_;
+        AnalysisData                        idata_;
+        AnalysisData                        mdata_;
+        AnalysisDataAverageModulePointer    occupancyModule_;
+        AnalysisDataLifetimeModulePointer   lifetimeModule_;
+};
 
 Select::Select()
-    : TrajectoryAnalysisModule(name, shortDescription),
+    : TrajectoryAnalysisModule(SelectInfo::name, SelectInfo::shortDescription),
       selOpt_(NULL),
       bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       bCumulativeLifetimes_(true), top_(NULL),
@@ -277,11 +318,6 @@ Select::Select()
     occupancyModule_->setXAxis(1.0, 1.0);
     registerBasicDataset(occupancyModule_.get(), "occupancy");
     registerBasicDataset(lifetimeModule_.get(), "lifetime");
-}
-
-
-Select::~Select()
-{
 }
 
 
@@ -688,6 +724,17 @@ Select::writeOutput()
                                "Mismatch between -pdbatoms enum values and implementation");
         }
     }
+}
+
+}       // namespace
+
+const char SelectInfo::name[]             = "select";
+const char SelectInfo::shortDescription[] =
+    "Print general information about selections";
+
+TrajectoryAnalysisModulePointer SelectInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new Select);
 }
 
 } // namespace analysismodules

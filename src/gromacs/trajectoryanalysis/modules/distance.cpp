@@ -41,10 +41,14 @@
  */
 #include "distance.h"
 
+#include <string>
+
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -61,12 +65,48 @@ namespace gmx
 namespace analysismodules
 {
 
-const char Distance::name[]             = "distance";
-const char Distance::shortDescription[] =
-    "Calculate distances between pairs of positions";
+namespace
+{
+
+class Distance : public TrajectoryAnalysisModule
+{
+    public:
+        Distance();
+
+        virtual void initOptions(Options                    *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
+
+    private:
+        SelectionList                            sel_;
+        std::string                              fnAverage_;
+        std::string                              fnAll_;
+        std::string                              fnXYZ_;
+        std::string                              fnHistogram_;
+        std::string                              fnAllStats_;
+        double                                   meanLength_;
+        double                                   lengthDev_;
+        double                                   binWidth_;
+
+        AnalysisData                             distances_;
+        AnalysisData                             xyz_;
+        AnalysisDataAverageModulePointer         summaryStatsModule_;
+        AnalysisDataAverageModulePointer         allStatsModule_;
+        AnalysisDataFrameAverageModulePointer    averageModule_;
+        AnalysisDataSimpleHistogramModulePointer histogramModule_;
+
+        // Copy and assign disallowed by base.
+};
 
 Distance::Distance()
-    : TrajectoryAnalysisModule(name, shortDescription),
+    : TrajectoryAnalysisModule(DistanceInfo::name, DistanceInfo::shortDescription),
       meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001)
 {
     summaryStatsModule_.reset(new AnalysisDataAverageModule());
@@ -85,11 +125,6 @@ Distance::Distance()
     registerBasicDataset(allStatsModule_.get(), "allstats");
     registerBasicDataset(averageModule_.get(), "average");
     registerBasicDataset(&histogramModule_->averager(), "histogram");
-}
-
-
-Distance::~Distance()
-{
 }
 
 
@@ -146,9 +181,6 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
 }
 
 
-namespace
-{
-
 /*! \brief
  * Checks that selections conform to the expectations of the tool.
  */
@@ -180,8 +212,6 @@ void checkSelections(const SelectionList &sel)
         }
     }
 }
-
-}       // namespace
 
 
 void
@@ -341,6 +371,17 @@ Distance::writeOutput()
         printf("  Standard deviation: %-6.3f nm\n",
                summaryStatsModule_->standardDeviation(index, 0));
     }
+}
+
+}       // namespace
+
+const char DistanceInfo::name[]             = "distance";
+const char DistanceInfo::shortDescription[] =
+    "Calculate distances between pairs of positions";
+
+TrajectoryAnalysisModulePointer DistanceInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new Distance);
 }
 
 } // namespace analysismodules

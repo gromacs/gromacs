@@ -41,16 +41,21 @@
  */
 #include "freevolume.h"
 
-#include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
+#include <string>
+
 #include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_random.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
@@ -63,16 +68,69 @@ namespace gmx
 namespace analysismodules
 {
 
-const char FreeVolume::name[]             = "freevolume";
-const char FreeVolume::shortDescription[] =
-    "Calculate free volume";
+namespace
+{
+
+/*! \brief
+ * Class used to compute free volume in a simulations box.
+ *
+ * Inherits TrajectoryAnalysisModule and all functions from there.
+ * Does not implement any new functionality.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class FreeVolume : public TrajectoryAnalysisModule
+{
+    public:
+        //! Constructor
+        FreeVolume();
+
+        //! Destructor
+        virtual ~FreeVolume();
+
+        //! Set the options and setting
+        virtual void initOptions(Options                    *options,
+                                 TrajectoryAnalysisSettings *settings);
+
+        //! First routine called by the analysis framework
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        //! Call for each frame of the trajectory
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        //! Last routine called by the analysis framework
+        virtual void finishAnalysis(int nframes);
+
+        //! Routine to write output, that is additional over the built-in
+        virtual void writeOutput();
+
+    private:
+        std::string                       fnFreevol_;
+        Selection                         sel_;
+        AnalysisData                      data_;
+        AnalysisDataAverageModulePointer  adata_;
+
+        int                               nmol_;
+        double                            mtot_;
+        double                            cutoff_;
+        double                            probeRadius_;
+        gmx_rng_t                         rng_;
+        int                               seed_, ninsert_;
+        AnalysisNeighborhood              nb_;
+        //! The van der Waals radius per atom
+        std::vector<double>               vdw_radius_;
+
+        // Copy and assign disallowed by base.
+};
 
 // Constructor. Here it is important to initialize the pointer to
 // subclasses that are elements of the main class. Here we have only
 // one. The type of this depends on what kind of tool you need.
 // Here we only have simple value/time kind of data.
 FreeVolume::FreeVolume()
-    : TrajectoryAnalysisModule(name, shortDescription),
+    : TrajectoryAnalysisModule(FreeVolumeInfo::name, FreeVolumeInfo::shortDescription),
       adata_(new AnalysisDataAverageModule())
 {
     // We only compute two numbers per frame
@@ -374,6 +432,17 @@ FreeVolume::writeOutput()
     double FFVaver  = 1-1.3*((100-FVaver)/100);
     double FFVerror = (FVerror/FVaver)*FFVaver;
     printf("Fractional free volume %.3f +/- %.3f\n", FFVaver, FFVerror);
+}
+
+}       // namespace
+
+const char FreeVolumeInfo::name[]             = "freevolume";
+const char FreeVolumeInfo::shortDescription[] =
+    "Calculate free volume";
+
+TrajectoryAnalysisModulePointer FreeVolumeInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new FreeVolume);
 }
 
 } // namespace analysismodules
