@@ -187,7 +187,7 @@ gmx_set_thread_affinity(FILE                *fplog,
                         const gmx_hw_info_t *hwinfo,
                         const t_inputrec    *inputrec)
 {
-    int        nth_affinity_set, thread_id_node, thread_id,
+    int        nth_affinity_set, thread0_id_node,
                nthread_local, nthread_node, nthread_hw_max, nphyscore;
     int        offset;
     const int *locality_order;
@@ -227,8 +227,8 @@ gmx_set_thread_affinity(FILE                *fplog,
     }
 
     /* map the current process to cores */
-    thread_id_node = 0;
-    nthread_node   = nthread_local;
+    thread0_id_node = 0;
+    nthread_node    = nthread_local;
 #ifdef GMX_MPI
     if (PAR(cr) || MULTISIM(cr))
     {
@@ -239,9 +239,9 @@ gmx_set_thread_affinity(FILE                *fplog,
 
         MPI_Comm_split(MPI_COMM_WORLD, gmx_hostname_num(), cr->rank_intranode,
                        &comm_intra);
-        MPI_Scan(&nthread_local, &thread_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
+        MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
         /* MPI_Scan is inclusive, but here we need exclusive */
-        thread_id_node -= nthread_local;
+        thread0_id_node -= nthread_local;
         /* Get the total number of threads on this physical node */
         MPI_Allreduce(&nthread_local, &nthread_node, 1, MPI_INT, MPI_SUM, comm_intra);
         MPI_Comm_free(&comm_intra);
@@ -288,15 +288,15 @@ gmx_set_thread_affinity(FILE                *fplog,
      * of threads on which we succeeded.
      */
     nth_affinity_set = 0;
-#pragma omp parallel firstprivate(thread_id_node) num_threads(nthread_local) \
-    reduction(+:nth_affinity_set)
+#pragma omp parallel num_threads(nthread_local) reduction(+:nth_affinity_set)
     {
+        int      thread_id, thread_id_node;
         int      index, core;
         gmx_bool setaffinity_ret;
 
-        thread_id       = gmx_omp_get_thread_num();
-        thread_id_node += thread_id;
-        index           = offset + thread_id_node*hw_opt->core_pinning_stride;
+        thread_id      = gmx_omp_get_thread_num();
+        thread_id_node = thread0_id_node + thread_id;
+        index          = offset + thread_id_node*hw_opt->core_pinning_stride;
         if (locality_order != NULL)
         {
             core = locality_order[index];
@@ -313,8 +313,8 @@ gmx_set_thread_affinity(FILE                *fplog,
 
         if (debug)
         {
-            fprintf(debug, "On rank %2d, thread %2d, core %2d the affinity setting returned %d\n",
-                    cr->nodeid, gmx_omp_get_thread_num(), core, setaffinity_ret);
+            fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
+                    cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
         }
     }
 
