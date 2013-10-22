@@ -59,8 +59,8 @@ set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on BlueGene" FORCE)
 # facility to run lots of jobs on small chunks of the machine. You
 # certainly need proper MPI to use a whole chunk of the machine that
 # the scheduler will allocate.
-set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI generally not compatible with BlueGene, defaulting to disabled!")
-set(GMX_MPI ON CACHE BOOL "MPI is normally required on BlueGene" FORCE)
+set(GMX_THREAD_MPI OFF CACHE BOOL "GROMACS bundled thread-MPI is not supported on BlueGene" FORCE)
+set(GMX_MPI ON CACHE BOOL "MPI is required on BlueGene" FORCE)
 
 # Access to /etc/passwd is not available on the back end of BlueGeneP
 # (at least), despite being detected by CMake. This can cause linker

@@ -37,9 +37,19 @@
 #ifndef _nbnxn_kernel_simd_utils_ref_h_
 #define _nbnxn_kernel_simd_utils_ref_h_
 
-typedef gmx_simd_ref_epi32            gmx_simd_ref_exclfilter;
-#define gmx_exclfilter                gmx_simd_ref_exclfilter
+typedef gmx_simd_ref_epi32      gmx_simd_ref_exclfilter;
+typedef gmx_simd_ref_exclfilter gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
+
+/* Set the stride for the lookup of the two LJ parameters from their
+   (padded) array. Only strides of 2 and 4 are currently supported. */
+#if defined GMX_NBNXN_SIMD_2XNN
+static const int nbfp_stride = 4;
+#elif defined GMX_DOUBLE
+static const int nbfp_stride = 2;
+#else
+static const int nbfp_stride = 4;
+#endif
 
 #if GMX_SIMD_WIDTH_HERE > 4
 /* The 4xn kernel operates on 4-wide i-force registers */
@@ -88,6 +98,10 @@ gmx_add_pr4(gmx_mm_pr4 a, gmx_mm_pr4 b)
 
     return c;
 }
+
+#else
+
+typedef gmx_simd_ref_pr gmx_simd_ref_pr4;
 
 #endif
 
@@ -444,7 +458,7 @@ gmx_simd_ref_load1_exclfilter(int src)
 }
 
 static gmx_inline gmx_simd_ref_exclfilter
-gmx_simd_ref_load_exclusion_filter(const unsigned *src)
+gmx_simd_ref_load_exclusion_filter(const int *src)
 {
     gmx_simd_ref_exclfilter a;
     int                     i;
