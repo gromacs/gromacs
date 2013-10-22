@@ -43,6 +43,14 @@
 #include "types/nbnxn_cuda_types_ext.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
 
+/* CUDA versions from 5.0 above support texture objects. */
+#if CUDA_VERSION >= 5000
+#define TEXOBJ_SUPPORTED
+#else  /* CUDA_VERSION */
+/* This typedef allows us to define only one version of struct cu_nbparam */
+typedef int cudaTextureObject_t;
+#endif /* CUDA_VERSION */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -74,8 +82,8 @@ enum {
 
 /* Non-bonded kernel versions. */
 
-/*  All structs prefixed with "cu_" hold data used in GPU calculations and
- *  are passed to the kernels, except cu_timers_t. */
+/* All structs prefixed with "cu_" hold data used in GPU calculations and
+ * are passed to the kernels, except cu_timers_t. */
 typedef struct cu_plist     cu_plist_t;
 typedef struct cu_atomdata  cu_atomdata_t;
 typedef struct cu_nbparam   cu_nbparam_t;
@@ -84,7 +92,7 @@ typedef struct nb_staging   nb_staging_t;
 
 
 /** Staging area for temporary data. The energies get downloaded here first,
- *   before getting added to the CPU-side aggregate values.
+ *  before getting added to the CPU-side aggregate values.
  */
 struct nb_staging
 {
@@ -118,24 +126,26 @@ struct cu_atomdata
 /** Parameters required for the CUDA nonbonded calculations. */
 struct cu_nbparam
 {
-    int      eeltype;       /**< type of electrostatics                             */
+    int      eeltype;        /**< type of electrostatics                       */
 
-    float    epsfac;        /**< charge multiplication factor                       */
-    float    c_rf,          /**< Reaction-field/plain cutoff electrostatics const.  */
-             two_k_rf;      /**< Reaction-field electrostatics constant             */
-    float    ewald_beta;    /**< Ewald/PME parameter                                */
-    float    sh_ewald;      /**< Ewald/PME  correction term                         */
-    float    rvdw_sq;       /**< VdW cut-off                                        */
-    float    rcoulomb_sq;   /**< Coulomb cut-off                                    */
-    float    rlist_sq;      /**< pair-list cut-off                                  */
-    float    sh_invrc6;     /**< LJ potential correction term                       */
+    float    epsfac;         /**< charge multiplication factor                 */
+    float    c_rf, two_k_rf; /**< Reaction-Field constants                     */
+    float    ewald_beta;     /**< Ewald/PME parameter                          */
+    float    sh_ewald;       /**< Ewald/PME  correction term                   */
+    float    rvdw_sq;        /**< VdW cut-off                                  */
+    float    rcoulomb_sq;    /**< Coulomb cut-off                              */
+    float    rlist_sq;       /**< pair-list cut-off                            */
+    float    sh_invrc6;      /**< LJ potential correction term                 */
 
-    float   *nbfp;          /**< nonbonded parameter table with C6/C12 pairs        */
+    /* Non-bonded parameters - accessed through texture memory */
+    float            *nbfp;        /**< nonbonded parameter table with C6/C12 pairs  */
+    cudaTextureObject_t nbfp_texobj; /**< texture object bound to nbfp                 */
 
-    /* Ewald Coulomb force table data */
-    int      coulomb_tab_size;  /**< table size (s.t. it fits in texture cache)     */
-    float    coulomb_tab_scale; /**< table scale/spacing                            */
-    float   *coulomb_tab;       /**< pointer to the table in the device memory      */
+    /* Ewald Coulomb force table data - accessed through texture memory */
+    int               coulomb_tab_size;      /**< table size (s.t. it fits in texture cache) */
+    float             coulomb_tab_scale;     /**< table scale/spacing                        */
+    float            *coulomb_tab;           /**< pointer to the table in the device memory  */
+    cudaTextureObject_t  coulomb_tab_texobj; /**< texture object bound to coulomb_tab        */
 };
 
 /** Pair list data */
@@ -194,10 +204,10 @@ struct nbnxn_cuda
     cudaStream_t     stream[2];      /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
-    cudaEvent_t    nonlocal_done;   /**< event triggered when the non-local non-bonded kernel
-                                       is done (and the local transfer can proceed)            */
-    cudaEvent_t    misc_ops_done;   /**< event triggered when the operations that precede the
-                                         main force calculations are done (e.g. buffer 0-ing) */
+    cudaEvent_t    nonlocal_done;    /**< event triggered when the non-local non-bonded kernel
+                                        is done (and the local transfer can proceed)           */
+    cudaEvent_t    misc_ops_done;    /**< event triggered when the operations that precede the
+                                          main force calculations are done (e.g. buffer 0-ing) */
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.

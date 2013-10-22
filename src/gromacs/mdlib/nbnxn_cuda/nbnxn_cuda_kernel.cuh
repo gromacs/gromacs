@@ -59,6 +59,9 @@
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
+#if __CUDA_ARCH__ >= 350
+__launch_bounds__(64,16)
+#endif
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener_prune)
@@ -311,8 +314,14 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #endif
 
                                 /* LJ 6*C6 and 12*C12 */
-                                c6      = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej));
-                                c12     = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej) + 1);
+#ifdef USE_TEXOBJ
+                                c6      = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * (ntypes * typei + typej));
+                                c12     = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * (ntypes * typei + typej) + 1);
+#else
+                                c6      = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej));
+                                c12     = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej) + 1);
+#endif /* USE_TEXOBJ */
+
 
                                 /* avoid NaN for excluded pairs at r=0 */
                                 r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
@@ -354,7 +363,13 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #if defined EL_EWALD_ANA
                                 F_invr  += qi * qj_f * (int_bit*inv_r2*inv_r + pmecorrF(beta2*r2)*beta3);
 #elif defined EL_EWALD_TAB
-                                F_invr  += qi * qj_f * (int_bit*inv_r2 - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
+                                F_invr  += qi * qj_f * (int_bit*inv_r2 -
+#ifdef USE_TEXOBJ
+                                                        interpolate_coulomb_force_r(nbparam.coulomb_tab_texobj, r2 * inv_r, coulomb_tab_scale)
+#else
+                                                        interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)
+#endif /* USE_TEXOBJ */
+                                                        ) * inv_r;
 #endif /* EL_EWALD_ANA/TAB */
 
 #ifdef CALC_ENERGIES
