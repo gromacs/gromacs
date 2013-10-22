@@ -61,7 +61,7 @@
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
-#if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ > 300
+#if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
 #define USE_TEXOBJ
 #endif
 
