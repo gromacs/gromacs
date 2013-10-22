@@ -517,7 +517,7 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
     {
         if (rerun_fr->bLambda)
         {
-            if (fepvals->delta_lambda != 0)
+            if (fepvals->delta_lambda==0)
             {
                 state_global->lambda[efptFEP] = rerun_fr->lambda;
                 for (i = 0; i < efptNR; i++)
@@ -575,6 +575,16 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
                 for (i = 0; i < efptNR; i++)
                 {
                     state_global->lambda[i] = lam0[i] + frac;
+                }
+            }
+        }
+        else
+        {
+            if (state->fep_state > 0) {
+                state_global->fep_state = state->fep_state; /* state->fep is the one updated by bExpanded */
+                for (i = 0; i < efptNR; i++)
+                {
+                    state_global->lambda[i] = fepvals->all_lambda[i][state_global->fep_state];
                 }
             }
         }

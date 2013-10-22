@@ -105,6 +105,7 @@ if (GMX_GIT_VERSION_INFO)
 endif ()
 
 if(GMX_BUILD_OWN_FFTW)
+    # Only needed for cmake 2.8.7, otherwise this should be automatic
     # This dependency has to be made here rather than the CMakeLists.txt that
     # does the FFTW build, because of the order in which
     # add_subdirectory() calls are made in the top-level CMakeLists.txt; the

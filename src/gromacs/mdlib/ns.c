@@ -401,6 +401,17 @@ static inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int 
         nlist->gid[nri]      = gid;
         nlist->shift[nri]    = shift;
     }
+    else
+    {
+        /* Adding to previous list. First remove possible previous padding */
+        if(nlist->simd_padding_width>1)
+        {
+            while(nlist->nrj>0 && nlist->jjnr[nlist->nrj-1]<0)
+            {
+                nlist->nrj--;
+            }
+        }
+    }
 }
 
 static inline void close_i_nblist(t_nblist *nlist)

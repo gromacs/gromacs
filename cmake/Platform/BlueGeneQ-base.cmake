@@ -117,4 +117,14 @@ macro(__BlueGeneQ_set_static_flags compiler_id lang)
     "<FLAGS> <CMAKE_${lang}_LINK_FLAGS> <LINK_FLAGS> <OBJECTS>  -o <TARGET> <LINK_LIBRARIES>")
   set(CMAKE_${lang}_LINK_EXECUTABLE
     "<CMAKE_${lang}_COMPILER> ${BG/Q_${lang}_DEFAULT_EXE_FLAGS}")
+
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND ${compiler_id} STREQUAL "XL")
+      # Work around an unknown compiler bug triggered in
+      # compute_globals(). Using -O0 disables -qhot and this seems
+      # to break the normal OpenMP flag -qsmp unless qualified with
+      # noauto.
+      set(OpenMP_C_FLAGS "-qsmp=noauto" CACHE STRING "Compiler flag for OpenMP parallelization")
+      set(OpenMP_CXX_FLAGS "-qsmp=noauto" CACHE STRING "Compiler flag for OpenMP parallelization")
+  endif()
+
 endmacro()
