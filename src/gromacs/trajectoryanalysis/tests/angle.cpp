@@ -57,7 +57,7 @@ using gmx::test::CommandLine;
  */
 
 //! Test fixture for the angle analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Angle>
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::AngleInfo>
     AngleModuleTest;
 
 TEST_F(AngleModuleTest, ComputesSimpleAngles)

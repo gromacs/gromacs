@@ -188,21 +188,21 @@ class AbstractTrajectoryAnalysisModuleTestFixture : public ::testing::Test
 /*! \internal \brief
  * Test fixture for a trajectory analysis module.
  *
- * \tparam ModuleType  Type of the analysis module to test.
+ * \tparam ModuleInfo  Info object for the analysis module to test.
  *
- * \p ModuleType should derive from TrajectoryAnalysisModule and be
- * default-constructible.
+ * \p ModuleInfo should provide a static
+ * `TrajectoryAnalysisModulePointer create()` method.
  *
  * \ingroup module_trajectoryanalysis
  */
-template <class ModuleType>
+template <class ModuleInfo>
 class TrajectoryAnalysisModuleTestFixture
     : public AbstractTrajectoryAnalysisModuleTestFixture
 {
     protected:
         virtual TrajectoryAnalysisModulePointer createModule()
         {
-            return TrajectoryAnalysisModulePointer(new ModuleType);
+            return ModuleInfo::create();
         }
 };
 
