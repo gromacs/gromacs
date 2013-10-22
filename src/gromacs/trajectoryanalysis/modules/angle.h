@@ -42,70 +42,20 @@
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_ANGLE_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_ANGLE_H
 
-#include <string>
-#include <vector>
-
 #include "../analysismodule.h"
-#include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/analysisdata/modules/histogram.h"
-#include "gromacs/selection/selection.h"
 
 namespace gmx
 {
 
-class SelectionOptionInfo;
-
 namespace analysismodules
 {
 
-class Angle : public TrajectoryAnalysisModule
+class AngleInfo
 {
     public:
         static const char name[];
         static const char shortDescription[];
-
-        Angle();
-        virtual ~Angle();
-
-        virtual void initOptions(Options                    *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
-
-    private:
-        void checkSelections(const SelectionList &sel1,
-                             const SelectionList &sel2) const;
-
-        SelectionList                            sel1_;
-        SelectionList                            sel2_;
-        SelectionOptionInfo                     *sel1info_;
-        SelectionOptionInfo                     *sel2info_;
-        std::string                              fnAverage_;
-        std::string                              fnAll_;
-        std::string                              fnHistogram_;
-
-        std::string                              g1type_;
-        std::string                              g2type_;
-        double                                   binWidth_;
-
-        AnalysisData                             angles_;
-        AnalysisDataFrameAverageModulePointer    averageModule_;
-        AnalysisDataSimpleHistogramModulePointer histogramModule_;
-        int                                      natoms1_;
-        int                                      natoms2_;
-        // TODO: It is not possible to put rvec into a container.
-        std::vector<rvec *>                      vt0_;
-
-        // Copy and assign disallowed by base.
+        static TrajectoryAnalysisModulePointer create();
 };
 
 } // namespace analysismodules

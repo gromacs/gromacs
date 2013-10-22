@@ -41,10 +41,15 @@
  */
 #include "angle.h"
 
+#include <string>
+#include <vector>
+
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -62,12 +67,57 @@ namespace gmx
 namespace analysismodules
 {
 
-const char Angle::name[]             = "gangle";
-const char Angle::shortDescription[] =
-    "Calculate angles";
+namespace
+{
+
+class Angle : public TrajectoryAnalysisModule
+{
+    public:
+        Angle();
+        virtual ~Angle();
+
+        virtual void initOptions(Options                    *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(Options                    *options,
+                                     TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
+
+    private:
+        void checkSelections(const SelectionList &sel1,
+                             const SelectionList &sel2) const;
+
+        SelectionList                            sel1_;
+        SelectionList                            sel2_;
+        SelectionOptionInfo                     *sel1info_;
+        SelectionOptionInfo                     *sel2info_;
+        std::string                              fnAverage_;
+        std::string                              fnAll_;
+        std::string                              fnHistogram_;
+
+        std::string                              g1type_;
+        std::string                              g2type_;
+        double                                   binWidth_;
+
+        AnalysisData                             angles_;
+        AnalysisDataFrameAverageModulePointer    averageModule_;
+        AnalysisDataSimpleHistogramModulePointer histogramModule_;
+        int                                      natoms1_;
+        int                                      natoms2_;
+        // TODO: It is not possible to put rvec into a container.
+        std::vector<rvec *>                      vt0_;
+
+        // Copy and assign disallowed by base.
+};
 
 Angle::Angle()
-    : TrajectoryAnalysisModule(name, shortDescription),
+    : TrajectoryAnalysisModule(AngleInfo::name, AngleInfo::shortDescription),
       sel1info_(NULL), sel2info_(NULL), binWidth_(1.0), natoms1_(0), natoms2_(0)
 {
     averageModule_.reset(new AnalysisDataFrameAverageModule());
@@ -551,6 +601,17 @@ Angle::writeOutput()
 {
 }
 
-} // namespace modules
+}       // namespace
 
-} // namespace gmxana
+const char AngleInfo::name[]             = "gangle";
+const char AngleInfo::shortDescription[] =
+    "Calculate angles";
+
+TrajectoryAnalysisModulePointer AngleInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new Angle);
+}
+
+} // namespace analysismodules
+
+} // namespace gmx

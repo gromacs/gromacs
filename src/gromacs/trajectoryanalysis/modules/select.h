@@ -42,72 +42,20 @@
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_SELECT_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_SELECT_H
 
-#include <string>
-#include <vector>
-
 #include "../analysismodule.h"
-#include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/analysisdata/modules/lifetime.h"
-#include "gromacs/selection/selection.h"
 
 namespace gmx
 {
 
-class SelectionOptionInfo;
-
 namespace analysismodules
 {
 
-class Select : public TrajectoryAnalysisModule
+class SelectInfo
 {
     public:
         static const char name[];
         static const char shortDescription[];
-
-        Select();
-        virtual ~Select();
-
-        virtual void initOptions(Options                    *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
-
-    private:
-        SelectionList                       sel_;
-        SelectionOptionInfo                *selOpt_;
-
-        std::string                         fnSize_;
-        std::string                         fnFrac_;
-        std::string                         fnIndex_;
-        std::string                         fnNdx_;
-        std::string                         fnMask_;
-        std::string                         fnOccupancy_;
-        std::string                         fnPDB_;
-        std::string                         fnLifetime_;
-        bool                                bTotNorm_;
-        bool                                bFracNorm_;
-        bool                                bResInd_;
-        bool                                bCumulativeLifetimes_;
-        std::string                         resNumberType_;
-        std::string                         pdbAtoms_;
-
-        const TopologyInformation          *top_;
-        std::vector<int>                    totsize_;
-        AnalysisData                        sdata_;
-        AnalysisData                        cdata_;
-        AnalysisData                        idata_;
-        AnalysisData                        mdata_;
-        AnalysisDataAverageModulePointer    occupancyModule_;
-        AnalysisDataLifetimeModulePointer   lifetimeModule_;
+        static TrajectoryAnalysisModulePointer create();
 };
 
 } // namespace analysismodules
