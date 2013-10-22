@@ -109,8 +109,12 @@ typedef struct tMPI_Spinlock
 #else
 /* older versions of gcc don't support atomic intrinsics */
 
-
+#ifndef __MIC__
 #define tMPI_Atomic_memory_barrier() __asm__ __volatile__("sfence;" : : : "memory")
+#else
+/* MIC is in-order and does not need nor support sfense */
+#define tMPI_Atomic_memory_barrier() __asm__ __volatile__("":::"memory")
+#endif
 
 #define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
 static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
