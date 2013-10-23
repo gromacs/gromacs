@@ -349,7 +349,7 @@ gmx_simd_ref_cmplt_pr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
 
 /* Logical AND on SIMD booleans. Can't be static or it can't be a
    template parameter (at least on XLC for BlueGene/Q) */
-gmx_inline gmx_simd_ref_pb
+static gmx_inline gmx_simd_ref_pb
 gmx_simd_ref_and_pb(gmx_simd_ref_pb a, gmx_simd_ref_pb b)
 {
     gmx_simd_ref_pb c;
@@ -365,7 +365,7 @@ gmx_simd_ref_and_pb(gmx_simd_ref_pb a, gmx_simd_ref_pb b)
 
 /* Logical OR on SIMD booleans. Can't be static or it can't be a
    template parameter (at least on XLC for BlueGene/Q) */
-gmx_inline gmx_simd_ref_pb
+static gmx_inline gmx_simd_ref_pb
 gmx_simd_ref_or_pb(gmx_simd_ref_pb a, gmx_simd_ref_pb b)
 {
     gmx_simd_ref_pb c;
