@@ -56,13 +56,6 @@
 
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
 
-/* Set the stride for the lookup of the two LJ parameters from their
- * (padded) array.
- * Note that currently only arrays with stride 2 and 4 are available.
- * Since the reference code does not require alignment, we can always use 2.
- */
-static const int nbfp_stride = 2;
-
 /* Align a stack-based thread-local working array. */
 static gmx_inline int *
 prepare_table_load_buffer(const int *array)
