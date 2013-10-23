@@ -41,6 +41,7 @@
  */
 #include "angle.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -70,6 +71,172 @@ namespace analysismodules
 namespace
 {
 
+/********************************************************************
+ * Helper classes
+ */
+
+/*! \brief
+ * Helper to encapsulate logic for looping over input selections.
+ *
+ * This class provides two-dimensional iteration:
+ *  - Over _angle groups_, corresponding to an input selection.  If the input
+ *    selection list contains a single selection, that selection gets used
+ *    for all angle groups.
+ *  - Within a group, over _values_, each consisting of a fixed number of
+ *    selection positions.  If there is only a single value within a selection,
+ *    that value is returned over and over again.
+ * This transparently provides the semantics of using a single selection/vector
+ * to compute angles against multiple selections/vectors as described in the
+ * tool help text.
+ *
+ * This class isn't perferctly self-contained and requires the caller to know
+ * some of the internals to use it properly, but it serves its purpose for this
+ * single analysis tool by simplifying the loops.
+ * Some methods have also been tailored to allow the caller to use it a bit
+ * more easily.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class AnglePositionIterator
+{
+    public:
+        /*! \brief
+         * Creates an iterator to loop over input selection positions.
+         *
+         * \param[in] selections       List of selections.
+         * \param[in] posCountPerValue Number of selection positions that
+         *     constitute a single value for the iteration.
+         *
+         * If \p selections is empty, and/or \p posCountPerValue is zero, the
+         * iterator can still be advanced and hasValue()/hasSingleValue()
+         * called, but values cannot be accessed.
+         */
+        AnglePositionIterator(const SelectionList &selections,
+                              int                  posCountPerValue)
+            : selections_(selections), posCountPerValue_(posCountPerValue),
+              currentSelection_(0), nextPosition_(0)
+        {
+        }
+
+        //! Advances the iterator to the next group of angles.
+        void nextGroup()
+        {
+            if (selections_.size() > 1)
+            {
+                ++currentSelection_;
+            }
+            nextPosition_ = 0;
+        }
+        //! Advances the iterator to the next angle in the current group.
+        void nextValue()
+        {
+            if (!hasSingleValue())
+            {
+                nextPosition_ += posCountPerValue_;
+            }
+        }
+
+        /*! \brief
+         * Returns whether this iterator represents any values.
+         *
+         * If the return value is `false`, only nextGroup(), nextValue() and
+         * hasSingleValue() are allowed to be called.
+         */
+        bool hasValue() const
+        {
+            return !selections_.empty();
+        }
+        /*! \brief
+         * Returns whether the current selection only contains a single value.
+         *
+         * Returns `false` if hasValue() returns false, which allows cutting
+         * some corners in consistency checks.
+         */
+        bool hasSingleValue() const
+        {
+            return hasValue() && currentSelection().posCount() == posCountPerValue_;
+        }
+        //! Returns whether the current selection is dynamic.
+        bool isDynamic() const
+        {
+            return currentSelection().isDynamic();
+        }
+        /*! \brief
+         * Returns whether positions in the current value are either all
+         * selected or all unselected.
+         */
+        bool allValuesConsistentlySelected() const
+        {
+            if (posCountPerValue_ <= 1)
+            {
+                return true;
+            }
+            const bool bSelected = currentPosition(0).selected();
+            for (int i = 1; i < posCountPerValue_; ++i)
+            {
+                if (currentPosition(i).selected() != bSelected)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        /*! \brief
+         * Returns whether positions in the current value are selected.
+         *
+         * Only works reliably if allValuesConsistentlySelected() returns
+         * `true`.
+         */
+        bool currentValuesSelected() const
+        {
+            return selections_.empty() || currentPosition(0).selected();
+        }
+
+        //! Returns the currently active selection.
+        const Selection &currentSelection() const
+        {
+            GMX_ASSERT(currentSelection_ < static_cast<int>(selections_.size()),
+                       "Accessing an invalid selection");
+            return selections_[currentSelection_];
+        }
+        //! Returns the `i`th position for the current value.
+        SelectionPosition currentPosition(int i) const
+        {
+            return currentSelection().position(nextPosition_ + i);
+        }
+        /*! \brief
+         * Extracts all coordinates corresponding to the current value.
+         *
+         * \param[out] x  Array to which the positions are extracted.
+         *
+         * \p x should contain at minimum the number of positions per value
+         * passed to the constructor.
+         */
+        void getCurrentPositions(rvec x[]) const
+        {
+            GMX_ASSERT(posCountPerValue_ > 0,
+                       "Accessing positions for an invalid angle type");
+            GMX_ASSERT(nextPosition_ + posCountPerValue_ <= currentSelection().posCount(),
+                       "Accessing an invalid position");
+            for (int i = 0; i < posCountPerValue_; ++i)
+            {
+                copy_rvec(currentPosition(i).x(), x[i]);
+            }
+        }
+
+    private:
+        const SelectionList &selections_;
+        const int            posCountPerValue_;
+        int                  currentSelection_;
+        int                  nextPosition_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(AnglePositionIterator);
+};
+
+/********************************************************************
+ * Actual analysis module
+ */
+
 class Angle : public TrajectoryAnalysisModule
 {
     public:
@@ -90,6 +257,8 @@ class Angle : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
+        void initFromSelections(const SelectionList &sel1,
+                                const SelectionList &sel2);
         void checkSelections(const SelectionList &sel1,
                              const SelectionList &sel2) const;
 
@@ -108,6 +277,8 @@ class Angle : public TrajectoryAnalysisModule
         AnalysisData                             angles_;
         AnalysisDataFrameAverageModulePointer    averageModule_;
         AnalysisDataSimpleHistogramModulePointer histogramModule_;
+
+        std::vector<int>                         angleCount_;
         int                                      natoms1_;
         int                                      natoms2_;
         // TODO: It is not possible to put rvec into a container.
@@ -144,7 +315,7 @@ void
 Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "g_angle computes different types of angles between vectors.",
+        "[TT]gmx gangle[tt] computes different types of angles between vectors.",
         "It supports both vectors defined by two positions and normals of",
         "planes defined by three positions.",
         "The z axis or the local normal of a sphere can also be used as",
@@ -166,9 +337,14 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "[TT]-g2[tt] specifies the other vector to use (see below).[PAR]",
         "With [TT]-g2 vector[tt] or [TT]-g2 plane[tt], [TT]-group2[tt] should",
         "specify another set of vectors. [TT]-group1[tt] and [TT]-group2[tt]",
-        "should specify the same number of selections, and for each selection",
-        "in [TT]-group1[tt], the corresponding selection in [TT]-group2[tt]",
-        "should specify the same number of vectors.[PAR]",
+        "should specify the same number of selections. It is also allowed to",
+        "only have a single selection for one of the options, in which case",
+        "the same selection is used with each selection in the other group.",
+        "Similarly, for each selection in [TT]-group1[tt], the corresponding",
+        "selection in [TT]-group2[tt] should specify the same number of",
+        "vectors or a single vector. In the latter case, the angle is",
+        "calculated between that single vector and each vector from the other",
+        "selection.[PAR]",
         "With [TT]-g2 sphnorm[tt], each selection in [TT]-group2[tt] should",
         "specify a single position that is the center of the sphere.",
         "The second vector is calculated as the vector from the center to the",
@@ -226,7 +402,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 void
 Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* settings */)
 {
-    bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
+    const bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
 
     if (bSingle && g2type_[0] != 'n')
     {
@@ -269,6 +445,65 @@ Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* setting
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection (-group2) with -g2 t0 or z"));
     }
+    // TODO: If bSingle is not set, the second selection option should be
+    // required.
+}
+
+
+void
+Angle::initFromSelections(const SelectionList &sel1,
+                          const SelectionList &sel2)
+{
+    const int  angleGroups         = std::max(sel1.size(), sel2.size());
+    const bool bHasSecondSelection = natoms2_ > 0;
+
+    if (bHasSecondSelection && sel1.size() != sel2.size()
+        && std::min(sel1.size(), sel2.size()) != 1)
+    {
+        GMX_THROW(InconsistentInputError(
+                          "-group1 and -group2 should specify the same number of selections"));
+    }
+
+    AnglePositionIterator iter1(sel1, natoms1_);
+    AnglePositionIterator iter2(sel2, natoms2_);
+    for (int g = 0; g < angleGroups; ++g, iter1.nextGroup(), iter2.nextGroup())
+    {
+        const int posCount1 = iter1.currentSelection().posCount();
+        if (natoms1_ > 1 && posCount1 % natoms1_ != 0)
+        {
+            GMX_THROW(InconsistentInputError(formatString(
+                                                     "Number of positions in selection %d in the first group not divisible by %d",
+                                                     static_cast<int>(g + 1), natoms1_)));
+        }
+        const int angleCount1 = posCount1 / natoms1_;
+        int       angleCount  = angleCount1;
+
+        if (bHasSecondSelection)
+        {
+            const int posCount2 = iter2.currentSelection().posCount();
+            if (natoms2_ > 1 && posCount2 % natoms2_ != 0)
+            {
+                GMX_THROW(InconsistentInputError(formatString(
+                                                         "Number of positions in selection %d in the second group not divisible by %d",
+                                                         static_cast<int>(g + 1), natoms2_)));
+            }
+            if (g2type_[0] == 's' && posCount2 != 1)
+            {
+                GMX_THROW(InconsistentInputError(
+                                  "The second group should contain a single position with -g2 sphnorm"));
+            }
+
+            const int angleCount2 = posCount2 / natoms2_;
+            angleCount = std::max(angleCount1, angleCount2);
+            if (angleCount1 != angleCount2
+                && std::min(angleCount1, angleCount2) != 1)
+            {
+                GMX_THROW(InconsistentInputError(
+                                  "Number of vectors defined by the two groups are not the same"));
+            }
+        }
+        angleCount_.push_back(angleCount);
+    }
 }
 
 
@@ -276,51 +511,40 @@ void
 Angle::checkSelections(const SelectionList &sel1,
                        const SelectionList &sel2) const
 {
-    if (natoms2_ > 0 && sel1.size() != sel2.size())
+    AnglePositionIterator iter1(sel1, natoms1_);
+    AnglePositionIterator iter2(sel2, natoms2_);
+    for (size_t g = 0; g < angleCount_.size(); ++g, iter1.nextGroup(), iter2.nextGroup())
     {
-        GMX_THROW(InconsistentInputError(
-                          "-group1 and -group2 should specify the same number of selections"));
-    }
-
-    for (size_t g = 0; g < sel1.size(); ++g)
-    {
-        const int na1 = sel1[g].posCount();
-        const int na2 = (natoms2_ > 0) ? sel2[g].posCount() : 0;
-        if (natoms1_ > 1 && na1 % natoms1_ != 0)
+        if (iter1.isDynamic() || (iter2.hasValue() && iter2.isDynamic()))
         {
-            GMX_THROW(InconsistentInputError(formatString(
-                                                     "Number of positions in selection %d in the first group not divisible by %d",
-                                                     static_cast<int>(g + 1), natoms1_)));
-        }
-        if (natoms2_ > 1 && na2 % natoms2_ != 0)
-        {
-            GMX_THROW(InconsistentInputError(formatString(
-                                                     "Number of positions in selection %d in the second group not divisible by %d",
-                                                     static_cast<int>(g + 1), natoms2_)));
-        }
-        if (natoms1_ > 0 && natoms2_ > 1 && na1 / natoms1_ != na2 / natoms2_)
-        {
-            GMX_THROW(InconsistentInputError(
-                              "Number of vectors defined by the two groups are not the same"));
-        }
-        if (g2type_[0] == 's' && sel2[g].posCount() != 1)
-        {
-            GMX_THROW(InconsistentInputError(
-                              "The second group should contain a single position with -g2 sphnorm"));
-        }
-        if (sel1[g].isDynamic() || (natoms2_ > 0 && sel2[g].isDynamic()))
-        {
-            for (int i = 0, j = 0; i < na1; i += natoms1_, j += natoms2_)
+            for (int n = 0; n < angleCount_[g]; ++n, iter1.nextValue(), iter2.nextValue())
             {
-                const bool bSelected = sel1[g].position(i).selected();
-                bool       bOk       = true;
-                for (int k = 1; k < natoms1_ && bOk; ++k)
+                bool bOk = true;
+                if (!iter1.allValuesConsistentlySelected())
                 {
-                    bOk = (sel1[g].position(i+k).selected() == bSelected);
+                    bOk = false;
                 }
-                for (int k = 1; k < natoms2_ && bOk; ++k)
+                if (!iter2.allValuesConsistentlySelected())
                 {
-                    bOk = (sel2[g].position(j+k).selected() == bSelected);
+                    bOk = false;
+                }
+                if (angleCount_[g] > 1)
+                {
+                    if (iter1.hasSingleValue() && !iter1.currentValuesSelected())
+                    {
+                        bOk = false;
+                    }
+                    if (iter2.hasSingleValue() && !iter2.currentValuesSelected())
+                    {
+                        bOk = false;
+                    }
+                }
+                if (iter2.hasValue()
+                    && (angleCount_[g] == 1
+                        || (!iter1.hasSingleValue() && !iter2.hasSingleValue()))
+                    && iter1.currentValuesSelected() != iter2.currentValuesSelected())
+                {
+                    bOk = false;
                 }
                 if (!bOk)
                 {
@@ -340,13 +564,13 @@ void
 Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
                     const TopologyInformation         & /* top */)
 {
-    checkSelections(sel1_, sel2_);
+    initFromSelections(sel1_, sel2_);
 
     // checkSelections() ensures that both selection lists have the same size.
-    angles_.setDataSetCount(sel1_.size());
-    for (size_t i = 0; i < sel1_.size(); ++i)
+    angles_.setDataSetCount(angleCount_.size());
+    for (size_t i = 0; i < angleCount_.size(); ++i)
     {
-        angles_.setColumnCount(i, sel1_[i].posCount() / natoms1_);
+        angles_.setColumnCount(i, angleCount_[i]);
     }
     double histogramMin = (g1type_ == "dihedral" ? -180.0 : 0);
     histogramModule_->init(histogramFromRange(histogramMin, 180.0)
@@ -409,17 +633,6 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-//! Helper method to process selections into an array of coordinates.
-static void
-copy_pos(const SelectionList &sel, int natoms, int g, int first, rvec x[])
-{
-    for (int k = 0; k < natoms; ++k)
-    {
-        copy_rvec(sel[g].position(first + k).x(), x[k]);
-    }
-}
-
-
 //! Helper method to calculate a vector from two or three positions.
 static void
 calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
@@ -475,7 +688,9 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     dh.startFrame(frnr, fr.time);
 
-    for (size_t g = 0; g < sel1_.size(); ++g)
+    AnglePositionIterator iter1(sel1, natoms1_);
+    AnglePositionIterator iter2(sel2, natoms2_);
+    for (size_t g = 0; g < angleCount_.size(); ++g, iter1.nextGroup(), iter2.nextGroup())
     {
         rvec  v1, v2;
         rvec  c1, c2;
@@ -491,16 +706,15 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 break;
         }
         dh.selectDataSet(g);
-        for (int i = 0, j = 0, n = 0;
-             i < sel1[g].posCount();
-             i += natoms1_, j += natoms2_, ++n)
+        for (int n = 0; n < angleCount_[g]; ++n, iter1.nextValue(), iter2.nextValue())
         {
             rvec x[4];
             real angle;
             // checkSelections() ensures that this reflects all the involved
             // positions.
-            bool bPresent = sel1[g].position(i).selected();
-            copy_pos(sel1, natoms1_, g, i, x);
+            const bool bPresent =
+                iter1.currentValuesSelected() && iter2.currentValuesSelected();
+            iter1.getCurrentPositions(x);
             switch (g1type_[0])
             {
                 case 'a':
@@ -548,7 +762,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     {
                         case 'v':
                         case 'p':
-                            copy_pos(sel2, natoms2_, 0, j, x);
+                            iter2.getCurrentPositions(x);
                             calc_vec(natoms2_, x, pbc, v2, c2);
                             break;
                         case 't':
