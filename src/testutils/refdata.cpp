@@ -681,7 +681,7 @@ bool TestReferenceChecker::isWriteMode() const
 
 bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
 {
-    if (isWriteMode())
+    if (isWriteMode() || impl_->shouldIgnore())
     {
         return bPresent;
     }
