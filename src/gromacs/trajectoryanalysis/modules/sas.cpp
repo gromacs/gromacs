@@ -1,0 +1,862 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2006, The GROMACS development team,
+ * Copyright (c) 2008,2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements gmx::analysismodules::Sas.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \ingroup module_trajectoryanalysis
+ */
+#include "sas.h"
+
+#include <algorithm>
+#include <string>
+#include <vector>
+
+#include "gromacs/legacyheaders/atomprop.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/pbc.h"
+#include "gromacs/legacyheaders/physics.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/symtab.h"
+#include "gromacs/legacyheaders/vec.h"
+
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/options.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionoption.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "gromacs/gmxana/nsc.h"
+
+namespace gmx
+{
+
+namespace analysismodules
+{
+
+namespace
+{
+
+struct t_conect
+{
+    atom_id  aa, ab;
+    real     d2a, d2b;
+};
+
+void add_rec(t_conect c[], atom_id i, atom_id j, real d2)
+{
+    if (c[i].aa == NO_ATID)
+    {
+        c[i].aa  = j;
+        c[i].d2a = d2;
+    }
+    else if (c[i].ab == NO_ATID)
+    {
+        c[i].ab  = j;
+        c[i].d2b = d2;
+    }
+    else if (d2 < c[i].d2a)
+    {
+        c[i].aa  = j;
+        c[i].d2a = d2;
+    }
+    else if (d2 < c[i].d2b)
+    {
+        c[i].ab  = j;
+        c[i].d2b = d2;
+    }
+    /* Swap them if necessary: a must be larger than b */
+    if (c[i].d2a < c[i].d2b)
+    {
+        j        = c[i].ab;
+        c[i].ab  = c[i].aa;
+        c[i].aa  = j;
+        d2       = c[i].d2b;
+        c[i].d2b = c[i].d2a;
+        c[i].d2a = d2;
+    }
+}
+
+void do_conect(const char *fn, int n, rvec x[])
+{
+    FILE     *fp;
+    int       i, j;
+    t_conect *c;
+    rvec      dx;
+    real      d2;
+
+    fprintf(stderr, "Building CONECT records\n");
+    snew(c, n);
+    for (i = 0; (i < n); i++)
+    {
+        c[i].aa = c[i].ab = NO_ATID;
+    }
+
+    for (i = 0; (i < n); i++)
+    {
+        for (j = i+1; (j < n); j++)
+        {
+            rvec_sub(x[i], x[j], dx);
+            d2 = iprod(dx, dx);
+            add_rec(c, i, j, d2);
+            add_rec(c, j, i, d2);
+        }
+    }
+    fp = ffopen(fn, "a");
+    for (i = 0; (i < n); i++)
+    {
+        if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
+        {
+            fprintf(stderr, "Warning dot %d has no conections\n", i+1);
+        }
+        fprintf(fp, "CONECT%5d%5d%5d\n", i+1, c[i].aa+1, c[i].ab+1);
+    }
+    ffclose(fp);
+    sfree(c);
+}
+
+void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *atoms,
+                   t_symtab *symtab, int ePBC, const matrix box, gmx_bool bSave)
+{
+    const char *const  atomnm = "DOT";
+    const char *const  resnm  = "DOT";
+    const char *const  title  = "Connolly Dot Surface Generated by gmx sas";
+
+    int                i, i0, r0, ii0, k;
+    rvec              *xnew;
+    t_atoms            aaa;
+
+    if (bSave)
+    {
+        i0 = atoms->nr;
+        r0 = atoms->nres;
+        srenew(atoms->atom, atoms->nr+ndots);
+        srenew(atoms->atomname, atoms->nr+ndots);
+        srenew(atoms->resinfo, r0+1);
+        atoms->atom[i0].resind = r0;
+        t_atoms_set_resinfo(atoms, i0, symtab, resnm, r0+1, ' ', 0, ' ');
+        srenew(atoms->pdbinfo, atoms->nr+ndots);
+        snew(xnew, atoms->nr+ndots);
+        for (i = 0; (i < atoms->nr); i++)
+        {
+            copy_rvec(x[i], xnew[i]);
+        }
+        for (i = k = 0; (i < ndots); i++)
+        {
+            ii0                        = i0+i;
+            atoms->atomname[ii0]       = put_symtab(symtab, atomnm);
+            atoms->pdbinfo[ii0].type   = epdbATOM;
+            atoms->pdbinfo[ii0].atomnr = ii0;
+            atoms->atom[ii0].resind    = r0;
+            xnew[ii0][XX]              = dots[k++];
+            xnew[ii0][YY]              = dots[k++];
+            xnew[ii0][ZZ]              = dots[k++];
+            atoms->pdbinfo[ii0].bfac   = 0.0;
+            atoms->pdbinfo[ii0].occup  = 0.0;
+        }
+        atoms->nr   = i0+ndots;
+        atoms->nres = r0+1;
+        write_sto_conf(fn, title, atoms, xnew, NULL, ePBC, const_cast<rvec *>(box));
+        atoms->nres = r0;
+        atoms->nr   = i0;
+    }
+    else
+    {
+        init_t_atoms(&aaa, ndots, TRUE);
+        aaa.atom[0].resind = 0;
+        t_atoms_set_resinfo(&aaa, 0, symtab, resnm, 1, ' ', 0, ' ');
+        snew(xnew, ndots);
+        for (i = k = 0; (i < ndots); i++)
+        {
+            ii0                     = i;
+            aaa.atomname[ii0]       = put_symtab(symtab, atomnm);
+            aaa.pdbinfo[ii0].type   = epdbATOM;
+            aaa.pdbinfo[ii0].atomnr = ii0;
+            aaa.atom[ii0].resind    = 0;
+            xnew[ii0][XX]           = dots[k++];
+            xnew[ii0][YY]           = dots[k++];
+            xnew[ii0][ZZ]           = dots[k++];
+            aaa.pdbinfo[ii0].bfac   = 0.0;
+            aaa.pdbinfo[ii0].occup  = 0.0;
+        }
+        aaa.nr = ndots;
+        write_sto_conf(fn, title, &aaa, xnew, NULL, ePBC, const_cast<rvec *>(box));
+        do_conect(fn, ndots, xnew);
+        free_t_atoms(&aaa, FALSE);
+    }
+    sfree(xnew);
+}
+
+/********************************************************************
+ * Actual analysis module
+ */
+
+class Sas : public TrajectoryAnalysisModule
+{
+    public:
+        Sas();
+        virtual ~Sas();
+
+        virtual void initOptions(Options                    *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection         &selections);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
+
+    private:
+        AnalysisData            area_;
+        AnalysisData            atomArea_;
+        AnalysisData            residueArea_;
+        AnalysisData            dgSolv_;
+        AnalysisData            volume_;
+
+        Selection               surfaceSel_;
+        SelectionList           outputSel_;
+
+        std::string             fnArea_;
+        std::string             fnAtomArea_;
+        std::string             fnResidueArea_;
+        std::string             fnDGSolv_;
+        std::string             fnVolume_;
+        std::string             fnConnolly_;
+
+        double                  solsize_;
+        int                     ndots_;
+        //double                  minarea_;
+        double                  dgsDefault_;
+        bool                    bSave_;
+
+        t_topology             *top_;
+        std::vector<real>       radii_;
+        std::vector<real>       dgsFactor_;
+
+        // Copy and assign disallowed by base.
+};
+
+class SasModuleData : public TrajectoryAnalysisModuleData
+{
+    public:
+        SasModuleData(TrajectoryAnalysisModule          *module,
+                      const AnalysisDataParallelOptions &opt,
+                      const SelectionCollection         &selections,
+                      int atomCount, int residueCount)
+            : TrajectoryAnalysisModuleData(module, opt, selections)
+        {
+            index_.reserve(atomCount);
+            for (int i = 0; i < atomCount; ++i)
+            {
+                index_.push_back(i);
+            }
+            res_a_.resize(residueCount);
+        }
+
+        virtual void finish() { finishDataHandles(); }
+
+        std::vector<int>        index_;
+        std::vector<real>       res_a_;
+};
+
+Sas::Sas()
+    : TrajectoryAnalysisModule(SasInfo::name, SasInfo::shortDescription),
+      solsize_(0.14), ndots_(24), dgsDefault_(0), bSave_(true), top_(NULL)
+{
+    //minarea_ = 0.5;
+    registerAnalysisDataset(&area_, "area");
+    registerAnalysisDataset(&atomArea_, "atomarea");
+    registerAnalysisDataset(&residueArea_, "resarea");
+    registerAnalysisDataset(&dgSolv_, "dgsolv");
+    registerAnalysisDataset(&volume_, "volume");
+}
+
+Sas::~Sas()
+{
+}
+
+void
+Sas::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
+{
+    static const char *const desc[] = {
+        "[TT]gmx sas[tt] computes hydrophobic, hydrophilic and total solvent",
+        "accessible surface area. See Eisenhaber F, Lijnzaad P, Argos P,",
+        "Sander C, & Scharf M (1995) J. Comput. Chem. 16, 273-284.",
+        "As a side effect, the Connolly surface can be generated as well in",
+        "a [TT].pdb[tt] file where the nodes are represented as atoms and the",
+        "vertice connecting the nearest nodes as CONECT records.",
+        "The program will ask for a group for the surface calculation",
+        "and a group for the output. The calculation group should always",
+        "consists of all the non-solvent atoms in the system.",
+        "The output group can be the whole or part of the calculation group.",
+        "The average and standard deviation of the area over the trajectory can be plotted",
+        "per residue and atom as well (options [TT]-or[tt] and [TT]-oa[tt]).",
+        "In combination with the latter option an [TT].itp[tt] file can be",
+        "generated (option [TT]-i[tt])",
+        "which can be used to restrain surface atoms.[PAR]",
+
+        "By default, periodic boundary conditions are taken into account,",
+        "this can be turned off using the [TT]-nopbc[tt] option.[PAR]",
+
+        "With the [TT]-tv[tt] option the total volume and density of the",
+        "molecule can be computed.",
+        "Please consider whether the normal probe radius is appropriate",
+        "in this case or whether you would rather use e.g. 0. It is good",
+        "to keep in mind that the results for volume and density are very",
+        "approximate. For example, in ice Ih, one can easily fit water molecules in the",
+        "pores which would yield a volume that is too low, and surface area and density",
+        "that are both too high."
+    };
+
+    options->setDescription(concatenateStrings(desc));
+
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
+                           .store(&fnArea_).defaultBasename("area")
+                           .description("Total area as a function of time"));
+    options->addOption(FileNameOption("odg").filetype(eftPlot).outputFile()
+                           .store(&fnDGSolv_).defaultBasename("dgsolv")
+                           .description("Estimated solvation free energy as a function of time"));
+    options->addOption(FileNameOption("or").filetype(eftPlot).outputFile()
+                           .store(&fnResidueArea_).defaultBasename("resarea")
+                           .description("Average area per residue"));
+    options->addOption(FileNameOption("oa").filetype(eftPlot).outputFile()
+                           .store(&fnAtomArea_).defaultBasename("atomarea")
+                           .description("Average area per atom"));
+    options->addOption(FileNameOption("tv").filetype(eftPlot).outputFile()
+                           .store(&fnVolume_).defaultBasename("volume")
+                           .description("Total volume and density as a function of time"));
+    options->addOption(FileNameOption("q").filetype(eftPDB).outputFile()
+                           .store(&fnConnolly_).defaultBasename("connolly")
+                           .description("PDB file for Connolly surface"));
+    //options->addOption(FileNameOption("i").filetype(eftITP).outputFile()
+    //                       .store(&fnRestraints_).defaultBasename("surfat")
+    //                       .description("Topology file for position restraings on surface atoms"));
+
+
+    options->addOption(DoubleOption("probe").store(&solsize_)
+                           .description("Radius of the solvent probe (nm)"));
+    options->addOption(IntegerOption("ndots").store(&ndots_)
+                           .description("Number of dots per sphere, more dots means more accuracy"));
+    //options->addOption(DoubleOption("minarea").store(&minarea_)
+    //                       .description("The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file (see help)"));
+    options->addOption(BooleanOption("prot").store(&bSave_)
+                           .description("Output the protein to the Connolly [TT].pdb[tt] file too"));
+    options->addOption(DoubleOption("dgs").store(&dgsDefault_)
+                           .description("Default value for solvation free energy per area (kJ/mol/nm^2)"));
+
+    options->addOption(SelectionOption("surface").store(&surfaceSel_)
+                           .required().onlyAtoms().dynamicMask()
+                           .description("Surface calculation selection"));
+    options->addOption(SelectionOption("output").storeVector(&outputSel_)
+                           .onlyAtoms().multiValue()
+                           .description("Output selection(s)"));
+
+    settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
+}
+
+void
+Sas::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                  const TopologyInformation        &top)
+{
+    const t_atoms &atoms = top.topology()->atoms;
+    top_ = top.topology();
+
+    //bITP   = opt2bSet("-i", nfile, fnm);
+    const bool bResAt =
+        !fnResidueArea_.empty() || !fnAtomArea_.empty(); // || bITP;
+    const bool bDGsol = !fnDGSolv_.empty();
+
+    if (solsize_ < 0)
+    {
+        solsize_ = 1e-3;
+        fprintf(stderr, "Probe size too small, setting it to %g\n", solsize_);
+    }
+    if (ndots_ < 20)
+    {
+        ndots_ = 20;
+        fprintf(stderr, "Ndots too small, setting it to %d\n", ndots_);
+    }
+
+    please_cite(stderr, "Eisenhaber95");
+    //if ((top.ePBC() != epbcXYZ) || (TRICLINIC(fr.box)))
+    //{
+    //    fprintf(stderr, "\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
+    //            "Analysis based on vacuum simulations (with the possibility of evaporation)\n"
+    //            "will certainly crash the analysis.\n\n");
+    //}
+
+    if (bDGsol)
+    {
+        if (!top.hasFullTopology())
+        {
+            GMX_THROW(InconsistentInputError("Cannot compute Delta G of solvation without a tpr file"));
+        }
+        else
+        {
+            if (strcmp(*(atoms.atomtype[0]), "?") == 0)
+            {
+                GMX_THROW(InconsistentInputError("Your input tpr file is too old, cannot not compute Delta G of solvation"));
+            }
+            else
+            {
+                printf("Free energy of solvation predictions:\n");
+                please_cite(stdout, "Eisenberg86a");
+            }
+        }
+    }
+
+    if (!fnConnolly_.empty() && !top.hasFullTopology())
+    {
+        gmx_fatal(FARGS, "Need a tpr file for Connolly plot");
+    }
+
+    // Now compute atomic radii including solvent probe size.
+    radii_.reserve(surfaceSel_.posCount());
+    if (bDGsol)
+    {
+        dgsFactor_.reserve(surfaceSel_.posCount());
+    }
+
+    // TODO: Not exception-safe, but nice solution would be to have a C++
+    // atom properties class...
+    gmx_atomprop_t     aps = gmx_atomprop_init();
+
+    ConstArrayRef<int> atomIndices = surfaceSel_.atomIndices();
+    int                prevResind  = atoms.atom[atomIndices[0]].resind;
+    int                resCount    = 0;
+    int                ndefault    = 0;
+    for (int i = 0; i < surfaceSel_.posCount(); i++)
+    {
+        const int ii     = atomIndices[i];
+        const int resind = atoms.atom[ii].resind;
+        if (resind != prevResind)
+        {
+            ++resCount;
+            prevResind = resind;
+        }
+        surfaceSel_.setOriginalId(i, resCount);
+        real      radius;
+        if (!gmx_atomprop_query(aps, epropVDW,
+                                *(atoms.resinfo[resind].name),
+                                *(atoms.atomname[ii]), &radius))
+        {
+            ndefault++;
+        }
+        radii_.push_back(radius + solsize_);
+        if (bDGsol)
+        {
+            real dgsFactor;
+            if (!gmx_atomprop_query(aps, epropDGsol,
+                                    *(atoms.resinfo[resind].name),
+                                    *(atoms.atomtype[ii]), &dgsFactor))
+            {
+                dgsFactor = dgsDefault_;
+            }
+            dgsFactor_.push_back(dgsFactor);
+        }
+    }
+    if (ndefault > 0)
+    {
+        fprintf(stderr, "WARNING: could not find a Van der Waals radius for %d atoms\n", ndefault);
+    }
+    gmx_atomprop_destroy(aps);
+
+    ++resCount;
+
+    for (size_t g = 0; g < outputSel_.size(); ++g)
+    {
+        ConstArrayRef<int> outputIndices = outputSel_[g].atomIndices();
+        for (int i = 0, j = 0; i < outputSel_[g].posCount(); ++i)
+        {
+            while (j < surfaceSel_.posCount() && outputIndices[i] > atomIndices[j])
+            {
+                ++j;
+            }
+            if (j == surfaceSel_.posCount() || outputIndices[i] != atomIndices[j])
+            {
+                GMX_THROW(InconsistentInputError("Output selection is not a subset of the input selection"));
+            }
+            outputSel_[g].setOriginalId(i, j);
+        }
+    }
+
+    area_.setColumnCount(0, 1 + outputSel_.size());
+    {
+        AnalysisDataPlotModulePointer plotm(
+                new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnArea_);
+        plotm->setTitle("Solvent Accessible Surface");
+        plotm->setXAxisIsTime();
+        plotm->setYLabel("Area (nm\\S2\\N)");
+        plotm->appendLegend("Total");
+        for (size_t i = 0; i < outputSel_.size(); ++i)
+        {
+            plotm->appendLegend(outputSel_[i].name());
+        }
+        area_.addModule(plotm);
+    }
+
+    if (bResAt)
+    {
+        atomArea_.setDataSetCount(1 + outputSel_.size());
+        residueArea_.setDataSetCount(1 + outputSel_.size());
+        for (size_t i = 0; i <= outputSel_.size(); ++i)
+        {
+            atomArea_.setColumnCount(i, surfaceSel_.posCount());
+            residueArea_.setColumnCount(i, resCount);
+        }
+        {
+            AnalysisDataAverageModulePointer avem(new AnalysisDataAverageModule);
+            // TODO: Set the X axis values to real atom indices.
+            atomArea_.addModule(avem);
+            if (!fnAtomArea_.empty())
+            {
+                AnalysisDataPlotModulePointer plotm(
+                        new AnalysisDataPlotModule(settings.plotSettings()));
+                plotm->setFileName(fnAtomArea_);
+                plotm->setTitle("Area per residue over the trajectory");
+                plotm->setXLabel("Residue");
+                plotm->setYLabel("Area (nm\\S2\\N)");
+                plotm->setErrorsAsSeparateColumn(true);
+                plotm->appendLegend("Average (nm\\S2\\N)");
+                plotm->appendLegend("Standard deviation (nm\\S2\\N)");
+                avem->addModule(plotm);
+            }
+        }
+        {
+            AnalysisDataAverageModulePointer avem(new AnalysisDataAverageModule);
+            // TODO: Set the X axis values to real residue indices.
+            residueArea_.addModule(avem);
+            if (!fnResidueArea_.empty())
+            {
+                AnalysisDataPlotModulePointer plotm(
+                        new AnalysisDataPlotModule(settings.plotSettings()));
+                plotm->setFileName(fnResidueArea_);
+                plotm->setTitle("Area per atom over the trajectory");
+                plotm->setXLabel("Residue");
+                plotm->setYLabel("Area (nm\\S2\\N)");
+                plotm->setErrorsAsSeparateColumn(true);
+                plotm->appendLegend("Average (nm\\S2\\N)");
+                plotm->appendLegend("Standard deviation (nm\\S2\\N)");
+                avem->addModule(plotm);
+            }
+        }
+    }
+
+    if (!fnDGSolv_.empty())
+    {
+        dgSolv_.setColumnCount(0, outputSel_.size());
+        AnalysisDataPlotModulePointer plotm(
+                new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnArea_);
+        plotm->setTitle("Solvent Accessible Surface");
+        plotm->setXAxisIsTime();
+        plotm->setYLabel("D Gsolv");
+        for (size_t i = 0; i < outputSel_.size(); ++i)
+        {
+            plotm->appendLegend(outputSel_[i].name());
+        }
+        dgSolv_.addModule(plotm);
+    }
+
+    if (!fnVolume_.empty())
+    {
+        if (!top.hasFullTopology())
+        {
+            gmx_fatal(FARGS, "Need a tpr file for option -tv");
+        }
+        volume_.setColumnCount(0, 2);
+        AnalysisDataPlotModulePointer plotm(
+                new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnVolume_);
+        plotm->setTitle("Volume and Density");
+        plotm->setXAxisIsTime();
+        plotm->appendLegend("Volume (nm\\S3\\N)");
+        plotm->appendLegend("Density (g/l)");
+        volume_.addModule(plotm);
+    }
+}
+
+TrajectoryAnalysisModuleDataPointer Sas::startFrames(
+        const AnalysisDataParallelOptions &opt,
+        const SelectionCollection         &selections)
+{
+    return TrajectoryAnalysisModuleDataPointer(
+            new SasModuleData(this, opt, selections, surfaceSel_.posCount(),
+                              residueArea_.columnCount(0)));
+}
+
+/*! \brief
+ * Helper method to compute the areas for a single selection.
+ */
+void computeAreas(const Selection &surfaceSel, const Selection &sel,
+                  const real *atomAreas, const std::vector<real> &dgsFactor,
+                  real *totalAreaOut, real *dgsolvOut,
+                  AnalysisDataHandle atomAreaHandle,
+                  AnalysisDataHandle resAreaHandle,
+                  std::vector<real> *resAreaWork)
+{
+    const bool bResAt    = !resAreaWork->empty();
+    const bool bDGsolv   = !dgsFactor.empty();
+    real       totalArea = 0;
+    real       dgsolv    = 0;
+    if (bResAt)
+    {
+        std::fill(resAreaWork->begin(), resAreaWork->end(), 0.0);
+    }
+    for (int i = 0; i < sel.posCount(); ++i)
+    {
+        const int  ii = (sel != surfaceSel ? sel.position(i).mappedId() : i);
+        if (!surfaceSel.position(ii).selected())
+        {
+            if (sel != surfaceSel)
+            {
+                continue;
+            }
+            GMX_THROW(InconsistentInputError("Output selection is not a subset of the surface selection"));
+        }
+        const int  ri       = surfaceSel.position(ii).mappedId();
+        const real atomArea = atomAreas[ii];
+        totalArea += atomArea;
+        if (bResAt)
+        {
+            atomAreaHandle.setPoint(ii, atomArea);
+            (*resAreaWork)[ri] += atomArea;
+        }
+        if (bDGsolv)
+        {
+            dgsolv += atomArea * dgsFactor[ii];
+        }
+    }
+    if (bResAt)
+    {
+        for (size_t i = 0; i < (*resAreaWork).size(); ++i)
+        {
+            resAreaHandle.setPoint(i, (*resAreaWork)[i]);
+        }
+    }
+    *totalAreaOut = totalArea;
+    *dgsolvOut    = dgsolv;
+}
+
+void
+Sas::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                  TrajectoryAnalysisModuleData *pdata)
+{
+    AnalysisDataHandle   ah         = pdata->dataHandle(area_);
+    AnalysisDataHandle   dgh        = pdata->dataHandle(dgSolv_);
+    AnalysisDataHandle   aah        = pdata->dataHandle(atomArea_);
+    AnalysisDataHandle   rah        = pdata->dataHandle(residueArea_);
+    AnalysisDataHandle   vh         = pdata->dataHandle(volume_);
+    const Selection     &surfaceSel = pdata->parallelSelection(surfaceSel_);
+    const SelectionList &outputSel  = pdata->parallelSelections(outputSel_);
+    SasModuleData       &frameData  = *static_cast<SasModuleData *>(pdata);
+
+    const bool           bResAt    = !frameData.res_a_.empty();
+    const bool           bDGsol    = !dgsFactor_.empty();
+    const bool           bConnolly = (frnr == 0 && !fnConnolly_.empty());
+    int                  flag      = 0;
+    if (bResAt || !outputSel.empty())
+    {
+        flag |= FLAG_ATOM_AREA;
+    }
+    if (bConnolly)
+    {
+        flag |= FLAG_DOTS;
+    }
+    if (volume_.columnCount() > 0)
+    {
+        flag |= FLAG_VOLUME;
+    }
+
+    if (surfaceSel.isDynamic())
+    {
+        frameData.index_.clear();
+        for (int i = 0; i < surfaceSel.posCount(); ++i)
+        {
+            if (surfaceSel.position(i).selected())
+            {
+                frameData.index_.push_back(i);
+            }
+        }
+    }
+
+    real  totarea, totvolume;
+    real *area = NULL, *surfacedots = NULL;
+    int   nsurfacedots;
+    int   retval = nsc_dclm_pbc(surfaceSel.coordinates().data(), &radii_[0],
+                                surfaceSel.posCount(), ndots_, flag, &totarea,
+                                &area, &totvolume, &surfacedots, &nsurfacedots,
+                                &frameData.index_[0],
+                                pbc != NULL ? pbc->ePBC : epbcNONE,
+                                pbc != NULL ? pbc->box : NULL);
+    scoped_ptr_sfree areaGuard(area);
+    scoped_ptr_sfree dotsGuard(surfacedots);
+    if (retval != 0)
+    {
+        GMX_THROW(InternalError("nsc_dclm_pbc failed"));
+    }
+
+    if (bConnolly)
+    {
+        // This is somewhat nasty, as it modifies the atoms and symtab
+        // structures.  But since it is only used in the first frame, and no
+        // one else uses the topology after initialization, it may just work
+        // even with future parallelization.
+        connolly_plot(fnConnolly_.c_str(),
+                      nsurfacedots, surfacedots, fr.x, &top_->atoms,
+                      &top_->symtab, fr.ePBC, fr.box, bSave_);
+    }
+
+    ah.startFrame(frnr, fr.time);
+    if (bResAt)
+    {
+        aah.startFrame(frnr, fr.time);
+        rah.startFrame(frnr, fr.time);
+    }
+    if (bDGsol)
+    {
+        dgh.startFrame(frnr, fr.time);
+    }
+
+    ah.setPoint(0, totarea);
+
+    real totalArea, dgsolv;
+    if (bResAt)
+    {
+        computeAreas(surfaceSel, surfaceSel, area, dgsFactor_,
+                     &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
+    }
+    for (size_t g = 0; g < outputSel.size(); ++g)
+    {
+        if (bResAt)
+        {
+            aah.selectDataSet(g + 1);
+            rah.selectDataSet(g + 1);
+        }
+        computeAreas(surfaceSel, outputSel[g], area, dgsFactor_,
+                     &totalArea, &dgsolv, aah, rah, &frameData.res_a_);
+        ah.setPoint(g + 1, totalArea);
+        if (bDGsol)
+        {
+            dgh.setPoint(g, dgsolv);
+        }
+    }
+
+    ah.finishFrame();
+    if (bResAt)
+    {
+        aah.finishFrame();
+        rah.finishFrame();
+    }
+    if (bDGsol)
+    {
+        dgh.finishFrame();
+    }
+
+    if (vh.isValid())
+    {
+        real totmass = 0;
+        for (int i = 0; i < surfaceSel.posCount(); ++i)
+        {
+            totmass += surfaceSel.position(i).mass();
+        }
+        const real density = totmass*AMU/(totvolume*NANO*NANO*NANO);
+        vh.startFrame(frnr, fr.time);
+        vh.setPoint(0, totvolume);
+        vh.setPoint(1, density);
+        vh.finishFrame();
+    }
+}
+
+void
+Sas::finishAnalysis(int nframes)
+{
+    //if (bITP)
+    //{
+    //    fp3 = ftp2FILE(efITP, nfile, fnm, "w");
+    //    fprintf(fp3, "[ position_restraints ]\n"
+    //            "#define FCX 1000\n"
+    //            "#define FCY 1000\n"
+    //            "#define FCZ 1000\n"
+    //            "; Atom  Type  fx   fy   fz\n");
+    //    for (i = 0; i < nx[0]; i++)
+    //    {
+    //        if (atom_area[i] > minarea)
+    //        {
+    //            fprintf(fp3, "%5d   1     FCX  FCX  FCZ\n", ii+1);
+    //        }
+    //    }
+    //    ffclose(fp3);
+    //}
+}
+
+void
+Sas::writeOutput()
+{
+}
+
+}       // namespace
+
+const char SasInfo::name[]             = "sas_new";
+const char SasInfo::shortDescription[] =
+    "Compute solvent accessible surface area";
+
+TrajectoryAnalysisModulePointer SasInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new Sas);
+}
+
+} // namespace analysismodules
+
+} // namespace gmx

@@ -111,6 +111,9 @@ class TrajectoryAnalysisModuleData::Impl
              const AnalysisDataParallelOptions &opt,
              const SelectionCollection         &selections);
 
+        //! Checks whether the given AnalysisData has been initialized.
+        bool isInitialized(const AnalysisData &data) const;
+
         //! Keeps a data handle for each AnalysisData object.
         HandleContainer            handles_;
         //! Stores thread-local selections.
@@ -127,8 +130,28 @@ TrajectoryAnalysisModuleData::Impl::Impl(
     for (i = module->impl_->analysisDatasets_.begin();
          i != module->impl_->analysisDatasets_.end(); ++i)
     {
-        handles_.insert(std::make_pair(i->second, i->second->startData(opt)));
+        AnalysisDataHandle handle;
+        if (isInitialized(*i->second))
+        {
+            handle = i->second->startData(opt);
+        }
+        handles_.insert(std::make_pair(i->second, handle));
     }
+}
+
+bool TrajectoryAnalysisModuleData::Impl::isInitialized(
+        const AnalysisData &data) const
+{
+    for (int i = 0; i < data.dataSetCount(); ++i)
+    {
+        if (data.columnCount(i) > 0)
+        {
+            // If not all of the column counts are set, startData() in the
+            // constructor asserts, so that does not need to be checked here.
+            return true;
+        }
+    }
+    return false;
 }
 
 
@@ -156,7 +179,10 @@ void TrajectoryAnalysisModuleData::finishDataHandles()
     Impl::HandleContainer::iterator i;
     for (i = impl_->handles_.begin(); i != impl_->handles_.end(); ++i)
     {
-        i->second.finishData();
+        if (i->second.isValid())
+        {
+            i->second.finishData();
+        }
     }
     impl_->handles_.clear();
 }
