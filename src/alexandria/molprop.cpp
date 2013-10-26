@@ -12,40 +12,54 @@ const char *mpo_name[MPO_NR] =
     "potential", "dipole", "quadrupole", "polarizability", "energy" 
 };
 
-const char *cs_name[CS_NR] =
+const char *cs_name(CommunicationStatus cs)
 {
-    "recv_data", "recv_empty", "send_data", "send_empty" 
+    switch (cs) {
+    case CS_OK:
+        static const char *ok = "Communication OK";
+        return ok;
+    case CS_ERROR:
+        static const char *err = "Communication Error";
+        return err;
+    case CS_SEND_DATA:
+        static const char *sd = "Communication sent data";
+        return sd;
+    case CS_RECV_DATA:
+        static const char *rd = "Communication OK";
+        return rd;
+    default:
+        gmx_fatal(FARGS, "Unknown communication status %d", (int) cs);
+    }
 };
 
 #define GMX_SEND_DATA 19823
 #define GMX_SEND_DONE -666
-CommunicationStatus gmx_send_data(t_commrec *cr,int dest)
+static CommunicationStatus gmx_send_data(t_commrec *cr,int dest)
 {
-    gmx_send_int(cr,dest,GMX_SEND_DATA);
+    gmx_send_int(cr, dest, GMX_SEND_DATA);
     
-    return CS_SEND_DATA;
+    return CS_OK;
 }
 
-CommunicationStatus gmx_send_done(t_commrec *cr,int dest)
+static CommunicationStatus gmx_send_done(t_commrec *cr,int dest)
 {
-    gmx_send_int(cr,dest,GMX_SEND_DONE);
+    gmx_send_int(cr, dest, GMX_SEND_DONE);
     
-    return CS_SEND_DATA;
+    return CS_OK;
 }
 
-CommunicationStatus gmx_recv_data(t_commrec *cr,int src)
+static CommunicationStatus gmx_recv_data_(t_commrec *cr,int src, int line)
 {
     int kk = gmx_recv_int(cr,src);
     
-    if (kk == GMX_SEND_DATA)
-        return CS_RECV_DATA;
-    else { 
-        if (kk != GMX_SEND_DONE)
-            fprintf(stderr,"Received %d in gmx_recv_data. Was expecting either %d or %d\n.",kk,
-                    (int)GMX_SEND_DATA,(int)GMX_SEND_DONE);
-        return CS_RECV_EMPTY;
+    if ((kk != GMX_SEND_DATA) && (kk != GMX_SEND_DONE))
+    {
+        gmx_fatal(FARGS, "Received %d in gmx_recv_data (line %d). Was expecting either %d or %d\n.",kk, line,
+                  (int)GMX_SEND_DATA, (int)GMX_SEND_DONE);
     }
+    return CS_OK;
 }
+#define gmx_recv_data(cr,src) gmx_recv_data_(cr,src,__LINE__)
 #undef GMX_SEND_DATA
 #undef GMX_SEND_DONE
     
@@ -126,6 +140,7 @@ void MolProp::AddBond(Bond b)
     else if ((NULL != debug) && (bi->GetBondOrder() != b.GetBondOrder()))
     {
         fprintf(debug,"Different bond orders in molecule %s\n",GetMolname().c_str());
+        fflush(debug);
     }
 }
 
@@ -426,6 +441,7 @@ void MolProp::Merge(MolProp& src)
         {
             fprintf(debug,"Not overriding multiplicity to %d when merging since it is %d (%s)\n",
                     smult,GetMultiplicity(),src.GetMolname().c_str());
+            fflush(debug);
         }
     }
     q = GetCharge();
@@ -440,6 +456,7 @@ void MolProp::Merge(MolProp& src)
         {
             fprintf(debug,"Not overriding charge to %g when merging since it is %g (%s)\n",
                     sq,q,GetMolname().c_str());
+            fflush(debug);
         }
     }
   
@@ -624,6 +641,7 @@ bool MolProp::GenerateComposition(gmx_poldata_t pd)
                 fprintf(debug," %s:%d",ani->GetAtom().c_str(),ani->GetNumber());
             }
             fprintf(debug,"\n");
+            fflush(debug);
         }
         return true;
     }
@@ -699,14 +717,20 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
         if (debug) 
         {
             if ((mform.size() > 0) && (strcasecmp(formula,mform.c_str()) != 0))
+            {
                 fprintf(debug,"Formula '%s' does match '%s' based on composition for %s.\n",
                         mform.c_str(),formula,GetMolname().c_str());
+                fflush(debug);
+            }
         }
         SetFormula(formula);
     }
     else if ((mform.size() == 0) && debug)
+    {
         fprintf(debug,"Empty composition and formula for %s\n",
                 GetMolname().c_str());
+        fflush(debug);
+    }
     sfree(ncomp);
     
     return (strlen(formula) > 0);
@@ -731,6 +755,7 @@ bool MolProp::HasComposition(std::string composition)
     {
         fprintf(debug,"No composition %s for molecule %s\n",composition.c_str(),
                 GetMolname().c_str());
+        fflush(debug);
     }
               
     return bComp;   
@@ -993,10 +1018,15 @@ CommunicationStatus GenericProperty::Send(t_commrec *cr,int dest)
     CommunicationStatus cs;
     
     cs = gmx_send_data(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_str(cr,dest,_type.c_str());
         gmx_send_str(cr,dest,_unit.c_str());
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send GenericProperty, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1006,10 +1036,15 @@ CommunicationStatus GenericProperty::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
     
     cs = gmx_recv_data(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _type.assign(gmx_recv_str(cr,src));
         _unit.assign(gmx_recv_str(cr,src));
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to receive GenericProperty, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1019,11 +1054,11 @@ CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr,int dest)
     CommunicationStatus cs;
     
     cs = GenericProperty::Send(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_send_data(cr,dest);
     }
-    if (CS_SEND_DATA == cs) 
+    if (CS_OK == cs) 
     {
         gmx_send_double(cr,dest,_xx);
         gmx_send_double(cr,dest,_yy);
@@ -1031,6 +1066,11 @@ CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr,int dest)
         gmx_send_double(cr,dest,_xy);
         gmx_send_double(cr,dest,_xz);
         gmx_send_double(cr,dest,_yz);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send MolecularQuadrupole, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1040,11 +1080,11 @@ CommunicationStatus MolecularQuadrupole::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
 
     cs = GenericProperty::Receive(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_recv_data(cr,src);    
     }
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _xx    = gmx_recv_double(cr,src);
         _yy    = gmx_recv_double(cr,src);
@@ -1052,6 +1092,11 @@ CommunicationStatus MolecularQuadrupole::Receive(t_commrec *cr,int src)
         _xy    = gmx_recv_double(cr,src);
         _xz    = gmx_recv_double(cr,src);
         _yz    = gmx_recv_double(cr,src);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to received MolecularQuadrupole, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1061,14 +1106,19 @@ CommunicationStatus MolecularEnergy::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
 
     cs = GenericProperty::Receive(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_recv_data(cr,src);    
     }
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _value = gmx_recv_double(cr,src);
         _error = gmx_recv_double(cr,src);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to receive MolecularEnergy, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1078,14 +1128,19 @@ CommunicationStatus MolecularEnergy::Send(t_commrec *cr,int dest)
     CommunicationStatus cs;
     
     cs = GenericProperty::Send(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_send_data(cr,dest);
     }
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_double(cr,dest,_value);
         gmx_send_double(cr,dest,_error);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send MolecularEnergy, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1095,11 +1150,16 @@ CommunicationStatus Bond::Send(t_commrec *cr,int dest)
     CommunicationStatus cs;
     
     cs = gmx_send_data(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_int(cr,dest,_ai);
         gmx_send_int(cr,dest,_aj);
         gmx_send_int(cr,dest,_bondorder);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send Bond, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1109,11 +1169,16 @@ CommunicationStatus Bond::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
     
     cs = gmx_recv_data(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _ai = gmx_recv_int(cr,src);
         _aj = gmx_recv_int(cr,src);
         _bondorder = gmx_recv_int(cr,src);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to receive Bond, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1123,17 +1188,22 @@ CommunicationStatus MolecularDipPolar::Send(t_commrec *cr,int dest)
     CommunicationStatus cs;
     
     cs = GenericProperty::Send(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_send_data(cr,dest);
     }
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_double(cr,dest,_x);
         gmx_send_double(cr,dest,_y);
         gmx_send_double(cr,dest,_z);
         gmx_send_double(cr,dest,_aver);
         gmx_send_double(cr,dest,_error);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send MolecularDipPolar, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1143,17 +1213,22 @@ CommunicationStatus MolecularDipPolar::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
     
     cs = GenericProperty::Receive(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_recv_data(cr,src);    
     }
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _x     = gmx_recv_double(cr,src);
         _y     = gmx_recv_double(cr,src);
         _z     = gmx_recv_double(cr,src);
         _aver  = gmx_recv_double(cr,src);
         _error = gmx_recv_double(cr,src);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to receive MolecularDipPolar, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1163,8 +1238,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
     
     cs = gmx_recv_data(cr,src);    
-    
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         //! Receive literature reference
         _reference    = gmx_recv_str(cr,src);
@@ -1173,37 +1247,48 @@ CommunicationStatus Experiment::Receive(t_commrec *cr,int src)
         _conformation = gmx_recv_str(cr,src);
 
         //! Receive polarizabilities
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {
             MolecularDipPolar mdp;
             
             cs = mdp.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            if (CS_OK == cs)
+            {
                 AddPolar(mdp);
+            }
         }
+        while (CS_OK == cs);
         
         //! Receive dipoles
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {
             MolecularDipPolar mdp;
             
             cs = mdp.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            if (CS_OK == cs)
+            {
                 AddDipole(mdp);
+            }
         }
+        while (CS_OK == cs);
 
         //! Receive energies     
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {
             MolecularEnergy me;
             
             cs = me.Receive(cr,src);
-            if  (CS_RECV_DATA == cs)
+            if  (CS_OK == cs)
+            {
                 AddEnergy(me);
+            }
         }
+        while (CS_OK == cs);
+    }
+    if ((CS_OK != cs) && (NULL != debug))
+    {
+        fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1211,12 +1296,9 @@ CommunicationStatus Experiment::Receive(t_commrec *cr,int src)
 CommunicationStatus Experiment::Send(t_commrec *cr,int dest)
 {
     CommunicationStatus cs;
-    MolecularQuadrupoleIterator qi;
-    MolecularDipPolarIterator dpi;
-    MolecularEnergyIterator mei;
-    
+
     cs = gmx_send_data(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         //! Send literature reference
         gmx_send_str(cr,dest,_reference.c_str());
@@ -1225,25 +1307,30 @@ CommunicationStatus Experiment::Send(t_commrec *cr,int dest)
         gmx_send_str(cr,dest,_conformation.c_str());
     
         //! Send polarizabilities
-        for(dpi=BeginPolar(); (CS_SEND_DATA == cs) && (dpi<EndPolar()); dpi++)
+        for(MolecularDipPolarIterator dpi=BeginPolar(); (CS_OK == cs) && (dpi<EndPolar()); dpi++)
         {
             cs = dpi->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
         
         //! Send dipoles
-        for(dpi=BeginDipole(); (CS_SEND_DATA == cs) && (dpi<EndDipole()); dpi++)
+        for(MolecularDipPolarIterator dpi=BeginDipole(); (CS_OK == cs) && (dpi<EndDipole()); dpi++)
         {
             cs = dpi->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
         
         //! Send energies
-        for(mei=BeginEnergy(); (CS_SEND_DATA == cs) && (mei<EndEnergy()); mei++)
+        for(MolecularEnergyIterator mei=BeginEnergy(); (CS_OK == cs) && (mei<EndEnergy()); mei++)
         {    
             cs = mei->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
+    }
+    if ((CS_OK != cs) && (NULL != debug))
+    {
+        fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1253,8 +1340,7 @@ CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
     
     cs = gmx_recv_data(cr,src);
-    
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _xyz_unit.assign(gmx_recv_str(cr,src));
         _V_unit.assign(gmx_recv_str(cr,src));
@@ -1264,6 +1350,11 @@ CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr,int src)
         _z = gmx_recv_double(cr,src);
         _V = gmx_recv_double(cr,src);
     }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to receive ElectrostaticPotential, status %s\n", cs_name(cs));
+        fflush(debug);
+    }
     return cs;
 }
 
@@ -1272,8 +1363,7 @@ CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr,int dest)
     CommunicationStatus cs;
     
     cs = gmx_send_data(cr,dest);
-    
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_str(cr,dest,_xyz_unit.c_str());
         gmx_send_str(cr,dest,_V_unit.c_str());
@@ -1282,6 +1372,11 @@ CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr,int dest)
         gmx_send_double(cr,dest,_y);
         gmx_send_double(cr,dest,_z);
         gmx_send_double(cr,dest,_V);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send ElectrostaticPotential, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1292,13 +1387,18 @@ CommunicationStatus AtomicCharge::Receive(t_commrec *cr,int src)
     
     cs = GenericProperty::Receive(cr,src);
     
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_recv_data(cr,src);
     }
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _q = gmx_recv_double(cr,src);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to receive AtomicCharge, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1309,13 +1409,18 @@ CommunicationStatus AtomicCharge::Send(t_commrec *cr,int dest)
     
     cs = GenericProperty::Send(cr,dest);
     
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_send_data(cr,dest);
     }
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_double(cr,dest,_q);
+    }
+    else if (NULL != debug)
+    {
+        fprintf(debug, "Trying to send AtomicCharge, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1325,7 +1430,7 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
     
     cs = gmx_recv_data(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _name.assign(gmx_recv_str(cr,src));
         _obtype.assign(gmx_recv_str(cr,src));
@@ -1335,15 +1440,23 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr,int src)
         _y = gmx_recv_double(cr,src);
         _z = gmx_recv_double(cr,src);
         
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do 
         {
             AtomicCharge aq;
             
             cs = aq.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            if (CS_OK == cs)
+            {
                 AddCharge(aq);
+            }
         }
+        while (CS_OK == cs);
+        
+    }
+    if (NULL != debug)
+    {
+        fprintf(debug, "Received CalcAtom, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1354,7 +1467,7 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr,int dest)
     AtomicChargeIterator qi;
     
     cs = gmx_send_data(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_str(cr,dest,_name.c_str());
         gmx_send_str(cr,dest,_obtype.c_str());
@@ -1364,11 +1477,16 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr,int dest)
         gmx_send_double(cr,dest,_y);
         gmx_send_double(cr,dest,_z);
         
-        for(qi=BeginQ(); (CS_SEND_DATA == cs) && (qi<EndQ()); qi++)
+        for(qi=BeginQ(); (CS_OK == cs) && (qi<EndQ()); qi++)
         {
             cs = qi->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
+    }
+    if (NULL != debug)
+    {
+        fprintf(debug, "Sent CalcAtom, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1381,36 +1499,45 @@ CommunicationStatus Calculation::Receive(t_commrec *cr,int src)
     
     cs = Experiment::Receive(cr,src);
     
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_recv_data(cr,src);
     }
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _program.assign(gmx_recv_str(cr,src));
         _method.assign(gmx_recv_str(cr,src));
         _basisset.assign(gmx_recv_str(cr,src));
         _datafile.assign(gmx_recv_str(cr,src));
 
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {
             ElectrostaticPotential ep;
             
             cs = ep.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            if (CS_OK == cs)
+            {
                 AddPotential(ep);
+            }
         }
+        while (CS_OK == cs);
         
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {
             CalcAtom ca;
             
             cs = ca.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            if (CS_OK == cs)
+            {
                 AddAtom(ca);
+            }
         }
+        while (CS_OK == cs);
+    }
+    if (NULL != debug)
+    {
+        fprintf(debug, "Received Calculation, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1423,28 +1550,33 @@ CommunicationStatus Calculation::Send(t_commrec *cr,int dest)
     
     cs = Experiment::Send(cr,dest);
     
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         cs = gmx_send_data(cr,dest);
     }
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_str(cr,dest,_program.c_str());
         gmx_send_str(cr,dest,_method.c_str());
         gmx_send_str(cr,dest,_basisset.c_str());
         gmx_send_str(cr,dest,_datafile.c_str());
 
-        for(epi=BeginPotential(); (CS_SEND_DATA == cs) && (epi<EndPotential()); epi++)
+        for(epi=BeginPotential(); (CS_OK == cs) && (epi<EndPotential()); epi++)
         {
             cs = epi->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
         
-        for(cai=BeginAtom(); (CS_SEND_DATA == cs) && (cai<EndAtom()); cai++)
+        for(cai=BeginAtom(); (CS_OK == cs) && (cai<EndAtom()); cai++)
         {
             cs = cai->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
+    }
+    if (NULL != debug)
+    {
+        fprintf(debug, "Sent Calculation, status %s\n", cs_name(cs));
+        fflush(debug);
     }
     return cs;
 }
@@ -1454,10 +1586,16 @@ CommunicationStatus AtomNum::Send(t_commrec *cr,int dest)
     CommunicationStatus cs;
     
     cs = gmx_send_data(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_str(cr,dest,_catom.c_str());
         gmx_send_int(cr,dest,_cnumber);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Sent AtomNum %s %d, status %s\n",
+                    _catom.c_str(), _cnumber, cs_name(cs));
+            fflush(debug);
+        }
     }
     return cs;
 }
@@ -1467,28 +1605,38 @@ CommunicationStatus AtomNum::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
     
     cs = gmx_recv_data(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _catom.assign(gmx_recv_str(cr,src));
         _cnumber = gmx_recv_int(cr,src);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Received AtomNum %s %d, status %s\n", 
+                    _catom.c_str(), _cnumber, cs_name(cs));
+            fflush(debug);
+        }
     }
     return cs;
 }
 
 CommunicationStatus MolecularComposition::Send(t_commrec *cr,int dest)
 {
-    AtomNumIterator ani;
-    CommunicationStatus cs;
+    CommunicationStatus cs = gmx_send_data(cr,dest);
     
-    cs = gmx_send_data(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_str(cr,dest,_compname.c_str());
-        for(ani=BeginAtomNum(); (CS_SEND_DATA == cs) && (ani<EndAtomNum()); ani++)
+        for(AtomNumIterator ani=BeginAtomNum(); (CS_OK == cs) && (ani<EndAtomNum()); ani++)
         {
             cs = ani->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Sent MolecularComposition %s, status %s\n", 
+                    _compname.c_str(), cs_name(cs));
+            fflush(debug);
+        }
     }
     return cs;
 }
@@ -1498,19 +1646,26 @@ CommunicationStatus MolecularComposition::Receive(t_commrec *cr,int src)
     CommunicationStatus cs;
     
     cs = gmx_recv_data(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         _compname.assign(gmx_recv_str(cr,src));
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        CommunicationStatus cs2;
+        do
         {
             AtomNum an;
             
-            cs = an.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            cs2 = an.Receive(cr,src);
+            if (CS_OK == cs2)
             {
                 AddAtom(an);
             }
+        }
+        while (CS_OK == cs2);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Received MolecularComposition %s, status %s\n", 
+                    _compname.c_str(), cs_name(cs));
+            fflush(debug);
         }
     }
     return cs;
@@ -1527,7 +1682,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr,int dest)
     
     /* Generic stuff */
     cs = gmx_send_data(cr,dest);
-    if (CS_SEND_DATA == cs)
+    if (CS_OK == cs)
     {
         gmx_send_double(cr,dest,_mass);
         gmx_send_int(cr,dest,_charge);
@@ -1540,53 +1695,65 @@ CommunicationStatus MolProp::Send(t_commrec *cr,int dest)
         gmx_send_str(cr,dest,_inchi.c_str());
         
         /* Bonds */
-        for(bi=BeginBond(); (CS_SEND_DATA == cs) && (bi<EndBond()); bi++)
+        for(bi=BeginBond(); (CS_OK == cs) && (bi<EndBond()); bi++)
         {
             cs = bi->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
 
         /* Composition */
-        for(mci=BeginMolecularComposition(); (CS_SEND_DATA == cs) && (mci<EndMolecularComposition()); mci++)
+        for(mci=BeginMolecularComposition(); (CS_OK == cs) && (mci<EndMolecularComposition()); mci++)
         {
-            mci->Send(cr,dest);
+            cs = mci->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
 
         /* Categories */
-        for(si=BeginCategory(); (CS_SEND_DATA == cs) && (si<EndCategory()); si++)
+        for(si=BeginCategory(); (CS_OK == cs) && (si<EndCategory()); si++)
         {
             cs = gmx_send_data(cr,dest);
-            if (CS_SEND_DATA == cs)
+            if (CS_OK == cs)
+            {
                 gmx_send_str(cr,dest,si->c_str());
+                if (NULL != debug)
+                {
+                    fprintf(debug, "Sent category %s\n", si->c_str());
+                    fflush(debug);
+                }
+            }
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
 
         /* Experiments */
-        for(ei=BeginExperiment(); (CS_SEND_DATA == cs) && (ei<EndExperiment()); ei++)
+        for(ei=BeginExperiment(); (CS_OK == cs) && (ei<EndExperiment()); ei++)
         {
             cs = ei->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
 
         /* Calculations */
-        for(ci=BeginCalculation(); (CS_SEND_DATA == cs) && (ci<EndCalculation()); ci++)
+        for(ci=BeginCalculation(); (CS_OK == cs) && (ci<EndCalculation()); ci++)
         {
             ci->Send(cr,dest);
         }
-        gmx_send_done(cr,dest);
+        cs = gmx_send_done(cr,dest);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Sent MolProp %s, status %s\n", 
+                    GetMolname().c_str(), cs_name(cs));
+            fflush(debug);
+        }
     }
     return cs;   
 }
 
 CommunicationStatus MolProp::Receive(t_commrec *cr,int src)
 {
-    char   *ptr;
     CommunicationStatus cs;
     
     /* Generic stuff */
     cs = gmx_recv_data(cr,src);
-    if (CS_RECV_DATA == cs)
+    if (CS_OK == cs)
     {
         //! Receive mass and more
         _mass = gmx_recv_double(cr,src);
@@ -1600,59 +1767,90 @@ CommunicationStatus MolProp::Receive(t_commrec *cr,int src)
         _inchi.assign(gmx_recv_str(cr,src));
     
         //! Receive Bonds
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {   
             Bond b;
             
             cs = b.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            if (CS_OK == cs)
+            {
                 AddBond(b);
+            }
         }
+        while (CS_OK == cs);
     
         //! Receive Compositions
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {   
             MolecularComposition mc;
             
-            cs = mc.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            cs = mc.Receive(cr, src);
+            if (CS_OK == cs)
+            {
                 AddComposition(mc);
+            }
         }
+        while (CS_OK == cs);
         
         //! Receive Categories
-        while (NULL != (ptr = gmx_recv_str(cr,src)))
+        do 
         {
-            AddCategory(ptr);
-            sfree(ptr);
+            cs = gmx_recv_data(cr, src);
+            if (CS_OK == cs)
+            {
+                char *ptr = gmx_recv_str(cr,src);
+                if (NULL != ptr)
+                {
+                    AddCategory(ptr);
+                    if (NULL != debug)
+                    {
+                        fprintf(debug, "Received a category %s\n", ptr);
+                        fflush(debug);
+                    }
+                    sfree(ptr);
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "A category was promised but I got a NULL pointer");
+                }
+            }
         }
-
+        while (CS_OK == cs);
+        
         //! Receive Experiments
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {   
             Experiment ex;
             
             cs = ex.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            if (CS_OK == cs)
+            {
                 AddExperiment(ex);
+            }
         }
+        while (CS_OK == cs);
 
         //! Receive Calculations
-        cs = gmx_recv_data(cr,src);
-        while (CS_RECV_DATA == cs)
+        do
         {   
             Calculation cc;
             
             cs = cc.Receive(cr,src);
-            if (CS_RECV_DATA == cs)
+            if (CS_OK == cs)
+            {
                 AddCalculation(cc);
+            }
+        }
+        while (CS_OK == cs);
+        if (NULL != debug) 
+        {
+            fprintf(debug,"Reveived %d calculations from %d for mol %s\n",
+                    NCalculation(),src,GetMolname().c_str());
+            fprintf(debug, "Received MolProp %s, status %s\n",
+                    GetMolname().c_str(), cs_name(cs));
+            fflush(debug);
         }
     }
-    if (NULL != debug) 
-        fprintf(debug,"Reveived %d calculations from %d for mol %s\n",
-                NCalculation(),src,GetMolname().c_str());
     return cs;
 }
 

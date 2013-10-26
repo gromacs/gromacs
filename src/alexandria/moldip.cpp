@@ -588,14 +588,31 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                     {
                         mpnew.eSupp = eSupportRemote;
                         /* Send another molecule */
+                        if (NULL != debug)
+                        {
+                            fprintf(debug, "Going to send %s to cpu %d\n", 
+                                    mpi->GetMolname().c_str(), dest);
+                        }
                         gmx_send_int(_cr, dest, 1);
-                        mpi->Send(_cr, dest);
-                        imm = (immStatus) gmx_recv_int(_cr, dest);
+                        CommunicationStatus cs = mpi->Send(_cr, dest);
+                        if (CS_OK != cs)
+                        {
+                            imm = immCommProblem;
+                        }
+                        else 
+                        {
+                            imm = (immStatus)gmx_recv_int(_cr, dest);
+                        }
                         if (imm != immOK)
                         {
                             fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
                                     mpnew.GetMolname().c_str(), dest, alexandria::immsg(imm));
                         }
+                        else if (NULL != debug) 
+                        {
+                            fprintf(debug, "Succesfully beamed over %s\n", mpi->GetMolname().c_str());
+                        }
+                        
                     }
                     else
                     {
@@ -605,6 +622,11 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                     {
                         _mymol.push_back(mpnew);
                         n++;
+                        if (NULL != debug)
+                        {
+                            fprintf(debug, "Added %s, n = %d\n",
+                                    mpnew.GetMolname().c_str(), n);
+                        }
                     }
                 }
                 if ((immOK != imm) && (NULL != debug))
@@ -627,13 +649,31 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
     }
     else
     {
+        /***********************************************
+         *
+         *           S L A V E   N O D E S
+         *
+         ***********************************************/
         n = 0;
         while (gmx_recv_int(_cr, 0) == 1)
         {
             /* Receive another molecule */
             alexandria::MyMol mpnew;
 
-            mpnew.Receive(_cr, 0);
+            if (NULL != debug) 
+            {
+                fprintf(debug, "Going to retrieve new molecule\n");
+            }
+            CommunicationStatus cs = mpnew.Receive(_cr, 0);
+            if (CS_OK != cs)
+            {
+                imm = immCommProblem;
+            }
+            else if (NULL != debug) 
+            {
+                fprintf(debug, "Succesfully retrieved %s\n", mpnew.GetMolname().c_str());
+                fflush(debug);
+            }
 
             imm = mpnew.GenerateTopology(_atomprop, _pd, lot, _iModel, _bPol, nexcl);
 
@@ -673,6 +713,10 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             if (immOK == imm)
             {
                 _mymol.push_back(mpnew);
+                if (NULL != debug)
+                {
+                    fprintf(debug, "Added molecule %s\n", mpnew.GetMolname().c_str());
+                }
             }
             gmx_send_int(_cr, 0, imm);
         }

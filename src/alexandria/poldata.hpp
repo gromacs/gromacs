@@ -404,4 +404,6 @@ extern int gmx_poldata_list_epref(gmx_poldata_t pd,ChargeGenerationModel *eqg_mo
 
 extern void gmx_poldata_comm_eemprops(gmx_poldata_t pd,t_commrec *cr);
 
+extern void gmx_poldata_comm_force_parameters(gmx_poldata_t pd,t_commrec *cr);
+
 #endif

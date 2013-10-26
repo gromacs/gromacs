@@ -1045,9 +1045,19 @@ double OptParam::CalcDeviation()
     {
         return _ener[ermsTOT];
     }
+    if (NULL == debug)
+    {
+        fprintf(debug, "Begin communicating force parameters\n");
+        fflush(debug);
+    }
     if (PAR(_cr))
     {
-        gmx_poldata_comm_eemprops(_pd, _cr);
+        gmx_poldata_comm_force_parameters(_pd, _cr);
+    }
+    if (NULL == debug)
+    {
+        fprintf(debug, "Done communicating force parameters\n");
+        fflush(debug);
     }
     init_nrnb(&my_nrnb);
 
@@ -1413,13 +1423,13 @@ void OptParam::Optimize(FILE *fp, FILE *fplog,
                 _param[k] = _best[k];
             }
 
-            EnergyFunction(_best);
+            double emin = EnergyFunction(_best);
             if (fplog)
             {
                 fprintf(fplog, "\nMinimum chi^2 value during optimization: %.3f.\n",
                         chi2_min);
-                fprintf(fplog, "\nMinimum RMSD value during optimization: %.3f.\n",
-                        _ener[ermsTOT]);
+                fprintf(fplog, "\nMinimum RMSD value during optimization: %.3f (kJ/mol).\n",
+                        emin);
                 //print_opt(fplog,opt);
             }
         }
@@ -1683,7 +1693,9 @@ int main(int argc, char *argv[])
     time_t                my_t;
     char                  pukestr[STRLEN];
     opt_mask_t           *omt = NULL;
-
+    int                   nnodes, myid;
+    
+    myid = gmx_setup(&argc, &argv, &nnodes);
     cr = init_par();
     if (MASTER(cr)) 
     {

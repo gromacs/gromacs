@@ -49,14 +49,13 @@ extern const char *mpo_name[MPO_NR];
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum CommunicationStatus { CS_RECV_DATA, 
-                           CS_RECV_EMPTY, 
-                           CS_SEND_DATA, 
-                           CS_SEND_EMPTY,
-                           CS_NR };
+enum CommunicationStatus { CS_OK = 6666,
+                           CS_ERROR = 7777,
+                           CS_SEND_DATA = 8888, 
+                           CS_RECV_DATA = 9999 };
 
 //! String describing the CommunicationStatus enum elements
-extern const char *cs_name[CS_NR];
+extern const char *cs_name(CommunicationStatus cs);
 
 /*! \brief
  * Contains all classes related to alexandria force field tools

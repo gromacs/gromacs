@@ -178,7 +178,7 @@ const char *immsg(immStatus imm)
         "Charge generation", "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)",
         "Not in training set", "No experimental data",
-        "Generating shells", "Generating bonds"
+        "Generating shells", "Generating bonds", "Communicating MolProp"
     };
 
     return msg[imm];
