@@ -658,31 +658,32 @@ typedef struct _stwknb {
     real dot;
 } Neighb;
 
-int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
+int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
                  int  densit, int mode,
                  real *value_of_area, real **at_area,
                  real *value_of_vol,
                  real **lidots, int *nu_dots,
                  atom_id index[], int ePBC, matrix box)
 {
-    int      iat, i, ii, iii, ix, iy, iz, ixe, ixs, iye, iys, ize, izs, i_ac;
-    int      jat, j, jj, jjj, jx, jy, jz;
-    int      distribution;
-    int      l;
-    int      maxnei, nnei, last, maxdots = 0;
-    int     *wkdot = NULL, *wkbox = NULL, *wkat1 = NULL, *wkatm = NULL;
-    Neighb  *wknb, *ctnb;
-    int      iii1, iii2, iiat, lfnr = 0, i_at, j_at;
-    real     dx, dy, dz, dd, ai, aisq, ajsq, aj, as, a;
-    real     xi, yi, zi, xs = 0., ys = 0., zs = 0.;
-    real     dotarea, area, vol = 0.;
-    real    *xus, *dots = NULL, *atom_area = NULL;
-    int      nxbox, nybox, nzbox, nxy, nxyz;
-    real     xmin = 0, ymin = 0, zmin = 0, xmax, ymax, zmax, ra2max, d, *pco;
+    int         iat, i, ii, iii, ix, iy, iz, ixe, ixs, iye, iys, ize, izs, i_ac;
+    int         jat, j, jj, jjj, jx, jy, jz;
+    int         distribution;
+    int         l;
+    int         maxnei, nnei, last, maxdots = 0;
+    int        *wkdot = NULL, *wkbox = NULL, *wkat1 = NULL, *wkatm = NULL;
+    Neighb     *wknb, *ctnb;
+    int         iii1, iii2, iiat, lfnr = 0, i_at, j_at;
+    real        dx, dy, dz, dd, ai, aisq, ajsq, aj, as, a;
+    real        xi, yi, zi, xs = 0., ys = 0., zs = 0.;
+    real        dotarea, area, vol = 0.;
+    real       *xus, *dots = NULL, *atom_area = NULL;
+    int         nxbox, nybox, nzbox, nxy, nxyz;
+    real        xmin = 0, ymin = 0, zmin = 0, xmax, ymax, zmax, ra2max, d;
+    const real *pco;
     /* Added DvdS 2006-07-19 */
-    t_pbc    pbc;
-    rvec     ddx, *x = NULL;
-    int      iat_xx, jat_xx;
+    t_pbc       pbc;
+    rvec        ddx, *x = NULL;
+    int         iat_xx, jat_xx;
 
     distribution = unsp_type(densit);
     if (distribution != -last_unsp || last_cubus != 4 ||

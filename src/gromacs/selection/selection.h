@@ -301,6 +301,17 @@ class Selection
          */
         explicit Selection(internal::SelectionData *sel) : sel_(sel) {}
 
+        //! Returns whether two selection objects wrap the same selection.
+        bool operator==(const Selection &other) const
+        {
+            return sel_ == other.sel_;
+        }
+        //! Returns whether two selection objects wrap different selections.
+        bool operator!=(const Selection &other) const
+        {
+            return !operator==(other);
+        }
+
         //! Returns the name of the selection.
         const char *name() const  { return data().name(); }
         //! Returns the string that was parsed to produce this selection.
