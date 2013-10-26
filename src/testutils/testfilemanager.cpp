@@ -164,6 +164,11 @@ std::string TestFileManager::getTemporaryFilePath(const char *suffix)
     return filename;
 }
 
+std::string TestFileManager::getTemporaryFilePath(const std::string &suffix)
+{
+    return getTemporaryFilePath(suffix.c_str());
+}
+
 std::string TestFileManager::getTestSpecificFileName(const char *suffix)
 {
     const ::testing::TestInfo *test_info =
