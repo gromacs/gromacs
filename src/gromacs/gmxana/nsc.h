@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,14 +40,17 @@
 #define FLAG_VOLUME     02
 #define FLAG_ATOM_AREA  04
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-
-extern int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
-                        int  densit, int mode,
-                        real *value_of_area, real **at_area,
-                        real *value_of_vol,
-                        real **lidots, int *nu_dots,
-                        atom_id index[], int ePBC, matrix box);
+int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
+                 int  densit, int mode,
+                 real *value_of_area, real **at_area,
+                 real *value_of_vol,
+                 real **lidots, int *nu_dots,
+                 atom_id index[], int ePBC, matrix box);
 
 /*
     User notes :
@@ -135,3 +138,7 @@ extern int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
    }
 
  */
+
+#ifdef __cplusplus
+}
+#endif
