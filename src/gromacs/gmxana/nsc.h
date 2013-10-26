@@ -38,14 +38,17 @@
 #define FLAG_VOLUME     02
 #define FLAG_ATOM_AREA  04
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-
-extern int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
-                        int  densit, int mode,
-                        real *value_of_area, real **at_area,
-                        real *value_of_vol,
-                        real **lidots, int *nu_dots,
-                        atom_id index[], int ePBC, matrix box);
+int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
+                 int  densit, int mode,
+                 real *value_of_area, real **at_area,
+                 real *value_of_vol,
+                 real **lidots, int *nu_dots,
+                 atom_id index[], int ePBC, matrix box);
 
 /*
     User notes :
@@ -133,3 +136,7 @@ extern int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
    }
 
  */
+
+#ifdef __cplusplus
+}
+#endif
