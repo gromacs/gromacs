@@ -1,0 +1,1090 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">sasa -surface all -output 'y &gt; 1.5'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="area">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">11.879948</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">7.934162</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="atomarea">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">155</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">0.034175</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.238918</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.238918</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.167415</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.034175</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.034175</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.238918</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.102524</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.033483</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.402124</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.033483</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.133932</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.100449</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.150954</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.301348</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.401797</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">155</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">0.034175</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.238918</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.238918</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.167415</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.133932</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.100449</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.150954</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.301348</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.401797</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="resarea">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">10</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">2.077971</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.568826</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.955484</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.394034</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.978806</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.780711</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.818123</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.212531</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.854661</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.238796</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">10</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">2.077971</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.568826</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.955484</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.632297</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.212531</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.460627</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.026424</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>
