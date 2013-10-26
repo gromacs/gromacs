@@ -48,6 +48,7 @@
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/cmdlinetest.h"
@@ -159,6 +160,16 @@ AbstractTrajectoryAnalysisModuleTestFixture::setOutputFile(const char *option,
     impl_->cmdline_.append(option);
     impl_->cmdline_.append(fullFilename);
     impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename));
+}
+
+void
+AbstractTrajectoryAnalysisModuleTestFixture::setOutputFileNoTest(
+        const char *option, const char *extension)
+{
+    std::string fullFilename = impl_->tempFiles_.getTemporaryFilePath(
+                formatString("%d.%s", impl_->cmdline_.argc(), extension));
+    impl_->cmdline_.append(option);
+    impl_->cmdline_.append(fullFilename);
 }
 
 void
