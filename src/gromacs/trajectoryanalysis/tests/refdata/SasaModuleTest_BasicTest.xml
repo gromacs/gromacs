@@ -1,0 +1,1735 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">sasa -surface all -output 'name N CA C O H'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="area">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">11.879948</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2.219834</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="atomarea">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">155</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">0.034175</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.238918</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.238918</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.167415</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.034175</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.034175</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.238918</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.102524</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.033483</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.402124</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.033483</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.133932</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.100449</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.150954</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.301348</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.159279</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.185825</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.212372</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.401797</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">155</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">0.034175</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.106186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053093</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.037738</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.167415</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.132732</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.033483</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.026546</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.033483</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.100449</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.301348</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.113215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.401797</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="resarea">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">10</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">2.077971</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.568826</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.955484</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.394034</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.978806</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.780711</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.818123</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.212531</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.854661</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.238796</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">10</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">0.235073</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.307084</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.258247</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.166215</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.060030</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.100449</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.200899</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.301348</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.515012</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="volume">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">2.744169</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">698.859863</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <String Name="-q"><![CDATA[
+TITLE     Connolly Dot Surface Generated by gmx sasa
+REMARK    THIS IS A SIMULATION BOX
+CRYST1   59.062   68.451   30.517  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM      1  N   LYS     1      35.360  22.340 -11.980  1.00  0.00            
+ATOM      2  H1  LYS     1      36.120  22.880 -12.360  1.00  0.00            
+ATOM      3  H2  LYS     1      34.700  22.140 -12.700  1.00  0.00            
+ATOM      4  H3  LYS     1      34.920  22.860 -11.250  1.00  0.00            
+ATOM      5  CA  LYS     1      35.890  21.070 -11.430  1.00  0.00            
+ATOM      6  HA  LYS     1      36.330  20.550 -12.160  1.00  0.00            
+ATOM      7  CB  LYS     1      36.870  21.440 -10.310  1.00  0.00            
+ATOM      8  HB1 LYS     1      37.630  21.950 -10.700  1.00  0.00            
+ATOM      9  HB2 LYS     1      36.390  22.010  -9.640  1.00  0.00            
+ATOM     10  CG  LYS     1      37.450  20.250  -9.560  1.00  0.00            
+ATOM     11  HG1 LYS     1      36.760  19.890  -8.940  1.00  0.00            
+ATOM     12  HG2 LYS     1      37.700  19.540 -10.230  1.00  0.00            
+ATOM     13  CD  LYS     1      38.690  20.650  -8.770  1.00  0.00            
+ATOM     14  HD1 LYS     1      39.450  20.830  -9.400  1.00  0.00            
+ATOM     15  HD2 LYS     1      38.490  21.470  -8.240  1.00  0.00            
+ATOM     16  CE  LYS     1      39.060  19.510  -7.840  1.00  0.00            
+ATOM     17  HE1 LYS     1      38.410  19.460  -7.080  1.00  0.00            
+ATOM     18  HE2 LYS     1      39.060  18.640  -8.330  1.00  0.00            
+ATOM     19  NZ  LYS     1      40.420  19.770  -7.300  1.00  0.00            
+ATOM     20  HZ1 LYS     1      40.690  19.030  -6.680  1.00  0.00            
+ATOM     21  HZ2 LYS     1      41.080  19.820  -8.060  1.00  0.00            
+ATOM     22  HZ3 LYS     1      40.420  20.640  -6.800  1.00  0.00            
+ATOM     23  C   LYS     1      34.740  20.260 -10.840  1.00  0.00            
+ATOM     24  O   LYS     1      33.950  20.810 -10.080  1.00  0.00            
+ATOM     25  N   VAL     2      34.740  18.960 -11.040  1.00  0.00            
+ATOM     26  H   VAL     2      35.360  18.600 -11.740  1.00  0.00            
+ATOM     27  CA  VAL     2      33.900  18.000 -10.330  1.00  0.00            
+ATOM     28  HA  VAL     2      33.170  18.520  -9.900  1.00  0.00            
+ATOM     29  CB  VAL     2      33.140  17.030 -11.230  1.00  0.00            
+ATOM     30  HB  VAL     2      33.860  16.520 -11.700  1.00  0.00            
+ATOM     31  CG1 VAL     2      32.250  16.080 -10.430  1.00  0.00            
+ATOM     32 1HG1 VAL     2      31.770  15.470 -11.060  1.00  0.00            
+ATOM     33 2HG1 VAL     2      32.820  15.550  -9.810  1.00  0.00            
+ATOM     34 3HG1 VAL     2      31.580  16.610  -9.910  1.00  0.00            
+ATOM     35  CG2 VAL     2      32.290  17.710 -12.290  1.00  0.00            
+ATOM     36 1HG2 VAL     2      31.830  17.020 -12.840  1.00  0.00            
+ATOM     37 2HG2 VAL     2      31.620  18.300 -11.850  1.00  0.00            
+ATOM     38 3HG2 VAL     2      32.880  18.270 -12.880  1.00  0.00            
+ATOM     39  C   VAL     2      34.800  17.310  -9.290  1.00  0.00            
+ATOM     40  O   VAL     2      35.760  16.610  -9.660  1.00  0.00            
+ATOM     41  N   PHE     3      34.490  17.550  -8.040  1.00  0.00            
+ATOM     42  H   PHE     3      33.750  18.190  -7.840  1.00  0.00            
+ATOM     43  CA  PHE     3      35.190  16.900  -6.920  1.00  0.00            
+ATOM     44  HA  PHE     3      36.150  16.970  -7.170  1.00  0.00            
+ATOM     45  CB  PHE     3      34.970  17.630  -5.590  1.00  0.00            
+ATOM     46  HB1 PHE     3      34.050  18.020  -5.580  1.00  0.00            
+ATOM     47  HB2 PHE     3      35.060  16.980  -4.840  1.00  0.00            
+ATOM     48  CG  PHE     3      35.940  18.740  -5.380  1.00  0.00            
+ATOM     49  CD1 PHE     3      35.670  20.050  -5.800  1.00  0.00            
+ATOM     50  HD1 PHE     3      34.810  20.250  -6.270  1.00  0.00            
+ATOM     51  CD2 PHE     3      37.000  18.560  -4.470  1.00  0.00            
+ATOM     52  HD2 PHE     3      37.130  17.660  -4.050  1.00  0.00            
+ATOM     53  CE1 PHE     3      36.580  21.080  -5.570  1.00  0.00            
+ATOM     54  HE1 PHE     3      36.480  21.950  -6.040  1.00  0.00            
+ATOM     55  CE2 PHE     3      37.870  19.590  -4.160  1.00  0.00            
+ATOM     56  HE2 PHE     3      38.660  19.420  -3.570  1.00  0.00            
+ATOM     57  CZ  PHE     3      37.640  20.870  -4.670  1.00  0.00            
+ATOM     58  HZ  PHE     3      38.220  21.640  -4.390  1.00  0.00            
+ATOM     59  C   PHE     3      34.740  15.440  -6.770  1.00  0.00            
+ATOM     60  O   PHE     3      33.520  15.160  -6.860  1.00  0.00            
+ATOM     61  N   GLY     4      35.720  14.640  -6.330  1.00  0.00            
+ATOM     62  H   GLY     4      36.670  14.950  -6.320  1.00  0.00            
+ATOM     63  CA  GLY     4      35.370  13.280  -5.870  1.00  0.00            
+ATOM     64  HA1 GLY     4      34.620  12.920  -6.430  1.00  0.00            
+ATOM     65  HA2 GLY     4      36.160  12.680  -5.940  1.00  0.00            
+ATOM     66  C   GLY     4      34.920  13.420  -4.420  1.00  0.00            
+ATOM     67  O   GLY     4      35.300  14.400  -3.780  1.00  0.00            
+ATOM     68  N   ARG     5      34.050  12.540  -3.970  1.00  0.00            
+ATOM     69  H   ARG     5      33.710  11.840  -4.600  1.00  0.00            
+ATOM     70  CA  ARG     5      33.560  12.540  -2.590  1.00  0.00            
+ATOM     71  HA  ARG     5      32.980  13.340  -2.520  1.00  0.00            
+ATOM     72  CB  ARG     5      32.760  11.260  -2.330  1.00  0.00            
+ATOM     73  HB1 ARG     5      32.000  11.220  -2.970  1.00  0.00            
+ATOM     74  HB2 ARG     5      33.360  10.470  -2.470  1.00  0.00            
+ATOM     75  CG  ARG     5      32.210  11.200  -0.920  1.00  0.00            
+ATOM     76  HG1 ARG     5      32.970  11.170  -0.270  1.00  0.00            
+ATOM     77  HG2 ARG     5      31.650  12.010  -0.750  1.00  0.00            
+ATOM     78  CD  ARG     5      31.380  10.000  -0.720  1.00  0.00            
+ATOM     79  HD1 ARG     5      31.040   9.990   0.220  1.00  0.00            
+ATOM     80  HD2 ARG     5      30.600  10.050  -1.350  1.00  0.00            
+ATOM     81  NE  ARG     5      32.060   8.750  -0.960  1.00  0.00            
+ATOM     82  HE  ARG     5      32.020   8.400  -1.890  1.00  0.00            
+ATOM     83  CZ  ARG     5      32.730   8.010  -0.100  1.00  0.00            
+ATOM     84  NH1 ARG     5      32.840   8.330   1.190  1.00  0.00            
+ATOM     85 1HH1 ARG     5      32.390   9.160   1.530  1.00  0.00            
+ATOM     86 2HH1 ARG     5      33.360   7.750   1.810  1.00  0.00            
+ATOM     87  NH2 ARG     5      33.250   6.840  -0.530  1.00  0.00            
+ATOM     88 1HH2 ARG     5      33.110   6.550  -1.470  1.00  0.00            
+ATOM     89 2HH2 ARG     5      33.760   6.260   0.100  1.00  0.00            
+ATOM     90  C   ARG     5      34.670  12.730  -1.560  1.00  0.00            
+ATOM     91  O   ARG     5      34.670  13.650  -0.700  1.00  0.00            
+ATOM     92  N   CYS     6      35.670  11.850  -1.610  1.00  0.00            
+ATOM     93  H   CYS     6      35.670  11.160  -2.330  1.00  0.00            
+ATOM     94  CA  CYS     6      36.780  11.870  -0.650  1.00  0.00            
+ATOM     95  HA  CYS     6      36.310  12.020   0.220  1.00  0.00            
+ATOM     96  CB  CYS     6      37.490  10.530  -0.620  1.00  0.00            
+ATOM     97  HB1 CYS     6      37.700  10.340  -1.580  1.00  0.00            
+ATOM     98  HB2 CYS     6      38.340  10.720  -0.130  1.00  0.00            
+ATOM     99  SG  CYS     6      36.540   9.200   0.140  1.00  0.00            
+ATOM    100  C   CYS     6      37.750  13.050  -0.780  1.00  0.00            
+ATOM    101  O   CYS     6      38.150  13.610   0.260  1.00  0.00            
+ATOM    102  N   GLU     7      37.860  13.480  -2.020  1.00  0.00            
+ATOM    103  H   GLU     7      37.400  13.000  -2.760  1.00  0.00            
+ATOM    104  CA  GLU     7      38.680  14.690  -2.310  1.00  0.00            
+ATOM    105  HA  GLU     7      39.600  14.550  -1.930  1.00  0.00            
+ATOM    106  CB  GLU     7      38.780  14.850  -3.820  1.00  0.00            
+ATOM    107  HB1 GLU     7      39.230  14.020  -4.170  1.00  0.00            
+ATOM    108  HB2 GLU     7      37.850  14.890  -4.170  1.00  0.00            
+ATOM    109  CG  GLU     7      39.540  16.050  -4.380  1.00  0.00            
+ATOM    110  HG1 GLU     7      39.130  16.870  -3.990  1.00  0.00            
+ATOM    111  HG2 GLU     7      40.490  15.980  -4.070  1.00  0.00            
+ATOM    112  CD  GLU     7      39.580  16.240  -5.870  1.00  0.00            
+ATOM    113  OE1 GLU     7      38.670  15.640  -6.490  1.00  0.00            
+ATOM    114  OE2 GLU     7      40.420  16.950  -6.380  1.00  0.00            
+ATOM    115  C   GLU     7      38.050  15.930  -1.660  1.00  0.00            
+ATOM    116  O   GLU     7      38.740  16.730  -1.010  1.00  0.00            
+ATOM    117  N   LEU     8      36.740  16.050  -1.820  1.00  0.00            
+ATOM    118  H   LEU     8      36.260  15.350  -2.350  1.00  0.00            
+ATOM    119  CA  LEU     8      35.960  17.160  -1.250  1.00  0.00            
+ATOM    120  HA  LEU     8      36.400  18.010  -1.560  1.00  0.00            
+ATOM    121  CB  LEU     8      34.530  17.170  -1.810  1.00  0.00            
+ATOM    122  HB1 LEU     8      34.570  17.220  -2.810  1.00  0.00            
+ATOM    123  HB2 LEU     8      34.060  16.330  -1.530  1.00  0.00            
+ATOM    124  CG  LEU     8      33.720  18.350  -1.310  1.00  0.00            
+ATOM    125  HG  LEU     8      33.780  18.420  -0.310  1.00  0.00            
+ATOM    126  CD1 LEU     8      34.300  19.660  -1.840  1.00  0.00            
+ATOM    127 1HD1 LEU     8      33.760  20.430  -1.500  1.00  0.00            
+ATOM    128 2HD1 LEU     8      35.240  19.750  -1.530  1.00  0.00            
+ATOM    129 3HD1 LEU     8      34.270  19.650  -2.840  1.00  0.00            
+ATOM    130  CD2 LEU     8      32.250  18.140  -1.600  1.00  0.00            
+ATOM    131 1HD2 LEU     8      31.720  18.930  -1.260  1.00  0.00            
+ATOM    132 2HD2 LEU     8      32.110  18.050  -2.580  1.00  0.00            
+ATOM    133 3HD2 LEU     8      31.930  17.310  -1.140  1.00  0.00            
+ATOM    134  C   LEU     8      36.050  17.130   0.270  1.00  0.00            
+ATOM    135  O   LEU     8      36.160  18.170   0.920  1.00  0.00            
+ATOM    136  N   ALA     9      35.750  15.980   0.830  1.00  0.00            
+ATOM    137  H   ALA     9      35.460  15.220   0.240  1.00  0.00            
+ATOM    138  CA  ALA     9      35.840  15.760   2.280  1.00  0.00            
+ATOM    139  HA  ALA     9      35.080  16.260   2.690  1.00  0.00            
+ATOM    140  CB  ALA     9      35.660  14.290   2.620  1.00  0.00            
+ATOM    141  HB1 ALA     9      35.720  14.160   3.610  1.00  0.00            
+ATOM    142  HB2 ALA     9      34.760  13.980   2.300  1.00  0.00            
+ATOM    143  HB3 ALA     9      36.370  13.750   2.180  1.00  0.00            
+ATOM    144  C   ALA     9      37.140  16.310   2.840  1.00  0.00            
+ATOM    145  O   ALA     9      37.150  16.980   3.900  1.00  0.00            
+ATOM    146  N   ALA    10      38.270  15.980   2.200  1.00  0.00            
+ATOM    147  H   ALA    10      38.200  15.390   1.400  1.00  0.00            
+ATOM    148  CA  ALA    10      39.610  16.430   2.620  1.00  0.00            
+ATOM    149  HA  ALA    10      39.690  16.190   3.580  1.00  0.00            
+ATOM    150  CB  ALA    10      40.710  15.710   1.840  1.00  0.00            
+ATOM    151  HB1 ALA    10      41.600  16.030   2.150  1.00  0.00            
+ATOM    152  HB2 ALA    10      40.640  14.720   2.010  1.00  0.00            
+ATOM    153  HB3 ALA    10      40.600  15.890   0.860  1.00  0.00            
+ATOM    154  C   ALA    10      39.740  17.940   2.460  1.00  0.00            
+ATOM    155  O   ALA    10      40.190  18.500   3.470  1.00  0.00            
+ATOM    156  DOT DOT    11      38.077  20.035   4.776  1.00  0.00            
+ATOM    157  DOT DOT    11      39.304  21.228   4.018  1.00  0.00            
+ATOM    158  DOT DOT    11      39.642  20.186   5.790  1.00  0.00            
+ATOM    159  DOT DOT    11      41.624  17.458   5.790  1.00  0.00            
+ATOM    160  DOT DOT    11      41.624  19.542   5.790  1.00  0.00            
+ATOM    161  DOT DOT    11      40.190  18.500   6.390  1.00  0.00            
+ATOM    162  DOT DOT    11      41.076  21.228   2.922  1.00  0.00            
+ATOM    163  DOT DOT    11      40.997  20.984   4.776  1.00  0.00            
+ATOM    164  DOT DOT    11      43.058  18.500   2.922  1.00  0.00            
+ATOM    165  DOT DOT    11      42.802  18.500   4.776  1.00  0.00            
+ATOM    166  DOT DOT    11      42.303  20.035   2.164  1.00  0.00            
+ATOM    167  DOT DOT    11      42.510  20.186   4.018  1.00  0.00            
+ATOM    168  DOT DOT    11      38.883  20.577   1.074  1.00  0.00            
+ATOM    169  DOT DOT    11      40.322  19.730  -0.003  1.00  0.00            
+ATOM    170  DOT DOT    11      41.983  19.570   1.074  1.00  0.00            
+ATOM    171  DOT DOT    11      42.178  15.890  -1.206  1.00  0.00            
+ATOM    172  DOT DOT    11      42.481  17.257  -0.303  1.00  0.00            
+ATOM    173  DOT DOT    11      39.851  12.291   2.498  1.00  0.00            
+ATOM    174  DOT DOT    11      40.152  13.219   4.076  1.00  0.00            
+ATOM    175  DOT DOT    11      41.128  13.219  -0.056  1.00  0.00            
+ATOM    176  DOT DOT    11      41.429  12.291   1.522  1.00  0.00            
+ATOM    177  DOT DOT    11      41.359  12.508   3.173  1.00  0.00            
+ATOM    178  DOT DOT    11      41.917  13.792   4.076  1.00  0.00            
+ATOM    179  DOT DOT    11      42.521  13.353   0.847  1.00  0.00            
+ATOM    180  DOT DOT    11      42.706  13.219   2.498  1.00  0.00            
+ATOM    181  DOT DOT    11      42.877  15.102   4.216  1.00  0.00            
+ATOM    182  DOT DOT    11      42.877  16.958   4.216  1.00  0.00            
+ATOM    183  DOT DOT    11      43.666  14.529   2.638  1.00  0.00            
+ATOM    184  DOT DOT    11      44.154  16.030   1.662  1.00  0.00            
+ATOM    185  DOT DOT    11      43.926  16.030   3.313  1.00  0.00            
+ATOM    186  DOT DOT    11      43.481  17.397   0.987  1.00  0.00            
+ATOM    187  DOT DOT    11      43.666  17.531   2.638  1.00  0.00            
+ATOM    188  DOT DOT    11      42.232  14.604   4.303  1.00  0.00            
+ATOM    189  DOT DOT    11      42.953  14.080   0.454  1.00  0.00            
+ATOM    190  DOT DOT    11      43.173  13.920   2.422  1.00  0.00            
+ATOM    191  DOT DOT    11      38.901  13.761   4.068  1.00  0.00            
+ATOM    192  DOT DOT    11      39.202  14.689   5.646  1.00  0.00            
+ATOM    193  DOT DOT    11      40.409  13.978   4.743  1.00  0.00            
+ATOM    194  DOT DOT    11      40.967  15.262   5.646  1.00  0.00            
+ATOM    195  DOT DOT    11      39.690  16.190   6.180  1.00  0.00            
+ATOM    196  DOT DOT    11      42.016  16.190   4.743  1.00  0.00            
+ATOM    197  DOT DOT    11      35.377  16.980   6.220  1.00  0.00            
+ATOM    198  DOT DOT    11      35.037  18.515   5.206  1.00  0.00            
+ATOM    199  DOT DOT    11      36.602  15.294   6.220  1.00  0.00            
+ATOM    200  DOT DOT    11      36.264  19.708   4.448  1.00  0.00            
+ATOM    201  DOT DOT    11      36.602  18.666   6.220  1.00  0.00            
+ATOM    202  DOT DOT    11      38.584  15.938   6.220  1.00  0.00            
+ATOM    203  DOT DOT    11      38.584  18.022   6.220  1.00  0.00            
+ATOM    204  DOT DOT    11      37.150  16.980   6.820  1.00  0.00            
+ATOM    205  DOT DOT    11      37.957  19.464   5.206  1.00  0.00            
+ATOM    206  DOT DOT    11      37.089  11.538   3.343  1.00  0.00            
+ATOM    207  DOT DOT    11      32.879  12.613   3.463  1.00  0.00            
+ATOM    208  DOT DOT    11      32.206  13.980   2.788  1.00  0.00            
+ATOM    209  DOT DOT    11      32.694  15.481   1.812  1.00  0.00            
+ATOM    210  DOT DOT    11      33.971  11.551   2.788  1.00  0.00            
+ATOM    211  DOT DOT    11      33.839  12.793   4.773  1.00  0.00            
+ATOM    212  DOT DOT    11      34.142  14.160   5.676  1.00  0.00            
+ATOM    213  DOT DOT    11      35.232  12.659   5.676  1.00  0.00            
+ATOM    214  DOT DOT    11      35.232  15.661   5.676  1.00  0.00            
+ATOM    215  DOT DOT    11      36.439  11.948   4.773  1.00  0.00            
+ATOM    216  DOT DOT    11      36.997  13.232   5.676  1.00  0.00            
+ATOM    217  DOT DOT    11      35.720  14.160   6.210  1.00  0.00            
+ATOM    218  DOT DOT    11      34.719  11.394   3.202  1.00  0.00            
+ATOM    219  DOT DOT    11      36.517  11.653   4.006  1.00  0.00            
+ATOM    220  DOT DOT    11      32.526  16.260   3.178  1.00  0.00            
+ATOM    221  DOT DOT    11      33.502  16.260   4.756  1.00  0.00            
+ATOM    222  DOT DOT    11      32.754  16.260   1.527  1.00  0.00            
+ATOM    223  DOT DOT    11      33.014  17.761   2.202  1.00  0.00            
+ATOM    224  DOT DOT    11      33.199  17.627   3.853  1.00  0.00            
+ATOM    225  DOT DOT    11      34.291  18.689   3.178  1.00  0.00            
+ATOM    226  DOT DOT    11      34.047  19.705   2.226  1.00  0.00            
+ATOM    227  DOT DOT    11      35.274  20.898   1.468  1.00  0.00            
+ATOM    228  DOT DOT    11      35.612  19.856   3.240  1.00  0.00            
+ATOM    229  DOT DOT    11      37.046  20.898   0.372  1.00  0.00            
+ATOM    230  DOT DOT    11      36.967  20.654   2.226  1.00  0.00            
+ATOM    231  DOT DOT    11      38.273  19.705  -0.386  1.00  0.00            
+ATOM    232  DOT DOT    11      29.864  15.809  -1.628  1.00  0.00            
+ATOM    233  DOT DOT    11      30.049  15.943   0.023  1.00  0.00            
+ATOM    234  DOT DOT    11      29.376  17.310  -0.652  1.00  0.00            
+ATOM    235  DOT DOT    11      30.352  17.310   0.926  1.00  0.00            
+ATOM    236  DOT DOT    11      31.141  14.881  -0.652  1.00  0.00            
+ATOM    237  DOT DOT    11      31.442  15.809   0.926  1.00  0.00            
+ATOM    238  DOT DOT    11      31.930  17.310   1.460  1.00  0.00            
+ATOM    239  DOT DOT    11      29.784  18.050  -3.743  1.00  0.00            
+ATOM    240  DOT DOT    11      31.391  15.838  -3.743  1.00  0.00            
+ATOM    241  DOT DOT    11      30.833  17.122  -4.646  1.00  0.00            
+ATOM    242  DOT DOT    11      30.833  18.978  -4.646  1.00  0.00            
+ATOM    243  DOT DOT    11      31.391  20.262  -3.743  1.00  0.00            
+ATOM    244  DOT DOT    11      29.166  18.930  -0.772  1.00  0.00            
+ATOM    245  DOT DOT    11      30.142  18.930   0.806  1.00  0.00            
+ATOM    246  DOT DOT    11      29.654  20.431  -1.748  1.00  0.00            
+ATOM    247  DOT DOT    11      29.839  20.297  -0.097  1.00  0.00            
+ATOM    248  DOT DOT    11      31.001  21.142  -2.423  1.00  0.00            
+ATOM    249  DOT DOT    11      30.931  21.359  -0.772  1.00  0.00            
+ATOM    250  DOT DOT    11      31.232  20.431   0.806  1.00  0.00            
+ATOM    251  DOT DOT    11      29.205  18.140  -1.018  1.00  0.00            
+ATOM    252  DOT DOT    11      30.368  18.140   0.863  1.00  0.00            
+ATOM    253  DOT DOT    11      29.477  18.140  -2.986  1.00  0.00            
+ATOM    254  DOT DOT    11      31.393  15.503  -2.986  1.00  0.00            
+ATOM    255  DOT DOT    11      33.551  21.862  -4.003  1.00  0.00            
+ATOM    256  DOT DOT    11      35.959  21.962  -0.367  1.00  0.00            
+ATOM    257  DOT DOT    11      37.306  21.251  -1.042  1.00  0.00            
+ATOM    258  DOT DOT    11      31.694  21.931  -1.988  1.00  0.00            
+ATOM    259  DOT DOT    11      31.879  21.797  -0.337  1.00  0.00            
+ATOM    260  DOT DOT    11      33.041  22.642  -2.663  1.00  0.00            
+ATOM    261  DOT DOT    11      32.971  22.859  -1.012  1.00  0.00            
+ATOM    262  DOT DOT    11      33.272  21.931   0.566  1.00  0.00            
+ATOM    263  DOT DOT    11      34.549  22.859  -1.988  1.00  0.00            
+ATOM    264  DOT DOT    11      34.479  22.642  -0.337  1.00  0.00            
+ATOM    265  DOT DOT    11      35.241  22.556  -2.422  1.00  0.00            
+ATOM    266  DOT DOT    11      32.202  18.420   1.756  1.00  0.00            
+ATOM    267  DOT DOT    11      33.292  19.921   1.756  1.00  0.00            
+ATOM    268  DOT DOT    11      41.608  16.730  -1.558  1.00  0.00            
+ATOM    269  DOT DOT    11      40.853  18.265  -2.316  1.00  0.00            
+ATOM    270  DOT DOT    11      41.060  18.416  -0.462  1.00  0.00            
+ATOM    271  DOT DOT    11      40.968  15.264  -8.700  1.00  0.00            
+ATOM    272  DOT DOT    11      42.533  15.415  -7.686  1.00  0.00            
+ATOM    273  DOT DOT    11      42.740  15.264  -5.832  1.00  0.00            
+ATOM    274  DOT DOT    11      42.193  16.950  -8.700  1.00  0.00            
+ATOM    275  DOT DOT    11      43.288  16.950  -6.928  1.00  0.00            
+ATOM    276  DOT DOT    11      43.032  16.950  -5.074  1.00  0.00            
+ATOM    277  DOT DOT    11      39.218  13.954  -8.810  1.00  0.00            
+ATOM    278  DOT DOT    11      39.556  12.912  -7.038  1.00  0.00            
+ATOM    279  DOT DOT    11      38.670  15.640  -9.410  1.00  0.00            
+ATOM    280  DOT DOT    11      40.783  14.105  -7.796  1.00  0.00            
+ATOM    281  DOT DOT    11      40.521  13.344  -6.452  1.00  0.00            
+ATOM    282  DOT DOT    11      41.767  16.908  -2.004  1.00  0.00            
+ATOM    283  DOT DOT    11      42.371  14.613  -5.233  1.00  0.00            
+ATOM    284  DOT DOT    11      42.556  14.479  -3.582  1.00  0.00            
+ATOM    285  DOT DOT    11      43.044  15.980  -4.558  1.00  0.00            
+ATOM    286  DOT DOT    11      42.816  15.980  -2.907  1.00  0.00            
+ATOM    287  DOT DOT    11      42.556  17.481  -3.582  1.00  0.00            
+ATOM    288  DOT DOT    11      39.718  12.519  -6.236  1.00  0.00            
+ATOM    289  DOT DOT    11      40.019  11.591  -4.658  1.00  0.00            
+ATOM    290  DOT DOT    11      41.111  12.653  -5.333  1.00  0.00            
+ATOM    291  DOT DOT    11      41.296  12.519  -3.682  1.00  0.00            
+ATOM    292  DOT DOT    11      41.481  13.183  -3.093  1.00  0.00            
+ATOM    293  DOT DOT    11      41.666  13.049  -1.442  1.00  0.00            
+ATOM    294  DOT DOT    11      42.154  14.550  -2.418  1.00  0.00            
+ATOM    295  DOT DOT    11      40.470  11.924   0.808  1.00  0.00            
+ATOM    296  DOT DOT    11      35.940   7.352   2.683  1.00  0.00            
+ATOM    297  DOT DOT    11      35.940  11.048   2.683  1.00  0.00            
+ATOM    298  DOT DOT    11      37.140   7.352  -2.403  1.00  0.00            
+ATOM    299  DOT DOT    11      37.511   6.211  -0.460  1.00  0.00            
+ATOM    300  DOT DOT    11      37.424   6.478   1.571  1.00  0.00            
+ATOM    301  DOT DOT    11      38.112   8.058   2.683  1.00  0.00            
+ATOM    302  DOT DOT    11      38.112  10.342   2.683  1.00  0.00            
+ATOM    303  DOT DOT    11      36.540   9.200   3.340  1.00  0.00            
+ATOM    304  DOT DOT    11      38.856   7.518  -1.291  1.00  0.00            
+ATOM    305  DOT DOT    11      39.083   7.352   0.740  1.00  0.00            
+ATOM    306  DOT DOT    11      39.617   9.792   1.936  1.00  0.00            
+ATOM    307  DOT DOT    11      39.617  11.648   1.936  1.00  0.00            
+ATOM    308  DOT DOT    11      38.340  10.720   2.470  1.00  0.00            
+ATOM    309  DOT DOT    11      40.406   9.219   0.358  1.00  0.00            
+ATOM    310  DOT DOT    11      40.894  10.720  -0.618  1.00  0.00            
+ATOM    311  DOT DOT    11      40.666  10.720   1.033  1.00  0.00            
+ATOM    312  DOT DOT    11      38.188   8.839  -3.646  1.00  0.00            
+ATOM    313  DOT DOT    11      38.489   7.911  -2.068  1.00  0.00            
+ATOM    314  DOT DOT    11      37.700  10.340  -4.180  1.00  0.00            
+ATOM    315  DOT DOT    11      39.581   8.973  -2.743  1.00  0.00            
+ATOM    316  DOT DOT    11      39.278  10.340  -3.646  1.00  0.00            
+ATOM    317  DOT DOT    11      40.254  10.340  -2.068  1.00  0.00            
+ATOM    318  DOT DOT    11      36.158   9.659  -4.396  1.00  0.00            
+ATOM    319  DOT DOT    11      32.557  15.185   0.606  1.00  0.00            
+ATOM    320  DOT DOT    11      31.879   4.893   1.263  1.00  0.00            
+ATOM    321  DOT DOT    11      32.971   3.831   0.588  1.00  0.00            
+ATOM    322  DOT DOT    11      33.272   4.759   2.166  1.00  0.00            
+ATOM    323  DOT DOT    11      34.549   3.831  -0.388  1.00  0.00            
+ATOM    324  DOT DOT    11      34.479   4.048   1.263  1.00  0.00            
+ATOM    325  DOT DOT    11      35.037   5.332   2.166  1.00  0.00            
+ATOM    326  DOT DOT    11      35.641   4.893  -1.063  1.00  0.00            
+ATOM    327  DOT DOT    11      35.826   4.759   0.588  1.00  0.00            
+ATOM    328  DOT DOT    11      31.044   5.049  -1.958  1.00  0.00            
+ATOM    329  DOT DOT    11      32.391   4.338  -2.633  1.00  0.00            
+ATOM    330  DOT DOT    11      31.833   5.622  -3.536  1.00  0.00            
+ATOM    331  DOT DOT    11      33.598   5.049  -3.536  1.00  0.00            
+ATOM    332  DOT DOT    11      33.899   4.121  -1.958  1.00  0.00            
+ATOM    333  DOT DOT    11      33.110   6.550  -4.070  1.00  0.00            
+ATOM    334  DOT DOT    11      34.991   5.183  -2.633  1.00  0.00            
+ATOM    335  DOT DOT    11      34.688   6.550  -3.536  1.00  0.00            
+ATOM    336  DOT DOT    11      30.906   5.137  -1.083  1.00  0.00            
+ATOM    337  DOT DOT    11      31.115   5.289   0.789  1.00  0.00            
+ATOM    338  DOT DOT    11      35.385   5.289  -1.849  1.00  0.00            
+ATOM    339  DOT DOT    11      31.479   6.383   2.973  1.00  0.00            
+ATOM    340  DOT DOT    11      32.571   5.321   2.298  1.00  0.00            
+ATOM    341  DOT DOT    11      32.872   6.249   3.876  1.00  0.00            
+ATOM    342  DOT DOT    11      34.079   5.538   2.973  1.00  0.00            
+ATOM    343  DOT DOT    11      34.637   6.822   3.876  1.00  0.00            
+ATOM    344  DOT DOT    11      34.637   8.678   3.876  1.00  0.00            
+ATOM    345  DOT DOT    11      33.360   7.750   4.410  1.00  0.00            
+ATOM    346  DOT DOT    11      35.426   6.249   2.298  1.00  0.00            
+ATOM    347  DOT DOT    11      35.686   7.750   2.973  1.00  0.00            
+ATOM    348  DOT DOT    11      30.812   9.160   3.596  1.00  0.00            
+ATOM    349  DOT DOT    11      31.902  10.661   3.596  1.00  0.00            
+ATOM    350  DOT DOT    11      33.667  10.088   3.596  1.00  0.00            
+ATOM    351  DOT DOT    11      32.390   9.160   4.130  1.00  0.00            
+ATOM    352  DOT DOT    11      33.109  11.372   2.693  1.00  0.00            
+ATOM    353  DOT DOT    11      30.705   6.779   2.509  1.00  0.00            
+ATOM    354  DOT DOT    11      30.267   6.220  -0.682  1.00  0.00            
+ATOM    355  DOT DOT    11      30.487   6.380   1.286  1.00  0.00            
+ATOM    356  DOT DOT    11      29.954   6.899  -2.378  1.00  0.00            
+ATOM    357  DOT DOT    11      30.743   7.472  -3.956  1.00  0.00            
+ATOM    358  DOT DOT    11      32.020   8.400  -4.490  1.00  0.00            
+ATOM    359  DOT DOT    11      29.716   7.047  -1.513  1.00  0.00            
+ATOM    360  DOT DOT    11      28.534   8.549  -1.838  1.00  0.00            
+ATOM    361  DOT DOT    11      28.046  10.050  -0.862  1.00  0.00            
+ATOM    362  DOT DOT    11      28.274  10.050  -2.513  1.00  0.00            
+ATOM    363  DOT DOT    11      28.534  11.551  -1.838  1.00  0.00            
+ATOM    364  DOT DOT    11      29.323   9.122  -3.416  1.00  0.00            
+ATOM    365  DOT DOT    11      29.323  10.978  -3.416  1.00  0.00            
+ATOM    366  DOT DOT    11      29.159   8.623   1.383  1.00  0.00            
+ATOM    367  DOT DOT    11      28.486   9.990   0.708  1.00  0.00            
+ATOM    368  DOT DOT    11      29.462   9.990   2.286  1.00  0.00            
+ATOM    369  DOT DOT    11      29.159  11.357   1.383  1.00  0.00            
+ATOM    370  DOT DOT    11      30.552  11.491   2.286  1.00  0.00            
+ATOM    371  DOT DOT    11      29.584  13.511  -1.238  1.00  0.00            
+ATOM    372  DOT DOT    11      29.769  13.377   0.413  1.00  0.00            
+ATOM    373  DOT DOT    11      30.861  14.439  -0.262  1.00  0.00            
+ATOM    374  DOT DOT    11      31.162  13.511   1.316  1.00  0.00            
+ATOM    375  DOT DOT    11      32.482  12.671   1.796  1.00  0.00            
+ATOM    376  DOT DOT    11      33.848   8.969  -4.536  1.00  0.00            
+ATOM    377  DOT DOT    11      29.674  11.220  -4.133  1.00  0.00            
+ATOM    378  DOT DOT    11      29.934  12.721  -3.458  1.00  0.00            
+ATOM    379  DOT DOT    11      30.723  10.292  -5.036  1.00  0.00            
+ATOM    380  DOT DOT    11      30.723  12.148  -5.036  1.00  0.00            
+ATOM    381  DOT DOT    11      30.654  13.340  -3.683  1.00  0.00            
+ATOM    382  DOT DOT    11      30.914  14.841  -3.008  1.00  0.00            
+ATOM    383  DOT DOT    11      31.099  14.707  -1.357  1.00  0.00            
+ATOM    384  DOT DOT    11      31.703  14.268  -4.586  1.00  0.00            
+ATOM    385  DOT DOT    11      32.261  15.552  -3.683  1.00  0.00            
+ATOM    386  DOT DOT    11      31.384  11.840  -5.763  1.00  0.00            
+ATOM    387  DOT DOT    11      32.991   9.628  -5.763  1.00  0.00            
+ATOM    388  DOT DOT    11      32.433  10.912  -6.666  1.00  0.00            
+ATOM    389  DOT DOT    11      34.198  10.339  -6.666  1.00  0.00            
+ATOM    390  DOT DOT    11      34.499   9.411  -5.088  1.00  0.00            
+ATOM    391  DOT DOT    11      36.648  11.179  -8.006  1.00  0.00            
+ATOM    392  DOT DOT    11      36.949  10.251  -6.428  1.00  0.00            
+ATOM    393  DOT DOT    11      36.879  10.468  -4.777  1.00  0.00            
+ATOM    394  DOT DOT    11      38.041  11.313  -7.103  1.00  0.00            
+ATOM    395  DOT DOT    11      38.226  11.179  -5.452  1.00  0.00            
+ATOM    396  DOT DOT    11      37.738  12.680  -8.006  1.00  0.00            
+ATOM    397  DOT DOT    11      38.714  12.680  -6.428  1.00  0.00            
+ATOM    398  DOT DOT    11      32.554  11.419  -6.918  1.00  0.00            
+ATOM    399  DOT DOT    11      33.901  10.708  -7.593  1.00  0.00            
+ATOM    400  DOT DOT    11      33.343  11.992  -8.496  1.00  0.00            
+ATOM    401  DOT DOT    11      35.108  11.419  -8.496  1.00  0.00            
+ATOM    402  DOT DOT    11      34.620  12.920  -9.030  1.00  0.00            
+ATOM    403  DOT DOT    11      35.952  11.490  -8.333  1.00  0.00            
+ATOM    404  DOT DOT    11      35.370  13.280  -8.970  1.00  0.00            
+ATOM    405  DOT DOT    11      31.200  13.474  -7.408  1.00  0.00            
+ATOM    406  DOT DOT    11      31.407  13.625  -5.554  1.00  0.00            
+ATOM    407  DOT DOT    11      30.652  15.160  -6.312  1.00  0.00            
+ATOM    408  DOT DOT    11      31.747  15.160  -4.540  1.00  0.00            
+ATOM    409  DOT DOT    11      31.407  16.695  -5.554  1.00  0.00            
+ATOM    410  DOT DOT    11      35.322  13.650  -9.233  1.00  0.00            
+ATOM    411  DOT DOT    11      37.431  24.069  -3.902  1.00  0.00            
+ATOM    412  DOT DOT    11      37.732  23.141  -2.324  1.00  0.00            
+ATOM    413  DOT DOT    11      39.497  22.568  -2.324  1.00  0.00            
+ATOM    414  DOT DOT    11      39.009  24.069  -4.878  1.00  0.00            
+ATOM    415  DOT DOT    11      38.939  23.852  -3.227  1.00  0.00            
+ATOM    416  DOT DOT    11      40.546  21.640  -3.227  1.00  0.00            
+ATOM    417  DOT DOT    11      40.101  23.007  -5.553  1.00  0.00            
+ATOM    418  DOT DOT    11      40.286  23.141  -3.902  1.00  0.00            
+ATOM    419  DOT DOT    11      37.058  22.660  -2.207  1.00  0.00            
+ATOM    420  DOT DOT    11      39.937  20.348  -1.504  1.00  0.00            
+ATOM    421  DOT DOT    11      41.214  19.420  -4.058  1.00  0.00            
+ATOM    422  DOT DOT    11      40.986  19.420  -2.407  1.00  0.00            
+ATOM    423  DOT DOT    11      40.726  20.921  -3.082  1.00  0.00            
+ATOM    424  DOT DOT    11      34.414  23.451  -6.528  1.00  0.00            
+ATOM    425  DOT DOT    11      35.761  24.162  -7.203  1.00  0.00            
+ATOM    426  DOT DOT    11      35.691  24.379  -5.552  1.00  0.00            
+ATOM    427  DOT DOT    11      37.269  24.379  -6.528  1.00  0.00            
+ATOM    428  DOT DOT    11      37.199  24.162  -4.877  1.00  0.00            
+ATOM    429  DOT DOT    11      34.337  22.710  -4.184  1.00  0.00            
+ATOM    430  DOT DOT    11      32.256  20.250  -5.782  1.00  0.00            
+ATOM    431  DOT DOT    11      32.744  21.751  -6.758  1.00  0.00            
+ATOM    432  DOT DOT    11      32.929  21.617  -5.107  1.00  0.00            
+ATOM    433  DOT DOT    11      34.091  22.462  -7.433  1.00  0.00            
+ATOM    434  DOT DOT    11      33.427  21.680  -4.414  1.00  0.00            
+ATOM    435  DOT DOT    11      31.984  19.521  -6.068  1.00  0.00            
+ATOM    436  DOT DOT    11      31.196  18.190  -7.352  1.00  0.00            
+ATOM    437  DOT DOT    11      31.869  19.557  -6.677  1.00  0.00            
+ATOM    438  DOT DOT    11      34.953  14.126 -10.966  1.00  0.00            
+ATOM    439  DOT DOT    11      36.308  14.924 -11.980  1.00  0.00            
+ATOM    440  DOT DOT    11      36.646  13.882 -10.208  1.00  0.00            
+ATOM    441  DOT DOT    11      37.873  15.075 -10.966  1.00  0.00            
+ATOM    442  DOT DOT    11      37.533  16.610 -11.980  1.00  0.00            
+ATOM    443  DOT DOT    11      38.628  16.610 -10.208  1.00  0.00            
+ATOM    444  DOT DOT    11      31.603  19.198 -14.946  1.00  0.00            
+ATOM    445  DOT DOT    11      32.161  20.482 -14.043  1.00  0.00            
+ATOM    446  DOT DOT    11      32.880  18.270 -15.480  1.00  0.00            
+ATOM    447  DOT DOT    11      33.368  19.771 -14.946  1.00  0.00            
+ATOM    448  DOT DOT    11      34.458  18.270 -14.946  1.00  0.00            
+ATOM    449  DOT DOT    11      29.066  18.300 -11.362  1.00  0.00            
+ATOM    450  DOT DOT    11      29.294  18.300 -13.013  1.00  0.00            
+ATOM    451  DOT DOT    11      29.554  19.801 -12.338  1.00  0.00            
+ATOM    452  DOT DOT    11      29.739  19.667 -10.687  1.00  0.00            
+ATOM    453  DOT DOT    11      30.901  20.512 -13.013  1.00  0.00            
+ATOM    454  DOT DOT    11      30.831  20.729 -11.362  1.00  0.00            
+ATOM    455  DOT DOT    11      29.764  15.519 -13.328  1.00  0.00            
+ATOM    456  DOT DOT    11      29.504  17.020 -14.003  1.00  0.00            
+ATOM    457  DOT DOT    11      31.111  14.808 -14.003  1.00  0.00            
+ATOM    458  DOT DOT    11      30.553  16.092 -14.906  1.00  0.00            
+ATOM    459  DOT DOT    11      30.553  17.948 -14.906  1.00  0.00            
+ATOM    460  DOT DOT    11      32.318  15.519 -14.906  1.00  0.00            
+ATOM    461  DOT DOT    11      31.830  17.020 -15.440  1.00  0.00            
+ATOM    462  DOT DOT    11      30.768  18.816 -14.753  1.00  0.00            
+ATOM    463  DOT DOT    11      31.433  20.347 -13.676  1.00  0.00            
+ATOM    464  DOT DOT    11      32.290  17.710 -15.390  1.00  0.00            
+ATOM    465  DOT DOT    11      29.699  15.243  -8.747  1.00  0.00            
+ATOM    466  DOT DOT    11      29.026  16.610  -9.422  1.00  0.00            
+ATOM    467  DOT DOT    11      30.002  16.610  -7.844  1.00  0.00            
+ATOM    468  DOT DOT    11      29.254  16.610 -11.073  1.00  0.00            
+ATOM    469  DOT DOT    11      29.699  17.977  -8.747  1.00  0.00            
+ATOM    470  DOT DOT    11      31.092  18.111  -7.844  1.00  0.00            
+ATOM    471  DOT DOT    11      32.031  13.121  -9.322  1.00  0.00            
+ATOM    472  DOT DOT    11      33.609  13.121 -10.298  1.00  0.00            
+ATOM    473  DOT DOT    11      29.704  13.969 -11.548  1.00  0.00            
+ATOM    474  DOT DOT    11      29.889  14.103  -9.897  1.00  0.00            
+ATOM    475  DOT DOT    11      29.444  15.470 -12.223  1.00  0.00            
+ATOM    476  DOT DOT    11      31.051  13.258 -12.223  1.00  0.00            
+ATOM    477  DOT DOT    11      30.981  13.041 -10.572  1.00  0.00            
+ATOM    478  DOT DOT    11      30.493  14.542 -13.126  1.00  0.00            
+ATOM    479  DOT DOT    11      32.258  13.969 -13.126  1.00  0.00            
+ATOM    480  DOT DOT    11      32.559  13.041 -11.548  1.00  0.00            
+ATOM    481  DOT DOT    11      30.007  14.450  -9.044  1.00  0.00            
+ATOM    482  DOT DOT    11      31.309  13.184  -9.848  1.00  0.00            
+ATOM    483  DOT DOT    11      33.191  13.184 -11.012  1.00  0.00            
+ATOM    484  DOT DOT    11      34.348  15.019 -13.766  1.00  0.00            
+ATOM    485  DOT DOT    11      34.649  14.091 -12.188  1.00  0.00            
+ATOM    486  DOT DOT    11      35.741  15.153 -12.863  1.00  0.00            
+ATOM    487  DOT DOT    11      35.438  16.520 -13.766  1.00  0.00            
+ATOM    488  DOT DOT    11      31.289  19.887  -8.737  1.00  0.00            
+ATOM    489  DOT DOT    11      35.848  17.099 -13.806  1.00  0.00            
+ATOM    490  DOT DOT    11      35.360  18.600 -14.340  1.00  0.00            
+ATOM    491  DOT DOT    11      37.241  17.233 -12.903  1.00  0.00            
+ATOM    492  DOT DOT    11      36.938  18.600 -13.806  1.00  0.00            
+ATOM    493  DOT DOT    11      31.082  20.810  -9.532  1.00  0.00            
+ATOM    494  DOT DOT    11      32.177  20.810  -7.760  1.00  0.00            
+ATOM    495  DOT DOT    11      31.630  22.496 -10.628  1.00  0.00            
+ATOM    496  DOT DOT    11      31.837  22.345  -8.774  1.00  0.00            
+ATOM    497  DOT DOT    11      33.064  23.538  -9.532  1.00  0.00            
+ATOM    498  DOT DOT    11      33.402  22.496  -7.760  1.00  0.00            
+ATOM    499  DOT DOT    11      39.631  23.069  -6.312  1.00  0.00            
+ATOM    500  DOT DOT    11      41.697  21.568  -4.734  1.00  0.00            
+ATOM    501  DOT DOT    11      41.209  23.069  -7.288  1.00  0.00            
+ATOM    502  DOT DOT    11      41.139  22.852  -5.637  1.00  0.00            
+ATOM    503  DOT DOT    11      42.746  20.640  -5.637  1.00  0.00            
+ATOM    504  DOT DOT    11      42.486  22.141  -6.312  1.00  0.00            
+ATOM    505  DOT DOT    11      41.568  18.319 -10.126  1.00  0.00            
+ATOM    506  DOT DOT    11      41.869  22.249  -8.548  1.00  0.00            
+ATOM    507  DOT DOT    11      42.961  18.453  -9.223  1.00  0.00            
+ATOM    508  DOT DOT    11      43.146  18.319  -7.572  1.00  0.00            
+ATOM    509  DOT DOT    11      42.658  19.820 -10.126  1.00  0.00            
+ATOM    510  DOT DOT    11      43.634  19.820  -8.548  1.00  0.00            
+ATOM    511  DOT DOT    11      43.406  19.820  -6.897  1.00  0.00            
+ATOM    512  DOT DOT    11      42.961  21.187  -9.223  1.00  0.00            
+ATOM    513  DOT DOT    11      43.146  21.321  -7.572  1.00  0.00            
+ATOM    514  DOT DOT    11      41.967  19.958  -4.614  1.00  0.00            
+ATOM    515  DOT DOT    11      43.016  19.030  -5.517  1.00  0.00            
+ATOM    516  DOT DOT    11      39.548  17.139 -10.396  1.00  0.00            
+ATOM    517  DOT DOT    11      40.941  17.273  -9.493  1.00  0.00            
+ATOM    518  DOT DOT    11      40.638  18.640 -10.396  1.00  0.00            
+ATOM    519  DOT DOT    11      37.701  23.899  -7.752  1.00  0.00            
+ATOM    520  DOT DOT    11      39.279  23.899  -8.728  1.00  0.00            
+ATOM    521  DOT DOT    11      39.209  23.682  -7.077  1.00  0.00            
+ATOM    522  DOT DOT    11      40.239  23.259  -9.888  1.00  0.00            
+ATOM    523  DOT DOT    11      41.028  20.830 -11.466  1.00  0.00            
+ATOM    524  DOT DOT    11      41.331  22.197 -10.563  1.00  0.00            
+ATOM    525  DOT DOT    11      41.516  22.331  -8.912  1.00  0.00            
+ATOM    526  DOT DOT    11      39.631  23.546  -9.352  1.00  0.00            
+ATOM    527  DOT DOT    11      38.188  18.039 -12.296  1.00  0.00            
+ATOM    528  DOT DOT    11      38.489  17.111 -10.718  1.00  0.00            
+ATOM    529  DOT DOT    11      39.581  18.173 -11.393  1.00  0.00            
+ATOM    530  DOT DOT    11      39.278  19.540 -12.296  1.00  0.00            
+ATOM    531  DOT DOT    11      34.509  23.377  -8.477  1.00  0.00            
+ATOM    532  DOT DOT    11      35.601  24.439  -9.152  1.00  0.00            
+ATOM    533  DOT DOT    11      37.109  24.222  -8.477  1.00  0.00            
+ATOM    534  DOT DOT    11      38.419  24.379 -11.188  1.00  0.00            
+ATOM    535  DOT DOT    11      38.349  24.162  -9.537  1.00  0.00            
+ATOM    536  DOT DOT    11      39.208  21.950 -12.766  1.00  0.00            
+ATOM    537  DOT DOT    11      39.511  23.317 -11.863  1.00  0.00            
+ATOM    538  DOT DOT    11      39.696  23.451 -10.212  1.00  0.00            
+ATOM    539  DOT DOT    11      35.053  19.622 -14.226  1.00  0.00            
+ATOM    540  DOT DOT    11      36.818  19.049 -14.226  1.00  0.00            
+ATOM    541  DOT DOT    11      36.330  20.550 -14.760  1.00  0.00            
+ATOM    542  DOT DOT    11      38.211  19.183 -13.323  1.00  0.00            
+ATOM    543  DOT DOT    11      37.908  20.550 -14.226  1.00  0.00            
+ATOM    544  DOT DOT    11      38.884  20.550 -12.648  1.00  0.00            
+ATOM    545  DOT DOT    11      32.854  24.361 -11.738  1.00  0.00            
+ATOM    546  DOT DOT    11      33.039  24.227 -10.087  1.00  0.00            
+ATOM    547  DOT DOT    11      34.201  25.072 -12.413  1.00  0.00            
+ATOM    548  DOT DOT    11      34.131  25.289 -10.762  1.00  0.00            
+ATOM    549  DOT DOT    11      34.432  24.361  -9.184  1.00  0.00            
+ATOM    550  DOT DOT    11      35.639  25.072 -10.087  1.00  0.00            
+ATOM    551  DOT DOT    11      32.146  22.140 -12.212  1.00  0.00            
+ATOM    552  DOT DOT    11      32.374  22.140 -13.863  1.00  0.00            
+ATOM    553  DOT DOT    11      32.634  23.641 -13.188  1.00  0.00            
+ATOM    554  DOT DOT    11      33.423  21.212 -14.766  1.00  0.00            
+ATOM    555  DOT DOT    11      33.423  23.068 -14.766  1.00  0.00            
+ATOM    556  DOT DOT    11      33.981  24.352 -13.863  1.00  0.00            
+ATOM    557  DOT DOT    11      35.188  20.639 -14.766  1.00  0.00            
+ATOM    558  DOT DOT    11      34.700  22.140 -15.300  1.00  0.00            
+ATOM    559  DOT DOT    11      35.188  23.641 -14.766  1.00  0.00            
+ATOM    560  DOT DOT    11      35.401  25.092 -13.523  1.00  0.00            
+ATOM    561  DOT DOT    11      36.120  22.880 -14.960  1.00  0.00            
+ATOM    562  DOT DOT    11      36.608  24.381 -14.426  1.00  0.00            
+ATOM    563  DOT DOT    11      36.909  25.309 -12.848  1.00  0.00            
+ATOM    564  DOT DOT    11      36.839  25.092 -11.197  1.00  0.00            
+ATOM    565  DOT DOT    11      37.698  22.880 -14.426  1.00  0.00            
+ATOM    566  DOT DOT    11      38.001  24.247 -13.523  1.00  0.00            
+ATOM    567  DOT DOT    11      38.186  24.381 -11.872  1.00  0.00            
+ATOM    568  DOT DOT    11      34.545  24.849 -13.299  1.00  0.00            
+TER
+ENDMDL
+]]></String>
+  </OutputFiles>
+</ReferenceData>

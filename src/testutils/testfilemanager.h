@@ -119,6 +119,8 @@ class TestFileManager
          * same test.
          */
         std::string getTemporaryFilePath(const char *suffix);
+        //! \copydoc TestFileManager::getTemporaryFilePath(const char *)
+        std::string getTemporaryFilePath(const std::string &suffix);
 
         /*! \brief Returns the path to the output temporary directory
          * for tests which use this TestFileManager object.
