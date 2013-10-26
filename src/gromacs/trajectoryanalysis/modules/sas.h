@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,61 +34,32 @@
  */
 /*! \internal \file
  * \brief
- * Implements registerTrajectoryAnalysisModules().
+ * Declares trajectory analysis module for surface area calculations.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "gromacs/trajectoryanalysis/modules.h"
+#ifndef GMX_TRAJECTORYANALYSIS_MODULES_SAS_H
+#define GMX_TRAJECTORYANALYSIS_MODULES_SAS_H
 
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
-
-#include "modules/angle.h"
-#include "modules/distance.h"
-#include "modules/freevolume.h"
-#include "modules/sas.h"
-#include "modules/select.h"
+#include "../analysismodule.h"
 
 namespace gmx
 {
 
-namespace
+namespace analysismodules
 {
 
-/*! \brief
- * Convenience method for registering a command-line module for trajectory
- * analysis.
- *
- * \tparam ModuleInfo  Info about trajectory analysis module to wrap.
- *
- * \p ModuleInfo should have static public members
- * `const char name[]`, `const char shortDescription[]`, and
- * `gmx::TrajectoryAnalysisModulePointer create()`.
- *
- * \ingroup module_trajectoryanalysis
- */
-template <class ModuleInfo>
-void registerModule(CommandLineModuleManager *manager,
-                    CommandLineModuleGroup    group)
+class SasInfo
 {
-    TrajectoryAnalysisCommandLineRunner::registerModule(
-            manager, ModuleInfo::name, ModuleInfo::shortDescription,
-            &ModuleInfo::create);
-    group.addModule(ModuleInfo::name);
-}
+    public:
+        static const char name[];
+        static const char shortDescription[];
+        static TrajectoryAnalysisModulePointer create();
+};
 
-}   // namespace
-
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
-{
-    using namespace gmx::analysismodules;
-    CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
-    registerModule<AngleInfo>(manager, group);
-    registerModule<DistanceInfo>(manager, group);
-    registerModule<FreeVolumeInfo>(manager, group);
-    registerModule<SasInfo>(manager, group);
-    registerModule<SelectInfo>(manager, group);
-}
+} // namespace analysismodules
 
 } // namespace gmx
+
+#endif

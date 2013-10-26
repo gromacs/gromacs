@@ -242,6 +242,9 @@ class AnalysisDataHandle
          */
         AnalysisDataHandle();
 
+        //! Returns whether this data handle is valid.
+        bool isValid() const { return impl_ != NULL; }
+
         /*! \brief
          * Start data for a new frame.
          *
