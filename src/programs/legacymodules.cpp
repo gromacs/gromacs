@@ -207,6 +207,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate free energy difference estimates through Bennett's acceptance ratio");
     registerObsoleteTool(manager, "bond");
     registerObsoleteTool(manager, "dist");
+    registerObsoleteTool(manager, "sas");
     registerObsoleteTool(manager, "sgangle");
 
     registerModule(manager, &gmx_bundle, "bundle",
@@ -306,8 +307,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Compute salt bridges");
     registerModule(manager, &gmx_sans, "sans",
                    "Compute small angle neutron scattering spectra");
-    registerModule(manager, &gmx_sas, "sas",
-                   "Compute solvent accessible surface area");
     registerModule(manager, &gmx_saxs, "saxs",
                    "Compute small angle X-ray scattering spectra");
     registerModule(manager, &gmx_sham, "sham",
@@ -449,7 +448,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("principal");
         group.addModule("rdf");
         group.addModule("saltbr");
-        group.addModule("sas");
         group.addModule("sorient");
         group.addModule("spol");
     }

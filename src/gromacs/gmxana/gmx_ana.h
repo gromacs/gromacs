@@ -217,9 +217,6 @@ int
 gmx_saltbr(int argc, char *argv[]);
 
 int
-gmx_sas(int argc, char *argv[]);
-
-int
 gmx_sham(int argc, char *argv[]);
 
 int
