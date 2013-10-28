@@ -322,6 +322,7 @@ void list_xtc(const char *fn, gmx_bool bXVG)
     {
         fprintf(stderr, "\nWARNING: Incomplete frame at time %g\n", time);
     }
+    sfree(x);
     close_xtc(xd);
 }
 
