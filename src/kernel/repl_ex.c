@@ -1343,6 +1343,10 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
                 pd_collect_state(cr, state);
             }
         }
+        else
+        {
+            copy_state_nonatomdata(state_local, state);
+        }
 
         if (MASTER(cr))
         {
