@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS Development Team
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -36,6 +34,8 @@
  */
 #ifndef _nbnxn_kernel_simd_utils_h_
 #define _nbnxn_kernel_simd_utils_h_
+
+#include "gromacs/legacyheaders/types/simple.h"
 
 /*! \brief Provides hardware-specific utility routines for the SIMD kernels.
  *
@@ -83,7 +83,7 @@ static const int nbfp_stride = 4;
  * full-width AVX_256 use the array, but other implementations do
  * not. */
 static gmx_inline int *
-prepare_table_load_buffer(const int *array)
+prepare_table_load_buffer(const int gmx_unused *array)
 {
 #if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
     return gmx_simd_align_int(array);

@@ -37,6 +37,8 @@
 #ifndef _nbnxn_kernel_simd_utils_x86_128d_h_
 #define _nbnxn_kernel_simd_utils_x86_128d_h_
 
+#include "gromacs/legacyheaders/types/simple.h"
+
 /* This files contains all functions/macros for the SIMD kernels
  * which have explicit dependencies on the j-cluster size and/or SIMD-width.
  * The functionality which depends on the j-cluster size is:
@@ -130,7 +132,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * AVX_256. */
 
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
+load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int gmx_unused *ti,
              __m128d *ctab0_S, __m128d *ctab1_S)
 {
     int     idx[2];
@@ -150,7 +152,7 @@ load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_epi32 ti_S, int *ti,
+               gmx_epi32 ti_S, int gmx_unused *ti,
                __m128d *ctab0_S, __m128d *ctab1_S, __m128d *ctabv_S)
 {
     int     idx[2];

@@ -118,7 +118,7 @@ t_commrec *init_commrec()
     return cr;
 }
 
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro)
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 {
 #ifdef GMX_THREAD_MPI
     t_commrec *cr;
