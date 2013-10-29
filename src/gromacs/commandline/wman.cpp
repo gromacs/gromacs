@@ -32,6 +32,8 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
+#include "gromacs/commandline/wman.h"
+
 #include <cstdio>
 #include <cstring>
 
@@ -40,7 +42,6 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"

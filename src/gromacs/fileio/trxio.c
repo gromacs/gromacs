@@ -52,6 +52,7 @@
 #include "gmxfio.h"
 #include "trxio.h"
 #include "gromacs/legacyheaders/statutil.h"
+#include "tpxio.h"
 #include "trnio.h"
 #include "names.h"
 #include "vec.h"
@@ -87,6 +88,27 @@ struct t_trxstatus
 };
 
 /* utility functions */
+
+gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
+{
+    int    iq;
+    double tol;
+
+    tol = 2*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
+
+    iq = (int)((a - b + tol*a)/c);
+
+    if (fabs(a - b - c*iq) <= tol*fabs(a))
+    {
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+
 
 int check_times2(real t, real t0, gmx_bool bDouble)
 {
@@ -1157,4 +1179,21 @@ void rewind_trj(t_trxstatus *status)
     initcount(status);
 
     gmx_fio_rewind(status->fio);
+}
+
+/***** T O P O L O G Y   S T U F F ******/
+
+t_topology *read_top(const char *fn, int *ePBC)
+{
+    int         epbc, natoms;
+    t_topology *top;
+
+    snew(top, 1);
+    epbc = read_tpx_top(fn, NULL, NULL, &natoms, NULL, NULL, NULL, top);
+    if (ePBC)
+    {
+        *ePBC = epbc;
+    }
+
+    return top;
 }

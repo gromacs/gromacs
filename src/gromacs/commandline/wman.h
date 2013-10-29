@@ -32,10 +32,11 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-#ifndef GMX_ONLINEHELP_WMAN_H
-#define GMX_ONLINEHELP_WMAN_H
+#ifndef GMX_COMMANDLINE_WMAN_H
+#define GMX_COMMANDLINE_WMAN_H
 
-#include "readinp.h"
+#include "gromacs/legacyheaders/readinp.h"
+
 #include "gromacs/fileio/filenm.h"
 
 void write_man(const char *mantp, const char *program,
