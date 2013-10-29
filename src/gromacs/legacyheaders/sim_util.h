@@ -37,12 +37,12 @@
 #define _sim_util_h
 
 #include "typedefs.h"
-#include "../fileio/enxio.h"
 #include "mdebin.h"
 #include "update.h"
 #include "vcm.h"
-#include "gromacs/timing/walltime_accounting.h"
+#include "../fileio/enxio.h"
 #include "../fileio/mdoutf.h"
+#include "../timing/walltime_accounting.h"
 
 #ifdef __cplusplus
 extern "C" {

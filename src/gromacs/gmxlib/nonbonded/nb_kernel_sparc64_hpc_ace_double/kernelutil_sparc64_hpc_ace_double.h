@@ -36,7 +36,7 @@
 #define _kernelutil_sparc64_hpc_ace_double_h_
 
 /* Fujitsu header borrows the name from SSE2, since some instructions have aliases */
-#include "emmintrin.h"
+#include <emmintrin.h>
 
 #define GMX_FJSP_SHUFFLE2(x,y) (((x)<<1) | (y))
 
