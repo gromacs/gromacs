@@ -53,6 +53,8 @@
 #include "statutil.h"
 #include "string2.h"
 
+#include "common.h"
+
 int gmx_omp_get_max_threads(void)
 {
 #ifdef GMX_OPENMP
@@ -85,7 +87,7 @@ void gmx_omp_set_num_threads(int num_threads)
 #ifdef GMX_OPENMP
     omp_set_num_threads(num_threads);
 #else
-    return;
+    GMX_UNUSED_VALUE(num_threads);
 #endif
 }
 
@@ -108,34 +110,45 @@ void gmx_omp_set_num_threads(int num_threads)
  * when the first call is made into a compilation unit that contains OpenMP
  * pragmas.
  */
-void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
-                                   gmx_hw_opt_t *hw_opt)
+void gmx_omp_check_thread_affinity(FILE            *fplog,
+                                   const t_commrec *cr,
+                                   gmx_hw_opt_t    *hw_opt)
 {
-    gmx_bool bKmpAffinitySet, bGompCpuAffinitySet;
-    char    *kmp_env, *gomp_env;
-
     /* no need to worry if internal thread pinning is turned off */
     if (hw_opt->thread_affinity == threadaffOFF)
     {
         return;
     }
 
-#if defined(GMX_OPENMP)
-
+#ifndef GMX_OPENMP
+    GMX_UNUSED_VALUE(fplog);
+    GMX_UNUSED_VALUE(cr);
+#else
     /* We assume that the affinity setting is available on all platforms
      * gcc supports. Even if this is not the case (e.g. Mac OS) the user
-     * will only get a warning.*/
-    bGompCpuAffinitySet = FALSE;
-    gomp_env            = NULL;
-#if defined(__GNUC__)
-    gomp_env            = getenv("GOMP_CPU_AFFINITY");
-    bGompCpuAffinitySet = (gomp_env != NULL);
-#endif /* __GNUC__ */
+     * will only get a warning. */
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
+    const char *const gomp_env            = getenv("GOMP_CPU_AFFINITY");
+    const bool        bGompCpuAffinitySet = (gomp_env != NULL);
 
-    bKmpAffinitySet = FALSE;
+    /* turn off internal pinning if GOMP_CPU_AFFINITY is set & non-empty */
+    if (bGompCpuAffinitySet && *gomp_env != '\0')
+    {
+        /* TODO: with -pin auto we should only warn when using all cores */
+        md_print_warn(cr, fplog,
+                      "NOTE: GOMP_CPU_AFFINITY set, will turn off %s internal affinity\n"
+                      "      setting as the two can conflict and cause performance degradation.\n"
+                      "      To keep using the %s internal affinity setting, unset the\n"
+                      "      GOMP_CPU_AFFINITY environment variable.",
+                      ShortProgram(), ShortProgram());
+
+        hw_opt->thread_affinity = threadaffOFF;
+    }
+#endif /* __GNUC__ || __INTEL_COMPILER */
+
 #if defined(__INTEL_COMPILER)
-    kmp_env         = getenv("KMP_AFFINITY");
-    bKmpAffinitySet = (kmp_env != NULL);
+    const char *const kmp_env         = getenv("KMP_AFFINITY");
+    const bool        bKmpAffinitySet = (kmp_env != NULL);
 
     /* disable Intel OpenMP affinity if neither KMP_AFFINITY nor
      * GOMP_CPU_AFFINITY is set (Intel uses the GNU env. var as well) */
@@ -176,22 +189,6 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
         hw_opt->thread_affinity = threadaffOFF;
     }
 #endif /* __INTEL_COMPILER */
-
-#if defined(__INTEL_COMPILER) || defined(__GNUC__)
-    /* turn off internal pinning f GOMP_CPU_AFFINITY is set & non-empty */
-    if (bGompCpuAffinitySet && gomp_env != NULL && gomp_env != '\0')
-    {
-        /* TODO: with -pin auto we should only warn when using all cores */
-        md_print_warn(cr, fplog,
-                      "NOTE: GOMP_CPU_AFFINITY set, will turn off %s internal affinity\n"
-                      "      setting as the two can conflict and cause performance degradation.\n"
-                      "      To keep using the %s internal affinity setting, unset the\n"
-                      "      GOMP_CPU_AFFINITY environment variable.",
-                      ShortProgram(), ShortProgram());
-
-        hw_opt->thread_affinity = threadaffOFF;
-    }
-#endif /* __INTEL_COMPILER || __GNUC__ */
 
 #endif /* GMX_OPENMP */
 }

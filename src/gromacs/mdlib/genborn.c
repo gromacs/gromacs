@@ -127,7 +127,7 @@ int init_gb_nblist(int natoms, t_nblist *nl)
     return 0;
 }
 
-void gb_pd_send(t_commrec *cr, real *send_data, int nr)
+void gb_pd_send(t_commrec gmx_unused *cr, real gmx_unused *send_data, int gmx_unused nr)
 {
 #ifdef GMX_MPI
     int  i, cur;
@@ -1648,7 +1648,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
                                                fr->invsqrta, fr->dvda, fr->gbtab.data, idef, born->epsilon_r, born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
-    enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda,fr->epsfac);
+    enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda, fr->epsfac);
 
     /* If parallel, sum the derivative of the potential w.r.t the born radii */
     if (PARTDECOMP(cr))
