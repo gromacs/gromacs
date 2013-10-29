@@ -115,7 +115,7 @@ gmx_bool wallcycle_have_counter(void)
     return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr,
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused *cr,
                                int nthreads_pp, int nthreads_pme)
 {
     gmx_wallcycle_t wc;
@@ -861,7 +861,11 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
 
 #else
 
-void wallcycle_sub_start(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs) {}
-void wallcycle_sub_stop(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs) {}
+void wallcycle_sub_start(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
+{
+}
+void wallcycle_sub_stop(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
+{
+}
 
 #endif /* GMX_CYCLE_SUBCOUNTERS */

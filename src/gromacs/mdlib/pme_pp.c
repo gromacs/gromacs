@@ -109,7 +109,7 @@ typedef struct {
 
 
 
-gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr)
+gmx_pme_pp_t gmx_pme_pp_init(t_commrec gmx_unused *cr)
 {
     struct gmx_pme_pp *pme_pp;
     int                rank;
@@ -133,7 +133,7 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr)
 /* This should be faster with a real non-blocking MPI implementation */
 /* #define GMX_PME_DELAYED_WAIT */
 
-static void gmx_pme_send_q_x_wait(gmx_domdec_t *dd)
+static void gmx_pme_send_q_x_wait(gmx_domdec_t gmx_unused *dd)
 {
 #ifdef GMX_MPI
     if (dd->nreq_pme)
@@ -145,8 +145,8 @@ static void gmx_pme_send_q_x_wait(gmx_domdec_t *dd)
 }
 
 static void gmx_pme_send_q_x(t_commrec *cr, int flags,
-                             real *chargeA, real *chargeB,
-                             matrix box, rvec *x,
+                             real gmx_unused *chargeA, real gmx_unused *chargeB,
+                             matrix box, rvec gmx_unused *x,
                              real lambda,
                              int maxshift_x, int maxshift_y,
                              gmx_large_int_t step)
@@ -284,7 +284,7 @@ void gmx_pme_send_finish(t_commrec *cr)
     gmx_pme_send_q_x(cr, flags, NULL, NULL, NULL, NULL, 0, 0, 0, -1);
 }
 
-void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff)
+void gmx_pme_send_switchgrid(t_commrec gmx_unused *cr, ivec gmx_unused grid_size, real gmx_unused ewaldcoeff)
 {
 #ifdef GMX_MPI
     gmx_pme_comm_n_box_t cnb;
@@ -303,7 +303,7 @@ void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff)
 #endif
 }
 
-void gmx_pme_send_resetcounters(t_commrec *cr, gmx_large_int_t step)
+void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_large_int_t gmx_unused step)
 {
 #ifdef GMX_MPI
     gmx_pme_comm_n_box_t cnb;
@@ -324,12 +324,12 @@ void gmx_pme_send_resetcounters(t_commrec *cr, gmx_large_int_t step)
 int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
                      int *natoms,
                      real **chargeA, real **chargeB,
-                     matrix box, rvec **x, rvec **f,
-                     int *maxshift_x, int *maxshift_y,
-                     gmx_bool *bFreeEnergy, real *lambda,
-                     gmx_bool *bEnerVir,
-                     gmx_large_int_t *step,
-                     ivec grid_size, real *ewaldcoeff)
+                     matrix gmx_unused box, rvec **x, rvec **f,
+                     int gmx_unused *maxshift_x, int gmx_unused *maxshift_y,
+                     gmx_bool gmx_unused *bFreeEnergy, real gmx_unused *lambda,
+                     gmx_bool gmx_unused *bEnerVir,
+                     gmx_large_int_t gmx_unused *step,
+                     ivec gmx_unused grid_size, real gmx_unused *ewaldcoeff)
 {
     gmx_pme_comm_n_box_t cnb;
     int                  nat = 0, q, messages, sender;
@@ -587,7 +587,7 @@ void gmx_pme_receive_f(t_commrec *cr,
 }
 
 void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
-                                 rvec *f, matrix vir,
+                                 rvec gmx_unused *f, matrix vir,
                                  real energy, real dvdlambda,
                                  float cycles)
 {
