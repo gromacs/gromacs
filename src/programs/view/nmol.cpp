@@ -53,7 +53,7 @@
 
 #define MSIZE 4
 
-static bool MWCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool MWCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_molwin *mw;
     Window    To;
@@ -548,11 +548,9 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
     }
 }
 
-void set_sizes(t_manager *man, real sx, real sy)
+void set_sizes(t_manager *man)
 {
-    int  i;
-
-    for (i = 0; (i < man->natom); i++)
+    for (int i = 0; i < man->natom; i++)
     {
         if (man->bVis[i])
         {
@@ -602,7 +600,7 @@ void draw_mol(t_x11 *x11, t_manager *man)
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
     }
-    set_sizes(man, sx, sy);
+    set_sizes(man);
 
     z_fill (man, man->zz);
 

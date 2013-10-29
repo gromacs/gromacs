@@ -50,7 +50,7 @@ unsigned long BLACK, BLUE, GREEN, CYAN, RED, BROWN, GREY, DARKGREY;
 /* These colours will be mapped to white on a monochrome screen */
 unsigned long LIGHTBLUE, LIGHTGREEN, LIGHTGREY, LIGHTCYAN, LIGHTRED, VIOLET, YELLOW, WHITE;
 
-static XFontStruct *XLQF(FILE *err, Display *disp, const char *name)
+static XFontStruct *XLQF(FILE gmx_unused *err, Display *disp, const char *name)
 {
     XFontStruct *font = XLoadQueryFont(disp, name);
 #ifdef DEBUG

@@ -929,7 +929,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt,
              gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
-             int nmultisim, int repl_ex_nst, int repl_ex_nex,
+             int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags)
 {

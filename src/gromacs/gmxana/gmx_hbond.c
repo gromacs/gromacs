@@ -2449,14 +2449,16 @@ static real quality_of_fit(real chi2, int N)
 }
 
 #else
-static real optimize_luzar_parameters(FILE *fp, t_luzar *tl, int maxiter,
-                                      real tol)
+static real optimize_luzar_parameters(FILE gmx_unused    *fp,
+                                      t_luzar gmx_unused *tl,
+                                      int gmx_unused      maxiter,
+                                      real gmx_unused     tol)
 {
     fprintf(stderr, "This program needs the GNU scientific library to work.\n");
 
     return -1;
 }
-static real quality_of_fit(real chi2, int N)
+static real quality_of_fit(real gmx_unused chi2, int gmx_unused N)
 {
     fprintf(stderr, "This program needs the GNU scientific library to work.\n");
 
