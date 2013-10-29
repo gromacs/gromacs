@@ -72,17 +72,17 @@
 #include "../nbnxn_kernel_simd_utils.h"
 
 static inline void
-gmx_load_simd_4xn_interactions(int            excl,
-                               gmx_exclfilter filter_S0,
-                               gmx_exclfilter filter_S1,
-                               gmx_exclfilter filter_S2,
-                               gmx_exclfilter filter_S3,
-                               const char    *interaction_mask_indices,
-                               real          *simd_interaction_array,
-                               gmx_mm_pb     *interact_S0,
-                               gmx_mm_pb     *interact_S1,
-                               gmx_mm_pb     *interact_S2,
-                               gmx_mm_pb     *interact_S3)
+gmx_load_simd_4xn_interactions(int                    excl,
+                               gmx_exclfilter         filter_S0,
+                               gmx_exclfilter         filter_S1,
+                               gmx_exclfilter         filter_S2,
+                               gmx_exclfilter         filter_S3,
+                               const char gmx_unused *interaction_mask_indices,
+                               real gmx_unused       *simd_interaction_array,
+                               gmx_mm_pb             *interact_S0,
+                               gmx_mm_pb             *interact_S1,
+                               gmx_mm_pb             *interact_S2,
+                               gmx_mm_pb             *interact_S3)
 {
 #ifdef GMX_X86_SSE2
     /* Load integer interaction mask */
