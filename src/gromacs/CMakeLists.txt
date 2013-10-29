@@ -106,6 +106,23 @@ if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx-version)
 endif ()
 
+# Recent versions of gcc and clang give warnings on scanner.cpp, which
+# is a generated source file. These are awkward to suppress inline, so
+# we do it in the compilation command (after testing that the compiler
+# supports the suppressions). Setting the properties only works after
+# the related target has been created, e.g. after when the file is
+# used with add_library().
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wno-unused-parameter HAS_NO_UNUSED_PARAMETER)
+check_cxx_compiler_flag(-Wno-deprecated-register HAS_NO_DEPRECATED_REGISTER)
+if (HAS_NO_UNUSED_PARAMETER)
+    set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-unused-parameter")
+endif()
+if (HAS_NO_DEPRECATED_REGISTER)
+    set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-deprecated-register")
+endif()
+set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
+
 if(GMX_BUILD_OWN_FFTW)
     # Only needed for cmake 2.8.7, otherwise this should be automatic
     # This dependency has to be made here rather than the CMakeLists.txt that
