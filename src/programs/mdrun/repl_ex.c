@@ -395,7 +395,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     return re;
 }
 
-static void exchange_reals(const gmx_multisim_t *ms, int b, real *v, int n)
+static void exchange_reals(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, real *v, int n)
 {
     real *buf;
     int   i;
@@ -428,7 +428,7 @@ static void exchange_reals(const gmx_multisim_t *ms, int b, real *v, int n)
 }
 
 
-static void exchange_ints(const gmx_multisim_t *ms, int b, int *v, int n)
+static void exchange_ints(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, int *v, int n)
 {
     int *buf;
     int  i;
@@ -460,7 +460,7 @@ static void exchange_ints(const gmx_multisim_t *ms, int b, int *v, int n)
     }
 }
 
-static void exchange_doubles(const gmx_multisim_t *ms, int b, double *v, int n)
+static void exchange_doubles(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, double *v, int n)
 {
     double *buf;
     int     i;
@@ -492,7 +492,7 @@ static void exchange_doubles(const gmx_multisim_t *ms, int b, double *v, int n)
     }
 }
 
-static void exchange_rvecs(const gmx_multisim_t *ms, int b, rvec *v, int n)
+static void exchange_rvecs(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, rvec *v, int n)
 {
     rvec *buf;
     int   i;

@@ -91,7 +91,7 @@ typedef struct gmx_partdec {
 } gmx_partdec_t;
 
 
-void gmx_tx(const t_commrec *cr, int dir, void *buf, int bufsize)
+void gmx_tx(const t_commrec gmx_unused *cr, int gmx_unused dir, void gmx_unused *buf, int gmx_unused bufsize)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_tx");
@@ -127,7 +127,7 @@ void gmx_tx(const t_commrec *cr, int dir, void *buf, int bufsize)
 #endif
 }
 
-void gmx_tx_wait(const t_commrec *cr)
+void gmx_tx_wait(const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_tx_wait");
@@ -142,7 +142,7 @@ void gmx_tx_wait(const t_commrec *cr)
 #endif
 }
 
-void gmx_rx(const t_commrec *cr, int dir, void *buf, int bufsize)
+void gmx_rx(const t_commrec gmx_unused *cr, int gmx_unused dir, void gmx_unused *buf, int gmx_unused bufsize)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_rx");
@@ -163,7 +163,7 @@ void gmx_rx(const t_commrec *cr, int dir, void *buf, int bufsize)
 #endif
 }
 
-void gmx_rx_wait(const t_commrec *cr)
+void gmx_rx_wait(const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_rx_wait");
@@ -178,9 +178,9 @@ void gmx_rx_wait(const t_commrec *cr)
 #endif
 }
 
-void gmx_tx_rx_real(const t_commrec *cr,
-                    int send_dir, real *send_buf, int send_bufsize,
-                    int recv_dir, real *recv_buf, int recv_bufsize)
+void gmx_tx_rx_real(const t_commrec gmx_unused *cr,
+                    int gmx_unused send_dir, real gmx_unused *send_buf, int gmx_unused send_bufsize,
+                    int gmx_unused recv_dir, real gmx_unused *recv_buf, int gmx_unused recv_bufsize)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_tx_rx_real");
@@ -219,9 +219,9 @@ void gmx_tx_rx_real(const t_commrec *cr,
 }
 
 
-void gmx_tx_rx_void(const t_commrec *cr,
-                    int send_dir, void *send_buf, int send_bufsize,
-                    int recv_dir, void *recv_buf, int recv_bufsize)
+void gmx_tx_rx_void(const t_commrec gmx_unused *cr,
+                    int gmx_unused send_dir, void gmx_unused *send_buf, int gmx_unused send_bufsize,
+                    int gmx_unused recv_dir, void gmx_unused *recv_buf, int gmx_unused recv_bufsize)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_tx_rx_void");
@@ -244,7 +244,7 @@ void gmx_tx_rx_void(const t_commrec *cr,
 
 /*void gmx_wait(int dir_send,int dir_recv)*/
 
-void gmx_wait(const t_commrec *cr)
+void gmx_wait(const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_wait");
@@ -333,9 +333,9 @@ pd_constraints_nlocalatoms(gmx_partdec_p_t pd)
  * This has not been tested for periodic molecules...
  */
 void
-pd_move_x_constraints(t_commrec *  cr,
-                      rvec *       x0,
-                      rvec *       x1)
+pd_move_x_constraints(t_commrec gmx_unused *cr,
+                      rvec      gmx_unused *x0,
+                      rvec      gmx_unused *x1)
 {
 #ifdef GMX_MPI
     gmx_partdec_t            *pd;
@@ -953,7 +953,7 @@ gmx_bool setup_parallel_vsites(t_idef *idef, t_commrec *cr,
     return do_comm;
 }
 
-t_state *partdec_init_local_state(t_commrec *cr, t_state *state_global)
+t_state *partdec_init_local_state(t_commrec gmx_unused *cr, t_state *state_global)
 {
     int      i;
     t_state *state_local;

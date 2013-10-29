@@ -365,9 +365,11 @@ gmx_set_thread_affinity(FILE                *fplog,
  * Note that this will only work on Linux as we use a GNU feature.
  */
 void
-gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
-                              gmx_hw_opt_t *hw_opt, int ncpus,
-                              gmx_bool bAfterOpenmpInit)
+gmx_check_thread_affinity_set(FILE            gmx_unused *fplog,
+                              const t_commrec gmx_unused *cr,
+                              gmx_hw_opt_t    gmx_unused *hw_opt,
+                              int             gmx_unused  ncpus,
+                              gmx_bool        gmx_unused  bAfterOpenmpInit)
 {
 #ifdef HAVE_SCHED_GETAFFINITY
     cpu_set_t mask_current;

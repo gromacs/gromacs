@@ -80,7 +80,7 @@ int gmx_omp_get_thread_num(void)
 #endif
 }
 
-void gmx_omp_set_num_threads(int num_threads)
+void gmx_omp_set_num_threads(int gmx_unused num_threads)
 {
 #ifdef GMX_OPENMP
     omp_set_num_threads(num_threads);
@@ -108,8 +108,9 @@ void gmx_omp_set_num_threads(int num_threads)
  * when the first call is made into a compilation unit that contains OpenMP
  * pragmas.
  */
-void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
-                                   gmx_hw_opt_t *hw_opt)
+void gmx_omp_check_thread_affinity(FILE gmx_unused            *fplog,
+                                   const t_commrec gmx_unused *cr,
+                                   gmx_hw_opt_t               *hw_opt)
 {
     gmx_bool bKmpAffinitySet, bGompCpuAffinitySet;
     char    *kmp_env, *gomp_env;
