@@ -733,7 +733,7 @@ float gmx_erfcf(float x)
 }
 
 
-gmx_bool gmx_isfinite(real x)
+gmx_bool gmx_isfinite(real gmx_unused x)
 {
     gmx_bool returnval = TRUE;
     /* If no suitable function was found, assume the value is
