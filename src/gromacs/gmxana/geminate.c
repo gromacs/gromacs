@@ -649,8 +649,11 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
 
 static real* d2r(const double *d, const int nn);
 
-extern real fitGemRecomb(double *ct, double *time, double **ctFit,
-                         const int nData, t_gemParams *params)
+extern real fitGemRecomb(double gmx_unused      *ct,
+                         double gmx_unused      *time,
+                         double gmx_unused     **ctFit,
+                         const int gmx_unused    nData,
+                         t_gemParams gmx_unused *params)
 {
 
     int         nThreads, i, iter, status, maxiter;
@@ -910,7 +913,7 @@ static int balFunc_fdf(const gsl_vector *params, void *data,
 /* Removes the ballistic term from the beginning of the ACF,
  * just like in Omer's paper.
  */
-extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nexp, gmx_bool bDerivative)
+extern void takeAwayBallistic(double gmx_unused *ct, double *t, int len, real tMax, int nexp, gmx_bool gmx_unused bDerivative)
 {
 
     /* Use nonlinear regression with GSL instead.

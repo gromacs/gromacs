@@ -29,10 +29,10 @@
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
 
-void dd_sendrecv_int(const gmx_domdec_t *dd,
-                     int ddimind, int direction,
-                     int *buf_s, int n_s,
-                     int *buf_r, int n_r)
+void dd_sendrecv_int(const gmx_domdec_t gmx_unused *dd,
+                     int gmx_unused ddimind, int gmx_unused direction,
+                     int gmx_unused *buf_s, int gmx_unused n_s,
+                     int gmx_unused *buf_r, int gmx_unused n_r)
 {
 #ifdef GMX_MPI
     int        rank_s, rank_r;
@@ -61,10 +61,10 @@ void dd_sendrecv_int(const gmx_domdec_t *dd,
 #endif
 }
 
-void dd_sendrecv_real(const gmx_domdec_t *dd,
-                      int ddimind, int direction,
-                      real *buf_s, int n_s,
-                      real *buf_r, int n_r)
+void dd_sendrecv_real(const gmx_domdec_t gmx_unused *dd,
+                      int gmx_unused ddimind, int gmx_unused direction,
+                      real gmx_unused *buf_s, int gmx_unused n_s,
+                      real gmx_unused *buf_r, int gmx_unused n_r)
 {
 #ifdef GMX_MPI
     int        rank_s, rank_r;
@@ -93,10 +93,10 @@ void dd_sendrecv_real(const gmx_domdec_t *dd,
 #endif
 }
 
-void dd_sendrecv_rvec(const gmx_domdec_t *dd,
-                      int ddimind, int direction,
-                      rvec *buf_s, int n_s,
-                      rvec *buf_r, int n_r)
+void dd_sendrecv_rvec(const gmx_domdec_t gmx_unused *dd,
+                      int gmx_unused ddimind, int gmx_unused direction,
+                      rvec gmx_unused *buf_s, int gmx_unused n_s,
+                      rvec gmx_unused *buf_r, int gmx_unused n_r)
 {
 #ifdef GMX_MPI
     int        rank_s, rank_r;
@@ -125,12 +125,12 @@ void dd_sendrecv_rvec(const gmx_domdec_t *dd,
 #endif
 }
 
-void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
-                       int ddimind,
-                       rvec *buf_s_fw, int n_s_fw,
-                       rvec *buf_r_fw, int n_r_fw,
-                       rvec *buf_s_bw, int n_s_bw,
-                       rvec *buf_r_bw, int n_r_bw)
+void dd_sendrecv2_rvec(const gmx_domdec_t gmx_unused *dd,
+                       int gmx_unused ddimind,
+                       rvec gmx_unused *buf_s_fw, int gmx_unused n_s_fw,
+                       rvec gmx_unused *buf_r_fw, int gmx_unused n_r_fw,
+                       rvec gmx_unused *buf_s_bw, int gmx_unused n_s_bw,
+                       rvec gmx_unused *buf_r_bw, int gmx_unused n_r_bw)
 {
 #ifdef GMX_MPI
     int         rank_fw, rank_bw, nreq;
@@ -200,7 +200,7 @@ void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
  * called during DD setup and partition.
  */
 
-void dd_bcast(gmx_domdec_t *dd, int nbytes, void *data)
+void dd_bcast(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *data)
 {
 #ifdef GMX_MPI
 #ifdef GMX_BLUEGENE
@@ -234,7 +234,7 @@ void dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
 #endif
 }
 
-void dd_scatter(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
+void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *src, void gmx_unused *dest)
 {
 #ifdef GMX_MPI
     MPI_Scatter(src, nbytes, MPI_BYTE,
@@ -243,7 +243,7 @@ void dd_scatter(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
 #endif
 }
 
-void dd_gather(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
+void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *src, void gmx_unused *dest)
 {
 #ifdef GMX_MPI
     MPI_Gather(src, nbytes, MPI_BYTE,
@@ -252,9 +252,9 @@ void dd_gather(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
 #endif
 }
 
-void dd_scatterv(gmx_domdec_t *dd,
-                 int *scounts, int *disps, void *sbuf,
-                 int rcount, void *rbuf)
+void dd_scatterv(gmx_domdec_t gmx_unused *dd,
+                 int gmx_unused *scounts, int gmx_unused *disps, void gmx_unused *sbuf,
+                 int gmx_unused rcount, void gmx_unused *rbuf)
 {
 #ifdef GMX_MPI
     int dum;
@@ -270,9 +270,9 @@ void dd_scatterv(gmx_domdec_t *dd,
 #endif
 }
 
-void dd_gatherv(gmx_domdec_t *dd,
-                int scount, void *sbuf,
-                int *rcounts, int *disps, void *rbuf)
+void dd_gatherv(gmx_domdec_t gmx_unused *dd,
+                int gmx_unused scount, void gmx_unused *sbuf,
+                int gmx_unused *rcounts, int gmx_unused *disps, void gmx_unused *rbuf)
 {
 #ifdef GMX_MPI
     int dum;

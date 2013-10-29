@@ -85,7 +85,7 @@ static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int count);
 static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
                                     const gmx_gpu_opt_t  *gpu_opt);
 
-static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info, gmx_bool bPrintAll)
+static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info)
 {
     int      i, ndev;
     char     stmp[STRLEN];
@@ -131,7 +131,7 @@ static void print_gpu_detection_stats(FILE                 *fplog,
 
     if (ngpu > 0)
     {
-        sprint_gpus(stmp, gpu_info, TRUE);
+        sprint_gpus(stmp, gpu_info);
         md_print_warn(cr, fplog, "%d GPU%s detected%s:\n%s\n",
                       ngpu, (ngpu > 1) ? "s" : "", onhost, stmp);
     }
@@ -208,7 +208,7 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int **idlist)
     }
 }
 
-static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
+static void parse_gpu_id_csv_string(const char gmx_unused *idstr, int gmx_unused *nid, int gmx_unused *idlist)
 {
     /* XXX implement cvs format to support more than 10 different GPUs in a box. */
     gmx_incons("Not implemented yet");
@@ -481,7 +481,7 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
  * We assume that this is equal with the number of CPUs reported to be
  * online by the OS at the time of the call.
  */
-static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
+static int get_nthreads_hw_avail(const t_commrec gmx_unused *cr)
 {
     int ret = 0;
 
@@ -530,8 +530,7 @@ static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
     return ret;
 }
 
-static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr,
-                            gmx_gpu_info_t *gpu_info)
+static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 {
 #ifdef GMX_LIB_MPI
     int              rank_world;
@@ -634,7 +633,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         }
 
         /* detect number of hardware threads */
-        hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
+        hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(cr);
 
         /* detect GPUs */
         hwinfo_g->gpu_info.ncuda_dev            = 0;
@@ -649,7 +648,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
              getenv("GMX_DISABLE_GPU_DETECTION") == NULL);
         if (hwinfo_g->gpu_info.bDetectGPUs)
         {
-            gmx_detect_gpus(fplog, cr, &hwinfo_g->gpu_info);
+            gmx_detect_gpus(fplog, cr);
         }
     }
     /* increase the reference counter */

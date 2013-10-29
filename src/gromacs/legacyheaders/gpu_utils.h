@@ -94,7 +94,7 @@ int get_current_gpu_device_id(void) FUNC_TERM_INT
 FUNC_QUALIFIER
 int get_gpu_device_id(const gmx_gpu_info_t gmx_unused *gpu_info,
                       const gmx_gpu_opt_t gmx_unused  *gpu_opt,
-                      int                              index) FUNC_TERM_INT
+                      int gmx_unused                   index) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unused *gpu_info, int gmx_unused index) FUNC_TERM_VOID

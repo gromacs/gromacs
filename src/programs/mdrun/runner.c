@@ -646,7 +646,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 }
 
 static void prepare_verlet_scheme(FILE                           *fplog,
-                                  const gmx_hw_info_t            *hwinfo,
                                   t_commrec                      *cr,
                                   t_inputrec                     *ir,
                                   const gmx_mtop_t               *mtop,
@@ -1008,7 +1007,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt,
              gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
-             int nmultisim, int repl_ex_nst, int repl_ex_nex,
+             int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags)
 {
@@ -1082,7 +1081,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             bUseGPU = (hwinfo->gpu_info.ncuda_dev_compatible > 0 ||
                        getenv("GMX_EMULATE_GPU") != NULL);
 
-            prepare_verlet_scheme(fplog, hwinfo, cr,
+            prepare_verlet_scheme(fplog, cr,
                                   inputrec, mtop, state->box,
                                   bUseGPU);
         }

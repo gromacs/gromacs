@@ -35,6 +35,8 @@
 #ifndef _nbnxn_kernel_simd_utils_h_
 #define _nbnxn_kernel_simd_utils_h_
 
+#include "gromacs/legacyheaders/types/simple.h"
+
 /*! \brief Provides hardware-specific utility routines for the SIMD kernels.
  *
  * Defines all functions, typedefs, constants and macros that have
@@ -81,7 +83,7 @@ static const int nbfp_stride = 4;
  * full-width AVX_256 use the array, but other implementations do
  * not. */
 static gmx_inline int *
-prepare_table_load_buffer(const int *array)
+prepare_table_load_buffer(const int gmx_unused *array)
 {
 #if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
     return gmx_simd_align_int(array);

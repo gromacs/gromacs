@@ -662,9 +662,9 @@ static void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
     }
 }
 
-static void pmeredist_pd(gmx_pme_t pme, gmx_bool forw,
-                         int n, gmx_bool bXF, rvec *x_f, real *charge,
-                         pme_atomcomm_t *atc)
+static void pmeredist_pd(gmx_pme_t pme, gmx_bool gmx_unused forw,
+                         int n, gmx_bool gmx_unused bXF, rvec gmx_unused *x_f,
+                         real gmx_unused *charge, pme_atomcomm_t *atc)
 /* Redistribute particle data for PME calculation */
 /* domain decomposition by x coordinate           */
 {
@@ -773,10 +773,10 @@ static void pmeredist_pd(gmx_pme_t pme, gmx_bool forw,
 #endif
 }
 
-static void pme_dd_sendrecv(pme_atomcomm_t *atc,
-                            gmx_bool bBackward, int shift,
-                            void *buf_s, int nbyte_s,
-                            void *buf_r, int nbyte_r)
+static void pme_dd_sendrecv(pme_atomcomm_t gmx_unused *atc,
+                            gmx_bool gmx_unused bBackward, int gmx_unused shift,
+                            void gmx_unused *buf_s, int gmx_unused nbyte_s,
+                            void gmx_unused *buf_r, int gmx_unused nbyte_r)
 {
 #ifdef GMX_MPI
     int        dest, src;

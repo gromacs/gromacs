@@ -5655,9 +5655,9 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
 }
 #endif
 
-void dd_setup_dlb_resource_sharing(t_commrec           *cr,
-                                   const gmx_hw_info_t *hwinfo,
-                                   const gmx_hw_opt_t  *hw_opt)
+void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused *cr,
+                                   const gmx_hw_info_t gmx_unused *hwinfo,
+                                   const gmx_hw_opt_t  gmx_unused *hw_opt)
 {
 #ifdef GMX_MPI
     int           physicalnode_id_hash;
@@ -5711,7 +5711,7 @@ void dd_setup_dlb_resource_sharing(t_commrec           *cr,
 #endif
 }
 
-static void make_load_communicators(gmx_domdec_t *dd)
+static void make_load_communicators(gmx_domdec_t gmx_unused *dd)
 {
 #ifdef GMX_MPI
     int  dim0, dim1, i, j;
@@ -5916,7 +5916,7 @@ void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd)
     }
 }
 
-static void make_pp_communicator(FILE *fplog, t_commrec *cr, int reorder)
+static void make_pp_communicator(FILE *fplog, t_commrec *cr, int gmx_unused reorder)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -6101,8 +6101,8 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
     return ma;
 }
 
-static void split_communicator(FILE *fplog, t_commrec *cr, int dd_node_order,
-                               int reorder)
+static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_node_order,
+                               int gmx_unused reorder)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;

@@ -552,7 +552,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
  * or easier, allocate at least n*SGSF elements.
  */
 static void sort_atoms(int dim, gmx_bool Backwards,
-                       int dd_zone,
+                       int gmx_unused dd_zone,
                        int *a, int n, rvec *x,
                        real h0, real invh, int n_per_h,
                        int *sort)
@@ -877,7 +877,7 @@ static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
     gmx_simd4_pr bb_0_S, bb_1_S;
     gmx_simd4_pr x_S;
 
-    int    i;
+    int          i;
 
     bb_0_S = gmx_simd4_load_bb_pr(x);
     bb_1_S = bb_0_S;
@@ -2096,7 +2096,7 @@ static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
 /* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
 #define SUBC_BB_DIST2_SIMD4_XXXX_INNER(si, bb_i, d2) \
     {                                                \
-        int    shi;                                  \
+        int          shi;                                  \
                                                  \
         gmx_simd4_pr dx_0, dy_0, dz_0;                       \
         gmx_simd4_pr dx_1, dy_1, dz_1;                       \
@@ -2231,8 +2231,8 @@ static gmx_bool subc_in_range_simd4(int na_c,
 
     gmx_simd4_pr rc2_S;
 
-    int    dim_stride;
-    int    j0, j1;
+    int          dim_stride;
+    int          j0, j1;
 
     rc2_S   = gmx_simd4_set1_pr(rl2);
 
@@ -2944,7 +2944,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 #ifdef NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SIMD4 */
         subc_bb_dist2_simd4_xxxx(gridj->pbb+(cj>>STRIDE_PBB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_PBB-1)),
-                               ci1, pbb_ci, d2l);
+                                 ci1, pbb_ci, d2l);
         *ndistc += na_c*2;
 #endif
 

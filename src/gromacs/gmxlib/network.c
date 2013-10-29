@@ -65,7 +65,7 @@ gmx_bool gmx_mpi_initialized(void)
 #endif
 }
 
-void gmx_fill_commrec_from_mpi(t_commrec *cr)
+void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_fill_commrec_from_mpi");
@@ -119,7 +119,7 @@ t_commrec *init_commrec()
     return cr;
 }
 
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro)
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 {
 #ifdef GMX_THREAD_MPI
     t_commrec *cr;
@@ -470,7 +470,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
 }
 
 
-void gmx_barrier(const t_commrec *cr)
+void gmx_barrier(const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_barrier");
@@ -506,7 +506,7 @@ void gmx_abort(int gmx_unused noderank, int gmx_unused nnodes, int gmx_unused er
 #endif
 }
 
-void gmx_bcast(int nbytes, void *b, const t_commrec *cr)
+void gmx_bcast(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_bast");
@@ -515,7 +515,7 @@ void gmx_bcast(int nbytes, void *b, const t_commrec *cr)
 #endif
 }
 
-void gmx_bcast_sim(int nbytes, void *b, const t_commrec *cr)
+void gmx_bcast_sim(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_bast");
@@ -524,7 +524,7 @@ void gmx_bcast_sim(int nbytes, void *b, const t_commrec *cr)
 #endif
 }
 
-void gmx_sumd(int nr, double r[], const t_commrec *cr)
+void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumd");
@@ -587,7 +587,7 @@ void gmx_sumd(int nr, double r[], const t_commrec *cr)
 #endif
 }
 
-void gmx_sumf(int nr, float r[], const t_commrec *cr)
+void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumf");
@@ -649,7 +649,7 @@ void gmx_sumf(int nr, float r[], const t_commrec *cr)
 #endif
 }
 
-void gmx_sumi(int nr, int r[], const t_commrec *cr)
+void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumi");
@@ -707,7 +707,7 @@ void gmx_sumi(int nr, int r[], const t_commrec *cr)
 #endif
 }
 
-void gmx_sumli(int nr, gmx_large_int_t r[], const t_commrec *cr)
+void gmx_sumli(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumli");
@@ -818,7 +818,7 @@ void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 }
 #endif
 
-void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms)
+void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumd_sim");
@@ -827,7 +827,7 @@ void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms)
 #endif
 }
 
-void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms)
+void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumf_sim");
@@ -836,7 +836,7 @@ void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms)
 #endif
 }
 
-void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms)
+void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumi_sim");
@@ -861,7 +861,7 @@ void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms)
 #endif
 }
 
-void gmx_sumli_sim(int nr, gmx_large_int_t r[], const gmx_multisim_t *ms)
+void gmx_sumli_sim(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumli_sim");
