@@ -74,7 +74,7 @@
 
 /* Windows file stuff, only necessary for visual studio */
 #ifdef _MSC_VER
-#include "windows.h"
+#include <windows.h>
 #endif
 
 /* we keep a linked list of all files opened through pipes (i.e.
