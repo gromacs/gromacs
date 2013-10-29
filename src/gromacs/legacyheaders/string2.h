@@ -34,6 +34,8 @@
  */
 /*! \file
  * \brief Generic string handling functions.
+ *
+ * \inpublicapi
  */
 #ifndef _string2_h
 #define _string2_h
