@@ -1780,7 +1780,7 @@ void init_interaction_const_tables(FILE                *fp,
 }
 
 static void init_interaction_const(FILE                 *fp,
-                                   const t_commrec      *cr,
+                                   const t_commrec gmx_unused *cr,
                                    interaction_const_t **interaction_const,
                                    const t_forcerec     *fr,
                                    real                  rtab)
