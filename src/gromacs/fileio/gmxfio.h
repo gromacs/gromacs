@@ -39,8 +39,7 @@
 #define GMX_FILEIO_GMXFIO_H
 
 #include <stdio.h>
-#include "sysstuff.h"
-#include "typedefs.h"
+#include "../legacyheaders/typedefs.h"
 #include "xdrf.h"
 #include "futil.h"
 
