@@ -46,13 +46,10 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gmx_fatal.h"
 #include "network.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trxio.h"
 
-#include "gromacs/onlinehelp/wman.h"
+#include "gromacs/commandline/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
@@ -107,27 +104,6 @@ const char *Program(void)
 }
 
 /* utility functions */
-
-gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
-{
-    int    iq;
-    double tol;
-
-    tol = 2*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
-
-    iq = static_cast<int>((a - b + tol*a)/c);
-
-    if (std::fabs(a - b - c*iq) <= tol*std::fabs(a))
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
-
 
 static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
 {
@@ -188,24 +164,6 @@ static void set_default_xvg_format(const char *xvg_list[])
             xvg_list[0] = xvg_list[exvgNONE];
         }
     }
-}
-
-
-/***** T O P O L O G Y   S T U F F ******/
-
-t_topology *read_top(const char *fn, int *ePBC)
-{
-    int         epbc, natoms;
-    t_topology *top;
-
-    snew(top, 1);
-    epbc = read_tpx_top(fn, NULL, NULL, &natoms, NULL, NULL, NULL, top);
-    if (ePBC)
-    {
-        *ePBC = epbc;
-    }
-
-    return top;
 }
 
 /*************************************************************
@@ -697,21 +655,25 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     if (strcmp(manstr[0], "no") != 0 && !(FF(PCA_QUIET)))
     {
-        if (!strcmp(manstr[0], "completion"))
+        try
         {
-            /* one file each for csh, bash and zsh if we do completions */
-            write_man("completion-zsh", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-            write_man("completion-bash", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-            write_man("completion-csh", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+            if (!strcmp(manstr[0], "completion"))
+            {
+                /* one file each for csh, bash and zsh if we do completions */
+                write_man("completion-zsh", output_env_get_short_program_name(*oenv),
+                          ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+                write_man("completion-bash", output_env_get_short_program_name(*oenv),
+                          ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+                write_man("completion-csh", output_env_get_short_program_name(*oenv),
+                          ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+            }
+            else
+            {
+                write_man(manstr[0], output_env_get_short_program_name(*oenv),
+                          ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+            }
         }
-        else
-        {
-            write_man(manstr[0], output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     /* convert time options, must be done after printing! */
