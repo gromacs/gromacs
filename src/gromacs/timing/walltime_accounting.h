@@ -36,7 +36,7 @@
 #ifndef GMX_TIMING_WALLTIME_ACCOUNTING_H
 #define GMX_TIMING_WALLTIME_ACCOUNTING_H
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "../legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

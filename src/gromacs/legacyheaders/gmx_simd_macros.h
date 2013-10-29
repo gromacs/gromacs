@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS Development Team
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -518,7 +516,7 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #ifdef __clang__
 #include <qpxmath.h>
 #else
-#include "mass_simd.h"
+#include <mass_simd.h>
 #endif
 
 /* No need to version the code by the precision, because the QPX AXU
