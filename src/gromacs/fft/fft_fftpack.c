@@ -25,6 +25,7 @@
 #include <errno.h>
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gmx_fatal.h"
 
 #include "external/fftpack/fftpack.h"
@@ -60,7 +61,7 @@ struct gmx_fft
 int
 gmx_fft_init_1d(gmx_fft_t *        pfft,
                 int                nx,
-                int                flags)
+                int gmx_unused     flags)
 {
     gmx_fft_t    fft;
 
@@ -100,7 +101,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
 int
 gmx_fft_init_1d_real(gmx_fft_t *        pfft,
                      int                nx,
-                     int                flags)
+                     int gmx_unused     flags)
 {
     gmx_fft_t    fft;
 
