@@ -38,7 +38,7 @@
 
 #include "typedefs.h"
 #include "domdec.h"
-#include "gmx_cyclecounter.h"
+#include "gromacs/timing/cyclecounter.h"
 
 #ifdef GMX_NBNXN_SIMD
 /* The include below sets the SIMD instruction type (precision+width)

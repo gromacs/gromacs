@@ -43,12 +43,13 @@
 #include "mdrun.h"
 #include "domdec.h"
 #include "mtop_util.h"
-#include "gmx_wallcycle.h"
 #include "vcm.h"
 #include "nrnb.h"
 #include "macros.h"
 #include "md_logging.h"
 #include "md_support.h"
+
+#include "gromacs/timing/wallcycle.h"
 
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };

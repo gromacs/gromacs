@@ -39,13 +39,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "domdec.h"
-#include "gmx_wallcycle.h"
-#include "gmx_cyclecounter.h"
-#include "gromacs/fileio/trnio.h"
 #include "smalloc.h"
 #include "network.h"
 #include "pbc.h"
-#include "gromacs/fileio/futil.h"
 #include "mdrun.h"
 #include "txtdump.h"
 #include "names.h"
@@ -55,16 +51,19 @@
 #include "vec.h"
 #include "gmx_ga2la.h"
 #include "xvgr.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "groupcoord.h"
 #include "pull_rotation.h"
 #include "gmx_sort.h"
 #include "copyrite.h"
 #include "macros.h"
 
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/timing/cyclecounter.h"
+#include "gromacs/timing/wallcycle.h"
 
 static char *RotStr = {"Enforced rotation:"};
-
 
 /* Set the minimum weight for the determination of the slab centers */
 #define WEIGHT_MIN (10*GMX_FLOAT_MIN)

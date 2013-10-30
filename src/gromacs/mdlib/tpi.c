@@ -43,7 +43,6 @@
 #include "sysstuff.h"
 #include "string2.h"
 #include "network.h"
-#include "gromacs/fileio/confio.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "main.h"
@@ -72,12 +71,14 @@
 #include "xvgr.h"
 #include "mdatoms.h"
 #include "ns.h"
-#include "gmx_wallcycle.h"
 #include "mtop_util.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trxio.h"
 #include "pme.h"
 #include "gbutil.h"
+
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
 #ifdef GMX_X86_SSE2

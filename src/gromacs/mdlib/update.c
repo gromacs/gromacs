@@ -50,10 +50,8 @@
 #include "macros.h"
 #include "vec.h"
 #include "main.h"
-#include "gromacs/fileio/confio.h"
 #include "update.h"
 #include "gmx_random.h"
-#include "gromacs/fileio/futil.h"
 #include "mshift.h"
 #include "tgroup.h"
 #include "force.h"
@@ -65,9 +63,12 @@
 #include "pull.h"
 #include "disre.h"
 #include "orires.h"
-#include "gmx_wallcycle.h"
 #include "gmx_omp_nthreads.h"
 #include "gmx_omp.h"
+
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/timing/wallcycle.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/

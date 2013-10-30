@@ -238,6 +238,9 @@
 /* Define to 1 if you have the gettimeofday() function. */
 #cmakedefine HAVE_GETTIMEOFDAY
 
+/* Define to 1 if you have the rdtscp instruction. */
+#cmakedefine HAVE_RDTSCP
+
 /* Define to 1 if you have the isfinite() function. */
 #cmakedefine HAVE_ISFINITE
 

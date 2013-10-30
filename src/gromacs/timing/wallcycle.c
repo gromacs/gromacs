@@ -32,20 +32,20 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <string.h>
-#include "gmx_wallcycle.h"
-#include "gmx_cyclecounter.h"
+
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "md_logging.h"
 #include "string2.h"
 
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/gmxmpi.h"
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
