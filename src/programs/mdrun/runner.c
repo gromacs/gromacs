@@ -464,9 +464,12 @@ static const char*  NSTLIST_ENVVAR          =  "GMX_NSTLIST";
 /* Try to increase nstlist when using a GPU with nstlist less than this */
 static const int    NSTLIST_GPU_ENOUGH      = 20;
 /* Increase nstlist until the non-bonded cost increases more than this factor */
-static const float  NBNXN_GPU_LIST_OK_FAC   = 1.25;
-/* Don't increase nstlist beyond a non-bonded cost increases of this factor */
-static const float  NBNXN_GPU_LIST_MAX_FAC  = 1.40;
+static const float  NBNXN_GPU_LIST_OK_FAC   = 1.20;
+/* Don't increase nstlist beyond a non-bonded cost increases of this factor.
+ * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
+ * needs 1.28 at rcoulomb=0.9 and 1.24 at rcoulomb=1.0 to get to nstlist=40.
+ */
+static const float  NBNXN_GPU_LIST_MAX_FAC  = 1.30;
 
 /* Try to increase nstlist when running on a GPU */
 static void increase_nstlist(FILE *fp, t_commrec *cr,
@@ -475,7 +478,8 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     char                  *env;
     int                    nstlist_orig, nstlist_prev;
     verletbuf_list_setup_t ls;
-    real                   rlist_inc, rlist_ok, rlist_max, rlist_new, rlist_prev;
+    real                   rlist_nstlist10, rlist_inc, rlist_ok, rlist_max;
+    real                   rlist_new, rlist_prev;
     int                    i;
     t_state                state_tmp;
     gmx_bool               bBox, bDD, bCont;
@@ -486,7 +490,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     char                   buf[STRLEN];
 
     /* Number of + nstlist alternative values to try when switching  */
-    const int nstl[] = { 20, 25, 40, 50 };
+    const int nstl[] = { 20, 25, 40 };
 #define NNSTL  sizeof(nstl)/sizeof(nstl[0])
 
     env = getenv(NSTLIST_ENVVAR);
@@ -534,10 +538,19 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 
     verletbuf_get_list_setup(TRUE, &ls);
 
-    /* Allow rlist to make the list double the size of the cut-off sphere */
+    /* Allow rlist to make the list a given factor larger than the list
+     * would be with nstlist=10.
+     */
+    nstlist_prev = ir->nstlist;
+    ir->nstlist  = 10;
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_drift, &ls,
+                            NULL, &rlist_nstlist10);
+    ir->nstlist  = nstlist_prev;
+
+    /* Determine the pair list size increase due to zero interactions */
     rlist_inc = nbnxn_get_rlist_effective_inc(NBNXN_GPU_CLUSTER_SIZE, mtop->natoms/det(box));
-    rlist_ok  = (max(ir->rvdw, ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC, 1.0/3.0) - rlist_inc;
-    rlist_max = (max(ir->rvdw, ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_MAX_FAC, 1.0/3.0) - rlist_inc;
+    rlist_ok  = (rlist_nstlist10 + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC, 1.0/3.0) - rlist_inc;
+    rlist_max = (rlist_nstlist10 + rlist_inc)*pow(NBNXN_GPU_LIST_MAX_FAC, 1.0/3.0) - rlist_inc;
     if (debug)
     {
         fprintf(debug, "GPU nstlist tuning: rlist_inc %.3f rlist_max %.3f\n",
