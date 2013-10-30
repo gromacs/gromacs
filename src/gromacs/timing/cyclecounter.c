@@ -15,6 +15,8 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
+#include "gromacs/timing/cyclecounter.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -27,12 +29,6 @@
 #ifdef _MSC_VER
 #include <windows.h>
 #endif
-
-#include "gmx_cyclecounter.h"
-
-
-
-
 
 /*! \brief Calculate number of seconds per cycle tick on host
  *

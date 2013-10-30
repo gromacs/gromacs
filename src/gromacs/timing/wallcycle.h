@@ -31,14 +31,12 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
-
-#ifndef _gmx_wallcycle_h
-#define _gmx_wallcycle_h
+#ifndef GMX_TIMING_WALLCYCLE_H
+#define GMX_TIMING_WALLCYCLE_H
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,4 +106,4 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 }
 #endif
 
-#endif /* _gmx_wallcycle_h */
+#endif

@@ -39,7 +39,6 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "gmxcomplex.h"
-#include "gmx_wallcycle.h"
 #include "sim_util.h"
 
 #ifdef __cplusplus

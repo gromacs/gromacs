@@ -60,9 +60,6 @@
 #include <config.h>
 #endif
 
-#include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/utility/gmxmpi.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -72,19 +69,21 @@
 #include "vec.h"
 #include "gmxcomplex.h"
 #include "smalloc.h"
-#include "gromacs/fileio/futil.h"
 #include "coulomb.h"
 #include "gmx_fatal.h"
 #include "pme.h"
 #include "network.h"
 #include "physics.h"
 #include "nrnb.h"
-#include "gmx_wallcycle.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gmx_cyclecounter.h"
 #include "gmx_omp.h"
 #include "macros.h"
 
+#include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/timing/cyclecounter.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/gmxmpi.h"
 
 /* Include the SIMD macro file and then check for support */
 #include "gmx_simd_macros.h"

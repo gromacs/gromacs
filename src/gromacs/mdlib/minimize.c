@@ -43,7 +43,6 @@
 #include "sysstuff.h"
 #include "string2.h"
 #include "network.h"
-#include "gromacs/fileio/confio.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "main.h"
@@ -66,21 +65,19 @@
 #include "md_support.h"
 #include "domdec.h"
 #include "partdec.h"
-#include "gromacs/fileio/trnio.h"
 #include "mdatoms.h"
 #include "ns.h"
-#include "gmx_wallcycle.h"
 #include "mtop_util.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "pme.h"
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
 
-
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trajectory_writing.h"
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
-#include "gromacs/fileio/trajectory_writing.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
 typedef struct {
