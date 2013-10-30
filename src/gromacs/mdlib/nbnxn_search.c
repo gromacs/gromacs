@@ -50,11 +50,10 @@
 #endif
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
-#include "gmx_cyclecounter.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gmx_omp_nthreads.h"
 #include "nrnb.h"
 
+#include "gromacs/fileio/gmxfio.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* We use 4-wide SIMD for bounding box calculations */

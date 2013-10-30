@@ -40,10 +40,8 @@
 #include <math.h>
 #include "typedefs.h"
 #include "string2.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "smalloc.h"
 #include "names.h"
-#include "gromacs/fileio/confio.h"
 #include "mvdata.h"
 #include "txtdump.h"
 #include "pbc.h"
@@ -65,14 +63,16 @@
 #include "calcmu.h"
 #include "constr.h"
 #include "xvgr.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/xtcio.h"
 #include "gmx_random.h"
 #include "domdec.h"
 #include "partdec.h"
-#include "gmx_wallcycle.h"
 #include "macros.h"
 
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 
 static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, int nlim)

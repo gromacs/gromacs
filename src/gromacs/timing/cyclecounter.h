@@ -15,23 +15,23 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-
-#ifndef _GMX_CYCLECOUNTER_H_
-#define _GMX_CYCLECOUNTER_H_
+/*! \internal \file
+ * \brief
+ * High-resolution timestamp or CPU clock cycle counters.
+ *
+ * After reading the current value with gmx_cycles_read() you can add or
+ * subtract these numbers as normal integers of type gmx_cycles_t.
+ */
+#ifndef GMX_TIMING_CYCLECOUNTER_H
+#define GMX_TIMING_CYCLECOUNTER_H
 
 /*
  * define HAVE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
  * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
  */
-
-
-/** @file gmx_cyclecounter.h
- *
- *  @brief High-resolution timestamp or CPU clock cycle counters.
- *
- *  After reading the current value with gmx_cycles_read() you can add or
- *  subtract these numbers as normal integers of type gmx_cycles_t.
- */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -44,8 +44,6 @@ extern "C"
 #if 0
 } /* fixes auto-indentation problems */
 #endif
-
-
 
 /* Minor implementation note:
  *
@@ -164,8 +162,6 @@ typedef long
     gmx_cycles_t;
 
 #endif
-
-
 
 /*! \brief Check if high-resolution cycle counters are available
  *
@@ -298,11 +294,6 @@ static int gmx_cycles_have_counter(void)
     return 0;
 }
 #endif
-
-
-
-
-
 
 /*! \brief Read CPU cycle counter
  *
@@ -501,24 +492,14 @@ static gmx_cycles_t gmx_cycles_read(void)
 }
 #endif
 
-
-
-
-
-
-
-
 /*! \brief Calculate number of seconds per cycle tick on host
  *
  *  This routine runs a timer loop to calibrate the number of
- *  seconds per the units returned from gmx_cycles_difference()
+ *  seconds per the units returned fro gmx_cycles_read().
  *
- *  To calculate the time used, call gmx_cycles_read() twice,
- *  and then use this routine to calculate the difference as a double
- *  precision floating-point number.
- *
- *  \param  sampletime Minimum number of seconds to sample.
- *          One second should give you a reasonably accurate calibration.
+ *  \param  sampletime Minimum real sample time. It takes some trial-and-error
+ *          to find the correct delay loop size, so the total runtime of
+ *          this routine is about twice this time.
  *  \return Number of seconds per cycle unit. If it is not possible to
  *          calculate on this system (for whatever reason) the return value
  *          will be -1, so check that it is positive before using it.
@@ -526,11 +507,8 @@ static gmx_cycles_t gmx_cycles_read(void)
 double
 gmx_cycles_calibrate(double sampletime);
 
-
 #ifdef __cplusplus
 }
 #endif
 
-
-
-#endif /* _GMX_CYCLECOUNTER_H_ */
+#endif

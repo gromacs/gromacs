@@ -41,11 +41,12 @@
 #include "sysstuff.h"
 #include "vec.h"
 #include "sim_util.h"
-#include "gmx_wallcycle.h"
 #include "mdrun.h"
 #include "confio.h"
 #include "trajectory_writing.h"
 #include "mdoutf.h"
+
+#include "gromacs/timing/wallcycle.h"
 
 void
 do_trajectory_writing(FILE           *fplog,
