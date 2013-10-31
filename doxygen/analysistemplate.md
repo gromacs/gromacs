@@ -227,3 +227,56 @@ To implement a command-line tool, it should create a module and run it using
 gmx::TrajectoryAnalysisCommandLineRunner using the boilerplate code below:
 \skip  int
 \until }
+
+
+\if libapi
+Tools within \Gromacs
+====================
+
+Analysis tools implemented using the template can also be easily included into
+the \Gromacs library.  To do this, follow these steps:
+
+ 1. Put your tool source code into `src/gromacs/trajectoryanalysis/modules/`.
+ 2. Remove `using namespace gmx;` and enclose all the code into
+    `gmx::analysismodules` namespace, and the tool class into an unnamed
+    namespace within this.
+ 3. Create a header file corresponding to your tool and add the following class
+    into it withing `gmx::analysismodules` namespace (replace `Template` with
+    the name of your tool):
+~~~~{.cpp}
+    class TemplateInfo
+    {
+        public:
+            static const char name[];
+            static const char shortDescription[];
+            static TrajectoryAnalysisModulePointer create();
+    };
+~~~~
+ 4. Add definition for these items in the source file, outside the unnamed
+    namespace (replace `Template`, `AnalysisTemplate` and the strings with
+    correct values):
+~~~~{.cpp}
+    const char TemplateInfo::name[]             = "template";
+    const char TemplateInfo::shortDescription[] =
+        "Compute something";
+
+    TrajectoryAnalysisModulePointer TemplateInfo::create()
+    {
+        return TrajectoryAnalysisModulePointer(new AnalysisTemplate);
+    }
+~~~~
+ 5. Change the constructor of your tool to refer to the strings in the new
+    class:
+~~~~{.cpp}
+    AnalysisTemplate::AnalysisTemplate()
+        : TrajectoryAnalysisModule(TemplateInfo::name, TemplateInfo::shortDescription),
+~~~~
+ 6. Register your module in `src/gromacs/trajectoryanalysis/modules.cpp`.
+ 7. Done.  Your tool can now be invoked as `gmx template`, using the string you
+    specified as the name.
+
+See existing tools within the `src/gromacs/trajectoryanalysis/modules/` for
+concrete examples and preferred layout of the files.  Please document yourself
+as the author of the files, using Doxygen comments like in the existing files.
+
+\endif
