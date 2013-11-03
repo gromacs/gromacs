@@ -13,13 +13,8 @@ if(GMX_MPI)
     COMPILE_DEFINITIONS )
 
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
-  # cmake < 2.8.5 not recommended for fall-back because of unreliability (redmine #851)
   if(NOT MPI_FOUND)
-      if(CMAKE_VERSION VERSION_LESS "2.8.5")
-          set(MPI_PREFIX MPI)
-      else()
-          set(MPI_PREFIX MPI_C)
-      endif()
+      set(MPI_PREFIX MPI_C)
       find_package(MPI)
       if(${${MPI_PREFIX}_FOUND})
         set(MPI_COMPILE_FLAGS ${${MPI_PREFIX}_COMPILE_FLAGS})
@@ -118,18 +113,10 @@ if(GMX_MPI)
     endif()
 
   else(MPI_FOUND)
-    if (CMAKE_VERSION VERSION_LESS "2.8.5")
-      message(FATAL_ERROR
-        "MPI support requested, but no MPI compiler found. Either set the "
-        "C-compiler (CMAKE_C_COMPILER) to the MPI compiler (often called mpicc), "
-        "or use a newer cmake version (>=2.8.5) which has improved MPI detection.")
-    else()
       message(FATAL_ERROR
         "MPI support requested, but no MPI compiler found. Either set the "
         "C-compiler (CMAKE_C_COMPILER) to the MPI compiler (often called mpicc), "
         "or set the variables reported missing for MPI_C above.")
-    endif()
-
   endif(MPI_FOUND)
 
   include(gmxTestCatamount)
