@@ -51,15 +51,9 @@ set(${UPPERFFTW}_INCLUDE_DIRS ${CMAKE_BINARY_PREFIX}/${INSTALL_DIR}/include PARE
 set(${UPPERFFTW}_FOUND TRUE PARENT_SCOPE)
 set(${UPPERFFTW}_HAVE_SIMD TRUE PARENT_SCOPE)
 
-if(CMAKE_VERSION VERSION_GREATER 2.8.7) #add_library GLOBAL is broken in 2.8.7
-    add_library(gmxfftw STATIC IMPORTED GLOBAL)
-    set_target_properties(gmxfftw PROPERTIES IMPORTED_LOCATION ${${UPPERFFTW}_LIBRARIES})
-    set(${UPPERFFTW}_LIBRARIES gmxfftw PARENT_SCOPE)
-else()
-    # The dependency that triggers building the gmxfftw target gets made where libmd is constructed
-    add_custom_target(gmxfftw)
-    set(${UPPERFFTW}_LIBRARIES ${${UPPERFFTW}_LIBRARIES} PARENT_SCOPE)
-endif()
+add_library(gmxfftw STATIC IMPORTED GLOBAL)
+set_target_properties(gmxfftw PROPERTIES IMPORTED_LOCATION ${${UPPERFFTW}_LIBRARIES})
+set(${UPPERFFTW}_LIBRARIES gmxfftw PARENT_SCOPE)
 add_dependencies(gmxfftw fftwBuild)
 
 message(STATUS "The GROMACS-managed build of FFTW 3 will configure with the following optimizations: ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}")

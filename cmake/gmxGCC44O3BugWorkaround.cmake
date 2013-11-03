@@ -8,7 +8,7 @@
 # is needed to avoid gcc crash.
 macro(gmx_check_gcc44_bug_workaround_needed OUT_VAR)
     if(CMAKE_COMPILER_IS_GNUCC AND
-    C_COMPILER_VERSION VERSION_GREATER "4.3.999" AND C_COMPILER_VERSION VERSION_LESS "4.4.999")
+    CMAKE_C_COMPILER_VERSION VERSION_GREATER "4.3.999" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "4.4.999")
 
         set(_gcc44_workaround FALSE)
 
@@ -17,9 +17,9 @@ macro(gmx_check_gcc44_bug_workaround_needed OUT_VAR)
         if ("${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${_build_type}}" MATCHES ".*-O3.*" AND
             GMX_OPENMP)
             if(GMX_DISABLE_GCC44_BUG_WORKAROUND)
-                set(_msg "gcc ${C_COMPILER_VERSION} detected, using -O3, but workaround for optimization bug is disabled")
+                set(_msg "gcc ${CMAKE_C_COMPILER_VERSION} detected, using -O3, but workaround for optimization bug is disabled")
             else()
-                set(_msg "gcc ${C_COMPILER_VERSION} detected, using -O3, will apply workaround for optimization bug (disable with GMX_DISABLE_GCC44_BUG_WORKAROUND)")
+                set(_msg "gcc ${CMAKE_C_COMPILER_VERSION} detected, using -O3, will apply workaround for optimization bug (disable with GMX_DISABLE_GCC44_BUG_WORKAROUND)")
                 set(_gcc44_workaround TRUE)
             endif()
             # only issues message if the value has changed
