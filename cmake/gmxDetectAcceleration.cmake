@@ -39,7 +39,7 @@
 # Try to detect CPU information and suggest an acceleration option
 # (such as SSE/AVX) that fits the current CPU. These functions assume
 # that gmx_detect_target_architecture() has already been run, so that
-# things like GMX_IS_X86 are already available.
+# things like GMX_TARGET_X86 are already available.
 #
 # Sets ${GMX_SUGGESTED_CPU_ACCELERATION} in the parent scope if
 # GMX_CPU_ACCELERATION is not set (e.g. by the user, or a previous run
@@ -62,10 +62,14 @@ function(gmx_suggest_x86_acceleration _suggested_acceleration)
     message(STATUS "Detecting best acceleration for this CPU")
 
     # Get CPU acceleration information
+    set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE")
+    if(GMX_TARGET_X86)
+        set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
+    endif()
     try_run(GMX_CPUID_RUN_ACC GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE -DGMX_IS_X86"
+            COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_TMP
             COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
             ARGS "-acceleration")
@@ -88,9 +92,9 @@ endfunction()
 
 function(gmx_detect_acceleration _suggested_acceleration)
     if(NOT DEFINED GMX_CPU_ACCELERATION)
-        if(GMX_IS_BGQ)
+        if(GMX_TARGET_BGQ)
             set(${_suggested_acceleration} "IBM_QPX")
-        elseif(GMX_IS_X86)
+        elseif(GMX_TARGET_X86)
             gmx_suggest_x86_acceleration(${_suggested_acceleration})
         else()
             set(${_suggested_acceleration} "None")
