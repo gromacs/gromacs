@@ -1,11 +1,11 @@
 libdir=@LIB_INSTALL_DIR@
 includedir=@INCL_INSTALL_DIR@
 
-Name: libgmxana
+Name: libgmxana@GMX_LIBS_SUFFIX@
 Description: Gromacs analysis lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
-Requires: @PKG_GSL@ libgmx@GMX_LIBS_SUFFIX@ libmd@GMX_LIBS_SUFFIX@
+Requires: @PKG_GSL@ libgmx@GMX_LIBS_SUFFIX@ lib@MD_PREFIX@md@GMX_LIBS_SUFFIX@
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
 Libs: -L${libdir} -lgmxana@GMX_LIBS_SUFFIX@
 Cflags: -I${includedir} @PKG_CFLAGS@

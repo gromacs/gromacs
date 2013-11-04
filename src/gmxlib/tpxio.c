@@ -174,14 +174,13 @@ static const t_ftupd ftupd[] = {
     { 46, F_ECONSERVED        },
     { 69, F_VTEMP_NOLONGERUSED},
     { 66, F_PDISPCORR         },
-    { 54, F_DHDL_CON          },
+    { 54, F_DVDL_CONSTR       },
     { 76, F_ANHARM_POL        },
     { 79, F_DVDL_COUL         },
     { 79, F_DVDL_VDW,         },
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
-    { 54, F_DHDL_CON          }
 };
 #define NFTUPD asize(ftupd)
 
@@ -1851,7 +1850,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->orires.kfac);
             break;
         case F_DIHRES:
-            if (file_version < 72)
+            if (file_version < 82)
             {
                 gmx_fio_do_int(fio, idum);
                 gmx_fio_do_int(fio, idum);
@@ -1859,7 +1858,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->dihres.phiA);
             gmx_fio_do_real(fio, iparams->dihres.dphiA);
             gmx_fio_do_real(fio, iparams->dihres.kfacA);
-            if (file_version >= 72)
+            if (file_version >= 82)
             {
                 gmx_fio_do_real(fio, iparams->dihres.phiB);
                 gmx_fio_do_real(fio, iparams->dihres.dphiB);

@@ -255,10 +255,11 @@ void CopyRight(FILE *out, const char *szProgram)
     /* Dont change szProgram arbitrarily - it must be argv[0], i.e. the
      * name of a file. Otherwise, we won't be able to find the library dir.
      */
+
 #define NCR (int)asize(CopyrightText)
 /* TODO: Is this exception still needed? */
 #ifdef GMX_FAHCORE
-#define NLICENSE 0 /*FAH has an exception permission from GPL to allow digital signatures in Gromacs*/
+#define NLICENSE 0 /*FAH has an exception permission from LGPL to allow digital signatures in Gromacs*/
 #else
 #define NLICENSE (int)asize(LicenseText)
 #endif
@@ -281,6 +282,11 @@ void CopyRight(FILE *out, const char *szProgram)
 
     ster_print(out, GromacsVersion());
     fprintf(out, "\n");
+
+    if (getenv("GMX_NO_CREDITS"))
+    {
+        return;
+    }
 
     /* fprintf(out,"\n");*/
 
@@ -764,7 +770,7 @@ void gmx_print_version_info(FILE *fp)
     }
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    fprintf(fp, "Linked with Intel MKL version %s.%s.%s.\n",
+    fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
             __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
 #endif
 #ifdef GMX_GPU

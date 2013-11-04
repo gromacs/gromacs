@@ -244,7 +244,8 @@ void nice_header (FILE *out, const char *fn)
     uid  = getuid();
     pw   = getpwuid(uid);
     gh   = gethostname(buf, 255);
-    user = pw->pw_name;
+    /* pw returns null on error (e.g. compute nodes lack /etc/passwd) */
+    user = pw ? pw->pw_name : unk;
 #else
     uid = 0;
     gh  = -1;

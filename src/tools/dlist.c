@@ -59,7 +59,7 @@ t_dlist *mk_dlist(FILE *log,
     t_dlist  *dl;
 
     snew(dl, atoms->nres+1);
-    prev.C = prev.O = -1;
+    prev.C = prev.Cn[1] = -1; /* Keep the compiler quiet */
     for (i = 0; (i < edMax); i++)
     {
         nc[i] = 0;
@@ -71,7 +71,7 @@ t_dlist *mk_dlist(FILE *log,
         ires = atoms->atom[i].resind;
 
         /* Initiate all atom numbers to -1 */
-        atm.minC = atm.H = atm.N = atm.C = atm.O = atm.minO = -1;
+        atm.minC = atm.H = atm.N = atm.C = atm.O = atm.minCalpha = -1;
         for (j = 0; (j < MAXCHI+3); j++)
         {
             atm.Cn[j] = -1;
@@ -82,7 +82,8 @@ t_dlist *mk_dlist(FILE *log,
         while ((i < atoms->nr) && (atoms->atom[i].resind == ires))
         {
             if ((strcmp(*(atoms->atomname[i]), "H") == 0) ||
-                (strcmp(*(atoms->atomname[i]), "H1") == 0) )
+                (strcmp(*(atoms->atomname[i]), "H1") == 0) ||
+                (strcmp(*(atoms->atomname[i]), "HN") == 0) )
             {
                 atm.H = i;
             }
@@ -95,7 +96,9 @@ t_dlist *mk_dlist(FILE *log,
                 atm.C = i;
             }
             else if ((strcmp(*(atoms->atomname[i]), "O") == 0) ||
-                     (strcmp(*(atoms->atomname[i]), "O1") == 0))
+                     (strcmp(*(atoms->atomname[i]), "O1") == 0) ||
+                     (strcmp(*(atoms->atomname[i]), "OC1") == 0) ||
+                     (strcmp(*(atoms->atomname[i]), "OT1") == 0))
             {
                 atm.O = i;
             }
@@ -178,9 +181,10 @@ t_dlist *mk_dlist(FILE *log,
         {
             atm.minC = prev.C;
         }
-        if (prev.O != -1)
+        /* Alpha-carbon from previous residue */
+        if (prev.Cn[1] != -1)
         {
-            atm.minO = prev.O;
+            atm.minCalpha = prev.Cn[1];
         }
         prev = atm;
 
@@ -215,7 +219,7 @@ t_dlist *mk_dlist(FILE *log,
                     }
                 }
             }
-            if ((atm.minC != -1) && (atm.minO != -1))
+            if ((atm.minC != -1) && (atm.minCalpha != -1))
             {
                 nc[6]++;
             }
@@ -303,7 +307,7 @@ gmx_bool has_dihedral(int Dih, t_dlist *dl)
             b = ((dl->atm.N != -1) && (dl->atm.Cn[1] != -1) && (dl->atm.C != -1) && (dl->atm.O != -1));
             break;
         case edOmega:
-            b = ((dl->atm.minO != -1) && (dl->atm.minC != -1) && (dl->atm.N != -1) && (dl->atm.Cn[1] != -1));
+            b = ((dl->atm.minCalpha != -1) && (dl->atm.minC != -1) && (dl->atm.N != -1) && (dl->atm.Cn[1] != -1));
             break;
         case edChi1:
         case edChi2:
@@ -388,7 +392,7 @@ void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt, int printtype,
         }
         if (bOmega && has_dihedral(edOmega, &(dl[i])))
         {
-            fprintf(fp, " Omega [%5d,%5d,%5d,%5d]", 1+dl[i].atm.minO, 1+dl[i].atm.minC,
+            fprintf(fp, " Omega [%5d,%5d,%5d,%5d]", 1+dl[i].atm.minCalpha, 1+dl[i].atm.minC,
                     1+dl[i].atm.N, 1+dl[i].atm.Cn[1]);
             pr_props(fp, &dl[i], edOmega, dt);
         }

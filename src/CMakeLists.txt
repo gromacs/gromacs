@@ -37,6 +37,14 @@ configure_file(buildinfo.h.cmakein buildinfo.h)
 
 include(../cmake/BuildManPages.cmake)
 
+option(GMX_PREFIX_LIBMD "Change install name of libmd to libgmxmd to avoid collision with BSD's/Martin Hinner's libmd, which is used in X11 and zfs" OFF)
+mark_as_advanced(GMX_PREFIX_LIBMD)
+if (GMX_PREFIX_LIBMD)
+  set(MD_PREFIX "gmx")
+else()
+  set(MD_PREFIX)
+endif()
+
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(kernel)

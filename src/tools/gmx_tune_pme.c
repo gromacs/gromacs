@@ -76,6 +76,7 @@ enum {
     eParselogNoDDGrid,
     eParselogTPXVersion,
     eParselogNotParallel,
+    eParselogLargePrimeFactor,
     eParselogFatal,
     eParselogNr
 };
@@ -287,6 +288,11 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 {
                     fclose(fp);
                     return eParselogNoDDGrid;
+                }
+                else if (str_starts(line, "The number of nodes you selected"))
+                {
+                    fclose(fp);
+                    return eParselogLargePrimeFactor;
                 }
                 else if (str_starts(line, "reading tpx file"))
                 {
@@ -592,23 +598,12 @@ static gmx_bool analyze_data(
 static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np[],
                               char *cmd_mdrun[], int repeats)
 {
-    char      *command = NULL;
     char      *cp;
-    char      *cp2;
-    char       line[STRLEN];
     FILE      *fp;
     const char def_mpirun[]   = "mpirun";
     const char def_mdrun[]    = "mdrun";
-    const char filename[]     = "benchtest.log";
 
-    /* This string should always be identical to the one in copyrite.c,
-     * gmx_print_version_info() in the defined(GMX_MPI) section */
-    const char match_mpi[]    = "MPI library:        MPI";
-    const char match_mdrun[]  = "Program: ";
     const char empty_mpirun[] = "";
-    gmx_bool   bMdrun         = FALSE;
-    gmx_bool   bMPI           = FALSE;
-
 
     /* Get the commands we need to set up the runs from environment variables */
     if (!bThreads)
@@ -635,25 +630,40 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np
     {
         *cmd_mdrun  = strdup(def_mdrun);
     }
+}
 
+/* Check that the commands will run mdrun (perhaps via mpirun) by
+ * running a very quick test simulation. Requires MPI environment to
+ * be available if applicable. */
+static void check_mdrun_works(gmx_bool bThreads,
+                              const char *cmd_mpirun,
+                              const char *cmd_np,
+                              const char *cmd_mdrun)
+{
+    char      *command = NULL;
+    char      *cp;
+    char       line[STRLEN];
+    FILE      *fp;
+    const char filename[]     = "benchtest.log";
 
-    /* If no simulations have to be performed, we are done here */
-    if (repeats <= 0)
-    {
-        return;
-    }
+    /* This string should always be identical to the one in copyrite.c,
+     * gmx_print_version_info() in the defined(GMX_MPI) section */
+    const char match_mpi[]    = "MPI library:        MPI";
+    const char match_mdrun[]  = "Program: ";
+    gmx_bool   bMdrun         = FALSE;
+    gmx_bool   bMPI           = FALSE;
 
     /* Run a small test to see whether mpirun + mdrun work  */
     fprintf(stdout, "Making sure that mdrun can be executed. ");
     if (bThreads)
     {
-        snew(command, strlen(*cmd_mdrun) + strlen(cmd_np) + strlen(filename) + 50);
-        sprintf(command, "%s%s-version -maxh 0.001 1> %s 2>&1", *cmd_mdrun, cmd_np, filename);
+        snew(command, strlen(cmd_mdrun) + strlen(cmd_np) + strlen(filename) + 50);
+        sprintf(command, "%s%s-version -maxh 0.001 1> %s 2>&1", cmd_mdrun, cmd_np, filename);
     }
     else
     {
-        snew(command, strlen(*cmd_mpirun) + strlen(cmd_np) + strlen(*cmd_mdrun) + strlen(filename) + 50);
-        sprintf(command, "%s%s%s -version -maxh 0.001 1> %s 2>&1", *cmd_mpirun, cmd_np, *cmd_mdrun, filename);
+        snew(command, strlen(cmd_mpirun) + strlen(cmd_np) + strlen(cmd_mdrun) + strlen(filename) + 50);
+        sprintf(command, "%s%s%s -version -maxh 0.001 1> %s 2>&1", cmd_mpirun, cmd_np, cmd_mdrun, filename);
     }
     fprintf(stdout, "Trying '%s' ... ", command);
     make_backup(filename);
@@ -670,8 +680,8 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np
      * also writes stuff to stdout/err */
     while (!feof(fp) )
     {
-        cp2 = fgets(line, STRLEN, fp);
-        if (cp2 != NULL)
+        cp = fgets(line, STRLEN, fp);
+        if (cp != NULL)
         {
             if (str_starts(line, match_mdrun) )
             {
@@ -1377,6 +1387,7 @@ static void do_the_tests(
         "No DD grid found for these settings.",
         "TPX version conflict!",
         "mdrun was not started in parallel!",
+        "Number of PP nodes has a prime factor that is too large.",
         "An error occured."
     };
     char        str_PME_f_load[13];
@@ -2293,7 +2304,16 @@ int gmx_tune_pme(int argc, char *argv[])
     }
     else
     {
-        sprintf(bbuf, " -np %d ", nnodes);
+        /* This string will be used for MPI runs and will appear after the
+         * mpirun command. */
+        if (strcmp(procstring[0], "none") != 0)
+        {
+            sprintf(bbuf, " %s %d ", procstring[0], nnodes);
+        }
+        else
+        {
+            sprintf(bbuf, " ");
+        }
     }
 
     cmd_np = bbuf;
@@ -2371,6 +2391,10 @@ int gmx_tune_pme(int argc, char *argv[])
 
     /* Get the commands we need to set up the runs from environment variables */
     get_program_paths(bThreads, &cmd_mpirun, cmd_np, &cmd_mdrun, repeats);
+    if (bBenchmark && repeats > 0)
+    {
+        check_mdrun_works(bThreads, cmd_mpirun, cmd_np, cmd_mdrun);
+    }
 
     /* Print some header info to file */
     sep_line(fp);

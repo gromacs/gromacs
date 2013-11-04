@@ -9,8 +9,7 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>mdp options</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p> </p><B>VERSION 4.6<br>
-Sat 19 Jan 2013</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p> </p><B>VERSION 4.6.3</B></td></tr></TABLE>
 <HR>
 
 <!-- 
@@ -708,7 +707,7 @@ as it is (nearly) free; selects <b>None</b> with the group cutoff-scheme.</dd>
 This makes the potential the integral of the force. Note that this does not
 affect the forces or the sampling.</dd>
 <dt><b>None</b></dt>
-<dd>Use an unmodified Coulomb potential.</dd>
+<dd>Use an unmodified Coulomb potential. With the group scheme this means no exact cut-off is used, energies and forces are calculated for all pairs in the neighborlist.</dd>
 </dl></dd>
 
 
@@ -781,7 +780,7 @@ as it is (nearly) free; selects <b>None</b> with the group cutoff-scheme.</dd>
 This makes the potential the integral of the force. Note that this does not
 affect the forces or the sampling.</dd>
 <dt><b>None</b></dt>
-<dd>Use an unmodified Van der Waals potential.</dd>
+<dd>Use an unmodified Van der Waals potential. With the group scheme this means no exact cut-off is used, energies and forces are calculated for all pairs in the neighborlist.</dd>
 </dl></dd>
 
 <dt><b>rvdw-switch: (0) [nm]</b></dt>
@@ -1545,8 +1544,8 @@ of 1 is sufficient, while for MBAR -1 should be used.</dd>
 <dt><b>sc-r-power: (6)</b></dt>
 <dd>the power of the radial term in the soft-core equation.  Possible values are 6 and 48. 6 is more standard, and is the default.  When 48 is used, then sc-alpha should generally be much lower (between 0.001 and 0.003).</dd>
 <dt><b>sc-coul: (no)</b></dt>
-<dd>Whether to apply the soft core free energy interations to the Columbic interaction. Default is no, as it is generally
-more efficient to turn of the Coulomic interactions linearly before turning off electrostatic interactions.</dd>
+<dd>Whether to apply the soft core free energy interaction transformation to the Columbic interaction of a molecule. Default is no, as it is generally
+more efficient to turn off the Coulomic interactions linearly before turning off the van der Waals interactions.</dd>
 <dt><b>sc-power: (0)</b></dt>
 <dd>the power for lambda in the soft-core function, only the values 1 and 2 are supported</dd>
 <dt><b>sc-sigma: (0.3) [nm]</b></dt>

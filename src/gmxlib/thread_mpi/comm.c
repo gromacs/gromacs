@@ -150,31 +150,53 @@ int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
 }
 
 
-tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
+int tMPI_Comm_alloc(tMPI_Comm *newcomm, tMPI_Comm parent, int N)
 {
-    struct tmpi_comm_ *ret;
+    struct tmpi_comm_ *retc;
     int                i;
+    int                ret;
 
-    ret            = (struct tmpi_comm_*)tMPI_Malloc(sizeof(struct tmpi_comm_));
-    ret->grp.peers = (struct tmpi_thread**)tMPI_Malloc(
+    retc = (struct tmpi_comm_*)tMPI_Malloc(sizeof(struct tmpi_comm_));
+    if (retc == NULL)
+    {
+        return TMPI_ERR_NO_MEM;
+    }
+
+    retc->grp.peers = (struct tmpi_thread**)tMPI_Malloc(
                 sizeof(struct tmpi_thread*)*Nthreads);
-    ret->grp.N = N;
+    if (retc->grp.peers == NULL)
+    {
+        return TMPI_ERR_NO_MEM;
+    }
+    retc->grp.N = N;
 
-    tMPI_Thread_mutex_init( &(ret->comm_create_lock) );
-    tMPI_Thread_cond_init( &(ret->comm_create_prep) );
-    tMPI_Thread_cond_init( &(ret->comm_create_finish) );
+    ret = tMPI_Thread_mutex_init( &(retc->comm_create_lock) );
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
+    ret = tMPI_Thread_cond_init( &(retc->comm_create_prep) );
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
+    ret = tMPI_Thread_cond_init( &(retc->comm_create_finish) );
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
 
-    ret->split    = NULL;
-    ret->new_comm = NULL;
+    retc->split    = NULL;
+    retc->new_comm = NULL;
     /* we have no topology to start out with */
-    ret->cart = NULL;
-    /*ret->graph=NULL;*/
+    retc->cart = NULL;
+    /*retc->graph=NULL;*/
 
     /* we start counting at 0 */
-    tMPI_Atomic_set( &(ret->destroy_counter), 0);
+    tMPI_Atomic_set( &(retc->destroy_counter), 0);
 
     /* initialize the main barrier */
-    tMPI_Barrier_init(&(ret->barrier), N);
+    tMPI_Barrier_init(&(retc->barrier), N);
 
     /* the reduce barriers */
     {
@@ -189,11 +211,19 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
             Niter += 1;
         }
 
-        ret->N_reduce_iter = Niter;
+        retc->N_reduce_iter = Niter;
         /* allocate the list */
-        ret->reduce_barrier = (tMPI_Barrier_t**)
+        retc->reduce_barrier = (tMPI_Barrier_t**)
             tMPI_Malloc(sizeof(tMPI_Barrier_t*)*(Niter+1));
-        ret->N_reduce = (int*)tMPI_Malloc(sizeof(int)*(Niter+1));
+        if (retc->reduce_barrier == NULL)
+        {
+            return TMPI_ERR_NO_MEM;
+        }
+        retc->N_reduce = (int*)tMPI_Malloc(sizeof(int)*(Niter+1));
+        if (retc->N_reduce == NULL)
+        {
+            return TMPI_ERR_NO_MEM;
+        }
 
         /* we re-set Nred to N */
         Nred = N;
@@ -201,68 +231,108 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
         {
             int j;
 
-            Nred             = Nred/2 + Nred%2;
-            ret->N_reduce[i] = Nred;
+            Nred              = Nred/2 + Nred%2;
+            retc->N_reduce[i] = Nred;
             /* allocate the sub-list */
-            ret->reduce_barrier[i] = (tMPI_Barrier_t*)
+            retc->reduce_barrier[i] = (tMPI_Barrier_t*)
                 tMPI_Malloc(sizeof(tMPI_Barrier_t)*(Nred));
+            if (retc->reduce_barrier[i] == NULL)
+            {
+                return TMPI_ERR_NO_MEM;
+            }
             for (j = 0; j < Nred; j++)
             {
-                tMPI_Barrier_init(&(ret->reduce_barrier[i][j]), 2);
+                tMPI_Barrier_init(&(retc->reduce_barrier[i][j]), 2);
             }
         }
     }
 
     /* the reduce buffers */
-    ret->reduce_sendbuf = (tMPI_Atomic_ptr_t*)
+    retc->reduce_sendbuf = (tMPI_Atomic_ptr_t*)
         tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*Nthreads);
-    ret->reduce_recvbuf = (tMPI_Atomic_ptr_t*)
+    if (retc->reduce_sendbuf == NULL)
+    {
+        return TMPI_ERR_NO_MEM;
+    }
+    retc->reduce_recvbuf = (tMPI_Atomic_ptr_t*)
         tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*Nthreads);
-
+    if (retc->reduce_recvbuf == NULL)
+    {
+        return TMPI_ERR_NO_MEM;
+    }
 
     if (parent)
     {
-        ret->erh = parent->erh;
+        retc->erh = parent->erh;
     }
     else
     {
-        ret->erh = TMPI_ERRORS_ARE_FATAL;
+        retc->erh = TMPI_ERRORS_ARE_FATAL;
     }
 
     /* coll_env objects */
-    ret->cev = (struct coll_env*)tMPI_Malloc(sizeof(struct coll_env)*N_COLL_ENV);
-    for (i = 0; i < N_COLL_ENV; i++)
+    retc->cev = (struct coll_env*)tMPI_Malloc(sizeof(struct coll_env)*
+                                              N_COLL_ENV);
+    if (retc->cev == NULL)
     {
-        tMPI_Coll_env_init( &(ret->cev[i]), N);
-    }
-    /* multi_sync objects */
-    ret->csync = (struct coll_sync*)tMPI_Malloc(sizeof(struct coll_sync)*N);
-    for (i = 0; i < N; i++)
-    {
-        tMPI_Coll_sync_init( &(ret->csync[i]), N);
+        return TMPI_ERR_NO_MEM;
     }
 
-    tMPI_Thread_mutex_lock( &(tmpi_global->comm_link_lock) );
+    for (i = 0; i < N_COLL_ENV; i++)
+    {
+        ret = tMPI_Coll_env_init( &(retc->cev[i]), N);
+        if (ret != TMPI_SUCCESS)
+        {
+            return ret;
+        }
+    }
+    /* multi_sync objects */
+    retc->csync = (struct coll_sync*)tMPI_Malloc(sizeof(struct coll_sync)*N);
+    if (retc->csync == NULL)
+    {
+        return TMPI_ERR_NO_MEM;
+    }
+
+    for (i = 0; i < N; i++)
+    {
+        ret = tMPI_Coll_sync_init( &(retc->csync[i]), N);
+        if (ret != TMPI_SUCCESS)
+        {
+            return ret;
+        }
+    }
+
+    ret = tMPI_Thread_mutex_lock( &(tmpi_global->comm_link_lock) );
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
     /* we insert ourselves in the circular list, after TMPI_COMM_WORLD */
     if (TMPI_COMM_WORLD)
     {
-        ret->next = TMPI_COMM_WORLD;
-        ret->prev = TMPI_COMM_WORLD->prev;
+        retc->next = TMPI_COMM_WORLD;
+        retc->prev = TMPI_COMM_WORLD->prev;
 
-        TMPI_COMM_WORLD->prev->next = ret;
-        TMPI_COMM_WORLD->prev       = ret;
+        TMPI_COMM_WORLD->prev->next = retc;
+        TMPI_COMM_WORLD->prev       = retc;
     }
     else
     {
-        ret->prev = ret->next = ret;
+        retc->prev = retc->next = retc;
     }
-    tMPI_Thread_mutex_unlock( &(tmpi_global->comm_link_lock) );
-    return ret;
+    ret = tMPI_Thread_mutex_unlock( &(tmpi_global->comm_link_lock) );
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
+    *newcomm = retc;
+    return TMPI_SUCCESS;
 }
 
-void tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock)
+int tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock)
 {
     int i;
+    int ret;
 
     free(comm->grp.peers);
     for (i = 0; i < comm->N_reduce_iter; i++)
@@ -283,9 +353,21 @@ void tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock)
     free(comm->cev);
     free(comm->csync);
 
-    tMPI_Thread_mutex_destroy( &(comm->comm_create_lock) );
-    tMPI_Thread_cond_destroy( &(comm->comm_create_prep) );
-    tMPI_Thread_cond_destroy( &(comm->comm_create_finish) );
+    ret = tMPI_Thread_mutex_destroy( &(comm->comm_create_lock) );
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
+    ret = tMPI_Thread_cond_destroy( &(comm->comm_create_prep) );
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
+    ret = tMPI_Thread_cond_destroy( &(comm->comm_create_finish) );
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
 
     free((void*)comm->reduce_sendbuf);
     free((void*)comm->reduce_recvbuf);
@@ -299,7 +381,11 @@ void tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock)
     /* remove ourselves from the circular list */
     if (do_link_lock)
     {
-        tMPI_Thread_mutex_lock( &(tmpi_global->comm_link_lock) );
+        ret = tMPI_Thread_mutex_lock( &(tmpi_global->comm_link_lock) );
+        if (ret != 0)
+        {
+            return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+        }
     }
     if (comm->next)
     {
@@ -312,14 +398,20 @@ void tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock)
     free(comm);
     if (do_link_lock)
     {
-        tMPI_Thread_mutex_unlock( &(tmpi_global->comm_link_lock) );
+        ret = tMPI_Thread_mutex_unlock( &(tmpi_global->comm_link_lock) );
+        if (ret != 0)
+        {
+            return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+        }
     }
+    return TMPI_SUCCESS;
 }
 
 int tMPI_Comm_free(tMPI_Comm *comm)
 {
     int size;
     int sum;
+    int ret;
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Comm_free(%p)", comm);
 #endif
@@ -332,15 +424,27 @@ int tMPI_Comm_free(tMPI_Comm *comm)
     if ((*comm)->grp.N > 1)
     {
         /* we remove ourselves from the comm. */
-        tMPI_Thread_mutex_lock(&((*comm)->comm_create_lock));
+        ret = tMPI_Thread_mutex_lock(&((*comm)->comm_create_lock));
+        if (ret != 0)
+        {
+            return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+        }
         (*comm)->grp.peers[myrank] = (*comm)->grp.peers[(*comm)->grp.N-1];
         (*comm)->grp.N--;
-        tMPI_Thread_mutex_unlock(&((*comm)->comm_create_lock));
+        ret = tMPI_Thread_mutex_unlock(&((*comm)->comm_create_lock));
+        if (ret != 0)
+        {
+            return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+        }
     }
     else
     {
         /* we're the last one so we can safely destroy it */
-        tMPI_Comm_destroy(*comm, TRUE);
+        ret = tMPI_Comm_destroy(*comm, TRUE);
+        if (ret != 0)
+        {
+            return ret;
+        }
     }
 #else
     /* This is correct if programs actually treat Comm_free as a collective
@@ -354,12 +458,16 @@ int tMPI_Comm_free(tMPI_Comm *comm)
 
     /* we add 1 to the destroy counter and actually deallocate if the counter
        reaches N. */
-    sum = tMPI_Atomic_add_return( &((*comm)->destroy_counter), 1);
+    sum = tMPI_Atomic_fetch_add( &((*comm)->destroy_counter), 1) + 1;
     /* this is a collective call on a shared data structure, so only
        one process (the last one in this case) should do anything */
     if (sum == size)
     {
-        tMPI_Comm_destroy(*comm, TRUE);
+        ret = tMPI_Comm_destroy(*comm, TRUE);
+        if (ret != 0)
+        {
+            return ret;
+        }
     }
 #endif
     return TMPI_SUCCESS;
@@ -456,6 +564,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
     tmpi_bool          i_am_first = FALSE;
     int                myrank     = tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     struct tmpi_split *spl;
+    int                ret;
 
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Comm_split(%p, %d, %d, %p)", comm, color, key,
@@ -467,7 +576,11 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
 
-    tMPI_Thread_mutex_lock(&(comm->comm_create_lock));
+    ret = tMPI_Thread_mutex_lock(&(comm->comm_create_lock));
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
     /* first get the colors */
     if (!comm->new_comm)
     {
@@ -498,7 +611,11 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
 
     if (spl->Ncol_init == 0)
     {
-        tMPI_Thread_cond_signal(&(comm->comm_create_prep));
+        ret = tMPI_Thread_cond_signal(&(comm->comm_create_prep));
+        if (ret != 0)
+        {
+            return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+        }
     }
 
     if (!i_am_first)
@@ -507,8 +624,12 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
            finished */
         while (!spl->can_finish)
         {
-            tMPI_Thread_cond_wait(&(comm->comm_create_finish),
-                                  &(comm->comm_create_lock) );
+            ret = tMPI_Thread_cond_wait(&(comm->comm_create_finish),
+                                        &(comm->comm_create_lock) );
+            if (ret != 0)
+            {
+                return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+            }
         }
     }
     else
@@ -526,8 +647,12 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
         /*if (N>1)*/
         while (spl->Ncol_init > 0)
         {
-            tMPI_Thread_cond_wait(&(comm->comm_create_prep),
-                                  &(comm->comm_create_lock));
+            ret = tMPI_Thread_cond_wait(&(comm->comm_create_prep),
+                                        &(comm->comm_create_lock));
+            if (ret != 0)
+            {
+                return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+            }
         }
 
         /* reset the state so that a new comm creating function can run */
@@ -553,7 +678,11 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
         comms = (tMPI_Comm*)tMPI_Malloc(Ncomms*sizeof(tMPI_Comm));
         for (i = 0; i < Ncomms; i++)
         {
-            comms[i] = tMPI_Comm_alloc(comm, comm_N[i]);
+            ret = tMPI_Comm_alloc(&(comms[i]), comm, comm_N[i]);
+            if (ret != TMPI_SUCCESS)
+            {
+                return ret;
+            }
         }
 
         /* now distribute the comms */
@@ -616,7 +745,11 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
         spl->can_finish = TRUE;
 
         /* tell the waiting threads that there's a comm ready */
-        tMPI_Thread_cond_broadcast(&(comm->comm_create_finish));
+        ret = tMPI_Thread_cond_broadcast(&(comm->comm_create_finish));
+        if (ret != 0)
+        {
+            return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+        }
     }
     /* here the individual threads get their comm object */
     *newcomm = newcomm_list[myrank];
@@ -629,7 +762,11 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
         free(spl);
     }
 
-    tMPI_Thread_mutex_unlock(&(comm->comm_create_lock));
+    ret = tMPI_Thread_mutex_unlock(&(comm->comm_create_lock));
+    if (ret != 0)
+    {
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);
+    }
 
     return TMPI_SUCCESS;
 }

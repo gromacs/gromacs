@@ -125,10 +125,10 @@ gmx_mm_log_ps(__m128 x)
     const __m128  CE_0        = _mm_set1_ps(1.3429983063133937f);
     const __m128  CE_1        = _mm_set1_ps(1.807420826584643f);
 
-    __m128        fexp, fexp1;
+    __m128        fexp;
     __m128i       iexp;
     __m128        mask;
-    __m128        x1, x2;
+    __m128        x2;
     __m128        y;
     __m128        pA, pB, pC, pD, pE, tB, tC, tD, tE;
 

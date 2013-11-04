@@ -93,8 +93,8 @@
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "nbnxn_kernels/nbnxn_kernel_ref.h"
-#include "nbnxn_kernels/nbnxn_kernel_simd_4xn.h"
-#include "nbnxn_kernels/nbnxn_kernel_simd_2xnn.h"
+#include "nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
+#include "nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
 #ifdef GMX_LIB_MPI
@@ -618,6 +618,7 @@ static void do_nb_verlet(t_forcerec *fr,
     int                        nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     char                      *env;
     nonbonded_verlet_group_t  *nbvg;
+    gmx_bool                  bCUDA;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -633,7 +634,9 @@ static void do_nb_verlet(t_forcerec *fr,
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    if (nbvg->kernel_type != nbnxnk8x8x8_CUDA)
+    bCUDA = (nbvg->kernel_type == nbnxnk8x8x8_CUDA);
+
+    if (!bCUDA)
     {
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
@@ -701,7 +704,7 @@ static void do_nb_verlet(t_forcerec *fr,
             gmx_incons("Invalid nonbonded kernel type passed!");
 
     }
-    if (nbvg->kernel_type != nbnxnk8x8x8_CUDA)
+    if (!bCUDA)
     {
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
@@ -710,13 +713,14 @@ static void do_nb_verlet(t_forcerec *fr,
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
-    else if (nbvg->ewald_excl == ewaldexclTable)
+    else if ((!bCUDA && nbvg->ewald_excl == ewaldexclAnalytical) ||
+             (bCUDA && nbnxn_cuda_is_kernel_ewald_analytical(fr->nbv->cu_nbv)))
     {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_TAB;
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
     else
     {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_TAB;
     }
     enr_nbnxn_kernel_lj = eNR_NBNXN_LJ;
     if (flags & GMX_FORCE_ENERGY)
@@ -1115,6 +1119,16 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
+    if (inputrec->bRot)
+    {
+        /* Enforced rotation has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing */
+        wallcycle_start(wcycle, ewcROT);
+        do_rotation(cr, inputrec, box, x, t, step, wcycle, bNS);
+        wallcycle_stop(wcycle, ewcROT);
+    }
+
     /* Start the force cycle counter.
      * This counter is stopped in do_forcelow_level.
      * No parallel communication should occur while this counter is running,
@@ -1162,42 +1176,18 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         GMX_BARRIER(cr->mpi_comm_mygroup);
     }
+
     if (inputrec->ePull == epullCONSTRAINT)
     {
         clear_pull_forces(inputrec->pull);
     }
 
-    /* update QMMMrec, if necessary */
-    if (fr->bQMMM)
-    {
-        update_QMMMrec(cr, fr, x, mdatoms, box, top);
-    }
-
-    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
-    {
-        posres_wrapper(fplog, flags, bSepDVDL, inputrec, nrnb, top, box, x,
-                       f, enerd, lambda, fr);
-    }
-
-    /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
-                      cr, nrnb, wcycle, mdatoms, &(inputrec->opts),
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, mtop, top, fr->born,
-                      &(top->atomtypes), bBornRadii, box,
-                      inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
-                      flags, &cycles_pme);
-
-    if (bSepLRF)
-    {
-        if (do_per_step(step, inputrec->nstcalclr))
-        {
-            /* Add the long range forces to the short range forces */
-            for (i = 0; i < fr->natoms_force_constr; i++)
-            {
-                rvec_add(fr->f_twin[i], f[i], f[i]);
-            }
-        }
-    }
+    /* We calculate the non-bonded forces, when done on the CPU, here.
+     * We do this before calling do_force_lowlevel, as in there bondeds
+     * forces are calculated before PME, which does communication.
+     * With this order, non-bonded and bonded force calculation imbalance
+     * can be balanced out by the domain decomposition load balancing.
+     */
 
     if (!bUseOrEmulGPU)
     {
@@ -1205,7 +1195,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
                      nrnb, wcycle);
     }
-
 
     if (!bUseOrEmulGPU || bDiffKernels)
     {
@@ -1245,6 +1234,38 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
                                                      fr->fshift);
+        }
+    }
+
+    /* update QMMMrec, if necessary */
+    if (fr->bQMMM)
+    {
+        update_QMMMrec(cr, fr, x, mdatoms, box, top);
+    }
+
+    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
+    {
+        posres_wrapper(fplog, flags, bSepDVDL, inputrec, nrnb, top, box, x,
+                       f, enerd, lambda, fr);
+    }
+
+    /* Compute the bonded and non-bonded energies and optionally forces */
+    do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
+                      cr, nrnb, wcycle, mdatoms, &(inputrec->opts),
+                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, mtop, top, fr->born,
+                      &(top->atomtypes), bBornRadii, box,
+                      inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
+                      flags, &cycles_pme);
+
+    if (bSepLRF)
+    {
+        if (do_per_step(step, inputrec->nstcalclr))
+        {
+            /* Add the long range forces to the short range forces */
+            for (i = 0; i < fr->natoms_force_constr; i++)
+            {
+                rvec_add(fr->f_twin[i], f[i], f[i]);
+            }
         }
     }
 
@@ -1414,6 +1435,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         pull_potential_wrapper(fplog, bSepDVDL, cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t);
+    }
+
+    /* Add the forces from enforced rotation potentials (if any) */
+    if (inputrec->bRot)
+    {
+        wallcycle_start(wcycle, ewcROTadd);
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
+        wallcycle_stop(wcycle, ewcROTadd);
     }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
@@ -1677,23 +1706,11 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             mk_mshift(fplog, graph, fr->ePBC, box, x);
         }
 
-        /* Do the actual neighbour searching and if twin range electrostatics
-         * also do the calculation of long range forces and energies.
-         */
-        for (i = 0; i < efptNR; i++)
-        {
-            dvdlambda[i] = 0;
-        }
+        /* Do the actual neighbour searching */
         ns(fplog, fr, x, box,
            groups, &(inputrec->opts), top, mdatoms,
            cr, nrnb, lambda, dvdlambda, &enerd->grpp, bFillGrid,
            bDoLongRangeNS);
-        if (bSepDVDL)
-        {
-            fprintf(fplog, sepdvdlformat, "LR non-bonded", 0.0, dvdlambda);
-        }
-        enerd->dvdl_lin[efptVDW]  += dvdlambda[efptVDW];
-        enerd->dvdl_lin[efptCOUL] += dvdlambda[efptCOUL];
 
         wallcycle_stop(wcycle, ewcNS);
     }

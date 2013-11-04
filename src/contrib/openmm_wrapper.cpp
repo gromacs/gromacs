@@ -9,11 +9,11 @@
  * 
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
+ * Copyright (c) 2001-2010, 2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
+ * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
  * 
@@ -63,6 +63,7 @@ using namespace std;
 #include "mdrun.h"
 #include "physics.h"
 #include "string2.h"
+#include "openmm_gpu_utils.h"
 #include "gpu_utils.h"
 #include "mtop_util.h"
 

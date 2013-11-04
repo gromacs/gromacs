@@ -314,8 +314,15 @@ enum
     SEL_CDATA_MINMAXALLOC = 16,
     /** Whether subexpressions use simple pass evaluation functions. */
     SEL_CDATA_SIMPLESUBEXPR = 32,
-    /** Whether this expressions is a part of a common subexpression. */
-    SEL_CDATA_COMMONSUBEXPR = 64
+    /*! \brief
+     * Whether a static subexpression needs to support multiple evaluations.
+     *
+     * This flag may only be set on \ref SEL_SUBEXPR elements that also have
+     * SEL_CDATA_SIMPLESUBEXPR.
+     */
+    SEL_CDATA_STATICMULTIEVALSUBEXPR = 64,
+    /** Whether this expression is a part of a common subexpression. */
+    SEL_CDATA_COMMONSUBEXPR = 128
 };
 
 /*! \internal \brief
@@ -396,6 +403,10 @@ _gmx_selelem_print_compiler_info(FILE *fp, t_selelem *sel, int level)
     if (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
     {
         fprintf(fp, "Ss");
+    }
+    if (sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR)
+    {
+        fprintf(fp, "Sm");
     }
     if (sel->cdata->flags & SEL_CDATA_COMMONSUBEXPR)
     {
@@ -1102,19 +1113,25 @@ init_item_evalfunc(t_selelem *sel)
             break;
 
         case SEL_SUBEXPR:
-            sel->evaluate = (sel->refcount == 2
-                             ? &_gmx_sel_evaluate_subexpr_simple
-                             : &_gmx_sel_evaluate_subexpr);
+            if (sel->refcount == 2
+                && !(sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR))
+            {
+                sel->evaluate = &_gmx_sel_evaluate_subexpr_simple;
+            }
+            else
+            {
+                sel->evaluate = &_gmx_sel_evaluate_subexpr;
+            }
             break;
 
         case SEL_SUBEXPRREF:
             sel->name     = sel->child->name;
-            sel->evaluate = (sel->child->refcount == 2
+            sel->evaluate = ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                              ? &_gmx_sel_evaluate_subexprref_simple
                              : &_gmx_sel_evaluate_subexprref);
             break;
     }
-
+    sel->cdata->evaluate = sel->evaluate;
     return TRUE;
 }
 
@@ -1179,7 +1196,8 @@ init_item_evaloutput(t_selelem *sel)
         }
     }
 
-    if (sel->type == SEL_SUBEXPR && sel->refcount == 2)
+    if (sel->type == SEL_SUBEXPR && sel->refcount == 2
+        && !(sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR))
     {
         sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         if (sel->v.type == GROUP_VALUE || sel->v.type == POS_VALUE)
@@ -1199,7 +1217,8 @@ init_item_evaloutput(t_selelem *sel)
             _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
         }
     }
-    else if (sel->type == SEL_SUBEXPRREF && sel->child->refcount == 2)
+    else if (sel->type == SEL_SUBEXPRREF
+             && (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR))
     {
         if (sel->v.u.ptr)
         {
@@ -1361,6 +1380,15 @@ init_item_staticeval(t_selelem *sel)
                     init_item_staticeval(child);
                 }
             }
+            /* If an expression is evaluated for a dynamic group, then also
+             * atom-valued parameters need to be evaluated every time. */
+            if ((sel->flags & SEL_DYNAMIC)
+                && (sel->type == SEL_EXPRESSION || sel->type == SEL_MODIFIER)
+                && (child->flags & SEL_ATOMVAL))
+            {
+                child->flags        |= SEL_DYNAMIC;
+                child->cdata->flags &= ~SEL_CDATA_STATIC;
+            }
             child = child->next;
         }
     }
@@ -1417,7 +1445,17 @@ init_item_subexpr_flags(t_selelem *sel)
     }
     else if (sel->type == SEL_SUBEXPRREF && sel->child->refcount == 2)
     {
-        sel->cdata->flags |= SEL_CDATA_SIMPLESUBEXPR;
+        /* See similar condition in init_item_staticeval(). */
+        if ((sel->flags & SEL_ATOMVAL)
+            && (sel->flags & SEL_DYNAMIC)
+            && !(sel->child->flags & SEL_DYNAMIC))
+        {
+            sel->child->cdata->flags |= SEL_CDATA_STATICMULTIEVALSUBEXPR;
+        }
+        else
+        {
+            sel->cdata->flags |= SEL_CDATA_SIMPLESUBEXPR;
+        }
     }
 
     /* Process children, but only follow subexpression references if the
@@ -2180,7 +2218,9 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             break;
 
         case SEL_SUBEXPR:
-            if (sel->cdata->flags & (SEL_CDATA_SIMPLESUBEXPR | SEL_CDATA_FULLEVAL))
+            if (((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR) &&
+                 !(sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR))
+                || (sel->cdata->flags & SEL_CDATA_FULLEVAL))
             {
                 rc = sel->cdata->evaluate(data, sel, g);
                 _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
@@ -2491,6 +2531,17 @@ postprocess_item_subexpressions(t_selelem *sel)
         sel->child->flags   &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         sel->child->v.nalloc = -1;
     }
+
+    /* For static subexpressions with a dynamic evaluation group, there is
+     * no need to evaluate them again, as the SEL_SUBEXPRREF takes care of
+     * everything during evaluation. */
+    if (sel->type == SEL_SUBEXPR
+        && (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
+        && (sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR))
+    {
+        sel->evaluate        = NULL;
+        sel->cdata->evaluate = NULL;
+    }
 }
 
 
@@ -2735,24 +2786,37 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
             /* FIXME: Clean up the collection */
             return -1;
         }
-        /* Initialize evaluation function. */
+        /* Initialize the compiler data */
+        init_item_compilerdata(item);
+        item = item->next;
+    }
+    /* Initialize the static evaluation compiler flags.
+     * Requires the FULLEVAL compiler flag for the whole tree. */
+    item = sc->root;
+    while (item)
+    {
+        init_item_staticeval(item);
+        item = item->next;
+    }
+    /* Initialize subexpression flags.
+     * Requires compiler flags for the full tree. */
+    item = sc->root;
+    while (item)
+    {
+        init_item_subexpr_flags(item);
+        item = item->next;
+    }
+    /* Initialize evaluation.
+     * Requires subexpression flags. */
+    item = sc->root;
+    while (item)
+    {
         if (!init_item_evalfunc(item))
         {
             /* FIXME: Clean up the collection */
             return -1;
         }
         setup_memory_pooling(item, sc->mempool);
-        /* Initialize the compiler data */
-        init_item_compilerdata(item);
-        init_item_staticeval(item);
-        item = item->next;
-    }
-    /* Initialize subexpression flags and evaluation output.
-     * Requires compiler flags for the full tree. */
-    item = sc->root;
-    while (item)
-    {
-        init_item_subexpr_flags(item);
         init_item_evaloutput(item);
         item = item->next;
     }

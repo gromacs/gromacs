@@ -588,6 +588,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "Can't use postive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
 
+        sprintf(err_buf, "Can only use expanded ensemble with md-vv for now; should be supported for other integrators in 5.0");
+        CHECK(!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED));
+        
         sprintf(err_buf, "Free-energy not implemented for Ewald");
         CHECK(ir->coulombtype == eelEWALD);
 
@@ -1080,6 +1083,17 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_note(wi, warn_buf);
     }
 
+    if (ir->coulombtype == eelPMESWITCH)
+    {
+        if (ir->rcoulomb_switch/ir->rcoulomb < 0.9499)
+        {
+            sprintf(warn_buf, "The switching range for %s should be 5%% or less, energy conservation will be good anyhow, since ewald_rtol = %g",
+                    eel_names[ir->coulombtype],
+                    ir->ewald_rtol);
+            warning(wi, warn_buf);
+        }
+    }
+
     if (EEL_FULL(ir->coulombtype))
     {
         if (ir->coulombtype == eelPMESWITCH || ir->coulombtype == eelPMEUSER ||
@@ -1146,6 +1160,16 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
     if (ir->cutoff_scheme == ecutsGROUP)
     {
+        if (((ir->coulomb_modifier != eintmodNONE && ir->rcoulomb == ir->rlist) ||
+             (ir->vdw_modifier != eintmodNONE && ir->rvdw == ir->rlist)) &&
+            ir->nstlist != 1)
+        {
+            warning_note(wi, "With exact cut-offs, rlist should be "
+                         "larger than rcoulomb and rvdw, so that there "
+                         "is a buffer region for particle motion "
+                         "between neighborsearch steps");
+        }
+
         if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
             && (ir->rlistlong <= ir->rcoulomb))
         {
@@ -1496,17 +1520,12 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     parse_n_real(weights, &nweights, &(expand->init_lambda_weights));
     if (nweights == 0)
     {
-        expand->bInit_weights = FALSE;
         snew(expand->init_lambda_weights, fep->n_lambda); /* initialize to zero */
     }
     else if (nweights != fep->n_lambda)
     {
         gmx_fatal(FARGS, "Number of weights (%d) is not equal to number of lambda values (%d)",
                   nweights, fep->n_lambda);
-    }
-    else
-    {
-        expand->bInit_weights = TRUE;
     }
     if ((expand->nstexpanded < 0) && (ir->efep != efepNO))
     {
@@ -3948,7 +3967,10 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
         if (rvdw1  + rvdw2  > ir->rlist ||
             rcoul1 + rcoul2 > ir->rlist)
         {
-            sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than rlist (%f)\n", max(rvdw1+rvdw2, rcoul1+rcoul2), ir->rlist);
+            sprintf(warn_buf,
+                    "The sum of the two largest charge group radii (%f) "
+                    "is larger than rlist (%f)\n",
+                    max(rvdw1+rvdw2, rcoul1+rcoul2), ir->rlist);
             warning(wi, warn_buf);
         }
         else
@@ -3957,12 +3979,19 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
              * since user defined interactions might purposely
              * not be zero at the cut-off.
              */
-            if (EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) &&
-                rvdw1 + rvdw2 > ir->rlist - ir->rvdw)
+            if ((EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) ||
+                 ir->vdw_modifier != eintmodNONE) &&
+                rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
             {
-                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rvdw (%f)\n",
+                sprintf(warn_buf, "The sum of the two largest charge group "
+                        "radii (%f) is larger than %s (%f) - rvdw (%f).\n"
+                        "With exact cut-offs, better performance can be "
+                        "obtained with cutoff-scheme = %s, because it "
+                        "does not use charge groups at all.",
                         rvdw1+rvdw2,
-                        ir->rlist, ir->rvdw);
+                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
+                        ir->rlistlong, ir->rvdw,
+                        ecutscheme_names[ecutsVERLET]);
                 if (ir_NVE(ir))
                 {
                     warning(wi, warn_buf);
@@ -3972,13 +4001,16 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     warning_note(wi, warn_buf);
                 }
             }
-            if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype) &&
+            if ((EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype) ||
+                 ir->coulomb_modifier != eintmodNONE) &&
                 rcoul1 + rcoul2 > ir->rlistlong - ir->rcoulomb)
             {
-                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than %s (%f) - rcoulomb (%f)\n",
+                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than %s (%f) - rcoulomb (%f).\n"
+                        "With exact cut-offs, better performance can be obtained with cutoff-scheme = %s, because it does not use charge groups at all.",
                         rcoul1+rcoul2,
                         ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
-                        ir->rlistlong, ir->rcoulomb);
+                        ir->rlistlong, ir->rcoulomb,
+                        ecutscheme_names[ecutsVERLET]);
                 if (ir_NVE(ir))
                 {
                     warning(wi, warn_buf);

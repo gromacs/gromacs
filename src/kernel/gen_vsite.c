@@ -1084,6 +1084,8 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
         (*newatom)      [atM[j]].type   = (*newatom)[atM[j]].typeB = tpM;
         (*newatom)      [atM[j]].ptype  = eptAtom;
         (*newatom)      [atM[j]].resind = at->atom[i0].resind;
+        (*newatom)      [atM[j]].elem[0] = 'M';
+        (*newatom)      [atM[j]].elem[1] = '\0';
         (*newvsite_type)[atM[j]]        = NOTSET;
         (*newcgnr)      [atM[j]]        = (*cgnr)[i0];
     }
@@ -1268,6 +1270,8 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     (*newatom)      [atM].type   = (*newatom)[atM].typeB = tpM;
     (*newatom)      [atM].ptype  = eptAtom;
     (*newatom)      [atM].resind = at->atom[i0].resind;
+    (*newatom)      [atM].elem[0] = 'M';
+    (*newatom)      [atM].elem[1] = '\0';
     (*newvsite_type)[atM]        = NOTSET;
     (*newcgnr)      [atM]        = (*cgnr)[i0];
     /* renumber cgnr: */
@@ -1996,6 +2000,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                         newatom[ni0+j].type   = newatom[ni0+j].typeB = tpM;
                         newatom[ni0+j].ptype  = eptAtom;
                         newatom[ni0+j].resind = at->atom[i0].resind;
+                        newatom[ni0+j].elem[0] = 'M';
+                        newatom[ni0+j].elem[1] = '\0';
                         newvsite_type[ni0+j]  = NOTSET;
                         newcgnr[ni0+j]        = (*cgnr)[i0];
                     }

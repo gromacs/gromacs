@@ -183,7 +183,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
     t_mdebin         *mdebin = NULL;
-    df_history_t      df_history;
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
     int               n_xtc    = -1;
@@ -208,7 +207,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
-    real              mu_aver = 0, dvdl;
+    real              mu_aver = 0, dvdl_constr;
     int               a0, a1, gnx = 0, ii;
     atom_id          *grpindex = NULL;
     char             *grpname;
@@ -332,14 +331,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         snew(f, top_global->natoms);
     }
 
-    /* lambda Monte carlo random number generator  */
-    if (ir->bExpanded)
-    {
-        mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
-    }
-    /* copy the state into df_history */
-    copy_df_history(&df_history, &state_global->dfhist);
-
     /* Kinetic energy data */
     snew(ekind, 1);
     init_ekindata(fplog, top_global, &(ir->opts), ekind);
@@ -434,7 +425,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             make_local_shells(cr, mdatoms, shellfc);
         }
 
-        init_bonded_thread_force_reduction(fr, &top->idef);
+        setup_bonded_threading(fr, &top->idef);
 
         if (ir->pull && PAR(cr))
         {
@@ -462,6 +453,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     else
     {
         bStateFromCP = FALSE;
+    }
+
+    if (ir->bExpanded)
+    {
+        init_expanded_ensemble(bStateFromCP,ir,&mcrng,&state->dfhist);
     }
 
     if (MASTER(cr))
@@ -594,15 +590,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     debug_gmx();
 
-    /* set free energy calculation frequency as the minimum of nstdhdl, nstexpanded, and nstrepl_ex_nst*/
+    /* set free energy calculation frequency as the minimum
+       greatest common denominator of nstdhdl, nstexpanded, and repl_ex_nst*/
     nstfep = ir->fepvals->nstdhdl;
-    if (ir->bExpanded && (nstfep > ir->expandedvals->nstexpanded))
+    if (ir->bExpanded)
     {
-        nstfep = ir->expandedvals->nstexpanded;
+        nstfep = gmx_greatest_common_divisor(ir->fepvals->nstdhdl,nstfep);
     }
-    if (repl_ex_nst > 0 && nstfep > repl_ex_nst)
+    if (repl_ex_nst > 0)
     {
-        nstfep = repl_ex_nst;
+        nstfep = gmx_greatest_common_divisor(repl_ex_nst,nstfep);
     }
 
     /* I'm assuming we need global communication the first time! MRS */
@@ -859,7 +856,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             set_current_lambdas(step, ir->fepvals, bRerunMD, &rerun_fr, state_global, state, lam0);
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = (do_per_step(step, nstfep) && (ir->efep != efepNO));
-            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded) && (step > 0));
+            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
+                            && (ir->bExpanded) && (step > 0) && (!bStartingFromCpt));
         }
 
         if (bSimAnn)
@@ -981,8 +979,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         /* < 0 means stop at next step, > 0 means stop at next NS step */
-        if ( (gs.set[eglsSTOPCOND] < 0 ) ||
-             ( (gs.set[eglsSTOPCOND] > 0 ) && ( bNS || ir->nstlist == 0)) )
+        if ( (gs.set[eglsSTOPCOND] < 0) ||
+             ( (gs.set[eglsSTOPCOND] > 0) && (bNStList || ir->nstlist == 0) ) )
         {
             bLastStep = TRUE;
         }
@@ -1275,9 +1273,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 bOK = TRUE;
                 if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
                 {
-                    dvdl = 0;
-
-                    update_constraints(fplog, step, &dvdl, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, shake_vir, NULL,
                                        cr, nrnb, wcycle, upd, constr,
@@ -1372,7 +1368,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             if (bTrotter && !bInitStep)
             {
-                enerd->term[F_DVDL_BONDED] += dvdl;        /* only add after iterations */
                 copy_mat(shake_vir, state->svir_prev);
                 copy_mat(force_vir, state->fvir_prev);
                 if (IR_NVT_TROTTER(ir) && ir->eI == eiVV)
@@ -1387,12 +1382,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 copy_rvecn(cbuf, state->v, 0, state->natoms);
             }
-
-            if (fr->bSepDVDL && fplog && do_log)
-            {
-                fprintf(fplog, sepdvdlformat, "Constraint", 0.0, dvdl);
-            }
-            enerd->term[F_DVDL_BONDED] += dvdl;
 
             GMX_MPE_LOG(ev_timestep1);
         }
@@ -1425,7 +1414,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, &df_history, step, mcrng, state->v, mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, mcrng, state->v, mdatoms);
+            /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
+            copy_df_history(&state_global->dfhist,&state->dfhist);
         }
         /* ################## START TRAJECTORY OUTPUT ################# */
 
@@ -1504,14 +1495,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         state_global->ekinstate.bUpToDate = TRUE;
                     }
                     update_energyhistory(&state_global->enerhist, mdebin);
-                    if (ir->efep != efepNO || ir->bSimTemp)
-                    {
-                        state_global->fep_state = state->fep_state; /* MRS: seems kludgy. The code should be
-                                                                       structured so this isn't necessary.
-                                                                       Note this reassignment is only necessary
-                                                                       for single threads.*/
-                        copy_df_history(&state_global->dfhist, &df_history);
-                    }
                 }
             }
             write_traj(fplog, cr, outf, mdof_flags, top_global,
@@ -1662,7 +1645,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
                 if (constr && bIfRandomize)
                 {
-                    update_constraints(fplog, step, &dvdl, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir, NULL,
                                        cr, nrnb, wcycle, upd, constr,
@@ -1700,10 +1683,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             copy_mat(state->box, lastbox);
 
             bOK = TRUE;
+            dvdl_constr = 0;
+
             if (!(bRerunMD && !rerun_fr.bV && !bForceUpdate))
             {
                 wallcycle_start(wcycle, ewcUPDATE);
-                dvdl = 0;
                 /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
                 if (bTrotter)
                 {
@@ -1763,7 +1747,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                               ekind, M, wcycle, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
-                update_constraints(fplog, step, &dvdl, ir, ekind, mdatoms, state,
+                update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
                                    fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir, force_vir,
                                    cr, nrnb, wcycle, upd, constr,
@@ -1796,7 +1780,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      * to numerical errors, or are they important
                      * physically? I'm thinking they are just errors, but not completely sure.
                      * For now, will call without actually constraining, constr=NULL*/
-                    update_constraints(fplog, step, &dvdl, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir, force_vir,
                                        cr, nrnb, wcycle, upd, NULL,
@@ -1810,9 +1794,30 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (fr->bSepDVDL && fplog && do_log)
                 {
-                    fprintf(fplog, sepdvdlformat, "Constraint dV/dl", 0.0, dvdl);
+                    fprintf(fplog, sepdvdlformat, "Constraint dV/dl", 0.0, dvdl_constr);
                 }
-                enerd->term[F_DVDL_BONDED] += dvdl;
+                if (bVV)
+                {
+                    /* this factor or 2 correction is necessary
+                       because half of the constraint force is removed
+                       in the vv step, so we have to double it.  See
+                       the Redmine issue #1255.  It is not yet clear
+                       if the factor of 2 is exact, or just a very
+                       good approximation, and this will be
+                       investigated.  The next step is to see if this
+                       can be done adding a dhdl contribution from the
+                       rattle step, but this is somewhat more
+                       complicated with the current code. Will be
+                       investigated, hopefully for 4.6.3. However,
+                       this current solution is much better than
+                       having it completely wrong.
+                    */
+                    enerd->term[F_DVDL_CONSTR] += 2*dvdl_constr;
+                }
+                else
+                {
+                    enerd->term[F_DVDL_CONSTR] += dvdl_constr;
+                }
             }
             else if (graph)
             {
@@ -1892,8 +1897,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bFirstIterate = FALSE;
         }
 
-        /* only add constraint dvdl after constraints */
-        enerd->term[F_DVDL_BONDED] += dvdl;
         if (!bVV || bRerunMD)
         {
             /* sum up the foreign energy and dhdl terms for md and sd. currently done every step so that dhdl is correct in the .edr */
@@ -1994,7 +1997,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
-                                          &df_history, state->fep_state, ir->nstlog, step);
+                                          &state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
             if (!(bStartingFromCpt && (EI_VV(ir->eI))))
             {
@@ -2033,13 +2036,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         if (bDoExpanded)
         {
-            /* Have to do this part after outputting the logfile and the edr file */
+            /* Have to do this part _after_ outputting the logfile and the edr file */
+            /* Gets written into the state at the beginning of next loop*/
             state->fep_state = lamnew;
-            for (i = 0; i < efptNR; i++)
-            {
-                state_global->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
-            }
         }
+
         /* Remaining runtime */
         if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && !bPMETuneRunning)
         {

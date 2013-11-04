@@ -52,11 +52,9 @@
 #include "futil.h"
 #include "maths.h"
 #include "macros.h"
-#include "physics.h"
 #include "vec.h"
 #include "tpxio.h"
 #include "mdrun.h"
-#include "calcpot.h"
 #include "main.h"
 #include "random.h"
 #include "index.h"
@@ -65,78 +63,43 @@
 
 static void insert_ion(int nsa, int *nwater,
                        gmx_bool bSet[], int repl[], atom_id index[],
-                       real pot[], rvec x[], t_pbc *pbc,
+                       rvec x[], t_pbc *pbc,
                        int sign, int q, const char *ionname,
-                       t_mdatoms *mdatoms,
-                       real rmin, gmx_bool bRandom, int *seed)
+                       t_atoms *atoms,
+                       real rmin, int *seed)
 {
-    int             i, ii, ei, owater, wlast, m, nw;
-    real            extr_e, poti, rmin2;
-    rvec            xei, dx;
-    gmx_bool        bSub = FALSE;
+    int             i, ei,nw;
+    real            rmin2;
+    rvec            dx;
     gmx_large_int_t maxrand;
 
     ei       = -1;
     nw       = *nwater;
     maxrand  = nw;
     maxrand *= 1000;
-    if (bRandom)
+
+    do
     {
-        do
-        {
-            ei = nw*rando(seed);
-            maxrand--;
-        }
-        while (bSet[ei] && (maxrand > 0));
-        if (bSet[ei])
-        {
-            gmx_fatal(FARGS, "No more replaceable solvent!");
-        }
+        ei = nw*rando(seed);
+        maxrand--;
     }
-    else
+    while (bSet[ei] && (maxrand > 0));
+    if (bSet[ei])
     {
-        extr_e = 0;
-        for (i = 0; (i < nw); i++)
-        {
-            if (!bSet[i])
-            {
-                ii   = index[nsa*i];
-                poti = pot[ii];
-                if (q > 0)
-                {
-                    if ((poti <= extr_e) || !bSub)
-                    {
-                        extr_e = poti;
-                        ei     = i;
-                        bSub   = TRUE;
-                    }
-                }
-                else
-                {
-                    if ((poti >= extr_e) || !bSub)
-                    {
-                        extr_e = poti;
-                        ei     = i;
-                        bSub   = TRUE;
-                    }
-                }
-            }
-        }
-        if (ei == -1)
-        {
-            gmx_fatal(FARGS, "No more replaceable solvent!");
-        }
+        gmx_fatal(FARGS, "No more replaceable solvent!");
     }
+
     fprintf(stderr, "Replacing solvent molecule %d (atom %d) with %s\n",
             ei, index[nsa*ei], ionname);
 
     /* Replace solvent molecule charges with ion charge */
     bSet[ei] = TRUE;
     repl[ei] = sign;
-    mdatoms->chargeA[index[nsa*ei]] = q;
+
+    atoms->atom[index[nsa*ei]].q = q;
     for (i = 1; i < nsa; i++)
     {
-        mdatoms->chargeA[index[nsa*ei+i]] = 0;
+        atoms->atom[index[nsa*ei+i]].q = 0;
     }
 
     /* Mark all solvent molecules within rmin as unavailable for substitution */
@@ -156,6 +119,7 @@ static void insert_ion(int nsa, int *nwater,
         }
     }
 }
+
 
 static char *aname(const char *mname)
 {
@@ -385,15 +349,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
 int gmx_genion(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]genion[tt] replaces solvent molecules by monoatomic ions at",
-        "the position of the first atoms with the most favorable electrostatic",
-        "potential or at random. The potential is calculated on all atoms, using",
-        "normal GROMACS particle-based methods (in contrast to other methods",
-        "based on solving the Poisson-Boltzmann equation).",
-        "The potential is recalculated after every ion insertion.",
-        "If specified in the run input file, a reaction field, shift function",
-        "or user function can be used. For the user function a table file",
-        "can be specified with the option [TT]-table[tt].",
+        "[TT]genion[tt] randomly replaces solvent molecules with monoatomic ions.",
         "The group of solvent molecules should be continuous and all molecules",
         "should have the same number of atoms.",
         "The user should add the ion molecules to the topology file or use",
@@ -405,21 +361,17 @@ int gmx_genion(int argc, char *argv[])
         "either by hand or with [TT]-p[tt]. Do not use an atom name instead!",
         "[PAR]Ions which can have multiple charge states get the multiplicity",
         "added, without sign, for the uncommon states only.[PAR]",
-        "With the option [TT]-pot[tt] the potential can be written as B-factors",
-        "in a [TT].pdb[tt] file (for visualisation using e.g. Rasmol).",
-        "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
-        "with the [TT]-scale[tt] option.[PAR]",
         "For larger ions, e.g. sulfate we recommended using [TT]genbox[tt]."
     };
     const char        *bugs[] = {
-        "Calculation of the potential is not reliable, therefore the [TT]-random[tt] option is now turned on by default.",
-        "If you specify a salt concentration existing ions are not taken into account. In effect you therefore specify the amount of salt to be added."
+        "If you specify a salt concentration existing ions are not taken into "
+        "account. In effect you therefore specify the amount of salt to be added.",
     };
     static int         p_num   = 0, n_num = 0, p_q = 1, n_q = -1;
     static const char *p_name  = "NA", *n_name = "CL";
-    static real        rmin    = 0.6, scale = 0.001, conc = 0;
+    static real        rmin    = 0.6, conc = 0;
     static int         seed    = 1993;
-    static gmx_bool    bRandom = TRUE, bNeutral = FALSE;
+    static gmx_bool    bNeutral = FALSE;
     static t_pargs     pa[]    = {
         { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
         { "-pname", FALSE, etSTR,  {&p_name}, "Name of the positive ion"      },
@@ -428,41 +380,27 @@ int gmx_genion(int argc, char *argv[])
         { "-nname", FALSE, etSTR,  {&n_name}, "Name of the negative ion"      },
         { "-nq",    FALSE, etINT,  {&n_q},   "Charge of the negative ion"    },
         { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
-        { "-random", FALSE, etBOOL, {&bRandom}, "Use random placement of ions instead of based on potential. The rmin option should still work" },
         { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" },
-        { "-scale", FALSE, etREAL, {&scale}, "Scaling factor for the potential for [TT]-pot[tt]" },
         { "-conc",  FALSE, etREAL, {&conc},
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [TT].tpr[tt] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
-        { "-neutral", FALSE, etBOOL, {&bNeutral},
-          "This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated." }
+        { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
     };
-    gmx_mtop_t        *mtop;
-    gmx_localtop_t    *top;
-    t_inputrec         inputrec;
-    t_commrec         *cr;
-    t_mdatoms         *mdatoms;
-    gmx_enerdata_t     enerd;
-    t_graph           *graph;
-    t_forcerec        *fr;
+    t_topology        top;
     rvec              *x, *v;
-    real              *pot, vol, qtot;
+    real               vol, qtot;
     matrix             box;
     t_atoms            atoms;
     t_pbc              pbc;
-    int               *repl;
+    int               *repl, ePBC;
     atom_id           *index;
-    char              *grpname;
-    gmx_bool          *bSet, bPDB;
+    char              *grpname, title[STRLEN];
+    gmx_bool          *bSet;
     int                i, nw, nwa, nsa, nsalt, iqtot;
-    FILE              *fplog;
     output_env_t       oenv;
     t_filenm           fnm[] = {
         { efTPX, NULL,  NULL,      ffREAD  },
-        { efXVG, "-table", "table", ffOPTRD },
         { efNDX, NULL,  NULL,      ffOPTRD },
         { efSTO, "-o",  NULL,      ffWRITE },
-        { efLOG, "-g",  "genion",  ffWRITE },
-        { efPDB, "-pot", "pot",    ffOPTWR },
         { efTOP, "-p",  "topol",   ffOPTRW }
     };
 #define NFILE asize(fnm)
@@ -470,12 +408,6 @@ int gmx_genion(int argc, char *argv[])
     CopyRight(stderr, argv[0]);
     parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
                       asize(desc), desc, asize(bugs), bugs, &oenv);
-    bPDB = ftp2bSet(efPDB, NFILE, fnm);
-    if (bRandom && bPDB)
-    {
-        fprintf(stderr, "Not computing potential with random option!\n");
-        bPDB = FALSE;
-    }
 
     /* Check input for something sensible */
     if ((p_num < 0) || (n_num < 0))
@@ -483,14 +415,16 @@ int gmx_genion(int argc, char *argv[])
         gmx_fatal(FARGS, "Negative number of ions to add?");
     }
 
-    snew(mtop, 1);
-    snew(top, 1);
-    fplog = init_calcpot(ftp2fn(efLOG, NFILE, fnm), ftp2fn(efTPX, NFILE, fnm),
-                         opt2fn("-table", NFILE, fnm), mtop, top, &inputrec, &cr,
-                         &graph, &mdatoms, &fr, &enerd, &pot, box, &x, oenv);
+    if (conc > 0 && (p_num > 0 || n_num > 0))
+    {
+        fprintf(stderr, "WARNING: -conc specified, overriding -nn and -np.\n");
+    }
 
-    atoms = gmx_mtop_global_atoms(mtop);
+    /* Read atom positions and charges */
+    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, &x, &v, box, FALSE);
+    atoms = top.atoms;
 
+    /* Compute total charge */
     qtot = 0;
     for (i = 0; (i < atoms.nr); i++)
     {
@@ -498,46 +432,47 @@ int gmx_genion(int argc, char *argv[])
     }
     iqtot = gmx_nint(qtot);
 
-    if ((conc > 0) || bNeutral)
+    
+    if (conc > 0)
     {
         /* Compute number of ions to be added */
         vol = det(box);
-        if (conc > 0)
+        nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
+        p_num = abs(nsalt*n_q);
+        n_num = abs(nsalt*p_q);
+    }
+    if (bNeutral)
+    {
+        int qdelta = p_num*p_q + n_num*n_q + iqtot;
+
+        /* Check if the system is neutralizable
+         * is (qdelta == p_q*p_num + n_q*n_num) solvable for p_num and n_num? */
+        int gcd = gmx_greatest_common_divisor(n_q, p_q);
+        if ((qdelta % gcd) != 0)
         {
-            nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
-            p_num = abs(nsalt*n_q);
-            n_num = abs(nsalt*p_q);
-            if (bNeutral)
+            gmx_fatal(FARGS, "Can't neutralize this system using -nq %d and"
+                    " -pq %d.\n", n_q, p_q);
+        }
+        
+        while (qdelta != 0)
+        {
+            while (qdelta < 0)
             {
-                int qdelta = 0;
-                do
-                {
-                    qdelta = (p_num*p_q + n_num*n_q + iqtot);
-                    if (qdelta < 0)
-                    {
-                        p_num  += abs(qdelta/p_q);
-                        qdelta  = (p_num*p_q + n_num*n_q + iqtot);
-                    }
-                    if (qdelta > 0)
-                    {
-                        n_num  += abs(qdelta/n_q);
-                        qdelta  = (p_num*p_q + n_num*n_q + iqtot);
-                    }
-                }
-                while (qdelta != 0);
+                p_num++;
+                qdelta += p_q;
+            }
+            while (qdelta > 0)
+            {
+                n_num++;
+                qdelta += n_q;
             }
         }
     }
 
     if ((p_num == 0) && (n_num == 0))
     {
-        if (!bPDB)
-        {
-            fprintf(stderr, "No ions to add and no potential to calculate.\n");
-            exit(0);
-        }
-        nw  = 0;
-        nsa = 0; /* to keep gcc happy */
+        fprintf(stderr, "No ions to add.\n");
+        exit(0);
     }
     else
     {
@@ -585,49 +520,19 @@ int gmx_genion(int argc, char *argv[])
     snew(v, atoms.nr);
     snew(atoms.pdbinfo, atoms.nr);
 
-    set_pbc(&pbc, inputrec.ePBC, box);
+    set_pbc(&pbc, ePBC, box);
 
     /* Now loop over the ions that have to be placed */
-    do
+    while (p_num-- > 0)
     {
-        if (!bRandom)
-        {
-            calc_pot(fplog, cr, mtop, &inputrec, top, x, fr, &enerd, mdatoms, pot, box, graph);
-            if (bPDB || debug)
-            {
-                char buf[STRLEN];
-
-                if (debug)
-                {
-                    sprintf(buf, "%d_%s", p_num+n_num, ftp2fn(efPDB, NFILE, fnm));
-                }
-                else
-                {
-                    strcpy(buf, ftp2fn(efPDB, NFILE, fnm));
-                }
-                for (i = 0; (i < atoms.nr); i++)
-                {
-                    atoms.pdbinfo[i].bfac = pot[i]*scale;
-                }
-                write_sto_conf(buf, "Potential calculated by genion",
-                               &atoms, x, v, inputrec.ePBC, box);
-                bPDB = FALSE;
-            }
-        }
-        if ((p_num > 0) && (p_num >= n_num))
-        {
-            insert_ion(nsa, &nw, bSet, repl, index, pot, x, &pbc,
-                       1, p_q, p_name, mdatoms, rmin, bRandom, &seed);
-            p_num--;
-        }
-        else if (n_num > 0)
-        {
-            insert_ion(nsa, &nw, bSet, repl, index, pot, x, &pbc,
-                       -1, n_q, n_name, mdatoms, rmin, bRandom, &seed);
-            n_num--;
-        }
+        insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
+                   1, p_q, p_name, &atoms, rmin, &seed);
     }
-    while (p_num+n_num > 0);
+    while (n_num-- > 0)
+    {
+        insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
+                   -1, n_q, n_name, &atoms, rmin, &seed);
+    }
     fprintf(stderr, "\n");
 
     if (nw)
@@ -637,12 +542,10 @@ int gmx_genion(int argc, char *argv[])
 
     sfree(atoms.pdbinfo);
     atoms.pdbinfo = NULL;
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *mtop->name, &atoms, x, NULL,
-                   inputrec.ePBC, box);
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, NULL, ePBC,
+                   box);
 
     thanx(stderr);
-
-    gmx_log_close(fplog);
 
     return 0;
 }

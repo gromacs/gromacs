@@ -811,6 +811,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     {
         printf("Program: %s\n", output_env_get_program_name(*oenv));
         gmx_print_version_info(stdout);
+        gmx_finalize_par();
         exit(0);
     }
 

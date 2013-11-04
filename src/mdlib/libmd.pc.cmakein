@@ -1,7 +1,7 @@
 libdir=@LIB_INSTALL_DIR@
 includedir=@INCL_INSTALL_DIR@
 
-Name: libmd
+Name: lib@MD_PREFIX@md@GMX_LIBS_SUFFIX@
 Description: Gromacs md lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@

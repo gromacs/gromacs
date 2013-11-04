@@ -35,15 +35,6 @@
 #  This file is part of Gromacs        Copyright (c) 1991-2008
 #  David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
 
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-
-#  To help us fund GROMACS development, we humbly ask that you cite
-#  the research papers on the package. Check out http://www.gromacs.org
-
-
 # The module defines the following variables:
 #   VMD_EXECUTABLE - path to vmd command
 #   GMX_VMD_PLUGIN_PATH - path to vmd plugins

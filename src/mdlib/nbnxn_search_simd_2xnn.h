@@ -36,16 +36,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#else
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
-#endif
-#include "gmx_simd_macros.h"
+/* Get the half-width SIMD stuff from the kernel utils files */
+#include "nbnxn_kernels/nbnxn_kernel_simd_utils.h"
+
 
 #if GMX_SIMD_WIDTH_HERE >= 2*NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_WIDTH_HERE/2)
@@ -55,21 +48,27 @@
 
 static gmx_inline gmx_mm_pr gmx_load_hpr_hilo_pr(const real *a)
 {
-    gmx_mm_hpr a_SSE;
+    gmx_mm_hpr a_S;
+    gmx_mm_pr  a_a_S;
 
-    a_SSE = _mm_load_ps(a);
+    gmx_load_hpr(&a_S, a);
 
-    return gmx_2hpr_to_pr(a_SSE, a_SSE);
+    gmx_2hpr_to_pr(a_S, a_S, &a_a_S);
+
+    return a_a_S;
 }
 
 static gmx_inline gmx_mm_pr gmx_set_2real_shift_pr(const real *a, real shift)
 {
-    gmx_mm_hpr a0, a1;
+    gmx_mm_hpr a0_S, a1_S;
+    gmx_mm_pr  a0_a1_S;
 
-    a0 = _mm_set1_ps(a[0] + shift);
-    a1 = _mm_set1_ps(a[1] + shift);
+    gmx_set1_hpr(&a0_S, a[0] + shift);
+    gmx_set1_hpr(&a1_S, a[1] + shift);
 
-    return gmx_2hpr_to_pr(a1, a0);
+    gmx_2hpr_to_pr(a0_S, a1_S, &a0_a1_S);
+
+    return a0_a1_S;
 }
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
@@ -87,12 +86,12 @@ icell_set_x_simd_2xnn(int ci,
 
     ia = X_IND_CI_SIMD_2XNN(ci);
 
-    x_ci->ix_SSE0 = gmx_set_2real_shift_pr(x + ia + 0*STRIDE_S + 0, shx);
-    x_ci->iy_SSE0 = gmx_set_2real_shift_pr(x + ia + 1*STRIDE_S + 0, shy);
-    x_ci->iz_SSE0 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 0, shz);
-    x_ci->ix_SSE2 = gmx_set_2real_shift_pr(x + ia + 0*STRIDE_S + 2, shx);
-    x_ci->iy_SSE2 = gmx_set_2real_shift_pr(x + ia + 1*STRIDE_S + 2, shy);
-    x_ci->iz_SSE2 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 2, shz);
+    x_ci->ix_S0 = gmx_set_2real_shift_pr(x + ia + 0*STRIDE_S + 0, shx);
+    x_ci->iy_S0 = gmx_set_2real_shift_pr(x + ia + 1*STRIDE_S + 0, shy);
+    x_ci->iz_S0 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 0, shz);
+    x_ci->ix_S2 = gmx_set_2real_shift_pr(x + ia + 0*STRIDE_S + 2, shx);
+    x_ci->iy_S2 = gmx_set_2real_shift_pr(x + ia + 1*STRIDE_S + 2, shy);
+    x_ci->iz_S2 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 2, shz);
 }
 
 /* SIMD code for making a pair list of cell ci vs cell cjf-cjl
@@ -110,21 +109,21 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
                             int *ndistc)
 {
     const nbnxn_x_ci_simd_2xnn_t *work;
-    const float                  *bb_ci;
+    const nbnxn_bb_t             *bb_ci;
 
-    gmx_mm_pr                     jx_SSE, jy_SSE, jz_SSE;
+    gmx_mm_pr                     jx_S, jy_S, jz_S;
 
-    gmx_mm_pr                     dx_SSE0, dy_SSE0, dz_SSE0;
-    gmx_mm_pr                     dx_SSE2, dy_SSE2, dz_SSE2;
+    gmx_mm_pr                     dx_S0, dy_S0, dz_S0;
+    gmx_mm_pr                     dx_S2, dy_S2, dz_S2;
 
-    gmx_mm_pr                     rsq_SSE0;
-    gmx_mm_pr                     rsq_SSE2;
+    gmx_mm_pr                     rsq_S0;
+    gmx_mm_pr                     rsq_S2;
 
-    gmx_mm_pr                     wco_SSE0;
-    gmx_mm_pr                     wco_SSE2;
-    gmx_mm_pr                     wco_any_SSE;
+    gmx_mm_pb                     wco_S0;
+    gmx_mm_pb                     wco_S2;
+    gmx_mm_pb                     wco_any_S;
 
-    gmx_mm_pr                     rc2_SSE;
+    gmx_mm_pr                     rc2_S;
 
     gmx_bool                      InRange;
     float                         d2;
@@ -137,12 +136,16 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 
     bb_ci = nbl->work->bb_ci;
 
-    rc2_SSE   = gmx_set1_pr(rl2);
+    rc2_S   = gmx_set1_pr(rl2);
 
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
     {
-        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjf, gridj->bbj);
+#ifdef NBNXN_SEARCH_BB_SIMD4
+        d2 = subc_bb_dist2_simd4(0, bb_ci, cjf, gridj->bbj);
+#else
+        d2 = subc_bb_dist2(0, bb_ci, cjf, gridj->bbj);
+#endif
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -158,28 +161,28 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         {
             xind_f  = X_IND_CJ_SIMD_2XNN(CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cjf);
 
-            jx_SSE  = gmx_load_hpr_hilo_pr(x_j+xind_f+0*STRIDE_S);
-            jy_SSE  = gmx_load_hpr_hilo_pr(x_j+xind_f+1*STRIDE_S);
-            jz_SSE  = gmx_load_hpr_hilo_pr(x_j+xind_f+2*STRIDE_S);
+            jx_S  = gmx_load_hpr_hilo_pr(x_j+xind_f+0*STRIDE_S);
+            jy_S  = gmx_load_hpr_hilo_pr(x_j+xind_f+1*STRIDE_S);
+            jz_S  = gmx_load_hpr_hilo_pr(x_j+xind_f+2*STRIDE_S);
 
             /* Calculate distance */
-            dx_SSE0            = gmx_sub_pr(work->ix_SSE0, jx_SSE);
-            dy_SSE0            = gmx_sub_pr(work->iy_SSE0, jy_SSE);
-            dz_SSE0            = gmx_sub_pr(work->iz_SSE0, jz_SSE);
-            dx_SSE2            = gmx_sub_pr(work->ix_SSE2, jx_SSE);
-            dy_SSE2            = gmx_sub_pr(work->iy_SSE2, jy_SSE);
-            dz_SSE2            = gmx_sub_pr(work->iz_SSE2, jz_SSE);
+            dx_S0            = gmx_sub_pr(work->ix_S0, jx_S);
+            dy_S0            = gmx_sub_pr(work->iy_S0, jy_S);
+            dz_S0            = gmx_sub_pr(work->iz_S0, jz_S);
+            dx_S2            = gmx_sub_pr(work->ix_S2, jx_S);
+            dy_S2            = gmx_sub_pr(work->iy_S2, jy_S);
+            dz_S2            = gmx_sub_pr(work->iz_S2, jz_S);
 
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0, dy_SSE0, dz_SSE0);
-            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2, dy_SSE2, dz_SSE2);
+            rsq_S0           = gmx_calc_rsq_pr(dx_S0, dy_S0, dz_S0);
+            rsq_S2           = gmx_calc_rsq_pr(dx_S2, dy_S2, dz_S2);
 
-            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0, rc2_SSE);
-            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
+            wco_S0           = gmx_cmplt_pr(rsq_S0, rc2_S);
+            wco_S2           = gmx_cmplt_pr(rsq_S2, rc2_S);
 
-            wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
+            wco_any_S        = gmx_or_pb(wco_S0, wco_S2);
 
-            InRange            = gmx_movemask_pr(wco_any_SSE);
+            InRange          = gmx_anytrue_pb(wco_any_S);
 
             *ndistc += 2*GMX_SIMD_WIDTH_HERE;
         }
@@ -196,7 +199,11 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjl > cjf)
     {
-        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjl, gridj->bbj);
+#ifdef NBNXN_SEARCH_BB_SIMD4
+        d2 = subc_bb_dist2_simd4(0, bb_ci, cjl, gridj->bbj);
+#else
+        d2 = subc_bb_dist2(0, bb_ci, cjl, gridj->bbj);
+#endif
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -212,28 +219,28 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         {
             xind_l  = X_IND_CJ_SIMD_2XNN(CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cjl);
 
-            jx_SSE  = gmx_load_hpr_hilo_pr(x_j+xind_l+0*STRIDE_S);
-            jy_SSE  = gmx_load_hpr_hilo_pr(x_j+xind_l+1*STRIDE_S);
-            jz_SSE  = gmx_load_hpr_hilo_pr(x_j+xind_l+2*STRIDE_S);
+            jx_S  = gmx_load_hpr_hilo_pr(x_j+xind_l+0*STRIDE_S);
+            jy_S  = gmx_load_hpr_hilo_pr(x_j+xind_l+1*STRIDE_S);
+            jz_S  = gmx_load_hpr_hilo_pr(x_j+xind_l+2*STRIDE_S);
 
             /* Calculate distance */
-            dx_SSE0            = gmx_sub_pr(work->ix_SSE0, jx_SSE);
-            dy_SSE0            = gmx_sub_pr(work->iy_SSE0, jy_SSE);
-            dz_SSE0            = gmx_sub_pr(work->iz_SSE0, jz_SSE);
-            dx_SSE2            = gmx_sub_pr(work->ix_SSE2, jx_SSE);
-            dy_SSE2            = gmx_sub_pr(work->iy_SSE2, jy_SSE);
-            dz_SSE2            = gmx_sub_pr(work->iz_SSE2, jz_SSE);
+            dx_S0            = gmx_sub_pr(work->ix_S0, jx_S);
+            dy_S0            = gmx_sub_pr(work->iy_S0, jy_S);
+            dz_S0            = gmx_sub_pr(work->iz_S0, jz_S);
+            dx_S2            = gmx_sub_pr(work->ix_S2, jx_S);
+            dy_S2            = gmx_sub_pr(work->iy_S2, jy_S);
+            dz_S2            = gmx_sub_pr(work->iz_S2, jz_S);
 
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0, dy_SSE0, dz_SSE0);
-            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2, dy_SSE2, dz_SSE2);
+            rsq_S0           = gmx_calc_rsq_pr(dx_S0, dy_S0, dz_S0);
+            rsq_S2           = gmx_calc_rsq_pr(dx_S2, dy_S2, dz_S2);
 
-            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0, rc2_SSE);
-            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
+            wco_S0           = gmx_cmplt_pr(rsq_S0, rc2_S);
+            wco_S2           = gmx_cmplt_pr(rsq_S2, rc2_S);
 
-            wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
+            wco_any_S        = gmx_or_pb(wco_S0, wco_S2);
 
-            InRange            = gmx_movemask_pr(wco_any_SSE);
+            InRange          = gmx_anytrue_pb(wco_any_S);
 
             *ndistc += 2*GMX_SIMD_WIDTH_HERE;
         }
@@ -249,7 +256,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         {
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_2xnn(remove_sub_diag, ci, cj);
+            nbl->cj[nbl->ncj].excl = get_imask_simd_2xnn(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */
@@ -258,5 +265,3 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 }
 
 #undef STRIDE_S
-#undef GMX_MM128_HERE
-#undef GMX_MM256_HERE

@@ -40,6 +40,8 @@
 #include <sched.h>
 #include <sys/syscall.h>
 #endif
+#include <string.h>
+#include <errno.h>
 #include <assert.h>
 #include <stdio.h>
 #include "typedefs.h"
@@ -68,6 +70,7 @@ get_thread_affinity_layout(FILE *fplog,
     const int * pkg_id;
     const int * core_id;
     const int * hwthread_id;
+    gmx_bool    bPickPinStride;
 
     if (pin_offset < 0)
     {
@@ -84,6 +87,7 @@ get_thread_affinity_layout(FILE *fplog,
 
     if (rc != 0)
     {
+        /* topology information not available or invalid, ignore it */
         nhwthreads      = hwinfo->nthreads_hw_avail;
         *locality_order = NULL;
 
@@ -91,23 +95,36 @@ get_thread_affinity_layout(FILE *fplog,
         {
             /* We don't know anything about the hardware, don't pin */
             md_print_warn(cr, fplog,
-                          "We don't know how many logical cores we have, will not pin threads");
+                          "NOTE: We don't know how many logical cores we have, will not pin threads");
 
             return -1;
         }
+    }
+
+    if (nthreads > nhwthreads)
+    {
+        /* We are oversubscribing, don't pin */
+        md_print_warn(NULL, fplog,
+                      "WARNING: Oversubscribing the CPU, will not pin threads");
+
+        return -1;
     }
 
     if (pin_offset + nthreads > nhwthreads)
     {
         /* We are oversubscribing, don't pin */
         md_print_warn(NULL, fplog,
-                      "More threads requested than available logical cores, will not pin threads");
+                      "WARNING: The requested pin offset is too large for the available logical cores,\n"
+                      "         will not pin threads");
 
         return -1;
     }
 
-    /* Check if we need to choose the pinning stride */
-    if (*pin_stride == 0)
+
+    /* do we need to choose the pinning stride? */
+    bPickPinStride = (*pin_stride == 0);
+
+    if (bPickPinStride)
     {
         if (rc == 0 && pin_offset + nthreads*nhwthreads_per_core <= nhwthreads)
         {
@@ -127,23 +144,27 @@ get_thread_affinity_layout(FILE *fplog,
              */
             *pin_stride = (nhwthreads - pin_offset)/nthreads;
         }
-
-        if (fplog != NULL)
-        {
-            fprintf(fplog, "Pinning threads with a logical core stride of %d\n",
-                    *pin_stride);
-        }
     }
     else
     {
-        if (pin_offset + nthreads*(*pin_stride) > nhwthreads)
+        /* Check the placement of the thread with the largest index to make sure
+         * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
+        if (pin_offset + (nthreads-1)*(*pin_stride) >= nhwthreads)
         {
             /* We are oversubscribing, don't pin */
             md_print_warn(NULL, fplog,
-                          "The requested pinning stride is too large for the available logical cores, will not pin threads");
+                          "WARNING: The requested pinning stride is too large for the available logical cores,\n"
+                          "         will not pin threads");
 
             return -1;
         }
+    }
+
+    if (fplog != NULL)
+    {
+        fprintf(fplog, "Pinning threads with a%s logical core stride of %d\n",
+                bPickPinStride ? "n auto-selected" : " user-specified",
+                *pin_stride);
     }
 
     return 0;
@@ -166,7 +187,7 @@ gmx_set_thread_affinity(FILE                *fplog,
                         const gmx_hw_info_t *hwinfo,
                         const t_inputrec    *inputrec)
 {
-    int        nth_affinity_set, thread_id_node, thread_id,
+    int        nth_affinity_set, thread0_id_node,
                nthread_local, nthread_node, nthread_hw_max, nphyscore;
     int        offset;
     const int *locality_order;
@@ -178,19 +199,22 @@ gmx_set_thread_affinity(FILE                *fplog,
         return;
     }
 
-#ifndef __APPLE__
     /* If the tMPI thread affinity setting is not supported encourage the user
      * to report it as it's either a bug or an exotic platform which we might
      * want to support. */
     if (tMPI_Thread_setaffinity_support() != TMPI_SETAFFINITY_SUPPORT_YES)
     {
+        /* we know Mac OS doesn't support setting thread affinity, so there's
+           no point in warning the user in that case. In any other case
+           the user might be able to do something about it. */
+#ifndef __APPLE__
         md_print_warn(NULL, fplog,
                       "Can not set thread affinities on the current platform. On NUMA systems this\n"
                       "can cause performance degradation. If you think your platform should support\n"
                       "setting affinities, contact the GROMACS developers.");
+#endif  /* __APPLE__ */
         return;
     }
-#endif /* __APPLE__ */
 
     /* threads on this MPI process or TMPI thread */
     if (cr->duty & DUTY_PP)
@@ -203,8 +227,8 @@ gmx_set_thread_affinity(FILE                *fplog,
     }
 
     /* map the current process to cores */
-    thread_id_node = 0;
-    nthread_node   = nthread_local;
+    thread0_id_node = 0;
+    nthread_node    = nthread_local;
 #ifdef GMX_MPI
     if (PAR(cr) || MULTISIM(cr))
     {
@@ -215,9 +239,9 @@ gmx_set_thread_affinity(FILE                *fplog,
 
         MPI_Comm_split(MPI_COMM_WORLD, gmx_hostname_num(), cr->rank_intranode,
                        &comm_intra);
-        MPI_Scan(&nthread_local, &thread_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
+        MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
         /* MPI_Scan is inclusive, but here we need exclusive */
-        thread_id_node -= nthread_local;
+        thread0_id_node -= nthread_local;
         /* Get the total number of threads on this physical node */
         MPI_Allreduce(&nthread_local, &nthread_node, 1, MPI_INT, MPI_SUM, comm_intra);
         MPI_Comm_free(&comm_intra);
@@ -250,6 +274,7 @@ gmx_set_thread_affinity(FILE                *fplog,
                                     nthread_node,
                                     offset, &hw_opt->core_pinning_stride,
                                     &locality_order);
+
     if (rc != 0)
     {
         /* Incompatible layout, don't pin, warning was already issued */
@@ -263,15 +288,15 @@ gmx_set_thread_affinity(FILE                *fplog,
      * of threads on which we succeeded.
      */
     nth_affinity_set = 0;
-#pragma omp parallel firstprivate(thread_id_node) num_threads(nthread_local) \
-    reduction(+:nth_affinity_set)
+#pragma omp parallel num_threads(nthread_local) reduction(+:nth_affinity_set)
     {
+        int      thread_id, thread_id_node;
         int      index, core;
         gmx_bool setaffinity_ret;
 
-        thread_id       = gmx_omp_get_thread_num();
-        thread_id_node += thread_id;
-        index           = offset + thread_id_node*hw_opt->core_pinning_stride;
+        thread_id      = gmx_omp_get_thread_num();
+        thread_id_node = thread0_id_node + thread_id;
+        index          = offset + thread_id_node*hw_opt->core_pinning_stride;
         if (locality_order != NULL)
         {
             core = locality_order[index];
@@ -288,8 +313,8 @@ gmx_set_thread_affinity(FILE                *fplog,
 
         if (debug)
         {
-            fprintf(debug, "On rank %2d, thread %2d, core %2d the affinity setting returned %d\n",
-                    cr->nodeid, gmx_omp_get_thread_num(), core, setaffinity_ret);
+            fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
+                    cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
         }
     }
 
@@ -310,27 +335,33 @@ gmx_set_thread_affinity(FILE                *fplog,
 
             /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
             sbuf1[0] = sbuf2[0] = '\0';
+            /* Only add rank info if we have more than one rank. */
+            if (cr->nnodes > 1)
+            {
 #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
-            sprintf(sbuf1, "In thread-MPI thread #%d: ", cr->nodeid);
-#else       /* GMX_LIB_MPI */
-            sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
+                sprintf(sbuf1, "In tMPI thread #%d: ", cr->nodeid);
+#else           /* GMX_LIB_MPI */
+                sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
 #endif
-#endif      /* GMX_MPI */
+#endif          /* GMX_MPI */
+            }
 
             if (nthread_local > 1)
             {
-                sprintf(sbuf2, "of %d/%d thread%s ",
+                sprintf(sbuf2, "for %d/%d thread%s ",
                         nthread_local - nth_affinity_set, nthread_local,
-                        (nthread_local - nth_affinity_set) > 1 ? "s" : "");
+                        nthread_local > 1 ? "s" : "");
             }
 
             md_print_warn(NULL, fplog,
-                          "NOTE: %sAffinity setting %sfailed.\n"
-                          "      This can cause performance degradation!",
+                          "WARNING: %sAffinity setting %sfailed.\n"
+                          "         This can cause performance degradation! If you think your setting are\n"
+                          "         correct, contact the GROMACS developers.",
                           sbuf1, sbuf2);
         }
     }
+    return;
 }
 
 /* Check the process affinity mask and if it is found to be non-zero,

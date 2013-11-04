@@ -93,6 +93,12 @@
 /* Use AMD core math library */
 #cmakedefine GMX_FFT_ACML
 
+/* Target platform is x86 or x86_64 */
+#cmakedefine GMX_IS_X86
+
+/* Target platform is BlueGene/Q */
+#cmakedefine GMX_IS_BGQ
+
 /* SSE2 instructions available */
 #cmakedefine GMX_X86_SSE2
 
@@ -122,6 +128,9 @@
 
 /* IBM QPX was selected as CPU acceleration type (e.g. BlueGene/Q) */
 #cmakedefine GMX_CPU_ACCELERATION_IBM_QPX
+
+/* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
+#cmakedefine GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
 
 /* String for CPU acceleration choice (for writing to log files and stdout) */
 #define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
@@ -163,6 +172,9 @@
 /* Use (modified) Mopac 7 for QM-MM calculations */
 #cmakedefine GMX_QMMM_MOPAC
 
+/* Use ORCA for QM-MM calculations */
+#cmakedefine GMX_QMMM_ORCA
+
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
@@ -181,7 +193,10 @@
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
 
-/* Define when thread-MPI atomic operations are available */
+/* Define when there is a pthread.h */
+#cmakedefine HAVE_PTHREAD_H
+
+/* Define native atomic operations are found */
 #cmakedefine TMPI_ATOMICS
 
 /* Define for busy wait option  */
@@ -190,17 +205,17 @@
 /* Define for copy buffer option */
 #cmakedefine TMPI_COPY_BUFFER
 
+/* Define for tmpi warnings option */
+#cmakedefine TMPI_WARNINGS
+
 /* Define for profiling option */
 #cmakedefine TMPI_PROFILE
 
-/* Define for Linux pthread_setaffinity */
+/* Define for Linux pthread_setaffinity_np */
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
 /* Define for Windows NUMA-aware allocator functions*/
 #cmakedefine TMPI_WINDOWS_NUMA_API
-
-/* Define for sysconf() */
-#cmakedefine HAVE_SYSCONF
 
 /* Define for GetSystemInfo() */
 #cmakedefine HAVE_SYSTEM_INFO
@@ -327,9 +342,6 @@
 
 /* Define to 1 if yo have the <stdlib.h> header file. */
 #cmakedefine HAVE_STDLIB_H
-
-/* Define to 1 if yo have the <pthread.h> header file. */
-#cmakedefine HAVE_PTHREAD_H
 
 /* Define to 1 if yo have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H

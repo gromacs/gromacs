@@ -813,6 +813,9 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
             /* could this be done more readably/compactly? */
             switch (i)
             {
+                case (efptMASS):
+                    index = F_DKDL;
+                    break;
                 case (efptCOUL):
                     index = F_DVDL_COUL;
                     break;
@@ -824,9 +827,6 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
                     break;
                 case (efptRESTRAINT):
                     index = F_DVDL_RESTRAINT;
-                    break;
-                case (efptMASS):
-                    index = F_DKDL;
                     break;
                 default:
                     index = F_DVDL;
@@ -861,6 +861,15 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
      * which is a very good approximation (except for exotic settings).
      * (investigate how to overcome this post 4.6 - MRS)
      */
+    if (fepvals->separate_dvdl[efptBONDED])
+    {
+        enerd->term[F_DVDL_BONDED] += enerd->term[F_DVDL_CONSTR];
+    }
+    else
+    {
+        enerd->term[F_DVDL] += enerd->term[F_DVDL_CONSTR];
+    }
+    enerd->term[F_DVDL_CONSTR] = 0;
 
     for (i = 0; i < fepvals->n_lambda; i++)
     {                                         /* note we are iterating over fepvals here!
@@ -868,21 +877,13 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
                                                  so we don't need to add anything to the
                                                  enerd->enerpart_lambda[0] */
 
-        /* we don't need to worry about dvdl contributions to the current lambda, because
-           it's automatically zero */
-
-        /* first kinetic energy term */
-        dlam = (fepvals->all_lambda[efptMASS][i] - lambda[efptMASS]);
-
-        enerd->enerpart_lambda[i+1] += enerd->term[F_DKDL]*dlam;
+        /* we don't need to worry about dvdl_lin contributions to dE at
+           current lambda, because the contributions to the current
+           lambda are automatically zeroed */
 
         for (j = 0; j < efptNR; j++)
         {
-            if (j == efptMASS)
-            {
-                continue;
-            }                            /* no other mass term to worry about */
-
+            /* Note that this loop is over all dhdl components, not just the separated ones */
             dlam = (fepvals->all_lambda[j][i]-lambda[j]);
             enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
             if (debug)

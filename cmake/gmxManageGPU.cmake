@@ -146,12 +146,46 @@ if(NOT GMX_GPU)
     mark_as_advanced(CUDA_TOOLKIT_ROOT_DIR)
 endif()
 
+# Try to execute ${CUDA_NVCC_EXECUTABLE} --version and set the output
+# (or an error string) in the argument variable.
+# Note that semicolon is used as separator for nvcc.
+#
+# Parameters:
+#   COMPILER_INFO   - [output variable] string with compiler path, ID and
+#                     some compiler-provided information
+#   COMPILER_FLAGS  - [output variable] flags for the compiler
+#
+macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
+    if(CUDA_NVCC_EXECUTABLE)
+
+        # Get the nvcc version string. This is multi-line, but since it is only 4 lines
+        # and might change in the future it is better to store than trying to parse out
+        # the version from the current format.
+        execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} --version
+            RESULT_VARIABLE _nvcc_version_res
+            OUTPUT_VARIABLE _nvcc_version_out
+            ERROR_VARIABLE  _nvcc_version_err
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if (${_nvcc_version_res} EQUAL 0)
+            # Fix multi-line mess: Replace newline with ";" so we can use it in a define
+            string(REPLACE "\n" ";" _nvcc_info_singleline ${_nvcc_version_out})
+            SET(${COMPILER_INFO} "${CUDA_NVCC_EXECUTABLE} ${_nvcc_info_singleline}")
+            string(TOUPPER ${CMAKE_BUILD_TYPE} _build_type)
+            SET(_compiler_flags "${CUDA_NVCC_FLAGS_${_build_type}}")
+            if(CUDA_PROPAGATE_HOST_FLAGS)
+                string(REGEX REPLACE "[ ]+" ";" _cxx_flags_nospace "${BUILD_CXXFLAGS}")
+            endif()
+            SET(${COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}; ${_cxx_flags_nospace}")
+        else ()
+            SET(${COMPILER_INFO} "N/A")
+            SET(${COMPILER_FLAGS} "N/A")
+        endif ()
+    endif ()
+endmacro ()
+
 macro(gmx_gpu_setup)
     # set up nvcc options
     include(gmxManageNvccConfig)
-
-    # Version info (semicolon used as line separator) for nvcc.
-    get_nvcc_version_info()
 
     # Atomic operations used for polling wait for GPU
     # (to avoid the cudaStreamSynchronize + ECC bug).

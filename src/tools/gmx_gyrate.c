@@ -180,7 +180,7 @@ void calc_gyro_z(rvec x[], matrix box,
 int gmx_gyrate(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_gyrate[tt] computes the radius of gyration of a group of atoms",
+        "[TT]g_gyrate[tt] computes the radius of gyration of a molecule",
         "and the radii of gyration about the [IT]x[it]-, [IT]y[it]- and [IT]z[it]-axes,",
         "as a function of time. The atoms are explicitly mass weighted.[PAR]",
         "With the [TT]-nmol[tt] option the radius of gyration will be calculated",

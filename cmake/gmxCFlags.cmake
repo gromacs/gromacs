@@ -68,7 +68,16 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
         endif()
-        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CFLAGS)
+        if (C_COMPILER_VERSION VERSION_EQUAL 4.8 OR C_COMPILER_VERSION VERSION_GREATER 4.8)
+            # In gcc 4.8 the default settings for many warning types
+            # were changed. Fixing many of them in C is at best
+            # awkward, and some of the fixes might require ABI
+            # changes, which we prefer not to do in a bugfix
+            # branch. So we introduce these workarounds, and plan to
+            # addess problems in master branch.
+            set(extra_warn_flags_for_gcc_4_8 " -Wno-unused-parameter -Wno-array-bounds -Wno-maybe-uninitialized -Wno-strict-overflow")
+        endif()
+        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value${extra_warn_flags_for_gcc_4_8}" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wno-sign-compare" GMXC_CFLAGS)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)

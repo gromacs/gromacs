@@ -37,14 +37,13 @@
  */
 
 #ifndef _nbnxn_search_h
-#define _nsnxn_search_h
+#define _nbnxn_search_h
 #include "visibility.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /* Returns the j-cluster size for kernel of type nb_kernel_type */
 int nbnxn_kernel_to_cj_size(int nb_kernel_type);

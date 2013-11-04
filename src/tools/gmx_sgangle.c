@@ -221,7 +221,7 @@ void sgangle_plot(const char *fn, const char *afile, const char *dfile,
     matrix       box;
     char         buf[256]; /* for xvgr title */
     gmx_rmpbc_t  gpbc = NULL;
-
+    const char*  aleg[2] = { "cos(Angle)", "Angle (degrees)" };     /* legends for sg_angle output file */
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
     {
@@ -230,6 +230,7 @@ void sgangle_plot(const char *fn, const char *afile, const char *dfile,
 
     sprintf(buf, "Angle between %s and %s", grpn1, grpn2);
     sg_angle = xvgropen(afile, buf, "Time (ps)", "Angle (degrees)", oenv);
+    xvgr_legend(sg_angle, 2, aleg, oenv);
 
     if (dfile)
     {

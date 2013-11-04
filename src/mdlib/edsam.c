@@ -1346,13 +1346,6 @@ static void init_edi(gmx_mtop_t *mtop, t_edpar *edi)
      * The initialized data sets are then transmitted to the
      * other nodes in broadcast_ed_data */
 
-    edi->bNeedDoEdsam = edi->vecs.mon.neig
-        || edi->vecs.linfix.neig
-        || edi->vecs.linacc.neig
-        || edi->vecs.radfix.neig
-        || edi->vecs.radacc.neig
-        || edi->vecs.radcon.neig;
-
     alook = gmx_mtop_atomlookup_init(mtop);
 
     /* evaluate masses (reference structure) */
@@ -2499,6 +2492,15 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv)
 
     for (nr_edi = 1; nr_edi <= nED; nr_edi++)
     {
+        /* Remember for each ED group whether we have to do essential dynamics
+         * constraints or possibly only flooding */
+        edi->bNeedDoEdsam = edi->vecs.mon.neig
+            || edi->vecs.linfix.neig
+            || edi->vecs.linacc.neig
+            || edi->vecs.radfix.neig
+            || edi->vecs.radacc.neig
+            || edi->vecs.radcon.neig;
+
         fprintf(ed->edo, "#\n");
         fprintf(ed->edo, "# Summary of applied con/restraints for the ED group %c\n", get_EDgroupChar(nr_edi, nED));
         fprintf(ed->edo, "# Atoms in average structure: %d\n", edi->sav.nr);
@@ -2616,28 +2618,30 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv)
     edi         = ed->edpar;
     for (nr_edi = 1; nr_edi <= nED; nr_edi++)
     {
-        nice_legend(&setname, &nsets, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED) );
+        if (edi->bNeedDoEdsam) /* Only print ED legend if at least one ED option is on */
+        {
+            nice_legend(&setname, &nsets, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED) );
 
-        /* Essential dynamics, projections on eigenvectors */
-        nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.mon, get_EDgroupChar(nr_edi, nED), "MON"   );
-        nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.linfix, get_EDgroupChar(nr_edi, nED), "LINFIX");
-        nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.linacc, get_EDgroupChar(nr_edi, nED), "LINACC");
-        nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.radfix, get_EDgroupChar(nr_edi, nED), "RADFIX");
-        if (edi->vecs.radfix.neig)
-        {
-            nice_legend(&setname, &nsets, &LegendStr, "RADFIX radius", "nm", get_EDgroupChar(nr_edi, nED));
+            /* Essential dynamics, projections on eigenvectors */
+            nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.mon, get_EDgroupChar(nr_edi, nED), "MON"   );
+            nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.linfix, get_EDgroupChar(nr_edi, nED), "LINFIX");
+            nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.linacc, get_EDgroupChar(nr_edi, nED), "LINACC");
+            nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.radfix, get_EDgroupChar(nr_edi, nED), "RADFIX");
+            if (edi->vecs.radfix.neig)
+            {
+                nice_legend(&setname, &nsets, &LegendStr, "RADFIX radius", "nm", get_EDgroupChar(nr_edi, nED));
+            }
+            nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.radacc, get_EDgroupChar(nr_edi, nED), "RADACC");
+            if (edi->vecs.radacc.neig)
+            {
+                nice_legend(&setname, &nsets, &LegendStr, "RADACC radius", "nm", get_EDgroupChar(nr_edi, nED));
+            }
+            nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.radcon, get_EDgroupChar(nr_edi, nED), "RADCON");
+            if (edi->vecs.radcon.neig)
+            {
+                nice_legend(&setname, &nsets, &LegendStr, "RADCON radius", "nm", get_EDgroupChar(nr_edi, nED));
+            }
         }
-        nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.radacc, get_EDgroupChar(nr_edi, nED), "RADACC");
-        if (edi->vecs.radacc.neig)
-        {
-            nice_legend(&setname, &nsets, &LegendStr, "RADACC radius", "nm", get_EDgroupChar(nr_edi, nED));
-        }
-        nice_legend_evec(&setname, &nsets, &LegendStr, &edi->vecs.radcon, get_EDgroupChar(nr_edi, nED), "RADCON");
-        if (edi->vecs.radcon.neig)
-        {
-            nice_legend(&setname, &nsets, &LegendStr, "RADCON radius", "nm", get_EDgroupChar(nr_edi, nED));
-        }
-
         edi = edi->next_edi;
     } /* end of 'pure' essential dynamics legend entries */
     n_edsam = nsets - n_flood;

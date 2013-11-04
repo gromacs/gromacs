@@ -153,7 +153,7 @@ int cmain(int argc,char *argv[])
     { efXVG, "-tpi",    "tpi",      ffOPTWR },
     { efXVG, "-tpid",   "tpidist",  ffOPTWR },
     { efEDI, "-ei",     "sam",      ffOPTRD },
-    { efEDO, "-eo",     "sam",      ffOPTWR },
+    { efXVG, "-eo",     "sam",      ffOPTWR },
     { efGCT, "-j",      "wham",     ffOPTRD },
     { efGCT, "-jo",     "bam",      ffOPTWR },
     { efXVG, "-ffout",  "gct",      ffOPTWR },
@@ -205,6 +205,8 @@ int cmain(int argc,char *argv[])
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
   const char *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
+  const char   *thread_aff_opt[threadaffNR+1] =
+    { NULL, "auto", "no", "yes", NULL };
   const char *nbpu_opt[] =
     { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
@@ -236,12 +238,12 @@ int cmain(int argc,char *argv[])
       "Number of OpenMP threads per MPI process/thread to start (0 is guess)" },
     { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
       "Number of OpenMP threads per MPI process/thread to start (0 is -ntomp)" },
-    { "-pin",     FALSE, etBOOL, {&hw_opt.bThreadPinning},
+    { "-pin",     FALSE, etBOOL, {thread_aff_opt},
       "Pin OpenMP threads to cores" },
-    { "-pinht",   FALSE, etBOOL, {&hw_opt.bPinHyperthreading},
-      "Always pin threads to Hyper-Threading cores" },
     { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
       "Core offset for pinning (for running multiple mdrun processes on a single physical node)" },
+    { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
+      "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
     { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_id},
       "List of GPU id's to use" },
     { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
@@ -413,7 +415,7 @@ int cmain(int argc,char *argv[])
 
       if (MULTISIM(cr) && MASTER(cr))
       {
-          check_multi_int(stdout,cr->ms,sim_part,"simulation part");
+          check_multi_int(stdout,cr->ms,sim_part,"simulation part", TRUE);
       }
   } 
   else

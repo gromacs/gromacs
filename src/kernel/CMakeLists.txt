@@ -88,7 +88,10 @@ if(GMX_OPENMM)
     # Even though the OpenMM build has "moved to contrib", many things
     # have be be done from within the scope of the CMakeLists.txt that
     # builds its mdrun, and that is here
-    include(../contrib/BuildMdrunOpenMM)
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/src/contrib)
+    find_package(OpenMM)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+    include(${CMAKE_SOURCE_DIR}/src/contrib/BuildMdrunOpenMM.cmake)
 endif(GMX_OPENMM)
 
 if(GMX_GPU OR GMX_FORCE_CXX)
@@ -122,6 +125,10 @@ add_executable(mdrun ${MDRUN_SOURCES} main.c)
 gmx_add_man_page(mdrun)
 target_link_libraries(mdrun gmxpreprocess md gmx ${OpenMP_LINKER_FLAGS})
 set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}" COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+if(GMX_OPENMM)
+    target_link_libraries(mdrun openmm_api_wrapper)
+endif()
 
 # Construct component groups for installation; note that a component may
 # belong to only one group

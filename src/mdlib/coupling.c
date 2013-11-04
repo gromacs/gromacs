@@ -1603,7 +1603,7 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
             Ek = trace(ekind->tcstat[i].ekinh);
         }
 
-        if (opts->tau_t[i] > 0 && opts->nrdf[i] > 0 && Ek > 0)
+        if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0)
         {
             Ek_ref1 = 0.5*opts->ref_t[i]*BOLTZ;
             Ek_ref  = Ek_ref1*opts->nrdf[i];

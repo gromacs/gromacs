@@ -180,16 +180,16 @@ atom_id *make_chi_ind(int nl, t_dlist dl[], int *ndih)
             id[n++] = dl[i].atm.O;
         }
     }
-    for (i = 0; (i < nl); i++)
+    for (i = 1; (i < nl); i++)
     {
         /* Omega */
         if (has_dihedral(edOmega, &(dl[i])))
         {
             dl[i].j0[edOmega] = n/4;
-            id[n++]           = dl[i].atm.minO;
+            id[n++]           = dl[i].atm.minCalpha;
             id[n++]           = dl[i].atm.minC;
             id[n++]           = dl[i].atm.N;
-            id[n++]           = dl[i].atm.H;
+            id[n++]           = dl[i].atm.Cn[1];
         }
     }
     for (Xi = 0; (Xi < MAXCHI); Xi++)

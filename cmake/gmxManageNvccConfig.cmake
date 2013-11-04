@@ -143,8 +143,10 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
     #   optimized for sm_35 results in lower performance than with sm_30.
     if(CUDA_VERSION VERSION_LESS "4.2")
         set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_20,code=compute_20")
-    else()
+    elseif(CUDA_VERSION VERSION_LESS "5.0")
         set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_30,code=compute_30")
+    else()
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
     endif()
 
     # finally set the damn flags
@@ -152,33 +154,3 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         "${_CUDA_ARCH_STR};-use_fast_math;${_HOST_COMPILER_OPTION_STRING}${CUDA_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Compiler flags for nvcc." FORCE)
 endif()
-
-
-# Try to execute ${CUDA_NVCC_EXECUTABLE} --version and set the output
-# (or an error string) in the argument variable.
-#
-# returned in argument: CUDA nvcc compiler version string
-#
-macro(get_nvcc_version_info)
-    if(CUDA_NVCC_EXECUTABLE AND NOT CUDA_NVCC_COMPILER_INFO)
-
-        # Get the nvcc version string. This is multi-line, but since it is only 4 lines
-        # and might change in the future it is better to store than trying to parse out
-        # the version from the current format.
-        execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} --version
-            RESULT_VARIABLE _nvcc_version_res
-            OUTPUT_VARIABLE _nvcc_version_out
-            ERROR_VARIABLE  _nvcc_version_err
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
-        if (${_nvcc_version_res} EQUAL 0)
-            # Fix multi-line mess: Replace newline with ";" so we can use it in a define
-            string(REPLACE "\n" ";" _nvcc_info_singleline ${_nvcc_version_out})
-            SET(CUDA_NVCC_COMPILER_INFO ${_nvcc_info_singleline}
-                CACHE STRING "CUDA nvcc compiler version string" FORCE)
-        else ()
-            SET(CUDA_NVCC_COMPILER_INFO ""
-                CACHE STRING "CUDA nvcc compiler version string not available" FORCE)
-        endif ()
-    endif ()
-    mark_as_advanced(CUDA_NVCC_COMPILER_INFO)
-endmacro ()

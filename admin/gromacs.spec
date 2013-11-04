@@ -3,7 +3,7 @@ Version:	4.5
 Release:	7%{?dist}
 Summary:	GROMACS binaries
 Group:		Applications/Engineering
-License:	GPLv2+
+License:	LGPLv2.1
 URL:		http://www.gromacs.org
 Source0:	ftp://ftp.gromacs.org/pub/gromacs/gromacs-%{version}.tar.gz
 Source1:	ftp://ftp.gromacs.org/pub/manual/manual-4.0.pdf

@@ -1,11 +1,11 @@
 libdir=@LIB_INSTALL_DIR@
 includedir=@INCL_INSTALL_DIR@
 
-Name: libgmxpreprocess
+Name: libgmxpreprocess@GMX_LIBS_SUFFIX@
 Description: Gromacs preprocess lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
-Requires: libgmx@GMX_LIBS_SUFFIX@ libmd@GMX_LIBS_SUFFIX@ 
+Requires: libgmx@GMX_LIBS_SUFFIX@ @MD_PREFIX@libmd@GMX_LIBS_SUFFIX@ 
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
 Libs: -L${libdir} -lgmxpreprocess@GMX_LIBS_SUFFIX@
 Cflags: -I${includedir} @PKG_CFLAGS@
