@@ -2070,7 +2070,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-                do_per_step(step, repl_ex_nst))
+            do_per_step(step, repl_ex_nst))
         {
             bExchanged |= replica_exchange(fplog, cr, repl_ex,
                                           state_global, enerd,
@@ -2080,10 +2080,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bExchanged && DOMAINDECOMP(cr))
         {
             dd_partition_system(fplog, step, cr, TRUE, 1,
-                    state_global, top_global, ir,
-                    state, &f, mdatoms, top, fr,
-                    vsite, shellfc, constr,
-                    nrnb, wcycle, FALSE);
+                                state_global, top_global, ir,
+                                state, &f, mdatoms, top, fr,
+                                vsite, shellfc, constr,
+                                nrnb, wcycle, FALSE);
         }
 
         bFirstStep       = FALSE;
