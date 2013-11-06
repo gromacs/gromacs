@@ -46,7 +46,7 @@
 #include "vec.h"
 #include "force.h"
 #include "invblock.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "network.h"
 #include "pbc.h"

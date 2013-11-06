@@ -40,50 +40,51 @@
  * \inpublicapi
  * \ingroup module_qmmm
  */
-#include "gromacs/legacyheaders/smalloc.h"
+#include <stdlib.h>
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/mmslave.h"
 #include "gromacs/mmslave/mmslave.h"
 
-//! Abstract type for the mm_slave code
-typedef struct {
+//! Abstract type for the mmslave code
+typedef struct gmx_mmslave {
     //! Embedded C++ class
-    MMSlave *mms;
-} gmx_mm_slave;
+    gmx::MMSlave *mms;
+} gmx_mmslave;
 
 /* Routines for C interface to the MMSlave class */
-gmx_mm_slave_t mm_slave_init(void)
+gmx_mmslave_t mmslave_init(void)
 {
-    gmx_mm_slave *gms;
+    gmx_mmslave *gms;
     
-    snew(gms,1);
-    gms->mms = new MMSlave();
+    gms = (gmx_mmslave *) calloc(1,sizeof(gmx_mmslave));
+    gms->mms = new gmx::MMSlave();
     
     return gms;
 }
     
-void mm_slave_done(gmx_mm_slave_t gms)
+void mmslave_done(gmx_mmslave_t gms)
 {
     delete gms->mms;
-    sfree(gms);
+    free(gms);
 }
 
-gmx_bool mm_slave_read_tpr(const char *tpr, 
-                           gmx_mm_slave_t gms)
+gmx_bool mmslave_read_tpr(const char *tpr, 
+                          gmx_mmslave_t gms)
 {
     return (gmx_bool) gms->mms->readTpr(tpr);
 }
 
-gmx_bool mm_slave_set_q(gmx_mm_slave_t gms,
-                        atom_id id,
-                        double q)
+gmx_bool mmslave_set_q(gmx_mmslave_t gms,
+                       atom_id id,
+                       double q)
 {
     return (gmx_bool) gms->mms->setAtomQ(id, q);
 }
 
-gmx_bool mm_slave_calc_energy(gmx_mm_slave_t gms, 
-                              const rvec *x,
-                              rvec *f,
-                              double *energy)
+gmx_bool mmslave_calc_energy(gmx_mmslave_t gms, 
+                             const rvec *x,
+                             rvec *f,
+                             double *energy)
 {
     return (gmx_bool) gms->mms->calcEnergy(x, f, energy);
 }
