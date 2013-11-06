@@ -42,70 +42,12 @@
  */
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/mmslave.h"
-#include "gromacs/mmslave/mmslave.h"
 
-//! Abstract type for the mm_slave code
-typedef struct {
-    //! Embedded C++ class
-    MMSlave *mms;
-} gmx_mm_slave;
-
-/* Routines for C interface to the MMSlave class */
-gmx_mm_slave_t mm_slave_init(void)
-{
-    gmx_mm_slave *gms;
-    
-    snew(gms,1);
-    gms->mms = new MMSlave();
-    
-    return gms;
-}
-    
-void mm_slave_done(gmx_mm_slave_t gms)
-{
-    delete gms->mms;
-    sfree(gms);
-}
-
-gmx_bool mm_slave_read_tpr(const char *tpr, 
-                           gmx_mm_slave_t gms)
-{
-    return (gmx_bool) gms->mms->readTpr(tpr);
-}
-
-gmx_bool mm_slave_set_q(gmx_mm_slave_t gms,
-                        atom_id id,
-                        double q)
-{
-    return (gmx_bool) gms->mms->setAtomQ(id, q);
-}
-
-gmx_bool mm_slave_calc_energy(gmx_mm_slave_t gms, 
-                              const rvec *x,
-                              rvec *f,
-                              double *energy)
-{
-    return (gmx_bool) gms->mms->calcEnergy(x, f, energy);
-}
-    
 namespace gmx
 {
-
-bool MMSlave::readTpr(const char *tpr)
+namespace test
 {
-    return true;
-}
 
-bool MMSlave::setAtomQ(atom_id id, double q)
-{
-    return true;
-}
 
-bool MMSlave::calcEnergy(const rvec *x,
-                         rvec *f,
-                         double *energy)
-{
-    return true;
-}
-
-}
+} // namespace test
+} // namespace gmx

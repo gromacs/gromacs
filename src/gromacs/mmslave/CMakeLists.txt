@@ -7,6 +7,6 @@ install(FILES ${MMSLAVE_PUBLIC_HEADERS}
         DESTINATION ${INCL_INSTALL_DIR}/gromacs
         COMPONENT development)
 
-#if (BUILD_TESTING)
-#    add_subdirectory(tests)
-#endif (BUILD_TESTING)
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif (BUILD_TESTING)
