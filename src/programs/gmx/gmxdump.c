@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -42,18 +42,18 @@
 #include <assert.h>
 #include "main.h"
 #include "macros.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
-#include "xtcio.h"
-#include "enxio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/fileio/enxio.h"
 #include "smalloc.h"
 #include "names.h"
-#include "gmxfio.h"
-#include "tpxio.h"
-#include "trnio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
 #include "txtdump.h"
 #include "gmxcpp.h"
 #include "checkpoint.h"
@@ -322,6 +322,7 @@ void list_xtc(const char *fn, gmx_bool bXVG)
     {
         fprintf(stderr, "\nWARNING: Incomplete frame at time %g\n", time);
     }
+    sfree(x);
     close_xtc(xd);
 }
 
@@ -356,7 +357,7 @@ void list_ene(const char *fn)
     real           rav, minthird;
     char           buf[22];
 
-    printf("gmxdump: %s\n", fn);
+    printf("gmx dump: %s\n", fn);
     in = open_enx(fn, "r");
     do_enxnms(in, &nre, &enm);
     assert(enm);
@@ -522,7 +523,7 @@ static void list_mtx(const char *fn)
 int gmx_gmxdump(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[TT]gmxdump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
+        "[TT]gmx dump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
         "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]), an energy",
         "file ([TT].ene[tt]/[TT].edr[tt]), or a checkpoint file ([TT].cpt[tt])",
         "and prints that to standard output in a readable format.",
@@ -557,8 +558,11 @@ int gmx_gmxdump(int argc, char *argv[])
         { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
     };
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
 
     if (ftp2bSet(efTPX, NFILE, fnm))

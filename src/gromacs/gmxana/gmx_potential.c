@@ -49,11 +49,12 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "gmx_ana.h"
 #include "string2.h"
+#include "gromacs/fileio/trxio.h"
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19
@@ -465,9 +466,12 @@ int gmx_potential(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
+                           &oenv))
+    {
+        return 0;
+    }
 
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';

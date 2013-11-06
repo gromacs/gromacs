@@ -201,7 +201,7 @@ TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections
 namespace
 {
 
-/*! \internal \brief
+/*! \brief
  * Basic thread-local trajectory analysis data storage class.
  *
  * Most simple tools should only require data handles and selections to be

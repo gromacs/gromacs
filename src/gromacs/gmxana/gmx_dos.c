@@ -38,10 +38,10 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "copyrite.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -59,6 +59,7 @@
 #include "correl.h"
 #include "gmx_ana.h"
 #include "gromacs/fft/fft.h"
+#include "gromacs/fileio/trxio.h"
 
 enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
@@ -319,9 +320,12 @@ int gmx_dos(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc,
-                      asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc,
+                           asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     beta = 1/(Temp*BOLTZ);
     if (bDump)

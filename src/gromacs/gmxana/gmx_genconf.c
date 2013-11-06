@@ -41,7 +41,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "statutil.h"
 #include "vec.h"
 #include "random.h"
@@ -51,6 +51,7 @@
 #include "names.h"
 #include "sortwater.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
                      int *seed, rvec max_rot)
@@ -190,8 +191,11 @@ int gmx_genconf(int argc, char *argv[])
         { "-renumber", FALSE, etBOOL, {&bRenum},  "Renumber residues" }
     };
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     if (bRandom && (seed == 0))
     {

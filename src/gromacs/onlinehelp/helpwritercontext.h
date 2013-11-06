@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #define GMX_ONLINEHELP_HELPWRITERCONTEXT_H
 
 #include <string>
+#include <vector>
 
 #include "../utility/common.h"
 
@@ -51,15 +52,57 @@ namespace gmx
 {
 
 class File;
+class TextLineWrapperSettings;
 
 /*! \cond libapi */
 //! \libinternal Output format for help writing.
 enum HelpOutputFormat
 {
     eHelpOutputFormat_Console,  //!< Plain text directly on the console.
+    eHelpOutputFormat_Man,      //!< Man page.
+    eHelpOutputFormat_Html,     //!< Html output for online manual.
     eHelpOutputFormat_NR        //!< Used for the number of output formats.
 };
 //! \endcond
+
+/*! \libinternal \brief
+ * Hyperlink data for writing out help.
+ *
+ * This class is separate from HelpWriterContext to allow constructing the list
+ * of links once and reusing them across multiple help writer contexts.
+ * This is used when exporting all the help from the wrapper binary to avoid
+ * repeatedly constructing the same data structure for each help item.
+ *
+ * \ingroup module_onlinehelp
+ */
+class HelpLinks
+{
+    public:
+        //! Initializes an empty links collection.
+        HelpLinks();
+        ~HelpLinks();
+
+        /*! \brief
+         * Adds a link.
+         *
+         * \param[in] linkName   Name of the link in input text.
+         * \param[in] targetName Hyperlink target.
+         *
+         * Any occurrence of \p linkName in the text passed to markup
+         * substitution methods in HelpWriterContext is made into a hyperlink
+         * to \p targetName if the markup format supports that.
+         */
+        void addLink(const std::string &linkName,
+                     const std::string &targetName);
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+
+        //! Allows the context to use the links.
+        friend class HelpWriterContext;
+};
 
 /*! \libinternal \brief
  * Context information for writing out help.
@@ -87,6 +130,9 @@ class HelpWriterContext
         HelpWriterContext(File *file, HelpOutputFormat format);
         ~HelpWriterContext();
 
+        //! Sets the links to use in this context.
+        void setLinks(const HelpLinks &links);
+
         /*! \brief
          * Returns the active output format.
          *
@@ -105,13 +151,32 @@ class HelpWriterContext
         File &outputFile() const;
 
         /*! \brief
-         * Substitutes markup used in help text.
+         * Substitutes markup used in help text and wraps lines.
          *
-         * \param[in] text  Text to substitute.
-         * \returns   \p text with markup substituted.
+         * \param[in] settings Line wrapper settings.
+         * \param[in] text     Text to substitute.
+         * \returns   \p text with markup substituted and wrapped.
          * \throws    std::bad_alloc if out of memory.
+         *
+         * \see TextLineWrapper::wrapToString()
          */
-        std::string substituteMarkup(const std::string &text) const;
+        std::string
+        substituteMarkupAndWrapToString(const TextLineWrapperSettings &settings,
+                                        const std::string             &text) const;
+        /*! \brief
+         * Substitutes markup used in help text and wraps lines.
+         *
+         * \param[in] settings Line wrapper settings.
+         * \param[in] text     Text to substitute.
+         * \returns   \p text with markup substituted and wrapped as a list of
+         *      lines.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * \see TextLineWrapper::wrapToVector()
+         */
+        std::vector<std::string>
+        substituteMarkupAndWrapToVector(const TextLineWrapperSettings &settings,
+                                        const std::string             &text) const;
         /*! \brief
          * Writes a title for the current help topic.
          *
@@ -127,13 +192,23 @@ class HelpWriterContext
          * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
          *
-         * In addition to substituteMarkup(), also does line wrapping for
-         * console output.
-         *
-         * TODO: This function and substituteMarkup() should work more
-         * similarly.
+         * Convenience function that calls substituteMarkupAndWrapToString()
+         * and writes the result directly to the output file.
          */
         void writeTextBlock(const std::string &text) const;
+        /*! \brief
+         * Writes a formatted text block into the output.
+         *
+         * \param[in] settings Line wrapper settings.
+         * \param[in] text     Text to format.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         *
+         * Convenience function that calls substituteMarkupAndWrapToString()
+         * and writes the result directly to the output file.
+         */
+        void writeTextBlock(const TextLineWrapperSettings &settings,
+                            const std::string             &text) const;
 
     private:
         class Impl;

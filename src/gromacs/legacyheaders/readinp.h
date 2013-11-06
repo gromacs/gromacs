@@ -162,9 +162,7 @@ const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[]);
 
 gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 
-void print_pargs(FILE *fp, int npargs, t_pargs pa[], gmx_bool bLeadingSpace);
-
-char *pargs_print_line(t_pargs *pa, gmx_bool bLeadingSpace);
+void print_pargs(FILE *fp, int npargs, t_pargs pa[]);
 
 void pr_enums(FILE *fp, int npargs, t_pargs pa[], int shell);
 

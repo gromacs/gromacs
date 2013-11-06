@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -51,6 +51,9 @@
 namespace gmx
 {
 
+//! \addtogroup module_utility
+//! \{
+
 /*! \brief
  * Tests whether a string starts with another string.
  *
@@ -60,8 +63,6 @@ namespace gmx
  *
  * Returns true if \p prefix is empty.
  * Does not throw.
- *
- * \inpublicapi
  */
 bool inline startsWith(const std::string &str, const std::string &prefix)
 {
@@ -82,8 +83,6 @@ bool inline startsWith(const char *str, const char *prefix)
  *
  * Returns true if \p suffix is NULL or empty.
  * Does not throw.
- *
- * \inpublicapi
  */
 bool endsWith(const std::string &str, const char *suffix);
 
@@ -97,8 +96,6 @@ bool endsWith(const std::string &str, const char *suffix);
  * \throws    std::bad_alloc if out of memory.
  *
  * Returns \p str if \p suffix is NULL or empty.
- *
- * \inpublicapi
  */
 std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
 
@@ -110,8 +107,6 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * This function works like sprintf(), except that it returns an std::string
  * instead of requiring a preallocated buffer.  Arbitrary length output is
  * supported.
- *
- * \inpublicapi
  */
 std::string formatString(const char *fmt, ...);
 
@@ -127,8 +122,6 @@ std::string formatString(const char *fmt, ...);
  * The strings in the \p sarray array are concatenated, adding a single space
  * between the strings if there is no whitespace in the end of a string.
  * Terminal whitespace is removed.
- *
- * \inpublicapi
  */
 std::string concatenateStrings(const char * const *sarray, size_t count);
 /*! \brief
@@ -141,8 +134,6 @@ std::string concatenateStrings(const char * const *sarray, size_t count);
  * \throws    std::bad_alloc if out of memory.
  *
  * \see concatenateStrings(const char * const *, size_t)
- *
- * \inpublicapi
  */
 template <size_t count>
 std::string concatenateStrings(const char * const (&sarray)[count])
@@ -156,7 +147,7 @@ std::string concatenateStrings(const char * const (&sarray)[count])
  * \param[in] input  Input string.
  * \param[in] from   String to find.
  * \param[in] to     String to use to replace \p from.
- * \returns   \p input with all occurrences of \p from replaced with \p to.
+ * \returns   Copy of \p input with all occurrences of \p from replaced with \p to.
  * \throws    std::bad_alloc if out of memory.
  *
  * The replacement is greedy and not recursive: starting from the beginning of
@@ -166,29 +157,31 @@ std::string concatenateStrings(const char * const (&sarray)[count])
  * Compexity is O(N), where N is length of output.
  *
  * \see replaceAllWords()
- *
- * \inpublicapi
  */
 std::string replaceAll(const std::string &input,
                        const char *from, const char *to);
+//! \copydoc replaceAll(const std::string &, const char *, const char *)
+std::string replaceAll(const std::string &input,
+                       const std::string &from, const std::string &to);
 /*! \brief
  * Replace whole words with others.
  *
  * \param[in] input  Input string.
  * \param[in] from   String to find.
  * \param[in] to     String to use to replace \p from.
- * \returns   \p input with all \p from words replaced with \p to.
+ * \returns   Copy of \p input with all \p from words replaced with \p to.
  * \throws    std::bad_alloc if out of memory.
  *
  * Works as replaceAll(), but a match is only considered if it is delimited by
  * non-alphanumeric characters.
  *
  * \see replaceAll()
- *
- * \inpublicapi
  */
 std::string replaceAllWords(const std::string &input,
                             const char *from, const char *to);
+//! \copydoc replaceAllWords(const std::string &, const char *, const char *)
+std::string replaceAllWords(const std::string &input,
+                            const std::string &from, const std::string &to);
 
 class TextLineWrapper;
 
@@ -200,7 +193,6 @@ class TextLineWrapper;
  * \see TextLineWrapper
  *
  * \inpublicapi
- * \ingroup module_utility
  */
 class TextLineWrapperSettings
 {
@@ -340,10 +332,9 @@ class TextLineWrapperSettings
    gmx::TextLineWrapper wrapper;
    wrapper.settings().setLineLength(78);
    printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
- * \endcode
+   \endcode
  *
  * \inpublicapi
- * \ingroup module_utility
  */
 class TextLineWrapper
 {
@@ -412,12 +403,12 @@ class TextLineWrapper
                lineStart = nextLineStart;
            }
            return result;
-         * \endcode
+           \endcode
          *
          * Does not throw.
          */
         size_t findNextLine(const char *input, size_t lineStart) const;
-        //! \copydoc findNextLine(const char *, size_t) const
+        //! \copydoc findNextLine(const char *, size_t)const
         size_t findNextLine(const std::string &input, size_t lineStart) const;
         /*! \brief
          * Formats a single line for output according to wrapping settings.
@@ -470,6 +461,8 @@ class TextLineWrapper
     private:
         TextLineWrapperSettings settings_;
 };
+
+//! \}
 
 } // namespace gmx
 

@@ -1517,11 +1517,12 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
 #endif
         }
 
-        /* Analytical Ewald exclusion correction is only an option in the
-         * x86 SIMD kernel. This is faster in single precision
-         * on Bulldozer and slightly faster on Sandy Bridge.
+        /* Analytical Ewald exclusion correction is only an option in
+         * the SIMD kernel. On BlueGene/Q, this is faster regardless
+         * of precision. In single precision, this is faster on
+         * Bulldozer, and slightly faster on Sandy Bridge.
          */
-#if (defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE
+#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1534,7 +1535,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         }
 
     }
-#endif /* GMX_X86_SSE2 */
+#endif /* GMX_NBNXN_SIMD */
 }
 
 
@@ -1543,42 +1544,49 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
     const char *returnvalue = NULL;
     switch (kernel_type)
     {
-        case nbnxnkNotSet: returnvalue     = "not set"; break;
-        case nbnxnk4x4_PlainC: returnvalue = "plain C"; break;
-#ifndef GMX_NBNXN_SIMD
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "not available"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "not available"; break;
-#else
+        case nbnxnkNotSet:
+            returnvalue = "not set";
+            break;
+        case nbnxnk4x4_PlainC:
+            returnvalue = "plain C";
+            break;
+        case nbnxnk4xN_SIMD_4xN:
+        case nbnxnk4xN_SIMD_2xNN:
+#ifdef GMX_NBNXN_SIMD
 #ifdef GMX_X86_SSE2
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-            /* x86 SIMD intrinsics can be converted to either SSE or AVX depending
-             * on compiler flags. As we use nearly identical intrinsics, using an AVX
-             * compiler flag without an AVX macro effectively results in AVX kernels.
+            /* We have x86 SSE2 compatible SIMD */
+#ifdef GMX_X86_AVX_128_FMA
+            returnvalue = "AVX-128-FMA";
+#else
+#if defined GMX_X86_AVX_256 || defined __AVX__
+            /* x86 SIMD intrinsics can be converted to SSE or AVX depending
+             * on compiler flags. As we use nearly identical intrinsics,
+             * compiling for AVX without an AVX macros effectively results
+             * in AVX kernels.
              * For gcc we check for __AVX__
              * At least a check for icc should be added (if there is a macro)
              */
-#if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
-#ifndef GMX_X86_SSE4_1
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SSE2"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE2"; break;
+#if defined GMX_X86_AVX_256 && !defined GMX_NBNXN_HALF_WIDTH_SIMD
+            returnvalue = "AVX-256";
 #else
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SSE4.1"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE4.1"; break;
+            returnvalue = "AVX-128";
 #endif
 #else
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "AVX-128"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-128"; break;
+#ifdef GMX_X86_SSE4_1
+            returnvalue  = "SSE4.1";
+#else
+            returnvalue  = "SSE2";
 #endif
 #endif
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "AVX-256"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-256"; break;
 #endif
-#else   /* not GMX_X86_SSE2 */
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SIMD"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SIMD"; break;
-#endif
-#endif
+#else   /* GMX_X86_SSE2 */
+            /* not GMX_X86_SSE2, but other SIMD */
+            returnvalue  = "SIMD";
+#endif /* GMX_X86_SSE2 */
+#else  /* GMX_NBNXN_SIMD */
+            returnvalue = "not available";
+#endif /* GMX_NBNXN_SIMD */
+            break;
         case nbnxnk8x8x8_CUDA: returnvalue   = "CUDA"; break;
         case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
 
@@ -2026,7 +2034,6 @@ void init_forcerec(FILE              *fp,
     real           rtab;
     char          *env;
     double         dbl;
-    rvec           box_size;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
     gmx_bool       bTab, bSep14tab, bNormalnblists;
@@ -2464,18 +2471,6 @@ void init_forcerec(FILE              *fp,
     if (fr->eeltype == eelGRF)
     {
         init_generalized_rf(fp, mtop, ir, fr);
-    }
-    else if (fr->eeltype == eelSHIFT)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            box_size[m] = box[m][m];
-        }
-
-        if ((fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
-        {
-            set_shift_consts(fr->rcoulomb_switch, fr->rcoulomb, box_size);
-        }
     }
 
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||

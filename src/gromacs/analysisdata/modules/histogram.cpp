@@ -200,7 +200,7 @@ AnalysisHistogramSettings::findBin(real y) const
 namespace
 {
 
-/*! \internal \brief
+/*! \brief
  * Represents copies of average histograms.
  *
  * Methods in AbstractAverageHistogram that return new histogram instances
@@ -343,7 +343,10 @@ AbstractAverageHistogram::normalizeProbability()
         {
             sum += value(i, c).value();
         }
-        scaleSingle(c, 1.0 / (sum * xstep()));
+        if (sum > 0.0)
+        {
+            scaleSingle(c, 1.0 / (sum * xstep()));
+        }
     }
 }
 
@@ -390,7 +393,8 @@ AbstractAverageHistogram::scaleAllByVector(real factor[])
 namespace internal
 {
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Implements average histogram module that averages per-frame histograms.
  *
  * This class is used for accumulating average histograms in per-frame
@@ -402,7 +406,7 @@ namespace internal
  * \ingroup module_analysisdata
  */
 class BasicAverageHistogramModule : public AbstractAverageHistogram,
-                                    public AnalysisDataModuleInterface
+                                    public AnalysisDataModuleSerial
 {
     public:
         BasicAverageHistogramModule();
@@ -617,14 +621,24 @@ AnalysisDataSimpleHistogramModule::settings() const
 
 
 int
-AnalysisDataSimpleHistogramModule::flags() const
+AnalysisDataSimpleHistogramModule::frameCount() const
 {
-    return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
+    return impl_->storage_.frameCount();
 }
 
 
-void
-AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
+int
+AnalysisDataSimpleHistogramModule::flags() const
+{
+    return efAllowMulticolumn | efAllowMultipoint | efAllowMissing
+           | efAllowMultipleDataSets;
+}
+
+
+bool
+AnalysisDataSimpleHistogramModule::parallelDataStarted(
+        AbstractAnalysisData              *data,
+        const AnalysisDataParallelOptions &options)
 {
     addModule(impl_->averager_);
     setDataSetCount(data->dataSetCount());
@@ -632,8 +646,8 @@ AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, settings().binCount());
     }
-    notifyDataStart();
-    impl_->storage_.startDataStorage(this);
+    impl_->storage_.startParallelDataStorage(this, &moduleManager(), options);
+    return true;
 }
 
 
@@ -653,10 +667,13 @@ AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &po
     frame.selectDataSet(points.dataSetIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
-        int bin = settings().findBin(points.y(i));
-        if (bin != -1)
+        if (points.present(i))
         {
-            frame.value(bin) += 1;
+            const int bin = settings().findBin(points.y(i));
+            if (bin != -1)
+            {
+                frame.value(bin) += 1;
+            }
         }
     }
 }
@@ -672,7 +689,7 @@ AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &
 void
 AnalysisDataSimpleHistogramModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 
@@ -733,14 +750,23 @@ AnalysisDataWeightedHistogramModule::settings() const
 
 
 int
+AnalysisDataWeightedHistogramModule::frameCount() const
+{
+    return impl_->storage_.frameCount();
+}
+
+
+int
 AnalysisDataWeightedHistogramModule::flags() const
 {
     return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 }
 
 
-void
-AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
+bool
+AnalysisDataWeightedHistogramModule::parallelDataStarted(
+        AbstractAnalysisData              *data,
+        const AnalysisDataParallelOptions &options)
 {
     addModule(impl_->averager_);
     setDataSetCount(data->dataSetCount());
@@ -748,8 +774,8 @@ AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, settings().binCount());
     }
-    notifyDataStart();
-    impl_->storage_.startDataStorage(this);
+    impl_->storage_.startParallelDataStorage(this, &moduleManager(), options);
+    return true;
 }
 
 
@@ -792,7 +818,7 @@ AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader
 void
 AnalysisDataWeightedHistogramModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 

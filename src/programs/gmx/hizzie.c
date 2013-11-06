@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "typedefs.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "smalloc.h"
 #include "vec.h"
 #include "physics.h"

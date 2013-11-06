@@ -10,6 +10,42 @@
    fun:inflateInit2_
 }
 
+# OpenMPI
+{
+   MPI_Init/Leak
+   Memcheck:Leak
+   ...
+   fun:PMPI_Init
+}
+{
+   MPI_Finalize/Leak
+   Memcheck:Leak
+   fun:malloc
+   fun:ompi_proc_all
+   ...
+   fun:_ZN3gmx8finalizeEv
+}
+{
+   MPI_Init/Addr4
+   Memcheck:Addr4
+   ...
+   fun:PMPI_Init
+}
+{
+   MPI_Init/sched_setaffinity
+   Memcheck:Param
+   sched_setaffinity(mask)
+   ...
+   fun:PMPI_Init
+}
+{
+   MPI_Init/writev
+   Memcheck:Param
+   writev(vector[...])
+   ...
+   fun:PMPI_Init
+}
+
 {
    gmx_fio_fopen
    Memcheck:Leak

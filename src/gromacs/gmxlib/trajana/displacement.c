@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -93,7 +93,8 @@ typedef struct gmx_ana_displpos_t
     gmx_bool                 bPres;
 } gmx_ana_displpos_t;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Stores displacement calculation data and parameters.
  *
  * There data can be accessed only through the functions defined in

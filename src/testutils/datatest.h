@@ -95,7 +95,7 @@ class AnalysisDataTestInputPointSet
         //! Returns the error in column \p i.
         real error(int i) const { return values_[i].error; }
         //! Returns whether the value in column \p i is present.
-        bool present(int i) const { return true; }
+        bool present(int /*i*/) const { return true; }
         //! Returns an AnalysisDataValue for column \p i.
         AnalysisDataValue value(int i) const
         {
@@ -347,6 +347,29 @@ class AnalysisDataTestFixture : public ::testing::Test
          */
         static void addStaticCheckerModule(const AnalysisDataTestInput &data,
                                            AbstractAnalysisData        *source);
+        /*! \brief
+         * Adds a mock module that verifies parallel output against
+         * AnalysisDataTestInput.
+         *
+         * \param[in]  data     Data to compare against.
+         * \param      source   Data object to verify.
+         *
+         * Creates a parallel mock module that verifies that the
+         * AnalysisDataModuleInterface methods are called correctly by
+         * \p source.  Parameters for the calls are verified against \p data.
+         * Adds the created module to \p source using \p data->addModule().
+         * Any exceptions from the called functions should be caught by the
+         * caller.
+         *
+         * Differs from addStaticCheckerModule() in that the created mock
+         * module reports that it accepts parallel input data, and accepts and
+         * verifies notification calls following the parallel pattern.
+         *
+         * \see AbstractAnalysisData::addModule()
+         */
+        static void addStaticParallelCheckerModule(
+            const AnalysisDataTestInput &data,
+            AbstractAnalysisData        *source);
         /*! \brief
          * Adds a column mock module that verifies output against
          * AnalysisDataTestInput.

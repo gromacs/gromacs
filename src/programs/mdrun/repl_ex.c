@@ -100,7 +100,7 @@ typedef struct gmx_repl_ex
 
 } t_gmx_repl_ex;
 
-static gmx_bool repl_quantity(FILE *fplog, const gmx_multisim_t *ms,
+static gmx_bool repl_quantity(const gmx_multisim_t *ms,
                               struct gmx_repl_ex *re, int ere, real q)
 {
     real    *qall;
@@ -185,10 +185,10 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     }
 
     re->type = -1;
-    bTemp    = repl_quantity(fplog, ms, re, ereTEMP, re->temp);
+    bTemp    = repl_quantity(ms, re, ereTEMP, re->temp);
     if (ir->efep != efepNO)
     {
-        bLambda = repl_quantity(fplog, ms, re, ereLAMBDA, (real)ir->fepvals->init_fep_state);
+        bLambda = repl_quantity(ms, re, ereLAMBDA, (real)ir->fepvals->init_fep_state);
     }
     if (re->type == -1)  /* nothing was assigned */
     {
@@ -664,7 +664,7 @@ static void pd_collect_state(const t_commrec *cr, t_state *state)
     }
 }
 
-static void print_transition_matrix(FILE *fplog, const char *leg, int n, int **nmoves, int *nattempt)
+static void print_transition_matrix(FILE *fplog, int n, int **nmoves, int *nattempt)
 {
     int   i, j, ntot;
     float Tprint;
@@ -713,7 +713,7 @@ static void print_ind(FILE *fplog, const char *leg, int n, int *ind, gmx_bool *b
     fprintf(fplog, "\n");
 }
 
-static void print_allswitchind(FILE *fplog, int n, int *ind, int *pind, int *allswaps, int *tmpswap)
+static void print_allswitchind(FILE *fplog, int n, int *pind, int *allswaps, int *tmpswap)
 {
     int i;
 
@@ -1039,7 +1039,7 @@ test_for_replica_exchange(FILE                 *fplog,
             }
         }
         re->nattempt[0]++;  /* keep track of total permutation trials here */
-        print_allswitchind(fplog, re->nrepl, re->ind, pind, re->allswaps, re->tmpswap);
+        print_allswitchind(fplog, re->nrepl, pind, re->allswaps, re->tmpswap);
     }
     else
     {
@@ -1120,8 +1120,7 @@ static void write_debug_x(t_state *state)
 }
 
 static void
-cyclic_decomposition(FILE      *fplog,
-                     const int *destinations,
+cyclic_decomposition(const int *destinations,
                      int      **cyclic,
                      gmx_bool  *incycle,
                      const int  nrepl,
@@ -1274,7 +1273,7 @@ prepare_to_do_exchange(FILE      *fplog,
 
         /* Identify the cyclic decomposition of the permutation (very
          * fast if neighbor replica exchange). */
-        cyclic_decomposition(fplog, destinations, cyclic, incycle, nrepl, maxswap);
+        cyclic_decomposition(destinations, cyclic, incycle, nrepl, maxswap);
 
         /* Now translate the decomposition into a replica exchange
          * order at each step. */
@@ -1340,6 +1339,10 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
             {
                 pd_collect_state(cr, state);
             }
+        }
+        else
+        {
+            copy_state_nonatomdata(state_local, state);
         }
 
         if (MASTER(cr))
@@ -1435,5 +1438,5 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
         fprintf(fplog, "\n");
     }
     /* print the transition matrix */
-    print_transition_matrix(fplog, "", re->nrepl, re->nmoves, re->nattempt);
+    print_transition_matrix(fplog, re->nrepl, re->nmoves, re->nattempt);
 }

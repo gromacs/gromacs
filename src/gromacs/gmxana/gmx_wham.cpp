@@ -53,7 +53,7 @@
 #include "vec.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "names.h"
 #include "gmx_random.h"
 #include "gmx_ana.h"
@@ -3402,8 +3402,11 @@ int gmx_wham(int argc, char *argv[])
     opt.stepchange            = 100;
     opt.stepUpdateContrib     = 100;
 
-    parse_common_args(&argc, argv, PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &opt.oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &opt.oenv))
+    {
+        return 0;
+    }
 
     opt.unit     = nenum(en_unit);
     opt.bsMethod = nenum(en_bsMethod);

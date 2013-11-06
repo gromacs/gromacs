@@ -47,7 +47,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "mshift.h"
@@ -359,8 +359,11 @@ int gmx_nmeig(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* Read tpr file for volume and number of harmonic terms */
     read_tpxheader(ftp2fn(efTPX, NFILE, fnm), &tpx, TRUE, &version, &generation);

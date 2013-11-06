@@ -48,6 +48,7 @@
 
 #include <gmock/gmock.h>
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/utility/programinfo.h"
@@ -81,7 +82,7 @@ class MockModule : public gmx::CommandLineModuleInterface
         virtual const char *shortDescription() const { return descr_; }
 
         MOCK_METHOD2(run, int(int argc, char *argv[]));
-        MOCK_CONST_METHOD1(writeHelp, void(const gmx::HelpWriterContext &context));
+        MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext &context));
 
     private:
         const char             *name_;
@@ -162,6 +163,22 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
 {
     const char *const cmdline[] = {
         "g_test", "help", "module"
+    };
+    CommandLine       args(CommandLine::create(cmdline));
+    initManager(args);
+    MockModule       &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
+    using ::testing::_;
+    EXPECT_CALL(mod1, writeHelp(_));
+    int rc = 0;
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
+{
+    const char *const cmdline[] = {
+        "g_test", "module", "-h"
     };
     CommandLine       args(CommandLine::create(cmdline));
     initManager(args);

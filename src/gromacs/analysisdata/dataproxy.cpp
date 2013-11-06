@@ -42,6 +42,7 @@
 #include "dataproxy.h"
 
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -49,11 +50,19 @@ namespace gmx
 
 AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
                                      AbstractAnalysisData *data)
-    : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan)
+    : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan),
+      bParallel_(false)
 {
     GMX_RELEASE_ASSERT(data != NULL, "Source data must not be NULL");
     GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");
     setMultipoint(source_.isMultipoint());
+}
+
+
+int
+AnalysisDataProxy::frameCount() const
+{
+    return source_.frameCount();
 }
 
 
@@ -93,14 +102,38 @@ AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, columnSpan_);
     }
-    notifyDataStart();
+    moduleManager().notifyDataStart(this);
+}
+
+
+bool
+AnalysisDataProxy::parallelDataStarted(
+        AbstractAnalysisData              *data,
+        const AnalysisDataParallelOptions &options)
+{
+    GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
+    setDataSetCount(data->dataSetCount());
+    for (int i = 0; i < data->dataSetCount(); ++i)
+    {
+        setColumnCount(i, columnSpan_);
+    }
+    moduleManager().notifyParallelDataStart(this, options);
+    bParallel_ = !moduleManager().hasSerialModules();
+    return bParallel_;
 }
 
 
 void
 AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
 {
-    notifyFrameStart(frame);
+    if (bParallel_)
+    {
+        moduleManager().notifyParallelFrameStart(frame);
+    }
+    else
+    {
+        moduleManager().notifyFrameStart(frame);
+    }
 }
 
 
@@ -110,7 +143,14 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
     AnalysisDataPointSetRef columns(points, firstColumn_, columnSpan_);
     if (columns.columnCount() > 0)
     {
-        notifyPointsAdd(columns);
+        if (bParallel_)
+        {
+            moduleManager().notifyParallelPointsAdd(columns);
+        }
+        else
+        {
+            moduleManager().notifyPointsAdd(columns);
+        }
     }
 }
 
@@ -118,14 +158,21 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 void
 AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    notifyFrameFinish(header);
+    if (bParallel_)
+    {
+        moduleManager().notifyParallelFrameFinish(header);
+    }
+    else
+    {
+        moduleManager().notifyFrameFinish(header);
+    }
 }
 
 
 void
 AnalysisDataProxy::dataFinished()
 {
-    notifyDataFinish();
+    moduleManager().notifyDataFinish();
 }
 
 } // namespace gmx

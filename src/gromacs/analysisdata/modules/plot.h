@@ -140,7 +140,7 @@ class AnalysisDataPlotSettings
  *
  * \ingroup module_analysisdata
  */
-class AbstractPlotModule : public AnalysisDataModuleInterface
+class AbstractPlotModule : public AnalysisDataModuleSerial
 {
     public:
         virtual ~AbstractPlotModule();
@@ -210,6 +210,8 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          * together.
          */
         void appendLegend(const char *setname);
+        //! \copydoc appendLegend(const char *)
+        void appendLegend(const std::string &setname);
         /*! \brief
          * Set field width and precision for X value output.
          */

@@ -44,7 +44,8 @@
 #include "xvgr.h"
 #include "pbc.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "physics.h"
 #include "gmx_ana.h"
 
@@ -207,8 +208,11 @@ int gmx_spol(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     snew(top, 1);
     snew(ir, 1);

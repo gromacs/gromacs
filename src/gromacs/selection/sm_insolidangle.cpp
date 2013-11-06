@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,7 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \page page_module_selection_insolidangle Selection method: insolidangle
+/*! \internal
+ * \page page_module_selection_insolidangle Selection method: insolidangle
  *
  * This method selects a subset of particles that are located in a solid
  * angle defined by a center and a set of points.
@@ -41,8 +42,6 @@
  * So there's such a cone for each position, and a
  * point is in the solid angle if it lies within any of these cones.
  * The width of the cones can be adjusted.
- *
- * \internal
  *
  * The method is implemented by partitioning the surface of the unit sphere
  * into bins using the polar coordinates \f$(\theta, \phi)\f$.
@@ -135,10 +134,13 @@
 using std::min;
 using std::max;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal data structure for the \p insolidangle selection method.
  *
  * \see \c t_partition
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {
@@ -148,12 +150,15 @@ typedef struct
     int                 bin;
 } t_partition_item;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal data structure for the \p insolidangle selection method.
  *
  * Describes the surface partitioning within one slice along the zenith angle.
  * The slice from azimuthal angle \p p[i].left to \p p[i+1].left belongs to
  * bin \p p[i].bin.
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {
@@ -163,12 +168,15 @@ typedef struct
     t_partition_item   *p;
 } t_partition;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal data structure for the \p insolidangle selection method.
  *
  * Contains the reference points that partially cover a certain region on the
  * surface of the unit sphere.
  * If \p n is -1, the whole region described by the bin is covered.
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {
@@ -180,10 +188,13 @@ typedef struct
     rvec *x;
 } t_spheresurfacebin;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Data structure for the \p insolidangle selection method.
  *
  * All angle values are in the units of radians.
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {
@@ -215,24 +226,58 @@ typedef struct
     t_spheresurfacebin *bin;
 } t_methoddata_insolidangle;
 
-/** Allocates data for the \p insolidangle selection method. */
+/*! \brief
+ * Allocates data for the \p insolidangle selection method.
+ *
+ * \param[in]     npar  Not used (should be 3).
+ * \param[in,out] param Method parameters (should point to
+ *   \ref smparams_insolidangle).
+ * \returns Pointer to the allocated data (\ref t_methoddata_insolidangle).
+ *
+ * Allocates memory for a \ref t_methoddata_insolidangle structure and
+ * initializes the parameter as follows:
+ *  - \p center defines the value for t_methoddata_insolidangle::center.
+ *  - \p span   defines the value for t_methoddata_insolidangle::span.
+ *  - \p cutoff defines the value for t_methoddata_insolidangle::angcut.
+ */
 static void *
 init_data_insolidangle(int npar, gmx_ana_selparam_t *param);
-/** Initializes the \p insolidangle selection method. */
+/*! \brief
+ * Initializes the \p insolidangle selection method.
+ *
+ * \param   top  Not used.
+ * \param   npar Not used.
+ * \param   param Not used.
+ * \param   data Pointer to \ref t_methoddata_insolidangle to initialize.
+ * \returns 0 on success, -1 on failure.
+ *
+ * Converts t_methoddata_insolidangle::angcut to radians and allocates
+ * and allocates memory for the bins used during the evaluation.
+ */
 static void
-init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_insolidangle(t_topology * top, int npar, gmx_ana_selparam_t * param, void *data);
 /** Frees the data allocated for the \p insolidangle selection method. */
 static void
 free_data_insolidangle(void *data);
-/** Initializes the evaluation of the \p insolidangle selection method for a frame. */
+/*! \brief
+ * Initializes the evaluation of the \p insolidangle selection method for a frame.
+ *
+ * \param[in]  top  Not used.
+ * \param[in]  fr   Not used.
+ * \param[in]  pbc  PBC structure.
+ * \param      data Should point to a \ref t_methoddata_insolidangle.
+ *
+ * Creates a lookup structure that enables fast queries of whether a point
+ * is within the solid angle or not.
+ */
 static void
-init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
+init_frame_insolidangle(t_topology * top, t_trxframe * fr, t_pbc *pbc, void *data);
 /** Internal helper function for evaluate_insolidangle(). */
 static bool
 accept_insolidangle(rvec x, t_pbc *pbc, void *data);
 /** Evaluates the \p insolidangle selection method. */
 static void
-evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_insolidangle(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
 /** Calculates the distance between unit vectors. */
@@ -264,7 +309,13 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
 /** Adds a single reference point and updates the surface bins. */
 static void
 store_surface_point(t_methoddata_insolidangle *surf, rvec x);
-/** Optimizes the surface bins for faster searching. */
+/*! \brief
+ * Optimizes the surface bins for faster searching.
+ *
+ * \param[in,out] surf Surface data structure.
+ *
+ * Currently, this function does nothing.
+ */
 static void
 optimize_surface_points(t_methoddata_insolidangle *surf);
 /** Estimates the area covered by the reference cones. */
@@ -316,43 +367,31 @@ gmx_ana_selmethod_t sm_insolidangle = {
      asize(help_insolidangle), help_insolidangle},
 };
 
-/*!
- * \param[in]     npar  Not used (should be 3).
- * \param[in,out] param Method parameters (should point to
- *   \ref smparams_insolidangle).
- * \returns Pointer to the allocated data (\ref t_methoddata_insolidangle).
- *
- * Allocates memory for a \ref t_methoddata_insolidangle structure and
- * initializes the parameter as follows:
- *  - \p center defines the value for t_methoddata_insolidangle::center.
- *  - \p span   defines the value for t_methoddata_insolidangle::span.
- *  - \p cutoff defines the value for t_methoddata_insolidangle::angcut.
- */
 static void *
-init_data_insolidangle(int npar, gmx_ana_selparam_t *param)
+init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
 {
-    t_methoddata_insolidangle *data;
+    t_methoddata_insolidangle *data = new t_methoddata_insolidangle();
+    data->angcut        = 5.0;
+    data->cfrac         = 0.0;
 
-    snew(data, 1);
-    data->angcut     = 5.0;
+    data->distccut      = 0.0;
+    data->targetbinsize = 0.0;
+
+    data->ntbins        = 0;
+    data->tbinsize      = 0.0;
+    data->tbin          = NULL;
+    data->maxbins       = 0;
+    data->nbins         = 0;
+    data->bin           = NULL;
+
     param[0].val.u.p = &data->center;
     param[1].val.u.p = &data->span;
     param[2].val.u.r = &data->angcut;
     return data;
 }
 
-/*!
- * \param   top  Not used.
- * \param   npar Not used.
- * \param   param Not used.
- * \param   data Pointer to \ref t_methoddata_insolidangle to initialize.
- * \returns 0 on success, -1 on failure.
- *
- * Converts t_methoddata_insolidangle::angcut to radians and allocates
- * and allocates memory for the bins used during the evaluation.
- */
 static void
-init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_insolidangle(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
     t_methoddata_insolidangle *surf = (t_methoddata_insolidangle *)data;
     int                        i, c;
@@ -406,20 +445,11 @@ free_data_insolidangle(void *data)
     }
     free_surface_points(d);
     sfree(d->bin);
-    sfree(d);
+    delete d;
 }
 
-/*!
- * \param[in]  top  Not used.
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  PBC structure.
- * \param      data Should point to a \ref t_methoddata_insolidangle.
- *
- * Creates a lookup structure that enables fast queries of whether a point
- * is within the solid angle or not.
- */
 static void
-init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
+init_frame_insolidangle(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     rvec                       dx;
@@ -427,7 +457,7 @@ init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 
     free_surface_points(d);
     clear_surface_points(d);
-    for (i = 0; i < d->span.nr; ++i)
+    for (i = 0; i < d->span.count(); ++i)
     {
         if (pbc)
         {
@@ -477,17 +507,15 @@ accept_insolidangle(rvec x, t_pbc *pbc, void *data)
  * \c t_methoddata_insolidangle::center, and stores the result in \p out->u.g.
  */
 static void
-evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_insolidangle(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
-    int                        b;
-
     out->u.g->isize = 0;
-    for (b = 0; b < pos->nr; ++b)
+    for (int b = 0; b < pos->count(); ++b)
     {
         if (accept_insolidangle(pos->x[b], pbc, data))
         {
-            gmx_ana_pos_append(NULL, out->u.g, pos, b, 0);
+            gmx_ana_pos_add_to_group(out->u.g, pos, b);
         }
     }
 }
@@ -919,13 +947,8 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
     }
 }
 
-/*!
- * \param[in,out] surf Surface data structure.
- *
- * Currently, this function does nothing.
- */
 static void
-optimize_surface_points(t_methoddata_insolidangle *surf)
+optimize_surface_points(t_methoddata_insolidangle * /* surf */)
 {
     /* TODO: Implement */
 }

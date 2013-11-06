@@ -45,7 +45,7 @@
 #include "statutil.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -53,9 +53,9 @@
 #include "physics.h"
 #include "names.h"
 #include "txtdump.h"
-#include "trnio.h"
+#include "gromacs/fileio/trnio.h"
 #include "symtab.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 
 real pot(real x, real qq, real c6, real cn, int npow)
 {
@@ -109,9 +109,12 @@ int gmx_sigeps(int argc, char *argv[])
     int           cur = 0;
 #define next (1-cur)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc),
-                      desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc),
+                           desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bBham = (opt2parg_bSet("-A", asize(pa), pa) ||
              opt2parg_bSet("-B", asize(pa), pa) ||

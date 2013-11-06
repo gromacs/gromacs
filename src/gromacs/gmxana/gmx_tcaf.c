@@ -38,9 +38,9 @@
 #include <stdio.h>
 
 #include <math.h>
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -57,6 +57,7 @@
 #include "xvgr.h"
 #include "pbc.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 #define NK  24
@@ -334,8 +335,11 @@ int gmx_tcaf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
                          TRUE);

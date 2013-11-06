@@ -55,8 +55,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
  * must differ according to whether REMD is active.
  */
 
-void calc_disres_R_6(const gmx_multisim_t *ms,
-                     int nfa, const t_iatom *fa, const t_iparams ip[],
+void calc_disres_R_6(int nfa, const t_iatom *fa, const t_iparams ip[],
                      const rvec *x, const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist);
 /* Calculates r and r^-3 (inst. and time averaged) for all pairs

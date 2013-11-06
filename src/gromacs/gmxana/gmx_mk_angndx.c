@@ -45,8 +45,9 @@
 #include "statutil.h"
 #include "macros.h"
 #include "string2.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
+#include "gromacs/fileio/trxio.h"
 
 static int calc_ntype(int nft, int *ft, t_idef *idef)
 {
@@ -268,8 +269,11 @@ int gmx_mk_angndx(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
 
     ft = select_ftype(opt[0], &nft, &mult);

@@ -252,7 +252,18 @@ AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &dat
                                                 AbstractAnalysisData        *source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
-    module->setupStaticCheck(data, source);
+    module->setupStaticCheck(data, source, false);
+    source->addModule(module);
+}
+
+
+void
+AnalysisDataTestFixture::addStaticParallelCheckerModule(
+        const AnalysisDataTestInput &data,
+        AbstractAnalysisData        *source)
+{
+    MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
+    module->setupStaticCheck(data, source, true);
     source->addModule(module);
 }
 

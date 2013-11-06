@@ -59,7 +59,7 @@ namespace gmx
 {
 
 /*! \cond internal */
-/*! \internal \brief
+/*! \brief
  * Flags for options.
  *
  * These flags are not part of the public interface, even though they are in an
@@ -79,7 +79,7 @@ enum SelectionFlag
     efSelection_EvaluateForces          = 1<<6,
 };
 
-//! \internal Holds a collection of ::SelectionFlag values.
+//! Holds a collection of ::SelectionFlag values.
 typedef FlagsTemplate<SelectionFlag> SelectionFlags;
 //! \endcond
 

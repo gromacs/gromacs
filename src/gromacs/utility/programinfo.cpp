@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gromacs/legacyheaders/thread_mpi/mutex.h"
 
 #include "gromacs/utility/exceptions.h"
@@ -67,6 +67,9 @@ namespace gmx
 
 namespace
 {
+
+//! \addtogroup module_utility
+//! \{
 
 //! Mutex for updates to the global program info objects.
 tMPI::mutex                    g_programInfoMutex;
@@ -85,6 +88,8 @@ std::string quoteIfNecessary(const char *str)
     }
     return str;
 }
+
+//! \}
 
 }   // namespace
 
@@ -123,7 +128,7 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
     // Some places in the existing code expect to have DIR_SEPARATOR in all
     // input paths, but Windows may also give '/' (and does that, e.g., for
     // tests invoked through CTest).
-    // When removing this, remove also the #include "futil.h".
+    // When removing this, remove also the #include "gromacs/fileio/futil.h".
     if (DIR_SEPARATOR == '\\')
     {
         std::replace(fullInvokedProgram_.begin(), fullInvokedProgram_.end(),
@@ -186,7 +191,7 @@ ProgramInfo &ProgramInfo::init(const char *realBinaryName,
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        std::exit(1);
+        std::exit(processExceptionAtExit(ex));
     }
 }
 
@@ -247,8 +252,8 @@ const std::string &ProgramInfo::displayName() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
     return impl_->displayName_.empty()
-        ? impl_->programName_
-        : impl_->displayName_;
+           ? impl_->programName_
+           : impl_->displayName_;
 }
 
 const std::string &ProgramInfo::commandLine() const

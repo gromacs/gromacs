@@ -225,7 +225,7 @@
 #include <boost/exception_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 
@@ -569,20 +569,10 @@ set_refpos_type(gmx::PositionCalculationCollection *pcc,
     }
 }
 
-/*!
- * \param[in]  left    Selection element for the left hand side.
- * \param[in]  right   Selection element for the right hand side.
- * \param[in]  op      String representation of the operator.
- * \param[in]  scanner Scanner data structure.
- * \returns    The created selection element.
- *
- * This function handles the creation of a gmx::SelectionTreeElement object for
- * arithmetic expressions.
- */
-SelectionTreeElementPointer
-_gmx_sel_init_arithmetic(const SelectionTreeElementPointer &left,
-                         const SelectionTreeElementPointer &right,
-                         char op, yyscan_t scanner)
+gmx::SelectionTreeElementPointer
+_gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
+                         const gmx::SelectionTreeElementPointer &right,
+                         char op, yyscan_t /* scanner */)
 {
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_ARITHMETIC));
     sel->v.type        = REAL_VALUE;

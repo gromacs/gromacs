@@ -47,9 +47,9 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
@@ -57,7 +57,7 @@
 #include "nrnb.h"
 #include "coulomb.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "names.h"
 #include "sfactor.h"
@@ -94,8 +94,11 @@ int gmx_saxs(int argc, char *argv[])
         { efXVG, "-sq", "sq",      ffWRITE },
     };
 #define NFILE asize(fnm)
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fnTPS = ftp2fn(efTPS, NFILE, fnm);
     fnTRX = ftp2fn(efTRX, NFILE, fnm);

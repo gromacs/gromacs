@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -43,15 +43,14 @@
 #ifndef GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 
+#include "analysismodule.h"
 #include "../utility/common.h"
-#include "../utility/uniqueptr.h"
 
 namespace gmx
 {
 
 class CommandLineModuleManager;
-class HelpWriterContext;
-class TrajectoryAnalysisModule;
+class CommandLineHelpContext;
 
 /*! \brief
  * Runner class for command-line analysis tools.
@@ -68,6 +67,16 @@ class TrajectoryAnalysisModule;
 class TrajectoryAnalysisCommandLineRunner
 {
     public:
+        /*! \brief
+         * Factory method type for creating a trajectory analysis module.
+         *
+         * This method allows the module creation to be postponed to be inside
+         * the try/catch block in runAsMain()/registerModule() implementation
+         * methods and still keep the implementation out of the header, making
+         * the ABI more stable.
+         */
+        typedef TrajectoryAnalysisModulePointer (*ModuleFactoryMethod)();
+
         /*! \brief
          * Implements a main() method that runs a given module.
          *
@@ -109,6 +118,24 @@ class TrajectoryAnalysisCommandLineRunner
         {
             registerModule(manager, name, description, &createModule<ModuleType>);
         }
+        /*! \brief
+         * Registers a command-line module that runs a given module.
+         *
+         * \tparam ModuleType  Trajectory analysis module.
+         * \param  manager     Manager to register the module to.
+         * \param  name        Name of the module to register.
+         * \param  description One-line description for the module to register.
+         * \param  factory     Function that creates the module on demand.
+         *
+         * \p name and \p descriptions must be string constants or otherwise
+         * stay valid for the duration of the program execution.
+         *
+         * Implements the template registerModule() method, but can also be
+         * used independently.
+         */
+        static void registerModule(CommandLineModuleManager *manager,
+                                   const char *name, const char *description,
+                                   ModuleFactoryMethod factory);
 
         /*! \brief
          * Create a new runner with the provided module.
@@ -126,6 +153,8 @@ class TrajectoryAnalysisCommandLineRunner
          * Sets the default debugging level for selections.
          *
          * This is intended only for use by internal debugging tools.
+         *
+         * \param[in] debuglevel  Level of debugging verbosity.
          *
          * Does not throw.
          *
@@ -146,22 +175,9 @@ class TrajectoryAnalysisCommandLineRunner
          * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
          */
-        void writeHelp(const HelpWriterContext &context);
+        void writeHelp(const CommandLineHelpContext &context);
 
     private:
-        //! Smart pointer type for managing a trajectory analysis module.
-        typedef gmx_unique_ptr<TrajectoryAnalysisModule>::type
-            TrajectoryAnalysisModulePointer;
-
-        /*! \brief
-         * Factory method type for creating a trajectory analysis module.
-         *
-         * This method allows the module creation to be postponed to be inside
-         * the try/catch block in runAsMain()/registerModule() implementation
-         * methods and still keep the implementation out of the header, making
-         * the ABI more stable.
-         */
-        typedef TrajectoryAnalysisModulePointer (*ModuleFactoryMethod)();
         /*! \brief
          * Creates a trajectory analysis module of a given type.
          *
@@ -176,10 +192,6 @@ class TrajectoryAnalysisCommandLineRunner
         //! Implements the template runAsMain() method.
         static int runAsMain(int argc, char *argv[],
                              ModuleFactoryMethod factory);
-        //! Implements the template registerModule() method.
-        static void registerModule(CommandLineModuleManager *manager,
-                                   const char *name, const char *description,
-                                   ModuleFactoryMethod factory);
 
         class Impl;
 

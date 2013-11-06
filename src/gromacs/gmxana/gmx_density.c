@@ -48,10 +48,11 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "physics.h"
 #include "gmx_ana.h"
 #include "macros.h"
@@ -499,9 +500,12 @@ int gmx_density(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
+                           &oenv))
+    {
+        return 0;
+    }
 
     if (bSymmetrize && !bCenter)
     {

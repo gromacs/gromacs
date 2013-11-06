@@ -42,19 +42,19 @@
 #endif
 
 
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "names.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "gmxfio.h"
-#include "xdrf.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xdrf.h"
 #include "statutil.h"
 #include "txtdump.h"
 #include "vec.h"
 #include "network.h"
 #include "gmx_random.h"
 #include "checkpoint.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "string2.h"
 #include <fcntl.h>
 
@@ -134,7 +134,7 @@ enum {
 /* free energy history variable names  */
 const char *edfh_names[edfhNR] =
 {
-    "bEquilibrated", "N_at_state", "Wang-Landau_Histogram", "Wang-Landau-delta", "Weights", "Free Energies", "minvar", "variance",
+    "bEquilibrated", "N_at_state", "Wang-Landau Histogram", "Wang-Landau Delta", "Weights", "Free Energies", "minvar", "variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
 
@@ -965,7 +965,8 @@ static int do_cpt_footer(XDR *xd, int file_version)
     return 0;
 }
 
-static int do_cpt_state(XDR *xd, int fflags, t_state *state,
+static int do_cpt_state(XDR *xd, gmx_bool bRead,
+                        int fflags, t_state *state,
                         gmx_bool bReadRNG, FILE *list)
 {
     int    sflags;
@@ -990,6 +991,12 @@ static int do_cpt_state(XDR *xd, int fflags, t_state *state,
         rng_p  = NULL;
         rngi_p = NULL;
     }
+
+    if (bRead) /* we need to allocate space for dfhist if we are reading */
+    {
+        init_df_history(&state->dfhist,state->dfhist.nlambda);
+    }
+
     /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */
 
     sflags = state->flags;
@@ -1022,9 +1029,9 @@ static int do_cpt_state(XDR *xd, int fflags, t_state *state,
                 case estMC_RNG:  ret      = do_cpte_ints(xd, cptpEST, i, sflags, state->nmcrng, (int **)&state->mc_rng, list); break;
                 case estMC_RNGI: ret      = do_cpte_ints(xd, cptpEST, i, sflags, 1, &state->mc_rngi, list); break;
                 case estDISRE_INITF:  ret = do_cpte_real (xd, cptpEST, i, sflags, &state->hist.disre_initf, list); break;
-                case estDISRE_RM3TAV: ret = do_cpte_reals(xd, cptpEST, i, sflags, state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
+                case estDISRE_RM3TAV: ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
                 case estORIRE_INITF:  ret = do_cpte_real (xd, cptpEST, i, sflags, &state->hist.orire_initf, list); break;
-                case estORIRE_DTAV:   ret = do_cpte_reals(xd, cptpEST, i, sflags, state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
+                case estORIRE_DTAV:   ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
                               "You are probably reading a new checkpoint file with old code", i);
@@ -1524,7 +1531,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     sfree(bhost);
     sfree(fprog);
 
-    if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, TRUE, NULL) < 0)        ||
+    if ((do_cpt_state(gmx_fio_getxdr(fp), FALSE, state->flags, state, TRUE, NULL) < 0)        ||
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, NULL) < 0) ||
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, &state->enerhist, NULL) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL) < 0)  ||
@@ -1940,7 +1947,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                         cr, bPartDecomp, nppnodes_f, npmenodes_f, dd_nc, dd_nc_f);
         }
     }
-    ret             = do_cpt_state(gmx_fio_getxdr(fp), fflags, state, *bReadRNG, NULL);
+    ret             = do_cpt_state(gmx_fio_getxdr(fp), TRUE, fflags, state, *bReadRNG, NULL);
     *init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.
                                             Investigate for 5.0. */
     if (ret)
@@ -2208,7 +2215,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                   &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
                   &state->edsamstate.nED, NULL);
     ret =
-        do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, bReadRNG, NULL);
+        do_cpt_state(gmx_fio_getxdr(fp), TRUE, state->flags, state, bReadRNG, NULL);
     if (ret)
     {
         cp_error();
@@ -2279,6 +2286,10 @@ read_checkpoint_state(const char *fn, int *simulation_part,
 
 void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 {
+    /* This next line is nasty because the sub-structures of t_state
+     * cannot be assumed to be zeroed (or even initialized in ways the
+     * rest of the code might assume). Using snew would be better, but
+     * this will all go away for 5.0. */
     t_state         state;
     int             simulation_part;
     gmx_large_int_t step;
@@ -2347,7 +2358,7 @@ void list_checkpoint(const char *fn, FILE *out)
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
                   &(state.dfhist.nlambda), &state.flags,
                   &flags_eks, &flags_enh, &flags_dfh, &state.edsamstate.nED, out);
-    ret = do_cpt_state(gmx_fio_getxdr(fp), state.flags, &state, TRUE, out);
+    ret = do_cpt_state(gmx_fio_getxdr(fp), TRUE, state.flags, &state, TRUE, out);
     if (ret)
     {
         cp_error();
@@ -2362,8 +2373,8 @@ void list_checkpoint(const char *fn, FILE *out)
 
     if (ret == 0)
     {
-        init_df_history(&state.dfhist, state.dfhist.nlambda, 0); /* reinitialize state with correct sizes */
-        ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state.dfhist, out);
+        ret = do_cpt_df_hist(gmx_fio_getxdr(fp),
+                             flags_dfh, &state.dfhist, out);
     }
 
     if (ret == 0)
@@ -2421,6 +2432,10 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
     t_fileio            *fp;
     gmx_large_int_t      step = 0;
     double               t;
+    /* This next line is nasty because the sub-structures of t_state
+     * cannot be assumed to be zeroed (or even initialized in ways the
+     * rest of the code might assume). Using snew would be better, but
+     * this will all go away for 5.0. */
     t_state              state;
     int                  nfiles;
     gmx_file_position_t *outputfiles;

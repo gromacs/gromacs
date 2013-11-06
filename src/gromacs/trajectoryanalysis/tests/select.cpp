@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ using gmx::test::CommandLine;
  */
 
 //! Test fixture for the select analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Select>
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SelectInfo>
     SelectModuleTest;
 
 TEST_F(SelectModuleTest, BasicTest)
@@ -112,7 +112,7 @@ TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
 {
     const char *const cmdline[] = {
         "select",
-        "-select", "resname RA RD and y < 2.5",
+        "-select", "resname RA RD and y < 2.5", "resname RA RB",
         "-pdbatoms", "maxsel"
     };
     setTopology("simple.pdb");
@@ -126,26 +126,13 @@ TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
 {
     const char *const cmdline[] = {
         "select",
-        "-select", "resname RA RD and y < 2.5",
+        "-select", "resname RA RD and y < 2.5", "resname RA RB",
         "-pdbatoms", "selected"
     };
     setTopology("simple.pdb");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
     setOutputFile("-ofpdb", "occupancy.pdb");
-    runTest(CommandLine::create(cmdline));
-}
-
-TEST_F(SelectModuleTest, HandlesDumpOption)
-{
-    const char *const cmdline[] = {
-        "select",
-        "-select", "y < 2.5",
-        "-dump"
-    };
-    setTopology("simple.gro");
-    setOutputFile("-oi", "index.dat");
-    includeDataset("index");
     runTest(CommandLine::create(cmdline));
 }
 

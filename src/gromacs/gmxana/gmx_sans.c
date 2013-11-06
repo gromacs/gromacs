@@ -46,12 +46,13 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "index.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "nsfactor.h"
 #include "gmx_omp.h"
@@ -158,8 +159,11 @@ int gmx_sans(int argc, char *argv[])
 
     nthreads = gmx_omp_get_max_threads();
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* check that binwidth not smaller than smallers distance */
     check_binwidth(binwidth);

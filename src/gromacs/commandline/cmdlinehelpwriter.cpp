@@ -43,6 +43,7 @@
 
 #include <string>
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -66,7 +67,7 @@ namespace
  * OptionsFormatterInterface
  */
 
-/*! \internal \brief
+/*! \brief
  * Interface for output format specific formatting of options.
  *
  * \see OptionsFilter
@@ -96,7 +97,7 @@ class OptionsFormatterInterface
  * OptionsFilter
  */
 
-/*! \internal \brief
+/*! \brief
  * Output format independent processing of options.
  *
  * Together with code in CommandLineHelpWriter::writeHelp(), this class
@@ -236,7 +237,7 @@ class CommonFormatterData
  * OptionsConsoleFormatter
  */
 
-/*! \internal \brief
+/*! \brief
  * Formatter implementation for console help.
  *
  * \ingroup module_commandline
@@ -356,7 +357,7 @@ void OptionsConsoleFormatter::formatFileOption(
     }
     bool bLongType = (type.length() > 12U);
     fileOptionFormatter_.addColumnLine(2, type);
-    fileOptionFormatter_.addColumnLine(3, context.substituteMarkup(option.description()));
+    fileOptionFormatter_.addColumnHelpTextBlock(3, context, option.description());
 
     // Compute layout.
     if (name.length() > 6U || firstShortValue > 0)
@@ -412,7 +413,7 @@ void OptionsConsoleFormatter::formatOption(
     }
     genericOptionFormatter_.addColumnLine(2, values);
 
-    std::string             description(context.substituteMarkup(option.description()));
+    std::string             description(option.description());
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
     if (doubleOption != NULL && doubleOption->isTime())
     {
@@ -434,7 +435,7 @@ void OptionsConsoleFormatter::formatOption(
             description.append(allowedValues[i]);
         }
     }
-    genericOptionFormatter_.addColumnLine(3, description);
+    genericOptionFormatter_.addColumnHelpTextBlock(3, context, description);
     if (values.length() > 6U)
     {
         genericOptionFormatter_.setColumnFirstLineOffset(3, 1);
@@ -451,7 +452,8 @@ void OptionsConsoleFormatter::formatSelectionOption(
     selectionOptionFormatter_.clear();
     std::string name(formatString("-%s", option.name().c_str()));
     selectionOptionFormatter_.addColumnLine(0, name);
-    selectionOptionFormatter_.addColumnLine(1, context.substituteMarkup(option.description()));
+    selectionOptionFormatter_.addColumnHelpTextBlock(1, context,
+                                                     option.description());
     file.writeString(selectionOptionFormatter_.formatRow());
 
     TextLineWrapper wrapper;
@@ -491,13 +493,11 @@ class CommandLineHelpWriter::Impl
         std::string             timeUnit_;
         //! Whether to write descriptions to output.
         bool                    bShowDescriptions_;
-        //! Whether to write hidden options to output.
-        bool                    bShowHidden_;
 };
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
     : options_(options), timeUnit_(TimeUnitManager().timeUnitAsString()),
-      bShowDescriptions_(false), bShowHidden_(false)
+      bShowDescriptions_(false)
 {
 }
 
@@ -514,12 +514,6 @@ CommandLineHelpWriter::~CommandLineHelpWriter()
 {
 }
 
-CommandLineHelpWriter &CommandLineHelpWriter::setShowHidden(bool bSet)
-{
-    impl_->bShowHidden_ = bSet;
-    return *this;
-}
-
 CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
 {
     impl_->bShowDescriptions_ = bSet;
@@ -532,11 +526,12 @@ CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *time
     return *this;
 }
 
-void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
+void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
 {
     boost::scoped_ptr<OptionsFormatterInterface> formatter;
-    CommonFormatterData common(impl_->timeUnit_.c_str());
-    switch (context.outputFormat())
+    const HelpWriterContext                     &writerContext = context.writerContext();
+    CommonFormatterData                          common(impl_->timeUnit_.c_str());
+    switch (writerContext.outputFormat())
     {
         case eHelpOutputFormat_Console:
             formatter.reset(new OptionsConsoleFormatter(common));
@@ -547,12 +542,12 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
             GMX_THROW(NotImplementedError(
                               "Command-line help is not implemented for this output format"));
     }
-    OptionsFilter filter(context, formatter.get());
-    filter.setShowHidden(impl_->bShowHidden_);
+    OptionsFilter filter(writerContext, formatter.get());
+    filter.setShowHidden(context.showHidden());
 
     if (impl_->bShowDescriptions_)
     {
-        File &file = context.outputFile();
+        File &file = writerContext.outputFile();
         file.writeLine("DESCRIPTION");
         file.writeLine("-----------");
         file.writeLine();

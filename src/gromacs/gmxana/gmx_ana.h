@@ -55,9 +55,6 @@ int
 gmx_bar(int argc, char *argv[]);
 
 int
-gmx_bond(int argc, char *argv[]);
-
-int
 gmx_bundle(int argc, char *argv[]);
 
 int
@@ -92,9 +89,6 @@ gmx_dipoles(int argc, char *argv[]);
 
 int
 gmx_disre(int argc, char *argv[]);
-
-int
-gmx_dist(int argc, char *argv[]);
 
 int
 gmx_do_dssp(int argc, char *argv[]);
@@ -224,12 +218,6 @@ gmx_saltbr(int argc, char *argv[]);
 
 int
 gmx_sas(int argc, char *argv[]);
-
-int
-gmx_select(int argc, char *argv[]);
-
-int
-gmx_sgangle(int argc, char *argv[]);
 
 int
 gmx_sham(int argc, char *argv[]);

@@ -42,7 +42,7 @@
 #include "network.h"
 #include "sim_util.h"
 #include "tgroup.h"
-#include "filenm.h"
+#include "../fileio/filenm.h"
 #include "mshift.h"
 #include "edsam.h"
 #include "mdebin.h"
@@ -63,10 +63,8 @@ extern "C" {
 #endif
 
 #define MD_POLARISE       (1<<2)
-#define MD_IONIZE         (1<<3)
 #define MD_RERUN          (1<<4)
 #define MD_RERUN_VSITE    (1<<5)
-#define MD_FFSCAN         (1<<6)
 #define MD_SEPPOT         (1<<7)
 #define MD_PARTDEC        (1<<9)
 #define MD_DDBONDCHECK    (1<<10)
@@ -139,7 +137,7 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  real cpt_period, real max_hours,
                                  const char *deviceOptions,
                                  unsigned long Flags,
-                                 gmx_runtime_t *runtime);
+                                 gmx_walltime_accounting_t walltime_accounting);
 
 /* ROUTINES from md.c */
 
@@ -167,13 +165,15 @@ gmx_integrator_t do_tpi;
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
+void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rng_t *mcrng, df_history_t *dfhist);
+
 int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, df_history_t *dfhist,
+                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              gmx_large_int_t step, gmx_rng_t mcrng,
                              rvec *v, t_mdatoms *mdatoms);
 
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                               int nlam, int frequency, gmx_large_int_t step);
+                               int fep_state, int frequency, gmx_large_int_t step);
 
 void get_mc_state(gmx_rng_t rng, t_state *state);
 

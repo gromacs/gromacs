@@ -45,7 +45,8 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "xvgr.h"
 #include "rmpbc.h"
 #include "pbc.h"
@@ -908,8 +909,11 @@ int gmx_current(int argc, char *argv[])
 
 
     /* At first the arguments will be parsed and the system information processed */
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bACF = opt2bSet("-caf", NFILE, fnm);
     bINT = opt2bSet("-mc", NFILE, fnm);

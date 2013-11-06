@@ -60,9 +60,6 @@
 #include <config.h>
 #endif
 
-#include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/utility/gmxmpi.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -72,28 +69,43 @@
 #include "vec.h"
 #include "gmxcomplex.h"
 #include "smalloc.h"
-#include "futil.h"
 #include "coulomb.h"
 #include "gmx_fatal.h"
 #include "pme.h"
 #include "network.h"
 #include "physics.h"
 #include "nrnb.h"
-#include "gmx_wallcycle.h"
-#include "pdbio.h"
-#include "gmx_cyclecounter.h"
 #include "gmx_omp.h"
 #include "macros.h"
 
-/* Single precision, with SSE2 or higher available */
-#if defined(GMX_X86_SSE2) && !defined(GMX_DOUBLE)
+#include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/timing/cyclecounter.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/gmxmpi.h"
 
-#include "gmx_x86_simd_single.h"
+/* Include the SIMD macro file and then check for support */
+#include "gmx_simd_macros.h"
+#if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
+/* Turn on arbitrary width SIMD intrinsics for PME solve */
+#define PME_SIMD
+#endif
 
-#define PME_SSE
-/* Some old AMD processors could have problems with unaligned loads+stores */
-#ifndef GMX_FAHCORE
-#define PME_SSE_UNALIGNED
+/* Include the 4-wide SIMD macro file */
+#include "gmx_simd4_macros.h"
+/* Check if we have 4-wide SIMD macro support */
+#ifdef GMX_HAVE_SIMD4_MACROS
+/* Do PME spread and gather with 4-wide SIMD.
+ * NOTE: SIMD is only used with PME order 4 and 5 (which are the most common).
+ */
+#define PME_SIMD4_SPREAD_GATHER
+
+#ifdef GMX_SIMD4_HAVE_UNALIGNED
+/* With PME-order=4 on x86, unaligned load+store is slightly faster
+ * than doubling all SIMD operations when using aligned load+store.
+ */
+#define PME_SIMD4_UNALIGNED
 #endif
 #endif
 
@@ -111,7 +123,16 @@
 #define mpi_type MPI_FLOAT
 #endif
 
-/* GMX_CACHE_SEP should be a multiple of 16 to preserve alignment */
+#ifdef PME_SIMD4_SPREAD_GATHER
+#define SIMD4_ALIGNMENT  (GMX_SIMD4_WIDTH*sizeof(real))
+#else
+/* We can use any alignment, apart from 0, so we use 4 reals */
+#define SIMD4_ALIGNMENT  (4*sizeof(real))
+#endif
+
+/* GMX_CACHE_SEP should be a multiple of the SIMD and SIMD4 register size
+ * to preserve alignment.
+ */
 #define GMX_CACHE_SEP 64
 
 /* We only define a maximum to be able to use local arrays without allocation.
@@ -222,9 +243,9 @@ typedef struct {
 
 
 typedef struct {
-#ifdef PME_SSE
-    /* Masks for SSE aligned spreading and gathering */
-    __m128 mask_SSE0[6], mask_SSE1[6];
+#ifdef PME_SIMD4_SPREAD_GATHER
+    /* Masks for 4-wide SIMD aligned spreading and gathering */
+    gmx_simd4_pb mask_S0[6], mask_S1[6];
 #else
     int    dummy; /* C89 requires that struct has at least one member */
 #endif
@@ -572,8 +593,9 @@ static void realloc_splinevec(splinevec th, real **ptr_z, int nalloc)
 
     srenew(th[XX], nalloc);
     srenew(th[YY], nalloc);
-    /* In z we add padding, this is only required for the aligned SSE code */
-    srenew(*ptr_z, nalloc+2*padding);
+    /* In z we add padding, this is only required for the aligned SIMD code */
+    sfree_aligned(*ptr_z);
+    snew_aligned(*ptr_z, nalloc+2*padding, SIMD4_ALIGNMENT);
     th[ZZ] = *ptr_z + padding;
 
     for (i = 0; i < padding; i++)
@@ -1435,9 +1457,10 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
     }
 
 
-static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
-                                     pme_atomcomm_t *atc, splinedata_t *spline,
-                                     pme_spline_work_t *work)
+static void spread_q_bsplines_thread(pmegrid_t                    *pmegrid,
+                                     pme_atomcomm_t               *atc,
+                                     splinedata_t                 *spline,
+                                     pme_spline_work_t gmx_unused *work)
 {
 
     /* spread charges from home atoms to local grid */
@@ -1451,6 +1474,12 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
     int            localsize, bndsize;
     int            pnx, pny, pnz, ndatatot;
     int            offx, offy, offz;
+
+#if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
+    real           thz_buffer[12], *thz_aligned;
+
+    thz_aligned = gmx_simd4_align_real(thz_buffer);
+#endif
 
     pnx = pmegrid->s[XX];
     pny = pmegrid->s[YY];
@@ -1490,23 +1519,23 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
             switch (order)
             {
                 case 4:
-#ifdef PME_SSE
-#ifdef PME_SSE_UNALIGNED
-#define PME_SPREAD_SSE_ORDER4
+#ifdef PME_SIMD4_SPREAD_GATHER
+#ifdef PME_SIMD4_UNALIGNED
+#define PME_SPREAD_SIMD4_ORDER4
 #else
-#define PME_SPREAD_SSE_ALIGNED
+#define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "pme_sse_single.h"
+#include "pme_simd4.h"
 #else
                     DO_BSPLINE(4);
 #endif
                     break;
                 case 5:
-#ifdef PME_SSE
-#define PME_SPREAD_SSE_ALIGNED
+#ifdef PME_SIMD4_SPREAD_GATHER
+#define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "pme_sse_single.h"
+#include "pme_simd4.h"
 #else
                     DO_BSPLINE(5);
 #endif
@@ -1519,11 +1548,11 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
     }
 }
 
-static void set_grid_alignment(int *pmegrid_nz, int pme_order)
+static void set_grid_alignment(int gmx_unused *pmegrid_nz, int gmx_unused pme_order)
 {
-#ifdef PME_SSE
+#ifdef PME_SIMD4_SPREAD_GATHER
     if (pme_order == 5
-#ifndef PME_SSE_UNALIGNED
+#ifndef PME_SIMD4_UNALIGNED
         || pme_order == 4
 #endif
         )
@@ -1536,8 +1565,8 @@ static void set_grid_alignment(int *pmegrid_nz, int pme_order)
 
 static void set_gridsize_alignment(int gmx_unused *gridsize, int gmx_unused pme_order)
 {
-#ifdef PME_SSE
-#ifndef PME_SSE_UNALIGNED
+#ifdef PME_SIMD4_SPREAD_GATHER
+#ifndef PME_SIMD4_UNALIGNED
     if (pme_order == 4)
     {
         /* Add extra elements to ensured aligned operations do not go
@@ -1588,7 +1617,7 @@ static void pmegrid_init(pmegrid_t *grid,
     {
         gridsize = grid->s[XX]*grid->s[YY]*grid->s[ZZ];
         set_gridsize_alignment(&gridsize, pme_order);
-        snew_aligned(grid->grid, gridsize, 16);
+        snew_aligned(grid->grid, gridsize, SIMD4_ALIGNMENT);
     }
     else
     {
@@ -1707,7 +1736,7 @@ static void pmegrids_init(pmegrids_t *grids,
         set_gridsize_alignment(&gridsize, pme_order);
         snew_aligned(grids->grid_all,
                      grids->nthread*gridsize+(grids->nthread+1)*GMX_CACHE_SEP,
-                     16);
+                     SIMD4_ALIGNMENT);
 
         for (x = 0; x < grids->nc[XX]; x++)
         {
@@ -1806,6 +1835,8 @@ static void pmegrids_destroy(pmegrids_t *grids)
 
 static void realloc_work(pme_work_t *work, int nkx)
 {
+    int simd_width;
+
     if (nkx > work->nalloc)
     {
         work->nalloc = nkx;
@@ -1813,15 +1844,21 @@ static void realloc_work(pme_work_t *work, int nkx)
         srenew(work->mhy, work->nalloc);
         srenew(work->mhz, work->nalloc);
         srenew(work->m2, work->nalloc);
-        /* Allocate an aligned pointer for SSE operations, including 3 extra
-         * elements at the end since SSE operates on 4 elements at a time.
+        /* Allocate an aligned pointer for SIMD operations, including extra
+         * elements at the end for padding.
          */
+#ifdef PME_SIMD
+        simd_width = GMX_SIMD_WIDTH_HERE;
+#else
+        /* We can use any alignment, apart from 0, so we use 4 */
+        simd_width = 4;
+#endif
         sfree_aligned(work->denom);
         sfree_aligned(work->tmp1);
         sfree_aligned(work->eterm);
-        snew_aligned(work->denom, work->nalloc+3, 16);
-        snew_aligned(work->tmp1, work->nalloc+3, 16);
-        snew_aligned(work->eterm, work->nalloc+3, 16);
+        snew_aligned(work->denom, work->nalloc+simd_width, simd_width*sizeof(real));
+        snew_aligned(work->tmp1,  work->nalloc+simd_width, simd_width*sizeof(real));
+        snew_aligned(work->eterm, work->nalloc+simd_width, simd_width*sizeof(real));
         srenew(work->m2inv, work->nalloc);
     }
 }
@@ -1840,27 +1877,29 @@ static void free_work(pme_work_t *work)
 }
 
 
-#ifdef PME_SSE
-/* Calculate exponentials through SSE in float precision */
+#ifdef PME_SIMD
+/* Calculate exponentials through SIMD */
 inline static void calc_exponentials(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
-        const __m128 two = _mm_set_ps(2.0f, 2.0f, 2.0f, 2.0f);
-        __m128 f_sse;
-        __m128 lu;
-        __m128 tmp_d1, d_inv, tmp_r, tmp_e;
+        const gmx_mm_pr two = gmx_set1_pr(2.0);
+        gmx_mm_pr f_simd;
+        gmx_mm_pr lu;
+        gmx_mm_pr tmp_d1, d_inv, tmp_r, tmp_e;
         int kx;
-        f_sse = _mm_load1_ps(&f);
-        for (kx = 0; kx < end; kx += 4)
+        f_simd = gmx_set1_pr(f);
+        /* We only need to calculate from start. But since start is 0 or 1
+         * and we want to use aligned loads/stores, we always start from 0.
+         */
+        for (kx = 0; kx < end; kx += GMX_SIMD_WIDTH_HERE)
         {
-            tmp_d1   = _mm_load_ps(d_aligned+kx);
-            lu       = _mm_rcp_ps(tmp_d1);
-            d_inv    = _mm_mul_ps(lu, _mm_sub_ps(two, _mm_mul_ps(lu, tmp_d1)));
-            tmp_r    = _mm_load_ps(r_aligned+kx);
-            tmp_r    = gmx_mm_exp_ps(tmp_r);
-            tmp_e    = _mm_mul_ps(f_sse, d_inv);
-            tmp_e    = _mm_mul_ps(tmp_e, tmp_r);
-            _mm_store_ps(e_aligned+kx, tmp_e);
+            tmp_d1   = gmx_load_pr(d_aligned+kx);
+            d_inv    = gmx_inv_pr(tmp_d1);
+            tmp_r    = gmx_load_pr(r_aligned+kx);
+            tmp_r    = gmx_exp_pr(tmp_r);
+            tmp_e    = gmx_mul_pr(f_simd, d_inv);
+            tmp_e    = gmx_mul_pr(tmp_e, tmp_r);
+            gmx_store_pr(e_aligned+kx, tmp_e);
         }
     }
 }
@@ -1980,6 +2019,7 @@ static int solve_pme_yzx(gmx_pme_t pme, t_complex *grid,
         p0 = grid + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
 
         /* We should skip the k-space point (0,0,0) */
+        /* Note that since here x is the minor index, local_offset[XX]=0 */
         if (local_offset[XX] > 0 || ky > 0 || kz > 0)
         {
             kxstart = local_offset[XX];
@@ -2200,6 +2240,14 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
 
     pme_spline_work_t *work;
 
+#if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
+    real           thz_buffer[12],  *thz_aligned;
+    real           dthz_buffer[12], *dthz_aligned;
+
+    thz_aligned  = gmx_simd4_align_real(thz_buffer);
+    dthz_aligned = gmx_simd4_align_real(dthz_buffer);
+#endif
+
     work = pme->spline_work;
 
     order = pme->pme_order;
@@ -2257,23 +2305,23 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
             switch (order)
             {
                 case 4:
-#ifdef PME_SSE
-#ifdef PME_SSE_UNALIGNED
-#define PME_GATHER_F_SSE_ORDER4
+#ifdef PME_SIMD4_SPREAD_GATHER
+#ifdef PME_SIMD4_UNALIGNED
+#define PME_GATHER_F_SIMD4_ORDER4
 #else
-#define PME_GATHER_F_SSE_ALIGNED
+#define PME_GATHER_F_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "pme_sse_single.h"
+#include "pme_simd4.h"
 #else
                     DO_FSPLINE(4);
 #endif
                     break;
                 case 5:
-#ifdef PME_SSE
-#define PME_GATHER_F_SSE_ALIGNED
+#ifdef PME_SIMD4_SPREAD_GATHER
+#define PME_GATHER_F_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "pme_sse_single.h"
+#include "pme_simd4.h"
 #else
                     DO_FSPLINE(5);
 #endif
@@ -2943,33 +2991,36 @@ make_gridindex5_to_localindex(int n, int local_start, int local_range,
     *fraction_shift  = fsh;
 }
 
-static pme_spline_work_t *make_pme_spline_work(int order)
+static pme_spline_work_t *make_pme_spline_work(int gmx_unused order)
 {
     pme_spline_work_t *work;
 
-#ifdef PME_SSE
-    float  tmp[8];
-    __m128 zero_SSE;
-    int    of, i;
+#ifdef PME_SIMD4_SPREAD_GATHER
+    real         tmp[12], *tmp_aligned;
+    gmx_simd4_pr zero_S;
+    gmx_simd4_pr real_mask_S0, real_mask_S1;
+    int          of, i;
 
-    snew_aligned(work, 1, 16);
+    snew_aligned(work, 1, SIMD4_ALIGNMENT);
 
-    zero_SSE = _mm_setzero_ps();
+    tmp_aligned = gmx_simd4_align_real(tmp);
+
+    zero_S = gmx_simd4_setzero_pr();
 
     /* Generate bit masks to mask out the unused grid entries,
      * as we only operate on order of the 8 grid entries that are
-     * load into 2 SSE float registers.
+     * load into 2 SIMD registers.
      */
     for (of = 0; of < 8-(order-1); of++)
     {
         for (i = 0; i < 8; i++)
         {
-            tmp[i] = (i >= of && i < of+order ? 1 : 0);
+            tmp_aligned[i] = (i >= of && i < of+order ? -1.0 : 1.0);
         }
-        work->mask_SSE0[of] = _mm_loadu_ps(tmp);
-        work->mask_SSE1[of] = _mm_loadu_ps(tmp+4);
-        work->mask_SSE0[of] = _mm_cmpgt_ps(work->mask_SSE0[of], zero_SSE);
-        work->mask_SSE1[of] = _mm_cmpgt_ps(work->mask_SSE1[of], zero_SSE);
+        real_mask_S0      = gmx_simd4_load_pr(tmp_aligned);
+        real_mask_S1      = gmx_simd4_load_pr(tmp_aligned+4);
+        work->mask_S0[of] = gmx_simd4_cmplt_pr(real_mask_S0, zero_S);
+        work->mask_S1[of] = gmx_simd4_cmplt_pr(real_mask_S1, zero_S);
     }
 #else
     work = NULL;
@@ -4096,6 +4147,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
 
 
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
+                                   gmx_walltime_accounting_t walltime_accounting,
                                    t_nrnb *nrnb, t_inputrec *ir,
                                    gmx_large_int_t step)
 {
@@ -4110,6 +4162,7 @@ static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
     }
     ir->init_step = step;
     wallcycle_start(wcycle, ewcRUN);
+    walltime_accounting_start(walltime_accounting);
 }
 
 
@@ -4150,6 +4203,7 @@ static void gmx_pmeonly_switch(int *npmedata, gmx_pme_t **pmedata,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
+                gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff,
                 t_inputrec *ir)
 {
@@ -4205,7 +4259,7 @@ int gmx_pmeonly(gmx_pme_t pme,
             if (ret == pmerecvqxRESETCOUNTERS)
             {
                 /* Reset the cycle and flop counters */
-                reset_pmeonly_counters(wcycle, nrnb, ir, step);
+                reset_pmeonly_counters(wcycle, walltime_accounting, nrnb, ir, step);
             }
         }
         while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
@@ -4221,6 +4275,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         if (count == 0)
         {
             wallcycle_start(wcycle, ewcRUN);
+            walltime_accounting_start(walltime_accounting);
         }
 
         wallcycle_start(wcycle, ewcPMEMESH);
@@ -4241,6 +4296,8 @@ int gmx_pmeonly(gmx_pme_t pme,
         count++;
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
+
+    walltime_accounting_end(walltime_accounting);
 
     return 0;
 }

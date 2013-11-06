@@ -32,7 +32,61 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_subdirectory(mdrun)
-if (NOT GMX_FAHCORE)
-    add_subdirectory(gmx)
-endif (NOT GMX_FAHCORE)
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
+
+file(GLOB MDRUN_SOURCES mdrun/*.c mdrun/*.cpp)
+if(X11_FOUND)
+    file(GLOB VIEW_SOURCES view/*.cpp)
+else()
+    file(GLOB VIEW_SOURCES view/view.cpp)
+endif(X11_FOUND)
+
+if(GMX_FAHCORE)
+    add_library(fahcore ${MDRUN_SOURCES})
+elseif(GMX_BUILD_MDRUN_ONLY)
+    add_executable(mdrun ${MDRUN_SOURCES} mdrun_main.cpp)
+    target_link_libraries(mdrun
+        ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
+    set_target_properties(mdrun PROPERTIES
+        OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}"
+        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+    install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
+else()
+    file(GLOB GMX_EXECUTABLE_SOURCES gmx/*.c gmx/*.cpp)
+    add_executable(gmx ${GMX_EXECUTABLE_SOURCES} ${MDRUN_SOURCES} ${VIEW_SOURCES})
+    if(X11_FOUND)
+        target_link_libraries(gmx
+            ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS} ${X11_LIBRARIES})
+    else()
+        target_link_libraries(gmx
+            ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
+    endif(X11_FOUND)
+    set_target_properties(gmx PROPERTIES
+        OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}"
+        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+    configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)
+    set(CREATE_LINKS_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/CreateLinks.cmake)
+    # TODO: Currently this rule is always run and recreates the symlinks;
+    # it would be best to just adapt the rest of the build such that this is
+    # never needed (for now, this makes the binary directory seem like it was
+    # earlier).
+    add_custom_target(links ALL
+        ${CMAKE_COMMAND}
+            -DBINARY_DIRECTORY=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+            -DQUIETLY=TRUE
+            -P ${CREATE_LINKS_SCRIPT}
+        DEPENDS gmx
+        COMMENT "Creating symlinks for alternative binary names"
+        VERBATIM)
+
+    # TODO: Create man pages (currently not working since the old mechanism
+    # requires a target for each binary to which one can add a post-build role, and
+    # the symlinks do not have such targets).
+
+    install(TARGETS gmx
+            RUNTIME DESTINATION ${BIN_INSTALL_DIR})
+    if (GMX_SYMLINK_OLD_BINARY_NAMES)
+        install(SCRIPT ${CREATE_LINKS_SCRIPT} COMPONENT links)
+    endif ()
+endif()

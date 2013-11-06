@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -95,7 +95,8 @@ typedef std::list<SelectionParserValue>
 typedef gmx::gmx_unique_ptr<SelectionParserValueList>::type
     SelectionParserValueListPointer;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Describes a parsed value, possibly resulting from expression evaluation.
  *
  * All factory methods and the constructors may throw an std::bad_alloc if
@@ -395,11 +396,26 @@ void
 _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
                         struct gmx_ana_selmethod_t *method, void *scanner);
 
-/** Creates a gmx::SelectionTreeElement for arithmetic expression evaluation. */
+/* An opaque pointer. */
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
+#endif
+/** \brief Creates a gmx::SelectionTreeElement for arithmetic expression evaluation.
+ *
+ * \param[in]  left    Selection element for the left hand side.
+ * \param[in]  right   Selection element for the right hand side.
+ * \param[in]  op      String representation of the operator.
+ * \param[in]  scanner Scanner data structure.
+ * \returns    The created selection element.
+ *
+ * This function handles the creation of a gmx::SelectionTreeElement object for
+ * arithmetic expressions.
+ */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
                          const gmx::SelectionTreeElementPointer &right,
-                         char op, void *scanner);
+                         char op, yyscan_t scanner);
 /** Creates a gmx::SelectionTreeElement for comparsion expression evaluation. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,

@@ -43,12 +43,13 @@
 #include "mdrun.h"
 #include "domdec.h"
 #include "mtop_util.h"
-#include "gmx_wallcycle.h"
 #include "vcm.h"
 #include "nrnb.h"
 #include "macros.h"
 #include "md_logging.h"
 #include "md_support.h"
+
+#include "gromacs/timing/wallcycle.h"
 
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
@@ -283,12 +284,12 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
                      globsig_t *gs, gmx_bool bInterSimGS,
-                     matrix box, gmx_mtop_t *top_global, real *pcurr,
+                     matrix box, gmx_mtop_t *top_global,
                      gmx_bool *bSumEkinhOld, int flags)
 {
     int      i, gsi;
     real     gs_buf[eglsNR];
-    tensor   corr_vir, corr_pres, shakeall_vir;
+    tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp, bVV;
     gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
              bFirstIterate, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
@@ -490,7 +491,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         m_add(pres, corr_pres, pres);
         enerd->term[F_PDISPCORR] = prescorr;
         enerd->term[F_PRES]     += prescorr;
-        *pcurr                   = enerd->term[F_PRES];
     }
 }
 
@@ -518,7 +518,7 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
     {
         if (rerun_fr->bLambda)
         {
-            if (fepvals->delta_lambda != 0)
+            if (fepvals->delta_lambda==0)
             {
                 state_global->lambda[efptFEP] = rerun_fr->lambda;
                 for (i = 0; i < efptNR; i++)
@@ -576,6 +576,16 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
                 for (i = 0; i < efptNR; i++)
                 {
                     state_global->lambda[i] = lam0[i] + frac;
+                }
+            }
+        }
+        else
+        {
+            if (state->fep_state > 0) {
+                state_global->fep_state = state->fep_state; /* state->fep is the one updated by bExpanded */
+                for (i = 0; i < efptNR; i++)
+                {
+                    state_global->lambda[i] = fepvals->all_lambda[i][state_global->fep_state];
                 }
             }
         }

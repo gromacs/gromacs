@@ -42,7 +42,7 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "vec.h"
 #include "index.h"
@@ -50,7 +50,8 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "rmpbc.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "nrjac.h"
 #include "gmx_ana.h"
 
@@ -176,9 +177,12 @@ int gmx_polystat(int argc, char *argv[])
     char       **legp, buf[STRLEN];
     gmx_rmpbc_t  gpbc = NULL;
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     snew(top, 1);
     ePBC = read_tpx_top(ftp2fn(efTPX, NFILE, fnm),

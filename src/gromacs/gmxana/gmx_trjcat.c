@@ -42,23 +42,24 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "gmxfio.h"
-#include "tpxio.h"
-#include "trnio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/trnio.h"
 #include "statutil.h"
-#include "futil.h"
-#include "pdbio.h"
-#include "confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "index.h"
 #include "vec.h"
-#include "xtcio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "wgms.h"
 #include "pbc.h"
 #include "xvgr.h"
-#include "xdrf.h"
+#include "gromacs/fileio/xdrf.h"
 #include "gmx_ana.h"
 
 #define TIME_EXPLICIT 0
@@ -507,8 +508,11 @@ int gmx_trjcat(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_BE_NICE | PCA_TIME_UNIT, NFILE, fnm,
-                      asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_TIME_UNIT, NFILE, fnm,
+                           asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bIndex = ftp2bSet(efNDX, NFILE, fnm);
     bDeMux = ftp2bSet(efXVG, NFILE, fnm);

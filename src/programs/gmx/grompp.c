@@ -50,14 +50,14 @@
 #include "readir.h"
 #include "toputil.h"
 #include "topio.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "readir.h"
 #include "symtab.h"
 #include "names.h"
 #include "grompp.h"
 #include "random.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "splitter.h"
 #include "sortwater.h"
@@ -65,14 +65,15 @@
 #include "gmx_fatal.h"
 #include "warninp.h"
 #include "index.h"
-#include "gmxfio.h"
-#include "trnio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "vsite_parm.h"
 #include "txtdump.h"
 #include "calcgrid.h"
 #include "add_par.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "perf_est.h"
 #include "compute_io.h"
 #include "gpp_atomtype.h"
@@ -1216,7 +1217,7 @@ static void check_gbsa_params_charged(gmx_mtop_t *sys, gpp_atomtype_t atype)
 }
 
 
-static void check_gbsa_params(t_inputrec *ir, gpp_atomtype_t atype)
+static void check_gbsa_params(gpp_atomtype_t atype)
 {
     int  nmiss, i;
 
@@ -1485,8 +1486,11 @@ int gmx_grompp(int argc, char *argv[])
     init_ir(ir, opts);
 
     /* Parse the command line */
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     wi = init_warning(TRUE, maxwarn);
 
@@ -1547,6 +1551,23 @@ int gmx_grompp(int argc, char *argv[])
     if (debug)
     {
         pr_symtab(debug, 0, "After new_status", &sys->symtab);
+    }
+
+    nvsite = 0;
+    /* set parameters for virtual site construction (not for vsiten) */
+    for (mt = 0; mt < sys->nmoltype; mt++)
+    {
+        nvsite +=
+            set_vsites(bVerbose, &sys->moltype[mt].atoms, atype, mi[mt].plist);
+    }
+    /* now throw away all obsolete bonds, angles and dihedrals: */
+    /* note: constraints are ALWAYS removed */
+    if (nvsite)
+    {
+        for (mt = 0; mt < sys->nmoltype; mt++)
+        {
+            clean_vsite_bondeds(mi[mt].plist, sys->moltype[mt].atoms.nr, bRmVSBds);
+        }
     }
 
     if (ir->cutoff_scheme == ecutsVERLET)
@@ -1648,23 +1669,6 @@ int gmx_grompp(int argc, char *argv[])
                    wi);
     }
 
-    nvsite = 0;
-    /* set parameters for virtual site construction (not for vsiten) */
-    for (mt = 0; mt < sys->nmoltype; mt++)
-    {
-        nvsite +=
-            set_vsites(bVerbose, &sys->moltype[mt].atoms, atype, mi[mt].plist);
-    }
-    /* now throw away all obsolete bonds, angles and dihedrals: */
-    /* note: constraints are ALWAYS removed */
-    if (nvsite)
-    {
-        for (mt = 0; mt < sys->nmoltype; mt++)
-        {
-            clean_vsite_bondeds(mi[mt].plist, sys->moltype[mt].atoms.nr, bRmVSBds);
-        }
-    }
-
     /* If we are using CMAP, setup the pre-interpolation grid */
     if (plist->ncmap > 0)
     {
@@ -1682,7 +1686,7 @@ int gmx_grompp(int argc, char *argv[])
     if (ir->implicit_solvent != eisNO)
     {
         /* Now we have renumbered the atom types, we can check the GBSA params */
-        check_gbsa_params(ir, atype);
+        check_gbsa_params(atype);
 
         /* Check that all atoms that have charge and/or LJ-parameters also have
          * sensible GB-parameters

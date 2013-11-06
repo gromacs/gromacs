@@ -42,7 +42,7 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "macros.h"
@@ -51,6 +51,7 @@
 #include "gstat.h"
 #include "vec.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 int gmx_rotacf(int argc, char *argv[])
@@ -112,8 +113,11 @@ int gmx_rotacf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 

@@ -33,6 +33,8 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#include "mdrun_main.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -41,7 +43,7 @@
 
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
@@ -51,9 +53,7 @@
 #include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
-#include "gromacs/utility/programinfo.h"
-
-int main(int argc, char *argv[])
+int gmx_mdrun(int argc, char *argv[])
 {
     const char   *desc[] = {
         "The [TT]mdrun[tt] program is the main computational chemistry engine",
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
         "is performed after every exchange.[PAR]",
         "Finally some experimental algorithms can be tested when the",
         "appropriate options have been given. Currently under",
-        "investigation are: polarizability and X-ray bombardments.",
+        "investigation are: polarizability.",
         "[PAR]",
         "The option [TT]-membed[tt] does what used to be g_membed, i.e. embed",
         "a protein into a membrane. The data file should contain the options",
@@ -382,9 +382,6 @@ int main(int argc, char *argv[])
         { efXVG, "-tpid",   "tpidist",  ffOPTWR },
         { efEDI, "-ei",     "sam",      ffOPTRD },
         { efXVG, "-eo",     "edsam",    ffOPTWR },
-        { efGCT, "-j",      "wham",     ffOPTRD },
-        { efGCT, "-jo",     "bam",      ffOPTWR },
-        { efXVG, "-ffout",  "gct",      ffOPTWR },
         { efXVG, "-devout", "deviatie", ffOPTWR },
         { efXVG, "-runav",  "runaver",  ffOPTWR },
         { efXVG, "-px",     "pullx",    ffOPTWR },
@@ -403,50 +400,49 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* Command line options ! */
-    gmx_bool      bPartDec      = FALSE;
-    gmx_bool      bDDBondCheck  = TRUE;
-    gmx_bool      bDDBondComm   = TRUE;
-    gmx_bool      bTunePME      = TRUE;
-    gmx_bool      bTestVerlet   = FALSE;
-    gmx_bool      bVerbose      = FALSE;
-    gmx_bool      bCompact      = TRUE;
-    gmx_bool      bSepPot       = FALSE;
-    gmx_bool      bRerunVSite   = FALSE;
-    gmx_bool      bIonize       = FALSE;
-    gmx_bool      bConfout      = TRUE;
-    gmx_bool      bReproducible = FALSE;
+    gmx_bool        bPartDec      = FALSE;
+    gmx_bool        bDDBondCheck  = TRUE;
+    gmx_bool        bDDBondComm   = TRUE;
+    gmx_bool        bTunePME      = TRUE;
+    gmx_bool        bTestVerlet   = FALSE;
+    gmx_bool        bVerbose      = FALSE;
+    gmx_bool        bCompact      = TRUE;
+    gmx_bool        bSepPot       = FALSE;
+    gmx_bool        bRerunVSite   = FALSE;
+    gmx_bool        bConfout      = TRUE;
+    gmx_bool        bReproducible = FALSE;
 
-    int           npme          = -1;
-    int           nmultisim     = 0;
-    int           nstglobalcomm = -1;
-    int           repl_ex_nst   = 0;
-    int           repl_ex_seed  = -1;
-    int           repl_ex_nex   = 0;
-    int           nstepout      = 100;
-    int           resetstep     = -1;
-    gmx_large_int_t nsteps      = -2; /* the value -2 means that the mdp option will be used */
+    int             npme          = -1;
+    int             nmultisim     = 0;
+    int             nstglobalcomm = -1;
+    int             repl_ex_nst   = 0;
+    int             repl_ex_seed  = -1;
+    int             repl_ex_nex   = 0;
+    int             nstepout      = 100;
+    int             resetstep     = -1;
+    gmx_large_int_t nsteps        = -2; /* the value -2 means that the mdp option will be used */
 
-    rvec          realddxyz          = {0, 0, 0};
-    const char   *ddno_opt[ddnoNR+1] =
+    rvec            realddxyz          = {0, 0, 0};
+    const char     *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-    const char   *dddlb_opt[] =
+    const char     *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
-    const char   *thread_aff_opt[threadaffNR+1] =
+    const char     *thread_aff_opt[threadaffNR+1] =
     { NULL, "auto", "on", "off", NULL };
-    const char   *nbpu_opt[] =
+    const char     *nbpu_opt[] =
     { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
-    real          rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
-    char         *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
-    real          cpt_period            = 15.0, max_hours = -1;
-    gmx_bool      bAppendFiles          = TRUE;
-    gmx_bool      bKeepAndNumCPT        = FALSE;
-    gmx_bool      bResetCountersHalfWay = FALSE;
-    output_env_t  oenv                  = NULL;
-    const char   *deviceOptions         = "";
+    real            rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
+    char           *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
+    real            cpt_period            = 15.0, max_hours = -1;
+    gmx_bool        bAppendFiles          = TRUE;
+    gmx_bool        bKeepAndNumCPT        = FALSE;
+    gmx_bool        bResetCountersHalfWay = FALSE;
+    output_env_t    oenv                  = NULL;
+    const char     *deviceOptions         = "";
 
-    gmx_hw_opt_t  hw_opt = {0, 0, 0, 0, threadaffSEL, 0, 0, NULL};
+    gmx_hw_opt_t    hw_opt = {0, 0, 0, 0, threadaffSEL, 0, 0, NULL};
 
-    t_pargs       pa[] = {
+    t_pargs         pa[] = {
 
         { "-pd",      FALSE, etBOOL, {&bPartDec},
           "Use particle decompostion" },
@@ -528,33 +524,30 @@ int main(int argc, char *argv[])
           "Seed for replica exchange, -1 is generate a seed" },
         { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
-        { "-ionize",  FALSE, etBOOL, {&bIonize},
-          "Do a simulation including the effect of an X-Ray bombardment on your system" },
         { "-confout", FALSE, etBOOL, {&bConfout},
           "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
         { "-stepout", FALSE, etINT, {&nstepout},
-          "HIDDENFrequency of writing the remaining runtime" },
+          "HIDDENFrequency of writing the remaining wall clock time for the run" },
         { "-resetstep", FALSE, etINT, {&resetstep},
           "HIDDENReset cycle counters after these many time steps" },
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    unsigned long Flags, PCA_Flags;
-    ivec          ddxyz;
-    int           dd_node_order;
-    gmx_bool      bAddPart;
-    FILE         *fplog, *fpmulti;
-    int           sim_part, sim_part_fn;
-    const char   *part_suffix = ".part";
-    char          suffix[STRLEN];
-    int           rc;
-    char        **multidir = NULL;
+    unsigned long   Flags, PCA_Flags;
+    ivec            ddxyz;
+    int             dd_node_order;
+    gmx_bool        bAddPart;
+    FILE           *fplog, *fpmulti;
+    int             sim_part, sim_part_fn;
+    const char     *part_suffix = ".part";
+    char            suffix[STRLEN];
+    int             rc;
+    char          **multidir = NULL;
 
 
-    cr = init_par(&argc, &argv);
-    gmx::ProgramInfo::init(argc, argv);
+    cr = init_commrec();
 
-    PCA_Flags = (PCA_CAN_SET_DEFFNM | PCA_STANDALONE | (MASTER(cr) ? 0 : PCA_QUIET));
+    PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
 
     /* Comment this in to do fexist calls only on master
      * works not with rerun or tables at the moment
@@ -568,8 +561,11 @@ int main(int argc, char *argv[])
        }
      */
 
-    parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
 
     /* we set these early because they might be used in init_multisystem()
@@ -679,7 +675,6 @@ int main(int argc, char *argv[])
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
     Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
-    Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
     Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
@@ -727,13 +722,6 @@ int main(int argc, char *argv[])
                   nsteps, nstepout, resetstep,
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                   pforce, cpt_period, max_hours, deviceOptions, Flags);
-
-    gmx_finalize_par();
-
-    if (MULTIMASTER(cr))
-    {
-        gmx_thanx(stderr);
-    }
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */

@@ -49,7 +49,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/legacyheaders/gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/vec.h"
 #include "gromacs/legacyheaders/xvgr.h"
@@ -274,6 +274,13 @@ AbstractPlotModule::appendLegend(const char *setname)
 
 
 void
+AbstractPlotModule::appendLegend(const std::string &setname)
+{
+    impl_->legend_.push_back(setname);
+}
+
+
+void
 AbstractPlotModule::setXFormat(int width, int precision, char format)
 {
     GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
@@ -306,7 +313,7 @@ AbstractPlotModule::flags() const
 
 
 void
-AbstractPlotModule::dataStarted(AbstractAnalysisData * /*data*/)
+AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
 {
     if (!impl_->filename_.empty())
     {

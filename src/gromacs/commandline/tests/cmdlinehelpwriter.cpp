@@ -49,8 +49,8 @@
 
 #include "gromacs/legacyheaders/types/simple.h"
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
-#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
@@ -69,16 +69,20 @@ namespace
 class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 {
     public:
+        CommandLineHelpWriterTest() : bHidden_(false) {}
+
         void checkHelp(gmx::CommandLineHelpWriter *writer);
 
         gmx::test::TestFileManager tempFiles_;
+        bool                       bHidden_;
 };
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
-    std::string            filename = tempFiles_.getTemporaryFilePath("helptext.txt");
-    gmx::File              file(filename, "w");
-    gmx::HelpWriterContext context(&file, gmx::eHelpOutputFormat_Console);
+    std::string                 filename = tempFiles_.getTemporaryFilePath("helptext.txt");
+    gmx::File                   file(filename, "w");
+    gmx::CommandLineHelpContext context(&file, gmx::eHelpOutputFormat_Console);
+    context.setShowHidden(bHidden_);
     writer->writeHelp(context);
     file.close();
 
@@ -143,7 +147,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     options.addOption(SelectionOption("sel").description("Selection option"));
 
     CommandLineHelpWriter writer(options);
-    writer.setShowHidden(true);
+    bHidden_ = true;
     checkHelp(&writer);
 }
 

@@ -45,7 +45,7 @@
 #include "smalloc.h"
 #include "symtab.h"
 #include "index.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "fflibutil.h"
 #include "hackblock.h"
 #include "gmx_fatal.h"

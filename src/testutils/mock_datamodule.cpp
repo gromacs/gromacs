@@ -283,7 +283,7 @@ void checkFrame(const AnalysisDataFrameRef       &frame,
     }
 }
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame header against static test input data.
  *
  * This functor is designed to be invoked as a handled for
@@ -315,7 +315,7 @@ class StaticDataFrameHeaderChecker
         const AnalysisDataTestInputFrame *frame_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame points against static test input data.
  *
  * This functor is designed to be invoked as a handled for
@@ -366,7 +366,7 @@ class StaticDataPointsChecker
         int                                  n_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for requesting data storage.
  *
  * This functor is designed to be invoked as a handled for
@@ -395,7 +395,7 @@ class DataStorageRequester
         int                     count_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame points and storage against static test input
  * data.
  *
@@ -465,6 +465,27 @@ class StaticDataPointsStorageChecker
         int                          storageCount_;
 };
 
+/*! \brief
+ * Sets the mock object expectation to mimick AnalysisDataModuleSerial.
+ *
+ * Makes MockAnalysisDataModule::parallelDataStarted() behave as if the mock
+ * object was an AnalysisDataModuleSerial object: forward the call to
+ * MockAnalysisDataModule::dataStarted() and return false.
+ */
+void setSerialExpectationForParallelDataStarted(MockAnalysisDataModule *mock)
+{
+    using ::testing::_;
+    using ::testing::AtMost;
+    using ::testing::DoAll;
+    using ::testing::Invoke;
+    using ::testing::Return;
+    using ::testing::WithArg;
+    EXPECT_CALL(*mock, parallelDataStarted(_, _))
+        .Times(AtMost(1))
+        .WillOnce(DoAll(WithArg<0>(Invoke(mock, &MockAnalysisDataModule::dataStarted)),
+                        Return(false)));
+}
+
 }       // anonymous namespace
 
 
@@ -487,38 +508,73 @@ int MockAnalysisDataModule::flags() const
 
 void
 MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
-                                         AbstractAnalysisData        *source)
+                                         AbstractAnalysisData        *source,
+                                         bool                         bParallel)
 {
     impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 
-    ::testing::InSequence dummy;
     using ::testing::_;
     using ::testing::Invoke;
+    using ::testing::Property;
+    using ::testing::Return;
 
-    EXPECT_CALL(*this, dataStarted(source));
-    for (int row = 0; row < data.frameCount(); ++row)
+    if (bParallel)
     {
-        const AnalysisDataTestInputFrame &frame = data.frame(row);
-        EXPECT_CALL(*this, frameStarted(_))
-            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
-        for (int ps = 0; ps < frame.pointSetCount(); ++ps)
+        ::testing::Expectation init =
+            EXPECT_CALL(*this, parallelDataStarted(source, _))
+                .WillOnce(Return(true));
+        ::testing::ExpectationSet framesFinished;
+        for (int row = 0; row < data.frameCount(); ++row)
         {
-            const AnalysisDataTestInputPointSet &points = frame.pointSet(ps);
-            StaticDataPointsChecker              checker(&frame, &points, 0,
-                                                         data.columnCount(points.dataSetIndex()));
-            EXPECT_CALL(*this, pointsAdded(_)).WillOnce(Invoke(checker));
+            ::testing::InSequence frameSequence;
+            const AnalysisDataTestInputFrame &frame = data.frame(row);
+            EXPECT_CALL(*this, frameStarted(Property(&AnalysisDataFrameHeader::index, row)))
+                .After(init)
+                .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+            for (int ps = 0; ps < frame.pointSetCount(); ++ps)
+            {
+                const AnalysisDataTestInputPointSet &points = frame.pointSet(ps);
+                StaticDataPointsChecker              checker(&frame, &points, 0,
+                                                             data.columnCount(points.dataSetIndex()));
+                EXPECT_CALL(*this, pointsAdded(Property(&AnalysisDataPointSetRef::frameIndex, row)))
+                    .WillOnce(Invoke(checker));
+            }
+            framesFinished +=
+                EXPECT_CALL(*this, frameFinished(Property(&AnalysisDataFrameHeader::index, row)))
+                    .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
         }
-        EXPECT_CALL(*this, frameFinished(_))
-            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        EXPECT_CALL(*this, dataFinished())
+            .After(framesFinished);
     }
-    EXPECT_CALL(*this, dataFinished());
+    else
+    {
+        ::testing::InSequence dummy;
+        setSerialExpectationForParallelDataStarted(this);
+        EXPECT_CALL(*this, dataStarted(source));
+        for (int row = 0; row < data.frameCount(); ++row)
+        {
+            const AnalysisDataTestInputFrame &frame = data.frame(row);
+            EXPECT_CALL(*this, frameStarted(_))
+                .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+            for (int ps = 0; ps < frame.pointSetCount(); ++ps)
+            {
+                const AnalysisDataTestInputPointSet &points = frame.pointSet(ps);
+                StaticDataPointsChecker              checker(&frame, &points, 0,
+                                                             data.columnCount(points.dataSetIndex()));
+                EXPECT_CALL(*this, pointsAdded(_)).WillOnce(Invoke(checker));
+            }
+            EXPECT_CALL(*this, frameFinished(_))
+                .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        }
+        EXPECT_CALL(*this, dataFinished());
+    }
 }
 
 
 void
 MockAnalysisDataModule::setupStaticColumnCheck(
         const AnalysisDataTestInput &data,
-        int firstcol, int n, AbstractAnalysisData *source)
+        int firstcol, int n, AbstractAnalysisData * /*source*/)
 {
     impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 
@@ -526,6 +582,7 @@ MockAnalysisDataModule::setupStaticColumnCheck(
     using ::testing::_;
     using ::testing::Invoke;
 
+    setSerialExpectationForParallelDataStarted(this);
     EXPECT_CALL(*this, dataStarted(_));
     for (int row = 0; row < data.frameCount(); ++row)
     {
@@ -562,6 +619,7 @@ MockAnalysisDataModule::setupStaticStorageCheck(
     using ::testing::_;
     using ::testing::Invoke;
 
+    setSerialExpectationForParallelDataStarted(this);
     EXPECT_CALL(*this, dataStarted(source))
         .WillOnce(Invoke(DataStorageRequester(storageCount)));
     for (int row = 0; row < data.frameCount(); ++row)
@@ -599,6 +657,7 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
     using ::testing::Expectation;
     using ::testing::Invoke;
 
+    setSerialExpectationForParallelDataStarted(this);
     Expectation dataStart = EXPECT_CALL(*this, dataStarted(source))
             .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
     Expectation frameStart = EXPECT_CALL(*this, frameStarted(_))

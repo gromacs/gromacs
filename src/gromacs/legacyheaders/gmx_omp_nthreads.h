@@ -38,6 +38,12 @@
 
 #include "types/commrec.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! Enum values corresponding to multithreaded algorithmic modules. */
 typedef enum module_nth
@@ -62,8 +68,19 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 /*! Returns the number of threads to be used in the given module m. */
 int gmx_omp_nthreads_get(int mod);
 
+/*! \brief Sets the number of threads to be used in module. Intended
+ *  for use in testing. */
+void gmx_omp_nthreads_set(int mod, int nthreads);
+
 /*! Read the OMP_NUM_THREADS env. var. and check against the value set on the command line. */
 void gmx_omp_nthreads_read_env(int     *nthreads_omp,
                                gmx_bool bIsSimMaster);
+
+#if 0
+{
+#endif
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GMX_OMP_NTHREADS */

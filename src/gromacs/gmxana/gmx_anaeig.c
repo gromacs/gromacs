@@ -45,13 +45,14 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "pdbio.h"
-#include "confio.h"
-#include "tpxio.h"
-#include "matio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/matio.h"
 #include "mshift.h"
 #include "xvgr.h"
 #include "do_fit.h"
@@ -1106,9 +1107,12 @@ int gmx_anaeig(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     indexfile = ftp2fn_null(efNDX, NFILE, fnm);
 

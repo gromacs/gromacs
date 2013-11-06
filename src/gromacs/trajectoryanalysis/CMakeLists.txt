@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010, by the GROMACS development team, led by
+# Copyright (c) 2010,2013, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -39,9 +39,7 @@ set(TRAJECTORYANALYSIS_PUBLIC_HEADERS
     analysismodule.h
     analysissettings.h
     cmdlinerunner.h)
-install(FILES ${TRAJECTORYANALYSIS_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/trajectoryanalysis
-        COMPONENT development)
+gmx_install_headers(trajectoryanalysis ${TRAJECTORYANALYSIS_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -93,7 +93,9 @@ t_dlist *mk_dlist(FILE *log,
                 atm.C = i;
             }
             else if ((strcmp(*(atoms->atomname[i]), "O") == 0) ||
-                     (strcmp(*(atoms->atomname[i]), "O1") == 0))
+                     (strcmp(*(atoms->atomname[i]), "O1") == 0) ||
+                     (strcmp(*(atoms->atomname[i]), "OC1") == 0) ||
+                     (strcmp(*(atoms->atomname[i]), "OT1") == 0))
             {
                 atm.O = i;
             }

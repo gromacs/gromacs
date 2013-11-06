@@ -51,11 +51,12 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "tpxio.h"
-#include "matio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/matio.h"
 #include "binsearch.h"
 #include "powerspect.h"
 
@@ -643,8 +644,11 @@ int gmx_hydorder(int argc, char *argv[])
     int          nfspect, nfxpm, nfraw;
     output_env_t oenv;
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     bFourier = opt2bSet("-Spect", NFILE, fnm);
     bRawOut  = opt2bSet("-or", NFILE, fnm);
 

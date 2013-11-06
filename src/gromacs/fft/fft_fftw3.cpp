@@ -47,7 +47,8 @@ static tMPI::mutex big_fftw_mutex;
      This is OK as long as the memory directly comes from malloc and is not some subarray within alloated memory.
    - This has to be fixed if any future architecute requires memory to be aligned to multiples of 32 bytes.
  */
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Contents of the FFTW3 fft datatype.
  *
  * Note that this is one of several possible implementations of gmx_fft_t.

@@ -41,17 +41,17 @@
 #include <ctype.h>
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "smalloc.h"
 #include "copyrite.h"
 #include "string2.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "vec.h"
 #include "statutil.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "toputil.h"
 #include "h_db.h"
 #include "physics.h"
@@ -675,7 +675,7 @@ int pdbicomp(const void *a, const void *b)
     return d;
 }
 
-static void sort_pdbatoms(int nrtp, t_restp restp[], t_hackblock hb[],
+static void sort_pdbatoms(t_restp restp[],
                           int natoms, t_atoms **pdbaptr, rvec **x,
                           t_blocka *block, char ***gnames)
 {
@@ -1368,8 +1368,11 @@ int gmx_pdb2gmx(int argc, char *argv[])
     };
 #define NPARGS asize(pa)
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
@@ -1929,8 +1932,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         {
             block = new_blocka();
             snew(gnames, 1);
-            sort_pdbatoms(pdba->nres, restp_chain, hb_chain,
-                          natom, &pdba, &x, block, &gnames);
+            sort_pdbatoms(restp_chain, natom, &pdba, &x, block, &gnames);
             natom = remove_duplicate_atoms(pdba, x, bVerbose);
             if (ftp2bSet(efNDX, NFILE, fnm))
             {

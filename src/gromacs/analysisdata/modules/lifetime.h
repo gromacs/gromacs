@@ -76,7 +76,7 @@ namespace gmx
  * \ingroup module_analysisdata
  */
 class AnalysisDataLifetimeModule : public AbstractAnalysisArrayData,
-                                   public AnalysisDataModuleInterface
+                                   public AnalysisDataModuleSerial
 {
     public:
         AnalysisDataLifetimeModule();
