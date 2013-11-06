@@ -47,13 +47,14 @@
 #include "smalloc.h"
 #include "mshift.h"
 #include "statutil.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "index.h"
 #include "gstat.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "viewit.h"
 
 
@@ -522,9 +523,12 @@ int gmx_do_dssp(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     fnSCount   = opt2fn("-sc", NFILE, fnm);
     fnArea     = opt2fn_null("-a", NFILE, fnm);
     fnTArea    = opt2fn_null("-ta", NFILE, fnm);

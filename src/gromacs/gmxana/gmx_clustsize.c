@@ -48,9 +48,10 @@
 #include "rmpbc.h"
 #include "statutil.h"
 #include "xvgr.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "index.h"
 #include "smalloc.h"
 #include "calcgrid.h"
@@ -59,7 +60,7 @@
 #include "coulomb.h"
 #include "pme.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "mtop_util.h"
 #include "gmx_ana.h"
 
@@ -506,9 +507,12 @@ int gmx_clustsize(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fnNDX   = ftp2fn_null(efNDX, NFILE, fnm);
     rgblo.r = rlo[XX], rgblo.g = rlo[YY], rgblo.b = rlo[ZZ];

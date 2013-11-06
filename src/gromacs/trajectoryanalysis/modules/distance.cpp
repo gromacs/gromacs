@@ -41,10 +41,14 @@
  */
 #include "distance.h"
 
+#include <string>
+
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -61,12 +65,48 @@ namespace gmx
 namespace analysismodules
 {
 
-const char Distance::name[]             = "distance";
-const char Distance::shortDescription[] =
-    "Calculate distances between pairs of positions";
+namespace
+{
+
+class Distance : public TrajectoryAnalysisModule
+{
+    public:
+        Distance();
+
+        virtual void initOptions(Options                    *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
+
+    private:
+        SelectionList                            sel_;
+        std::string                              fnAverage_;
+        std::string                              fnAll_;
+        std::string                              fnXYZ_;
+        std::string                              fnHistogram_;
+        std::string                              fnAllStats_;
+        double                                   meanLength_;
+        double                                   lengthDev_;
+        double                                   binWidth_;
+
+        AnalysisData                             distances_;
+        AnalysisData                             xyz_;
+        AnalysisDataAverageModulePointer         summaryStatsModule_;
+        AnalysisDataAverageModulePointer         allStatsModule_;
+        AnalysisDataFrameAverageModulePointer    averageModule_;
+        AnalysisDataSimpleHistogramModulePointer histogramModule_;
+
+        // Copy and assign disallowed by base.
+};
 
 Distance::Distance()
-    : TrajectoryAnalysisModule(name, shortDescription),
+    : TrajectoryAnalysisModule(DistanceInfo::name, DistanceInfo::shortDescription),
       meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001)
 {
     summaryStatsModule_.reset(new AnalysisDataAverageModule());
@@ -85,11 +125,6 @@ Distance::Distance()
     registerBasicDataset(allStatsModule_.get(), "allstats");
     registerBasicDataset(averageModule_.get(), "average");
     registerBasicDataset(&histogramModule_->averager(), "histogram");
-}
-
-
-Distance::~Distance()
-{
 }
 
 
@@ -131,11 +166,8 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
     options->addOption(FileNameOption("oallstat").filetype(eftPlot).outputFile()
                            .store(&fnAllStats_).defaultBasename("diststat")
                            .description("Statistics for individual distances"));
-    // TODO: Consider what is the best way to support dynamic selections.
-    // Again, most of the code already supports it, but it needs to be
-    // considered how should -oall work, and additional checks should be added.
     options->addOption(SelectionOption("select").storeVector(&sel_)
-                           .required().onlyStatic().multiValue()
+                           .required().dynamicMask().multiValue()
                            .description("Position pairs to calculate distances for"));
     // TODO: Extend the histogramming implementation to allow automatic
     // extension of the histograms to cover the data, removing the need for
@@ -148,9 +180,6 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
                            .description("Bin width for histogramming"));
 }
 
-
-namespace
-{
 
 /*! \brief
  * Checks that selections conform to the expectations of the tool.
@@ -167,10 +196,22 @@ void checkSelections(const SelectionList &sel)
                         sel[g].name(), sel[g].posCount());
             GMX_THROW(InconsistentInputError(message));
         }
+        if (sel[g].isDynamic())
+        {
+            for (int i = 0; i < sel[g].posCount(); i += 2)
+            {
+                if (sel[g].position(i).selected() != sel[g].position(i+1).selected())
+                {
+                    std::string message =
+                        formatString("Dynamic selection %d does not select "
+                                     "a consistent set of pairs over the frames",
+                                     static_cast<int>(g + 1));
+                    GMX_THROW(InconsistentInputError(message));
+                }
+            }
+        }
     }
 }
-
-}       // namespace
 
 
 void
@@ -200,7 +241,10 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Average distance");
         plotm->setXAxisIsTime();
         plotm->setYLabel("Distance (nm)");
-        // TODO: Add legends
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plotm->appendLegend(sel_[g].name());
+        }
         averageModule_->addModule(plotm);
     }
 
@@ -236,7 +280,10 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Distance histogram");
         plotm->setXLabel("Distance (nm)");
         plotm->setYLabel("Probability");
-        // TODO: Add legends
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plotm->appendLegend(sel_[g].name());
+        }
         histogramModule_->averager().addModule(plotm);
     }
 
@@ -249,7 +296,11 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Statistics for individual distances");
         plotm->setXLabel("Distance index");
         plotm->setYLabel("Average/standard deviation (nm)");
-        // TODO: Add legends
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plotm->appendLegend(std::string(sel_[g].name()) + " avg");
+            plotm->appendLegend(std::string(sel_[g].name()) + " std.dev.");
+        }
         // TODO: Consider whether this output format is the best possible.
         allStatsModule_->addModule(plotm);
     }
@@ -285,8 +336,9 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             {
                 rvec_sub(p2.x(), p1.x(), dx);
             }
-            real dist = norm(dx);
-            distHandle.setPoint(n, dist);
+            real dist     = norm(dx);
+            bool bPresent = p1.selected() && p2.selected();
+            distHandle.setPoint(n, dist, bPresent);
             xyzHandle.setPoints(n*3, 3, dx);
         }
     }
@@ -319,6 +371,17 @@ Distance::writeOutput()
         printf("  Standard deviation: %-6.3f nm\n",
                summaryStatsModule_->standardDeviation(index, 0));
     }
+}
+
+}       // namespace
+
+const char DistanceInfo::name[]             = "distance";
+const char DistanceInfo::shortDescription[] =
+    "Calculate distances between pairs of positions";
+
+TrajectoryAnalysisModulePointer DistanceInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new Distance);
 }
 
 } // namespace analysismodules

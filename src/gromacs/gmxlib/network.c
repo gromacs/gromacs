@@ -64,42 +64,80 @@ gmx_bool gmx_mpi_initialized(void)
 #endif
 }
 
-int gmx_setup(int gmx_unused *argc, char gmx_unused **argv, int *nnodes)
+void gmx_fill_commrec_from_mpi(t_commrec *cr)
 {
 #ifndef GMX_MPI
-    gmx_call("gmx_setup");
-    return 0;
+    gmx_call("gmx_fill_commrec_from_mpi");
 #else
-    char   buf[256];
-    int    resultlen;             /* actual length of node name      */
-    int    i, flag;
-    int    mpi_num_nodes;
-    int    mpi_my_rank;
-    char   mpi_hostname[MPI_MAX_PROCESSOR_NAME];
-
-    /* Call the MPI routines */
-#ifdef GMX_LIB_MPI
-#ifdef GMX_FAHCORE
-    (void) fah_MPI_Init(argc, &argv);
-#else
-    (void) MPI_Init(argc, &argv);
-#endif
-#endif
-    (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_nodes );
-    (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
-    (void) MPI_Get_processor_name( mpi_hostname, &resultlen );
-
-#ifdef GMX_LIB_MPI
-    if (debug)
+    if (!gmx_mpi_initialized())
     {
-        fprintf(debug, "NNODES=%d, MYRANK=%d, HOSTNAME=%s\n",
-                mpi_num_nodes, mpi_my_rank, mpi_hostname);
+        gmx_comm("MPI has not been initialized properly");
     }
+
+    cr->nnodes           = gmx_node_num();
+    cr->nodeid           = gmx_node_rank();
+    cr->sim_nodeid       = cr->nodeid;
+    cr->mpi_comm_mysim   = MPI_COMM_WORLD;
+    cr->mpi_comm_mygroup = MPI_COMM_WORLD;
+
+#endif
+}
+
+t_commrec *init_commrec()
+{
+    t_commrec    *cr;
+
+    snew(cr, 1);
+
+#ifdef GMX_LIB_MPI
+    gmx_fill_commrec_from_mpi(cr);
+#else
+    cr->mpi_comm_mysim   = NULL;
+    cr->mpi_comm_mygroup = NULL;
+    cr->nnodes           = 1;
+    cr->sim_nodeid       = 0;
+    cr->nodeid           = cr->sim_nodeid;
 #endif
 
-    *nnodes = mpi_num_nodes;
+    // TODO cr->duty should not be initialized here
+    cr->duty = (DUTY_PP | DUTY_PME);
 
-    return mpi_my_rank;
+#if defined GMX_LIB_MPI && !defined MPI_IN_PLACE_EXISTS
+    /* initialize the MPI_IN_PLACE replacement buffers */
+    snew(cr->mpb, 1);
+    cr->mpb->ibuf        = NULL;
+    cr->mpb->libuf       = NULL;
+    cr->mpb->fbuf        = NULL;
+    cr->mpb->dbuf        = NULL;
+    cr->mpb->ibuf_alloc  = 0;
+    cr->mpb->libuf_alloc = 0;
+    cr->mpb->fbuf_alloc  = 0;
+    cr->mpb->dbuf_alloc  = 0;
+#endif
+
+    return cr;
+}
+
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro)
+{
+#ifdef GMX_THREAD_MPI
+    t_commrec *cr;
+
+    /* make a thread-specific commrec */
+    snew(cr, 1);
+    /* now copy the whole thing, so settings like the number of PME nodes
+       get propagated. */
+    *cr = *cro;
+
+    /* and we start setting our own thread-specific values for things */
+    gmx_fill_commrec_from_mpi(cr);
+
+    // TODO cr->duty should not be initialized here
+    cr->duty             = (DUTY_PP | DUTY_PME);
+
+    return cr;
+#else
+    return NULL;
 #endif
 }
 
@@ -125,6 +163,9 @@ int gmx_node_rank(void)
 #endif
 }
 
+#if defined GMX_LIB_MPI && defined GMX_IS_BGQ
+#include <spi/include/kernel/location.h>
+#endif
 
 int gmx_hostname_num()
 {
@@ -142,6 +183,28 @@ int gmx_hostname_num()
     char mpi_hostname[MPI_MAX_PROCESSOR_NAME], hostnum_str[MPI_MAX_PROCESSOR_NAME];
 
     MPI_Get_processor_name(mpi_hostname, &resultlen);
+#ifdef GMX_IS_BGQ
+    Personality_t personality;
+    Kernel_GetPersonality(&personality, sizeof(personality));
+    /* Each MPI rank has a unique coordinate in a 6-dimensional space
+       (A,B,C,D,E,T), with dimensions A-E corresponding to different
+       physical nodes, and T within each node. Each node has sixteen
+       physical cores, each of which can have up to four hardware
+       threads, so 0 <= T <= 63 (but the maximum value of T depends on
+       the confituration of ranks and OpenMP threads per
+       node). However, T is irrelevant for computing a suitable return
+       value for gmx_hostname_num().
+     */
+    hostnum  = personality.Network_Config.Acoord;
+    hostnum *= personality.Network_Config.Bnodes;
+    hostnum += personality.Network_Config.Bcoord;
+    hostnum *= personality.Network_Config.Cnodes;
+    hostnum += personality.Network_Config.Ccoord;
+    hostnum *= personality.Network_Config.Dnodes;
+    hostnum += personality.Network_Config.Dcoord;
+    hostnum *= personality.Network_Config.Enodes;
+    hostnum += personality.Network_Config.Ecoord;
+#else
     /* This procedure can only differentiate nodes with host names
      * that end on unique numbers.
      */
@@ -166,11 +229,32 @@ int gmx_hostname_num()
         /* Use only the last 9 decimals, so we don't overflow an int */
         hostnum = strtol(hostnum_str + max(0, j-9), NULL, 10);
     }
+#endif
 
     if (debug)
     {
-        fprintf(debug, "In gmx_setup_nodecomm: hostname '%s', hostnum %d\n",
+        fprintf(debug, "In gmx_hostname_num: hostname '%s', hostnum %d\n",
                 mpi_hostname, hostnum);
+#ifdef GMX_IS_BGQ
+        fprintf(debug,
+                "Torus ID A: %d / %d B: %d / %d C: %d / %d D: %d / %d E: %d / %d\nNode ID T: %d / %d core: %d / %d hardware thread: %d / %d\n",
+                personality.Network_Config.Acoord,
+                personality.Network_Config.Anodes,
+                personality.Network_Config.Bcoord,
+                personality.Network_Config.Bnodes,
+                personality.Network_Config.Ccoord,
+                personality.Network_Config.Cnodes,
+                personality.Network_Config.Dcoord,
+                personality.Network_Config.Dnodes,
+                personality.Network_Config.Ecoord,
+                personality.Network_Config.Enodes,
+                Kernel_ProcessorCoreID(),
+                16,
+                Kernel_ProcessorID(),
+                64,
+                Kernel_ProcessorThreadID(),
+                4);
+#endif
     }
     return hostnum;
 #endif
@@ -765,58 +849,5 @@ void gmx_sumli_sim(int nr, gmx_large_int_t r[], const gmx_multisim_t *ms)
         r[i] = ms->mpb->libuf[i];
     }
 #endif
-#endif
-}
-
-
-void gmx_finalize_par(void)
-{
-#ifndef GMX_MPI
-    /* Compiled without MPI, no MPI finalizing needed */
-    return;
-#else
-    int initialized, finalized;
-    int ret;
-
-    MPI_Initialized(&initialized);
-    if (!initialized)
-    {
-        return;
-    }
-    /* just as a check; we don't want to finalize twice */
-    MPI_Finalized(&finalized);
-    if (finalized)
-    {
-        return;
-    }
-
-    /* We sync the processes here to try to avoid problems
-     * with buggy MPI implementations that could cause
-     * unfinished processes to terminate.
-     */
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    /*
-       if (DOMAINDECOMP(cr)) {
-       if (cr->npmenodes > 0 || cr->dd->bCartesian)
-        MPI_Comm_free(&cr->mpi_comm_mygroup);
-       if (cr->dd->bCartesian)
-        MPI_Comm_free(&cr->mpi_comm_mysim);
-       }
-     */
-
-    /* Apparently certain mpich implementations cause problems
-     * with MPI_Finalize. In that case comment out MPI_Finalize.
-     */
-    if (debug)
-    {
-        fprintf(debug, "Will call MPI_Finalize now\n");
-    }
-
-    ret = MPI_Finalize();
-    if (debug)
-    {
-        fprintf(debug, "Return code from MPI_Finalize = %d\n", ret);
-    }
 #endif
 }

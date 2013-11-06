@@ -43,7 +43,6 @@
 #include "sysstuff.h"
 #include "string2.h"
 #include "network.h"
-#include "confio.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "main.h"
@@ -66,19 +65,20 @@
 #include "md_support.h"
 #include "domdec.h"
 #include "partdec.h"
-#include "trnio.h"
 #include "mdatoms.h"
 #include "ns.h"
-#include "gmx_wallcycle.h"
 #include "mtop_util.h"
-#include "gmxfio.h"
 #include "pme.h"
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
+#include "md_logging.h"
 
-
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trajectory_writing.h"
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 typedef struct {
     t_state  s;
@@ -101,25 +101,27 @@ static em_state_t *init_em_state()
     return ems;
 }
 
-static void print_em_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
-                           gmx_wallcycle_t wcycle,
-                           const char *name)
+static void print_em_start(FILE                     *fplog,
+                           t_commrec                *cr,
+                           gmx_walltime_accounting_t walltime_accounting,
+                           gmx_wallcycle_t           wcycle,
+                           const char               *name)
 {
     char buf[STRLEN];
 
-    runtime_start(runtime);
+    walltime_accounting_start(walltime_accounting);
 
     sprintf(buf, "Started %s", name);
     print_date_and_time(fplog, cr->nodeid, buf, NULL);
 
     wallcycle_start(wcycle, ewcRUN);
 }
-static void em_time_end(gmx_runtime_t  *runtime,
-                        gmx_wallcycle_t wcycle)
+static void em_time_end(gmx_walltime_accounting_t walltime_accounting,
+                        gmx_wallcycle_t           wcycle)
 {
     wallcycle_stop(wcycle, ewcRUN);
 
-    runtime_end(runtime);
+    walltime_accounting_end(walltime_accounting);
 }
 
 static void sp_header(FILE *out, const char *minimizer, real ftol, int nsteps)
@@ -136,25 +138,25 @@ static void warn_step(FILE *fp, real ftol, gmx_bool bLastStep, gmx_bool bConstra
     if (bLastStep)
     {
         sprintf(buffer,
-                "\nEnergy minimization reached the maximum number"
-                "of steps before the forces reached the requested"
+                "\nEnergy minimization reached the maximum number "
+                "of steps before the forces reached the requested "
                 "precision Fmax < %g.\n", ftol);
     }
     else
     {
         sprintf(buffer,
-                "\nEnergy minimization has stopped, but the forces have"
-                "not converged to the requested precision Fmax < %g (which"
-                "may not be possible for your system). It stopped"
-                "because the algorithm tried to make a new step whose size"
-                "was too small, or there was no change in the energy since"
-                "last step. Either way, we regard the minimization as"
-                "converged to within the available machine precision,"
+                "\nEnergy minimization has stopped, but the forces have "
+                "not converged to the requested precision Fmax < %g (which "
+                "may not be possible for your system). It stopped "
+                "because the algorithm tried to make a new step whose size "
+                "was too small, or there was no change in the energy since "
+                "last step. Either way, we regard the minimization as "
+                "converged to within the available machine precision, "
                 "given your starting configuration and EM parameters.\n%s%s",
                 ftol,
                 sizeof(real) < sizeof(double) ?
-                "\nDouble precision normally gives you higher accuracy, but"
-                "this is often not needed for preparing to run molecular"
+                "\nDouble precision normally gives you higher accuracy, but "
+                "this is often not needed for preparing to run molecular "
                 "dynamics.\n" :
                 "",
                 bConstrain ?
@@ -384,7 +386,7 @@ void init_em(FILE *fplog, const char *title,
 
         forcerec_set_excl_load(fr, *top, cr);
 
-        init_bonded_thread_force_reduction(fr, &(*top)->idef);
+        setup_bonded_threading(fr, &(*top)->idef);
 
         if (ir->ePBC != epbcNONE && !fr->bMolPBC)
         {
@@ -462,7 +464,8 @@ void init_em(FILE *fplog, const char *title,
 }
 
 static void finish_em(t_commrec *cr, gmx_mdoutf_t *outf,
-                      gmx_runtime_t *runtime, gmx_wallcycle_t wcycle)
+                      gmx_walltime_accounting_t walltime_accounting,
+                      gmx_wallcycle_t wcycle)
 {
     if (!(cr->duty & DUTY_PME))
     {
@@ -472,7 +475,7 @@ static void finish_em(t_commrec *cr, gmx_mdoutf_t *outf,
 
     done_mdoutf(outf);
 
-    em_time_end(runtime, wcycle);
+    em_time_end(walltime_accounting, wcycle);
 }
 
 static void swap_em_state(em_state_t *ems1, em_state_t *ems2)
@@ -966,7 +969,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long gmx_unused Flags,
-             gmx_runtime_t *runtime)
+             gmx_walltime_accounting_t walltime_accounting)
 {
     const char       *CG = "Polak-Ribiere Conjugate Gradients";
 
@@ -1007,7 +1010,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
             nfile, fnm, &outf, &mdebin);
 
     /* Print to log file */
-    print_em_start(fplog, cr, runtime, wcycle, CG);
+    print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
 
     /* Max number of steps */
     number_steps = inputrec->nsteps;
@@ -1553,10 +1556,10 @@ double do_cg(FILE *fplog, t_commrec *cr,
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(cr, outf, runtime, wcycle);
+    finish_em(cr, outf, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
-    runtime->nsteps_done = step;
+    walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
 } /* That's all folks */
@@ -1580,7 +1583,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 const char gmx_unused *deviceOptions,
                 unsigned long gmx_unused Flags,
-                gmx_runtime_t *runtime)
+                gmx_walltime_accounting_t walltime_accounting)
 {
     static const char *LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
@@ -1676,7 +1679,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     end   = mdatoms->homenr + start;
 
     /* Print to log file */
-    print_em_start(fplog, cr, runtime, wcycle, LBFGS);
+    print_em_start(fplog, cr, walltime_accounting, wcycle, LBFGS);
 
     do_log = do_ene = do_x = do_f = TRUE;
 
@@ -2335,10 +2338,10 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(cr, outf, runtime, wcycle);
+    finish_em(cr, outf, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
-    runtime->nsteps_done = step;
+    walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
 } /* That's all folks */
@@ -2362,7 +2365,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 const char  gmx_unused *deviceOptions,
                 unsigned long gmx_unused Flags,
-                gmx_runtime_t *runtime)
+                gmx_walltime_accounting_t walltime_accounting)
 {
     const char       *SD = "Steepest Descents";
     em_state_t       *s_min, *s_try;
@@ -2395,7 +2398,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
             nfile, fnm, &outf, &mdebin);
 
     /* Print to log file  */
-    print_em_start(fplog, cr, runtime, wcycle, SD);
+    print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
 
     /* Set variables for stepsize (in nm). This is the largest
      * step that we are going to make in any direction.
@@ -2560,12 +2563,12 @@ double do_steep(FILE *fplog, t_commrec *cr,
                         s_min->epot, s_min->fmax, s_min->a_fmax, fnormn);
     }
 
-    finish_em(cr, outf, runtime, wcycle);
+    finish_em(cr, outf, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
     inputrec->nsteps = count;
 
-    runtime->nsteps_done = count;
+    walltime_accounting_set_nsteps_done(walltime_accounting, count);
 
     return 0;
 } /* That's all folks */
@@ -2589,7 +2592,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long gmx_unused Flags,
-             gmx_runtime_t *runtime)
+             gmx_walltime_accounting_t walltime_accounting)
 {
     const char          *NM = "Normal Mode Analysis";
     gmx_mdoutf_t        *outf;
@@ -2607,7 +2610,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     rvec                 mu_tot;
     rvec                *fneg, *dfdx;
     gmx_bool             bSparse; /* use sparse matrix storage format */
-    size_t               sz;
+    size_t               sz=0;
     gmx_sparsematrix_t * sparse_matrix           = NULL;
     real           *     full_matrix             = NULL;
     em_state_t       *   state_work;
@@ -2655,32 +2658,35 @@ double do_nm(FILE *fplog, t_commrec *cr,
      */
     if (EEL_FULL(fr->eeltype) || fr->rlist == 0.0)
     {
-        fprintf(stderr, "Non-cutoff electrostatics used, forcing full Hessian format.\n");
+        md_print_info(cr, fplog, "Non-cutoff electrostatics used, forcing full Hessian format.\n");
         bSparse = FALSE;
     }
     else if (top_global->natoms < 1000)
     {
-        fprintf(stderr, "Small system size (N=%d), using full Hessian format.\n", top_global->natoms);
+        md_print_info(cr, fplog, "Small system size (N=%d), using full Hessian format.\n", top_global->natoms);
         bSparse = FALSE;
     }
     else
     {
-        fprintf(stderr, "Using compressed symmetric sparse Hessian format.\n");
+        md_print_info(cr, fplog, "Using compressed symmetric sparse Hessian format.\n");
         bSparse = TRUE;
     }
 
-    sz = DIM*top_global->natoms;
-
-    fprintf(stderr, "Allocating Hessian memory...\n\n");
-
-    if (bSparse)
+    if (MASTER(cr))
     {
-        sparse_matrix = gmx_sparsematrix_init(sz);
-        sparse_matrix->compressed_symmetric = TRUE;
-    }
-    else
-    {
-        snew(full_matrix, sz*sz);
+        sz = DIM*top_global->natoms;
+
+        fprintf(stderr, "Allocating Hessian memory...\n\n");
+
+        if (bSparse)
+        {
+            sparse_matrix = gmx_sparsematrix_init(sz);
+            sparse_matrix->compressed_symmetric = TRUE;
+        }
+        else
+        {
+            snew(full_matrix, sz*sz);
+        }
     }
 
     /* Initial values */
@@ -2694,7 +2700,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     where();
 
     /* Write start time and temperature */
-    print_em_start(fplog, cr, runtime, wcycle, NM);
+    print_em_start(fplog, cr, walltime_accounting, wcycle, NM);
 
     /* fudge nr of steps to nr of atoms */
     inputrec->nsteps = natoms*2;
@@ -2719,16 +2725,14 @@ double do_nm(FILE *fplog, t_commrec *cr,
     /* if forces are not small, warn user */
     get_state_f_norm_max(cr, &(inputrec->opts), mdatoms, state_work);
 
-    if (MASTER(cr))
+    md_print_info(cr, fplog, "Maximum force:%12.5e\n", state_work->fmax);
+    if (state_work->fmax > 1.0e-3)
     {
-        fprintf(stderr, "Maximum force:%12.5e\n", state_work->fmax);
-        if (state_work->fmax > 1.0e-3)
-        {
-            fprintf(stderr, "Maximum force probably not small enough to");
-            fprintf(stderr, " ensure that you are in an \nenergy well. ");
-            fprintf(stderr, "Be aware that negative eigenvalues may occur");
-            fprintf(stderr, " when the\nresulting matrix is diagonalized.\n");
-        }
+        md_print_info(cr, fplog,
+                      "The force is probably not small enough to "
+                      "ensure that you are at a minimum.\n"
+                      "Be aware that negative eigenvalues may occur\n"
+                      "when the resulting matrix is diagonalized.\n\n");
     }
 
     /***********************************************************
@@ -2855,9 +2859,9 @@ double do_nm(FILE *fplog, t_commrec *cr,
         gmx_mtxio_write(ftp2fn(efMTX, nfile, fnm), sz, sz, full_matrix, sparse_matrix);
     }
 
-    finish_em(cr, outf, runtime, wcycle);
+    finish_em(cr, outf, walltime_accounting, wcycle);
 
-    runtime->nsteps_done = natoms*2;
+    walltime_accounting_set_nsteps_done(walltime_accounting, natoms*2);
 
     return 0;
 }

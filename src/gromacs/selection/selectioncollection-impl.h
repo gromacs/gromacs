@@ -174,7 +174,8 @@ class SelectionCollection::Impl
         gmx_ana_indexgrps_t    *grps_;
 };
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Implements selection evaluation.
  *
  * This class is used to implement SelectionCollection::evaluate() and

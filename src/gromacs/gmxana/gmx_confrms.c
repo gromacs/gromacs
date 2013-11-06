@@ -36,22 +36,22 @@
 #include <config.h>
 #endif
 
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "smalloc.h"
 #include "macros.h"
 #include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "string2.h"
 #include "vec.h"
 #include "index.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "futil.h"
-#include "confio.h"
-#include "pdbio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "txtdump.h"
 #include "do_fit.h"
 #include "viewit.h"
@@ -553,8 +553,11 @@ int gmx_confrms(int argc, char *argv[])
     real    *msds;
 
 
-    parse_common_args(&argc, argv, PCA_BE_NICE | PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     matchndxfile = opt2fn_null("-no", NFILE, fnm);
     conf1file    = ftp2fn(efTPS, NFILE, fnm);
     conf2file    = ftp2fn(efSTX, NFILE, fnm);

@@ -42,9 +42,10 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "genhydro.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "index.h"
 #include "vec.h"
 #include "hackblock.h"
@@ -96,8 +97,11 @@ int gmx_protonate(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME,
-                      NFILE, fnm, 0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
+                           NFILE, fnm, 0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     infile = opt2fn("-s", NFILE, fnm);
     read_tps_conf(infile, title, &top, &ePBC, &x, NULL, box, FALSE);

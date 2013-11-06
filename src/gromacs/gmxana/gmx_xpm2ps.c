@@ -44,13 +44,14 @@
 #include "macros.h"
 #include "statutil.h"
 #include "writeps.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "viewit.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 #define FUDGE 1.2
 #define DDD   2
@@ -1484,9 +1485,12 @@ int gmx_xpm2ps(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                      NFILE, fnm, NPA, pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
+                           NFILE, fnm, NPA, pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     etitle   = nenum(title);
     elegend  = nenum(legend);

@@ -46,12 +46,12 @@
 #include "macros.h"
 #include "names.h"
 #include "typedefs.h"
-#include "tpxio.h"
-#include "trnio.h"
-#include "enxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/enxio.h"
 #include "readir.h"
 #include "statutil.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "vec.h"
 #include "mtop_util.h"
 #include "random.h"
@@ -306,7 +306,7 @@ static void reduce_topology_x(int gnx, atom_id index[],
     mtop->natoms                 = top.atoms.nr;
 }
 
-static void zeroq(int n, atom_id index[], gmx_mtop_t *mtop)
+static void zeroq(atom_id index[], gmx_mtop_t *mtop)
 {
     int mt, i;
 
@@ -406,8 +406,11 @@ int gmx_tpbconv(int argc, char *argv[])
     int             nerror = 0;
 
     /* Parse the command line */
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* Convert int to gmx_large_int_t */
     nsteps_req = nsteps_req_int;
@@ -666,7 +669,7 @@ int gmx_tpbconv(int argc, char *argv[])
             }
             else if (bZeroQ)
             {
-                zeroq(gnx, index, &mtop);
+                zeroq(index, &mtop);
                 fprintf(stderr, "Zero-ing charges for group %s\n", grpname);
             }
             else

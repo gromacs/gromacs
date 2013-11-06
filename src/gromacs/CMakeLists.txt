@@ -34,32 +34,44 @@
 
 set(LIBGROMACS_SOURCES)
 
-add_subdirectory(legacyheaders)
+function (gmx_install_headers DESTINATION)
+    if (NOT GMX_BUILD_MDRUN_ONLY)
+        if (DESTINATION)
+            set(DESTINATION ${INCL_INSTALL_DIR}/gromacs/${DESTINATION})
+        else()
+            set(DESTINATION ${INCL_INSTALL_DIR}/gromacs)
+        endif()
+        install(FILES ${ARGN} DESTINATION ${DESTINATION} COMPONENT development)
+    endif()
+endfunction ()
+
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(gmxpreprocess)
-add_subdirectory(gmxana)
-add_subdirectory(analysisdata)
 add_subdirectory(commandline)
 add_subdirectory(fft)
 add_subdirectory(linearalgebra)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
 add_subdirectory(qmmm)
-add_subdirectory(selection)
-add_subdirectory(trajectoryanalysis)
+add_subdirectory(mmslave)
+add_subdirectory(timing)
 add_subdirectory(utility)
-
-file(GLOB LIBGROMACS_HEADERS *.h)
-install(FILES ${LIBGROMACS_HEADERS} DESTINATION ${INCL_INSTALL_DIR}/gromacs
-        COMPONENT development)
+add_subdirectory(fileio)
+if (NOT GMX_BUILD_MDRUN_ONLY)
+    add_subdirectory(legacyheaders)
+    add_subdirectory(gmxana)
+    add_subdirectory(analysisdata)
+    add_subdirectory(selection)
+    add_subdirectory(trajectoryanalysis)
+endif ()
 
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.cmakein ${CMAKE_CURRENT_BINARY_DIR}/version.h)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/version.h
-    DESTINATION ${INCL_INSTALL_DIR}/gromacs
-    COMPONENT development)
+file(GLOB LIBGROMACS_HEADERS *.h)
+configure_file(version.h.cmakein version.h)
+gmx_install_headers("" ${LIBGROMACS_HEADERS})
+gmx_install_headers("" ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
 # Add target that generates gitversion.c every time make is run
 # if git version info is requested
@@ -67,14 +79,13 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/version.h
 # ignores set_source_file_properties from subdirectories.
 if (GMX_GIT_VERSION_INFO)
     set(GENERATED_VERSION_FILE ${CMAKE_CURRENT_BINARY_DIR}/utility/gitversion.c)
-    add_custom_target(gmx_version ALL
+    add_custom_target(gmx-version ALL
             COMMAND ${CMAKE_COMMAND}
                 -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
-                -D GIT_VERSION="${GIT_VERSION}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-                -D VERSION_C_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein"
-                -D VERSION_C_OUT=${GENERATED_VERSION_FILE}
+                -D VERSION_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein"
+                -D VERSION_OUT=${GENERATED_VERSION_FILE}
                 -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein
@@ -94,10 +105,28 @@ endif()
 
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
-    add_dependencies(libgromacs gmx_version)
+    add_dependencies(libgromacs gmx-version)
 endif ()
 
+# Recent versions of gcc and clang give warnings on scanner.cpp, which
+# is a generated source file. These are awkward to suppress inline, so
+# we do it in the compilation command (after testing that the compiler
+# supports the suppressions). Setting the properties only works after
+# the related target has been created, e.g. after when the file is
+# used with add_library().
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wno-unused-parameter HAS_NO_UNUSED_PARAMETER)
+check_cxx_compiler_flag(-Wno-deprecated-register HAS_NO_DEPRECATED_REGISTER)
+if (HAS_NO_UNUSED_PARAMETER)
+    set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-unused-parameter")
+endif()
+if (HAS_NO_DEPRECATED_REGISTER)
+    set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-deprecated-register")
+endif()
+set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
+
 if(GMX_BUILD_OWN_FFTW)
+    # Only needed for cmake 2.8.7, otherwise this should be automatic
     # This dependency has to be made here rather than the CMakeLists.txt that
     # does the FFTW build, because of the order in which
     # add_subdirectory() calls are made in the top-level CMakeLists.txt; the
@@ -108,21 +137,28 @@ endif()
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${FFT_LIBRARIES} ${XML_LIBRARIES} ${GSL_LIBRARIES}
+                      ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
+                      ${XML_LIBRARIES} ${GSL_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${SOVERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
-install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+# Only install the library in mdrun-only mode if it is actually necessary
+# for the binary
+if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
+    install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgromacs.pc.cmakein
-               ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
-        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
-        RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
-        COMPONENT development)
+if (NOT GMX_BUILD_MDRUN_ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgromacs.pc.cmakein
+                   ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
+            DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+            RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
+            COMPONENT development)
+endif()
 
 if (INSTALL_CUDART_LIB) #can be set manual by user
     if (GMX_GPU)

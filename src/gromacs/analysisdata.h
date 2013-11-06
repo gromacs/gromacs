@@ -207,6 +207,7 @@
 #include "analysisdata/modules/average.h"
 #include "analysisdata/modules/displacement.h"
 #include "analysisdata/modules/histogram.h"
+#include "analysisdata/modules/lifetime.h"
 #include "analysisdata/modules/plot.h"
 
 #endif

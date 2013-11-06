@@ -40,8 +40,8 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-#include "pdbio.h"
-#include "confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -55,7 +55,8 @@
 #include "strdb.h"
 #include "physics.h"
 #include "atomprop.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "pbc.h"
 #include "princ.h"
 #include "txtdump.h"
@@ -745,8 +746,11 @@ int gmx_editconf(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, NPA, pa,
-                      asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, NPA, pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     bIndex     = opt2bSet("-n", NFILE, fnm) || bNDEF;
     bMead      = opt2bSet("-mead", NFILE, fnm);

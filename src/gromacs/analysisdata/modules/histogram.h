@@ -338,7 +338,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * Output data contains the same number of frames and data sets as the input
  * data.  Each frame contains the histogram(s) for the points in that frame.
  * Each input data set is processed independently into the corresponding output
- * data set.
+ * data set.  Missing values are ignored.
  * All input columns for a data set are averaged into the same histogram.
  * The number of columns for all data sets equals the number of bins in the
  * histogram.
@@ -347,7 +347,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * \ingroup module_analysisdata
  */
 class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
-                                          public AnalysisDataModuleInterface
+                                          public AnalysisDataModuleParallel
 {
     public:
         /*! \brief
@@ -379,9 +379,13 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
         //! Returns bin properties for the histogram.
         const AnalysisHistogramSettings &settings() const;
 
+        virtual int frameCount() const;
+
         virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual bool parallelDataStarted(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
@@ -416,7 +420,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
  * \ingroup module_analysisdata
  */
 class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
-                                            public AnalysisDataModuleInterface
+                                            public AnalysisDataModuleParallel
 {
     public:
         //! \copydoc AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
@@ -434,9 +438,13 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
         //! \copydoc AnalysisDataSimpleHistogramModule::settings()
         const AnalysisHistogramSettings &settings() const;
 
+        virtual int frameCount() const;
+
         virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual bool parallelDataStarted(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
@@ -469,7 +477,7 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
  * \ingroup module_analysisdata
  */
 class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
-                                     public AnalysisDataModuleInterface
+                                     public AnalysisDataModuleSerial
 {
     public:
         //! \copydoc AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()

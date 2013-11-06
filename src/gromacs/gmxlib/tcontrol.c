@@ -32,12 +32,13 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
+#include "gromacs/legacyheaders/statutil.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include "typedefs.h"
-#include "statutil.h"
 #include "gmx_fatal.h"
 
 #ifdef GMX_THREAD_MPI

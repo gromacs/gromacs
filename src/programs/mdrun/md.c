@@ -1,5 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- *
+/*
  *
  *                This source code is part of
  *
@@ -50,19 +49,15 @@
 #include "vsite.h"
 #include "update.h"
 #include "ns.h"
-#include "trnio.h"
-#include "xtcio.h"
 #include "mdrun.h"
 #include "md_support.h"
 #include "md_logging.h"
-#include "confio.h"
 #include "network.h"
 #include "pull.h"
 #include "xvgr.h"
 #include "physics.h"
 #include "names.h"
-#include "xmdrun.h"
-#include "ionize.h"
+#include "force.h"
 #include "disre.h"
 #include "orires.h"
 #include "pme.h"
@@ -91,6 +86,13 @@
 #include "nbnxn_cuda_data_mgmt.h"
 
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trajectory_writing.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -100,7 +102,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                                gmx_large_int_t step,
                                gmx_large_int_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
-                               gmx_runtime_t *runtime,
+                               gmx_walltime_accounting_t walltime_accounting,
                                nbnxn_cuda_ptr_t cu_nbv)
 {
     char sbuf[STEPSTRSIZE];
@@ -125,8 +127,8 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     ir->nsteps    -= *step_rel;
     *step_rel      = 0;
     wallcycle_start(wcycle, ewcRUN);
-    runtime_start(runtime);
-    print_date_and_time(fplog, cr->nodeid, "Restarted time", runtime);
+    walltime_accounting_start(walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, "Restarted time", walltime_accounting);
 }
 
 double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
@@ -144,11 +146,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              real cpt_period, real max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long Flags,
-             gmx_runtime_t *runtime)
+             gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_mdoutf_t   *outf;
     gmx_large_int_t step, step_rel;
-    double          run_time;
+    double          elapsed_time;
     double          t, t0, lam0[efptNR];
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
@@ -157,7 +159,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
                       bForceUpdate = FALSE, bCPT;
-    int               mdof_flags;
     gmx_bool          bMasterState;
     int               force_flags, cglo_flags;
     tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
@@ -173,11 +174,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
     t_mdebin         *mdebin = NULL;
-    df_history_t      df_history;
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
-    int               n_xtc    = -1;
-    rvec             *x_xtc    = NULL;
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
     gmx_global_stat_t gstat;
@@ -185,33 +183,26 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     t_graph          *graph = NULL;
     globsig_t         gs;
     gmx_rng_t         mcrng = NULL;
-    gmx_bool          bFFscan;
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind, *ekind_save;
     gmx_shellfc_t     shellfc;
     int               count, nconverged = 0;
     real              timestep = 0;
     double            tcount   = 0;
-    gmx_bool          bIonize  = FALSE;
-    gmx_bool          bTCR     = FALSE, bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
+    gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
     gmx_bool          bAppend;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
-    real              mu_aver = 0, dvdl_constr;
-    int               a0, a1, gnx = 0, ii;
-    atom_id          *grpindex = NULL;
-    char             *grpname;
-    t_coupl_rec      *tcr     = NULL;
-    rvec             *xcopy   = NULL, *vcopy = NULL, *cbuf = NULL;
-    matrix            boxcopy = {{0}}, lastbox;
-    tensor            tmpvir;
-    real              fom, oldfom, veta_save, pcurr, scalevir, tracevir;
+    real              dvdl_constr;
+    int               a0, a1;
+    rvec             *cbuf = NULL;
+    matrix            lastbox;
+    real              veta_save, scalevir, tracevir;
     real              vetanew = 0;
     int               lamnew  = 0;
     /* for FEP */
     int               nstfep;
-    real              rate;
     double            cycles;
     real              saved_conserved_quantity = 0;
     real              last_ekin                = 0;
@@ -236,8 +227,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
-    bIonize  = (Flags & MD_IONIZE);
-    bFFscan  = (Flags & MD_FFSCAN);
     bAppend  = (Flags & MD_APPENDFILES);
     if (Flags & MD_RESETCOUNTERSHALFWAY)
     {
@@ -294,7 +283,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 "If you want less energy communication, set nstlist > 3.\n\n");
     }
 
-    if (bRerunMD || bFFscan)
+    if (bRerunMD)
     {
         ir->nstxtcout = 0;
     }
@@ -321,14 +310,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         snew(f, top_global->natoms);
     }
-
-    /* lambda Monte carlo random number generator  */
-    if (ir->bExpanded)
-    {
-        mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
-    }
-    /* copy the state into df_history */
-    copy_df_history(&df_history, &state_global->dfhist);
 
     /* Kinetic energy data */
     snew(ekind, 1);
@@ -424,7 +405,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             make_local_shells(cr, mdatoms, shellfc);
         }
 
-        init_bonded_thread_force_reduction(fr, &top->idef);
+        setup_bonded_threading(fr, &top->idef);
 
         if (ir->pull && PAR(cr))
         {
@@ -452,6 +433,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     else
     {
         bStateFromCP = FALSE;
+    }
+
+    if (ir->bExpanded)
+    {
+        init_expanded_ensemble(bStateFromCP,ir,&mcrng,&state->dfhist);
     }
 
     if (MASTER(cr))
@@ -493,22 +479,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (!DOMAINDECOMP(cr))
         {
             set_constraints(constr, top, ir, mdatoms, cr);
-        }
-    }
-
-    /* Check whether we have to GCT stuff */
-    bTCR = ftp2bSet(efGCT, nfile, fnm);
-    if (bTCR)
-    {
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "Will do General Coupling Theory!\n");
-        }
-        gnx = top_global->mols.nr;
-        snew(grpindex, gnx);
-        for (i = 0; (i < gnx); i++)
-        {
-            grpindex[i] = i;
         }
     }
 
@@ -608,7 +578,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                     NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                     constr, NULL, FALSE, state->box,
-                    top_global, &pcurr, &bSumEkinhOld, cglo_flags);
+                    top_global, &bSumEkinhOld, cglo_flags);
     if (ir->eI == eiVVAK)
     {
         /* a second call to get the half step temperature initialized as well */
@@ -620,7 +590,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
-                        top_global, &pcurr, &bSumEkinhOld,
+                        top_global, &bSumEkinhOld,
                         cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
     }
 
@@ -642,14 +612,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     if (bIterativeCase)
     {
         bufstate = init_bufstate(state);
-    }
-    if (bFFscan)
-    {
-        snew(xcopy, state->natoms);
-        snew(vcopy, state->natoms);
-        copy_rvecn(state->x, xcopy, 0, state->natoms);
-        copy_rvecn(state->v, vcopy, 0, state->natoms);
-        copy_mat(state->box, boxcopy);
     }
 
     /* need to make an initiation call to get the Trotter variables set, as well as other constants for non-trotter
@@ -710,8 +672,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 
     /* Set and write start time */
-    runtime_start(runtime);
-    print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
+    walltime_accounting_start(walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, "Started mdrun", walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     if (fplog)
     {
@@ -848,7 +810,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             set_current_lambdas(step, ir->fepvals, bRerunMD, &rerun_fr, state_global, state, lam0);
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = (do_per_step(step, nstfep) && (ir->efep != efepNO));
-            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded) && (step > 0));
+            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
+                            && (ir->bExpanded) && (step > 0) && (!bStartingFromCpt));
         }
 
         if (bSimAnn)
@@ -916,17 +879,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         /* Stop Center of Mass motion */
         bStopCM = (ir->comm_mode != ecmNO && do_per_step(step, ir->nstcomm));
-
-        /* Copy back starting coordinates in case we're doing a forcefield scan */
-        if (bFFscan)
-        {
-            for (ii = 0; (ii < state->natoms); ii++)
-            {
-                copy_rvec(xcopy[ii], state->x[ii]);
-                copy_rvec(vcopy[ii], state->v[ii]);
-            }
-            copy_mat(boxcopy, state->box);
-        }
 
         if (bRerunMD)
         {
@@ -1026,7 +978,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
         }
 
-        if (MASTER(cr) && do_log && !bFFscan)
+        if (MASTER(cr) && do_log)
         {
             print_ebin_header(fplog, step, t, state->lambda[efptFEP]); /* can we improve the information printed here? */
         }
@@ -1045,30 +997,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
-                            top_global, &pcurr, &bSumEkinhOld,
+                            top_global, &bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
-
-        /* Ionize the atoms if necessary */
-        if (bIonize)
-        {
-            ionize(fplog, oenv, mdatoms, top_global, t, ir, state->x, state->v,
-                   mdatoms->start, mdatoms->start+mdatoms->homenr, state->box, cr);
-        }
-
-        /* Update force field in ffscan program */
-        if (bFFscan)
-        {
-            if (update_forcefield(fplog,
-                                  nfile, fnm, fr,
-                                  mdatoms->nr, state->x, state->box))
-            {
-                gmx_finalize_par();
-
-                exit(0);
-            }
-        }
 
         /* We write a checkpoint at this MD step when:
          * either at an NS step when we signalled through gs,
@@ -1143,7 +1075,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            count = relax_shell_flexcon(fplog, cr, bVerbose, bFFscan ? step+1 : step,
+            count = relax_shell_flexcon(fplog, cr, bVerbose, step,
                                         ir, bNS, force_flags,
                                         top,
                                         constr, enerd, fcd,
@@ -1172,19 +1104,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-        }
-
-        if (bTCR)
-        {
-            mu_aver = calc_mu_aver(cr, state->x, mdatoms->chargeA,
-                                   mu_tot, &top_global->mols, mdatoms, gnx, grpindex);
-        }
-
-        if (bTCR && bFirstStep)
-        {
-            tcr = init_coupling(fplog, nfile, fnm, cr, fr, mdatoms, &(top->idef));
-            fprintf(fplog, "Done init_coupling\n");
-            fflush(fplog);
         }
 
         if (bVV && !bStartingFromCpt && !bRerunMD)
@@ -1266,7 +1185,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
 
-                    if (!bOK && !bFFscan)
+                    if (!bOK)
                     {
                         gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
                     }
@@ -1301,7 +1220,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, state->box,
-                                    top_global, &pcurr, &bSumEkinhOld,
+                                    top_global, &bSumEkinhOld,
                                     cglo_flags
                                     | CGLO_ENERGY
                                     | (bTemp ? CGLO_TEMPERATURE : 0)
@@ -1338,7 +1257,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                             constr, NULL, FALSE, state->box,
-                                            top_global, &pcurr, &bSumEkinhOld,
+                                            top_global, &bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
                         }
                     }
@@ -1399,123 +1318,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, &df_history, step, mcrng, state->v, mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, mcrng, state->v, mdatoms);
+            /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
+            copy_df_history(&state_global->dfhist,&state->dfhist);
         }
-        /* ################## START TRAJECTORY OUTPUT ################# */
 
         /* Now we have the energies and forces corresponding to the
          * coordinates at time t. We must output all of this before
          * the update.
-         * for RerunMD t is read from input trajectory
          */
-        mdof_flags = 0;
-        if (do_per_step(step, ir->nstxout))
-        {
-            mdof_flags |= MDOF_X;
-        }
-        if (do_per_step(step, ir->nstvout))
-        {
-            mdof_flags |= MDOF_V;
-        }
-        if (do_per_step(step, ir->nstfout))
-        {
-            mdof_flags |= MDOF_F;
-        }
-        if (do_per_step(step, ir->nstxtcout))
-        {
-            mdof_flags |= MDOF_XTC;
-        }
-        if (bCPT)
-        {
-            mdof_flags |= MDOF_CPT;
-        }
-        ;
-
-#if defined(GMX_FAHCORE) || defined(GMX_WRITELASTSTEP)
-        if (bLastStep)
-        {
-            /* Enforce writing positions and velocities at end of run */
-            mdof_flags |= (MDOF_X | MDOF_V);
-        }
-#endif
-#ifdef GMX_FAHCORE
-        if (MASTER(cr))
-        {
-            fcReportProgress( ir->nsteps, step );
-        }
-
-        /* sync bCPT and fc record-keeping */
-        if (bCPT && MASTER(cr))
-        {
-            fcRequestCheckPoint();
-        }
-#endif
-
-        if (mdof_flags != 0)
-        {
-            wallcycle_start(wcycle, ewcTRAJ);
-            if (bCPT)
-            {
-                if (state->flags & (1<<estLD_RNG))
-                {
-                    get_stochd_state(upd, state);
-                }
-                if (state->flags  & (1<<estMC_RNG))
-                {
-                    get_mc_state(mcrng, state);
-                }
-                if (MASTER(cr))
-                {
-                    if (bSumEkinhOld)
-                    {
-                        state_global->ekinstate.bUpToDate = FALSE;
-                    }
-                    else
-                    {
-                        update_ekinstate(&state_global->ekinstate, ekind);
-                        state_global->ekinstate.bUpToDate = TRUE;
-                    }
-                    update_energyhistory(&state_global->enerhist, mdebin);
-                    if (ir->efep != efepNO || ir->bSimTemp)
-                    {
-                        state_global->fep_state = state->fep_state; /* MRS: seems kludgy. The code should be
-                                                                       structured so this isn't necessary.
-                                                                       Note this reassignment is only necessary
-                                                                       for single threads.*/
-                        copy_df_history(&state_global->dfhist, &df_history);
-                    }
-                }
-            }
-            write_traj(fplog, cr, outf, mdof_flags, top_global,
-                       step, t, state, state_global, f, f_global, &n_xtc, &x_xtc);
-            if (bCPT)
-            {
-                nchkpt++;
-                bCPT = FALSE;
-            }
-            debug_gmx();
-            if (bLastStep && step_rel == ir->nsteps &&
-                (Flags & MD_CONFOUT) && MASTER(cr) &&
-                !bRerunMD && !bFFscan)
-            {
-                /* x and v have been collected in write_traj,
-                 * because a checkpoint file will always be written
-                 * at the last step.
-                 */
-                fprintf(stderr, "\nWriting final coordinates.\n");
-                if (fr->bMolPBC)
-                {
-                    /* Make molecules whole only for confout writing */
-                    do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, state_global->x);
-                }
-                write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
-                                    *top_global->name, top_global,
-                                    state_global->x, state_global->v,
-                                    ir->ePBC, state->box);
-                debug_gmx();
-            }
-            wallcycle_stop(wcycle, ewcTRAJ);
-        }
+        do_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
+                              ir, state, state_global, top_global, fr, upd,
+                              outf, mdebin, ekind, f, f_global,
+                              wcycle, mcrng, &nchkpt,
+                              bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
+                              bSumEkinhOld);
 
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV)
@@ -1523,10 +1340,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             copy_mat(state->svir_prev, shake_vir);
             copy_mat(state->fvir_prev, force_vir);
         }
-        /*  ################## END TRAJECTORY OUTPUT ################ */
 
-        /* Determine the wallclock run time up till now */
-        run_time = gmx_gettime() - (double)runtime->real;
+        elapsed_time = walltime_accounting_get_current_elapsed_time(walltime_accounting);
 
         /* Check whether everything is still allright */
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
@@ -1563,7 +1378,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             handled_stop_condition = (int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-                 (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
+                 (max_hours > 0 && elapsed_time > max_hours*60.0*60.0*0.99) &&
                  gs.sig[eglsSTOPCOND] == 0 && gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
@@ -1576,7 +1391,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         if (bResetCountersHalfMaxH && MASTER(cr) &&
-            run_time > max_hours*60.0*60.0*0.495)
+            elapsed_time > max_hours*60.0*60.0*0.495)
         {
             gs.sig[eglsRESETCOUNTERS] = 1;
         }
@@ -1613,7 +1428,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
                            cpt_period >= 0 &&
                            (cpt_period == 0 ||
-                            run_time >= nchkpt*cpt_period*60.0)) &&
+                            elapsed_time >= nchkpt*cpt_period*60.0)) &&
             gs.set[eglsCHKPT] == 0)
         {
             gs.sig[eglsCHKPT] = 1;
@@ -1746,7 +1561,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, lastbox,
-                                    top_global, &pcurr, &bSumEkinhOld,
+                                    top_global, &bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE
                                     );
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1773,7 +1588,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        FALSE, bCalcVir,
                                        state->veta);
                 }
-                if (!bOK && !bFFscan)
+                if (!bOK)
                 {
                     gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
                 }
@@ -1847,7 +1662,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 (step_rel % gs.nstms == 0) &&
                                 (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
                                 lastbox,
-                                top_global, &pcurr, &bSumEkinhOld,
+                                top_global, &bSumEkinhOld,
                                 cglo_flags
                                 | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
                                 | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
@@ -1892,44 +1707,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */
 
         /* The coordinates (x) were unshifted in update */
-        if (bFFscan && (shellfc == NULL || bConverged))
-        {
-            if (print_forcefield(fplog, enerd->term, mdatoms->homenr,
-                                 f, NULL, xcopy,
-                                 &(top_global->mols), mdatoms->massT, pres))
-            {
-                gmx_finalize_par();
-
-                fprintf(stderr, "\n");
-                exit(0);
-            }
-        }
         if (!bGStat)
         {
             /* We will not sum ekinh_old,
              * so signal that we still have to do it.
              */
             bSumEkinhOld = TRUE;
-        }
-
-        if (bTCR)
-        {
-            /* Only do GCT when the relaxation of shells (minimization) has converged,
-             * otherwise we might be coupling to bogus energies.
-             * In parallel we must always do this, because the other sims might
-             * update the FF.
-             */
-
-            /* Since this is called with the new coordinates state->x, I assume
-             * we want the new box state->box too. / EL 20040121
-             */
-            do_coupling(fplog, oenv, nfile, fnm, tcr, t, step, enerd->term, fr,
-                        ir, MASTER(cr),
-                        mdatoms, &(top->idef), mu_aver,
-                        top_global->mols.nr, cr,
-                        state->box, total_vir, pres,
-                        mu_tot, state->x, f, bConverged);
-            debug_gmx();
         }
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
@@ -1949,27 +1732,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + compute_conserved_from_auxiliary(ir, state, &MassQ);
         }
-        /* Check for excessively large energies */
-        if (bIonize)
-        {
-#ifdef GMX_DOUBLE
-            real etot_max = 1e200;
-#else
-            real etot_max = 1e30;
-#endif
-            if (fabs(enerd->term[F_ETOT]) > etot_max)
-            {
-                fprintf(stderr, "Energy too large (%g), giving up\n",
-                        enerd->term[F_ETOT]);
-            }
-        }
         /* #########  END PREPARING EDR OUTPUT  ###########  */
-
-        /* Time for performance */
-        if (((step % stepout) == 0) || bLastStep)
-        {
-            runtime_upd_proc(runtime);
-        }
 
         /* Output stuff */
         if (MASTER(cr))
@@ -1980,7 +1743,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
-                                          &df_history, state->fep_state, ir->nstlog, step);
+                                          &state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
             if (!(bStartingFromCpt && (EI_VV(ir->eI))))
             {
@@ -2019,21 +1782,18 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         if (bDoExpanded)
         {
-            /* Have to do this part after outputting the logfile and the edr file */
+            /* Have to do this part _after_ outputting the logfile and the edr file */
+            /* Gets written into the state at the beginning of next loop*/
             state->fep_state = lamnew;
-            for (i = 0; i < efptNR; i++)
-            {
-                state_global->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
-            }
         }
-        /* Remaining runtime */
+        /* Print the remaining wall clock time for the run */
         if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && !bPMETuneRunning)
         {
             if (shellfc)
             {
                 fprintf(stderr, "\n");
             }
-            print_time(stderr, runtime, step, ir, cr);
+            print_time(stderr, walltime_accounting, step, ir, cr);
         }
 
         /* Replica exchange */
@@ -2160,7 +1920,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             gs.set[eglsRESETCOUNTERS] != 0)
         {
             /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, runtime,
+            reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
                                fr->nbv != NULL && fr->nbv->bUseGPU ? fr->nbv->cu_nbv : NULL);
             wcycle_set_reset_counters(wcycle, -1);
             if (!(cr->duty & DUTY_PME))
@@ -2169,7 +1929,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 gmx_pme_send_resetcounters(cr, step);
             }
             /* Correct max_hours for the elapsed time */
-            max_hours                -= run_time/(60.0*60.0);
+            max_hours                -= elapsed_time/(60.0*60.0);
             bResetCountersHalfMaxH    = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
         }
@@ -2178,8 +1938,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* End of main MD loop */
     debug_gmx();
 
-    /* Stop the time */
-    runtime_end(runtime);
+    /* Stop measuring walltime */
+    walltime_accounting_end(walltime_accounting);
 
     if (bRerunMD && MASTER(cr))
     {
@@ -2230,7 +1990,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         print_replica_exchange_statistics(fplog, repl_ex);
     }
 
-    runtime->nsteps_done = step_rel;
+    walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 
     return 0;
 }

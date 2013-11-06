@@ -45,15 +45,16 @@
 #include "string2.h"
 #include "vec.h"
 #include "index.h"
-#include "pdbio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "do_fit.h"
 #include "princ.h"
 #include "rmpbc.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
@@ -277,9 +278,12 @@ int gmx_rmsf(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, NULL,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, NULL,
+                           &oenv))
+    {
+        return 0;
+    }
 
     bReadPDB = ftp2bSet(efPDB, NFILE, fnm);
     devfn    = opt2fn_null("-od", NFILE, fnm);

@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::AnalysisDataModuleInterface.
+ * Declares gmx::AnalysisDataModuleInterface and related convenience classes.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -50,6 +50,7 @@ namespace gmx
 
 class AbstractAnalysisData;
 class AnalysisDataFrameHeader;
+class AnalysisDataParallelOptions;
 class AnalysisDataPointSetRef;
 
 /*! \brief
@@ -57,14 +58,31 @@ class AnalysisDataPointSetRef;
  *
  * The interface provides one method (flags()) that describes features of
  * data objects the module supports.  Only most common features are included
- * in the flags; custom checks can be implemented in the dataStarted() method
- * (see below).
+ * in the flags; custom checks can be implemented in the dataStarted() and/or
+ * parallelDataStarted() methods (see below).
  * All other methods in the interface are callbacks that are called by the
  * data object to which the module is attached to describe the data.
  *
- * The frames are presented to the module always in the order of increasing
- * indices, even if they become ready in a different order in the attached
- * data.
+ * The modules can operate in two modes: serial or parallel.
+ * In serial mode, the frames are presented to the module always in the order
+ * of increasing indices, even if they become ready in a different order in the
+ * attached data.
+ * In parallel mode, the frames are presented in the order that they become
+ * available in the input data, which may not be sequential.  This mode allows
+ * the input data to optimize its behavior if it does not need to store and
+ * sort the frames.
+ * If the input data supports parallel mode, it calls parallelDataStarted().
+ * If the module returns true from this method, then it will process the frames
+ * in the parallel mode.  If the module returns false, it will get the frames
+ * in serial order.
+ * If the input data does not support parallel mode, it calls dataStarted().
+ *
+ * Concrete modules typically do not directly derive from this interface, but
+ * from either AnalysisDataModuleSerial or AnalysisDataModuleParallel.
+ * Both these classes implement one of dataStarted()/parallelDataStarted() by
+ * forwarding the calls to the other method of this pair.  This allows the
+ * module to only implement the initialization once, without needing to worry
+ * how to correctly handle both cases.
  *
  * Currently, if the module throws an exception, it requires the analysis tool
  * to terminate, since AbstractAnalysisData will be left in a state where it
@@ -80,7 +98,8 @@ class AnalysisDataModuleInterface
         /*! \brief
          * Possible flags for flags().
          */
-        enum {
+        enum Flag
+        {
             //! The module can process multipoint data.
             efAllowMultipoint           = 1<<0,
             //! The module does not make sense for non-multipoint data.
@@ -119,6 +138,11 @@ class AnalysisDataModuleInterface
          * \throws    unspecified  Can throw any exception required by the
          *      implementing class to report errors.
          *
+         * When the data is ready, either this method or parallelDataStarted()
+         * is called, depending on the nature of the input data.  If this
+         * method is called, the input data will always present the frames in
+         * sequential order.
+         *
          * The data to which the module is attached is passed as an argument
          * to provide access to properties of the data for initialization
          * and/or validation.  The module can also call
@@ -135,6 +159,32 @@ class AnalysisDataModuleInterface
          * AbstractAnalysisData::addColumnModule() was called.
          */
         virtual void dataStarted(AbstractAnalysisData *data) = 0;
+        /*! \brief
+         * Called (once) for parallel data when the data has been set up.
+         *
+         * \param[in] data     Data object to which the module is added.
+         * \param[in] options  Parallelization properties of the input data.
+         * \returns   true if the module can process the input in
+         *      non-sequential order.
+         * \throws    APIError if the provided data is not compatible.
+         * \throws    unspecified  Can throw any exception required by the
+         *      implementing class to report errors.
+         *
+         * This method is called instead of dataStarted() if the input data has
+         * the capability to present data in non-sequential order.
+         * If the method returns true, then the module accepts this and frame
+         * notification methods may be called in that non-sequential order.
+         * If the method returns false, then the frame notification methods are
+         * called in sequential order, as if dataStarted() had been called.
+         *
+         * See dataStarted() for general information on initializing the data.
+         * That applies to this method as well, with the exception that calling
+         * AbstractAnalysisData::requestStorage() is currently not very well
+         * supported (or rather, accessing the requested storage doesn't work).
+         */
+        virtual bool parallelDataStarted(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options) = 0;
         /*! \brief
          * Called at the start of each data frame.
          *
@@ -174,9 +224,64 @@ class AnalysisDataModuleInterface
          *      implementing class to report errors.
          */
         virtual void dataFinished() = 0;
+};
 
-    protected:
-        AnalysisDataModuleInterface() {}
+/*! \brief
+ * Convenience base class for serial analysis data modules.
+ *
+ * Implements the parallelDataStarted() method such that initialization is
+ * always forwarded to dataStarted(), and the module always behaves as serial
+ * (parallelDataStarted() returns false).
+ *
+ * \inlibraryapi
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataModuleSerial : public AnalysisDataModuleInterface
+{
+    public:
+        virtual ~AnalysisDataModuleSerial() {}
+
+        virtual int flags() const = 0;
+
+        virtual void dataStarted(AbstractAnalysisData *data)              = 0;
+        virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
+        virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
+        virtual void dataFinished() = 0;
+
+    private:
+        virtual bool parallelDataStarted(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options);
+};
+
+/*! \brief
+ * Convenience base class for parallel analysis data modules.
+ *
+ * Implements the dataStarted() method such that initialization is always done
+ * in parallelDataStarted().  dataStarted() calls are forwarded to
+ * parallelDataStarted() using a dummy serial AnalysisDataParallelOptions.
+ *
+ * \inlibraryapi
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataModuleParallel : public AnalysisDataModuleInterface
+{
+    public:
+        virtual ~AnalysisDataModuleParallel() {}
+
+        virtual int flags() const = 0;
+
+        virtual bool parallelDataStarted(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options)                   = 0;
+        virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
+        virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
+        virtual void dataFinished() = 0;
+
+    private:
+        virtual void dataStarted(AbstractAnalysisData *data);
 };
 
 } // namespace gmx

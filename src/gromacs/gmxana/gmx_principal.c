@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "mshift.h"
@@ -54,7 +54,8 @@
 #include "princ.h"
 #include "rmpbc.h"
 #include "txtdump.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gstat.h"
 #include "gmx_ana.h"
 
@@ -115,9 +116,12 @@ int gmx_principal(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     axis1 = ffopen(opt2fn("-a1", NFILE, fnm), "w");
     axis2 = ffopen(opt2fn("-a2", NFILE, fnm), "w");

@@ -67,7 +67,17 @@ evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static void
 evaluate_resindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-/** Checks whether molecule information is present in the topology. */
+/*! \brief
+ * Checks whether molecule information is present in the topology.
+ *
+ * \param[in] top  Topology structure.
+ * \param     npar Not used.
+ * \param     param Not used.
+ * \param     data Not used.
+ * \returns   0 if molecule info is present in the topology, -1 otherwise.
+ *
+ * If molecule information is not found, also prints an error message.
+ */
 static void
 check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p molindex selection keyword. */
@@ -82,7 +92,17 @@ evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static void
 evaluate_pdbatomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-/** Checks whether atom types are present in the topology. */
+/*! \brief
+ * Checks whether atom types are present in the topology.
+ *
+ * \param[in] top  Topology structure.
+ * \param     npar Not used.
+ * \param     param Not used.
+ * \param     data Not used.
+ * \returns   0 if atom types are present in the topology, -1 otherwise.
+ *
+ * If the atom types are not found, also prints an error message.
+ */
 static void
 check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p atomtype selection keyword. */
@@ -105,7 +125,17 @@ evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static void
 evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-/** Checks whether PDB info is present in the topology. */
+/*! \brief
+ * Checks whether PDB info is present in the topology.
+ *
+ * \param[in] top  Topology structure.
+ * \param     npar Not used.
+ * \param     param Not used.
+ * \param     data Not used.
+ * \returns   0 if PDB info is present in the topology, -1 otherwise.
+ *
+ * If PDB info is not found, also prints an error message.
+ */
 static void
 check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p altloc selection keyword. */
@@ -447,8 +477,8 @@ gmx_ana_selmethod_t sm_z = {
  * Copies \p g to \p out->u.g.
  */
 static void
-evaluate_all(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-             gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_all(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+             gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     gmx_ana_index_copy(out->u.g, g, false);
 }
@@ -460,8 +490,8 @@ evaluate_all(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns an empty \p out->u.g.
  */
 static void
-evaluate_none(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_none(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+              gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void * /* data */)
 {
     out->u.g->isize = 0;
 }
@@ -473,8 +503,8 @@ evaluate_none(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the indices for each atom in \p out->u.i.
  */
 static void
-evaluate_atomnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_atomnr(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -492,8 +522,8 @@ evaluate_atomnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the residue numbers for each atom in \p out->u.i.
  */
 static void
-evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_resnr(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
     int  resind;
@@ -513,8 +543,8 @@ evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the residue indices for each atom in \p out->u.i.
  */
 static void
-evaluate_resindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_resindex(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -525,17 +555,8 @@ evaluate_resindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     }
 }
 
-/*!
- * \param[in] top  Topology structure.
- * \param     npar Not used.
- * \param     param Not used.
- * \param     data Not used.
- * \returns   0 if molecule info is present in the topology, -1 otherwise.
- *
- * If molecule information is not found, also prints an error message.
- */
 static void
-check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+check_molecules(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
     bool bOk;
 
@@ -553,8 +574,8 @@ check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data
  * Returns the molecule indices for each atom in \p out->u.i.
  */
 static void
-evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_molindex(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i, j;
 
@@ -576,8 +597,8 @@ evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the atom name for each atom in \p out->u.s.
  */
 static void
-evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_atomname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -595,8 +616,8 @@ evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the PDB atom name for each atom in \p out->u.s.
  */
 static void
-evaluate_pdbatomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_pdbatomname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -612,17 +633,8 @@ evaluate_pdbatomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     }
 }
 
-/*!
- * \param[in] top  Topology structure.
- * \param     npar Not used.
- * \param     param Not used.
- * \param     data Not used.
- * \returns   0 if atom types are present in the topology, -1 otherwise.
- *
- * If the atom types are not found, also prints an error message.
- */
 static void
-check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+check_atomtype(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
     bool bOk;
 
@@ -641,8 +653,8 @@ check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * Segfaults if atom types are not found in the topology.
  */
 static void
-evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_atomtype(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -660,8 +672,8 @@ evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the residue name for each atom in \p out->u.s.
  */
 static void
-evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_resname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
     int  resind;
@@ -681,8 +693,8 @@ evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the insertion code for each atom in \p out->u.s.
  */
 static void
-evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_insertcode(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
     int  resind;
@@ -702,8 +714,8 @@ evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the chain for each atom in \p out->u.s.
  */
 static void
-evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_chain(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
     int  resind;
@@ -723,8 +735,8 @@ evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the mass for each atom in \p out->u.r.
  */
 static void
-evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_mass(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -742,8 +754,8 @@ evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the charge for each atom in \p out->u.r.
  */
 static void
-evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_charge(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -754,17 +766,8 @@ evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     }
 }
 
-/*!
- * \param[in] top  Topology structure.
- * \param     npar Not used.
- * \param     param Not used.
- * \param     data Not used.
- * \returns   0 if PDB info is present in the topology, -1 otherwise.
- *
- * If PDB info is not found, also prints an error message.
- */
 static void
-check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+check_pdbinfo(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
     bool bOk;
 
@@ -782,8 +785,8 @@ check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * Returns the alternate location identifier for each atom in \p out->u.s.
  */
 static void
-evaluate_altloc(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_altloc(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -802,8 +805,8 @@ evaluate_altloc(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Segfaults if PDB info is not found in the topology.
  */
 static void
-evaluate_occupancy(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_occupancy(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -822,8 +825,8 @@ evaluate_occupancy(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Segfaults if PDB info is not found in the topology.
  */
 static void
-evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_betafactor(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
 
@@ -837,8 +840,6 @@ evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 /*! \brief
  * Internal utility function for position keyword evaluation.
  *
- * \param[in]  fr   Current frame.
- * \param[in]  g    Index group for which the coordinates should be evaluated.
  * \param[out] out  Output array.
  * \param[in]  pos  Position data to use instead of atomic coordinates
  *   (can be NULL).
@@ -848,33 +849,19 @@ evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * evaluate_z() to do the actual evaluation.
  */
 static void
-evaluate_coord(t_trxframe *fr, gmx_ana_index_t *g, real out[],
-               gmx_ana_pos_t *pos, int d)
+evaluate_coord(real out[], gmx_ana_pos_t *pos, int d)
 {
-    int  b, i;
-    real v;
-
-    if (pos)
+    for (int b = 0; b < pos->count(); ++b)
     {
-        for (b = 0; b < pos->nr; ++b)
+        const real v = pos->x[b][d];
+        for (int i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
         {
-            v = pos->x[b][d];
-            for (i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
-            {
-                out[i] = v;
-            }
+            out[i] = v;
         }
     }
-    else
-    {
-        // TODO: This loop is never reached in the current code.
-        // It would be useful to change the code such that it is, mostly for
-        // memory efficiency reasons.
-        for (i = 0; i < g->isize; ++i)
-        {
-            out[i] = fr->x[g->index[i]][d];
-        }
-    }
+    // TODO: Make this more efficient by directly extracting the coordinates
+    // from the frame coordinates for atomic positions instead of going through
+    // a position calculation.
 }
 
 /*!
@@ -884,11 +871,11 @@ evaluate_coord(t_trxframe *fr, gmx_ana_index_t *g, real out[],
  * Returns the \p x coordinate for each atom in \p out->u.r.
  */
 static void
-evaluate_x(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+evaluate_x(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->g->isize;
-    evaluate_coord(fr, pos->g, out->u.r, pos, XX);
+    out->nr = pos->m.mapb.nra;
+    evaluate_coord(out->u.r, pos, XX);
 }
 
 /*!
@@ -898,11 +885,11 @@ evaluate_x(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the \p y coordinate for each atom in \p out->u.r.
  */
 static void
-evaluate_y(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+evaluate_y(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->g->isize;
-    evaluate_coord(fr, pos->g, out->u.r, pos, YY);
+    out->nr = pos->m.mapb.nra;
+    evaluate_coord(out->u.r, pos, YY);
 }
 
 /*!
@@ -912,9 +899,9 @@ evaluate_y(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the \p z coordinate for each atom in \p out->u.r.
  */
 static void
-evaluate_z(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+evaluate_z(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->g->isize;
-    evaluate_coord(fr, pos->g, out->u.r, pos, ZZ);
+    out->nr = pos->m.mapb.nra;
+    evaluate_coord(out->u.r, pos, ZZ);
 }

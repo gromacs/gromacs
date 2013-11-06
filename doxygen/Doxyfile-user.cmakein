@@ -1,5 +1,10 @@
 @INCLUDE               = Doxyfile-common
 
+# There is no public API documentation here;
+# exclude them from the generated file list
+EXCLUDE               += @CMAKE_SOURCE_DIR@/src/programs
+EXCLUDE               += @CMAKE_SOURCE_DIR@/src/testutils
+
 INTERNAL_DOCS          = NO
 HIDE_UNDOC_CLASSES     = YES
 HIDE_FRIEND_COMPOUNDS  = YES

@@ -46,9 +46,10 @@
 #include "names.h"
 #include "macros.h"
 #include "gmx_fatal.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "vec.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -569,8 +570,11 @@ int gmx_eneconv(int argc, char *argv[])
           "Stop on errors in the file" }
     };
 
-    parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa),
-                      pa, asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa),
+                           pa, asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
     tadjust  = 0;
     nremax   = 0;
     nset     = 0;

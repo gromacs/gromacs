@@ -76,6 +76,11 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
     public:
         virtual ~AbstractAnalysisArrayData();
 
+        virtual int frameCount() const
+        {
+            return bReady_ ? rowCount_ : 0;
+        }
+
         /*! \brief
          * Returns the number of rows in the data array.
          *

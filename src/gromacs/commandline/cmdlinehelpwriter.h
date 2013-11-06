@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 namespace gmx
 {
 
-class HelpWriterContext;
+class CommandLineHelpContext;
 class Options;
 
 /*! \brief
@@ -68,10 +68,6 @@ class CommandLineHelpWriter
         explicit CommandLineHelpWriter(const Options &options);
         ~CommandLineHelpWriter();
 
-        /*! \brief
-         * Sets whether hidden options are shown in the help.
-         */
-        CommandLineHelpWriter &setShowHidden(bool bShow);
         /*! \brief
          * Sets whether long descriptions for sections are shown in the help.
          */
@@ -95,7 +91,7 @@ class CommandLineHelpWriter
          * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
          */
-        void writeHelp(const HelpWriterContext &context);
+        void writeHelp(const CommandLineHelpContext &context);
 
     private:
         class Impl;

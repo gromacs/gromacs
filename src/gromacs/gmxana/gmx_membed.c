@@ -57,7 +57,7 @@ int gmx_membed(int argc, char *argv[])
         "files should also be merged. Consecutively, create a [TT].tpr[tt] file (input for [TT]g_membed[tt]) from these files,"
         "with the following options included in the [TT].mdp[tt] file.[BR]",
         " - [TT]integrator      = md[tt][BR]",
-        " - [TT]energygrp       = Protein[tt] (or other group that you want to insert)[BR]",
+        " - [TT]energygrps      = Protein[tt] (or other group that you want to insert)[BR]",
         " - [TT]freezegrps      = Protein[tt][BR]",
         " - [TT]freezedim       = Y Y Y[tt][BR]",
         " - [TT]energygrp_excl  = Protein Protein[tt][BR]",
@@ -142,7 +142,7 @@ int gmx_membed(int argc, char *argv[])
         { "-start",   FALSE, etBOOL, {&bStart},
           "Call mdrun with membed options" },
         { "-stepout", FALSE, etINT, {&nstepout},
-          "HIDDENFrequency of writing the remaining runtime" },
+          "HIDDENFrequency of writing the remaining wall clock time for the run" },
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
         { "-mdrun_path", FALSE, etSTR, {&mdrun_path},
@@ -154,8 +154,11 @@ int gmx_membed(int argc, char *argv[])
     char         buf[256], buf2[64];
     gmx_bool     bSucces;
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     data_out = ffopen(opt2fn("-dat", NFILE, fnm), "w");
 

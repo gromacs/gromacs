@@ -48,7 +48,7 @@
 #include "types/symtab.h"
 #include "types/idef.h"
 #include "types/atoms.h"
-#include "types/trx.h"
+#include "../fileio/trx.h"
 #include "types/topology.h"
 #include "types/energy.h"
 #include "types/inputrec.h"
@@ -63,7 +63,6 @@
 #include "types/mdatom.h"
 #include "types/pbc.h"
 #include "types/ifunc.h"
-#include "types/filenm.h"
 #include "types/group.h"
 #include "types/state.h"
 #include "types/shellfc.h"
@@ -134,7 +133,8 @@ void init_energyhistory(energyhistory_t * enerhist);
 void done_energyhistory(energyhistory_t * enerhist);
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
-void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
+void init_df_history(df_history_t *dfhist, int nlambda);
+void done_df_history(df_history_t *dfhist);
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
 
 void copy_blocka(const t_blocka *src, t_blocka *dest);

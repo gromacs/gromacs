@@ -53,12 +53,12 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "pdbio.h"
-#include "confio.h"
-#include "tpxio.h"
-#include "matio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/matio.h"
 #include "mshift.h"
 #include "xvgr.h"
 #include "do_fit.h"
@@ -786,8 +786,11 @@ int gmx_make_edi(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
     edi_params.outfrq = 100; edi_params.slope = 0.0; edi_params.maxedsteps = 0;
-    parse_common_args(&argc, argv, 0,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     indexfile       = ftp2fn_null(efNDX, NFILE, fnm);
     EdiFile         = ftp2fn(efEDI, NFILE, fnm);

@@ -2,11 +2,11 @@ file(GLOB LINEARALGEBRA_SOURCES *.c)
 
 if (NOT GMX_EXTERNAL_BLAS)
     file(GLOB BLAS_SOURCES gmx_blas/*.c)
-endif (NOT GMX_EXTERNAL_BLAS)
+endif()
 
 if (NOT GMX_EXTERNAL_LAPACK)
     file(GLOB LAPACK_SOURCES gmx_lapack/*.c)
-endif (NOT GMX_EXTERNAL_LAPACK)
+endif()
 
 set(LINEARALGEBRA_SOURCES
     ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
@@ -19,6 +19,4 @@ set(LINEARALGEBRA_PUBLIC_HEADERS
     matrix.h
     mtxio.h
     sparsematrix.h)
-install(FILES ${LINEARALGEBRA_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/linearalgebra
-        COMPONENT development)
+gmx_install_headers(linearalgebra ${LINEARALGEBRA_PUBLIC_HEADERS})

@@ -225,6 +225,9 @@ recommends either
   build \fftw{} \fftwversion{} from source automatically for you (use
   \verb+cmake -DGMX_BUILD_OWN_FFTW=ON+), or
 \item that you build \fftw{} from the source code.
+Note that the GROMACS-managed download of the FFTW tarball has a
+slight chance of posing a security risk. If you use this option, you
+will see a warning that advises how you can eliminate this risk.
 \end{itemize}
 
 If you build \fftw{} from source yourself, get the most recent version
@@ -403,7 +406,7 @@ be specified using the following environment variables:
 \end{itemize}
 The respective '\verb+include+', '\verb+lib+', or '\verb+bin+' is
 appended to the path. For each of these variables, a list of paths can
-be specified (on Unix seperated with ":"). Note that these are
+be specified (on Unix separated with ":"). Note that these are
 enviroment variables (and not \cmake{} command-line arguments) and in
 a '\verb+bash+' shell are used like:
 \begin{verbatim}
@@ -426,18 +429,22 @@ As mentioned above, sometimes vendor \blas{} and \lapack{} libraries
 can provide performance enhancements for \gromacs{} when doing
 normal-mode analysis or covariance analysis. For simplicity, the text
 below will refer only to \blas{}, but the same options are available
-for \lapack{}. By default, the \cmake{} optionv
-\verb+GMX_EXTERNAL_BLAS+ is on, which triggers \cmake{} to search for
-\blas{}. If one is found, then it is used. Otherwise, \cmake{} falls
-back on internal versions provided in the \gromacs{} source. These are
-fine for normal use. If you need to specify a non-standard path to
-search, use \verb+-DCMAKE_PREFIX_PATH=/path/to/search+.
+for \lapack{}. By default, CMake will search for \blas{}, use it if it
+is found, and otherwise fall back on a version of \blas{} internal to
+\gromacs{}. The \cmake{} option \verb+GMX_EXTERNAL_BLAS+ will be set
+accordingly. The internal versions are fine for normal use. If you
+need to specify a non-standard path to search, use
+\verb+-DCMAKE_PREFIX_PATH=/path/to/search+. If you need to specify a
+library with a non-standard name (e.g. ESSL on AIX or BlueGene), then
+set \verb+-DGMX_BLAS_USER=/path/to/reach/lib/libwhatever.a+.
 
 If you are using Intel's \mkl{} for \fft{}, then the \blas{} and
-\lapack{} it provides are used automatically.
+\lapack{} it provides are used automatically. This could be
+over-ridden with \verb+GMX_BLAS_USER+, etc.
 
 On Apple platforms where the Accelerate Framework is available, these
-will be automatically used for \blas{} and \lapack{}.
+will be automatically used for \blas{} and \lapack{}. This could be
+over-ridden with \verb+GMX_BLAS_USER+, etc.
 
 \subsection{Native GPU acceleration}
 If you have the \cuda{} Software Development Kit installed, you can
@@ -674,14 +681,14 @@ parallel job execution.
 
 \subsubsection{BlueGene/P}
 
-There is currently no native acceleration on this platform, but the
-default plain C kernels will work.
+There is currently no native acceleration on this platform and no
+plans to make one. The default plain C kernels will work.
 
 \subsubsection{BlueGene/Q}
 
-There is currently no native acceleration on this platform, but the
-default plain C kernels will work. We have accelerated kernels in
-progress for this platform, but they are not quite done yet.
+There is currently native acceleration on this platform for the Verlet
+cut-off scheme. Accelerated kernels for the group cut-off scheme may
+come in the future, but the default plain C kernels will work.
 
 Only static linking with XL compilers is supported by \gromacs{}. Dynamic
 linking would be supported by the architecture and \gromacs{}, but has no
@@ -703,23 +710,36 @@ You need to arrange for FFTW to be installed correctly, following the
 above instructions.
 
 mpicc is used for compiling and linking. This can make it awkward to
-attempt to use IBM's optimized BLAS/LAPACK called ESSL. Since mdrun is
-the only part of \gromacs{} that should normally run on the compute
-nodes, and there is nearly no need for linear algebra support for
-mdrun, it is recommended to use the \gromacs{} built-in linear algebra
-routines - it is rare for this to be a bottleneck.
+attempt to use IBM's optimized BLAS/LAPACK called ESSL (see the
+section on linear algebra). Since mdrun is the only part of \gromacs{}
+that should normally run on the compute nodes, and there is nearly no
+need for linear algebra support for mdrun, it is recommended to use
+the \gromacs{} built-in linear algebra routines - it is rare for this
+to be a bottleneck.
 
+The recommended configuration is to use
 \begin{verbatim}
-cmake .. -DCMAKE_TOOLCHAIN_FILE=BlueGeneQ-static-XL-C \
-         -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix
-make mdrun
-make install-mdrun
+cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-CXX \
+         -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
+         -DGMX_MPI=ON \
+         -DGMX_BUILD_MDRUN_ONLY=ON
+make
+make install
 \end{verbatim}
+which will build a statically-linked MPI-enabled mdrun for the back
+end. Otherwise, GROMACS default configuration behaviour applies.
+
 It is possible to configure and make the remaining \gromacs{} tools
-with the compute node toolchain, but as none of those tools are
-\mpi{}-aware, this would not normally be useful. Instead, these should
-be planned to run on the login node, and a seperate \gromacs{}
-installation performed for that using the login node's toolchain.
+with the compute-node toolchain, but as none of those tools are
+\mpi{}-aware and could then only run on the compute nodes, this
+would not normally be useful. Instead, these should be planned
+to run on the login node, and a separate \gromacs{} installation
+performed for that using the login node's toolchain - not the
+above platform file, or any other compute-node toolchain.
+
+Note that only the MPI build is available for the compute-node
+toolchains. The GROMACS thread-MPI or serial builds are not useful at
+all on BlueGene/Q.
 
 \subsubsection{Fujitsu PRIMEHPC}
 
@@ -738,7 +758,7 @@ repository is currently tested on x86 with gcc versions ranging
 from 4.4 through 4.7, and versions 12 and 13 of the Intel compiler.
 Under Windows we test both the visual studio compilers and icc,
 
-We test irregularly on BlueGene/L, BlueGene/P, BlueGene/Q, Cray, 
+We test irregularly on BlueGene/Q, Cray,
 Fujitsu PRIMEHPC, Google nativeclient and other environments. In 
 the future we expect ARM to be an important test target too, but this
 is currently not included.

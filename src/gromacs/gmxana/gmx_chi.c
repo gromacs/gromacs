@@ -38,10 +38,10 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "confio.h"
-#include "pdbio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -49,7 +49,7 @@
 #include "index.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include <string.h>
 #include "sysstuff.h"
 #include "txtdump.h"
@@ -57,7 +57,7 @@
 #include "vec.h"
 #include "strdb.h"
 #include "xvgr.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
 static gmx_bool bAllowed(real phi, real psi)
@@ -1375,9 +1375,12 @@ int gmx_chi(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
+                           &oenv))
+    {
+        return 0;
+    }
 
     /* Handle result from enumerated type */
     sscanf(maxchistr[0], "%d", &maxchi);

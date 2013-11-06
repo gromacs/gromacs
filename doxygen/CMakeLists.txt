@@ -77,9 +77,30 @@ if (DOXYGEN_FOUND)
     add_custom_target(doc-user
         ${CMAKE_COMMAND} -DDOCTYPE=user -P RunDoxygen.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating user documentation with Doxygen" VERBATIM)
+        COMMENT "Generating public API documentation with Doxygen" VERBATIM)
     add_custom_target(doc-all)
     add_dependencies(doc-all doc-full doc-lib doc-user)
+
+    if (GMX_GIT_VERSION_INFO)
+        add_custom_target(doxygen-version
+                COMMAND ${CMAKE_COMMAND}
+                    -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
+                    -D PROJECT_VERSION="${PROJECT_VERSION}"
+                    -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+                    -D VERSION_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-version.cmakein"
+                    -D VERSION_OUT="${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-version"
+                    -D VERSION_NO_REMOTE_HASH=
+                    -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-version.cmakein
+                COMMENT "Generating version information for Doxygen")
+        add_dependencies(doc-full doxygen-version)
+        add_dependencies(doc-lib doxygen-version)
+        add_dependencies(doc-user doxygen-version)
+    else()
+        set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
+        configure_file(Doxyfile-version.cmakein Doxyfile-version)
+    endif()
 endif (DOXYGEN_FOUND)
 
 find_package(PythonInterp)

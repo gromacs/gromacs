@@ -37,29 +37,20 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_CRAY_XT3
-#include <catamount/dclock.h>
-#endif
-
-
 #include <stdio.h>
-#include <time.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #include <math.h>
 #include "typedefs.h"
 #include "string2.h"
-#include "gmxfio.h"
 #include "smalloc.h"
 #include "names.h"
-#include "confio.h"
 #include "mvdata.h"
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
 #include "vec.h"
-#include <time.h>
 #include "nrnb.h"
 #include "mshift.h"
 #include "mdrun.h"
@@ -77,22 +68,21 @@
 #include "calcmu.h"
 #include "constr.h"
 #include "xvgr.h"
-#include "trnio.h"
-#include "xtcio.h"
 #include "copyrite.h"
 #include "pull_rotation.h"
 #include "gmx_random.h"
 #include "domdec.h"
 #include "partdec.h"
-#include "gmx_wallcycle.h"
 #include "genborn.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "nbnxn_kernels/nbnxn_kernel_ref.h"
-#include "nbnxn_kernels/nbnxn_kernel_simd_4xn.h"
-#include "nbnxn_kernels/nbnxn_kernel_simd_2xnn.h"
+#include "nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
+#include "nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "adress.h"
@@ -101,36 +91,15 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "nbnxn_cuda/nbnxn_cuda.h"
 
-double
-gmx_gettime()
-{
-#ifdef HAVE_GETTIMEOFDAY
-    struct timeval t;
-    double         seconds;
-
-    gettimeofday(&t, NULL);
-
-    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
-
-    return seconds;
-#else
-    double  seconds;
-
-    seconds = time(NULL);
-
-    return seconds;
-#endif
-}
-
-
-#define difftime(end, start) ((double)(end)-(double)(start))
-
-void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
-                t_inputrec *ir, t_commrec gmx_unused *cr)
+void print_time(FILE                     *out,
+                gmx_walltime_accounting_t walltime_accounting,
+                gmx_large_int_t           step,
+                t_inputrec               *ir,
+                t_commrec gmx_unused     *cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
-    double dt;
+    double dt, elapsed_seconds, time_per_step;
     char   buf[48];
 
 #ifndef GMX_THREAD_MPI
@@ -142,17 +111,16 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     fprintf(out, "step %s", gmx_step_str(step, buf));
     if ((step >= ir->nstlist))
     {
-        runtime->last          = gmx_gettime();
-        dt                     = difftime(runtime->last, runtime->real);
-        runtime->time_per_step = dt/(step - ir->init_step + 1);
-
-        dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
+        double seconds_since_epoch = gmx_gettime();
+        elapsed_seconds = seconds_since_epoch - walltime_accounting_get_start_time_stamp(walltime_accounting);
+        time_per_step   = elapsed_seconds/(step - ir->init_step + 1);
+        dt              = (ir->nsteps + ir->init_step - step) * time_per_step;
 
         if (ir->nsteps >= 0)
         {
             if (dt >= 300)
             {
-                finish = (time_t) (runtime->last + dt);
+                finish = (time_t) (seconds_since_epoch + dt);
                 gmx_ctime_r(&finish, timebuf, STRLEN);
                 sprintf(buf, "%s", timebuf);
                 buf[strlen(buf)-1] = '\0';
@@ -160,13 +128,13 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
             }
             else
             {
-                fprintf(out, ", remaining runtime: %5d s          ", (int)dt);
+                fprintf(out, ", remaining wall clock time: %5d s          ", (int)dt);
             }
         }
         else
         {
             fprintf(out, " performance: %.1f ns/day    ",
-                    ir->delta_t/1000*24*60*60/runtime->time_per_step);
+                    ir->delta_t/1000*24*60*60/time_per_step);
         }
     }
 #ifndef GMX_THREAD_MPI
@@ -179,66 +147,8 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     fflush(out);
 }
 
-#ifdef NO_CLOCK
-#define clock() -1
-#endif
-
-static double set_proctime(gmx_runtime_t *runtime)
-{
-    double diff;
-#ifdef GMX_CRAY_XT3
-    double prev;
-
-    prev          = runtime->proc;
-    runtime->proc = dclock();
-
-    diff = runtime->proc - prev;
-#else
-    clock_t prev;
-
-    prev          = runtime->proc;
-    runtime->proc = clock();
-
-    diff = (double)(runtime->proc - prev)/(double)CLOCKS_PER_SEC;
-#endif
-    if (diff < 0)
-    {
-        /* The counter has probably looped, ignore this data */
-        diff = 0;
-    }
-
-    return diff;
-}
-
-void runtime_start(gmx_runtime_t *runtime)
-{
-    runtime->real          = gmx_gettime();
-    runtime->proc          = 0;
-    set_proctime(runtime);
-    runtime->realtime      = 0;
-    runtime->proctime      = 0;
-    runtime->last          = 0;
-    runtime->time_per_step = 0;
-}
-
-void runtime_end(gmx_runtime_t *runtime)
-{
-    double now;
-
-    now = gmx_gettime();
-
-    runtime->proctime += set_proctime(runtime);
-    runtime->realtime  = now - runtime->real;
-    runtime->real      = now;
-}
-
-void runtime_upd_proc(gmx_runtime_t *runtime)
-{
-    runtime->proctime += set_proctime(runtime);
-}
-
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
-                         const gmx_runtime_t *runtime)
+                         const gmx_walltime_accounting_t walltime_accounting)
 {
     int    i;
     char   timebuf[STRLEN];
@@ -247,9 +157,9 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
 
     if (fplog)
     {
-        if (runtime != NULL)
+        if (walltime_accounting != NULL)
         {
-            tmptime = (time_t) runtime->real;
+            tmptime = (time_t) walltime_accounting_get_start_time_stamp(walltime_accounting);
             gmx_ctime_r(&tmptime, timebuf, STRLEN);
         }
         else
@@ -588,12 +498,13 @@ static void do_nb_verlet(t_forcerec *fr,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
                          int clearF,
-                         t_nrnb *nrnb)
+                         t_nrnb *nrnb,
+                         gmx_wallcycle_t wcycle)
 {
     int                        nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     char                      *env;
     nonbonded_verlet_group_t  *nbvg;
-    gmx_bool                  bCUDA;
+    gmx_bool                   bCUDA;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -949,7 +860,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
         /* launch local nonbonded F on GPU */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
-                     nrnb);
+                     nrnb, wcycle);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -1030,7 +941,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
-                         nrnb);
+                         nrnb, wcycle);
             cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
     }
@@ -1161,7 +1072,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         /* Maybe we should move this into do_force_lowlevel */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
-                     nrnb);
+                     nrnb, wcycle);
     }
 
     if (!bUseOrEmulGPU || bDiffKernels)
@@ -1172,7 +1083,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal,
                          bDiffKernels ? enbvClearFYes : enbvClearFNo,
-                         nrnb);
+                         nrnb, wcycle);
         }
 
         if (!bUseOrEmulGPU)
@@ -1263,7 +1174,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
-                             nrnb);
+                             nrnb, wcycle);
                 cycles_force += wallcycle_stop(wcycle, ewcFORCE);
             }
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1336,7 +1247,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start_nocount(wcycle, ewcFORCE);
             do_nb_verlet(fr, ic, enerd, flags, eintLocal,
                          DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
-                         nrnb);
+                         nrnb, wcycle);
             wallcycle_stop(wcycle, ewcFORCE);
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1670,13 +1581,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             mk_mshift(fplog, graph, fr->ePBC, box, x);
         }
 
-        /* Do the actual neighbour searching and if twin range electrostatics
-         * also do the calculation of long range forces and energies.
-         */
-        for (i = 0; i < efptNR; i++)
-        {
-            dvdlambda[i] = 0;
-        }
+        /* Do the actual neighbour searching */
         ns(fplog, fr, box,
            groups, top, mdatoms,
            cr, nrnb, bFillGrid,
@@ -2468,7 +2373,7 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
 void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
-                gmx_runtime_t *runtime,
+                gmx_walltime_accounting_t walltime_accounting,
                 wallclock_gpu_t *gputimes,
                 gmx_bool bWriteStat)
 {
@@ -2476,7 +2381,10 @@ void finish_run(FILE *fplog, t_commrec *cr,
     t_nrnb *nrnb_tot = NULL;
     real    delta_t;
     double  nbfs, mflop;
-
+    double  elapsed_time,
+            elapsed_time_over_all_ranks,
+            elapsed_time_over_all_threads,
+            elapsed_time_over_all_threads_over_all_ranks;
     wallcycle_sum(cr, wcycle);
 
     if (cr->nnodes > 1)
@@ -2492,14 +2400,25 @@ void finish_run(FILE *fplog, t_commrec *cr,
         nrnb_tot = nrnb;
     }
 
-#if defined(GMX_MPI) && !defined(GMX_THREAD_MPI)
+    elapsed_time                                 = walltime_accounting_get_elapsed_time(walltime_accounting);
+    elapsed_time_over_all_ranks                  = elapsed_time;
+    elapsed_time_over_all_threads                = walltime_accounting_get_elapsed_time_over_all_threads(walltime_accounting);
+    elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
+#ifdef GMX_MPI
     if (cr->nnodes > 1)
     {
-        /* reduce nodetime over all MPI processes in the current simulation */
-        double sum;
-        MPI_Allreduce(&runtime->proctime, &sum, 1, MPI_DOUBLE, MPI_SUM,
+        /* reduce elapsed_time over all MPI ranks in the current simulation */
+        MPI_Allreduce(&elapsed_time,
+                      &elapsed_time_over_all_ranks,
+                      1, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
-        runtime->proctime = sum;
+        elapsed_time_over_all_ranks /= cr->nnodes;
+        /* Reduce elapsed_time_over_all_threads over all MPI ranks in the
+         * current simulation. */
+        MPI_Allreduce(&elapsed_time_over_all_threads,
+                      &elapsed_time_over_all_threads_over_all_ranks,
+                      1, MPI_DOUBLE, MPI_SUM,
+                      cr->mpi_comm_mysim);
     }
 #endif
 
@@ -2546,7 +2465,8 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
-        wallcycle_print(fplog, cr->nnodes, cr->npmenodes, runtime->realtime,
+        wallcycle_print(fplog, cr->nnodes, cr->npmenodes,
+                        elapsed_time_over_all_ranks,
                         wcycle, gputimes);
 
         if (EI_DYNAMICS(inputrec->eI))
@@ -2560,13 +2480,17 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
         if (fplog)
         {
-            print_perf(fplog, runtime->proctime, runtime->realtime,
-                       runtime->nsteps_done, delta_t, nbfs, mflop);
+            print_perf(fplog, elapsed_time_over_all_threads_over_all_ranks,
+                       elapsed_time_over_all_ranks,
+                       walltime_accounting_get_nsteps_done(walltime_accounting),
+                       delta_t, nbfs, mflop);
         }
         if (bWriteStat)
         {
-            print_perf(stderr, runtime->proctime, runtime->realtime,
-                       runtime->nsteps_done, delta_t, nbfs, mflop);
+            print_perf(stderr, elapsed_time_over_all_threads_over_all_ranks,
+                       elapsed_time_over_all_ranks,
+                       walltime_accounting_get_nsteps_done(walltime_accounting),
+                       delta_t, nbfs, mflop);
         }
     }
 }

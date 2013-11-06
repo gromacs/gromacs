@@ -39,9 +39,9 @@
 #include <config.h>
 #endif
 
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "string2.h"
@@ -375,8 +375,11 @@ int gmx_anadock(int argc, char *argv[])
     t_pdbfile **pdbf = NULL;
     int         npdbf;
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0,
-                      NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0,
+                           NULL, &oenv))
+    {
+        return 0;
+    }
 
     fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
     please_cite(stdout, "Hetenyi2002b");

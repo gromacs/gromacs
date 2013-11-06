@@ -48,6 +48,7 @@
 
 #include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -75,37 +76,33 @@ AnalysisDataParallelOptions::AnalysisDataParallelOptions(int parallelizationFact
 
 
 /********************************************************************
- * AnalysisDataStorage::Impl declaration
+ * AnalysisDataStorageImpl declaration
  */
 
 namespace internal
 {
+
 //! Smart pointer type for managing a storage frame builder.
 typedef gmx_unique_ptr<AnalysisDataStorageFrame>::type
     AnalysisDataFrameBuilderPointer;
-}   // namespace internal
 
 /*! \internal \brief
  * Private implementation class for AnalysisDataStorage.
  *
  * \ingroup module_analysisdata
  */
-class AnalysisDataStorage::Impl
+class AnalysisDataStorageImpl
 {
     public:
-        //! Short-hand for the internal frame data type.
-        typedef internal::AnalysisDataStorageFrameData FrameData;
         //! Smart pointer type for managing a stored frame.
-        typedef gmx_unique_ptr<FrameData>::type FramePointer;
-        //! Short-hand for a smart pointer type to a storage frame builder.
-        typedef internal::AnalysisDataFrameBuilderPointer FrameBuilderPointer;
+        typedef gmx_unique_ptr<AnalysisDataStorageFrameData>::type FramePointer;
 
         //! Shorthand for a list of data frames that are currently stored.
         typedef std::vector<FramePointer> FrameList;
         //! Shorthand for a list of currently unused storage frame builders.
-        typedef std::vector<FrameBuilderPointer> FrameBuilderList;
+        typedef std::vector<AnalysisDataFrameBuilderPointer> FrameBuilderList;
 
-        Impl();
+        AnalysisDataStorageImpl();
 
         //! Returns whether the storage is set to use multipoint data.
         bool isMultipoint() const;
@@ -122,6 +119,8 @@ class AnalysisDataStorage::Impl
         }
         //! Returns the index of the oldest frame that may be currently stored.
         int firstStoredIndex() const;
+        //! Returns the index of the first frame that is not fully notified.
+        int firstUnnotifiedIndex() const { return firstUnnotifiedIndex_; }
         /*! \brief
          * Computes index into \a frames_ for accessing frame \p index.
          *
@@ -163,7 +162,7 @@ class AnalysisDataStorage::Impl
          *
          * \throws std::bad_alloc if out of memory.
          */
-        FrameBuilderPointer getFrameBuilder();
+        AnalysisDataFrameBuilderPointer getFrameBuilder();
 
         /*! \brief
          * Returns whether notifications should be immediately fired.
@@ -178,12 +177,21 @@ class AnalysisDataStorage::Impl
             return isMultipoint() && storageLimit_ == 0 && pendingLimit_ == 1;
         }
         /*! \brief
-         * Calls notification method in \a data_.
+         * Returns whether data needs to be stored at all.
          *
-         * \throws    unspecified  Any exception thrown by
-         *      AbstractAnalysisData::notifyPointsAdd().
+         * This is used to optimize multipoint handling for parallel cases
+         * (where shouldNotifyImmediately() returns false),
+         * where it is not necessary to store even a single frame.
+         *
+         * \todo
+         * This could be extended to non-multipoint data as well.
+         *
+         * Does not throw.
          */
-        void notifyPointSet(const AnalysisDataPointSetRef &points);
+        bool needStorage() const
+        {
+            return storageLimit_ > 0 || (pendingLimit_ > 1 && modules_->hasSerialModules());
+        }
         /*! \brief
          * Calls notification methods for new frames.
          *
@@ -200,8 +208,10 @@ class AnalysisDataStorage::Impl
         void finishFrame(int index);
 
 
-        //! Data object to use for notification calls.
-        AbstractAnalysisData   *data_;
+        //! Parent data object to access data dimensionality etc.
+        const AbstractAnalysisData *data_;
+        //! Manager to use for notification calls.
+        AnalysisDataModuleManager  *modules_;
         /*! \brief
          * Number of past frames that need to be stored.
          *
@@ -213,6 +223,9 @@ class AnalysisDataStorage::Impl
          * Number of future frames that may need to be started.
          *
          * Should always be at least one.
+         *
+         * \todo
+         * Get rid of this alltogether, as it is no longer used much.
          *
          * \see AnalysisDataStorage::startFrame()
          */
@@ -243,6 +256,8 @@ class AnalysisDataStorage::Impl
         FrameList               frames_;
         //! Location of oldest frame in \a frames_.
         size_t                  firstFrameLocation_;
+        //! Index of the first frame that is not fully notified.
+        int                     firstUnnotifiedIndex_;
         /*! \brief
          * Currently unused frame builders.
          *
@@ -267,10 +282,8 @@ class AnalysisDataStorage::Impl
  * AnalysisDataStorageFrameImpl declaration
  */
 
-namespace internal
-{
-
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal representation for a single stored frame.
  *
  * It is implemented such that the frame header is always valid, i.e.,
@@ -301,8 +314,8 @@ class AnalysisDataStorageFrameData
          * \param     storageImpl  Storage object this frame belongs to.
          * \param[in] index        Zero-based index for the frame.
          */
-        AnalysisDataStorageFrameData(AnalysisDataStorage::Impl *storageImpl,
-                                     int                        index);
+        AnalysisDataStorageFrameData(AnalysisDataStorageImpl *storageImpl,
+                                     int                      index);
 
         //! Whether the frame has been started with startFrame().
         bool isStarted() const { return status_ >= eStarted; }
@@ -317,7 +330,7 @@ class AnalysisDataStorageFrameData
         void markNotified() { status_ = eNotified; }
 
         //! Returns the storage implementation object.
-        AnalysisDataStorage::Impl &storageImpl() const { return storageImpl_; }
+        AnalysisDataStorageImpl &storageImpl() const { return storageImpl_; }
         //! Returns the underlying data object (for data dimensionalities etc.).
         const AbstractAnalysisData &baseData() const { return *storageImpl().data_; }
 
@@ -367,7 +380,7 @@ class AnalysisDataStorageFrameData
 
     private:
         //! Storage object that contains this frame.
-        AnalysisDataStorage::Impl              &storageImpl_;
+        AnalysisDataStorageImpl                &storageImpl_;
         //! Header for the frame.
         AnalysisDataFrameHeader                 header_;
         //! Values for the frame.
@@ -387,21 +400,20 @@ class AnalysisDataStorageFrameData
         GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisDataStorageFrameData);
 };
 
-}   // namespace internal
-
 /********************************************************************
- * AnalysisDataStorage::Impl implementation
+ * AnalysisDataStorageImpl implementation
  */
 
-AnalysisDataStorage::Impl::Impl()
-    : data_(NULL),
-      storageLimit_(0), pendingLimit_(1), firstFrameLocation_(0), nextIndex_(0)
+AnalysisDataStorageImpl::AnalysisDataStorageImpl()
+    : data_(NULL), modules_(NULL),
+      storageLimit_(0), pendingLimit_(1),
+      firstFrameLocation_(0), firstUnnotifiedIndex_(0), nextIndex_(0)
 {
 }
 
 
 bool
-AnalysisDataStorage::Impl::isMultipoint() const
+AnalysisDataStorageImpl::isMultipoint() const
 {
     GMX_ASSERT(data_ != NULL, "isMultipoint() called too early");
     return data_->isMultipoint();
@@ -409,14 +421,14 @@ AnalysisDataStorage::Impl::isMultipoint() const
 
 
 int
-AnalysisDataStorage::Impl::firstStoredIndex() const
+AnalysisDataStorageImpl::firstStoredIndex() const
 {
     return frames_[firstFrameLocation_]->frameIndex();
 }
 
 
 int
-AnalysisDataStorage::Impl::computeStorageLocation(int index) const
+AnalysisDataStorageImpl::computeStorageLocation(int index) const
 {
     if (index < firstStoredIndex() || index >= nextIndex_)
     {
@@ -427,7 +439,7 @@ AnalysisDataStorage::Impl::computeStorageLocation(int index) const
 
 
 size_t
-AnalysisDataStorage::Impl::endStorageLocation() const
+AnalysisDataStorageImpl::endStorageLocation() const
 {
     if (storeAll())
     {
@@ -442,12 +454,12 @@ AnalysisDataStorage::Impl::endStorageLocation() const
 
 
 void
-AnalysisDataStorage::Impl::extendBuffer(size_t newSize)
+AnalysisDataStorageImpl::extendBuffer(size_t newSize)
 {
     frames_.reserve(newSize);
     while (frames_.size() < newSize)
     {
-        frames_.push_back(FramePointer(new FrameData(this, nextIndex_)));
+        frames_.push_back(FramePointer(new AnalysisDataStorageFrameData(this, nextIndex_)));
         ++nextIndex_;
     }
     // The unused frame should not be included in the count.
@@ -459,7 +471,7 @@ AnalysisDataStorage::Impl::extendBuffer(size_t newSize)
 
 
 void
-AnalysisDataStorage::Impl::rotateBuffer()
+AnalysisDataStorageImpl::rotateBuffer()
 {
     GMX_ASSERT(!storeAll(),
                "No need to rotate internal buffer if everything is stored");
@@ -475,57 +487,46 @@ AnalysisDataStorage::Impl::rotateBuffer()
 }
 
 
-internal::AnalysisDataFrameBuilderPointer
-AnalysisDataStorage::Impl::getFrameBuilder()
+AnalysisDataFrameBuilderPointer
+AnalysisDataStorageImpl::getFrameBuilder()
 {
     if (builders_.empty())
     {
-        return FrameBuilderPointer(new AnalysisDataStorageFrame(*data_));
+        return AnalysisDataFrameBuilderPointer(new AnalysisDataStorageFrame(*data_));
     }
-    FrameBuilderPointer builder(move(builders_.back()));
+    AnalysisDataFrameBuilderPointer builder(move(builders_.back()));
     builders_.pop_back();
     return move(builder);
 }
 
 
 void
-AnalysisDataStorage::Impl::notifyPointSet(const AnalysisDataPointSetRef &points)
+AnalysisDataStorageImpl::notifyNextFrames(size_t firstLocation)
 {
-    data_->notifyPointsAdd(points);
-}
-
-
-void
-AnalysisDataStorage::Impl::notifyNextFrames(size_t firstLocation)
-{
-    if (firstLocation != firstFrameLocation_)
+    if (frames_[firstLocation]->frameIndex() != firstUnnotifiedIndex_)
     {
-        // firstLocation can only be zero here if !storeAll() because
-        // firstFrameLocation_ is always zero for storeAll()
-        int prevIndex =
-            (firstLocation == 0 ? frames_.size() - 1 : firstLocation - 1);
-        if (!frames_[prevIndex]->isNotified())
-        {
-            return;
-        }
+        return;
     }
     size_t i   = firstLocation;
     size_t end = endStorageLocation();
     while (i != end)
     {
-        Impl::FrameData &storedFrame = *frames_[i];
+        AnalysisDataStorageFrameData &storedFrame = *frames_[i];
         if (!storedFrame.isFinished())
         {
             break;
         }
         if (!storedFrame.isNotified())
         {
-            data_->notifyFrameStart(storedFrame.header());
+            // Increment before the notifications to make the frame available
+            // in the module callbacks.
+            ++firstUnnotifiedIndex_;
+            modules_->notifyFrameStart(storedFrame.header());
             for (int j = 0; j < storedFrame.pointSetCount(); ++j)
             {
-                data_->notifyPointsAdd(storedFrame.pointSet(j));
+                modules_->notifyPointsAdd(storedFrame.pointSet(j));
             }
-            data_->notifyFrameFinish(storedFrame.header());
+            modules_->notifyFrameFinish(storedFrame.header());
             storedFrame.markNotified();
             if (storedFrame.frameIndex() >= storageLimit_)
             {
@@ -542,11 +543,12 @@ AnalysisDataStorage::Impl::notifyNextFrames(size_t firstLocation)
 
 
 void
-AnalysisDataStorage::Impl::finishFrame(int index)
+AnalysisDataStorageImpl::finishFrame(int index)
 {
-    int                storageIndex = computeStorageLocation(index);
+    const int storageIndex = computeStorageLocation(index);
     GMX_RELEASE_ASSERT(storageIndex >= 0, "Out of bounds frame index");
-    Impl::FrameData   &storedFrame = *frames_[storageIndex];
+
+    AnalysisDataStorageFrameData &storedFrame = *frames_[storageIndex];
     GMX_RELEASE_ASSERT(storedFrame.isStarted(),
                        "finishFrame() called for frame before startFrame()");
     GMX_RELEASE_ASSERT(!storedFrame.isFinished(),
@@ -554,9 +556,11 @@ AnalysisDataStorage::Impl::finishFrame(int index)
     GMX_RELEASE_ASSERT(storedFrame.frameIndex() == index,
                        "Inconsistent internal frame indexing");
     builders_.push_back(storedFrame.finishFrame(isMultipoint()));
+    modules_->notifyParallelFrameFinish(storedFrame.header());
     if (shouldNotifyImmediately())
     {
-        data_->notifyFrameFinish(storedFrame.header());
+        ++firstUnnotifiedIndex_;
+        modules_->notifyFrameFinish(storedFrame.header());
         if (storedFrame.frameIndex() >= storageLimit_)
         {
             rotateBuffer();
@@ -573,12 +577,9 @@ AnalysisDataStorage::Impl::finishFrame(int index)
  * AnalysisDataStorageFrame implementation
  */
 
-namespace internal
-{
-
 AnalysisDataStorageFrameData::AnalysisDataStorageFrameData(
-        AnalysisDataStorage::Impl *storageImpl,
-        int                        index)
+        AnalysisDataStorageImpl *storageImpl,
+        int                      index)
     : storageImpl_(*storageImpl), header_(index, 0.0, 0.0), status_(eMissing)
 {
     GMX_RELEASE_ASSERT(storageImpl->data_ != NULL,
@@ -630,16 +631,17 @@ void
 AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
                                           ValueIterator begin, ValueIterator end)
 {
-    const int valueCount  = end - begin;
+    const int                valueCount = end - begin;
+    AnalysisDataPointSetInfo pointSetInfo(0, valueCount,
+                                          dataSetIndex, firstColumn);
+    AnalysisDataPointSetRef  pointSet(header(), pointSetInfo,
+                                      AnalysisDataValuesRef(begin, end));
+    storageImpl().modules_->notifyParallelPointsAdd(pointSet);
     if (storageImpl().shouldNotifyImmediately())
     {
-        AnalysisDataPointSetInfo pointSetInfo(0, valueCount,
-                                              dataSetIndex, firstColumn);
-        storageImpl().notifyPointSet(
-                AnalysisDataPointSetRef(header(), pointSetInfo,
-                                        AnalysisDataValuesRef(begin, end)));
+        storageImpl().modules_->notifyPointsAdd(pointSet);
     }
-    else
+    else if (storageImpl().needStorage())
     {
         pointSets_.push_back(
                 AnalysisDataPointSetInfo(values_.size(), valueCount,
@@ -659,6 +661,10 @@ AnalysisDataStorageFrameData::finishFrame(bool bMultipoint)
                            "Point sets created for non-multipoint data");
         values_ = builder_->values_;
         builder_->clearValues();
+        for (int i = 0; i < pointSetCount(); ++i)
+        {
+            storageImpl().modules_->notifyParallelPointsAdd(pointSet(i));
+        }
     }
     else
     {
@@ -796,10 +802,10 @@ AnalysisDataStorage::~AnalysisDataStorage()
 }
 
 
-void
-AnalysisDataStorage::setParallelOptions(const AnalysisDataParallelOptions &opt)
+int
+AnalysisDataStorage::frameCount() const
 {
-    impl_->pendingLimit_ = 2 * opt.parallelizationFactor() - 1;
+    return impl_->firstUnnotifiedIndex();
 }
 
 
@@ -811,7 +817,8 @@ AnalysisDataStorage::tryGetDataFrame(int index) const
     {
         return AnalysisDataFrameRef();
     }
-    const Impl::FrameData &storedFrame = *impl_->frames_[storageIndex];
+    const internal::AnalysisDataStorageFrameData &storedFrame
+        = *impl_->frames_[storageIndex];
     if (!storedFrame.isAvailable())
     {
         return AnalysisDataFrameRef();
@@ -840,13 +847,36 @@ AnalysisDataStorage::requestStorage(int nframes)
 
 
 void
-AnalysisDataStorage::startDataStorage(AbstractAnalysisData *data)
+AnalysisDataStorage::startDataStorage(AbstractAnalysisData      *data,
+                                      AnalysisDataModuleManager *modules)
 {
+    modules->notifyDataStart(data);
     // Data needs to be set before calling extendBuffer()
-    impl_->data_ = data;
+    impl_->data_    = data;
+    impl_->modules_ = modules;
     if (!impl_->storeAll())
     {
-        impl_->extendBuffer(impl_->storageLimit_ + impl_->pendingLimit_ + 1);
+        // 2 = pending limit (1) + 1
+        impl_->extendBuffer(impl_->storageLimit_ + 2);
+    }
+}
+
+
+void
+AnalysisDataStorage::startParallelDataStorage(
+        AbstractAnalysisData              *data,
+        AnalysisDataModuleManager         *modules,
+        const AnalysisDataParallelOptions &options)
+{
+    const int pendingLimit = 2 * options.parallelizationFactor() - 1;
+    impl_->pendingLimit_   = pendingLimit;
+    modules->notifyParallelDataStart(data, options);
+    // Data needs to be set before calling extendBuffer()
+    impl_->data_    = data;
+    impl_->modules_ = modules;
+    if (!impl_->storeAll())
+    {
+        impl_->extendBuffer(impl_->storageLimit_ + pendingLimit + 1);
     }
 }
 
@@ -855,7 +885,7 @@ AnalysisDataStorageFrame &
 AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
 {
     GMX_ASSERT(header.isValid(), "Invalid header");
-    Impl::FrameData *storedFrame;
+    internal::AnalysisDataStorageFrameData *storedFrame;
     if (impl_->storeAll())
     {
         size_t size = header.index() + 1;
@@ -879,9 +909,10 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
     GMX_RELEASE_ASSERT(storedFrame->frameIndex() == header.index(),
                        "Inconsistent internal frame indexing");
     storedFrame->startFrame(header, impl_->getFrameBuilder());
+    impl_->modules_->notifyParallelFrameStart(header);
     if (impl_->shouldNotifyImmediately())
     {
-        impl_->data_->notifyFrameStart(header);
+        impl_->modules_->notifyFrameStart(header);
     }
     return storedFrame->builder();
 }
@@ -897,9 +928,10 @@ AnalysisDataStorage::startFrame(int index, real x, real dx)
 AnalysisDataStorageFrame &
 AnalysisDataStorage::currentFrame(int index)
 {
-    int                storageIndex = impl_->computeStorageLocation(index);
+    const int storageIndex = impl_->computeStorageLocation(index);
     GMX_RELEASE_ASSERT(storageIndex >= 0, "Out of bounds frame index");
-    Impl::FrameData   &storedFrame = *impl_->frames_[storageIndex];
+
+    internal::AnalysisDataStorageFrameData &storedFrame = *impl_->frames_[storageIndex];
     GMX_RELEASE_ASSERT(storedFrame.isStarted(),
                        "currentFrame() called for frame before startFrame()");
     GMX_RELEASE_ASSERT(!storedFrame.isFinished(),
@@ -914,6 +946,14 @@ void
 AnalysisDataStorage::finishFrame(int index)
 {
     impl_->finishFrame(index);
+}
+
+void
+AnalysisDataStorage::finishDataStorage()
+{
+    // TODO: Check that all frames have been finished etc.
+    impl_->builders_.clear();
+    impl_->modules_->notifyDataFinish();
 }
 
 } // namespace gmx

@@ -41,6 +41,10 @@
  */
 #include "exceptions.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <cstring>
 
 #include <new>
@@ -50,6 +54,7 @@
 #include <boost/exception/get_error_info.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/thread_mpi/system_error.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
@@ -67,6 +72,15 @@ namespace
  * ErrorMessage
  */
 
+/*! \brief
+ * Error message or error context text item.
+ *
+ * Error messages for an exception are represented as a chain of ErrorMessage
+ * objects: the elements at the bottom of the chain (with no children) is the
+ * error message, and other elements are the context strings added.
+ *
+ * \ingroup module_utility
+ */
 class ErrorMessage
 {
     public:
@@ -222,6 +236,9 @@ int NotImplementedError::errorCode() const
 namespace
 {
 
+//! \addtogroup module_utility
+//! \{
+
 /*! \brief
  * Abstracts actual output from the other logic in exception formatting.
  *
@@ -229,7 +246,7 @@ namespace
  * formatExceptionMessageInternal(), and is responsible for composing the
  * output.  This allows using the same implementation of interpreting the
  * exceptions while still supporting output to different formats (e.g., to a
- * string or to stderr).
+ * string or to \c stderr).
  */
 class MessageWriterInterface
 {
@@ -258,7 +275,7 @@ class MessageWriterInterface
  * Exception information writer for cases where exceptions should be avoided.
  *
  * Formats the messages into the provided FILE handle without checking for
- * errors in fprintf() calls.
+ * errors in std::fprintf() calls.
  */
 class MessageWriterFileNoThrow : public MessageWriterInterface
 {
@@ -416,6 +433,8 @@ void formatExceptionMessageInternal(MessageWriterInterface *writer,
     }
 }
 
+//! \}
+
 }   // namespace
 
 void printFatalErrorMessage(FILE *fp, const std::exception &ex)
@@ -488,6 +507,17 @@ void formatExceptionMessageToFile(FILE *fp, const std::exception &ex)
 {
     MessageWriterFileNoThrow writer(fp);
     formatExceptionMessageInternal(&writer, ex, 0);
+}
+
+int processExceptionAtExit(const std::exception & /*ex*/)
+{
+    int returnCode = 1;
+#ifdef GMX_LIB_MPI
+    // TODO: Consider moving the output done in gmx_abort() into the message
+    // printing routine above, so that this could become a simple MPI_Abort().
+    gmx_abort(gmx_node_rank(), gmx_node_num(), returnCode);
+#endif
+    return returnCode;
 }
 
 } // namespace gmx

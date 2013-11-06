@@ -591,6 +591,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "Can't use postive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
 
+        sprintf(err_buf, "Can only use expanded ensemble with md-vv for now; should be supported for other integrators in 5.0");
+        CHECK(!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED));
+        
         sprintf(err_buf, "Free-energy not implemented for Ewald");
         CHECK(ir->coulombtype == eelEWALD);
 
@@ -1520,17 +1523,12 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     parse_n_real(weights, &nweights, &(expand->init_lambda_weights));
     if (nweights == 0)
     {
-        expand->bInit_weights = FALSE;
         snew(expand->init_lambda_weights, fep->n_lambda); /* initialize to zero */
     }
     else if (nweights != fep->n_lambda)
     {
         gmx_fatal(FARGS, "Number of weights (%d) is not equal to number of lambda values (%d)",
                   nweights, fep->n_lambda);
-    }
-    else
-    {
-        expand->bInit_weights = TRUE;
     }
     if ((expand->nstexpanded < 0) && (ir->efep != efepNO))
     {

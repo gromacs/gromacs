@@ -43,7 +43,8 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include <math.h>
 #include "index.h"
 #include "pbc.h"
@@ -78,7 +79,7 @@ int gmx_spatial(int argc, char *argv[])
         "Cartesian coordinate. To do that, simply omit the preliminary [TT]trjconv[tt] steps. \n",
         "USAGE: \n",
         "1. Use [TT]make_ndx[tt] to create a group containing the atoms around which you want the SDF \n",
-        "2. [TT]trjconv -s a.tpr -f a.xtc -o b.xtc -center tric -ur compact -pbc none[tt] \n",
+        "2. [TT]trjconv -s a.tpr -f a.xtc -o b.xtc -boxcenter tric -ur compact -pbc none[tt] \n",
         "3. [TT]trjconv -s a.tpr -f b.xtc -o c.xtc -fit rot+trans[tt] \n",
         "4. run [TT]g_spatial[tt] on the [TT].xtc[tt] output of step #3. \n",
         "5. Load [TT]grid.cube[tt] into VMD and view as an isosurface. \n",
@@ -164,8 +165,11 @@ int gmx_spatial(int argc, char *argv[])
 
     /* This is the routine responsible for adding default options,
      * calling the X/motif interface, etc. */
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, TRUE);
     sfree(xtop);

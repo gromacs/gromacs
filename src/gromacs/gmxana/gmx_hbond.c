@@ -46,8 +46,9 @@
 #include "copyrite.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "futil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "physics.h"
 #include "macros.h"
 #include "gmx_fatal.h"
@@ -56,7 +57,7 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "string2.h"
 #include "pbc.h"
 #include "correl.h"
@@ -3853,8 +3854,11 @@ int gmx_hbond(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, npargs,
-                      ppa, asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, npargs,
+                           ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     /* NN-loop? If so, what estimator to use ?*/
     NN = 1;

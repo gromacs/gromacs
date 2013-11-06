@@ -74,7 +74,7 @@ struct fft5d_time_t {
 };
 typedef struct fft5d_time_t *fft5d_time;
 #else
-#include "gmx_wallcycle.h"
+#include "gromacs/timing/wallcycle.h"
 typedef gmx_wallcycle_t fft5d_time;
 #endif
 

@@ -70,20 +70,21 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
-#include "tpxio.h"
 #include "txtdump.h"
 #include "gmx_detect_hardware.h"
 #include "gmx_omp_nthreads.h"
 #include "pull_rotation.h"
 #include "calc_verletbuf.h"
-#include "../mdlib/nbnxn_search.h"
-#include "../mdlib/nbnxn_consts.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
 #include "macros.h"
 #include "gmx_omp.h"
 #include "gmx_thread_affinity.h"
 
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #ifdef GMX_FAHCORE
@@ -161,7 +162,7 @@ static void mdrunner_start_fn(void *arg)
 
     fnm = dup_tfn(mc.nfile, mc.fnm);
 
-    cr = init_par_threads(mc.cr);
+    cr = reinitialize_commrec_for_this_thread(mc.cr);
 
     if (MASTER(cr))
     {
@@ -256,8 +257,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
         return NULL;
     }
 
-    /* make a new comm_rec to reflect the new situation */
-    crn = init_par_threads(cr);
+    crn = reinitialize_commrec_for_this_thread(cr);
     return crn;
 }
 
@@ -383,7 +383,7 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
-        /* Steps are divided over the nodes iso splitting the atoms */
+        /* Dims/steps are divided over the nodes iso splitting the atoms */
         min_atoms_per_mpi_thread = 0;
     }
     else
@@ -465,9 +465,12 @@ static const char*  NSTLIST_ENVVAR          =  "GMX_NSTLIST";
 /* Try to increase nstlist when using a GPU with nstlist less than this */
 static const int    NSTLIST_GPU_ENOUGH      = 20;
 /* Increase nstlist until the non-bonded cost increases more than this factor */
-static const float  NBNXN_GPU_LIST_OK_FAC   = 1.25;
-/* Don't increase nstlist beyond a non-bonded cost increases of this factor */
-static const float  NBNXN_GPU_LIST_MAX_FAC  = 1.40;
+static const float  NBNXN_GPU_LIST_OK_FAC   = 1.20;
+/* Don't increase nstlist beyond a non-bonded cost increases of this factor.
+ * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
+ * needs 1.28 at rcoulomb=0.9 and 1.24 at rcoulomb=1.0 to get to nstlist=40.
+ */
+static const float  NBNXN_GPU_LIST_MAX_FAC  = 1.30;
 
 /* Try to increase nstlist when running on a GPU */
 static void increase_nstlist(FILE *fp, t_commrec *cr,
@@ -476,7 +479,8 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     char                  *env;
     int                    nstlist_orig, nstlist_prev;
     verletbuf_list_setup_t ls;
-    real                   rlist_inc, rlist_ok, rlist_max, rlist_new, rlist_prev;
+    real                   rlist_nstlist10, rlist_inc, rlist_ok, rlist_max;
+    real                   rlist_new, rlist_prev;
     int                    i;
     t_state                state_tmp;
     gmx_bool               bBox, bDD, bCont;
@@ -487,7 +491,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     char                   buf[STRLEN];
 
     /* Number of + nstlist alternative values to try when switching  */
-    const int nstl[] = { 20, 25, 40, 50 };
+    const int nstl[] = { 20, 25, 40 };
 #define NNSTL  sizeof(nstl)/sizeof(nstl[0])
 
     env = getenv(NSTLIST_ENVVAR);
@@ -535,10 +539,19 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 
     verletbuf_get_list_setup(TRUE, &ls);
 
-    /* Allow rlist to make the list double the size of the cut-off sphere */
+    /* Allow rlist to make the list a given factor larger than the list
+     * would be with nstlist=10.
+     */
+    nstlist_prev = ir->nstlist;
+    ir->nstlist  = 10;
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_drift, &ls,
+                            NULL, &rlist_nstlist10);
+    ir->nstlist  = nstlist_prev;
+
+    /* Determine the pair list size increase due to zero interactions */
     rlist_inc = nbnxn_get_rlist_effective_inc(NBNXN_GPU_CLUSTER_SIZE, mtop->natoms/det(box));
-    rlist_ok  = (max(ir->rvdw, ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC, 1.0/3.0) - rlist_inc;
-    rlist_max = (max(ir->rvdw, ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_MAX_FAC, 1.0/3.0) - rlist_inc;
+    rlist_ok  = (rlist_nstlist10 + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC, 1.0/3.0) - rlist_inc;
+    rlist_max = (rlist_nstlist10 + rlist_inc)*pow(NBNXN_GPU_LIST_MAX_FAC, 1.0/3.0) - rlist_inc;
     if (debug)
     {
         fprintf(debug, "GPU nstlist tuning: rlist_inc %.3f rlist_max %.3f\n",
@@ -772,6 +785,14 @@ static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
+#ifndef GMX_OPENMP
+    if (hw_opt->nthreads_omp > 1)
+    {
+        gmx_fatal(FARGS, "More than 1 OpenMP thread requested, but Gromacs was compiled without OpenMP support");
+    }
+    hw_opt->nthreads_omp = 1;
+#endif
+
     if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp_pme <= 0)
     {
         /* We have the same number of OpenMP threads for PP and PME processes,
@@ -914,38 +935,38 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags)
 {
-    gmx_bool        bForceUseGPU, bTryUseGPU;
-    double          nodetime = 0, realtime;
-    t_inputrec     *inputrec;
-    t_state        *state = NULL;
-    matrix          box;
-    gmx_ddbox_t     ddbox = {0};
-    int             npme_major, npme_minor;
-    real            tmpr1, tmpr2;
-    t_nrnb         *nrnb;
-    gmx_mtop_t     *mtop       = NULL;
-    t_mdatoms      *mdatoms    = NULL;
-    t_forcerec     *fr         = NULL;
-    t_fcdata       *fcd        = NULL;
-    real            ewaldcoeff = 0;
-    gmx_pme_t      *pmedata    = NULL;
-    gmx_vsite_t    *vsite      = NULL;
-    gmx_constr_t    constr;
-    int             i, m, nChargePerturbed = -1, status, nalloc;
-    char           *gro;
-    gmx_wallcycle_t wcycle;
-    gmx_bool        bReadRNG, bReadEkin;
-    int             list;
-    gmx_runtime_t   runtime;
-    int             rc;
-    gmx_large_int_t reset_counters;
-    gmx_edsam_t     ed           = NULL;
-    t_commrec      *cr_old       = cr;
-    int             nthreads_pme = 1;
-    int             nthreads_pp  = 1;
-    gmx_membed_t    membed       = NULL;
-    gmx_hw_info_t  *hwinfo       = NULL;
-    master_inf_t    minf         = {-1, FALSE};
+    gmx_bool                  bForceUseGPU, bTryUseGPU;
+    double                    nodetime = 0, realtime;
+    t_inputrec               *inputrec;
+    t_state                  *state = NULL;
+    matrix                    box;
+    gmx_ddbox_t               ddbox = {0};
+    int                       npme_major, npme_minor;
+    real                      tmpr1, tmpr2;
+    t_nrnb                   *nrnb;
+    gmx_mtop_t               *mtop       = NULL;
+    t_mdatoms                *mdatoms    = NULL;
+    t_forcerec               *fr         = NULL;
+    t_fcdata                 *fcd        = NULL;
+    real                      ewaldcoeff = 0;
+    gmx_pme_t                *pmedata    = NULL;
+    gmx_vsite_t              *vsite      = NULL;
+    gmx_constr_t              constr;
+    int                       i, m, nChargePerturbed = -1, status, nalloc;
+    char                     *gro;
+    gmx_wallcycle_t           wcycle;
+    gmx_bool                  bReadRNG, bReadEkin;
+    int                       list;
+    gmx_walltime_accounting_t walltime_accounting = NULL;
+    int                       rc;
+    gmx_large_int_t           reset_counters;
+    gmx_edsam_t               ed           = NULL;
+    t_commrec                *cr_old       = cr;
+    int                       nthreads_pme = 1;
+    int                       nthreads_pp  = 1;
+    gmx_membed_t              membed       = NULL;
+    gmx_hw_info_t            *hwinfo       = NULL;
+    master_inf_t              minf         = {-1, FALSE};
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -1000,6 +1021,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 gmx_fatal(FARGS, "GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
         }
+#ifdef GMX_IS_BGQ
+        else
+        {
+            md_print_warn(cr, fplog,
+                          "NOTE: There is no SIMD implementation of the group scheme kernels on\n"
+                          "      BlueGene/Q. You will observe better performance from using the\n"
+                          "      Verlet cut-off scheme.\n");
+        }
+#endif
     }
 #ifndef GMX_THREAD_MPI
     if (PAR(cr))
@@ -1309,7 +1339,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         cr->duty      = (DUTY_PP | DUTY_PME);
         npme_major    = 1;
         npme_minor    = 1;
-        if (!EI_TPI(inputrec->eI))
+        /* NM and TPI perform single node energy calculations in parallel */
+        if (!(inputrec->eI == eiNM || EI_TPI(inputrec->eI)))
         {
             npme_major = cr->nnodes;
         }
@@ -1528,6 +1559,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (cr->duty & DUTY_PP)
     {
+        /* Assumes uniform use of the number of OpenMP threads */
+        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntDefault));
+
         if (inputrec->ePull != epullNO)
         {
             /* Initialize pull code */
@@ -1567,7 +1601,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       cpt_period, max_hours,
                                       deviceOptions,
                                       Flags,
-                                      &runtime);
+                                      walltime_accounting);
 
         if (inputrec->ePull != epullNO)
         {
@@ -1583,23 +1617,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     else
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, ewaldcoeff, inputrec);
-    }
-
-    if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
-    {
-        /* Some timing stats */
-        if (SIMMASTER(cr))
-        {
-            if (runtime.proc == 0)
-            {
-                runtime.proc = runtime.real;
-            }
-        }
-        else
-        {
-            runtime.real = 0;
-        }
+        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff, inputrec);
     }
 
     wallcycle_stop(wcycle, ewcRUN);
@@ -1608,7 +1627,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      * if rerunMD, don't write last frame again
      */
     finish_run(fplog, cr,
-               inputrec, nrnb, wcycle, &runtime,
+               inputrec, nrnb, wcycle, walltime_accounting,
                fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU ?
                nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
@@ -1635,7 +1654,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_hardware_info_free(hwinfo);
 
     /* Does what it says */
-    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", &runtime);
+    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", walltime_accounting);
+    walltime_accounting_destroy(walltime_accounting);
 
     /* Close logfile already here if we were appending to it */
     if (MASTER(cr) && (Flags & MD_APPENDFILES))

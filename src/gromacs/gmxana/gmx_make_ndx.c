@@ -42,11 +42,11 @@
 #include <ctype.h>
 #include "sysstuff.h"
 #include "strdb.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "string2.h"
 #include "statutil.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "typedefs.h"
 #include "index.h"
 #include "smalloc.h"
@@ -1547,8 +1547,11 @@ int gmx_make_ndx(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     stxfile = ftp2fn_null(efSTX, NFILE, fnm);
     if (opt2bSet("-n", NFILE, fnm))

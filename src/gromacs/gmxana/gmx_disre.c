@@ -44,7 +44,7 @@
 #include "xvgr.h"
 #include "vec.h"
 #include "do_fit.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "disre.h"
@@ -52,13 +52,14 @@
 #include "force.h"
 #include "gstat.h"
 #include "main.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "index.h"
 #include "mdatoms.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "mdrun.h"
 #include "names.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "mtop_util.h"
 #include "gmx_ana.h"
 
@@ -142,16 +143,17 @@ static void print5(FILE *fp)
     fprintf(fp, "\n");
 }
 
-static void check_viol(FILE *log, t_commrec *cr,
+static void check_viol(FILE *log,
                        t_ilist *disres, t_iparams forceparams[],
                        rvec x[], rvec f[],
-                       t_forcerec *fr, t_pbc *pbc, t_graph *g, t_dr_result dr[],
+                       t_pbc *pbc, t_graph *g, t_dr_result dr[],
                        int clust_id, int isize, atom_id index[], real vvindex[],
                        t_fcdata *fcd)
 {
     t_iatom         *forceatoms;
     int              i, j, nat, n, type, nviol, ndr, label;
     real             ener, rt, mviol, tviol, viol, lam, dvdl, drt;
+    rvec            *fshift;
     static  gmx_bool bFirst = TRUE;
 
     lam   = 0;
@@ -191,7 +193,7 @@ static void check_viol(FILE *log, t_commrec *cr,
         while (((i+n) < disres->nr) &&
                (forceparams[forceatoms[i+n]].disres.label == label));
 
-        calc_disres_R_6(cr->ms, n, &forceatoms[i], forceparams,
+        calc_disres_R_6(n, &forceatoms[i], forceparams,
                         (const rvec*)x, pbc, fcd, NULL);
 
         if (fcd->disres.Rt_6[0] <= 0)
@@ -206,9 +208,11 @@ static void check_viol(FILE *log, t_commrec *cr,
         dr[clust_id].aver_3[ndr] += drt;
         dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[0];
 
+        snew(fshift, SHIFTS);
         ener = interaction_function[F_DISRES].ifunc(n, &forceatoms[i], forceparams,
-                                                    (const rvec*)x, f, fr->fshift,
+                                                    (const rvec*)x, f, fshift,
                                                     pbc, g, lam, &dvdl, NULL, fcd, NULL);
+        sfree(fshift);
         viol = fcd->disres.sumviol;
 
         if (viol > 0)
@@ -682,10 +686,8 @@ int gmx_disre(int argc, char *argv[])
     rvec           *xtop;
     gmx_localtop_t *top;
     t_atoms        *atoms = NULL;
-    t_forcerec     *fr;
     t_fcdata        fcd;
     t_nrnb          nrnb;
-    t_commrec      *cr;
     t_graph        *g;
     int             ntopatoms, natoms, i, j, kkk;
     t_trxstatus    *status;
@@ -723,11 +725,13 @@ int gmx_disre(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    cr  = init_par(&argc, &argv);
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
-    gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr, FALSE, 0, &fplog);
+    fplog = ftp2FILE(efLOG, NFILE, fnm, "w");
 
     if (ntop)
     {
@@ -825,10 +829,6 @@ int gmx_disre(int argc, char *argv[])
     mdatoms = init_mdatoms(fplog, &mtop, ir.efep != efepNO);
     atoms2md(&mtop, &ir, 0, NULL, 0, mtop.natoms, mdatoms);
     update_mdatoms(mdatoms, ir.fepvals->init_lambda);
-    fr      = mk_forcerec();
-    fprintf(fplog, "Made forcerec\n");
-    init_forcerec(fplog, oenv, fr, NULL, &ir, &mtop, cr, box,
-                  NULL, NULL, NULL, NULL, NULL, FALSE, -1);
     init_nrnb(&nrnb);
     if (ir.ePBC != epbcNONE)
     {
@@ -858,15 +858,15 @@ int gmx_disre(int argc, char *argv[])
             }
             my_clust = clust->inv_clust[j];
             range_check(my_clust, 0, clust->clust->nr);
-            check_viol(fplog, cr, &(top->idef.il[F_DISRES]),
+            check_viol(fplog, &(top->idef.il[F_DISRES]),
                        top->idef.iparams,
-                       x, f, fr, pbc_null, g, dr_clust, my_clust, isize, index, vvindex, &fcd);
+                       x, f, pbc_null, g, dr_clust, my_clust, isize, index, vvindex, &fcd);
         }
         else
         {
-            check_viol(fplog, cr, &(top->idef.il[F_DISRES]),
+            check_viol(fplog, &(top->idef.il[F_DISRES]),
                        top->idef.iparams,
-                       x, f, fr, pbc_null, g, &dr, 0, isize, index, vvindex, &fcd);
+                       x, f, pbc_null, g, &dr, 0, isize, index, vvindex, &fcd);
         }
         if (bPDB)
         {
@@ -941,8 +941,6 @@ int gmx_disre(int argc, char *argv[])
         do_view(oenv, opt2fn("-ds", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-dm", NFILE, fnm), "-nxy");
     }
-
-    gmx_finalize_par();
 
     gmx_log_close(fplog);
 

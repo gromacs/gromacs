@@ -48,13 +48,14 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "txtdump.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "gstat.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 typedef struct {
@@ -177,8 +178,11 @@ int gmx_lie(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fp = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
     do_enxnms(fp, &nre, &enm);

@@ -37,7 +37,7 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "copyrite.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "string2.h"
 #include "readinp.h"
 #include "calcgrid.h"
@@ -51,8 +51,6 @@
 #include "network.h"
 #include "main.h"
 #include "macros.h"
-
-#include "gromacs/utility/programinfo.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
@@ -419,16 +417,16 @@ static void calc_recipbox(matrix box, matrix recipbox)
 
 /* Estimate the reciprocal space part error of the SPME Ewald sum. */
 static real estimate_reciprocal(
-        t_inputinfo *info,
-        rvec         x[],   /* array of particles */
-        real         q[],   /* array of charges */
-        int          nr,    /* number of charges = size of the charge array */
+        t_inputinfo       *info,
+        rvec               x[], /* array of particles */
+        real               q[], /* array of charges */
+        int                nr,  /* number of charges = size of the charge array */
         FILE  gmx_unused  *fp_out,
-        gmx_bool     bVerbose,
-        unsigned int seed,     /* The seed for the random number generator */
-        int         *nsamples, /* Return the number of samples used if Monte Carlo
-                                * algorithm is used for self energy error estimate */
-        t_commrec   *cr)
+        gmx_bool           bVerbose,
+        unsigned int       seed,     /* The seed for the random number generator */
+        int               *nsamples, /* Return the number of samples used if Monte Carlo
+                                      * algorithm is used for self energy error estimate */
+        t_commrec         *cr)
 {
     real     e_rec   = 0; /* reciprocal error estimate */
     real     e_rec1  = 0; /* Error estimate term 1*/
@@ -1123,19 +1121,20 @@ int gmx_pme_error(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    cr = init_par(&argc, &argv);
-    gmx::ProgramInfo::init(argc, argv);
-
+    cr = init_commrec();
 #ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-    PCA_Flags  = PCA_NOEXIT_ON_ARGS | PCA_STANDALONE;
+    PCA_Flags  = PCA_NOEXIT_ON_ARGS;
     PCA_Flags |= (MASTER(cr) ? 0 : PCA_QUIET);
 
-    parse_common_args(&argc, argv, PCA_Flags,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_Flags,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     if (!bTUNE)
     {
@@ -1202,8 +1201,6 @@ int gmx_pme_error(int argc, char *argv[])
         please_cite(fp, "Wang2010");
         fclose(fp);
     }
-
-    gmx_finalize_par();
 
     return 0;
 }

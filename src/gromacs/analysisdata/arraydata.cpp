@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -139,19 +140,20 @@ AbstractAnalysisArrayData::valuesReady()
     bReady_ = true;
 
     std::vector<AnalysisDataValue>::const_iterator valueIter = value_.begin();
-    notifyDataStart();
+    AnalysisDataModuleManager                     &modules   = moduleManager();
+    modules.notifyDataStart(this);
     for (int i = 0; i < rowCount(); ++i, valueIter += columnCount())
     {
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
-        notifyFrameStart(header);
-        notifyPointsAdd(
+        modules.notifyFrameStart(header);
+        modules.notifyPointsAdd(
                 AnalysisDataPointSetRef(
                         header, pointSetInfo_,
                         AnalysisDataValuesRef(valueIter,
                                               valueIter + columnCount())));
-        notifyFrameFinish(header);
+        modules.notifyFrameFinish(header);
     }
-    notifyDataFinish();
+    modules.notifyDataFinish();
 }
 
 

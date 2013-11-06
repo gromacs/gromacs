@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares common exception classes for fatal error handling.
+ * Declares common exception classes and macros for fatal error handling.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -66,9 +66,8 @@ namespace internal
 typedef std::vector<boost::exception_ptr> NestedExceptionList;
 }   // namespace internal
 
-/*! \addtopublicapi
- * \{
- */
+//! \addtogroup module_utility
+//! \{
 
 /*! \brief
  * Provides information for Gromacs exception constructors.
@@ -157,7 +156,7 @@ class ExceptionInitializer
  * -# Because the constructor takes an argument, virtual inheritance would
  *    complicate any classes that inherit indirectly from this class.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class GromacsException : public std::exception, public boost::exception
 {
@@ -205,7 +204,7 @@ class GromacsException : public std::exception, public boost::exception
 /*! \brief
  * Exception class for file I/O errors.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class FileIOError : public GromacsException
 {
@@ -232,7 +231,7 @@ class FileIOError : public GromacsException
  * Derived classes should be used to indicate the nature of the error instead
  * of throwing this class directly.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class UserInputError : public GromacsException
 {
@@ -245,7 +244,7 @@ class UserInputError : public GromacsException
 /*! \brief
  * Exception class for situations where user input cannot be parsed/understood.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class InvalidInputError : public UserInputError
 {
@@ -260,7 +259,7 @@ class InvalidInputError : public UserInputError
 /*! \brief
  * Exception class for situations where user input is inconsistent.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class InconsistentInputError : public UserInputError
 {
@@ -275,7 +274,7 @@ class InconsistentInputError : public UserInputError
 /*! \brief
  * Exception class for simulation instabilities.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class SimulationInstabilityError : public GromacsException
 {
@@ -290,7 +289,7 @@ class SimulationInstabilityError : public GromacsException
 /*! \brief
  * Exception class for internal errors.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class InternalError : public GromacsException
 {
@@ -305,7 +304,7 @@ class InternalError : public GromacsException
 /*! \brief
  * Exception class for incorrect use of an API.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class APIError : public GromacsException
 {
@@ -320,7 +319,7 @@ class APIError : public GromacsException
 /*! \brief
  * Exception class for use of an unimplemented feature.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class NotImplementedError : public APIError
 {
@@ -349,7 +348,7 @@ class NotImplementedError : public APIError
    {
        GMX_THROW(InconsistentUserInput("Negative values not allowed for value"));
    }
- * \endcode
+   \endcode
  */
 #define GMX_THROW(e) \
     BOOST_THROW_EXCEPTION((e))
@@ -376,7 +375,7 @@ class NotImplementedError : public APIError
    {
        GMX_THROW(FileIOError("Could not open file"), "fopen", errno);
    }
- * \endcode
+   \endcode
  */
 #define GMX_THROW_WITH_ERRNO(e, syscall, err) \
     do { \
@@ -388,7 +387,7 @@ class NotImplementedError : public APIError
 /*! \brief
  * Formats a standard fatal error message for reporting an exception.
  *
- * \param[in] fp  File to format the message to.
+ * \param[in] fp  %File to format the message to.
  * \param[in] ex  Exception to format.
  *
  * Does not throw.  If memory allocation fails or some other error occurs
@@ -398,7 +397,7 @@ class NotImplementedError : public APIError
  * \code
    int main(int argc, char *argv[])
    {
-       gmx::ProgramInfo::init(argc, argv);
+       gmx::init(&argc, &argv);
        try
        {
            // The actual code for the program
@@ -407,10 +406,10 @@ class NotImplementedError : public APIError
        catch (const std::exception &ex)
        {
            gmx::printFatalErrorMessage(stderr, ex);
-           return 1;
+           return gmx::processExceptionAtExit(ex);
        }
    }
- * \endcode
+   \endcode
  */
 void printFatalErrorMessage(FILE *fp, const std::exception &ex);
 /*! \brief
@@ -424,21 +423,34 @@ std::string formatExceptionMessageToString(const std::exception &ex);
 /*! \brief
  * Formats an error message for reporting an exception.
  *
- * \param     fp  File to write the message to.
+ * \param     fp  %File to write the message to.
  * \param[in] ex  Exception to format.
  * \throws    std::bad_alloc if out of memory.
  */
 void formatExceptionMessageToFile(FILE *fp, const std::exception &ex);
+/*! \brief
+ * Handles an exception that is causing the program to terminate.
+ *
+ * \param[in] ex  Exception that is the cause for terminating the program.
+ * \returns   Return code to return from main().
+ *
+ * This method should be called as the last thing before terminating the
+ * program because of an exception.  It exists to terminate the program as
+ * gracefully as possible in the case of MPI processing (but the current
+ * implementation always calls MPI_Abort()).
+ *
+ * See printFatalErrorMessage() for example usage.
+ *
+ * Does not throw.
+ */
+int processExceptionAtExit(const std::exception &ex);
 
 /*! \brief
  * Converts an exception into a return code.
  */
 int translateException(const std::exception &ex);
 
-/*!\}*/
-
-/*! \cond libapi */
-/*! \libinternal \brief
+/*! \brief
  * Macro for catching exceptions at C++ -> C boundary.
  *
  * This macro is intended for uniform handling of exceptions when C++ code is
@@ -452,22 +464,21 @@ int translateException(const std::exception &ex);
  * behavior if needed.
  *
  * Usage:
- * \code
+   \code
    try
    {
        // C++ code
    }
    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
- * \endcode
- *
- * \inlibraryapi
+   \endcode
  */
 #define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR \
     catch (const std::exception &ex) { \
         ::gmx::printFatalErrorMessage(stderr, ex); \
-        std::exit(1); \
+        ::std::exit(::gmx::processExceptionAtExit(ex)); \
     }
-//! \endcond
+
+//! \}
 
 } // namespace gmx
 

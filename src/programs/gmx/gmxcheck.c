@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -42,23 +42,24 @@
 #include "main.h"
 #include "macros.h"
 #include <math.h>
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
-#include "gmxfio.h"
-#include "trnio.h"
-#include "xtcio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "atomprop.h"
 #include "vec.h"
 #include "pbc.h"
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
-#include "confio.h"
-#include "enxio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "names.h"
 #include "mtop_util.h"
 
@@ -712,7 +713,7 @@ void chk_enx(const char *fn)
 int gmx_gmxcheck(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]gmxcheck[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
+        "[TT]gmx check[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
         "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
         "or an index file ([TT].ndx[tt])",
         "and prints out useful information about them.[PAR]",
@@ -728,7 +729,7 @@ int gmx_gmxcheck(int argc, char *argv[])
         "the program will check whether the bond lengths defined in the tpr",
         "file are indeed correct in the trajectory. If not you may have",
         "non-matching files due to e.g. deshuffling or due to problems with",
-        "virtual sites. With these flags, [TT]gmxcheck[tt] provides a quick check for such problems.[PAR]",
+        "virtual sites. With these flags, [TT]gmx check[tt] provides a quick check for such problems.[PAR]",
         "The program can compare two run input ([TT].tpr[tt], [TT].tpb[tt] or",
         "[TT].tpa[tt]) files",
         "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
@@ -781,8 +782,11 @@ int gmx_gmxcheck(int argc, char *argv[])
           "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
     };
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fn1 = opt2fn_null("-f", NFILE, fnm);
     fn2 = opt2fn_null("-f2", NFILE, fnm);

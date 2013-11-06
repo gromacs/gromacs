@@ -151,6 +151,13 @@ AnalysisData::setMultipoint(bool bMultipoint)
 }
 
 
+int
+AnalysisData::frameCount() const
+{
+    return impl_->storage_.frameCount();
+}
+
+
 AnalysisDataHandle
 AnalysisData::startData(const AnalysisDataParallelOptions &opt)
 {
@@ -158,9 +165,7 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
                        "Too many calls to startData() compared to provided options");
     if (impl_->handles_.empty())
     {
-        notifyDataStart();
-        impl_->storage_.setParallelOptions(opt);
-        impl_->storage_.startDataStorage(this);
+        impl_->storage_.startParallelDataStorage(this, &moduleManager(), opt);
     }
 
     Impl::HandlePointer handle(new internal::AnalysisDataHandleImpl(this));
@@ -188,7 +193,7 @@ AnalysisData::finishData(AnalysisDataHandle handle)
 
     if (impl_->handles_.empty())
     {
-        notifyDataFinish();
+        impl_->storage_.finishDataStorage();
     }
 }
 

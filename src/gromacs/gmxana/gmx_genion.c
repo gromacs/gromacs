@@ -40,16 +40,16 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "statutil.h"
 #include "pbc.h"
 #include "force.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "maths.h"
 #include "macros.h"
 #include "vec.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "mdrun.h"
 #include "main.h"
 #include "random.h"
@@ -64,7 +64,7 @@ static void insert_ion(int nsa, int *nwater,
                        t_atoms *atoms,
                        real rmin, int *seed)
 {
-    int             i, ei,nw;
+    int             i, ei, nw;
     real            rmin2;
     rvec            dx;
     gmx_large_int_t maxrand;
@@ -363,12 +363,12 @@ int gmx_genion(int argc, char *argv[])
         "If you specify a salt concentration existing ions are not taken into "
         "account. In effect you therefore specify the amount of salt to be added.",
     };
-    static int         p_num   = 0, n_num = 0, p_q = 1, n_q = -1;
-    static const char *p_name  = "NA", *n_name = "CL";
-    static real        rmin    = 0.6, conc = 0;
-    static int         seed    = 1993;
+    static int         p_num    = 0, n_num = 0, p_q = 1, n_q = -1;
+    static const char *p_name   = "NA", *n_name = "CL";
+    static real        rmin     = 0.6, conc = 0;
+    static int         seed     = 1993;
     static gmx_bool    bNeutral = FALSE;
-    static t_pargs     pa[]    = {
+    static t_pargs     pa[]     = {
         { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
         { "-pname", FALSE, etSTR,  {&p_name}, "Name of the positive ion"      },
         { "-pq",    FALSE, etINT,  {&p_q},   "Charge of the positive ion"    },
@@ -381,7 +381,7 @@ int gmx_genion(int argc, char *argv[])
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [TT].tpr[tt] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
         { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
     };
-    t_topology        top;
+    t_topology         top;
     rvec              *x, *v;
     real               vol, qtot;
     matrix             box;
@@ -401,8 +401,11 @@ int gmx_genion(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     /* Check input for something sensible */
     if ((p_num < 0) || (n_num < 0))
@@ -427,11 +430,11 @@ int gmx_genion(int argc, char *argv[])
     }
     iqtot = gmx_nint(qtot);
 
-    
+
     if (conc > 0)
     {
         /* Compute number of ions to be added */
-        vol = det(box);
+        vol   = det(box);
         nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
         p_num = abs(nsalt*n_q);
         n_num = abs(nsalt*p_q);
@@ -446,9 +449,9 @@ int gmx_genion(int argc, char *argv[])
         if ((qdelta % gcd) != 0)
         {
             gmx_fatal(FARGS, "Can't neutralize this system using -nq %d and"
-                    " -pq %d.\n", n_q, p_q);
+                      " -pq %d.\n", n_q, p_q);
         }
-        
+
         while (qdelta != 0)
         {
             while (qdelta < 0)

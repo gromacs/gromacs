@@ -39,7 +39,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "gmxcomplex.h"
-#include "gmx_wallcycle.h"
+#include "sim_util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,6 +97,7 @@ int gmx_pme_do(gmx_pme_t pme,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,     t_nrnb *mynrnb,
                 gmx_wallcycle_t wcycle,
+                gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff,
                 t_inputrec *ir);
 /* Called on the nodes that do PME exclusively (as slaves)

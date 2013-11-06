@@ -38,9 +38,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -57,6 +57,7 @@
 #include "xvgr.h"
 #include "gmx_ana.h"
 #include "gromacs/fft/fft.h"
+#include "gromacs/fileio/trxio.h"
 
 static void index_atom2mol(int *n, atom_id *index, t_block *mols)
 {
@@ -234,8 +235,11 @@ int gmx_velacc(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     if (bMol || bMass)
     {

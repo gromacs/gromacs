@@ -28,14 +28,15 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#include <copyrite.h>
-#include <filenm.h>
-#include <macros.h>
-#include <pbc.h>
-#include <smalloc.h>
-#include <statutil.h>
-#include <vec.h>
-#include <xvgr.h>
+#include "copyrite.h"
+#include "gromacs/fileio/filenm.h"
+#include "macros.h"
+#include "pbc.h"
+#include "smalloc.h"
+#include "statutil.h"
+#include "vec.h"
+#include "xvgr.h"
+#include "gromacs/fileio/trxio.h"
 
 
 int gmx_dyecoupl(int argc, char *argv[])
@@ -120,7 +121,10 @@ int gmx_dyecoupl(int argc, char *argv[])
                 rrange, krange, rincr, kincr, Rfrac;
     int         rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
-    parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
 
     /* Check command line options for filenames and set bool flags when switch used*/

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -48,12 +48,15 @@
 /*! \brief
  * Stores a set of positions together with their origins.
  */
-typedef struct gmx_ana_pos_t
+struct gmx_ana_pos_t
 {
-    /*! \brief
-     * Number of positions.
-     */
-    int                 nr;
+    //! Initializes an empty position structure.
+    gmx_ana_pos_t();
+    ~gmx_ana_pos_t();
+
+    //! Returns the number of positions.
+    int count() const { return m.mapb.nr; }
+
     /*! \brief
      * Array of positions.
      */
@@ -73,18 +76,11 @@ typedef struct gmx_ana_pos_t
      */
     gmx_ana_indexmap_t  m;
     /*! \brief
-     * Pointer to the current evaluation group.
-     */
-    gmx_ana_index_t    *g;
-    /*! \brief
      * Number of elements allocated for \c x.
      */
     int                 nalloc_x;
-} gmx_ana_pos_t;
+};
 
-/** Initializes an empty position structure. */
-void
-gmx_ana_pos_clear(gmx_ana_pos_t *pos);
 /** Ensures that enough memory has been allocated to store positions. */
 void
 gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize);
@@ -94,15 +90,13 @@ gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos);
 /** Request memory allocation for forces. */
 void
 gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos);
+/** Reserves memory for use with gmx_ana_pos_append_init(). */
+void
+gmx_ana_pos_reserve_for_append(gmx_ana_pos_t *pos, int n, int isize,
+                               bool bVelocities, bool bForces);
 /** Initializes a \c gmx_ana_pos_t to represent a constant position. */
 void
 gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x);
-/** Frees the memory allocated for position storage. */
-void
-gmx_ana_pos_deinit(gmx_ana_pos_t *pos);
-/** Frees the memory allocated for positions. */
-void
-gmx_ana_pos_free(gmx_ana_pos_t *pos);
 /** Copies the evaluated positions to a preallocated data structure. */
 void
 gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst);
@@ -110,9 +104,6 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst);
 /** Sets the number of positions in a position structure. */
 void
 gmx_ana_pos_set_nr(gmx_ana_pos_t *pos, int n);
-/** Sets the evaluation group of a position data structure. */
-void
-gmx_ana_pos_set_evalgrp(gmx_ana_pos_t *pos, gmx_ana_index_t *g);
 /** Empties a position data structure with full initialization. */
 void
 gmx_ana_pos_empty_init(gmx_ana_pos_t *pos);
@@ -122,14 +113,15 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos);
 /** Appends a position to a preallocated data structure with full
  * initialization. */
 void
-gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
-                        gmx_ana_pos_t *src, int i);
+gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i);
 /** Appends a position to a preallocated data structure. */
 void
-gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
-                   gmx_ana_pos_t *src, int i, int refid);
+gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid);
 /** Updates position data structure state after appends. */
 void
 gmx_ana_pos_append_finish(gmx_ana_pos_t *pos);
+void
+/** Appends atoms from a position into a preallocated index group. */
+gmx_ana_pos_add_to_group(gmx_ana_index_t *g, gmx_ana_pos_t *src, int i);
 
 #endif

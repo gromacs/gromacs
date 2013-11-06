@@ -42,7 +42,7 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "copyrite.h"
 #include "vec.h"
@@ -51,7 +51,7 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "trnio.h"
+#include "gromacs/fileio/trnio.h"
 #include "gmx_ana.h"
 
 
@@ -179,9 +179,12 @@ int gmx_g_angle(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
+                           &oenv))
+    {
+        return 0;
+    }
 
     mult   = 4;
     maxang = 360.0;

@@ -53,9 +53,9 @@
 #include "network.h"
 #include "main.h"
 #include "macros.h"
-#include "futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "string2.h"
 #include "copyrite.h"
 
@@ -360,40 +360,6 @@ void gmx_log_close(FILE *fp)
     }
 }
 
-static void comm_args(const t_commrec *cr, int *argc, char ***argv)
-{
-    int i, len;
-
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(*argc), argc, cr);
-    }
-
-    if (!MASTER(cr))
-    {
-        snew(*argv, *argc+1);
-    }
-    if (debug)
-    {
-        fprintf(debug, "NODEID=%d argc=%d\n", cr->nodeid, *argc);
-    }
-    for (i = 0; (i < *argc); i++)
-    {
-        if (MASTER(cr))
-        {
-            len = strlen((*argv)[i])+1;
-        }
-        gmx_bcast(sizeof(len), &len, cr);
-        if (!MASTER(cr))
-        {
-            snew((*argv)[i], len);
-        }
-        /*gmx_bcast(len*sizeof((*argv)[i][0]),(*argv)[i],cr);*/
-        gmx_bcast(len*sizeof(char), (*argv)[i], cr);
-    }
-    debug_gmx();
-}
-
 void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
                       int nfile, const t_filenm fnm[], gmx_bool bParFn)
 {
@@ -505,92 +471,4 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
             }
         }
     }
-}
-
-t_commrec *init_par(int gmx_unused *argc, char ***argv_ptr)
-{
-    t_commrec    *cr;
-
-    snew(cr, 1);
-
-#if defined GMX_MPI && !defined GMX_THREAD_MPI
-    char **argv = argv_ptr ? *argv_ptr : NULL;
-    cr->sim_nodeid = gmx_setup(argc, argv, &cr->nnodes);
-
-    if (!PAR(cr) && (cr->sim_nodeid != 0))
-    {
-        gmx_comm("(!PAR(cr) && (cr->sim_nodeid != 0))");
-    }
-
-    cr->mpi_comm_mysim   = MPI_COMM_WORLD;
-    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-#else
-    /* These should never be accessed */
-    cr->mpi_comm_mysim   = NULL;
-    cr->mpi_comm_mygroup = NULL;
-    cr->nnodes           = 1;
-    cr->sim_nodeid       = 0;
-#endif
-
-    cr->nodeid = cr->sim_nodeid;
-
-    cr->duty = (DUTY_PP | DUTY_PME);
-
-    /* Communicate arguments if parallel */
-#ifndef GMX_THREAD_MPI
-    if (PAR(cr))
-    {
-        comm_args(cr, argc, argv_ptr);
-    }
-#endif /* GMX_THREAD_MPI */
-
-#ifdef GMX_MPI
-#if !defined(GMX_THREAD_MPI) && !defined(MPI_IN_PLACE_EXISTS)
-    /* initialize the MPI_IN_PLACE replacement buffers */
-    snew(cr->mpb, 1);
-    cr->mpb->ibuf        = NULL;
-    cr->mpb->libuf       = NULL;
-    cr->mpb->fbuf        = NULL;
-    cr->mpb->dbuf        = NULL;
-    cr->mpb->ibuf_alloc  = 0;
-    cr->mpb->libuf_alloc = 0;
-    cr->mpb->fbuf_alloc  = 0;
-    cr->mpb->dbuf_alloc  = 0;
-#endif
-#endif
-
-    return cr;
-}
-
-t_commrec *init_par_threads(const t_commrec *cro)
-{
-#ifdef GMX_THREAD_MPI
-    int        initialized;
-    t_commrec *cr;
-
-    /* make a thread-specific commrec */
-    snew(cr, 1);
-    /* now copy the whole thing, so settings like the number of PME nodes
-       get propagated. */
-    *cr = *cro;
-
-    /* and we start setting our own thread-specific values for things */
-    MPI_Initialized(&initialized);
-    if (!initialized)
-    {
-        gmx_comm("Initializing threads without comm");
-    }
-    /* once threads will be used together with MPI, we'll
-       fill the cr structure with distinct data here. This might even work: */
-    cr->sim_nodeid = gmx_setup(0, NULL, &cr->nnodes);
-
-    cr->mpi_comm_mysim   = MPI_COMM_WORLD;
-    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-    cr->nodeid           = cr->sim_nodeid;
-    cr->duty             = (DUTY_PP | DUTY_PME);
-
-    return cr;
-#else
-    return NULL;
-#endif
 }

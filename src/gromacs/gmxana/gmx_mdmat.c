@@ -43,15 +43,16 @@
 #include "vec.h"
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "statutil.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "xvgr.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "rmpbc.h"
 #include "pbc.h"
 #include "gmx_ana.h"
@@ -225,8 +226,11 @@ int gmx_mdmat(int argc, char *argv[])
     output_env_t   oenv;
     gmx_rmpbc_t    gpbc = NULL;
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE, NFILE, fnm,
-                      asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE, NFILE, fnm,
+                           asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fprintf(stderr, "Will truncate at %f nm\n", truncate);
     bCalcN  = opt2bSet("-no", NFILE, fnm);

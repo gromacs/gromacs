@@ -41,7 +41,8 @@
 #define GMX_DFTI_PREC  DFTI_SINGLE
 #endif
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Contents of the Intel MKL FFT fft datatype.
  *
  * Note that this is one of several possible implementations of gmx_fft_t.

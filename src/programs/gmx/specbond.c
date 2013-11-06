@@ -39,7 +39,7 @@
 #include <ctype.h>
 #include <math.h>
 #include "typedefs.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "strdb.h"
 #include "string2.h"
 #include "smalloc.h"
