@@ -71,7 +71,10 @@ bool MMSlave::readTpr(const char *tpr)
     x_ = (rvec *)calloc(natoms_, sizeof(rvec));
     v_ = (rvec *)calloc(natoms_, sizeof(rvec));
     f_ = (rvec *)calloc(natoms_, sizeof(rvec));
-    (void) read_tpx(tpr, &inputrec_, box_, &natoms_, x_, v_, f_, &mtop_);
+    
+    (void) read_tpx(tpr, &inputrec_, box_, &natoms_, x_, 
+                    (tpx.bV ? v_ : NULL),
+                    (tpx.bF ? f_ : NULL), &mtop_);
 
     return true;
 }
