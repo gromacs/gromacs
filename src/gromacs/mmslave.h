@@ -43,6 +43,8 @@
 #ifndef GMX_MMSLAVE_H
 #define GMX_MMSLAVE_H
 
+#include "gromacs/legacyheaders/types/simple.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -61,13 +63,49 @@ extern "C" {
 
     /*! \brief
      * Function to read a tpr file and store the information in the
-     * data structur
+     * data structure
      * \param[in] tpr  the file name
      * \param[in] gms  the data structure to be read
      * \return TRUE if successful
      */
     extern gmx_bool mmslave_read_tpr(const char *tpr, 
                                      gmx_mmslave_t gms);
+
+    /*! \brief
+     * \return the number of atoms in the system
+     */
+    extern int mmslave_natoms(gmx_mmslave_t gms);
+
+    /*! \brief
+     * Copy internal coordinate array
+     * \param[in]  natoms length of array
+     * \param[out] x      array of rvecs (must be allocated by the caller)
+     * \return TRUE on success, false otherwise (typically if natoms is too small or x is NULL)
+     */
+    extern gmx_bool mmslave_copyX(gmx_mmslave_t gms, int natoms, rvec *x);
+     
+    /*! \brief
+     * Copy internal velocity array
+     * \param[in]  gms    the data structure containing the data
+     * \param[in]  natoms length of array
+     * \param[out] v      array of rvecs (must be allocated by the caller)
+     * \return TRUE on success, false otherwise (typically if natoms is too small or v is NULL)
+     */
+    extern gmx_bool mmslave_copyV(gmx_mmslave_t gms, int natoms, rvec *v);
+     
+    /*! \brief
+     * Copy internal force array
+     * \param[in]  gms    the data structure containing the data
+     * \param[in]  natoms length of array
+     * \param[out] f      array of rvecs (must be allocated by the caller)
+     * \return TRUE on success, false otherwise (typically if natoms is too small or f is NULL)
+     */
+    extern gmx_bool mmslave_copyF(gmx_mmslave_t gms, int natoms, rvec *f);
+     
+    /*! \brief
+     * Function to cleanup the innards of the data structure
+     */
+    extern void mmslave_clean(gmx_mmslave_t gms);
 
     /*! \brief
      * Function to modify the charge of an atom

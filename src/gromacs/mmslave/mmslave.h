@@ -32,12 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares code for calling GROMACS routines from an external program
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \inpublicapi
  * \ingroup module_qmmm
  */
 #ifndef GMX_MMSLAVE_MMSLAVE_H
@@ -51,11 +50,24 @@ namespace gmx
  */
 class MMSlave 
 {
-    private:
-    
-    public:
+private:
+    //! Simulation parameters
+    t_inputrec inputrec_;
+    //! Simulation box
+    matrix     box_;
+    //! Molecular topology
+    gmx_mtop_t mtop_;
+    //! Number of atoms
+    int natoms_;
+    //! Coordinates
+    rvec *x_;
+    //! Velocities
+    rvec *v_;
+    //! Forces
+    rvec *f_;
+public:
     //! Constructor
-    MMSlave() {}
+    MMSlave();
     
     //! Destructor
     ~MMSlave() {}
@@ -68,6 +80,40 @@ class MMSlave
      */
     bool readTpr(const char *tpr);
 
+    /*! \brief
+     * \return the number of atoms in the system
+     */
+    int nAtoms() { return natoms_; }
+    
+    /*! \brief
+     * Copy internal coordinate array
+     * \param[in]  natoms length of array
+     * \param[out] x      array of rvecs (must be allocated by the caller)
+     * \return true on success, false otherwise (typically if natoms is too small or x is NULL)
+     */
+    bool copyX(int natoms, rvec *x);
+     
+    /*! \brief
+     * Copy internal velocity array
+     * \param[in]  natoms length of array
+     * \param[out] v      array of rvecs (must be allocated by the caller)
+     * \return true on success, false otherwise (typically if natoms is too small or v is NULL)
+     */
+    bool copyV(int natoms, rvec *v);
+     
+    /*! \brief
+     * Copy internal force array
+     * \param[in]  natoms length of array
+     * \param[out] f      array of rvecs (must be allocated by the caller)
+     * \return true on success, false otherwise (typically if natoms is too small or f is NULL)
+     */
+    bool copyF(int natoms, rvec *f);
+     
+    /*! \brief
+     * Clean up function
+     */
+    void cleanUp();
+    
     /*! \brief
      * Function to modify the charge of an atom
      * data structure

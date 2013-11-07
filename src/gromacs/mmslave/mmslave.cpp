@@ -34,16 +34,116 @@
  */
 /*! \file
  * \brief
- * Declares code for calling GROMACS routines from an external program
+ * Contains code for calling GROMACS routines from an external program
  *
- * \author David van der Spoel <spoel@xray.bmc.uu.se>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \inpublicapi
  * \ingroup module_qmmm
  */
 #include <stdlib.h>
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/legacyheaders/vec.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/mmslave.h"
 #include "gromacs/mmslave/mmslave.h"
+
+/* Note: the C-interface is all the way down in this file */
+
+namespace gmx
+{
+
+MMSlave::MMSlave()
+{
+    x_      = NULL;
+    v_      = NULL;
+    f_      = NULL;
+    natoms_ = 0;
+}
+
+bool MMSlave::readTpr(const char *tpr)
+{
+    t_tpxheader tpx;
+    int         version, generation;
+    
+    read_tpxheader(tpr, &tpx, FALSE, &version, &generation);
+    natoms_ = tpx.natoms;
+    x_ = (rvec *)calloc(natoms_, sizeof(rvec));
+    v_ = (rvec *)calloc(natoms_, sizeof(rvec));
+    f_ = (rvec *)calloc(natoms_, sizeof(rvec));
+    (void) read_tpx(tpr, &inputrec_, box_, &natoms_, x_, v_, f_, &mtop_);
+
+    return true;
+}
+
+static bool copyIt(int natoms_dst, rvec *x_dst, int natoms_src, rvec *x_src)
+{
+    if ((natoms_dst < natoms_src) || (NULL == x_dst))
+    {
+        return false;
+    }
+    for(int i=0; (i < natoms_src); i++)
+    {
+        copy_rvec(x_src[i], x_dst[i]);
+    }
+    return true;
+}
+
+bool MMSlave::copyX(int natoms, rvec *x)
+{
+    return copyIt(natoms, x, natoms_, x_);
+}
+
+bool MMSlave::copyV(int natoms, rvec *v)
+{
+    return copyIt(natoms, v, natoms_, v_);
+}
+
+bool MMSlave::copyF(int natoms, rvec *f)
+{
+    return copyIt(natoms, f, natoms_, f_);
+}
+
+void MMSlave::cleanUp()
+{
+    if (NULL != x_)
+    {
+        free(x_);
+    }
+    if (NULL != v_)
+    {
+        free(v_);
+    }
+    if (NULL != f_)
+    {
+        free(f_);
+    }
+}
+
+bool MMSlave::setAtomQ(atom_id id, double q)
+{
+    t_atom *atom;
+    
+    gmx_mtop_atomlookup_t alook = gmx_mtop_atomlookup_init(&mtop_);
+    
+    gmx_mtop_atomnr_to_atom(alook, id, &atom);
+    atom->q = q;
+    atom->qB = q;
+
+    gmx_mtop_atomlookup_destroy(alook);
+
+    return true;
+}
+
+bool MMSlave::calcEnergy(const rvec *x,
+                         rvec *f,
+                         double *energy)
+{
+    fprintf(stderr, "Warning: computing the force and energy is not implemented yet.\n");
+    return true;
+}
+
+}
 
 //! Abstract type for the mmslave code
 typedef struct gmx_mmslave {
@@ -74,6 +174,33 @@ gmx_bool mmslave_read_tpr(const char *tpr,
     return (gmx_bool) gms->mms->readTpr(tpr);
 }
 
+int mmslave_natoms(gmx_mmslave_t gms)
+{
+    return gms->mms->nAtoms();
+}
+
+gmx_bool mmslave_copyX(gmx_mmslave_t gms, int natoms, rvec *x)
+{
+    return (gmx_bool) gms->mms->copyX(natoms, x);
+}
+    
+gmx_bool mmslave_copyV(gmx_mmslave_t gms, int natoms, rvec *v)
+{
+    return (gmx_bool) gms->mms->copyX(natoms, v);
+}
+    
+gmx_bool mmslave_copyF(gmx_mmslave_t gms, int natoms, rvec *f)
+{
+    return (gmx_bool) gms->mms->copyX(natoms, f);
+}
+    
+void mmslave_clean(gmx_mmslave_t gms)
+{
+    gms->mms->cleanUp();
+    delete gms->mms;
+    free(gms);
+}
+
 gmx_bool mmslave_set_q(gmx_mmslave_t gms,
                        atom_id id,
                        double q)
@@ -89,24 +216,3 @@ gmx_bool mmslave_calc_energy(gmx_mmslave_t gms,
     return (gmx_bool) gms->mms->calcEnergy(x, f, energy);
 }
     
-namespace gmx
-{
-
-bool MMSlave::readTpr(const char *tpr)
-{
-    return true;
-}
-
-bool MMSlave::setAtomQ(atom_id id, double q)
-{
-    return true;
-}
-
-bool MMSlave::calcEnergy(const rvec *x,
-                         rvec *f,
-                         double *energy)
-{
-    return true;
-}
-
-}
