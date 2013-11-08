@@ -560,6 +560,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
  * or easier, allocate at least n*SGSF elements.
  */
 static void sort_atoms(int dim, gmx_bool Backwards,
+                       int dd_zone,
                        int *a, int n, rvec *x,
                        real h0, real invh, int n_per_h,
                        int *sort)
@@ -604,13 +605,22 @@ static void sort_atoms(int dim, gmx_bool Backwards,
 
 #ifndef NDEBUG
         /* As we can have rounding effect, we use > iso >= here */
-        if (zi < 0 || zi > n_per_h*SORT_GRID_OVERSIZE)
+        if (zi < 0 || (dd_zone == 0 && zi > n_per_h*SORT_GRID_OVERSIZE))
         {
             gmx_fatal(FARGS, "(int)((x[%d][%c]=%f - %f)*%f) = %d, not in 0 - %d*%d\n",
                       a[i], 'x'+dim, x[a[i]][dim], h0, invh, zi,
                       n_per_h, SORT_GRID_OVERSIZE);
         }
 #endif
+
+        /* In a non-local domain, particles communcated for bonded interactions
+         * can be far beyond the grid size, which is set by the non-bonded
+         * cut-off distance. We sort such particles into the last cell.
+         */
+        if (zi > n_per_h*SORT_GRID_OVERSIZE)
+        {
+            zi = n_per_h*SORT_GRID_OVERSIZE;
+        }
 
         /* Ideally this particle should go in sort cell zi,
          * but that might already be in use,
@@ -1261,7 +1271,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
         ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
 
         /* Sort the atoms within each x,y column on z coordinate */
-        sort_atoms(ZZ, FALSE,
+        sort_atoms(ZZ, FALSE, dd_zone,
                    nbs->a+ash, na, x,
                    grid->c0[ZZ],
                    1.0/nbs->box[ZZ][ZZ], ncz*grid->na_sc,
@@ -1346,7 +1356,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
         ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
 
         /* Sort the atoms within each x,y column on z coordinate */
-        sort_atoms(ZZ, FALSE,
+        sort_atoms(ZZ, FALSE, dd_zone,
                    nbs->a+ash, na, x,
                    grid->c0[ZZ],
                    1.0/nbs->box[ZZ][ZZ], ncz*grid->na_sc,
@@ -1377,7 +1387,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
 
 #if GPU_NSUBCELL_Y > 1
             /* Sort the atoms along y */
-            sort_atoms(YY, (sub_z & 1),
+            sort_atoms(YY, (sub_z & 1), dd_zone,
                        nbs->a+ash_z, na_z, x,
                        grid->c0[YY]+cy*grid->sy,
                        grid->inv_sy, subdiv_z,
@@ -1391,7 +1401,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
 
 #if GPU_NSUBCELL_X > 1
                 /* Sort the atoms along x */
-                sort_atoms(XX, ((cz*GPU_NSUBCELL_Y + sub_y) & 1),
+                sort_atoms(XX, ((cz*GPU_NSUBCELL_Y + sub_y) & 1), dd_zone,
                            nbs->a+ash_y, na_y, x,
                            grid->c0[XX]+cx*grid->sx,
                            grid->inv_sx, subdiv_y,
