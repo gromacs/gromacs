@@ -77,6 +77,7 @@ static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
 /* FW decl. */
 static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int count);
+static int gmx_count_gpu_dev_unique(const gmx_gpu_opt_t *gpu_opt);
 
 static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info, gmx_bool bPrintAll)
 {
@@ -155,9 +156,17 @@ static void print_gpu_use_stats(FILE                 *fplog,
     }
     else
     {
-        sprintf(sbuf, "%d GPU%s %sselected for this run: ",
-                ngpu_use, (ngpu_use > 1) ? "s" : "",
-                gpu_opt->bUserSet ? "user-" : "auto-");
+        int ngpu_use_uniq;
+
+        ngpu_use_uniq = gmx_count_gpu_dev_unique(gpu_opt);
+
+        sprintf(sbuf, "%d GPU%s %sselected for this run.\n"
+                "Per-node mapping of GPU%s to PP rank%s: ",
+                ngpu_use_uniq, (ngpu_use_uniq > 1) ? "s" : "",
+                gpu_opt->bUserSet ? "user-" : "auto-",
+                (ngpu_use > 1) ? "s" : "",
+                (cr->nrank_pp_intranode > 1) ? "s" : "");
+
         for (i = 0; i < ngpu_use; i++)
         {
             sprintf(stmp, "#%d", get_gpu_device_id(gpu_info, gpu_opt, i));
@@ -377,8 +386,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog,
             if (same_count > 0)
             {
                 md_print_warn(cr, fplog,
-                              "NOTE: Potentially sub-optimal launch configuration: you assigned %s to\n"
-                              "      multiple %s%s; this can cause performance loss.\n",
+                              "NOTE: You assigned %s to multiple %s%s",
                               same_count > 1 ? "GPUs" : "a GPU", th_or_proc, btMPI ? "s" : "es");
             }
         }
@@ -395,6 +403,13 @@ void gmx_check_hw_runconf_consistency(FILE *fplog,
 
 }
 
+/* Return 0 if none of the GPU (per node) are shared among PP ranks.
+ *
+ * Sharing GPUs among multiple PP ranks is possible when the user passes
+ * GPU IDs. Here we check for sharing and return a non-zero value when
+ * this is detected. Note that the return value represents the number of
+ * PP rank pairs that share a device.
+ */
 int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
 {
     int      same_count    = 0;
@@ -415,6 +430,46 @@ int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
     }
 
     return same_count;
+}
+
+/* Count and return the number of unique GPUs (per node) selected.
+ *
+ * As sharing GPUs among multiple PP ranks is possible when the user passes
+ * GPU IDs, the number of GPUs user (per node) can be different from the
+ * number of GPU IDs selected.
+ */
+static int gmx_count_gpu_dev_unique(const gmx_gpu_opt_t *gpu_opt)
+{
+    int      uniq_count, ngpu;
+    int      *uniq_ids;
+
+    ngpu        = gpu_opt->ncuda_dev_use;
+    uniq_count  = 0;
+
+    if (gpu_opt->bUserSet)
+    {
+        int      i, j;
+        snew(uniq_ids, ngpu);
+
+        for (i = 0; i < ngpu - 1; i++)
+        {
+            uniq_ids[i] = 0;
+        }
+        for (i = 0; i < ngpu - 1; i++)
+        {
+            uniq_ids[gpu_opt->cuda_dev_use[i]] = 1;
+        }
+        for (i = 0; i < ngpu - 1; i++)
+        {
+            uniq_count += uniq_ids[i];
+        }
+    }
+    else
+    {
+        uniq_count = ngpu;
+    }
+
+    return uniq_count;
 }
 
 
