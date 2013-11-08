@@ -1,0 +1,8 @@
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Verified+2: Jenkins Buildbot
+Code-Review+1: Stefan Fleischmann <stefan.fleischmann@scilifelab.se>
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Fri, 08 Nov 2013 20:01:15 +0100
+Reviewed-on: https://gerrit.gromacs.org/2761
+Project: gromacs
+Branch: refs/heads/master
