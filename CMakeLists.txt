@@ -432,7 +432,7 @@ option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with 
 if (UNIX)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static archives (it will only work if static versions of external dependencies are available and found)")
-elseif (WIN32 and NOT CYGWIN)
+elseif (WIN32 AND NOT CYGWIN)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static system libraries (MT instead of MD)")
 endif()
