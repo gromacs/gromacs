@@ -514,11 +514,12 @@ if (GMX_X11)
     find_package(X11)
     # X11 includes/libraries are only set in the ngmx subdirectory!
     if(NOT X11_FOUND)
-        message(WARNING "X11 include files and/or libraries were not found. Will not build the GROMACS X11-binaries, such as ngmx")
-    else()
-        set(HAVE_X11 1)
-        include_directories(${X11_INCLUDE_DIR})
+        message(FATAL_ERROR
+                "X11 include files and/or libraries were not found. "
+                "Set GMX_X11=OFF to compile without X11 support. "
+                "gmx view will not be available.")
     endif()
+    include_directories(${X11_INCLUDE_DIR})
 endif(GMX_X11)
 
 include(ThreadMPI)
