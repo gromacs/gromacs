@@ -50,7 +50,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 
-#ifdef HAVE_X11
+#ifdef GMX_X11
 
 #include "Xstuff.h"
 #include "gromacs.bm"
@@ -59,10 +59,6 @@
 #include "writeps.h"
 #include "molps.h"
 #include "nmol.h"
-
-/* Forward declarations: I Don't want all that init shit here */
-void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
-              const output_env_t oenv);
 
 static void dump_it(t_manager *man)
 {
@@ -262,65 +258,7 @@ static bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
     }
     return result;
 }
-//! HAVE_X11
-#endif
 
-int gmx_view(int argc, char *argv[])
-{
-    const char  *desc[] = {
-        "[TT]view[tt] is the GROMACS trajectory viewer. This program reads a",
-        "trajectory file, a run input file and an index file and plots a",
-        "3D structure of your molecule on your standard X Window",
-        "screen. No need for a high end graphics workstation, it even",
-        "works on Monochrome screens.[PAR]",
-        "The following features have been implemented:",
-        "3D view, rotation, translation and scaling of your molecule(s),",
-        "labels on atoms, animation of trajectories,",
-        "hardcopy in PostScript format, user defined atom-filters",
-        "runs on MIT-X (real X), open windows and motif,",
-        "user friendly menus, option to remove periodicity, option to",
-        "show computational box.[PAR]",
-        "Some of the more common X command line options can be used: ",
-        "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
-    };
-    const char  *bugs[] = {
-        "Balls option does not work",
-        "Some times dumps core without a good reason"
-    };
-
-    output_env_t oenv;
-    t_filenm     fnm[] = {
-        { efTRX, "-f", NULL, ffREAD },
-        { efTPX, NULL, NULL, ffREAD },
-        { efNDX, NULL, NULL, ffOPTRD }
-    };
-#define NFILE asize(fnm)
-
-    if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
-                          0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
-    {
-#ifndef HAVE_X11
-        fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
-#else
-        t_x11 *x11;
-
-        if ((x11 = GetX11(&argc, argv)) == NULL)
-        {
-            fprintf(stderr, "Can't connect to X Server.\n"
-                    "Check your DISPLAY environment variable\n");
-        }
-        else
-        {
-            init_gmx(x11, argv[0], NFILE, fnm, oenv);
-            x11->MainLoop(x11);
-            x11->CleanUp(x11);
-        }
-#endif
-    }
-    return 0;
-}
-
-#ifdef HAVE_X11
 static t_mentry  FileMenu[] = {
     { 0,  IDEXPORT,   false,  "Export..." },
     { 0,  IDDUMPWIN,  false,  "Print"     },
@@ -352,8 +290,8 @@ static const char *MenuTitle[MSIZE] = {
     "File", "Display", "Help"
 };
 
-void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
-              const output_env_t oenv)
+static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
+                     const output_env_t oenv)
 {
     Pixmap                pm;
     t_gmx                *gmx;
@@ -430,6 +368,59 @@ void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
     ShowDlg(gmx->dlgs[edFilter]);
 }
-
-//! HAVE_X11
 #endif
+
+int gmx_view(int argc, char *argv[])
+{
+    const char  *desc[] = {
+        "[TT]view[tt] is the GROMACS trajectory viewer. This program reads a",
+        "trajectory file, a run input file and an index file and plots a",
+        "3D structure of your molecule on your standard X Window",
+        "screen. No need for a high end graphics workstation, it even",
+        "works on Monochrome screens.[PAR]",
+        "The following features have been implemented:",
+        "3D view, rotation, translation and scaling of your molecule(s),",
+        "labels on atoms, animation of trajectories,",
+        "hardcopy in PostScript format, user defined atom-filters",
+        "runs on MIT-X (real X), open windows and motif,",
+        "user friendly menus, option to remove periodicity, option to",
+        "show computational box.[PAR]",
+        "Some of the more common X command line options can be used: ",
+        "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
+    };
+    const char  *bugs[] = {
+        "Balls option does not work",
+        "Some times dumps core without a good reason"
+    };
+
+    output_env_t oenv;
+    t_filenm     fnm[] = {
+        { efTRX, "-f", NULL, ffREAD },
+        { efTPX, NULL, NULL, ffREAD },
+        { efNDX, NULL, NULL, ffOPTRD }
+    };
+#define NFILE asize(fnm)
+
+    if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
+                          0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+#ifndef GMX_X11
+        fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
+#else
+        t_x11 *x11;
+
+        if ((x11 = GetX11(&argc, argv)) == NULL)
+        {
+            fprintf(stderr, "Can't connect to X Server.\n"
+                    "Check your DISPLAY environment variable\n");
+        }
+        else
+        {
+            init_gmx(x11, argv[0], NFILE, fnm, oenv);
+            x11->MainLoop(x11);
+            x11->CleanUp(x11);
+        }
+#endif
+    }
+    return 0;
+}

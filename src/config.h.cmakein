@@ -203,7 +203,7 @@
 #cmakedefine HAVE_SYSTEM_INFO
 
 /* Define for X-Windows */
-#cmakedefine HAVE_X11
+#cmakedefine GMX_X11
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
