@@ -209,7 +209,8 @@ void CommandLineParser::parse(int *argc, char *argv[])
     // Update the argc count if argv was modified.
     if (impl_->bSkipUnknown_)
     {
-        *argc = newi;
+        *argc      = newi;
+        argv[newi] = NULL;
     }
     // Finish the last option.
     if (bInOption)

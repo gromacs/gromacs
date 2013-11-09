@@ -73,7 +73,7 @@ class CommandLine::Impl
 CommandLine::Impl::Impl(const char *const cmdline[], size_t count)
 {
     args_.reserve(count);
-    argv_.reserve(count);
+    argv_.reserve(count + 1);
     argc_ = static_cast<int>(count);
     for (size_t i = 0; i < count; ++i)
     {
@@ -85,6 +85,7 @@ CommandLine::Impl::Impl(const char *const cmdline[], size_t count)
         args_.push_back(arg);
         argv_.push_back(arg);
     }
+    argv_.push_back(NULL);
 }
 
 CommandLine::Impl::~Impl()
@@ -124,14 +125,16 @@ void CommandLine::append(const char *arg)
                        "Command-line has been modified externally");
     size_t newSize = impl_->args_.size() + 1;
     impl_->args_.reserve(newSize);
-    impl_->argv_.reserve(newSize);
+    impl_->argv_.reserve(newSize + 1);
     char *newArg = strdup(arg);
     if (newArg == NULL)
     {
         throw std::bad_alloc();
     }
     impl_->args_.push_back(newArg);
+    impl_->argv_.pop_back(); // Remove the trailing NULL.
     impl_->argv_.push_back(newArg);
+    impl_->argv_.push_back(NULL);
     impl_->argc_ = static_cast<int>(newSize);
 }
 
