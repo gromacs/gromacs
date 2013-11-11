@@ -231,7 +231,7 @@ static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
     return false;
 }
 
-static bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool MainCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_gmx    *gmx;
     int       nsel, width, height;
