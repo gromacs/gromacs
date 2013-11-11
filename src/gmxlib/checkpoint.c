@@ -1112,16 +1112,44 @@ static int do_cpt_swapstate(XDR *xd,gmx_bool bRead,
 {
     int ii,ic,j;
     int ret=0;
+    int swap_cpt_version = 2;
+    int dummy;
 
 
     if (eswapNO == swapstate->eSwapCoords)
     {
         return ret;
     }
+    
+    swapstate->bFromCpt = bRead;
 
-    /* When reading, ion swapping is not initialized yet,
+    /* Ugly hack to be able to also read older swap checkpoint files */
+    if (bRead)
+    {
+        do_cpt_int_err(xd,"test checkpoint version",&dummy,list);
+        if (dummy < 0)
+        {
+            /* We use values < 0 to transport the swap checkpoint version */
+            swap_cpt_version = -dummy;
+            do_cpt_int_err(xd,"swap coupling steps",&swapstate->csteps,list);
+        }
+        else
+        {
+            swap_cpt_version = 1;
+            /* Found old swap checkpoint version, converting to new version */
+            swapstate->csteps = dummy;
+        }
+    }
+    else
+    {
+        /* If we write, we always write the newest version */
+        dummy = -swap_cpt_version;
+        do_cpt_int_err(xd,"swap checkpoint version",&dummy,list);
+        do_cpt_int_err(xd,"swap coupling steps",&swapstate->csteps,list);
+    }
+
+    /* When reading, init_swapcoords has not been called yet,
      * so we have to allocate memory first. */
-    do_cpt_int_err(xd,"swap coupling steps",&swapstate->csteps,list);
 
     for (ic=0; ic<eCompNr; ic++)
     {
@@ -1190,28 +1218,34 @@ static int do_cpt_swapstate(XDR *xd,gmx_bool bRead,
     /* Ion history */
     do_cpt_int_err(xd, "number of ions", &swapstate->nions, list);
 
-    fprintf(stderr, "\nHistory for %d ions in cpt file.\n", swapstate->nions);
     if (bRead)
     {
         snew(swapstate->chan_pass, swapstate->nions);
         snew(swapstate->dom_from , swapstate->nions);
     }
 
-//    fprintf(stderr, "Channel history for all %d ions:\n", swapstate->nions);
     do_cpt_u_chars(xd, "channel history", swapstate->nions, swapstate->chan_pass, list);
-//    for (j=0; j<swapstate->nions; j++)
-//    {
-//        fprintf(stderr, " %d", swapstate->chan_pass[j]);
-//    }
-//    fprintf(stderr, "\n");
-
-//    fprintf(stderr, "Domain history for all %d ions:\n", swapstate->nions);
     do_cpt_u_chars(xd, "domain history", swapstate->nions, swapstate->dom_from, list);
-//    for (j=0; j<swapstate->nions; j++)
-//    {
-//        fprintf(stderr, " %d", swapstate->dom_from[j]);
-//    }
-//    fprintf(stderr, "\n");
+
+    /* From swap version 2 on, we save the last known whole positions to checkpoint
+     * file to be able to also make multimeric channels whole in PBC */
+    if (swap_cpt_version > 1)
+    {
+        do_cpt_int_err(xd, "Ch0 atoms", &swapstate->nat[eChan0], list);
+        do_cpt_int_err(xd, "Ch1 atoms", &swapstate->nat[eChan1], list);
+        if (bRead)
+        {
+            snew(swapstate->xc_old_whole[eChan0], swapstate->nat[eChan0]);
+            snew(swapstate->xc_old_whole[eChan1], swapstate->nat[eChan1]);
+            do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], swapstate->xc_old_whole[eChan0], list);
+            do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], swapstate->xc_old_whole[eChan1], list);
+        }
+        else
+        {
+            do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], *swapstate->xc_old_whole_p[eChan0], list);
+            do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], *swapstate->xc_old_whole_p[eChan1], list);
+        }
+    }
 
     return ret;
 }

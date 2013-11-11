@@ -204,6 +204,17 @@ typedef struct
     int       nions;              /* Size of the following arrays             */
     unsigned char *dom_from;      /* Ion came from which compartment?         */
     unsigned char *chan_pass;     /* Through which channel did this ion pass? */
+    
+    /* To also make multimeric channel proteins whole, we save the last whole
+     * configuration of the channels in the checkpoint file. If we have no
+     * checkpoint file, we assume that the starting configuration hast the  
+     * correct PBC representation after making the individual molecules whole */
+    gmx_bool  bFromCpt;                         /* Started from .cpt file?    */
+    int       nat[eChanNr];                     /* Size of xc_old_whole, i.e.
+                                                   # of atoms in each channel */
+    rvec      *xc_old_whole[eChanNr];           /* Last known whole positions of  
+                                                   the two channel multimers  */
+    rvec      **xc_old_whole_p[eChanNr];        /* Pointer to these positions */
 }
 swapstate_t;
 

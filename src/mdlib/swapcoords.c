@@ -21,6 +21,7 @@
 #include "xvgr.h"
 #include "gmxfio.h"
 #include "copyrite.h"
+#include "confio.h"
 
 
 static char* IonString[eIonNr] = {"anion", "cation" };
@@ -86,6 +87,9 @@ typedef struct group
     int      nat_loc;       /* Number of local group atoms                    */
     int      nalloc_loc;    /* Allocation size for ind_loc                    */
     rvec     *xc;           /* Collective array of group atom positions       */
+    ivec     *xc_shifts;    /* Current (collective) shifts                    */
+    ivec     *xc_eshifts;   /* Extra shifts since last DD step                */
+    rvec     *xc_old;       /* Old (collective) positions                     */
     real     *qc;           /* Collective array of charges                    */
     int      *c_ind_loc;    /* Position of local atoms in the
                                collective array, [0..nat_loc]                 */
@@ -244,6 +248,7 @@ static void get_molecule_center(
 
 
     /* Use the first atom as the reference and put other atoms near that one */
+    /* This does not work for large molecules that span > half of the box! */
     copy_rvec(x[0], reference);
 
     /* Calculate either the weighted center or simply the center of geometry */
@@ -276,6 +281,7 @@ static void get_molecule_center(
     /* Normalize */
     svmul(1.0/wsum, center, center);
 }
+
 
 
 /* Returns TRUE if x is between (w1+gap) and (w2-gap)
@@ -1192,11 +1198,91 @@ static void detect_flux_per_channel_init(
 }
 
 
+/* The swapstate struct stores the information we need to make the channels
+ * whole again after restarts from a checkpoint file. Here we do the following:
+ * a) If we did not start from .cpt, we prepare the struct for proper .cpt writing,
+ * b) if we did start from .cpt, we copy over the last whole structures from .cpt,
+ * c) in any case, for subsequent checkpoint writing, we set the pointers in
+ * swapstate to the x_old arrays, which contain the correct PBC representation of
+ * multimeric channels at the last time step. */
+static void init_swapstate(
+        swapstate_t      *swapstate, 
+        t_swapcoords     *sc, 
+        gmx_mtop_t       *mtop,
+        rvec             x[],       /* the initial positions */
+        matrix           box,
+        int              ePBC)
+{
+    int      i, ig;
+    rvec                  *x_pbc  = NULL;   /* positions of the whole MD system with molecules made whole */
+    t_group               *g;
+    t_swap                *s;
+
+
+    s = sc->si_priv;
+
+    /* We always need the last whole positions such that
+     * in the next time step we can make the channels whole again in PBC */
+    if (swapstate->bFromCpt 
+            && swapstate->xc_old_whole[eChan0] != NULL) /* Old cpt files have no xc_old_whole! */
+    {
+        /* Copy the last whole positions of each channel from .cpt */
+        g = &(s->group[eGrpSplit0]);
+        for (i = 0; i <  g->nat; i++)
+        {
+            copy_rvec(swapstate->xc_old_whole[eChan0][i], g->xc_old[i]);
+        }
+        g = &(s->group[eGrpSplit1]);
+        for (i = 0; i <  g->nat; i++)
+        {
+            copy_rvec(swapstate->xc_old_whole[eChan1][i], g->xc_old[i]);
+        }
+    }
+    else
+    {
+        /* Extract the initial split group positions. */
+
+        /* Remove pbc, make molecule whole. */
+        snew(x_pbc, mtop->natoms);
+        m_rveccopy(mtop->natoms, x, x_pbc);
+
+        fprintf(stderr, "%s Writing out initial positions made whole.\n", SwS);
+
+        /* This can only make individual molecules whole, not multimers */
+        do_pbc_mtop(NULL, ePBC, box, mtop, x_pbc);
+        write_sto_conf_mtop("CompElAssumedWholeConfiguration.pdb",
+                *mtop->name, mtop,
+                x_pbc, NULL, ePBC, box);
+
+        /* If this is the first run (i.e. no checkpoint present) we assume
+         * that the starting positions give us the correct PBC representation */
+        for (ig = eGrpSplit0; ig <= eGrpSplit1; ig++)
+        {
+            g = &(s->group[ig]);
+            for (i = 0; i < g->nat; i++)
+            {
+                copy_rvec(x_pbc[g->ind[i]], g->xc_old[i]);
+            }
+        }
+        sfree(x_pbc);
+
+        /* Prepare swapstate arrays for later checkpoint writing */
+        swapstate->nat[eChan0] = s->group[eGrpSplit0].nat;
+        swapstate->nat[eChan1] = s->group[eGrpSplit1].nat;
+    }
+
+    /* For subsequent checkpoint writing, set the swapstate pointers to the xc_old 
+     * arrays that get updated at every swapping step */
+    swapstate->xc_old_whole_p[eChan0] = &s->group[eGrpSplit0].xc_old;
+    swapstate->xc_old_whole_p[eChan1] = &s->group[eGrpSplit1].xc_old;
+}
+
+
 extern void init_swapcoords(
         FILE             *fplog,    /* general output file md.log */
         gmx_bool         bVerbose,
         t_inputrec       *ir,
-        const char      *fn,        /* output file name for swap data */
+        const char       *fn,       /* output file name for swap data */
         gmx_mtop_t       *mtop,
         rvec             x[],       /* the initial positions */
         matrix           box,
@@ -1283,6 +1369,20 @@ extern void init_swapcoords(
         g = &(s->group[ig]);
         snew(g->xc, g->nat);
         snew(g->c_ind_loc, g->nat);
+        /* For the split groups (the channels) we need some extra memory to
+         * be able to make the molecules whole even if they span more than
+         * half of the box size. */
+        if (eGrpSplit0 == ig || eGrpSplit1 == ig)
+        {
+            snew(g->xc_shifts, g->nat);
+            snew(g->xc_eshifts, g->nat);
+            snew(g->xc_old, g->nat);
+        }
+    }
+    
+    if (MASTER(cr))
+    {
+        init_swapstate(swapstate, sc, mtop, x, box, ir->ePBC);
     }
 
     /* Make shure that all molecules in the ion and solvent groups contain the
@@ -1318,14 +1418,14 @@ extern void init_swapcoords(
     }
 
     /* Need mass-weighted center of split group? */
-    for (j=0, ig=eGrpSplit0; j<eChanNr; ig++, j++)
+    for (j = 0, ig = eGrpSplit0; j < eChanNr; ig++, j++)
     {
         g = &(s->group[ig]);
         if (TRUE == sc->massw_split[j])
         {
             /* Save the split group charges if mass-weighting is requested */
             snew(g->m, g->nat);
-            for (i=0; i<g->nat; i++)
+            for (i = 0; i < g->nat; i++)
             {
                 gmx_mtop_atomnr_to_atom(alook,g->ind[i],&atom);
                 g->m[i] = atom->m;
@@ -1390,7 +1490,17 @@ extern void init_swapcoords(
             {
                 copy_rvec(x[sc->ind_split[j][i]],g->xc[i]);
             }
-            get_molecule_center(g->xc, g->nat, g->m, g->center, s->pbc);
+            if (eGrpSplit0 == ig || eGrpSplit1 == ig)
+            {
+                /* xc has the correct PBC representation for the two channels, so we do 
+                 * not need to correct for that */
+                get_center(g->xc, g->m, g->nat, g->center);
+            }
+            else
+            {
+                /* For the water molecules, we need to make the molecules whole */
+                get_molecule_center(g->xc, g->nat, g->m, g->center, s->pbc);
+            }
             if (!bAppend)
             {
                 if (eswapAuto == ir->eSwapCoords)
@@ -1514,7 +1624,10 @@ extern void init_swapcoords(
         {
             fprintf(stderr, "%s Requested charge imbalance is Q(A) - Q(B) = %gz.\n", SwS, s->deltaQ);
         }
-        fprintf(s->fpout, "# Requested charge imbalance is Q(A)-Q(B) = %gz.\n", s->deltaQ);
+        if (!bAppend)
+        {
+            fprintf(s->fpout, "# Requested charge imbalance is Q(A)-Q(B) = %gz.\n", s->deltaQ);
+        }
     }
 
     if (PAR(cr))
@@ -1708,18 +1821,28 @@ extern gmx_bool do_swapcoords(
     for (ig = 0; ig < gmax; ig++)
     {
         g = &(s->group[ig]);
-        communicate_group_positions_noshift(cr, g->xc, x, g->nat,
-                g->nat_loc, g->ind_loc, g->c_ind_loc);
+        if (eGrpSplit0 == ig || eGrpSplit1 == ig)
+        {
+            /* The split groups, i.e. the channels. Here we need  the full
+             * communicate_group_positions(), so that we can make the molecules
+             * whole even in cases where they span more than half of the box in 
+             * any dimension */
+            communicate_group_positions(cr, g->xc, g->xc_shifts, g->xc_eshifts, TRUE,
+                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, g->xc_old, box);
+            
+            get_center(g->xc, g->m, g->nat, g->center); /* center of split groups == channels */
+        }
+        else
+        {
+            /* Swap group (ions), and solvent group. These molecules are small
+             * and we can always make them whole with a simple distance check. */
+            communicate_group_positions_noshift(cr, g->xc, x, g->nat,
+                    g->nat_loc, g->ind_loc, g->c_ind_loc);
+        }
     }
 
-    /* Set up the compartments and get lists of atoms in each compartment */
-    g = &s->group[eGrpSplit0];
-    get_molecule_center(g->xc, g->nat, g->m, g->center, s->pbc); /* center of split group 0 */
-
-    g = &s->group[eGrpSplit1];
-    get_molecule_center(g->xc, g->nat, g->m, g->center, s->pbc); /* center of split group 1 */
-
-    /* Determine how many ions each compartment contains */
+    /* Set up the compartments and get lists of atoms in each compartment, 
+     * determine how many ions each compartment contains */
     if (eswapAuto == ir->eSwapCoords)
     {
         compartmentalize_auto(sc);
