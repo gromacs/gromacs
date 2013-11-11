@@ -89,7 +89,7 @@ bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
     return false;
 }
 
-bool MenuCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+bool MenuCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_menu *m;
 

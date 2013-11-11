@@ -100,56 +100,45 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 
 static void ps_draw_bond(t_psdata ps,
                          atom_id ai, atom_id aj, iv2 vec2[],
-                         rvec x[], char **atomnm[], int size[], bool bBalls)
+                         rvec x[], char **atomnm[])
 {
     char    *ic, *jc;
     int      xi, yi, xj, yj;
     int      xm, ym;
 
-    if (bBalls)
+    if (local_pbc_dx(x[ai], x[aj]))
     {
-        ps_draw_atom(ps, ai, vec2, atomnm);
-        ps_draw_atom(ps, aj, vec2, atomnm);
-    }
-    else
-    {
-        if (local_pbc_dx(x[ai], x[aj]))
+        ic = *atomnm[ai];
+        jc = *atomnm[aj];
+        xi = vec2[ai][XX];
+        yi = vec2[ai][YY];
+        xj = vec2[aj][XX];
+        yj = vec2[aj][YY];
+
+        if (ic != jc)
         {
-            ic = *atomnm[ai];
-            jc = *atomnm[aj];
-            xi = vec2[ai][XX];
-            yi = vec2[ai][YY];
-            xj = vec2[aj][XX];
-            yj = vec2[aj][YY];
+            xm = (xi+xj) >> 1;
+            ym = (yi+yj) >> 1;
 
-            if (ic != jc)
-            {
-                xm = (xi+xj) >> 1;
-                ym = (yi+yj) >> 1;
-
-                ps_rgb(ps, Type2RGB(ic));
-                ps_line(ps, xi, yi, xm, ym);
-                ps_rgb(ps, Type2RGB(jc));
-                ps_line(ps, xm, ym, xj, yj);
-            }
-            else
-            {
-                ps_rgb(ps, Type2RGB(ic));
-                ps_line(ps, xi, yi, xj, yj);
-            }
+            ps_rgb(ps, Type2RGB(ic));
+            ps_line(ps, xi, yi, xm, ym);
+            ps_rgb(ps, Type2RGB(jc));
+            ps_line(ps, xm, ym, xj, yj);
+        }
+        else
+        {
+            ps_rgb(ps, Type2RGB(ic));
+            ps_line(ps, xi, yi, xj, yj);
         }
     }
 }
 
-void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[], rvec x[],
-                     char **atomnm[], int size[], bool bShowHydro, int bond_type,
-                     bool bPlus)
+static void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[],
+                            rvec x[], char **atomnm[], bool bShowHydro)
 {
-    bool         bBalls;
     int          i;
     t_object    *obj;
 
-    bBalls = false;
     for (i = 0; (i < nobj); i++)
     {
         obj = &(objs[i]);
@@ -159,12 +148,12 @@ void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[], rvec x[
                 ps_draw_atom(ps, obj->ai, vec2, atomnm);
                 break;
             case eOBond:
-                ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm, size, bBalls);
+                ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm);
                 break;
             case eOHBond:
                 if (bShowHydro)
                 {
-                    ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm, size, bBalls);
+                    ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm);
                 }
                 break;
             default:
@@ -256,7 +245,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
     }
-    set_sizes(man, sx, sy);
+    set_sizes(man);
 
     z_fill (man, man->zz);
 
@@ -278,8 +267,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     /* Draw the objects */
     ps_draw_objects(ps,
                     nvis, man->obj, man->ix, man->x, man->top.atoms.atomname,
-                    man->size,
-                    mw->bShowHydrogen, mw->bond_type, man->bPlus);
+                    mw->bShowHydrogen);
 
     /* Draw the labels */
     ps_color(ps, 0, 0, 0);

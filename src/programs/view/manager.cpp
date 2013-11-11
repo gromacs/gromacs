@@ -495,7 +495,7 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
     }
 }
 
-static bool TitleCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool TitleCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_windata *wd;
 
@@ -519,7 +519,7 @@ static bool TitleCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
     return false;
 }
 
-static bool ManCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool ManCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_manager *man;
     int        width, height;
