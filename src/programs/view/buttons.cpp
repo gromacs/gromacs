@@ -75,7 +75,7 @@ static void move_bbox(t_x11 *x11, t_butbox *bbox)
     }
 }
 
-static bool BBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool BBCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_butbox *bbox;
 
@@ -89,7 +89,7 @@ static bool BBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
     return false;
 }
 
-static bool VBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool VBCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_butbox  *vbox;
     int        y0;
@@ -115,7 +115,7 @@ void set_vbtime(t_x11 *x11, t_butbox *vbox, char *text)
     ExposeWin(x11->disp, vbox->wd.self);
 }
 
-static bool ButtonCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool ButtonCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     XEvent     letter;
     t_mwbut   *but;
@@ -182,7 +182,7 @@ t_butbox *init_vbox(t_x11 *x11, Window Parent, Window SendTo, unsigned long fg, 
             y0+play_height+2*AIR, 1, "VCR - Control");
     vb->wd.self = XCreateSimpleWindow(x11->disp, Parent,
                                       vb->wd.x, vb->wd.y, vb->wd.width, vb->wd.height,
-                                      vb->wd.bwidth, WHITE, BLACK);
+                                      vb->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, vb->wd.self, Parent, VBCallBack, vb);
     x11->SetInputMask(x11, vb->wd.self, ExposureMask);
 

@@ -47,7 +47,7 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers" GMXC_CXXFLAGS)
       # new in gcc 4.5
@@ -142,7 +142,8 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function -Wunused-value" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers" GMXC_CXXFLAGS)
     endif()
 
     # now actually set the flags:

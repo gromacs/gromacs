@@ -66,7 +66,7 @@ void hide_logo(t_x11 *x11, t_logo *logo)
     XUnmapWindow(x11->disp, logo->wd.self);
 }
 
-static bool LogoCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     /* Assume window is 100x110 */
     static bool bFirst = true;

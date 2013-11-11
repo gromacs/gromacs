@@ -1357,6 +1357,9 @@ fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int
     MPI_Cart_get(gcart, 2, P, wrap, coor);
     MPI_Cart_sub(gcart, rdim1, &cart[0]);
     MPI_Cart_sub(gcart, rdim2, &cart[1]);
+#else
+    (void)P0;
+    (void)comm;
 #endif
     return fft5d_plan_3d(NG, MG, KG, cart, flags, rlin, rlout, rlout2, rlout3, nthreads);
 }
