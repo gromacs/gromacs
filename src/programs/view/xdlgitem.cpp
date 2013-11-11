@@ -663,7 +663,7 @@ t_dlgitem *CreateCheckBox(t_x11 *x11,
 }
 
 t_dlgitem *CreatePixmap(Pixmap pm, t_id id,
-                        t_id groupid, int x0, int y0, int w, int h, int bw)
+                        t_id /*groupid*/, int x0, int y0, int w, int h, int bw)
 {
     t_dlgitem *dlgitem;
 

@@ -141,9 +141,9 @@ static void ps_draw_bond(t_psdata ps,
     }
 }
 
-void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[], rvec x[],
-                     char **atomnm[], int size[], bool bShowHydro, int bond_type,
-                     bool bPlus)
+static void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[],
+                            rvec x[], char **atomnm[], int size[],
+                            bool bShowHydro)
 {
     bool         bBalls;
     int          i;
@@ -256,7 +256,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
     }
-    set_sizes(man, sx, sy);
+    set_sizes(man);
 
     z_fill (man, man->zz);
 
@@ -278,8 +278,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     /* Draw the objects */
     ps_draw_objects(ps,
                     nvis, man->obj, man->ix, man->x, man->top.atoms.atomname,
-                    man->size,
-                    mw->bShowHydrogen, mw->bond_type, man->bPlus);
+                    man->size, mw->bShowHydrogen);
 
     /* Draw the labels */
     ps_color(ps, 0, 0, 0);

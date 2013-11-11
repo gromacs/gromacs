@@ -77,7 +77,7 @@ t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
     return f;
 }
 
-static void FilterCB(t_x11 *x11, int dlg_mess, int item_id,
+static void FilterCB(t_x11 *x11, int dlg_mess, int /*item_id*/,
                      char *set, void *data)
 {
     int       nset;

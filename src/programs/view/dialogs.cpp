@@ -131,8 +131,8 @@ static void hide_mb(t_gmx *gmx)
     }
 }
 
-static void MBCallback(t_x11 *x11, int dlg_mess, int item_id,
-                       char *set, void *data)
+static void MBCallback(t_x11 * /*x11*/, int dlg_mess, int /*item_id*/,
+                       char * /*set*/, void *data)
 {
     t_gmx *gmx;
 
@@ -158,7 +158,7 @@ static t_dlg *about_mb(t_x11 *x11, t_gmx *gmx)
                       MBCallback, gmx);
 }
 
-static void QuitCB(t_x11 *x11, int dlg_mess, int item_id,
+static void QuitCB(t_x11 *x11, int dlg_mess, int /*item_id*/,
                    char *set, void *data)
 {
     t_gmx  *gmx;
