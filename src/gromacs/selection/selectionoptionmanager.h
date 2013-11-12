@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,6 +107,8 @@ class SelectionOptionManager
          *
          * \param     storage  Storage object to receive the selections.
          * \param[in] value    Value to convert.
+         * \param[in] bFullValue  If true, the provided selections are the full
+         *      value of the option, and additional checks are performed.
          * \throws    std::bad_alloc if out of memory.
          * \throws    InvalidInputError if the selection string is not valid,
          *      or uses a feature not supported by the option.
@@ -116,7 +118,8 @@ class SelectionOptionManager
          * through any public or library API.
          */
         void convertOptionValue(SelectionOptionStorage *storage,
-                                const std::string      &value);
+                                const std::string      &value,
+                                bool                    bFullValue);
         /*! \brief
          * Adds a selection option for delayed user input.
          *

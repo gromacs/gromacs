@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,8 @@
  */
 #ifndef GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
 #define GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
+
+#include <string>
 
 #include "../options/optionstoragetemplate.h"
 #include "selection.h"
@@ -126,6 +128,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
 
         SelectionOptionInfo     info_;
         SelectionOptionManager *manager_;
+        std::string             defaultText_;
         SelectionFlags          selectionFlags_;
 };
 
