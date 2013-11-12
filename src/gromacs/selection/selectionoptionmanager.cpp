@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -274,10 +274,11 @@ SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
 
 void
 SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
-                                           const std::string      &value)
+                                           const std::string      &value,
+                                           bool                    bFullValue)
 {
     SelectionList selections = impl_->collection_.parseFromString(value);
-    storage->addSelections(selections, false);
+    storage->addSelections(selections, bFullValue);
 }
 
 void

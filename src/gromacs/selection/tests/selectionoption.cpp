@@ -121,6 +121,8 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
     EXPECT_NO_THROW_GMX(assigner.finishOption());
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options_.finish());
+
+    ASSERT_TRUE(sel.isValid());
 }
 
 
@@ -236,6 +238,25 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
     EXPECT_THROW_GMX(assigner.finishOption(), gmx::InvalidInputError);
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options_.finish());
+}
+
+
+TEST_F(SelectionOptionTest, HandlesDefaultSelectionText)
+{
+    gmx::Selection sel;
+    using gmx::SelectionOption;
+    options_.addOption(SelectionOption("sel").store(&sel)
+                           .defaultSelectionText("all"));
+    setManager();
+
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    ASSERT_TRUE(sel.isValid());
+
+    EXPECT_NO_THROW_GMX(sc_.setTopology(NULL, 10));
+    EXPECT_NO_THROW_GMX(sc_.compile());
+
+    EXPECT_STREQ("all", sel.selectionText());
 }
 
 

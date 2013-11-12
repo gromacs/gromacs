@@ -79,7 +79,8 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 
         //! Initializes an option with the given name.
         explicit SelectionOption(const char *name)
-            : MyBase(name), selectionFlags_(efSelection_DisallowEmpty)
+            : MyBase(name), defaultText_(""),
+              selectionFlags_(efSelection_DisallowEmpty)
         {
         }
 
@@ -126,6 +127,15 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         MyClass &allowEmpty()
         { selectionFlags_.clear(efSelection_DisallowEmpty); return me(); }
 
+        /*! \brief
+         * Sets default selection text for the option.
+         *
+         * If the option is not set by the user, the provided text is parsed as
+         * the value of the selection.
+         */
+        MyClass &defaultSelectionText(const char *text)
+        { defaultText_ = text; return me(); }
+
     private:
         // Disable possibility to allow multiple occurrences, since it isn't
         // implemented.
@@ -137,6 +147,7 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 
         virtual AbstractOptionStoragePointer createStorage() const;
 
+        const char             *defaultText_;
         SelectionFlags          selectionFlags_;
 
         /*! \brief

@@ -62,7 +62,8 @@ namespace gmx
 SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
     : MyBase(settings, OptionFlags() | efOption_NoDefaultValue
              | efOption_DontCheckMinimumCount),
-      info_(this), manager_(NULL), selectionFlags_(settings.selectionFlags_)
+      info_(this), manager_(NULL), defaultText_(settings.defaultText_),
+      selectionFlags_(settings.selectionFlags_)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for selection options");
@@ -125,7 +126,7 @@ void SelectionOptionStorage::convertValue(const std::string &value)
 {
     GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
-    manager_->convertOptionValue(this, value);
+    manager_->convertOptionValue(this, value, false);
 }
 
 void SelectionOptionStorage::processSetValues(ValueList *values)
@@ -144,10 +145,13 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
 
 void SelectionOptionStorage::processAll()
 {
+    GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
+    if (!isSet() && !defaultText_.empty())
+    {
+        manager_->convertOptionValue(this, defaultText_, true);
+    }
     if (isRequired() && !isSet())
     {
-        GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
-
         manager_->requestOptionDelayedParsing(this);
         markAsSet();
     }
