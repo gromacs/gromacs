@@ -202,8 +202,8 @@ FreeVolume::initOptions(Options                    *options,
                            .description("Computed free volume"));
 
     // Add option for selecting a subset of atoms
-    options->addOption(SelectionOption("select").required().valueCount(1)
-                           .store(&sel_)
+    options->addOption(SelectionOption("select")
+                           .store(&sel_).defaultSelectionText("all")
                            .onlyAtoms());
 
     // Add option for the probe radius and initialize it

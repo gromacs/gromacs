@@ -290,6 +290,7 @@ class Selection
          *
          * Any attempt to call methods in the object before a selection is
          * assigned results in undefined behavior.
+         * isValid() returns `false` for the selection until it is initialized.
          */
         Selection() : sel_(NULL) {}
         /*! \brief
@@ -300,6 +301,9 @@ class Selection
          * Only for internal use by the selection module.
          */
         explicit Selection(internal::SelectionData *sel) : sel_(sel) {}
+
+        //! Returns whether the selection object is initialized.
+        bool isValid() const { return sel_ != NULL; }
 
         //! Returns the name of the selection.
         const char *name() const  { return data().name(); }

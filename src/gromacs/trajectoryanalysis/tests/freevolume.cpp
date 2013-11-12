@@ -63,8 +63,7 @@ typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Fre
 TEST_F(FreeVolumeModuleTest, ComputesFreeVolume)
 {
     const char *const cmdline[] = {
-        "freevolume",
-        "-select", "all", "-seed", "13"
+        "freevolume", "-seed", "13"
     };
     setTopology("freevolume.tpr");
     setTrajectory("freevolume.xtc");
