@@ -1765,7 +1765,10 @@ CommunicationStatus MolProp::Receive(t_commrec *cr,int src)
         _cas.assign(gmx_recv_str(cr,src));
         _cid.assign(gmx_recv_str(cr,src));
         _inchi.assign(gmx_recv_str(cr,src));
-    
+        if (NULL != debug)
+        {
+            fprintf(debug, "Got molname %s\n", GetMolname().c_str());
+        }
         //! Receive Bonds
         do
         {   
