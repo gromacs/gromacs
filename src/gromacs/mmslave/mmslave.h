@@ -42,99 +42,106 @@
 #ifndef GMX_MMSLAVE_MMSLAVE_H
 #define GMX_MMSLAVE_MMSLAVE_H
 
-namespace gmx 
+namespace gmx
 {
 
 /*! \brief
  * class for serving a quantum chemistry program by computing energies and forces
  */
-class MMSlave 
+class MMSlave
 {
-private:
-    //! Simulation parameters
-    t_inputrec inputrec_;
-    //! Simulation box
-    matrix     box_;
-    //! Molecular topology
-    gmx_mtop_t mtop_;
-    //! Number of atoms
-    int natoms_;
-    //! Coordinates
-    rvec *x_;
-    //! Velocities
-    rvec *v_;
-    //! Forces
-    rvec *f_;
-public:
-    //! Constructor
-    MMSlave();
-    
-    //! Destructor
-    ~MMSlave() {}
-    
-    /*! \brief
-     * Function to read a tpr file and store the information in the
-     * data structur
-     * \param[in] tpr  the file name
-     * \return true if successful
-     */
-    bool readTpr(const char *tpr);
+    private:
+        //! Simulation parameters
+        t_inputrec inputrec_;
+        //! Simulation box
+        matrix     box_;
+        //! Molecular topology
+        gmx_mtop_t mtop_;
+        //! Number of MM atoms
+        int        natoms_mm_;
+        //! Number of QM atoms
+        int        natoms_qm_;
+        //! Coordinates
+        rvec      *x_;
+        //! Velocities
+        rvec      *v_;
+        //! Forces
+        rvec      *f_;
+    public:
+        //! Constructor
+        MMSlave();
 
-    /*! \brief
-     * \return the number of atoms in the system
-     */
-    int nAtoms() { return natoms_; }
-    
-    /*! \brief
-     * Copy internal coordinate array
-     * \param[in]  natoms length of array
-     * \param[out] x      array of rvecs (must be allocated by the caller)
-     * \return true on success, false otherwise (typically if natoms is too small or x is NULL)
-     */
-    bool copyX(int natoms, rvec *x);
-     
-    /*! \brief
-     * Copy internal velocity array
-     * \param[in]  natoms length of array
-     * \param[out] v      array of rvecs (must be allocated by the caller)
-     * \return true on success, false otherwise (typically if natoms is too small or v is NULL)
-     */
-    bool copyV(int natoms, rvec *v);
-     
-    /*! \brief
-     * Copy internal force array
-     * \param[in]  natoms length of array
-     * \param[out] f      array of rvecs (must be allocated by the caller)
-     * \return true on success, false otherwise (typically if natoms is too small or f is NULL)
-     */
-    bool copyF(int natoms, rvec *f);
-     
-    /*! \brief
-     * Clean up function
-     */
-    void cleanUp();
-    
-    /*! \brief
-     * Function to modify the charge of an atom
-     * data structure
-     * \param[in] id   the atom id
-     * \param[in] q    the new charge
-     * \return true if successful
-     */
-    bool setAtomQ(atom_id id, double q);
+        //! Destructor
+        ~MMSlave() {}
 
-    /*! \brief
-     * Function to compute the energy and forces
-     * \param[in]  x   the atomic coordinates for the whole system (MM+QM)
-     * \param[out] f   the forces on all atoms
-     * \param[out] energy the total MM energy
-     * \return TRUE if successful
-     */
-    bool calcEnergy(const rvec *x,
-                    rvec *f,
-                    double *energy);
+        /*! \brief
+         * Function to read a tpr file and store the information in the
+         * data structur
+         * \param[in] tpr  the file name
+         * \return true if successful
+         */
+        bool readTpr(const char *tpr);
+
+        /*! \brief
+         * \return the number of MM atoms in the system
+         */
+        int nAtomsMM() { return natoms_mm_; }
+
+        /*! \brief
+         * \return the number of QM atoms in the system
+         */
+        int nAtomsQM() { return natoms_qm_; }
+
+        /*! \brief
+         * Copy internal coordinate array
+         * \param[in]  natoms length of array
+         * \param[out] x      array of rvecs (must be allocated by the caller)
+         * \return true on success, false otherwise (typically if natoms is too small or x is NULL)
+         */
+        bool copyX(int natoms, rvec *x);
+
+        /*! \brief
+         * Copy internal velocity array
+         * \param[in]  natoms length of array
+         * \param[out] v      array of rvecs (must be allocated by the caller)
+         * \return true on success, false otherwise (typically if natoms is too small or v is NULL)
+         */
+        bool copyV(int natoms, rvec *v);
+
+        /*! \brief
+         * Copy internal force array
+         * \param[in]  natoms length of array
+         * \param[out] f      array of rvecs (must be allocated by the caller)
+         * \return true on success, false otherwise (typically if natoms is too small or f is NULL)
+         */
+        bool copyF(int natoms, rvec *f);
+
+        /*! \brief
+         * Clean up function
+         */
+        void cleanUp();
+
+        /*! \brief
+         * Function to modify the charge of an atom
+         * data structure
+         * \param[in] id   the atom id
+         * \param[in] q    the new charge
+         * \return true if successful
+         */
+        bool setAtomQ(atom_id id, double q);
+
+        /*! \brief
+         * Function to compute the energy and forces
+         * \param[in]  x   the atomic coordinates for the whole system (MM+QM)
+         * \param[out] f   the forces on all atoms
+         * \param[out] energy the total MM energy
+         * \return TRUE if successful
+         */
+        bool calcEnergy(const rvec *x,
+                        rvec       *f,
+                        double     *energy);
 };
-    
+
 }
 
 #endif

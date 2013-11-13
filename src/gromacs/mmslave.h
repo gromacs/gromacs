@@ -49,90 +49,115 @@
 extern "C" {
 #endif
 
-    //! Abstract type for the mmslave code
-    typedef struct gmx_mmslave *gmx_mmslave_t;
+//! Abstract type for the mmslave code
+typedef struct gmx_mmslave *gmx_mmslave_t;
 
-    //! Create the data structure and returns it
-    extern gmx_mmslave_t mmslave_init(void);
-    
-    /*! \brief
-     * Function to clean up
-     * \param[in] gms  the data structure to be freed
-     */
-    extern void mmslave_done(gmx_mmslave_t gms);
+//! Create the data structure and returns it
+extern gmx_mmslave_t mmslave_init(void);
 
-    /*! \brief
-     * Function to read a tpr file and store the information in the
-     * data structure
-     * \param[in] tpr  the file name
-     * \param[in] gms  the data structure to be read
-     * \return TRUE if successful
-     */
-    extern gmx_bool mmslave_read_tpr(const char *tpr, 
-                                     gmx_mmslave_t gms);
+/*! \brief
+ * Function to clean up
+ * \param[in] gms  the data structure to be freed
+ */
+extern void mmslave_done(gmx_mmslave_t gms);
 
-    /*! \brief
-     * \return the number of atoms in the system
-     */
-    extern int mmslave_natoms(gmx_mmslave_t gms);
+/*! \brief
+ * Function to read a tpr file and store the information in the
+ * data structure
+ * \param[in] tpr  the file name
+ * \param[in] gms  the data structure to be read
+ * \return 1 if successful, 0 otherwise
+ */
+extern int mmslave_read_tpr(const char   *tpr,
+                            gmx_mmslave_t gms);
 
-    /*! \brief
-     * Copy internal coordinate array
-     * \param[in]  natoms length of array
-     * \param[out] x      array of rvecs (must be allocated by the caller)
-     * \return TRUE on success, false otherwise (typically if natoms is too small or x is NULL)
-     */
-    extern gmx_bool mmslave_copyX(gmx_mmslave_t gms, int natoms, rvec *x);
-     
-    /*! \brief
-     * Copy internal velocity array
-     * \param[in]  gms    the data structure containing the data
-     * \param[in]  natoms length of array
-     * \param[out] v      array of rvecs (must be allocated by the caller)
-     * \return TRUE on success, false otherwise (typically if natoms is too small or v is NULL)
-     */
-    extern gmx_bool mmslave_copyV(gmx_mmslave_t gms, int natoms, rvec *v);
-     
-    /*! \brief
-     * Copy internal force array
-     * \param[in]  gms    the data structure containing the data
-     * \param[in]  natoms length of array
-     * \param[out] f      array of rvecs (must be allocated by the caller)
-     * \return TRUE on success, false otherwise (typically if natoms is too small or f is NULL)
-     */
-    extern gmx_bool mmslave_copyF(gmx_mmslave_t gms, int natoms, rvec *f);
-     
-    /*! \brief
-     * Function to cleanup the innards of the data structure
-     */
-    extern void mmslave_clean(gmx_mmslave_t gms);
+/*! \brief
+ * The number of groups are numbered 0 to N-1. You can use this
+ * index in subsequent calls to related routines.
+ * \param[in] gms  the data structure
+ * \return the number N of atom-groups in the system
+ */
+extern int mmslave_ngroups(gmx_mmslave_t gms);
 
-    /*! \brief
-     * Function to modify the charge of an atom
-     * data structure
-     * \param[in] gms  the data structure to be modified
-     * \param[in] id   the atom id
-     * \param[in] q    the new charge
-     * \return TRUE if successful
-     */
-    extern gmx_bool mmslave_set_q(gmx_mmslave_t gms,
-                                  atom_id id,
-                                  double q);
+/*! \brief
+ * Return number of atoms in specified group
+ * \param[in] gms    the data structure
+ * \param[in] group  the data structure to be read
+ * \return the number of atoms in group or 0 if group is out of range
+ */
+extern int mmslave_group_natoms(gmx_mmslave_t gms,
+                                int           group);
 
-    /*! \brief
-     * Function to compute the energy and forces
-     * \param[in]  gms the data structure to be modified
-     * \param[in]  x   the atomic coordinates for the whole system (MM+QM)
-     * \param[out] f   the forces on all atoms
-     * \param[out] energy the total MM energy
-     * \return TRUE if successful
-     */
-    extern gmx_bool mmslave_calc_energy(gmx_mmslave_t gms, 
-                                        const rvec *x,
-                                        rvec *f,
-                                        double *energy);
-    
-    
+/*! \brief
+ * Copy internal coordinate array
+ * \param[in]  gms    the data structure
+ * \param[in]  group  group index
+ * \param[in]  natoms length of array
+ * \param[out] x      array of rvecs (must be allocated by the caller)
+ * \return 1 on success, 0 otherwise (typically if natoms is too small or x is NULL)
+ */
+extern int mmslave_copyX(gmx_mmslave_t gms,
+                         int           group,
+                         int           natoms,
+                         rvec         *x);
+
+/*! \brief
+ * Copy internal velocity array
+ * \param[in]  gms    the data structure containing the data
+ * \param[in]  group  group index
+ * \param[in]  natoms length of array
+ * \param[out] v      array of rvecs (must be allocated by the caller)
+ * \return 1 on success, 0 otherwise (typically if natoms is too small or v is NULL)
+ */
+extern int mmslave_copyV(gmx_mmslave_t gms,
+                         int           group,
+                         int           natoms,
+                         rvec         *v);
+
+/*! \brief
+ * Copy internal force array
+ * \param[in]  gms    the data structure containing the data
+ * \param[in]  group  group index
+ * \param[in]  natoms length of array
+ * \param[out] f      array of rvecs (must be allocated by the caller)
+ * \return 1 on success, 0 otherwise (typically if natoms is too small or f is NULL)
+ */
+extern int mmslave_copyF(gmx_mmslave_t gms,
+                         int           group,
+                         int           natoms,
+                         rvec         *f);
+
+/*! \brief
+ * Function to cleanup the innards of the data structure
+ */
+extern void mmslave_clean(gmx_mmslave_t gms);
+
+/*! \brief
+ * Function to modify the charge of an atom
+ * data structure
+ * \param[in] gms  the data structure to be modified
+ * \param[in] id   the atom id
+ * \param[in] q    the new charge
+ * \return 1 if successful, 0 otherwise
+ */
+extern int mmslave_set_q(gmx_mmslave_t gms,
+                         atom_id       id,
+                         double        q);
+
+/*! \brief
+ * Function to compute the energy and forces
+ * \param[in]  gms    the data structure to be modified
+ * \param[in]  x      the atomic coordinates for the whole system (MM+QM)
+ * \param[out] f      the forces on all atoms
+ * \param[out] energy the total MM energy
+ * \return 1 if successful, 0 otherwise
+ */
+extern int mmslave_calc_energy(gmx_mmslave_t gms,
+                               const rvec   *x,
+                               rvec         *f,
+                               double       *energy);
+
+
 #ifdef __cplusplus
 }
 #endif

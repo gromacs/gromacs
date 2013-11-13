@@ -47,6 +47,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mmslave.h"
 #include "gromacs/mmslave/mmslave.h"
+#include "gromacs/utility/gmxassert.h"
 
 /* Note: the C-interface is all the way down in this file */
 
@@ -55,26 +56,44 @@ namespace gmx
 
 MMSlave::MMSlave()
 {
-    x_      = NULL;
-    v_      = NULL;
-    f_      = NULL;
-    natoms_ = 0;
+    x_         = NULL;
+    v_         = NULL;
+    f_         = NULL;
+    natoms_qm_ = 0;
+    natoms_mm_ = 0;
 }
 
 bool MMSlave::readTpr(const char *tpr)
 {
     t_tpxheader tpx;
-    int         version, generation;
-    
+    int         version, generation, natoms;
+
     read_tpxheader(tpr, &tpx, FALSE, &version, &generation);
-    natoms_ = tpx.natoms;
-    x_ = (rvec *)calloc(natoms_, sizeof(rvec));
-    v_ = (rvec *)calloc(natoms_, sizeof(rvec));
-    f_ = (rvec *)calloc(natoms_, sizeof(rvec));
-    
-    (void) read_tpx(tpr, &inputrec_, box_, &natoms_, x_, 
+    natoms = tpx.natoms;
+    x_     = (rvec *)calloc(natoms, sizeof(rvec));
+    v_     = (rvec *)calloc(natoms, sizeof(rvec));
+    f_     = (rvec *)calloc(natoms, sizeof(rvec));
+
+    (void) read_tpx(tpr, &inputrec_, box_, &natoms, x_,
                     (tpx.bV ? v_ : NULL),
                     (tpx.bF ? f_ : NULL), &mtop_);
+
+    gmx_mtop_atomloop_all_t aloop = gmx_mtop_atomloop_all_init(&mtop_);
+    int                     at_global;
+    t_atom                 *atom;
+    while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
+    {
+        if (ggrpnr(&(mtop_.groups), egcQMMM, at_global) == 0)
+        {
+            natoms_qm_++;
+        }
+        else
+        {
+            natoms_mm_++;
+        }
+    }
+    GMX_RELEASE_ASSERT((natoms == natoms_qm_ + natoms_mm_),
+                       "Total number of atoms not consistent");
 
     return true;
 }
@@ -85,7 +104,7 @@ static bool copyIt(int natoms_dst, rvec *x_dst, int natoms_src, rvec *x_src)
     {
         return false;
     }
-    for(int i=0; (i < natoms_src); i++)
+    for (int i = 0; (i < natoms_src); i++)
     {
         copy_rvec(x_src[i], x_dst[i]);
     }
@@ -94,17 +113,17 @@ static bool copyIt(int natoms_dst, rvec *x_dst, int natoms_src, rvec *x_src)
 
 bool MMSlave::copyX(int natoms, rvec *x)
 {
-    return copyIt(natoms, x, natoms_, x_);
+    return copyIt(natoms, x, natoms_qm_ + natoms_mm_, x_);
 }
 
 bool MMSlave::copyV(int natoms, rvec *v)
 {
-    return copyIt(natoms, v, natoms_, v_);
+    return copyIt(natoms, v, natoms_qm_ + natoms_mm_, v_);
 }
 
 bool MMSlave::copyF(int natoms, rvec *f)
 {
-    return copyIt(natoms, f, natoms_, f_);
+    return copyIt(natoms, f, natoms_qm_ + natoms_mm_, f_);
 }
 
 void MMSlave::cleanUp()
@@ -125,12 +144,12 @@ void MMSlave::cleanUp()
 
 bool MMSlave::setAtomQ(atom_id id, double q)
 {
-    t_atom *atom;
-    
+    t_atom               *atom;
+
     gmx_mtop_atomlookup_t alook = gmx_mtop_atomlookup_init(&mtop_);
-    
+
     gmx_mtop_atomnr_to_atom(alook, id, &atom);
-    atom->q = q;
+    atom->q  = q;
     atom->qB = q;
 
     gmx_mtop_atomlookup_destroy(alook);
@@ -139,8 +158,8 @@ bool MMSlave::setAtomQ(atom_id id, double q)
 }
 
 bool MMSlave::calcEnergy(const rvec *x,
-                         rvec *f,
-                         double *energy)
+                         rvec       *f,
+                         double     *energy)
 {
     fprintf(stderr, "Warning: computing the force and energy is not implemented yet.\n");
     return true;
@@ -158,45 +177,66 @@ typedef struct gmx_mmslave {
 gmx_mmslave_t mmslave_init(void)
 {
     gmx_mmslave *gms;
-    
-    gms = (gmx_mmslave *) calloc(1,sizeof(gmx_mmslave));
+
+    gms      = (gmx_mmslave *) calloc(1, sizeof(gmx_mmslave));
     gms->mms = new gmx::MMSlave();
-    
+
     return gms;
 }
-    
+
 void mmslave_done(gmx_mmslave_t gms)
 {
     delete gms->mms;
     free(gms);
 }
 
-gmx_bool mmslave_read_tpr(const char *tpr, 
-                          gmx_mmslave_t gms)
+int mmslave_read_tpr(const char   *tpr,
+                     gmx_mmslave_t gms)
 {
-    return (gmx_bool) gms->mms->readTpr(tpr);
+    if (gms->mms->readTpr(tpr))
+    {
+        return 1;
+    }
+    return 0;
 }
 
-int mmslave_natoms(gmx_mmslave_t gms)
+int mmslave_natoms_mm(gmx_mmslave_t gms)
 {
-    return gms->mms->nAtoms();
+    return gms->mms->nAtomsMM();
 }
 
-gmx_bool mmslave_copyX(gmx_mmslave_t gms, int natoms, rvec *x)
+int mmslave_natoms_qm(gmx_mmslave_t gms)
 {
-    return (gmx_bool) gms->mms->copyX(natoms, x);
+    return gms->mms->nAtomsQM();
 }
-    
-gmx_bool mmslave_copyV(gmx_mmslave_t gms, int natoms, rvec *v)
+
+int mmslave_copyX(gmx_mmslave_t gms, int natoms, rvec *x)
 {
-    return (gmx_bool) gms->mms->copyX(natoms, v);
+    if (gms->mms->copyX(natoms, x))
+    {
+        return 1;
+    }
+    return 0;
 }
-    
-gmx_bool mmslave_copyF(gmx_mmslave_t gms, int natoms, rvec *f)
+
+int mmslave_copyV(gmx_mmslave_t gms, int natoms, rvec *v)
 {
-    return (gmx_bool) gms->mms->copyX(natoms, f);
+    if (gms->mms->copyX(natoms, v))
+    {
+        return 1;
+    }
+    return 0;
 }
-    
+
+int mmslave_copyF(gmx_mmslave_t gms, int natoms, rvec *f)
+{
+    if (gms->mms->copyX(natoms, f))
+    {
+        return 1;
+    }
+    return 0;
+}
+
 void mmslave_clean(gmx_mmslave_t gms)
 {
     gms->mms->cleanUp();
@@ -204,18 +244,25 @@ void mmslave_clean(gmx_mmslave_t gms)
     free(gms);
 }
 
-gmx_bool mmslave_set_q(gmx_mmslave_t gms,
-                       atom_id id,
-                       double q)
+int mmslave_set_q(gmx_mmslave_t gms,
+                  atom_id       id,
+                  double        q)
 {
-    return (gmx_bool) gms->mms->setAtomQ(id, q);
+    if (gms->mms->setAtomQ(id, q))
+    {
+        return 1;
+    }
+    return 0;
 }
 
-gmx_bool mmslave_calc_energy(gmx_mmslave_t gms, 
-                             const rvec *x,
-                             rvec *f,
-                             double *energy)
+int mmslave_calc_energy(gmx_mmslave_t gms,
+                        const rvec   *x,
+                        rvec         *f,
+                        double       *energy)
 {
-    return (gmx_bool) gms->mms->calcEnergy(x, f, energy);
+    if (gms->mms->calcEnergy(x, f, energy))
+    {
+        return 1;
+    }
+    return 0;
 }
-    
