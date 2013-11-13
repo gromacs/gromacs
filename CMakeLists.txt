@@ -56,7 +56,7 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.6.4-dev")
+set(PROJECT_VERSION "4.6.5-dev")
 # The version number of the regressiontest tarball against which this
 # git branch can be tested. Normally, this will be the version of the
 # last patch release. Comment the next line out for branches leading
