@@ -600,9 +600,6 @@ static void compartmentalize_ions(
                 /* Now put it into the list containing only ions of its type */
                 add_to_list(i, &s->comp[comp][type], dist);
 
-                /* Correct the time-averaged number of ions for this compartment */
-                update_time_window(&s->comp[comp][type],sc->csteps,replace);
-
                 /* Master also checks through which channel each ion has passed */
                 if (MASTER(cr) && (iong->dom_now != NULL))
                 {
@@ -616,6 +613,8 @@ static void compartmentalize_ions(
                 not_in_comp[comp] += 1;
             }
         }
+        /* Correct the time-averaged number of ions for this compartment */
+        update_time_window(&s->comp[comp][type],sc->csteps,replace);
     }
 
     /* Flux detection warnings */
@@ -1383,6 +1382,17 @@ extern void init_swapcoords(
     if (MASTER(cr))
     {
         init_swapstate(swapstate, sc, mtop, x, box, ir->ePBC);
+    }
+
+    /* After init_swapstate we have a set of (old) whole positions for our 
+     * channels. Now transfer that to all nodes */
+    if (PAR(cr))
+    {
+        for (ig = eGrpSplit0; ig <= eGrpSplit1; ig++)
+        {
+            g = &(s->group[ig]);
+            gmx_bcast((g->nat)*sizeof((g->xc_old)[0]), g->xc_old, (cr));
+        }
     }
 
     /* Make shure that all molecules in the ion and solvent groups contain the
