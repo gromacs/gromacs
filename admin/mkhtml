@@ -12,7 +12,7 @@ set PROGFILE	= $2
 
 set dir = $cwd
 
-set VER		= 4.6.3
+set VER		= 4.6.4
 set MANDIR	= online
 set HTML	= $cwd/html
 set HTMLOL	= $HTML/$MANDIR
@@ -74,7 +74,7 @@ foreach i ( $GENERAL )
   echo "<br><br>" >> $HTMLIDX
 end
 cat >> $HTMLIDX <<EOD
-<A HREF="gmxfaq.html">FAQ</a>
+<A HREF="http://www.gromacs.org/Documentation/FAQs">FAQ</a>
 <br>
 </TD>
 <TD VALIGN=top WIDTH=75%>
