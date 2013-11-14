@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -278,6 +278,13 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     nbp->rcoulomb_sq = ic->rcoulomb * ic->rcoulomb;
     nbp->rlist_sq    = ic->rlist * ic->rlist;
     nbp->sh_invrc6   = ic->sh_invrc6;
+
+    /* TODO: implemented LJ force- and potential-switch CUDA kernels */
+    if (!(ic->vdw_modifier == eintmodNONE ||
+          ic->vdw_modifier == eintmodPOTSHIFT))
+    {
+        gmx_fatal(FARGS, "The CUDA kernels do not yet support switched LJ interactions");
+    }
 
     if (ic->eeltype == eelCUT)
     {

@@ -930,7 +930,7 @@ static void make_benchmark_tprs(
     fprintf(fp, "   Grid spacing x y z   : %f %f %f\n",
             box_size[XX]/ir->nkx, box_size[YY]/ir->nky, box_size[ZZ]/ir->nkz);
     fprintf(fp, "   Van der Waals type   : %s\n", EVDWTYPE(ir->vdwtype));
-    if (EVDW_SWITCHED(ir->vdwtype))
+    if (ir_vdw_switched(ir))
     {
         fprintf(fp, "   rvdw_switch          : %f nm\n", ir->rvdw_switch);
     }
