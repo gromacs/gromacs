@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,6 +91,8 @@ enum
     eNR_NBNXN_RF,       eNR_NBNXN_RF_E,
     eNR_NBNXN_TAB,      eNR_NBNXN_TAB_E,
     eNR_NBNXN_EWALD,    eNR_NBNXN_EWALD_E,
+    eNR_NBNXN_LJ_FSW,   eNR_NBNXN_LJ_FSW_E,
+    eNR_NBNXN_LJ_PSW,   eNR_NBNXN_LJ_PSW_E,
     eNR_NB14,
     eNR_BORN_RADII_STILL,     eNR_BORN_RADII_HCT_OBC,
     eNR_BORN_CHAINRULE,
