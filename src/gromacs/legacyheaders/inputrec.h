@@ -57,6 +57,18 @@ int pcouple_min_integration_steps(int epc);
 
 int ir_optimal_nstpcouple(const t_inputrec *ir);
 
+gmx_bool ir_coulomb_switched(const t_inputrec *ir);
+
+gmx_bool ir_coulomb_is_zero_at_cutoff(const t_inputrec *ir);
+
+gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec *ir);
+
+gmx_bool ir_vdw_switched(const t_inputrec *ir);
+
+gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir);
+
+gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir);
+
 #ifdef __cplusplus
 }
 #endif
