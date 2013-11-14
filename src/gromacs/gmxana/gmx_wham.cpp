@@ -118,6 +118,7 @@ typedef struct
     real *k;             //!< force constants in tpr file
     rvec *init_dist;     //!< reference displacements
     real *umbInitDist;   //!< reference displacement in umbrella direction
+    real  cycl_period;   //!< period length for cyclic PMF, read from box
     /*!\}*/
     /*!
      * \name Using PDO files common until gromacs 3.x
@@ -1985,6 +1986,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     int         i, ngrp, d;
     t_state     state;
     static int  first = 1;
+    real        period;
 
     /* printf("Reading %s \n",fn); */
     read_tpx_state(fn, &ir, &state, NULL, NULL);
@@ -2080,6 +2082,15 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
         printf("\tUse option -v to see this output for all input tpr files\n");
     }
 
+    period = 0;
+    for(d = 0; d < DIM; d++)
+    {
+        if(header->pull_dim[d])
+        {
+            period += state.box[d][d]*state.box[d][d];
+        }
+    }
+    header->cycl_period = sqrt(period);
     first = 0;
 }
 
@@ -2454,6 +2465,7 @@ void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
 {
     int  i;
     real mintmp, maxtmp;
+    real spread,ave;
 
     printf("Reading %d tpr and pullf files\n", nfiles/2);
 
@@ -2484,6 +2496,21 @@ void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
             {
                 opt->min = mintmp;
             }
+        }
+        if(opt->bCycl)
+        {
+            /* header->cycl_period must be smaller than the spread of values, or we do not have cyclic overlap */
+            spread = opt->max - opt->min;
+            ave    = 0.5*(opt->min+opt->max);
+            if(spread<=header->cycl_period)
+            {
+                gmx_fatal(FARGS,"Cannot do cyclic wham: spread of values (%f) smaller than autodetected cyclic distance (%f)\n",
+                          spread,header->cycl_period);
+            }
+            opt->min = ave - 0.5*header->cycl_period;
+            opt->max = ave + 0.5*header->cycl_period;
+            printf("\nSetting boundaries from cyclic geometry, period distance from box is %f.\n",
+                   header->cycl_period);
         }
         printf("\nDetermined boundaries to %f and %f\n\n", opt->min, opt->max);
         if (opt->bBoundsOnly)
