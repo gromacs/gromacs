@@ -49,7 +49,7 @@
 /* For convenience, and to enable configure-time invocation, we keep all architectures
  * in a single file, but to avoid repeated ifdefs we set the overall architecture here.
  */
-#ifdef GMX_IS_X86
+#ifdef GMX_TARGET_X86
 /* OK, it is x86, but can we execute cpuid? */
 #if defined(GMX_X86_GCC_INLINE_ASM) || ( defined(_MSC_VER) && ( (_MSC_VER > 1500) || (_MSC_VER==1500 & _MSC_FULL_VER >= 150030729)))
 #    define GMX_CPUID_X86
@@ -1089,7 +1089,8 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
 
 int
 gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
-                             FILE *        log)
+                             FILE *        log,
+                             int           print_to_stderr)
 {
     int                           rc;
     char                          str[1024];
@@ -1124,9 +1125,12 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
                     gmx_cpuid_acceleration_string[acc],
                     gmx_cpuid_acceleration_string[compiled_acc]);
         }
-        printf("Compiled acceleration: %s (Gromacs could use %s on this machine, which is better)\n",
-               gmx_cpuid_acceleration_string[compiled_acc],
-               gmx_cpuid_acceleration_string[acc]);
+        if (print_to_stderr)
+        {
+            fprintf(stderr, "Compiled acceleration: %s (Gromacs could use %s on this machine, which is better)\n",
+                   gmx_cpuid_acceleration_string[compiled_acc],
+                   gmx_cpuid_acceleration_string[acc]);
+        }
     }
     return rc;
 }

@@ -122,6 +122,15 @@ void change_dd_dlb_cutoff_limit(t_commrec *cr);
  * possible after subsequently setting a shorter cut-off with change_dd_cutoff.
  */
 
+void dd_setup_dlb_resource_sharing(t_commrec           *cr,
+                                   const gmx_hw_info_t *hwinfo,
+                                   const gmx_hw_opt_t  *hw_opt);
+/* When domains (PP MPI ranks) share a GPU, the individual GPU wait times
+ * are meaningless, as it depends on the order in which tasks on the same
+ * GPU finish. Therefore there wait times need to be averaged over the ranks
+ * sharing the same GPU. This function sets up the communication for that.
+ */
+
 void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd);
 
 void dd_collect_vec(gmx_domdec_t *dd,
@@ -131,7 +140,7 @@ void dd_collect_state(gmx_domdec_t *dd,
                       t_state *state_local, t_state *state);
 
 enum {
-    ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclPME, ddCyclNr
+    ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclWaitGPU, ddCyclPME, ddCyclNr
 };
 
 void dd_cycles_add(gmx_domdec_t *dd, float cycles, int ddCycl);
