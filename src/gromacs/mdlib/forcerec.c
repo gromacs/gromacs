@@ -1840,11 +1840,52 @@ void init_interaction_const_tables(FILE                *fp,
     }
 }
 
-static void init_interaction_const(FILE                       *fp,
-                                   const t_commrec gmx_unused *cr,
-                                   interaction_const_t       **interaction_const,
-                                   const t_forcerec           *fr,
-                                   real                        rtab)
+static void clear_force_switch_constants(shift_consts_t *sc)
+{
+    sc->c2   = 0;
+    sc->c3   = 0;
+    sc->cpot = 0;
+}
+
+static void force_switch_constants(real p,
+                                   real rsw, real rc,
+                                   shift_consts_t *sc)
+{
+    /* Here we determine the coefficient for shifting the force to zero
+     * between distance rsw and the cut-off rc.
+     * For a potential of r^-p, we have force p*r^-(p+1).
+     * But to save flops we absorb p in the coefficient.
+     * Thus we get:
+     * force/p   = r^-(p+1) + c2*r^2 + c3*r^3
+     * potential = r^-p + c2/3*r^3 + c3/4*r^4 + cpot
+     */
+    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 2));
+    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 3));
+    sc->cpot = -pow(rc, -p) + p*sc->c2/3*pow(rc - rsw, 3) + p*sc->c3/4*pow(rc - rsw, 4);
+}
+
+static void potential_switch_constants(real rsw, real rc,
+                                       switch_consts_t *sc)
+{
+    /* The switch function is 1 at rsw and 0 at rc.
+     * The derivative and second derivate are zero at both ends.
+     * rsw        = max(r - r_switch, 0)
+     * sw         = 1 + c3*rsw^3 + c4*rsw^4 + c5*rsw^5
+     * dsw        = 3*c3*rsw^2 + 4*c4*rsw^3 + 5*c5*rsw^4
+     * force      = force*dsw - potential*sw
+     * potential *= sw
+     */
+    sc->c3 = -10*pow(rc - rsw, -3);
+    sc->c4 =  15*pow(rc - rsw, -4);
+    sc->c5 =  -6*pow(rc - rsw, -5);
+}
+
+static void
+init_interaction_const(FILE                       *fp,
+                       const t_commrec gmx_unused *cr,
+                       interaction_const_t       **interaction_const,
+                       const t_forcerec           *fr,
+                       real                        rtab)
 {
     interaction_const_t *ic;
     gmx_bool             bUsesSimpleTables = TRUE;
@@ -1860,15 +1901,40 @@ static void init_interaction_const(FILE                       *fp,
     ic->rlistlong   = fr->rlistlong;
 
     /* Lennard-Jones */
-    ic->rvdw        = fr->rvdw;
-    if (fr->vdw_modifier == eintmodPOTSHIFT)
+    ic->vdw_modifier = fr->vdw_modifier;
+    ic->rvdw         = fr->rvdw;
+    ic->rvdw_switch  = fr->rvdw_switch;
+    clear_force_switch_constants(&ic->dispersion_shift);
+    clear_force_switch_constants(&ic->repulsion_shift);
+
+    switch (ic->vdw_modifier)
     {
-        ic->sh_invrc6 = pow(ic->rvdw, -6.0);
+        case eintmodPOTSHIFT:
+            /* Only shift the potential, don't touch the force */
+            ic->dispersion_shift.cpot = -pow(ic->rvdw, -6.0);
+            ic->repulsion_shift.cpot  = -pow(ic->rvdw, -12.0);
+            break;
+        case eintmodFORCESWITCH:
+            /* Switch the force, switch and shift the potential */
+            force_switch_constants(6.0, ic->rvdw_switch, ic->rvdw,
+                                   &ic->dispersion_shift);
+            force_switch_constants(12.0, ic->rvdw_switch, ic->rvdw,
+                                   &ic->repulsion_shift);
+            break;
+        case eintmodPOTSWITCH:
+            /* Switch the potential and force */
+            potential_switch_constants(ic->rvdw_switch, ic->rvdw,
+                                       &ic->vdw_switch);
+            break;
+        case eintmodNONE:
+        case eintmodEXACTCUTOFF:
+            /* Nothing to do here */
+            break;
+        default:
+            gmx_incons("unimplemented potential modifier");
     }
-    else
-    {
-        ic->sh_invrc6 = 0;
-    }
+
+    ic->sh_invrc6 = -ic->dispersion_shift.cpot;
 
     /* Electrostatics */
     ic->eeltype     = fr->eeltype;
@@ -1914,14 +1980,14 @@ static void init_interaction_const(FILE                       *fp,
     if (fp != NULL)
     {
         fprintf(fp, "Potential shift: LJ r^-12: %.3f r^-6 %.3f",
-                sqr(ic->sh_invrc6), ic->sh_invrc6);
+                ic->repulsion_shift.cpot, ic->dispersion_shift.cpot);
         if (ic->eeltype == eelCUT)
         {
-            fprintf(fp, ", Coulomb %.3f", ic->c_rf);
+            fprintf(fp, ", Coulomb %.3f", -ic->c_rf);
         }
         else if (EEL_PME(ic->eeltype))
         {
-            fprintf(fp, ", Ewald %.3e", ic->sh_ewald);
+            fprintf(fp, ", Ewald %.3e", -ic->sh_ewald);
         }
         fprintf(fp, "\n");
     }
@@ -2087,13 +2153,19 @@ static void init_nb_verlet(FILE                *fp,
         if (i == 0 ||
             nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
         {
+            gmx_bool bSimpleList;
+
+            bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type);
+
             snew(nbv->grp[i].nbat, 1);
             nbnxn_atomdata_init(fp,
                                 nbv->grp[i].nbat,
                                 nbv->grp[i].kernel_type,
+                                /* SIMD LJ switch kernels don't support LJ combination rules */
+                                bSimpleList && !(fr->vdw_modifier == eintmodFORCESWITCH || fr->vdw_modifier == eintmodPOTSWITCH),
                                 fr->ntype, fr->nbfp,
                                 ir->opts.ngener,
-                                nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type) ? gmx_omp_nthreads_get(emntNonbonded) : 1,
+                                bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
                                 nb_alloc, nb_free);
         }
         else
