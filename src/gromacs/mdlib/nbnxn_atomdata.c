@@ -354,10 +354,8 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
     }
 }
 
-/* Determines the combination rule (or none) to be used, stores it,
- * and sets the LJ parameters required with the rule.
- */
-static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
+/* Stores the LJ parameter data in a format convenient for the SIMD kernels */
+static void set_ljparam_simd_data(nbnxn_atomdata_t *nbat)
 {
     int  nt, i, j;
     real c6, c12;
@@ -511,6 +509,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 void nbnxn_atomdata_init(FILE *fp,
                          nbnxn_atomdata_t *nbat,
                          int nb_kernel_type,
+                         gmx_bool bTryCombinationRule,
                          int ntype, const real *nbfp,
                          int n_energygroups,
                          int nout,
@@ -632,7 +631,7 @@ void nbnxn_atomdata_init(FILE *fp,
 
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
-    if (simple)
+    if (bTryCombinationRule)
     {
         /* We prefer the geometic combination rule,
          * as that gives a slightly faster kernel than the LB rule.
@@ -664,14 +663,17 @@ void nbnxn_atomdata_init(FILE *fp,
                         nbat->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
             }
         }
-
-        set_combination_rule_data(nbat);
     }
     else
     {
         nbat->comb_rule = ljcrNONE;
 
         nbat->free(nbat->nbfp_comb);
+    }
+
+    if (simple)
+    {
+        set_ljparam_simd_data(nbat);
     }
 
     nbat->natoms  = 0;

@@ -53,27 +53,38 @@
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME(base, ene) base ## _rf_ ## ene
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecRF ## ljt ## feg ## _ref
 #endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME(base, ene) base ## _tab_ ## ene
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTab ## ljt ## feg ##_ref
 #else
-#define NBK_FUNC_NAME(base, ene) base ## _tab_twin_ ## ene
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTabTwinCut ## ljt ## feg ##_ref
+#endif
+#endif
+
+#ifdef VDW_FORCE_SWITCH
+#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJFsw, feg)
+#else
+#ifdef VDW_POT_SWITCH
+#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJPsw, feg)
+#else
+#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJ, feg)
 #endif
 #endif
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(nbnxn_kernel_ref, noener)
+NBK_FUNC_NAME(_F)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(nbnxn_kernel_ref, ener)
+NBK_FUNC_NAME(_VF)
 #else
-NBK_FUNC_NAME(nbnxn_kernel_ref, energrp)
+NBK_FUNC_NAME(_VgrpF)
 #endif
 #endif
 #undef NBK_FUNC_NAME
+#undef NBK_FUNC_NAME2
 (const nbnxn_pairlist_t     *nbl,
  const nbnxn_atomdata_t     *nbat,
  const interaction_const_t  *ic,
@@ -122,7 +133,10 @@ NBK_FUNC_NAME(nbnxn_kernel_ref, energrp)
     int        egp_mask;
     int        egp_sh_i[UNROLLI];
 #endif
-    real       sh_invrc6;
+#endif
+#ifdef VDW_POT_SWITCH
+    real       swV3, swV4, swV5;
+    real       swF2, swF3, swF4;
 #endif
 
 #ifdef CALC_COUL_RF
@@ -150,8 +164,13 @@ NBK_FUNC_NAME(nbnxn_kernel_ref, energrp)
     int npair = 0;
 #endif
 
-#ifdef CALC_ENERGIES
-    sh_invrc6 = ic->sh_invrc6;
+#ifdef VDW_POT_SWITCH
+    swV3 = ic->vdw_switch.c3;
+    swV4 = ic->vdw_switch.c4;
+    swV5 = ic->vdw_switch.c5;
+    swF2 = 3*ic->vdw_switch.c3;
+    swF3 = 4*ic->vdw_switch.c4;
+    swF4 = 5*ic->vdw_switch.c5;
 #endif
 
 #ifdef CALC_COUL_RF
