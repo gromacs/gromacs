@@ -71,14 +71,14 @@
  * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
  */
 #if (defined CALC_COUL_RF || defined CALC_COUL_TAB) && (!defined __GNUC__ || (defined CALC_COUL_RF && defined GMX_X86_AVX_256))
-#define CUTOFF_BLENDV
+#define NBNXN_CUTOFF_USE_BLENDV
 #endif
 /* With analytical Ewald we replace cmp+and+and with sub+blendv+blendv.
  * This is only faster with icc on Sandy Bridge (PS kernel slower than gcc 4.7).
  * Tested with icc 13.
  */
 #if defined CALC_COUL_EWALD && defined __INTEL_COMPILER && defined GMX_X86_AVX_256
-#define CUTOFF_BLENDV
+#define NBNXN_CUTOFF_USE_BLENDV
 #endif
 #endif
 
@@ -103,7 +103,7 @@
     gmx_mm_pr  tx_S2, ty_S2, tz_S2;
     gmx_mm_pr  rsq_S0, rinv_S0, rinvsq_S0;
     gmx_mm_pr  rsq_S2, rinv_S2, rinvsq_S2;
-#ifndef CUTOFF_BLENDV
+#ifndef NBNXN_CUTOFF_USE_BLENDV
     /* wco: within cut-off, mask of all 1's or 0's */
     gmx_mm_pb  wco_S0;
     gmx_mm_pb  wco_S2;
@@ -114,6 +114,19 @@
     gmx_mm_pb  wco_vdw_S2;
 #endif
 #endif
+
+#if (defined CALC_COULOMB && defined CALC_COUL_TAB) || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
+    gmx_mm_pr r_S0;
+    gmx_mm_pr r_S2;
+#endif
+
+#if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
+    gmx_mm_pr  rsw_S0, rsw2_S0, rsw2_r_S0;
+#ifndef HALF_LJ
+    gmx_mm_pr  rsw_S2, rsw2_S2, rsw2_r_S2;
+#endif
+#endif
+
 #ifdef CALC_COULOMB
 #ifdef CHECK_EXCLS
     /* 1/r masked with the interaction mask */
@@ -138,8 +151,8 @@
     gmx_mm_pr  frcoul_S2;
 #ifdef CALC_COUL_TAB
     /* For tables: r, rs=r/sp, rf=floor(rs), frac=rs-rf */
-    gmx_mm_pr  r_S0, rs_S0, rf_S0, frac_S0;
-    gmx_mm_pr  r_S2, rs_S2, rf_S2, frac_S2;
+    gmx_mm_pr  rs_S0, rf_S0, frac_S0;
+    gmx_mm_pr  rs_S2, rf_S2, frac_S2;
     /* Table index: rs truncated to an int */
     gmx_epi32  ti_S0, ti_S2;
     /* Linear force table values */
@@ -214,11 +227,11 @@
 #endif
 #endif
 
-    gmx_mm_pr  FrLJ6_S0, FrLJ12_S0;
+    gmx_mm_pr  FrLJ6_S0, FrLJ12_S0, frLJ_S0;
 #ifndef HALF_LJ
-    gmx_mm_pr  FrLJ6_S2, FrLJ12_S2;
+    gmx_mm_pr  FrLJ6_S2, FrLJ12_S2, frLJ_S2;
 #endif
-#ifdef CALC_ENERGIES
+#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
     gmx_mm_pr  VLJ6_S0, VLJ12_S0, VLJ_S0;
 #ifndef HALF_LJ
     gmx_mm_pr  VLJ6_S2, VLJ12_S2, VLJ_S2;
@@ -271,7 +284,7 @@
     rsq_S0      = gmx_calc_rsq_pr(dx_S0, dy_S0, dz_S0);
     rsq_S2      = gmx_calc_rsq_pr(dx_S2, dy_S2, dz_S2);
 
-#ifndef CUTOFF_BLENDV
+#ifndef NBNXN_CUTOFF_USE_BLENDV
     wco_S0      = gmx_cmplt_pr(rsq_S0, rc2_S);
     wco_S2      = gmx_cmplt_pr(rsq_S2, rc2_S);
 #endif
@@ -380,7 +393,7 @@
 
 #endif /* CALC_LJ */
 
-#ifndef CUTOFF_BLENDV
+#ifndef NBNXN_CUTOFF_USE_BLENDV
     rinv_S0     = gmx_blendzero_pr(rinv_S0, wco_S0);
     rinv_S2     = gmx_blendzero_pr(rinv_S2, wco_S2);
 #else
@@ -424,7 +437,7 @@
     /* We need to mask (or limit) rsq for the cut-off,
      * as large distances can cause an overflow in gmx_pmecorrF/V.
      */
-#ifndef CUTOFF_BLENDV
+#ifndef NBNXN_CUTOFF_USE_BLENDV
     brsq_S0     = gmx_mul_pr(beta2_S, gmx_blendzero_pr(rsq_S0, wco_S0));
     brsq_S2     = gmx_mul_pr(beta2_S, gmx_blendzero_pr(rsq_S2, wco_S2));
 #else
@@ -541,12 +554,9 @@
     rinvsix_S2  = gmx_blendzero_pr(rinvsix_S2, interact_S2);
 #endif
 #endif
-#ifdef VDW_CUTOFF_CHECK
-    rinvsix_S0  = gmx_blendzero_pr(rinvsix_S0, wco_vdw_S0);
-#ifndef HALF_LJ
-    rinvsix_S2  = gmx_blendzero_pr(rinvsix_S2, wco_vdw_S2);
-#endif
-#endif
+
+#ifndef LJ_FORCE_SWITCH
+    /* We have plain LJ with simple C6/6 C12/12 coefficients */
     FrLJ6_S0    = gmx_mul_pr(c6_S0, rinvsix_S0);
 #ifndef HALF_LJ
     FrLJ6_S2    = gmx_mul_pr(c6_S2, rinvsix_S2);
@@ -555,6 +565,37 @@
 #ifndef HALF_LJ
     FrLJ12_S2   = gmx_mul_pr(c12_S2, gmx_mul_pr(rinvsix_S2, rinvsix_S2));
 #endif
+#endif
+
+#if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
+    /* We switch the LJ force */
+    r_S0        = gmx_mul_pr(rsq_S0, rinv_S0);
+    rsw_S0      = gmx_max_pr(gmx_sub_pr(r_S0, rswitch_S), zero_S);
+    rsw2_S0     = gmx_mul_pr(rsw_S0, rsw_S0);
+    rsw2_r_S0   = gmx_mul_pr(rsw2_S0, r_S0);
+#ifndef HALF_LJ
+    r_S2        = gmx_mul_pr(rsq_S2, rinv_S2);
+    rsw_S2      = gmx_max_pr(gmx_sub_pr(r_S2, rswitch_S), zero_S);
+    rsw2_S2     = gmx_mul_pr(rsw_S2, rsw_S2);
+    rsw2_r_S2   = gmx_mul_pr(rsw2_S2, r_S2);
+#endif
+#endif
+
+#ifdef LJ_FORCE_SWITCH
+
+#define add_fr_switch_pr(fr, rsw, rsw2_r, c2, c3) gmx_madd_pr(gmx_madd_pr(c3, rsw, c2), rsw2_r, fr)
+
+    FrLJ6_S0    = gmx_mul_pr(c6_S0, add_fr_switch_pr(rinvsix_S0, rsw_S0, rsw2_r_S0, p6_fc2_S, p6_fc3_S));
+#ifndef HALF_LJ
+    FrLJ6_S2    = gmx_mul_pr(c6_S2, add_fr_switch_pr(rinvsix_S2, rsw_S2, rsw2_r_S2, p6_fc2_S, p6_fc3_S));
+#endif
+    FrLJ12_S0   = gmx_mul_pr(c12_S0, add_fr_switch_pr(gmx_mul_pr(rinvsix_S0, rinvsix_S0), rsw_S0, rsw2_r_S0, p12_fc2_S, p12_fc3_S));
+#ifndef HALF_LJ
+    FrLJ12_S2   = gmx_mul_pr(c12_S2, add_fr_switch_pr(gmx_mul_pr(rinvsix_S2, rinvsix_S2), rsw_S2, rsw2_r_S2, p12_fc2_S, p12_fc3_S));
+#endif
+#undef gmx_add_fr_switch
+#endif /* LJ_FORCE_SWITCH */
+
 #endif /* not LJ_COMB_LB */
 
 #ifdef LJ_COMB_LB
@@ -574,12 +615,6 @@
     sir6_S2     = gmx_mul_pr(sir2_S2, gmx_mul_pr(sir2_S2, sir2_S2));
 #ifdef EXCL_FORCES
     sir6_S2     = gmx_blendzero_pr(sir6_S2, interact_S2);
-#endif
-#endif
-#ifdef VDW_CUTOFF_CHECK
-    sir6_S0     = gmx_blendzero_pr(sir6_S0, wco_vdw_S0);
-#ifndef HALF_LJ
-    sir6_S2     = gmx_blendzero_pr(sir6_S2, wco_vdw_S2);
 #endif
 #endif
     FrLJ6_S0    = gmx_mul_pr(eps_S0, sir6_S0);
@@ -610,6 +645,110 @@
 #endif
 #endif
 #endif /* LJ_COMB_LB */
+
+    /* Determine the total scalar LJ force*r */
+    frLJ_S0     = gmx_sub_pr(FrLJ12_S0, FrLJ6_S0);
+#ifndef HALF_LJ
+    frLJ_S2     = gmx_sub_pr(FrLJ12_S2, FrLJ6_S2);
+#endif
+
+#if defined CALC_ENERGIES && !defined LJ_POT_SWITCH
+#ifndef LJ_FORCE_SWITCH
+    /* Calculate the LJ energies, with constant potential shift */
+    VLJ6_S0     = gmx_mul_pr(sixth_S, gmx_madd_pr(c6_S0, p6_cpot_S, FrLJ6_S0));
+#ifndef HALF_LJ
+    VLJ6_S2     = gmx_mul_pr(sixth_S, gmx_madd_pr(c6_S2, p6_cpot_S, FrLJ6_S2));
+#endif
+    VLJ12_S0    = gmx_mul_pr(twelveth_S, gmx_madd_pr(c12_S0, p12_cpot_S, FrLJ12_S0));
+#ifndef HALF_LJ
+    VLJ12_S2    = gmx_mul_pr(twelveth_S, gmx_madd_pr(c12_S2, p12_cpot_S, FrLJ12_S2));
+#endif
+#else
+
+#define v_fswitch_pr(rsw, rsw2, c0, c3, c4) gmx_madd_pr(gmx_madd_pr(c4, rsw, c3), gmx_mul_pr(rsw2, rsw), c0)
+
+    VLJ6_S0     = gmx_mul_pr(c6_S0, gmx_madd_pr(sixth_S, rinvsix_S0, v_fswitch_pr(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
+#ifndef HALF_LJ
+    VLJ6_S2     = gmx_mul_pr(c6_S2, gmx_madd_pr(sixth_S, rinvsix_S2, v_fswitch_pr(rsw_S2, rsw2_S2, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
+#endif
+    VLJ12_S0    = gmx_mul_pr(c12_S0, gmx_madd_pr(twelveth_S, gmx_mul_pr(rinvsix_S0, rinvsix_S0), v_fswitch_pr(rsw_S0, rsw2_S0, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
+#ifndef HALF_LJ
+    VLJ12_S2    = gmx_mul_pr(c12_S2, gmx_madd_pr(twelveth_S, gmx_mul_pr(rinvsix_S2, rinvsix_S2), v_fswitch_pr(rsw_S2, rsw2_S2, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
+#endif
+#undef v_fswitch_pr
+#endif /* LJ_FORCE_SWITCH */
+
+    /* Add up the repulsion and dispersion */
+    VLJ_S0      = gmx_sub_pr(VLJ12_S0, VLJ6_S0);
+#ifndef HALF_LJ
+    VLJ_S2      = gmx_sub_pr(VLJ12_S2, VLJ6_S2);
+#endif
+#endif /* CALC_ENERGIES && !LJ_POT_SWITCH */
+
+#ifdef LJ_POT_SWITCH
+    /* We always need the potential, since it is needed for the force */
+    VLJ_S0 = gmx_nmsub_pr(sixth_S, FrLJ6_S0, gmx_mul_pr(twelveth_S, FrLJ12_S0));
+#ifndef HALF_LJ
+    VLJ_S2 = gmx_nmsub_pr(sixth_S, FrLJ6_S2, gmx_mul_pr(twelveth_S, FrLJ12_S2));
+#endif
+
+    {
+        gmx_mm_pr sw_S0, dsw_S0;
+#ifndef HALF_LJ
+        gmx_mm_pr sw_S2, dsw_S2;
+#endif
+
+#define switch_pr(rsw, rsw2, c3, c4, c5) gmx_madd_pr(gmx_madd_pr(gmx_madd_pr(c5, rsw, c4), rsw, c3), gmx_mul_pr(rsw2, rsw), one_S)
+#define dswitch_pr(rsw, rsw2, c2, c3, c4) gmx_mul_pr(gmx_madd_pr(gmx_madd_pr(c4, rsw, c3), rsw, c2), rsw2)
+
+        sw_S0  = switch_pr(rsw_S0, rsw2_S0, swV3_S, swV4_S, swV5_S);
+        dsw_S0 = switch_pr(rsw_S0, rsw2_S0, swF2_S, swF3_S, swF4_S);
+#ifndef HALF_LJ
+        sw_S2  = switch_pr(rsw_S2, rsw2_S2, swV3_S, swV4_S, swV5_S);
+        dsw_S2 = switch_pr(rsw_S2, rsw2_S2, swF2_S, swF3_S, swF4_S);
+#endif
+        frLJ_S0 = gmx_nmsub_pr(gmx_mul_pr(dsw_S0, VLJ_S0), r_S0, gmx_mul_pr(sw_S0, frLJ_S0));
+#ifndef HALF_LJ
+        frLJ_S2 = gmx_nmsub_pr(gmx_mul_pr(dsw_S2, VLJ_S2), r_S2, gmx_mul_pr(sw_S2, frLJ_S2));
+#endif
+#ifdef CALC_ENERGIES
+        VLJ_S0  = gmx_mul_pr(sw_S0, VLJ_S0);
+#ifndef HALF_LJ
+        VLJ_S2  = gmx_mul_pr(sw_S2, VLJ_S2);
+#endif
+#endif
+
+#undef switch_pr
+#undef dswitch_pr
+    }
+#endif /* LJ_POT_SWITCH */
+
+#if defined VDW_CUTOFF_CHECK
+    /* frLJ is multiplied later by rinvsq, which is masked for the Coulomb
+     * cut-off, but if the VdW cut-off is shorter, we need to mask with that.
+     */
+    frLJ_S0     = gmx_blendzero_pr(frLJ_S0, wco_vdw_S0);
+#ifndef HALF_LJ
+    frLJ_S2     = gmx_blendzero_pr(frLJ_S2, wco_vdw_S2);
+#endif
+#endif
+
+#ifdef CALC_ENERGIES
+    /* The potential shift should be removed for pairs beyond cut-off */
+    VLJ_S0      = gmx_blendzero_pr(VLJ_S0, wco_vdw_S0);
+#ifndef HALF_LJ
+    VLJ_S2      = gmx_blendzero_pr(VLJ_S2, wco_vdw_S2);
+#endif
+#endif
+
+#if defined CALC_ENERGIES && defined CHECK_EXCLS
+    /* The potential shift should be removed for excluded pairs */
+    VLJ_S0      = gmx_blendzero_pr(VLJ_S0, interact_S0);
+#ifndef HALF_LJ
+    VLJ_S2      = gmx_blendzero_pr(VLJ_S2, interact_S2);
+#endif
+#endif
+
 
 #endif /* CALC_LJ */
 
@@ -650,32 +789,7 @@
 #endif
 
 #ifdef CALC_LJ
-    /* Calculate the LJ energies */
-    VLJ6_S0     = gmx_mul_pr(sixth_S, gmx_sub_pr(FrLJ6_S0, gmx_mul_pr(c6_S0, sh_invrc6_S)));
-#ifndef HALF_LJ
-    VLJ6_S2     = gmx_mul_pr(sixth_S, gmx_sub_pr(FrLJ6_S2, gmx_mul_pr(c6_S2, sh_invrc6_S)));
-#endif
-    VLJ12_S0    = gmx_mul_pr(twelveth_S, gmx_sub_pr(FrLJ12_S0, gmx_mul_pr(c12_S0, sh_invrc12_S)));
-#ifndef HALF_LJ
-    VLJ12_S2    = gmx_mul_pr(twelveth_S, gmx_sub_pr(FrLJ12_S2, gmx_mul_pr(c12_S2, sh_invrc12_S)));
-#endif
 
-    VLJ_S0      = gmx_sub_pr(VLJ12_S0, VLJ6_S0);
-#ifndef HALF_LJ
-    VLJ_S2      = gmx_sub_pr(VLJ12_S2, VLJ6_S2);
-#endif
-    /* The potential shift should be removed for pairs beyond cut-off */
-    VLJ_S0      = gmx_blendzero_pr(VLJ_S0, wco_vdw_S0);
-#ifndef HALF_LJ
-    VLJ_S2      = gmx_blendzero_pr(VLJ_S2, wco_vdw_S2);
-#endif
-#ifdef CHECK_EXCLS
-    /* The potential shift should be removed for excluded pairs */
-    VLJ_S0      = gmx_blendzero_pr(VLJ_S0, interact_S0);
-#ifndef HALF_LJ
-    VLJ_S2      = gmx_blendzero_pr(VLJ_S2, interact_S2);
-#endif
-#endif
 #ifndef ENERGY_GROUPS
     Vvdwtot_S    = gmx_add_pr(Vvdwtot_S,
 #ifndef HALF_LJ
@@ -695,26 +809,18 @@
 
 #ifdef CALC_LJ
 #ifdef CALC_COULOMB
-    fscal_S0    = gmx_mul_pr(rinvsq_S0,
-                             gmx_add_pr(frcoul_S0,
-                                        gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
+    fscal_S0    = gmx_mul_pr(rinvsq_S0, gmx_add_pr(frcoul_S0, frLJ_S0));
 #else
-    fscal_S0    = gmx_mul_pr(rinvsq_S0,
-                             (
-                                        gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
+    fscal_S0    = gmx_mul_pr(rinvsq_S0, frLJ_S0);
 #endif
 #else
     fscal_S0    = gmx_mul_pr(rinvsq_S0, frcoul_S0);
 #endif /* CALC_LJ */
 #if defined CALC_LJ && !defined HALF_LJ
 #ifdef CALC_COULOMB
-    fscal_S2    = gmx_mul_pr(rinvsq_S2,
-                             gmx_add_pr(frcoul_S2,
-                                        gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
+    fscal_S2    = gmx_mul_pr(rinvsq_S2, gmx_add_pr(frcoul_S2, frLJ_S2));
 #else
-    fscal_S2    = gmx_mul_pr(rinvsq_S2,
-                             (
-                                        gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
+    fscal_S2    = gmx_mul_pr(rinvsq_S2, frLJ_S2);
 #endif
 #else
     /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */
@@ -752,6 +858,6 @@
 #undef  wco_vdw_S0
 #undef  wco_vdw_S2
 
-#undef  CUTOFF_BLENDV
+#undef  NBNXN_CUTOFF_USE_BLENDV
 
 #undef  EXCL_FORCES
