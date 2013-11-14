@@ -279,6 +279,13 @@ static void init_nbparam(cu_nbparam_t *nbp,
     nbp->rlist_sq   = ic->rlist * ic->rlist;
     nbp->sh_invrc6  = ic->sh_invrc6;
 
+    /* TODO: implemented LJ force- and potential-switch CUDA kernels */
+    if (!(ic->vdw_modifier == eintmodNONE ||
+          ic->vdw_modifier == eintmodPOTSHIFT))
+    {
+        gmx_fatal(FARGS, "The CUDA kernels do not yet support switched LJ interactions");
+    }
+
     if (ic->eeltype == eelCUT)
     {
         nbp->eeltype = eelCuCUT;
