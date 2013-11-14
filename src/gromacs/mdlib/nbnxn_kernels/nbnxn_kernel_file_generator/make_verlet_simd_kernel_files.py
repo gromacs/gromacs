@@ -119,31 +119,33 @@ FileHeader = \
 # The dict order must match the order of an enumeration in
 # nbnxn_kernel_simd_template.c.pre
 ElectrostaticsDict = collections.OrderedDict()
-ElectrostaticsDict['rf'] = { 'define' : '#define CALC_COUL_RF' }
-ElectrostaticsDict['tab'] = { 'define' : '#define CALC_COUL_TAB' }
-ElectrostaticsDict['tab_twin'] = { 'define' : '#define CALC_COUL_TAB\n#define VDW_CUTOFF_CHECK /* Use twin-range cut-off */' }
-ElectrostaticsDict['ewald'] = { 'define' : '#define CALC_COUL_EWALD' }
-ElectrostaticsDict['ewald_twin'] = { 'define' : '#define CALC_COUL_EWALD\n#define VDW_CUTOFF_CHECK /* Use twin-range cut-off */' }
-
+ElectrostaticsDict['ElecRF'] = { 'define' : '#define CALC_COUL_RF' }
+ElectrostaticsDict['ElecQSTab'] = { 'define' : '#define CALC_COUL_TAB' }
+ElectrostaticsDict['ElecQSTabTwinCut'] = { 'define' : '#define CALC_COUL_TAB\n#define VDW_CUTOFF_CHECK /* Use twin-range cut-off */' }
+ElectrostaticsDict['ElecEw'] = { 'define' : '#define CALC_COUL_EWALD' }
+ElectrostaticsDict['ElecEwTwinCut'] = { 'define' : '#define CALC_COUL_EWALD\n#define VDW_CUTOFF_CHECK /* Use twin-range cut-off */' }
+ 
 # The dict order must match the order of a C enumeration.
-LJCombinationRuleDict = collections.OrderedDict()
-LJCombinationRuleDict['geom'] = { 'define' : '#define LJ_COMB_GEOM' }
-LJCombinationRuleDict['lb'] = { 'define' : '#define LJ_COMB_LB' }
-LJCombinationRuleDict['none'] = { 'define' : '/* Use no LJ combination rule */' }
+VdwTreatmentDict = collections.OrderedDict()
+VdwTreatmentDict['VdwLJCombGeom'] = { 'define' : '#define LJ_COMB_GEOM' }
+VdwTreatmentDict['VdwLJCombLB'] = { 'define' : '#define LJ_COMB_LB' }
+VdwTreatmentDict['VdwLJ'] = { 'define' : '/* Use no LJ combination rule */' }
+VdwTreatmentDict['VdwLJFSw'] = { 'define' : '/* Use no LJ combination rule */\n#define LJ_FORCE_SWITCH' }
+VdwTreatmentDict['VdwLJPSw'] = { 'define' : '/* Use no LJ combination rule */\n#define LJ_POT_SWITCH' }
 
 # This is OK as an unordered dict
 EnergiesComputationDict = {
-    'ener'    : {
+    'F'  : {
+        'function type' : 'nbk_func_noener',
+        'define' : '/* Will not calculate energies */',
+    },
+    'FE'    : {
         'function type' : 'nbk_func_ener',
         'define' : '#define CALC_ENERGIES',
     },
-    'energrp' : {
+    'FEgrp' : {
         'function type' : 'nbk_func_ener',
         'define' : '#define CALC_ENERGIES\n#define ENERGY_GROUPS',
-    },
-    'noener'  : {
-        'function type' : 'nbk_func_noener',
-        'define' : '/* Will not calculate energies */',
     },
 }
 
@@ -182,11 +184,12 @@ with open ("nbnxn_kernel_simd_template.h.pre", "r") as KernelsHeaderTemplateFile
 #   for each kernel, a file defining the single C function for that kernel
 for type in VerletKernelTypeDict:
     DirName = "../simd_{0}".format(type)
-    KernelNamePrefix = 'nbnxn_kernel_simd_{0}'.format(type)
-    KernelsHeaderFileName = "{0}.h".format(KernelNamePrefix)
+    KernelNamePrefix = 'nbnxn_kernel'
+    KernelsName = "{0}_simd_{1}".format(KernelNamePrefix,type)
+    KernelsHeaderFileName = "{0}.h".format(KernelsName,type)
     KernelFunctionLookupTable = {}
     KernelDeclarations = ''
-    with open ("{1}_kernel.c.pre".format(DirName,KernelNamePrefix), "r") as KernelTemplateFile:
+    with open ("{0}_kernel.c.pre".format(KernelsName,type), "r") as KernelTemplateFile:
         KernelTemplate =  KernelTemplateFile.read()
 
     # Loop over all kernels
@@ -194,9 +197,9 @@ for type in VerletKernelTypeDict:
         KernelFunctionLookupTable[ener] = '{\n'
         for elec in ElectrostaticsDict:
             KernelFunctionLookupTable[ener] += '    {\n'
-            for ljcomb in LJCombinationRuleDict:
-                KernelName = ('{0}_{1}_comb_{2}_{3}'
-                              .format(KernelNamePrefix,elec,ljcomb,ener))
+            for ljtreat in VdwTreatmentDict:
+                KernelName = ('{0}_{1}_{2}_{3}_{4}'
+                              .format(KernelNamePrefix,elec,ljtreat,ener,type))
 
                 # Declare the kernel function
                 KernelDeclarations += ('{1:21} {0};\n'
@@ -209,7 +212,7 @@ for type in VerletKernelTypeDict:
                     kernelfp.write(KernelTemplate
                                    .format(VerletKernelTypeDict[type]['Define'],
                                            ElectrostaticsDict[elec]['define'],
-                                           LJCombinationRuleDict[ljcomb]['define'],
+                                           VdwTreatmentDict[ljtreat]['define'],
                                            EnergiesComputationDict[ener]['define'],
                                            KernelsHeaderFileName,
                                            KernelName,
@@ -230,13 +233,13 @@ for type in VerletKernelTypeDict:
     with open('{0}/{1}'.format(DirName,KernelsHeaderFileName),'w') as fp:
         fp.write(FileHeader.format(type))
         fp.write(KernelsHeaderTemplate
-                 .format(KernelNamePrefix,
-                         " " * (len(KernelNamePrefix) + 1),
+                 .format(KernelsName,
+                         " " * (len(KernelsName) + 1),
                          KernelDeclarations))
 
     # Write the file defining the kernel dispatcher
     # function for this type
-    with open('{0}/{1}'.format(DirName,"{0}.c".format(KernelNamePrefix)),'w') as fp:
+    with open('{0}/{1}'.format(DirName,"{0}.c".format(KernelsName,type)),'w') as fp:
         fp.write(FileHeader.format(type))
         fp.write(KernelDispatcherTemplate
                  .format(VerletKernelTypeDict[type]['Define'],
@@ -244,11 +247,11 @@ for type in VerletKernelTypeDict:
                          VerletKernelTypeDict[type]['WidthCheck'],
                          VerletKernelTypeDict[type]['UnrollSize'],
                          KernelsHeaderFileName,
-                         KernelNamePrefix,
-                         ' ' * (len(KernelNamePrefix)+1),
-                         KernelFunctionLookupTable['ener'],
-                         KernelFunctionLookupTable['energrp'],
-                         KernelFunctionLookupTable['noener'],
+                         KernelsName,
+                         ' ' * (len(KernelsName)+1),
+                         KernelFunctionLookupTable['F'],
+                         KernelFunctionLookupTable['FE'],
+                         KernelFunctionLookupTable['FEgrp'],
                      )
              )
 
