@@ -72,6 +72,11 @@ int gmx_node_num(void);
 int gmx_node_rank(void);
 /* return the rank of the node */
 
+int gmx_physicalnode_id_hash(void);
+/* Return a non-negative hash that is, hopefully, unique for each physical node.
+ * This hash is useful for determining hardware locality.
+ */
+
 int gmx_hostname_num(void);
 /* Ostensibly, returns a integer characteristic of and unique to each
    physical node in the MPI system. If the first part of the MPI
