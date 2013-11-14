@@ -302,6 +302,25 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported");
         }
+        if (ir->vdwtype == evdwSHIFT || ir->vdwtype == evdwSWITCH)
+        {
+            if (ir->vdw_modifier == eintmodNONE ||
+                ir->vdw_modifier == eintmodPOTSHIFT)
+            {
+                ir->vdw_modifier = (ir->vdwtype == evdwSHIFT ? eintmodFORCESWITCH : eintmodPOTSWITCH);
+
+                sprintf(warn_buf, "Replacing vdwtype=%s by the equivalent combination of vdwtype=%s and vdw_modifier=%s", evdw_names[ir->vdwtype], evdw_names[evdwCUT], eintmod_names[ir->vdw_modifier]);
+                warning_note(wi, warn_buf);
+
+                ir->vdwtype = evdwCUT;
+            }
+            else
+            {
+                sprintf(warn_buf, "Unsupported combination of vdwtype=%s and vdw_modifier=%s", evdw_names[ir->vdwtype], eintmod_names[ir->vdw_modifier]);
+                warning_error(wi, warn_buf);
+            }
+        }
+
         if (ir->vdwtype != evdwCUT)
         {
             warning_error(wi, "With Verlet lists only cut-off LJ interactions are supported");
@@ -311,6 +330,12 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
               EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
             warning_error(wi, "With Verlet lists only cut-off, reaction-field, PME and Ewald electrostatics are supported");
+        }
+        if (!(ir->coulomb_modifier == eintmodNONE ||
+              ir->coulomb_modifier == eintmodPOTSHIFT))
+        {
+            sprintf(warn_buf, "coulomb_modifier=%s is not supported with the Verlet cut-off scheme", eintmod_names[ir->coulomb_modifier]);
+            warning_error(wi, warn_buf);
         }
 
         if (ir->nstlist <= 0)

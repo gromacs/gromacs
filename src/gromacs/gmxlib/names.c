@@ -102,7 +102,7 @@ const char *econstr_names[econtNR+1] = {
 };
 
 const char *eintmod_names[eintmodNR+1] = {
-    "Potential-shift-Verlet", "Potential-shift", "None", "Potential-switch", "Exact-cutoff", NULL
+    "Potential-shift-Verlet", "Potential-shift", "None", "Potential-switch", "Exact-cutoff", "Force-switch", NULL
 };
 
 const char *egrp_nm[egNR+1] = {

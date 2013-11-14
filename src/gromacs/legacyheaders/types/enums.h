@@ -90,7 +90,7 @@ enum {
  * Exactcutoff is only used by Reaction-field-zero, and is not user-selectable.
  */
 enum eintmod {
-    eintmodPOTSHIFT_VERLET, eintmodPOTSHIFT, eintmodNONE, eintmodPOTSWITCH, eintmodEXACTCUTOFF, eintmodNR
+    eintmodPOTSHIFT_VERLET, eintmodPOTSHIFT, eintmodNONE, eintmodPOTSWITCH, eintmodEXACTCUTOFF, eintmodFORCESWITCH, eintmodNR
 };
 
 /*
