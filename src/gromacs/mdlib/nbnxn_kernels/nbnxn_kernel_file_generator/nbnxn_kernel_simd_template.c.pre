@@ -15,6 +15,7 @@
 #include "../nbnxn_kernel_common.h"
 #include "gmx_omp_nthreads.h"
 #include "types/force_flags.h"
+#include "gmx_fatal.h"
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
@@ -22,12 +23,15 @@ enum {{
     coultRF, coultTAB, coultTAB_TWIN, coultEWALD, coultEWALD_TWIN, coultNR
 }};
 
-/* Declare and define the kernel function pointer lookup tables. */
-static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
+/* Declare and define the kernel function pointer lookup tables.
+ * The minor index of the array goes over both the LJ combination rules,
+ * which is only supported by plain cut-off, and the LJ switch functions.
+ */
+static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
 {7}
-static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
+static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
 {8}
-static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
+static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
 {9}
 
 static void
@@ -91,7 +95,7 @@ void
 {{
     int                nnbl;
     nbnxn_pairlist_t **nbl;
-    int                coult;
+    int                coult, ljtreatment = 0;
     int                nb;
 
     nnbl = nbl_list->nnbl;
@@ -125,6 +129,23 @@ void
                 coult = coultEWALD_TWIN;
             }}
         }}
+    }}
+
+    switch (ic->vdw_modifier)
+    {{
+        case eintmodNONE:
+        case eintmodPOTSHIFT:
+            ljtreatment = nbat->comb_rule;
+            break;
+        /* Switch functions follow after cut-off combination rule kernels */
+        case eintmodFORCESWITCH:
+            ljtreatment = ljcrNR;
+            break;
+        case eintmodPOTSWITCH:
+            ljtreatment = ljcrNR + 1;
+            break;
+        default:
+            gmx_incons("Unsupported VdW interaction modifier");
     }}
 
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
@@ -162,11 +183,11 @@ void
               (EEL_FULL(ic->eeltype) && (force_flags & GMX_FORCE_VIRIAL))))
         {{
             /* Don't calculate energies */
-            p_nbk_noener[coult][nbat->comb_rule](nbl[nb], nbat,
-                                                 ic,
-                                                 shift_vec,
-                                                 out->f,
-                                                 fshift_p);
+            p_nbk_noener[coult][ljtreatment](nbl[nb], nbat,
+                                             ic,
+                                             shift_vec,
+                                             out->f,
+                                             fshift_p);
         }}
         else if (out->nV == 1 || !(force_flags & GMX_FORCE_ENERGY))
         {{
@@ -174,13 +195,13 @@ void
             out->Vvdw[0] = 0;
             out->Vc[0]   = 0;
 
-            p_nbk_ener[coult][nbat->comb_rule](nbl[nb], nbat,
-                                               ic,
-                                               shift_vec,
-                                               out->f,
-                                               fshift_p,
-                                               out->Vvdw,
-                                               out->Vc);
+            p_nbk_ener[coult][ljtreatment](nbl[nb], nbat,
+                                           ic,
+                                           shift_vec,
+                                           out->f,
+                                           fshift_p,
+                                           out->Vvdw,
+                                           out->Vc);
         }}
         else
         {{
@@ -196,13 +217,13 @@ void
                 out->VSc[i] = 0;
             }}
 
-            p_nbk_energrp[coult][nbat->comb_rule](nbl[nb], nbat,
-                                                  ic,
-                                                  shift_vec,
-                                                  out->f,
-                                                  fshift_p,
-                                                  out->VSvdw,
-                                                  out->VSc);
+            p_nbk_energrp[coult][ljtreatment](nbl[nb], nbat,
+                                              ic,
+                                              shift_vec,
+                                              out->f,
+                                              fshift_p,
+                                              out->VSvdw,
+                                              out->VSc);
 
             reduce_group_energies(nbat->nenergrp, nbat->neg_2log,
                                   out->VSvdw, out->VSc,
