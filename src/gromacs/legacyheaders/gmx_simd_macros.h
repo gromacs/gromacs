@@ -167,7 +167,7 @@
 #endif
 #endif
 
-#ifdef GMX_IS_X86
+#ifdef GMX_TARGET_X86
 
 #ifdef GMX_X86_SSE2
 /* This is for general x86 SIMD instruction sets that also support SSE2 */
@@ -504,7 +504,7 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 
 #endif /* GMX_X86_SSE2 */
 
-#endif /* GMX_IS_X86 */
+#endif /* GMX_TARGET_X86 */
 
 #ifdef GMX_CPU_ACCELERATION_IBM_QPX
 
