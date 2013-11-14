@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -194,4 +194,45 @@ int ir_optimal_nstpcouple(const t_inputrec *ir)
     }
 
     return n;
+}
+
+gmx_bool ir_coulomb_switched(const t_inputrec *ir)
+{
+    return (ir->coulombtype == eelSWITCH ||
+            ir->coulombtype == eelSHIFT ||
+            ir->coulombtype == eelENCADSHIFT ||
+            ir->coulombtype == eelPMESWITCH ||
+            ir->coulombtype == eelPMEUSERSWITCH ||
+            ir->coulomb_modifier == eintmodPOTSWITCH ||
+            ir->coulomb_modifier == eintmodFORCESWITCH);
+}
+
+gmx_bool ir_coulomb_is_zero_at_cutoff(const t_inputrec *ir)
+{
+    return (ir_coulomb_switched(ir) || ir->coulomb_modifier != eintmodNONE ||
+            ir->coulombtype == eelRF_ZERO);
+}
+
+gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec *ir)
+{
+    return (ir_coulomb_is_zero_at_cutoff(ir) || ir->coulombtype == eelUSER || ir->coulombtype == eelPMEUSER);
+}
+
+gmx_bool ir_vdw_switched(const t_inputrec *ir)
+{
+    return (ir->vdwtype == evdwSWITCH ||
+            ir->vdwtype == evdwSHIFT ||
+            ir->vdwtype == evdwENCADSHIFT ||
+            ir->vdw_modifier == eintmodPOTSWITCH ||
+            ir->vdw_modifier == eintmodFORCESWITCH);
+}
+
+gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir)
+{
+    return (ir_vdw_switched(ir) || ir->vdw_modifier != eintmodNONE);
+}
+
+gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
+{
+    return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }
