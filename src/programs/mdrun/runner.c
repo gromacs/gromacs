@@ -751,20 +751,29 @@ static void convert_to_verlet_scheme(FILE *fplog,
         if (EVDW_SWITCHED(ir->vdwtype))
         {
             ir->vdwtype = evdwCUT;
+
+            switch (ir->vdwtype)
+            {
+                case evdwSHIFT:  ir->vdw_modifier = eintmodFORCESWITCH; break;
+                case evdwSWITCH: ir->vdw_modifier = eintmodPOTSWITCH; break;
+                default: gmx_fatal(FARGS, "The Verlet scheme does not support Van der Waals interactions of type '%s'", evdw_names[ir->vdwtype]);
+            }
         }
         if (EEL_SWITCHED(ir->coulombtype))
         {
             if (EEL_FULL(ir->coulombtype))
             {
                 /* With full electrostatic only PME can be switched */
-                ir->coulombtype = eelPME;
+                ir->coulombtype      = eelPME;
+                ir->coulomb_modifier = eintmodPOTSHIFT;
             }
             else
             {
                 md_print_warn(NULL, fplog, "NOTE: Replacing %s electrostatics with reaction-field with epsilon-rf=inf\n", eel_names[ir->coulombtype]);
-                ir->coulombtype = eelRF;
-                ir->epsilon_rf  = 0.0;
-            }
+                ir->coulombtype      = eelRF;
+                ir->epsilon_rf       = 0.0;
+                ir->coulomb_modifier = eintmodPOTSHIFT;
+             }
         }
 
         /* We set the pair energy error tolerance to a small number.
