@@ -620,8 +620,22 @@ static void do_nb_verlet(t_forcerec *fr,
              nbvg->nbl_lists.natpair_ljq);
     inc_nrnb(nrnb, enr_nbnxn_kernel_lj,
              nbvg->nbl_lists.natpair_lj);
+    /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
     inc_nrnb(nrnb, enr_nbnxn_kernel_ljc-eNR_NBNXN_LJ_RF+eNR_NBNXN_RF,
              nbvg->nbl_lists.natpair_q);
+
+    if (ic->vdw_modifier == eintmodFORCESWITCH)
+    {
+        /* We add up the switch cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
+    }
+    if (ic->vdw_modifier == eintmodPOTSWITCH)
+    {
+        /* We add up the switch cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
+    }
 }
 
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
@@ -2025,7 +2039,9 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if ((fr->vdwtype == evdwSWITCH) || (fr->vdwtype == evdwSHIFT))
+        if (fr->vdwtype == evdwSWITCH || fr->vdwtype == evdwSHIFT ||
+            fr->vdw_modifier == eintmodPOTSWITCH ||
+            fr->vdw_modifier == eintmodFORCESWITCH)
         {
             if (fr->rvdw_switch == 0)
             {
@@ -2045,7 +2061,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
-            if (fr->vdwtype == evdwSHIFT)
+            if (fr->vdwtype == evdwSHIFT ||
+                fr->vdw_modifier == eintmodFORCESWITCH)
             {
                 /* Determine the constant energy shift below rvdw_switch.
                  * Table has a scale factor since we have scaled it down to compensate

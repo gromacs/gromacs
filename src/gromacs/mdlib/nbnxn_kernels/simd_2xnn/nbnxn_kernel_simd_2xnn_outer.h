@@ -113,14 +113,17 @@
     unsigned      *exclusion_filter;
     gmx_exclfilter filter_S0, filter_S2;
 
-    gmx_mm_pr   zero_S = gmx_set1_pr(0);
+    gmx_mm_pr      zero_S = gmx_set1_pr(0.0);
 
-    gmx_mm_pr   one_S = gmx_set1_pr(1.0);
-    gmx_mm_pr   iq_S0 = gmx_setzero_pr();
-    gmx_mm_pr   iq_S2 = gmx_setzero_pr();
-    gmx_mm_pr   mrc_3_S;
+    gmx_mm_pr      one_S  = gmx_set1_pr(1.0);
+    gmx_mm_pr      iq_S0  = gmx_setzero_pr();
+    gmx_mm_pr      iq_S2  = gmx_setzero_pr();
+
+#ifdef CALC_COUL_RF
+    gmx_mm_pr      mrc_3_S;
 #ifdef CALC_ENERGIES
-    gmx_mm_pr   hrc_3_S, moh_rc_S;
+    gmx_mm_pr      hrc_3_S, moh_rc_S;
+#endif
 #endif
 
 #ifdef CALC_COUL_TAB
@@ -130,8 +133,9 @@
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
-    int         ti0_array[2*GMX_SIMD_WIDTH_HERE], *ti0;
-    int         ti2_array[2*GMX_SIMD_WIDTH_HERE], *ti2;
+    /* Thread-local working buffers for force and potential lookups */
+    int         ti0_array[2*GMX_SIMD_WIDTH_HERE], *ti0 = NULL;
+    int         ti2_array[2*GMX_SIMD_WIDTH_HERE], *ti2 = NULL;
 #ifdef CALC_ENERGIES
     gmx_mm_pr   mhalfsp_S;
 #endif
@@ -143,6 +147,27 @@
 
 #if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
     gmx_mm_pr  sh_ewald_S;
+#endif
+
+#ifdef LJ_POT_SWITCH
+    gmx_mm_pr   rswitch_S;
+    gmx_mm_pr   swV3_S, swV4_S, swV5_S;
+    gmx_mm_pr   swF2_S, swF3_S, swF4_S;
+#else
+#ifdef LJ_FORCE_SWITCH
+    gmx_mm_pr   rswitch_S;
+    gmx_mm_pr   p6_fc2_S, p6_fc3_S;
+    gmx_mm_pr   p12_fc2_S, p12_fc3_S;
+#ifdef CALC_ENERGIES
+    gmx_mm_pr   p6_vc3_S, p6_vc4_S;
+    gmx_mm_pr   p12_vc3_S, p12_vc4_S;
+    gmx_mm_pr   p6_6cpot_S, p12_12cpot_S;
+#endif
+#else
+#ifdef CALC_ENERGIES
+    gmx_mm_pr  p6_cpot_S, p12_cpot_S;
+#endif
+#endif
 #endif
 
 #ifdef LJ_COMB_LB
@@ -178,8 +203,6 @@
 #endif
 
 #ifdef CALC_ENERGIES
-    gmx_mm_pr  sh_invrc6_S, sh_invrc12_S;
-
     /* cppcheck-suppress unassignedVariable */
     real       tmpsum_array[2*GMX_SIMD_WIDTH_HERE], *tmpsum;
 #endif
@@ -235,13 +258,21 @@
         exclusion_filter = nbat->simd_exclusion_filter2;
     }
 
-    /* Here we cast the exclusion masks from unsigned * to int * or
-     * real *.  Since we only check bits, the actual value they
-     * represent does not matter, as long as both mask and exclusion
-     * info are treated the same way.
+    /* Here we cast the exclusion filters from unsigned * to int * or real *.
+     * Since we only check bits, the actual value they represent does not
+     * matter, as long as both filter and mask data are treated the same way.
      */
     filter_S0 = gmx_load_exclusion_filter(exclusion_filter + 0*2*UNROLLJ*filter_stride);
     filter_S2 = gmx_load_exclusion_filter(exclusion_filter + 1*2*UNROLLJ*filter_stride);
+
+#ifdef CALC_COUL_RF
+    /* Reaction-field constants */
+    mrc_3_S  = gmx_set1_pr(-2*ic->k_rf);
+#ifdef CALC_ENERGIES
+    hrc_3_S  = gmx_set1_pr(ic->k_rf);
+    moh_rc_S = gmx_set1_pr(-ic->c_rf);
+#endif
+#endif
 
 #ifdef CALC_COUL_TAB
     /* Generate aligned table index pointers */
@@ -270,13 +301,50 @@
     sh_ewald_S = gmx_set1_pr(ic->sh_ewald);
 #endif
 
-    q                   = nbat->q;
-    type                = nbat->type;
-    facel               = ic->epsfac;
-    shiftvec            = shift_vec[0];
-    x                   = nbat->x;
+    /* LJ function constants */
+#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
+    sixth_S      = gmx_set1_pr(1.0/6.0);
+    twelveth_S   = gmx_set1_pr(1.0/12.0);
+#endif
 
-    avoid_sing_S = gmx_set1_pr(NBNXN_AVOID_SING_R2_INC);
+#ifdef LJ_POT_SWITCH
+    rswitch_S = gmx_set1_pr(ic->rvdw_switch);
+    swV3_S    = gmx_set1_pr(ic->vdw_switch.c3);
+    swV4_S    = gmx_set1_pr(ic->vdw_switch.c4);
+    swV5_S    = gmx_set1_pr(ic->vdw_switch.c5);
+    swF2_S    = gmx_set1_pr(3*ic->vdw_switch.c3);
+    swF3_S    = gmx_set1_pr(4*ic->vdw_switch.c4);
+    swF4_S    = gmx_set1_pr(5*ic->vdw_switch.c5);
+#else
+    sixth_S      = gmx_set1_pr(1.0/6.0);
+    twelveth_S   = gmx_set1_pr(1.0/12.0);
+#ifdef LJ_FORCE_SWITCH
+    rswitch_S = gmx_set1_pr(ic->rvdw_switch);
+    p6_fc2_S  = gmx_set1_pr(ic->dispersion_shift.c2);
+    p6_fc3_S  = gmx_set1_pr(ic->dispersion_shift.c3);
+    p12_fc2_S = gmx_set1_pr(ic->repulsion_shift.c2);
+    p12_fc3_S = gmx_set1_pr(ic->repulsion_shift.c3);
+#ifdef CALC_ENERGIES
+    {
+        gmx_mm_pr mthird_S  = gmx_set1_pr(-1.0/3.0);
+        gmx_mm_pr mfourth_S = gmx_set1_pr(-1.0/4.0);
+
+        p6_vc3_S     = gmx_mul_pr(mthird_S,  p6_fc2_S);
+        p6_vc4_S     = gmx_mul_pr(mfourth_S, p6_fc3_S);
+        p6_6cpot_S   = gmx_set1_pr(ic->dispersion_shift.cpot/6);
+        p12_vc3_S    = gmx_mul_pr(mthird_S,  p12_fc2_S);
+        p12_vc4_S    = gmx_mul_pr(mfourth_S, p12_fc3_S);
+        p12_12cpot_S = gmx_set1_pr(ic->repulsion_shift.cpot/12);
+    }
+#endif
+#else
+    /* Plain LJ cut-off, with potential shift cpot, which can be 0 */
+#ifdef CALC_ENERGIES
+    p6_cpot_S    = gmx_set1_pr(ic->dispersion_shift.cpot);
+    p12_cpot_S   = gmx_set1_pr(ic->repulsion_shift.cpot);
+#endif
+#endif
+#endif /* LJ_POT_SWITCH */
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
     rc2_S    = gmx_set1_pr(ic->rcoulomb*ic->rcoulomb);
@@ -284,21 +352,13 @@
     rcvdw2_S = gmx_set1_pr(ic->rvdw*ic->rvdw);
 #endif
 
-#ifdef CALC_ENERGIES
-    sixth_S      = gmx_set1_pr(1.0/6.0);
-    twelveth_S   = gmx_set1_pr(1.0/12.0);
+    avoid_sing_S = gmx_set1_pr(NBNXN_AVOID_SING_R2_INC);
 
-    sh_invrc6_S  = gmx_set1_pr(ic->sh_invrc6);
-    sh_invrc12_S = gmx_set1_pr(ic->sh_invrc6*ic->sh_invrc6);
-#endif
-
-    mrc_3_S  = gmx_set1_pr(-2*ic->k_rf);
-
-#ifdef CALC_ENERGIES
-    hrc_3_S  = gmx_set1_pr(ic->k_rf);
-
-    moh_rc_S = gmx_set1_pr(-ic->c_rf);
-#endif
+    q                   = nbat->q;
+    type                = nbat->type;
+    facel               = ic->epsfac;
+    shiftvec            = shift_vec[0];
+    x                   = nbat->x;
 
 #ifdef CALC_ENERGIES
     tmpsum   = gmx_simd_align_real(tmpsum_array);

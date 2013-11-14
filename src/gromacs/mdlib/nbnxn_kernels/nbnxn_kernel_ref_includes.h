@@ -30,40 +30,22 @@
  * the papers people have written on it - you can find them on the website!
  */
 
-/* This files includes all x86 SIMD kernel flavors.
- * Only the Electrostatics type and optionally the VdW cut-off check
- * need to be set before including this file.
+
+/* This file includes all required (non-)energy flavors of the kernel
+ * outer and inner loops, given a Coulomb and VdW treatment.
  */
+
+/* Include the force only kernels */
+#include "nbnxn_kernel_ref_outer.h"
 
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_ref_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
+#include "nbnxn_kernel_ref_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
-
-/* Include the force only kernels */
-#define LJ_COMB_GEOM
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_GEOM
-#define LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
-#undef LJ_COMB_LB
-#include "nbnxn_kernel_x86_simd_outer.h"
