@@ -665,8 +665,22 @@ static void do_nb_verlet(t_forcerec *fr,
              nbvg->nbl_lists.natpair_ljq);
     inc_nrnb(nrnb, enr_nbnxn_kernel_lj,
              nbvg->nbl_lists.natpair_lj);
+    /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
     inc_nrnb(nrnb, enr_nbnxn_kernel_ljc-eNR_NBNXN_LJ_RF+eNR_NBNXN_RF,
              nbvg->nbl_lists.natpair_q);
+
+    if (ic->vdw_modifier == eintmodFORCESWITCH)
+    {
+        /* We add up the switch cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
+    }
+    if (ic->vdw_modifier == eintmodPOTSWITCH)
+    {
+        /* We add up the switch cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
+    }
 }
 
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
@@ -2175,7 +2189,9 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if ((fr->vdwtype == evdwSWITCH) || (fr->vdwtype == evdwSHIFT))
+        if (fr->vdwtype == evdwSWITCH || fr->vdwtype == evdwSHIFT ||
+            fr->vdw_modifier == eintmodPOTSWITCH ||
+            fr->vdw_modifier == eintmodFORCESWITCH)
         {
             if (fr->rvdw_switch == 0)
             {
@@ -2195,7 +2211,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
-            if (fr->vdwtype == evdwSHIFT)
+            if (fr->vdwtype == evdwSHIFT ||
+                fr->vdw_modifier == eintmodFORCESWITCH)
             {
                 /* Determine the constant energy shift below rvdw_switch.
                  * Table has a scale factor since we have scaled it down to compensate
@@ -2228,13 +2245,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
         }
         else if (EVDW_PME(fr->vdwtype))
         {
-            if (EVDW_SWITCHED(fr->vdwtype) && fr->rvdw_switch == 0)
-            {
-                gmx_fatal(FARGS,
-                          "With dispersion correction rvdw-switch can not be zero "
-                          "for vdw-type = %s", evdw_names[fr->vdwtype]);
-            }
-
             scale  = fr->nblists[0].table_vdw.scale;
             vdwtab = fr->nblists[0].table_vdw.data;
 
@@ -2251,15 +2261,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              */
             fr->enershiftsix = pow(fr->ewaldcoeff_lj, 6) / 6.0;
 
-            /* Calculate C12 values as without PME. */
-            if (EVDW_SWITCHED(fr->vdwtype))
-            {
-                enersum = 0;
-                virsum  = 0;
-                integrate_table(vdwtab, scale, 4, ri0, ri1, &enersum, &virsum);
-                eners[1] -= enersum;
-                virs[1]  -= virsum;
-            }
             /* Add analytical corrections, C6 for the whole range, C12
              * from rvdw_switch to infinity.
              */

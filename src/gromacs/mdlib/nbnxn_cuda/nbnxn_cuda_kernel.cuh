@@ -64,15 +64,15 @@ __launch_bounds__(64, 16)
 #endif
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
-__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener_prune)
+__global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)
 #else
-__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _prune)
+__global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_cuda)
 #endif
 #else
 #ifdef CALC_ENERGIES
-__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener)
+__global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_cuda)
 #else
-__global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
+__global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 #endif
 (const cu_atomdata_t atdat,
