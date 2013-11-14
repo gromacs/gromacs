@@ -90,7 +90,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     int           ewitab;
     real          ewtabscale, eweps, sh_ewald, ewrt, ewtabhalfspace;
     real *        ewtab;
-    real          rcoulomb2, rvdw, rvdw2, sh_invrc6;
+    real          rcoulomb2, rvdw, rvdw2, sh_dispersion, sh_repulsion;
     real          rcutoff, rcutoff2;
     real          rswitch_elec, rswitch_vdw, d, d2, sw, dsw, rinvcorr;
     real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
@@ -116,7 +116,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     rcoulomb2           = fr->rcoulomb*fr->rcoulomb;
     rvdw                = fr->rvdw;
     rvdw2               = rvdw*rvdw;
-    sh_invrc6           = fr->ic->sh_invrc6;
+    sh_dispersion       = fr->ic->dispersion_shift.cpot;
+    sh_repulsion        = fr->ic->repulsion_shift.cpot;
 
     if (fr->coulomb_modifier == eintmodPOTSWITCH)
     {
@@ -333,7 +334,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fvdw             = (vvdw_rep-vvdw_disp)*rinvsq;
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
-                            vvdw             = (vvdw_rep-c12*sh_invrc6*sh_invrc6)*(1.0/12.0)-(vvdw_disp-c6*sh_invrc6)*(1.0/6.0);
+                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion)/6.0;
                         }
                         else
                         {
@@ -354,7 +355,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fvdw             = (br*vvdw_rep-vvdw_disp)*rinvsq;
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
-                            vvdw             = (vvdw_rep-cexp1*exp(-cexp2*rvdw))-(vvdw_disp-c6*sh_invrc6)/6.0;
+                            vvdw             = (vvdw_rep-cexp1*exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
                         }
                         else
                         {

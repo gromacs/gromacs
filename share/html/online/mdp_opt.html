@@ -781,6 +781,10 @@ This makes the potential the integral of the force. Note that this does not
 affect the forces or the sampling.</dd>
 <dt><b>None</b></dt>
 <dd>Use an unmodified Van der Waals potential. With the group scheme this means no exact cut-off is used, energies and forces are calculated for all pairs in the neighborlist.</dd>
+<dt><b>Force-switch</b></dt>
+<dd>Smoothly switches the forces to zero between <b>rvdw-switch</b> and <b>rvdw</b>. Note that this is more expensive to calculate than a plain cut-off and it is not required for energy conservation, since <b>Potential-shift</b> conserves energy just as well.</dd>
+<dt><b>Potential-switch</b></dt>
+<dd>Smoothly switches the potential to zero between <b>rvdw-switch</b> and <b>rvdw</b>. Note that this introduces articifically large forces in the switching region and is much more expensive to calculate. This option should only be used if the force field you use requires this.</dd>
 </dl></dd>
 
 <dt><b>rvdw-switch: (0) [nm]</b></dt>

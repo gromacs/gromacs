@@ -124,12 +124,14 @@ ElectrostaticsDict['tab'] = { 'define' : '#define CALC_COUL_TAB' }
 ElectrostaticsDict['tab_twin'] = { 'define' : '#define CALC_COUL_TAB\n#define VDW_CUTOFF_CHECK /* Use twin-range cut-off */' }
 ElectrostaticsDict['ewald'] = { 'define' : '#define CALC_COUL_EWALD' }
 ElectrostaticsDict['ewald_twin'] = { 'define' : '#define CALC_COUL_EWALD\n#define VDW_CUTOFF_CHECK /* Use twin-range cut-off */' }
-
+ 
 # The dict order must match the order of a C enumeration.
-LJCombinationRuleDict = collections.OrderedDict()
-LJCombinationRuleDict['geom'] = { 'define' : '#define LJ_COMB_GEOM' }
-LJCombinationRuleDict['lb'] = { 'define' : '#define LJ_COMB_LB' }
-LJCombinationRuleDict['none'] = { 'define' : '/* Use no LJ combination rule */' }
+LJTreatmentDict = collections.OrderedDict()
+LJTreatmentDict['comb_geom'] = { 'define' : '#define LJ_COMB_GEOM' }
+LJTreatmentDict['comb_lb'] = { 'define' : '#define LJ_COMB_LB' }
+LJTreatmentDict['comb_none'] = { 'define' : '/* Use no LJ combination rule */' }
+LJTreatmentDict['lj_fswitch'] = { 'define' : '/* Use no LJ combination rule */\n#define LJ_FORCE_SWITCH' }
+LJTreatmentDict['lj_pswitch'] = { 'define' : '/* Use no LJ combination rule */\n#define LJ_POT_SWITCH' }
 
 # This is OK as an unordered dict
 EnergiesComputationDict = {
@@ -194,9 +196,9 @@ for type in VerletKernelTypeDict:
         KernelFunctionLookupTable[ener] = '{\n'
         for elec in ElectrostaticsDict:
             KernelFunctionLookupTable[ener] += '    {\n'
-            for ljcomb in LJCombinationRuleDict:
-                KernelName = ('{0}_{1}_comb_{2}_{3}'
-                              .format(KernelNamePrefix,elec,ljcomb,ener))
+            for ljtreat in LJTreatmentDict:
+                KernelName = ('{0}_{1}_{2}_{3}'
+                              .format(KernelNamePrefix,elec,ljtreat,ener))
 
                 # Declare the kernel function
                 KernelDeclarations += ('{1:21} {0};\n'
@@ -209,7 +211,7 @@ for type in VerletKernelTypeDict:
                     kernelfp.write(KernelTemplate
                                    .format(VerletKernelTypeDict[type]['Define'],
                                            ElectrostaticsDict[elec]['define'],
-                                           LJCombinationRuleDict[ljcomb]['define'],
+                                           LJTreatmentDict[ljtreat]['define'],
                                            EnergiesComputationDict[ener]['define'],
                                            KernelsHeaderFileName,
                                            KernelName,
