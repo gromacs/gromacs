@@ -765,24 +765,31 @@ static void convert_to_verlet_scheme(FILE *fplog,
     }
     else if (ir_vdw_switched(ir) || ir_coulomb_switched(ir))
     {
-        md_print_warn(NULL, fplog, "Converting switched or shifted interactions to a shifted potential (without force shift), this will lead to slightly different interaction potentials");
-
-        if (ir_vdw_switched(ir))
+        if (ir_vdw_switched(ir) && ir->vdw_modifier == eintmodNONE)
         {
             ir->vdwtype = evdwCUT;
+
+            switch (ir->vdwtype)
+            {
+                case evdwSHIFT:  ir->vdw_modifier = eintmodFORCESWITCH; break;
+                case evdwSWITCH: ir->vdw_modifier = eintmodPOTSWITCH; break;
+                default: gmx_fatal(FARGS, "The Verlet scheme does not support Van der Waals interactions of type '%s'", evdw_names[ir->vdwtype]);
+            }
         }
-        if (ir_coulomb_switched(ir))
+        if (ir_coulomb_switched(ir) && ir->coulomb_modifier == eintmodNONE)
         {
             if (EEL_FULL(ir->coulombtype))
             {
                 /* With full electrostatic only PME can be switched */
-                ir->coulombtype = eelPME;
+                ir->coulombtype      = eelPME;
+                ir->coulomb_modifier = eintmodPOTSHIFT;
             }
             else
             {
                 md_print_warn(NULL, fplog, "NOTE: Replacing %s electrostatics with reaction-field with epsilon-rf=inf\n", eel_names[ir->coulombtype]);
-                ir->coulombtype = eelRF;
-                ir->epsilon_rf  = 0.0;
+                ir->coulombtype      = eelRF;
+                ir->epsilon_rf       = 0.0;
+                ir->coulomb_modifier = eintmodPOTSHIFT;
             }
         }
 
@@ -1141,6 +1148,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             /* Here the master rank decides if all ranks will use GPUs */
             bUseGPU = (hwinfo->gpu_info.ncuda_dev_compatible > 0 ||
                        getenv("GMX_EMULATE_GPU") != NULL);
+
+            if (bUseGPU && (inputrec->vdw_modifier == eintmodFORCESWITCH ||
+                            inputrec->vdw_modifier == eintmodPOTSWITCH))
+            {
+                md_print_warn(cr, fplog, "LJ switch functions are not yet supported on the GPU, falling back to CPU-only");
+                bUseGPU = FALSE;
+            }
 
             prepare_verlet_scheme(fplog, cr,
                                   inputrec, nstlist_cmdline, mtop, state->box,

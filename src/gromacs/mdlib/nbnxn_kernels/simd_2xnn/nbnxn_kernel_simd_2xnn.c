@@ -46,6 +46,7 @@
 #ifdef GMX_NBNXN_SIMD_2XNN
 
 /* Include the full-width SIMD macros */
+
 #include "gromacs/simd/macros.h"
 #include "gromacs/simd/vector_operations.h"
 
@@ -58,6 +59,7 @@
 #include "../nbnxn_kernel_common.h"
 #include "gmx_omp_nthreads.h"
 #include "types/force_flags.h"
+#include "gmx_fatal.h"
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
@@ -65,91 +67,124 @@ enum {
     coultRF, coultTAB, coultTAB_TWIN, coultEWALD, coultEWALD_TWIN, coultNR
 };
 
-/* Declare and define the kernel function pointer lookup tables. */
-static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
+/* Declare and define the kernel function pointer lookup tables.
+ * The minor index of the array goes over both the LJ combination rules,
+ * which is only supported by plain cut-off, and the LJ switch functions.
+ */
+static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
 {
     {
-        nbnxn_kernel_simd_2xnn_rf_comb_geom_ener,
-        nbnxn_kernel_simd_2xnn_rf_comb_lb_ener,
-        nbnxn_kernel_simd_2xnn_rf_comb_none_ener,
+        nbnxn_kernel_ElecRF_VdwLJCombGeom_F_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJCombLB_F_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJ_F_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJFSw_F_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJPSw_F_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_tab_comb_geom_ener,
-        nbnxn_kernel_simd_2xnn_tab_comb_lb_ener,
-        nbnxn_kernel_simd_2xnn_tab_comb_none_ener,
+        nbnxn_kernel_ElecQSTab_VdwLJCombGeom_F_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJCombLB_F_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJ_F_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJFSw_F_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJPSw_F_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_geom_ener,
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_lb_ener,
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_none_ener,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_F_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_F_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_F_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_F_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_ewald_comb_geom_ener,
-        nbnxn_kernel_simd_2xnn_ewald_comb_lb_ener,
-        nbnxn_kernel_simd_2xnn_ewald_comb_none_ener,
+        nbnxn_kernel_ElecEw_VdwLJCombGeom_F_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJCombLB_F_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJ_F_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJFSw_F_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJPSw_F_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_geom_ener,
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_lb_ener,
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_none_ener,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_F_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_F_2xnn,
     },
 };
 
-static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
+static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
 {
     {
-        nbnxn_kernel_simd_2xnn_rf_comb_geom_energrp,
-        nbnxn_kernel_simd_2xnn_rf_comb_lb_energrp,
-        nbnxn_kernel_simd_2xnn_rf_comb_none_energrp,
+        nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJCombLB_VF_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJ_VF_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJFSw_VF_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJPSw_VF_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_tab_comb_geom_energrp,
-        nbnxn_kernel_simd_2xnn_tab_comb_lb_energrp,
-        nbnxn_kernel_simd_2xnn_tab_comb_none_energrp,
+        nbnxn_kernel_ElecQSTab_VdwLJCombGeom_VF_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJCombLB_VF_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJ_VF_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJFSw_VF_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJPSw_VF_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_geom_energrp,
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_lb_energrp,
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_none_energrp,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_VF_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_VF_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_VF_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_VF_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_ewald_comb_geom_energrp,
-        nbnxn_kernel_simd_2xnn_ewald_comb_lb_energrp,
-        nbnxn_kernel_simd_2xnn_ewald_comb_none_energrp,
+        nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJCombLB_VF_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJ_VF_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJFSw_VF_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJPSw_VF_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_geom_energrp,
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_lb_energrp,
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_none_energrp,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VF_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_VF_2xnn,
     },
 };
 
-static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
+static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
 {
     {
-        nbnxn_kernel_simd_2xnn_rf_comb_geom_noener,
-        nbnxn_kernel_simd_2xnn_rf_comb_lb_noener,
-        nbnxn_kernel_simd_2xnn_rf_comb_none_noener,
+        nbnxn_kernel_ElecRF_VdwLJCombGeom_VgrpF_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJCombLB_VgrpF_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJ_VgrpF_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJFSw_VgrpF_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJPSw_VgrpF_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_tab_comb_geom_noener,
-        nbnxn_kernel_simd_2xnn_tab_comb_lb_noener,
-        nbnxn_kernel_simd_2xnn_tab_comb_none_noener,
+        nbnxn_kernel_ElecQSTab_VdwLJCombGeom_VgrpF_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJCombLB_VgrpF_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJ_VgrpF_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJFSw_VgrpF_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJPSw_VgrpF_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_geom_noener,
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_lb_noener,
-        nbnxn_kernel_simd_2xnn_tab_twin_comb_none_noener,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_VgrpF_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_VgrpF_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_VgrpF_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_VgrpF_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_ewald_comb_geom_noener,
-        nbnxn_kernel_simd_2xnn_ewald_comb_lb_noener,
-        nbnxn_kernel_simd_2xnn_ewald_comb_none_noener,
+        nbnxn_kernel_ElecEw_VdwLJCombGeom_VgrpF_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJCombLB_VgrpF_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJ_VgrpF_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJFSw_VgrpF_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJPSw_VgrpF_2xnn,
     },
     {
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_geom_noener,
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_lb_noener,
-        nbnxn_kernel_simd_2xnn_ewald_twin_comb_none_noener,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VgrpF_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VgrpF_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJ_VgrpF_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VgrpF_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_VgrpF_2xnn,
     },
 };
 
@@ -215,7 +250,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
 {
     int                nnbl;
     nbnxn_pairlist_t **nbl;
-    int                coult;
+    int                coult, ljtreatment = 0;
     int                nb;
 
     nnbl = nbl_list->nnbl;
@@ -251,6 +286,23 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         }
     }
 
+    switch (ic->vdw_modifier)
+    {
+        case eintmodNONE:
+        case eintmodPOTSHIFT:
+            ljtreatment = nbat->comb_rule;
+            break;
+        /* Switch functions follow after cut-off combination rule kernels */
+        case eintmodFORCESWITCH:
+            ljtreatment = ljcrNR;
+            break;
+        case eintmodPOTSWITCH:
+            ljtreatment = ljcrNR + 1;
+            break;
+        default:
+            gmx_incons("Unsupported VdW interaction modifier");
+    }
+
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
     for (nb = 0; nb < nnbl; nb++)
     {
@@ -281,11 +333,11 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         if (!(force_flags & GMX_FORCE_ENERGY))
         {
             /* Don't calculate energies */
-            p_nbk_noener[coult][nbat->comb_rule](nbl[nb], nbat,
-                                                 ic,
-                                                 shift_vec,
-                                                 out->f,
-                                                 fshift_p);
+            p_nbk_noener[coult][ljtreatment](nbl[nb], nbat,
+                                             ic,
+                                             shift_vec,
+                                             out->f,
+                                             fshift_p);
         }
         else if (out->nV == 1)
         {
@@ -293,13 +345,13 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
             out->Vvdw[0] = 0;
             out->Vc[0]   = 0;
 
-            p_nbk_ener[coult][nbat->comb_rule](nbl[nb], nbat,
-                                               ic,
-                                               shift_vec,
-                                               out->f,
-                                               fshift_p,
-                                               out->Vvdw,
-                                               out->Vc);
+            p_nbk_ener[coult][ljtreatment](nbl[nb], nbat,
+                                           ic,
+                                           shift_vec,
+                                           out->f,
+                                           fshift_p,
+                                           out->Vvdw,
+                                           out->Vc);
         }
         else
         {
@@ -315,13 +367,13 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
                 out->VSc[i] = 0;
             }
 
-            p_nbk_energrp[coult][nbat->comb_rule](nbl[nb], nbat,
-                                                  ic,
-                                                  shift_vec,
-                                                  out->f,
-                                                  fshift_p,
-                                                  out->VSvdw,
-                                                  out->VSc);
+            p_nbk_energrp[coult][ljtreatment](nbl[nb], nbat,
+                                              ic,
+                                              shift_vec,
+                                              out->f,
+                                              fshift_p,
+                                              out->VSvdw,
+                                              out->VSc);
 
             reduce_group_energies(nbat->nenergrp, nbat->neg_2log,
                                   out->VSvdw, out->VSc,
