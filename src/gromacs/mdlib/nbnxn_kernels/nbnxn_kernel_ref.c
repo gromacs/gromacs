@@ -46,6 +46,14 @@
 
 /*! \brief Typedefs for declaring lookup tables of kernel functions.
  */
+
+typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
+                                  const nbnxn_atomdata_t     *nbat,
+                                  const interaction_const_t  *ic,
+                                  rvec                       *shift_vec,
+                                  real                       *f,
+                                  real                       *fshift);
+
 typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
                                 const nbnxn_atomdata_t     *nbat,
                                 const interaction_const_t  *ic,
@@ -55,72 +63,37 @@ typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
                                 real                       *Vvdw,
                                 real                       *Vc);
 
-typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
-                                  const nbnxn_atomdata_t     *nbat,
-                                  const interaction_const_t  *ic,
-                                  rvec                       *shift_vec,
-                                  real                       *f,
-                                  real                       *fshift);
-
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
-
-/* Include the force+energy kernels */
-#define CALC_ENERGIES
-#include "nbnxn_kernel_ref_outer.h"
-#undef CALC_ENERGIES
-
-/* Include the force+energygroups kernels */
-#define CALC_ENERGIES
-#define ENERGY_GROUPS
-#include "nbnxn_kernel_ref_outer.h"
-#undef ENERGY_GROUPS
-#undef CALC_ENERGIES
-
-/* Include the force only kernels */
-#include "nbnxn_kernel_ref_outer.h"
-
+#include "nbnxn_kernel_ref_includes.h"
+#define VDW_FORCE_SWITCH
+#include "nbnxn_kernel_ref_includes.h"
+#undef VDW_FORCE_SWITCH
+#define VDW_POT_SWITCH
+#include "nbnxn_kernel_ref_includes.h"
+#undef VDW_POT_SWITCH
 #undef CALC_COUL_RF
 
 
 /* Tabulated exclusion interaction electrostatics kernels */
 #define CALC_COUL_TAB
-
-/* Include the force+energy kernels */
-#define CALC_ENERGIES
-#include "nbnxn_kernel_ref_outer.h"
-#undef CALC_ENERGIES
-
-/* Include the force+energygroups kernels */
-#define CALC_ENERGIES
-#define ENERGY_GROUPS
-#include "nbnxn_kernel_ref_outer.h"
-#undef ENERGY_GROUPS
-#undef CALC_ENERGIES
-
-/* Include the force only kernels */
-#include "nbnxn_kernel_ref_outer.h"
-
+#include "nbnxn_kernel_ref_includes.h"
+#define VDW_FORCE_SWITCH
+#include "nbnxn_kernel_ref_includes.h"
+#undef VDW_FORCE_SWITCH
+#define VDW_POT_SWITCH
+#include "nbnxn_kernel_ref_includes.h"
+#undef VDW_POT_SWITCH
 /* Twin-range cut-off kernels */
 #define VDW_CUTOFF_CHECK
-
-/* Include the force+energy kernels */
-#define CALC_ENERGIES
-#include "nbnxn_kernel_ref_outer.h"
-#undef CALC_ENERGIES
-
-/* Include the force+energygroups kernels */
-#define CALC_ENERGIES
-#define ENERGY_GROUPS
-#include "nbnxn_kernel_ref_outer.h"
-#undef ENERGY_GROUPS
-#undef CALC_ENERGIES
-
-/* Include the force only kernels */
-#include "nbnxn_kernel_ref_outer.h"
-
+#include "nbnxn_kernel_ref_includes.h"
+#define VDW_FORCE_SWITCH
+#include "nbnxn_kernel_ref_includes.h"
+#undef VDW_FORCE_SWITCH
+#define VDW_POT_SWITCH
+#include "nbnxn_kernel_ref_includes.h"
+#undef VDW_POT_SWITCH
 #undef VDW_CUTOFF_CHECK
-
 #undef CALC_COUL_TAB
 
 
@@ -128,25 +101,29 @@ enum {
     coultRF, coultTAB, coultTAB_TWIN, coultNR
 };
 
-p_nbk_func_ener p_nbk_c_ener[coultNR] =
-{
-    nbnxn_kernel_ref_rf_ener,
-    nbnxn_kernel_ref_tab_ener,
-    nbnxn_kernel_ref_tab_twin_ener
+enum {
+    vdwtCUT, vdwtFSWITCH, vdwtPSWITCH, vdwtNR
 };
 
-p_nbk_func_ener p_nbk_c_energrp[coultNR] =
+p_nbk_func_noener p_nbk_c_noener[coultNR][vdwtNR] =
 {
-    nbnxn_kernel_ref_rf_energrp,
-    nbnxn_kernel_ref_tab_energrp,
-    nbnxn_kernel_ref_tab_twin_energrp
+    { nbnxn_kernel_ref_rf_lj_cut_noener,       nbnxn_kernel_ref_rf_lj_fswitch_noener,       nbnxn_kernel_ref_rf_lj_pswitch_noener },
+    { nbnxn_kernel_ref_tab_lj_cut_noener,      nbnxn_kernel_ref_tab_lj_fswitch_noener,      nbnxn_kernel_ref_tab_lj_pswitch_noener },
+    { nbnxn_kernel_ref_tab_twin_lj_cut_noener, nbnxn_kernel_ref_tab_twin_lj_fswitch_noener, nbnxn_kernel_ref_tab_twin_lj_pswitch_noener }
 };
 
-p_nbk_func_noener p_nbk_c_noener[coultNR] =
+p_nbk_func_ener p_nbk_c_ener[coultNR][vdwtNR] =
 {
-    nbnxn_kernel_ref_rf_noener,
-    nbnxn_kernel_ref_tab_noener,
-    nbnxn_kernel_ref_tab_twin_noener
+    { nbnxn_kernel_ref_rf_lj_cut_ener,       nbnxn_kernel_ref_rf_lj_fswitch_ener,       nbnxn_kernel_ref_rf_lj_pswitch_ener },
+    { nbnxn_kernel_ref_tab_lj_cut_ener,      nbnxn_kernel_ref_tab_lj_fswitch_ener,      nbnxn_kernel_ref_tab_lj_pswitch_ener },
+    { nbnxn_kernel_ref_tab_twin_lj_cut_ener, nbnxn_kernel_ref_tab_twin_lj_fswitch_ener, nbnxn_kernel_ref_tab_twin_lj_pswitch_ener }
+};
+
+p_nbk_func_ener p_nbk_c_energrp[coultNR][vdwtNR] =
+{
+    { nbnxn_kernel_ref_rf_lj_cut_energrp,       nbnxn_kernel_ref_rf_lj_fswitch_energrp,       nbnxn_kernel_ref_rf_lj_pswitch_energrp },
+    { nbnxn_kernel_ref_tab_lj_cut_energrp,      nbnxn_kernel_ref_tab_lj_fswitch_energrp,      nbnxn_kernel_ref_tab_lj_pswitch_energrp },
+    { nbnxn_kernel_ref_tab_twin_lj_cut_energrp, nbnxn_kernel_ref_tab_twin_lj_fswitch_energrp, nbnxn_kernel_ref_tab_twin_lj_pswitch_energrp }
 };
 
 void
@@ -163,6 +140,7 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
     int                nnbl;
     nbnxn_pairlist_t **nbl;
     int                coult;
+    int                vdwt;
     int                nb;
 
     nnbl = nbl_list->nnbl;
@@ -182,6 +160,23 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
         {
             coult = coultTAB_TWIN;
         }
+    }
+
+    switch (ic->vdw_modifier)
+    {
+        case eintmodPOTSHIFT:
+        case eintmodNONE:
+            vdwt = vdwtCUT;
+            break;
+        case eintmodFORCESWITCH:
+            vdwt = vdwtFSWITCH;
+            break;
+        case eintmodPOTSWITCH:
+            vdwt = vdwtPSWITCH;
+            break;
+        default:
+            gmx_incons("Unsupported VdW modifier");
+            break;
     }
 
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
@@ -214,11 +209,11 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
         if (!(force_flags & GMX_FORCE_ENERGY))
         {
             /* Don't calculate energies */
-            p_nbk_c_noener[coult](nbl[nb], nbat,
-                                  ic,
-                                  shift_vec,
-                                  out->f,
-                                  fshift_p);
+            p_nbk_c_noener[coult][vdwt](nbl[nb], nbat,
+                                        ic,
+                                        shift_vec,
+                                        out->f,
+                                        fshift_p);
         }
         else if (out->nV == 1)
         {
@@ -226,13 +221,13 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
             out->Vvdw[0] = 0;
             out->Vc[0]   = 0;
 
-            p_nbk_c_ener[coult](nbl[nb], nbat,
-                                ic,
-                                shift_vec,
-                                out->f,
-                                fshift_p,
-                                out->Vvdw,
-                                out->Vc);
+            p_nbk_c_ener[coult][vdwt](nbl[nb], nbat,
+                                      ic,
+                                      shift_vec,
+                                      out->f,
+                                      fshift_p,
+                                      out->Vvdw,
+                                      out->Vc);
         }
         else
         {
@@ -248,13 +243,13 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
                 out->Vc[i] = 0;
             }
 
-            p_nbk_c_energrp[coult](nbl[nb], nbat,
-                                   ic,
-                                   shift_vec,
-                                   out->f,
-                                   fshift_p,
-                                   out->Vvdw,
-                                   out->Vc);
+            p_nbk_c_energrp[coult][vdwt](nbl[nb], nbat,
+                                         ic,
+                                         shift_vec,
+                                         out->f,
+                                         fshift_p,
+                                         out->Vvdw,
+                                         out->Vc);
         }
     }
 

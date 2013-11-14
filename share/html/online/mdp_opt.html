@@ -739,7 +739,8 @@ A value of 0 means infinity.</dd>
 VdW cut-off <b>rvdw</b>,
 where <b>rvdw</b> <tt>&ge;</tt> <b>rlist</b>.</dd>
 <dt><b>Shift</b></dt>
-<dd>The LJ (not Buckingham) potential is decreased over the whole
+<dd>This functionality is deprecated and replaced by <b>vdw-modifier = Force-switch</b>.
+The LJ (not Buckingham) potential is decreased over the whole
 range and the forces decay smoothly to zero between <b>rvdw-switch</b>
 and <b>rvdw</b>.  The neighbor search cut-off <b>rlist</b> should be
 0.1 to 0.3 nm larger than <b>rvdw</b> to accommodate for the size of
@@ -747,7 +748,8 @@ charge groups and diffusion between neighbor list
 updates.</dd>
 
 <dt><b>Switch</b></dt>
-<dd>The LJ (not Buckingham)
+<dd>This functionality is deprecated and replaced by <b>vdw-modifier = Potential-switch</b>.
+The LJ (not Buckingham)
 potential is normal out to <b>rvdw-switch</b>, after which it is switched
 off to reach zero at <b>rvdw</b>. Both the potential and force functions
 are continuously smooth, but be aware that all switch functions will give rise
@@ -781,6 +783,10 @@ This makes the potential the integral of the force. Note that this does not
 affect the forces or the sampling.</dd>
 <dt><b>None</b></dt>
 <dd>Use an unmodified Van der Waals potential. With the group scheme this means no exact cut-off is used, energies and forces are calculated for all pairs in the neighborlist.</dd>
+<dt><b>Force-switch</b></dt>
+<dd>Smoothly switches the forces to zero between <b>rvdw-switch</b> and <b>rvdw</b>. This shifts the potential shift over the whole range and switches it to zero at the cut-off. Note that this is more expensive to calculate than a plain cut-off and it is not required for energy conservation, since <b>Potential-shift</b> conserves energy just as well.</dd>
+<dt><b>Potential-switch</b></dt>
+<dd>Smoothly switches the potential to zero between <b>rvdw-switch</b> and <b>rvdw</b>. Note that this introduces articifically large forces in the switching region and is much more expensive to calculate. This option should only be used if the force field you are using requires this.</dd>
 </dl></dd>
 
 <dt><b>rvdw-switch: (0) [nm]</b></dt>
