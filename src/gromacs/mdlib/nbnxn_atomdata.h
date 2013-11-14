@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,6 +75,7 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
 void nbnxn_atomdata_init(FILE *fp,
                          nbnxn_atomdata_t *nbat,
                          int nb_kernel_type,
+                         gmx_bool bTryCombinationRule,
                          int ntype, const real *nbfp,
                          int n_energygroups,
                          int nout,
