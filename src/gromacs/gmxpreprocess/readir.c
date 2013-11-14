@@ -325,6 +325,25 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported");
         }
+        if (ir->vdwtype == evdwSHIFT || ir->vdwtype == evdwSWITCH)
+        {
+            if (ir->vdw_modifier == eintmodNONE ||
+                ir->vdw_modifier == eintmodPOTSHIFT)
+            {
+                ir->vdw_modifier = (ir->vdwtype == evdwSHIFT ? eintmodFORCESWITCH : eintmodPOTSWITCH);
+
+                sprintf(warn_buf, "Replacing vdwtype=%s by the equivalent combination of vdwtype=%s and vdw_modifier=%s", evdw_names[ir->vdwtype], evdw_names[evdwCUT], eintmod_names[ir->vdw_modifier]);
+                warning_note(wi, warn_buf);
+
+                ir->vdwtype = evdwCUT;
+            }
+            else
+            {
+                sprintf(warn_buf, "Unsupported combination of vdwtype=%s and vdw_modifier=%s", evdw_names[ir->vdwtype], eintmod_names[ir->vdw_modifier]);
+                warning_error(wi, warn_buf);
+            }
+        }
+
         if (ir->vdwtype != evdwCUT)
         {
             warning_error(wi, "With Verlet lists only cut-off LJ interactions are supported");
@@ -334,6 +353,12 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
               EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
             warning_error(wi, "With Verlet lists only cut-off, reaction-field, PME and Ewald electrostatics are supported");
+        }
+        if (!(ir->coulomb_modifier == eintmodNONE ||
+              ir->coulomb_modifier == eintmodPOTSHIFT))
+        {
+            sprintf(warn_buf, "coulomb_modifier=%s is not supported with the Verlet cut-off scheme", eintmod_names[ir->coulomb_modifier]);
+            warning_error(wi, warn_buf);
         }
 
         if (ir->nstlist <= 0)
@@ -1185,8 +1210,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir_vdw_switched(ir))
     {
-        sprintf(err_buf, "With vdwtype = %s rvdw-switch must be < rvdw. Or, better - use a potential modifier.",
-                evdw_names[ir->vdwtype]);
+        sprintf(err_buf, "With switched vdw forces or potentials, rvdw-switch must be < rvdw");
         CHECK(ir->rvdw_switch >= ir->rvdw);
     }
     else if (ir->vdwtype == evdwCUT)
@@ -1197,6 +1221,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             CHECK(ir->rlist > ir->rvdw);
         }
     }
+
     if (ir->cutoff_scheme == ecutsGROUP)
     {
         if (((ir->coulomb_modifier != eintmodNONE && ir->rcoulomb == ir->rlist) ||
@@ -1256,7 +1281,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                     evdw_names[evdwSHIFT]);
             warning_note(wi, warn_buf);
         }
-        if (!ir_coulomb_might_be_zero_at_cutoff(ir) && ir->rcoulomb > 0 && ir->coulomb_modifier == eintmodNONE)
+        if (!ir_coulomb_might_be_zero_at_cutoff(ir) && ir->rcoulomb > 0)
         {
             sprintf(warn_buf, "You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
                     eel_names[eelPMESWITCH], eel_names[eelRF_ZERO]);
@@ -4206,7 +4231,7 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
              * since user defined interactions might purposely
              * not be zero at the cut-off.
              */
-            if ((ir_vdw_is_zero_at_cutoff(ir) || ir->vdw_modifier != eintmodNONE) &&
+            if (ir_vdw_is_zero_at_cutoff(ir) &&
                 rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
             {
                 sprintf(warn_buf, "The sum of the two largest charge group "
@@ -4227,8 +4252,7 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     warning_note(wi, warn_buf);
                 }
             }
-            if ((ir_coulomb_is_zero_at_cutoff(ir) ||
-                 ir->coulomb_modifier != eintmodNONE) &&
+            if (ir_coulomb_is_zero_at_cutoff(ir) &&
                 rcoul1 + rcoul2 > ir->rlistlong - ir->rcoulomb)
             {
                 sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than %s (%f) - rcoulomb (%f).\n"
