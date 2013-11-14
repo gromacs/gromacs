@@ -40,10 +40,43 @@
 extern "C" {
 #endif
 
+/* Used with force switching or a constant potential shift:
+ * rsw       = max(r - r_switch, 0)
+ * force/p   = r^-(p+1) + c2*rsw^2 + c3*rsw^3
+ * potential = r^-p + c2/3*rsw^3 + c3/4*rsw^4 + cpot
+ * With a constant potential shift c2 and c3 are both 0.
+ */
+typedef struct {
+    real c2;
+    real c3;
+    real cpot;
+} shift_consts_t;
+
+/* Used with potential switching:
+ * rsw        = max(r - r_switch, 0)
+ * sw         = 1 + c3*rsw^3 + c4*rsw^4 + c5*rsw^5
+ * dsw        = 3*c3*rsw^2 + 4*c4*rsw^3 + 5*c5*rsw^4
+ * force      = force*dsw - potential*sw
+ * potential *= sw
+ */
+typedef struct {
+    real c3;
+    real c4;
+    real c5;
+} switch_consts_t;
+
 typedef struct {
     /* VdW */
+    int  vdw_modifier;
     real rvdw;
-    real sh_invrc6; /* For shifting the LJ potential */
+    real rvdw_switch;
+    shift_consts_t  dispersion_shift;
+    shift_consts_t  repulsion_shift;
+    switch_consts_t vdw_switch;
+    /* TODO: remove this variable, used for not modyfing the group kernels,
+     * it is equal to -dispersion_shift->cpot
+     */
+    real sh_invrc6;
 
     /* type of electrostatics (defined in enums.h) */
     int  eeltype;
@@ -57,7 +90,7 @@ typedef struct {
 
     /* PME/Ewald */
     real ewaldcoeff;
-    real sh_ewald;   /* For shifting the Ewald potential */
+    real sh_ewald;   /* -sh_ewald is added to the direct space potential */
 
     /* Dielectric constant resp. multiplication factor for charges */
     real epsilon_r;
