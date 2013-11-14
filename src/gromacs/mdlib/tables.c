@@ -1147,6 +1147,33 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
                 gmx_fatal(FARGS, "Invalid vdwtype %d in %s line %d", vdwtype,
                           __FILE__, __LINE__);
         }
+
+        if (!b14only && fr->vdw_modifier != eintmodNONE)
+        {
+            if (fr->vdwtype != evdwCUT)
+            {
+                gmx_incons("Potential modifiers only implemented for LJ cut-off");
+            }
+
+            switch (fr->vdw_modifier)
+            {
+                case eintmodNONE:
+                case eintmodPOTSHIFT:
+                case eintmodEXACTCUTOFF:
+                    /* No modification */
+                    break;
+                case eintmodPOTSWITCH:
+                    tabsel[etiLJ6]  = etabLJ6Switch;
+                    tabsel[etiLJ12] = etabLJ12Switch;
+                    break;
+                case eintmodFORCESWITCH:
+                    tabsel[etiLJ6]  = etabLJ6Shift;
+                    tabsel[etiLJ12] = etabLJ12Shift;
+                    break;
+                default:
+                    gmx_incons("Unsupported vdw_modifier");
+            }
+        }
     }
 }
 
