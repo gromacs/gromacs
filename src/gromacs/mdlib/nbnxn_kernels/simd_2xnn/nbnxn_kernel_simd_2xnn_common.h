@@ -43,30 +43,43 @@
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 2xnn kernel common header file"
 #endif
 
-#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
-
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
 
 /* The stride of all the atom data arrays is equal to half the SIMD width */
 #define STRIDE     (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
 
+#include "../nbnxn_kernel_simd_utils.h"
+
+#ifndef HAVE_GMX_SUM_SIMD /* should be defined for arch with hardware reduce */
+static gmx_inline real
+gmx_sum_simd4(gmx_mm_pr4 x, real* b)
+{
+    gmx_store_pr4(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+
 #if GMX_SIMD_WIDTH_HERE == 8
-#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
-#else
-#if GMX_SIMD_WIDTH_HERE == 16
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);    
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7];
+}
+#elif GMX_SIMD_WIDTH_HERE == 16
 /* This is getting ridiculous, SIMD horizontal adds would help,
  * but this is not performance critical (only used to reduce energies)
  */
-#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7]+x[8]+x[9]+x[10]+x[11]+x[12]+x[13]+x[14]+x[15])
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);    
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]+b[9]+b[10]+b[11]+b[12]+b[13]+b[14]+b[15];
+}
 #else
 #error "unsupported kernel configuration"
 #endif
-#endif
+#endif //HAVE_GMX_SUM_SIMD
 
-#include "../nbnxn_kernel_simd_utils.h"
-
-static inline void
+static gmx_inline void
 gmx_load_simd_2xnn_interactions(int            excl,
                                 gmx_exclfilter filter_S0,
                                 gmx_exclfilter filter_S2,
