@@ -598,12 +598,9 @@
         gmx_store_pr4(f+sciz, gmx_add_pr4(fiz_S, gmx_load_pr4(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
-        gmx_store_pr4(shf, fix_S);
-        fshift[ish3+0] += SUM_SIMD4(shf);
-        gmx_store_pr4(shf, fiy_S);
-        fshift[ish3+1] += SUM_SIMD4(shf);
-        gmx_store_pr4(shf, fiz_S);
-        fshift[ish3+2] += SUM_SIMD4(shf);
+        fshift[ish3+0] += gmx_sum_simd4(fix_S, shf);
+        fshift[ish3+1] += gmx_sum_simd4(fiy_S, shf);
+        fshift[ish3+2] += gmx_sum_simd4(fiz_S, shf);
 #endif
 #else
         fix0_S = gmx_mm_transpose_sum2_pr(fix_S0, fix_S1);
@@ -622,24 +619,19 @@
         gmx_store_pr(f+sciz+2, gmx_add_pr(fiz2_S, gmx_load_pr(f+sciz+2)));
 
 #ifdef CALC_SHIFTFORCES
-        gmx_store_pr(shf, gmx_add_pr(fix0_S, fix2_S));
-        fshift[ish3+0] += shf[0] + shf[1];
-        gmx_store_pr(shf, gmx_add_pr(fiy0_S, fiy2_S));
-        fshift[ish3+1] += shf[0] + shf[1];
-        gmx_store_pr(shf, gmx_add_pr(fiz0_S, fiz2_S));
-        fshift[ish3+2] += shf[0] + shf[1];
+        fshift[ish3+0] += gmx_sum_simd2(gmx_add_pr(fix0_S, fix2_S), shf);
+        fshift[ish3+1] += gmx_sum_simd2(gmx_add_pr(fiY0_S, fiY2_S), shf);
+        fshift[ish3+2] += gmx_sum_simd2(gmx_add_pr(fiZ0_S, fiZ2_S), shf);
 #endif
 #endif
 
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
-            gmx_store_pr(tmpsum, vctot_S);
-            *Vc += SUM_SIMD(tmpsum);
+            *Vc += gmx_sum_simd(vctot_S, tmpsum);
         }
 
-        gmx_store_pr(tmpsum, Vvdwtot_S);
-        *Vvdw += SUM_SIMD(tmpsum);
+        *Vvdw += gmx_sum_simd(Vvdwtot_S, tmpsum);
 #endif
 
         /* Outer loop uses 6 flops/iteration */
