@@ -43,8 +43,6 @@
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
 #endif
 
-#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
-
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
 
@@ -53,20 +51,6 @@
 #define STRIDE     (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
 #else
 #define STRIDE     (UNROLLI)
-#endif
-
-#if GMX_SIMD_WIDTH_HERE == 2
-#define SUM_SIMD(x)  (x[0]+x[1])
-#else
-#if GMX_SIMD_WIDTH_HERE == 4
-#define SUM_SIMD(x)  SUM_SIMD4(x)
-#else
-#if GMX_SIMD_WIDTH_HERE == 8
-#define SUM_SIMD(x)  (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
-#else
-#error "unsupported kernel configuration"
-#endif
-#endif
 #endif
 
 #include "../nbnxn_kernel_simd_utils.h"

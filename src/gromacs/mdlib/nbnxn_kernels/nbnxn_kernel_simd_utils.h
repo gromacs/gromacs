@@ -140,6 +140,61 @@ static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
 #endif /* GMX_X86_SSE2 */
 #endif /* GMX_SIMD_REFERENCE_PLAIN_C */
 
+#if GMX_SIMD_WIDTH_HERE == 4 && !defined GMX_SIMD_REFERENCE_PLAIN_C
+#define gmx_mm_pr4    gmx_mm_pr
+#define gmx_load_pr4  gmx_load_pr
+#define gmx_store_pr4 gmx_store_pr
+#define gmx_add_pr4   gmx_add_pr
+#endif
+
+#ifndef HAVE_GMX_SUM_SIMD /* should be defined for arch with hardware reduce */
+static gmx_inline real
+gmx_sum_simd2(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1];
+}
+
+#if GMX_SIMD_WIDTH_HERE>=4
+static gmx_inline real
+gmx_sum_simd4(gmx_mm_pr4 x, real* b)
+{
+    gmx_store_pr4(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+#endif
+
+#if GMX_SIMD_WIDTH_HERE == 2
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1];
+}
+#elif GMX_SIMD_WIDTH_HERE == 4
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+#elif GMX_SIMD_WIDTH_HERE == 8
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7];
+}
+#elif GMX_SIMD_WIDTH_HERE == 16
+/* This is getting ridiculous, SIMD horizontal adds would help,
+ * but this is not performance critical (only used to reduce energies)
+ */
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]+b[9]+b[10]+b[11]+b[12]+b[13]+b[14]+b[15];
+}
+#else
+#error "unsupported kernel configuration"
+#endif
+#endif //HAVE_GMX_SUM_SIMD
 
 #ifdef UNROLLJ
 /* Add energy register to possibly multiple terms in the energy array */
