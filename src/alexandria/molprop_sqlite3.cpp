@@ -138,10 +138,12 @@ void ReadSqlite3(const char *sqlite_file,
             cidx++;
             nsyn++;
         }            
-        else if (SQLITE_DONE != rc) {
+        else if (SQLITE_DONE != rc) 
+        {
             check_sqlite3(db,"Stepping",rc);
         }
-        else {
+        else 
+        {
             printf("There are %d synonyms for %d molecules.\n",nsyn,(int)mp.size());
         }
     } while (SQLITE_ROW == rc);
@@ -157,9 +159,10 @@ void ReadSqlite3(const char *sqlite_file,
                   sqlite3_prepare_v2(db,sql_str,1+strlen(sql_str),&stmt,NULL));
 
     if (NULL != debug)
+    {
         fprintf(debug,"sql_str = '%s'\nvariable = '%s'\n",sql_str,
                 sqlite3_bind_parameter_name(stmt,1));
-
+    }
     if (NULL != debug)
     {
         nbind = sqlite3_bind_parameter_count(stmt);
@@ -179,17 +182,22 @@ void ReadSqlite3(const char *sqlite_file,
         }
         else
         {
-            if ((NULL == key.iupac) || (strcmp(key.iupac,keyptr->iupac) != 0)) {
+            if ((NULL == key.iupac) || (strcmp(key.iupac,keyptr->iupac) != 0)) 
+            {
                 if (NULL != debug)
+                {
                     fprintf(debug,"Warning: incorrect iupac %s for %s - changing to %s\n",
                             key.iupac,key.molname,keyptr->iupac);
+                }
                 mpi->SetIupac(keyptr->iupac);
             }
             iupac = keyptr->iupac;
             if (NULL != iupac)
             {
                 if (NULL != debug)
+                {
                     fprintf(debug,"Going to query for '%s'\n",iupac);
+                }
                 check_sqlite3(db,"Binding text",
                               sqlite3_bind_text(stmt,1,iupac,-1,SQLITE_STATIC));
                 do 
@@ -201,8 +209,10 @@ void ReadSqlite3(const char *sqlite_file,
                         cidx   = 0;
                         iupac2 = (char *)sqlite3_column_text(stmt,cidx++);
                         if (strcasecmp(iupac,iupac2.c_str()) != 0)
+                        {
                             gmx_fatal(FARGS,"Selected '%s' from database but got '%s'. WTF?!",
                                       iupac,iupac2.c_str());
+                        }
                         cas    = (char *)sqlite3_column_text(stmt,cidx++);
                         csid   = (char *)sqlite3_column_text(stmt,cidx++);
                         classification = (char *)sqlite3_column_text(stmt,cidx++);
@@ -215,11 +225,17 @@ void ReadSqlite3(const char *sqlite_file,
                         
                         alexandria::Experiment myexp(ref,"minimum");
                         if (strcasecmp(prop,"Polarizability") == 0)
+                        {
                             myexp.AddPolar(alexandria::MolecularDipPolar(prop,unit,0,0,0,value,error));
+                        }
                         else if (strcasecmp(prop,"dipole") == 0)
+                        {
                             myexp.AddDipole(alexandria::MolecularDipPolar(prop,unit,0,0,0,value,error));
+                        }
                         else if (strcasecmp(prop,"DHf(298.15K)") == 0)
+                        {
                             myexp.AddEnergy(alexandria::MolecularEnergy(prop,unit,value,error));
+                        }
                         mpi->AddExperiment(myexp);
                         //mpi->Stats();
                         
