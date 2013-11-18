@@ -450,11 +450,13 @@ static void detect_flux_per_channel(
         t_swapcoords  *sc,
         real cyl0_r2,
         real cyl1_r2,
+        gmx_large_int_t step,
         gmx_bool bRerun)
 {
     gmx_swapcoords_t s;
     int sd, chan_nr;
     gmx_bool in_cyl0, in_cyl1;
+    char buf[STRLEN];
 
 
     s    = sc->si_priv;
@@ -517,11 +519,22 @@ static void detect_flux_per_channel(
             case eChHistPassedNone:
                 *s->fluxleak = *s->fluxleak + 1;
 
-                fprintf(stderr, " %s Ion %d (%s) moved from %s to %s", SwS, i, IonStr[iontype], DomainString[*dom_from],DomainString[*dom_now]);
+                fprintf(stderr, " %s Warning! Step %s, ion %d (%s) moved from %s to %s\n", 
+                        SwS, gmx_step_str(step, buf), i, IonStr[iontype], DomainString[*dom_from], DomainString[*dom_now]);
                 if (bRerun)
+                {
                     fprintf(stderr, ", possibly due to a swap in the original simulation.\n");
+                }
                 else
-                    fprintf(stderr, " but did not pass any of the split cylinders!\n");
+                {
+                    fprintf(stderr, "but did not pass cyl0 or cyl1 as defined in the .mdp file.\n"
+                                    "Do you have an ion somewhere within the membrane?\n");
+                    /* Write this info to the CompEl output file: */
+                    fprintf(s->fpout, " # Warning: step %s, ion %d (%s) moved from %s to %s (probably through the membrane)\n", 
+                            gmx_step_str(step, buf), i, IonStr[iontype], 
+                            DomainString[*dom_from], DomainString[*dom_now]);
+
+                }
                 break;
             case eChHistPassedCh0:
             case eChHistPassedCh1:
@@ -565,6 +578,7 @@ static void compartmentalize_ions(
     real cyl0_r2,cyl1_r2;
     int comp,type;
     int sum,not_in_comp[eCompNr]; /* consistency check */
+    int ion_nr_global;
 
 
     s    = sc->si_priv;
@@ -603,9 +617,10 @@ static void compartmentalize_ions(
                 /* Master also checks through which channel each ion has passed */
                 if (MASTER(cr) && (iong->dom_now != NULL))
                 {
-                    detect_flux_per_channel(i, comp, type, iong->xc[i],
+                    ion_nr_global = iong->ind[i] + 1; /* PDB index starts at 1 ... */
+                    detect_flux_per_channel(ion_nr_global, comp, type, iong->xc[i],
                             &iong->dom_now[i], &iong->dom_from[i], &iong->chan_pass[i],
-                            sc, cyl0_r2, cyl1_r2, bRerun);
+                            sc, cyl0_r2, cyl1_r2, step, bRerun);
                 }
             }
             else
