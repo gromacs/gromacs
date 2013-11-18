@@ -71,11 +71,11 @@ get_thread_affinity_layout(FILE *fplog,
     const int * hwthread_id;
     gmx_bool    bPickPinStride;
 
-    if (pin_offset < 0)
+    if (MASTER(cr) && pin_offset < 0)
     {
         gmx_fatal(FARGS, "Negative thread pinning offset requested");
     }
-    if (*pin_stride < 0)
+    if (MASTER(cr) && *pin_stride < 0)
     {
         gmx_fatal(FARGS, "Negative thread pinning stride requested");
     }
@@ -120,51 +120,59 @@ get_thread_affinity_layout(FILE *fplog,
     }
 
 
-    /* do we need to choose the pinning stride? */
-    bPickPinStride = (*pin_stride == 0);
-
-    if (bPickPinStride)
+#ifdef GMX_THREAD_MPI //pid_stride is global for all tmpi threads (as member of hwinfo)
+    if (MASTER(cr)) 
+#endif
     {
-        if (rc == 0 && pin_offset + nthreads*nhwthreads_per_core <= nhwthreads)
+        /* do we need to choose the pinning stride? */
+        bPickPinStride = (*pin_stride == 0); 
+        
+        if (bPickPinStride)
         {
-            /* Put one thread on each physical core */
-            *pin_stride = nhwthreads_per_core;
+            if (rc == 0 && pin_offset + nthreads*nhwthreads_per_core <= nhwthreads)
+            {
+                /* Put one thread on each physical core */
+                *pin_stride = nhwthreads_per_core;
+            }
+            else
+            {
+                /* We don't know if we have SMT, and if we do, we don't know
+                 * if hw threads in the same physical core are consecutive.
+                 * Without SMT the pinning layout should not matter too much.
+                 * so we assume a consecutive layout and maximally spread out"
+                 * the threads at equal threads per core.
+                 * Note that IBM is the major non-x86 case with cpuid support
+                 * and probably threads are already pinned by the queuing system,
+                 * so we wouldn't end up here in the first place.
+                 */
+                *pin_stride = (nhwthreads - pin_offset)/nthreads;
+            }
         }
         else
         {
-            /* We don't know if we have SMT, and if we do, we don't know
-             * if hw threads in the same physical core are consecutive.
-             * Without SMT the pinning layout should not matter too much.
-             * so we assume a consecutive layout and maximally spread out"
-             * the threads at equal threads per core.
-             * Note that IBM is the major non-x86 case with cpuid support
-             * and probably threads are already pinned by the queuing system,
-             * so we wouldn't end up here in the first place.
-             */
-            *pin_stride = (nhwthreads - pin_offset)/nthreads;
+            /* Check the placement of the thread with the largest index to make sure
+             * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
+            if (pin_offset + (nthreads-1)*(*pin_stride) >= nhwthreads)
+            {
+                /* We are oversubscribing, don't pin */
+                md_print_warn(NULL, fplog,
+                              "WARNING: The requested pinning stride is too large for the available logical cores,\n"
+                              "         will not pin threads");
+                
+                return -1;
+            }
         }
-    }
-    else
-    {
-        /* Check the placement of the thread with the largest index to make sure
-         * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
-        if (pin_offset + (nthreads-1)*(*pin_stride) >= nhwthreads)
+
+        if (fplog != NULL)
         {
-            /* We are oversubscribing, don't pin */
-            md_print_warn(NULL, fplog,
-                          "WARNING: The requested pinning stride is too large for the available logical cores,\n"
-                          "         will not pin threads");
-
-            return -1;
+            fprintf(fplog, "Pinning threads with a%s logical core stride of %d\n",
+                    bPickPinStride ? "n auto-selected" : " user-specified",
+                    *pin_stride);
         }
     }
-
-    if (fplog != NULL)
-    {
-        fprintf(fplog, "Pinning threads with a%s logical core stride of %d\n",
-                bPickPinStride ? "n auto-selected" : " user-specified",
-                *pin_stride);
-    }
+#ifdef GMX_THREAD_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
 
     return 0;
 }
