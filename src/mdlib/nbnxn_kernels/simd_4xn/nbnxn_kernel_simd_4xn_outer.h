@@ -120,12 +120,12 @@
     const real *tab_coul_V;
 #endif
     /* Thread-local working buffers for force and potential lookups */
-    int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1], *ti0 = NULL;
-    int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1], *ti1 = NULL;
-    int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2 = NULL;
-    int        ti3_array[2*GMX_SIMD_WIDTH_HERE-1], *ti3 = NULL;
+    int         ti0_array[2*GMX_SIMD_WIDTH_HERE], *ti0 = NULL;
+    int         ti1_array[2*GMX_SIMD_WIDTH_HERE], *ti1 = NULL;
+    int         ti2_array[2*GMX_SIMD_WIDTH_HERE], *ti2 = NULL;
+    int         ti3_array[2*GMX_SIMD_WIDTH_HERE], *ti3 = NULL;
 #ifdef CALC_ENERGIES
-    gmx_mm_pr  mhalfsp_S;
+    gmx_mm_pr   mhalfsp_S;
 #endif
 #endif
 
