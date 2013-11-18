@@ -5033,6 +5033,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                 ci_block = get_ci_block_size(gridi, nbs->DomDec, nnbl);
             }
 
+            /* With GPU: generate progressively smaller lists for
+             * load balancing for local only or non-local with 2 zones.
+             */
+            progBal = (LOCAL_I(iloc) || nbs->zones->n <= 2);
+
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for (th = 0; th < nnbl; th++)
             {
@@ -5049,11 +5054,6 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                 {
                     clear_pairlist(nbl[th]);
                 }
-
-                /* With GPU: generate progressively smaller lists for
-                 * load balancing for local only or non-local with 2 zones.
-                 */
-                progBal = (LOCAL_I(iloc) || nbs->zones->n <= 2);
 
                 /* Divide the i super cell equally over the nblists */
                 nbnxn_make_pairlist_part(nbs, gridi, gridj,
