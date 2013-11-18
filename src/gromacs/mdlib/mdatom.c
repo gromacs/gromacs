@@ -225,7 +225,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
 
     alook = gmx_mtop_atomlookup_init(mtop);
 
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) schedule(static)
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) schedule(static), private(c6,c12)
     for (i = 0; i < md->nr; i++)
     {
         int      g, ag, molb;
