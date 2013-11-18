@@ -118,7 +118,6 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
     gmx_mtop_atomlookup_t alook;
     int                   i;
     t_grpopts            *opts;
-    real                  c6, c12;
     gmx_groups_t         *groups;
     gmx_molblock_t       *molblock;
 
@@ -230,6 +229,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
     {
         int      g, ag, molb;
         real     mA, mB, fac;
+        real     c6, c12;
         t_atom  *atom;
 
         if (index == NULL)
