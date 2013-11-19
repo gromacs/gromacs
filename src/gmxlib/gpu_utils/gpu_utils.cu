@@ -860,10 +860,7 @@ int get_gpu_device_id(const gmx_gpu_info_t *gpu_info,
 {
     assert(gpu_info);
     assert(gpu_opt);
-    if (idx < 0 && idx >= gpu_opt->ncuda_dev_use)
-    {
-        return -1;
-    }
+    assert(idx >= 0 && idx < gpu_opt->ncuda_dev_use);
 
     return gpu_info->cuda_dev[gpu_opt->cuda_dev_use[idx]].id;
 }
