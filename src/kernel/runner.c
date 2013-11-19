@@ -1482,6 +1482,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_select_gpu_ids(fplog, cr, &hwinfo->gpu_info, bForceUseGPU,
                            &hw_opt->gpu_opt);
     }
+    else
+    {
+        /* Ignore (potentially) manually selected GPUs */
+        hw_opt->gpu_opt.ncuda_dev_use = 0;
+    }
 
     /* check consistency of CPU acceleration and number of GPUs selected */
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
