@@ -556,7 +556,7 @@ static void detect_flux_per_channel(
                 {
                     s->fluxfromAtoB[chan_nr][iontype]--;
                 }
-                fprintf(fpout, "# Ion %d finished passing %s.\n", iion, ChannelString[*chan_pass]);
+                fprintf(fpout, "# Atom nr. %d finished passing %s.\n", iion, ChannelString[*chan_pass]);
                 break;
             default:
                 gmx_fatal(FARGS, "%s Unknown channel history entry!\n", SwS);
@@ -1568,6 +1568,8 @@ extern void init_swapcoords(
                 fprintf(s->fpout, "# Coupling constant (number of swap attempt steps to average over): %d  (translates to %f ps).\n",
                         sc->csteps, sc->csteps*sc->nstswap*ir->delta_t);
                 fprintf(s->fpout, "# Threshold is %f\n", sc->threshold);
+                fprintf(s->fpout, "#\n");
+                fprintf(s->fpout, "# Remarks about which atoms passed which channel use global atoms numbers starting at one.\n");
             }
         }
     }
