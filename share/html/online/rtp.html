@@ -1,16 +1,7 @@
 <title>rtp file format</title>
-<LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
-<h2>rtp file format</h2>
-<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
-<TR>
-<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 4.6</B></TR>
-<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Sat 19 Jan 2013</B></TR></TABLE></CENTER><HR>
 <H3>Description</H3>
 The rtp file extension stands for residue toplogy. 
-Such a file is needed by <a href="pdb2gmx.html">pdb2gmx</a>
+Such a file is needed by <a href="../programs/gmx-pdb2gmx.html">gmx pdb2gmx</a>
 to make a GROMACS topology for a protein contained in a <tt>.pdb</tt>
 file. The file contains the default interaction type for the 4 bonded
 interactions and residue entries, which consist of atoms and
@@ -23,17 +14,20 @@ Instead of parameters a string can be added for each bonded interaction,
 the string is copied to the <a href="top.html"><tt>.top</tt></a> file,
 this is used for the GROMOS96 forcefield. 
 <p>
-<a href="pdb2gmx.html">pdb2gmx</a> automatically generates all angles,
+<a href="../programs/gmx-pdb2gmx.html">gmx pdb2gmx</a>
+automatically generates all angles,
 this means that the <tt>[angles]</tt> field is only
 useful for overriding <a href="itp.html"><tt>.itp</tt></a> parameters.
 <p>
-<a href="pdb2gmx.html">pdb2gmx</a> automatically generates one proper
+<a href="../programs/gmx-pdb2gmx.html">gmx pdb2gmx</a>
+automatically generates one proper
 dihedral for every rotatable bond, preferably on heavy atoms.
 When the <tt>[dihedrals]</tt> field is used, no other dihedrals will
 be generated for the bonds corresponding to the specified dihedrals. 
 It is possible to put more than one dihedral on a rotatable bond.
 <p>
-<a href="pdb2gmx.html">pdb2gmx</a> sets the number exclusions to 3, which
+<a href="../programs/gmx-pdb2gmx.html">gmx pdb2gmx</a>
+sets the number exclusions to 3, which
 means that interactions between atoms connected by at most 3 bonds are
 excluded. Pair interactions are generated for all pairs of atoms which are
 seperated by 3 bonds (except pairs of hydrogens).
@@ -87,9 +81,3 @@ A sample is included below.
  [ atoms ]
     ZN    ZN   2.000     0
 </PRE>
-<hr>
-<div ALIGN=RIGHT>
-<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
-
-</div>
-</body>

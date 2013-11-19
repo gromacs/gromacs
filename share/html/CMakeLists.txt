@@ -39,21 +39,18 @@ else()
 endif()
 
 if(CAN_BUILD_HTMLHELP)
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/programs)
-    add_custom_target(html-programs
-        gmx -quiet help -export html
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/programs
-        COMMENT "Generating HTML help for programs"
-        VERBATIM)
-    # TODO: May not work for an in-source build.
     add_custom_target(html
         ${CMAKE_COMMAND}
         -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+        -D STEP=PRE
         -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMAND gmx -quiet help -export html
+        COMMAND ${CMAKE_COMMAND}
+        -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+        -D STEP=POST
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
         COMMENT "Generating HTML help"
         VERBATIM)
-    add_dependencies(html html-programs)
     set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES programs)
+        ADDITIONAL_MAKE_CLEAN_FILES "output;header.processed.html")
 endif()

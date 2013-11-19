@@ -511,11 +511,15 @@ class HelpExportHtml : public HelpExportInterface
         virtual void finishModuleGroupExport();
 
     private:
+        void setupHeaderAndFooter();
+
         void writeHtmlHeader(File *file, const std::string &title) const;
         void writeHtmlFooter(File *file) const;
 
         boost::scoped_ptr<File>  indexFile_;
         HelpLinks                links_;
+        std::string              header_;
+        std::string              footer_;
 };
 
 HelpExportHtml::HelpExportHtml(const CommandLineModuleMap &modules)
@@ -533,11 +537,21 @@ HelpExportHtml::HelpExportHtml(const CommandLineModuleMap &modules)
             links_.addLink(line, "../online/" + line, line);
         }
     }
+    setupHeaderAndFooter();
+}
+
+void HelpExportHtml::setupHeaderAndFooter()
+{
+    header_ = gmx::File::readToString("input/header.html");
+    header_ = replaceAll(header_, "@VERSION@", GromacsVersion());
+    gmx::File::writeFileFromString("header.processed.html", header_);
+    header_ = replaceAll(header_, "@ROOTPATH@", "../");
+    footer_ = gmx::File::readToString("input/footer.html");
 }
 
 void HelpExportHtml::startModuleExport()
 {
-    indexFile_.reset(new File("byname.html", "w"));
+    indexFile_.reset(new File("output/programs/byname.html", "w"));
     writeHtmlHeader(indexFile_.get(), "GROMACS Programs by Name");
     indexFile_->writeLine("<H3>GROMACS Programs Alphabetically</H3>");
 }
@@ -547,7 +561,7 @@ void HelpExportHtml::exportModuleHelp(
         const std::string                &tag,
         const std::string                &displayName)
 {
-    File file(tag + ".html", "w");
+    File file("output/programs/" + tag + ".html", "w");
     writeHtmlHeader(&file, displayName);
 
     CommandLineHelpContext context(&file, eHelpOutputFormat_Html, &links_);
@@ -570,7 +584,7 @@ void HelpExportHtml::finishModuleExport()
 
 void HelpExportHtml::startModuleGroupExport()
 {
-    indexFile_.reset(new File("bytopic.html", "w"));
+    indexFile_.reset(new File("output/programs/bytopic.html", "w"));
     writeHtmlHeader(indexFile_.get(), "GROMACS Programs by Topic");
     indexFile_->writeLine("<H3>GROMACS Programs by Topic</H3>");
 }
@@ -600,39 +614,12 @@ void HelpExportHtml::finishModuleGroupExport()
 
 void HelpExportHtml::writeHtmlHeader(File *file, const std::string &title) const
 {
-    file->writeLine("<HTML>");
-    file->writeLine("<HEAD>");
-    file->writeLine(formatString("<TITLE>%s</TITLE>", title.c_str()));
-    file->writeLine("<LINK rel=stylesheet href=\"../online/style.css\" type=\"text/css\">");
-    file->writeLine("<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000FF\" vlink=\"#990000\" alink=\"#FF0000\">");
-    file->writeLine("<TABLE WIDTH=\"98%%\" NOBORDER><TR>");
-    file->writeLine("<TD WIDTH=400><TABLE WIDTH=400 NOBORDER>");
-    file->writeLine("<TD WIDTH=116>");
-    file->writeLine("<A HREF=\"http://www.gromacs.org/\">"
-                    "<IMG SRC=\"../images/gmxlogo_small.jpg\" BORDER=0>"
-                    "</A>");
-    file->writeLine("</TD>");
-    file->writeLine(formatString("<TD ALIGN=LEFT VALIGN=TOP WIDTH=280>"
-                                 "<BR><H2>%s</H2>", title.c_str()));
-    file->writeLine("<FONT SIZE=-1><A HREF=\"../online.html\">Main Table of Contents</A></FONT>");
-    file->writeLine("</TD>");
-    file->writeLine("</TABLE></TD>");
-    file->writeLine("<TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM>");
-    file->writeLine(formatString("<P><B>%s</B>", GromacsVersion()));
-    file->writeLine("</TD>");
-    file->writeLine("</TR></TABLE>");
-    file->writeLine("<HR>");
+    file->writeLine(replaceAll(header_, "@TITLE@", title));
 }
 
 void HelpExportHtml::writeHtmlFooter(File *file) const
 {
-    file->writeLine("<P>");
-    file->writeLine("<HR>");
-    file->writeLine("<DIV ALIGN=RIGHT><FONT SIZE=\"-1\">");
-    file->writeLine("<A HREF=\"http://www.gromacs.org\">http://www.gromacs.org</A><BR>");
-    file->writeLine("</FONT></DIV>");
-    file->writeLine("</BODY>");
-    file->writeLine("</HTML>");
+    file->writeLine(footer_);
 }
 
 }   // namespace
