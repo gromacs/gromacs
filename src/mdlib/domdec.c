@@ -5697,7 +5697,7 @@ void dd_setup_dlb_resource_sharing(t_commrec *cr,
 
     physicalnode_id_hash = gmx_physicalnode_id_hash();
 
-    gpu_id = get_gpu_device_id(&hwinfo->gpu_info, &hw_opt->gpu_opt, cr->nodeid);
+    gpu_id = get_gpu_device_id(&hwinfo->gpu_info, &hw_opt->gpu_opt, cr->rank_pp_intranode);
 
     dd = cr->dd;
 
