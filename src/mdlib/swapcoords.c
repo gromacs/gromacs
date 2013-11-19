@@ -45,7 +45,7 @@ static char *DimStr[DIM+1] = {
 
 /* Keep track of through which channel the ions have passed */
 enum eChannelHistory { eChHistPassedNone, eChHistPassedCh0, eChHistPassedCh1, eChHistNr };
-/* static char* ChannelHistString[eChHistNr] = { "none", "channel0", "channel1" }; */
+static char* ChannelString[eChHistNr] = { "none", "channel0", "channel1" };
 
 /* Keep track of from which compartment the ions came before passing the channel */
 enum eDomain { eDomainNotset, eDomainA, eDomainB, eDomainNr };
@@ -440,7 +440,7 @@ static void get_compartment_boundaries(
  *
  */
 static void detect_flux_per_channel(
-        int i,
+        int iion,
         int comp,
         int iontype,
         rvec ion_pos,
@@ -451,7 +451,8 @@ static void detect_flux_per_channel(
         real cyl0_r2,
         real cyl1_r2,
         gmx_large_int_t step,
-        gmx_bool bRerun)
+        gmx_bool bRerun,
+        FILE *fpout)
 {
     gmx_swapcoords_t s;
     int sd, chan_nr;
@@ -520,7 +521,7 @@ static void detect_flux_per_channel(
                 *s->fluxleak = *s->fluxleak + 1;
 
                 fprintf(stderr, " %s Warning! Step %s, ion %d (%s) moved from %s to %s\n", 
-                        SwS, gmx_step_str(step, buf), i, IonStr[iontype], DomainString[*dom_from], DomainString[*dom_now]);
+                        SwS, gmx_step_str(step, buf), iion, IonStr[iontype], DomainString[*dom_from], DomainString[*dom_now]);
                 if (bRerun)
                 {
                     fprintf(stderr, ", possibly due to a swap in the original simulation.\n");
@@ -531,7 +532,7 @@ static void detect_flux_per_channel(
                                     "Do you have an ion somewhere within the membrane?\n");
                     /* Write this info to the CompEl output file: */
                     fprintf(s->fpout, " # Warning: step %s, ion %d (%s) moved from %s to %s (probably through the membrane)\n", 
-                            gmx_step_str(step, buf), i, IonStr[iontype], 
+                            gmx_step_str(step, buf), iion, IonStr[iontype], 
                             DomainString[*dom_from], DomainString[*dom_now]);
 
                 }
@@ -539,14 +540,23 @@ static void detect_flux_per_channel(
             case eChHistPassedCh0:
             case eChHistPassedCh1:
                 if (*chan_pass == eChHistPassedCh0)
+                {
                     chan_nr = 0;
+                }
                 else
+                {
                     chan_nr = 1;
+                }
 
                 if (eDomainA == *dom_from)
+                {
                     s->fluxfromAtoB[chan_nr][iontype]++;
+                }
                 else
+                {
                     s->fluxfromAtoB[chan_nr][iontype]--;
+                }
+                fprintf(fpout, "# Ion %d finished passing %s.\n", iion, ChannelString[*chan_pass]);
                 break;
             default:
                 gmx_fatal(FARGS, "%s Unknown channel history entry!\n", SwS);
@@ -576,7 +586,7 @@ static void compartmentalize_ions(
     t_group *iong;
     real dist;
     real cyl0_r2,cyl1_r2;
-    int comp,type;
+    int comp, type = 0; /* Make compiler happy */
     int sum,not_in_comp[eCompNr]; /* consistency check */
     int ion_nr_global;
 
@@ -606,7 +616,7 @@ static void compartmentalize_ions(
         for (i = 0; i < iong->nat; i++)
         {
             /* Anion or cation? */
-            type = iong->qc[i]<0? eIonNEG : eIonPOS;
+            type = iong->qc[i] < 0 ? eIonNEG : eIonPOS;
 
             /* Is this ion in the compartment that we look at? */
             if (compartment_contains_atom(left, right, 0, iong->xc[i][sd], box[sd][sd], &dist) )
@@ -620,7 +630,7 @@ static void compartmentalize_ions(
                     ion_nr_global = iong->ind[i] + 1; /* PDB index starts at 1 ... */
                     detect_flux_per_channel(ion_nr_global, comp, type, iong->xc[i],
                             &iong->dom_now[i], &iong->dom_from[i], &iong->chan_pass[i],
-                            sc, cyl0_r2, cyl1_r2, step, bRerun);
+                            sc, cyl0_r2, cyl1_r2, step, bRerun, fpout);
                 }
             }
             else
