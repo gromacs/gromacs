@@ -1,20 +1,11 @@
 <title>trr file format</title>
-<LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
-<h2>trr file format</h2>
-<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
-<TR>
-<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 4.6</B></TR>
-<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Sat 19 Jan 2013</B></TR></TABLE></CENTER><HR>
 <h3>Description</h3>
 Files with the trr file extension contain the trajectory of a simulation. 
 In this file all the coordinates, velocities, forces and energies are 
 printed as you told GROMACS in your mdp file. This file is in portable binary 
-format an can be read with <a href=gmxdump.html>gmxdump</a>.
+format an can be read with <a href="../programs/gmx-dump.html">gmx dump</a>.
 <PRE>
-% <a href="gmxdump.html">gmxdump</a> -f traj.trr
+% <a href="../programs/gmx-dump.html">gmx dump</a> -f traj.trr
 </PRE>
 or if you're not such a fast reader:
 <PRE>
@@ -25,11 +16,5 @@ or if you're not such a fast reader:
 You can also get a quick look in the contents of the file (number of 
 frames etc.) using:
 <PRE>
-% <a href="gmxcheck.html">gmxcheck</a> -f traj.trr
+% <a href="../programs/gmx-check.html">gmx check</a> -f traj.trr
 </PRE>
-<hr>
-<div ALIGN=RIGHT>
-<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
-
-</div>
-</body>
