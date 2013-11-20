@@ -586,7 +586,7 @@ static void compartmentalize_ions(
     t_group *iong;
     real dist;
     real cyl0_r2,cyl1_r2;
-    int comp, type = 0; /* Make compiler happy */
+    int comp, type;
     int sum,not_in_comp[eCompNr]; /* consistency check */
     int ion_nr_global;
 
@@ -638,8 +638,9 @@ static void compartmentalize_ions(
                 not_in_comp[comp] += 1;
             }
         }
-        /* Correct the time-averaged number of ions for this compartment */
-        update_time_window(&s->comp[comp][type],sc->csteps,replace);
+        /* Correct the time-averaged number of ions in both compartments */
+        update_time_window(&s->comp[comp][eIonNEG],sc->csteps,replace);
+        update_time_window(&s->comp[comp][eIonPOS],sc->csteps,replace);
     }
 
     /* Flux detection warnings */
