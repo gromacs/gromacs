@@ -46,16 +46,17 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
 #include "index.h"
 #include "gstat.h"
-#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "nsfactor.h"
-#include "gmx_omp.h"
+
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/utility/gmxomp.h"
 
 int gmx_sans(int argc, char *argv[])
 {

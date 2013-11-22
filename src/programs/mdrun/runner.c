@@ -78,7 +78,6 @@
 #include "gmx_fatal_collective.h"
 #include "membed.h"
 #include "macros.h"
-#include "gmx_omp.h"
 #include "gmx_thread_affinity.h"
 
 #include "gromacs/fileio/tpxio.h"
@@ -86,6 +85,7 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/gmxomp.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -989,7 +989,7 @@ static void free_gpu_resources(FILE             *fplog,
         {
             gmx_barrier(cr);
         }
-#endif /* GMX_THREAD_MPI */
+#endif  /* GMX_THREAD_MPI */
 
         /* uninitialize GPU (by destroying the context) */
         if (!free_gpu(gpu_err_str))
