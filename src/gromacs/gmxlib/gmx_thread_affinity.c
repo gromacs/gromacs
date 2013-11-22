@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,14 +48,13 @@
 #include "types/commrec.h"
 #include "types/hw_info.h"
 #include "gmx_cpuid.h"
-#include "gmx_omp.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
 #include "statutil.h"
 #include "gmx_thread_affinity.h"
 
 #include "thread_mpi/threads.h"
-
+#include "gromacs/utility/gmxomp.h"
 
 static int
 get_thread_affinity_layout(FILE *fplog,

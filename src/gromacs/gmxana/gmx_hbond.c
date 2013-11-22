@@ -40,15 +40,10 @@
 
 /*#define HAVE_NN_LOOPS*/
 
-#include "gmx_omp.h"
-
 #include "statutil.h"
 #include "copyrite.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
 #include "physics.h"
 #include "macros.h"
 #include "gmx_fatal.h"
@@ -57,12 +52,17 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "gromacs/fileio/matio.h"
 #include "string2.h"
 #include "pbc.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "geminate.h"
+
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/utility/gmxomp.h"
 
 typedef short int t_E;
 typedef int t_EEst;

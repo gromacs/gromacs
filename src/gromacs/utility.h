@@ -125,8 +125,10 @@
  *
  * \if libapi
  *
- * The header gmxmpi.h abstract away the mechanism of including either MPI or
+ * The header gmxmpi.h abstracts away the mechanism of including either MPI or
  * thread-MPI headers depending on compilation options.
+ * Similarly, gmxomp.h removes the need to use conditional compilation for code
+ * that needs to include omp.h for OpenMP functions.
  *
  * The header gmxregex.h declares gmx::Regex and regexMatch() for basic regular
  * expression matching using an interface similar to C++11.

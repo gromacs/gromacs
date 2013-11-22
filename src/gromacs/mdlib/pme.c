@@ -75,7 +75,6 @@
 #include "network.h"
 #include "physics.h"
 #include "nrnb.h"
-#include "gmx_omp.h"
 #include "macros.h"
 
 #include "gromacs/fft/parallel_3dfft.h"
@@ -84,6 +83,7 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/gmxomp.h"
 
 /* Include the SIMD macro file and then check for support */
 #include "gmx_simd_macros.h"
@@ -247,7 +247,7 @@ typedef struct {
     /* Masks for 4-wide SIMD aligned spreading and gathering */
     gmx_simd4_pb mask_S0[6], mask_S1[6];
 #else
-    int    dummy; /* C89 requires that struct has at least one member */
+    int          dummy; /* C89 requires that struct has at least one member */
 #endif
 } pme_spline_work_t;
 

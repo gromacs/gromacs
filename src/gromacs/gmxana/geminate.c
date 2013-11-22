@@ -52,8 +52,8 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "geminate.h"
-#include "gmx_omp.h"
 
+#include "gromacs/utility/gmxomp.h"
 
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,

@@ -52,7 +52,8 @@
 #include "partdec.h"
 #include "mtop_util.h"
 #include "gmx_omp_nthreads.h"
-#include "gmx_omp.h"
+
+#include "gromacs/utility/gmxomp.h"
 
 /* Routines to send/recieve coordinates and force
  * of constructing atoms.
