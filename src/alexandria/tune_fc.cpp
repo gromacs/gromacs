@@ -107,12 +107,18 @@ typedef struct {
 static void check_support(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mm,
                           gmx_poldata_t                   pd,
+                          t_commrec                      *cr,
                           bool                            bOpt[])
 {
-    int nsupp = (int) mm.size();
-
+    int ntotal  = (int) mm.size();
+    int nlocal = 0;
+  
     for (std::vector<alexandria::MyMol>::iterator mymol = mm.begin(); (mymol < mm.end()); )
     {
+        if (mymol->eSupp != eSupportLocal)
+        {
+            continue;
+        }
         bool bSupport = true;
 
         for (int bt = 0; bSupport && (bt <= ebtsIDIHS); bt++)
@@ -204,10 +210,18 @@ static void check_support(FILE                           *fp,
         else
         {
             mymol++;
+            nlocal++;
         }
     }
-    printf("%d out of %d molecules have support in the force field.\n",
-           (int)mm.size(), nsupp);
+    if (PAR(cr)) 
+    {
+        gmx_sumi(1, &nlocal, cr);
+    }
+    if (NULL != fp)
+    {
+        fprintf(fp, "%d out of %d molecules have support in the force field.\n",
+                nlocal, ntotal);
+    }
 }
 
 static opt_mask_t *analyze_idef(FILE                          *fp,
@@ -1508,7 +1522,9 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         }
     }
     fprintf(fp, "\n");
-    fprintf(fp, "RMSD is %g kJ/mol for %d molecules.\n\n", sqrt(msd/_mymol.size()), (int)_mymol.size());
+    fprintf(fp, "RMSD is %g kJ/mol for %d molecules.\n\n", 
+            sqrt(msd/_mymol.size()), (int)_mymol.size());
+    fflush(fp);
     if (NULL != xvg)
     {
         xvgrclose(xfp);
@@ -1734,7 +1750,7 @@ int main(int argc, char *argv[])
              lot, bCharged, oenv, gms, th_toler, ph_toler, dip_toler,
              TRUE, TRUE, TRUE, watoms, FALSE, seed);
 
-    check_support(fp, opt._mymol, opt._pd, bOpt);
+    check_support(fp, opt._mymol, opt._pd, opt._cr, bOpt);
 
     omt = analyze_idef(fp,
                        opt._mymol,
@@ -1746,8 +1762,10 @@ int main(int argc, char *argv[])
 
     print_moldip_mols(fp, opt._mymol, FALSE, FALSE);
     omt = analyze_idef(fp, opt._mymol, opt._pd, bOpt);
-    opt.PrintSpecs(fp, (char *)"Before optimization", NULL, oenv, false);
-
+    if (MASTER(cr))
+    {
+        opt.PrintSpecs(fp, (char *)"Before optimization", NULL, oenv, false);
+    }
     opt.Optimize(MASTER(cr) ? stderr : NULL, fp,
                  maxiter, nrun, step, seed,
                  bRandom, oenv, bOpt, D0, beta0, D0_min, beta_min,
@@ -1756,13 +1774,14 @@ int main(int argc, char *argv[])
                  opt2fn("-epot", NFILE, fnm),
                  temperature);
     done_opt_mask(&omt);
-    print_moldip_mols(fp, opt._mymol, TRUE, FALSE);
-    opt.PrintSpecs(fp, (char *)"After optimization", opt2fn("-x", NFILE, fnm), oenv, true);
-
-    gmx_poldata_write(opt2fn("-o", NFILE, fnm), opt._pd, compress);
-
     if (MASTER(cr))
     {
+        print_moldip_mols(fp, opt._mymol, TRUE, FALSE);
+        opt.PrintSpecs(fp, (char *)"After optimization", 
+                       opt2fn("-x", NFILE, fnm), oenv, true);
+    
+        gmx_poldata_write(opt2fn("-o", NFILE, fnm), opt._pd, compress);
+
         gmx_molselect_done(gms);
         done_filenms(NFILE, fnm);
 
