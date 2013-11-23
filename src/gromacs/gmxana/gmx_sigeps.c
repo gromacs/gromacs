@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ real dpot(real x, real qq, real c6, real cn, int npow)
 int gmx_sigeps(int argc, char *argv[])
 {
     const char   *desc[] = {
-        "[TT]g_sigeps[tt] is a simple utility that converts C6/C12 or C6/Cn combinations",
+        "[THISMODULE] is a simple utility that converts C6/C12 or C6/Cn combinations",
         "to [GRK]sigma[grk] and [GRK]epsilon[grk], or vice versa. It can also plot the potential",
         "in  file. In addition, it makes an approximation of a Buckingham potential",
         "to a Lennard-Jones potential."

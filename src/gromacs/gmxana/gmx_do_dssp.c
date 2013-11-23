@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -435,11 +435,11 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 int gmx_do_dssp(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]do_dssp[tt] ",
+        "[THISMODULE] ",
         "reads a trajectory file and computes the secondary structure for",
         "each time frame ",
         "calling the dssp program. If you do not have the dssp program,",
-        "get it from http://swift.cmbi.ru.nl/gv/dssp. [TT]do_dssp[tt] assumes ",
+        "get it from http://swift.cmbi.ru.nl/gv/dssp. [THISMODULE] assumes ",
         "that the dssp executable is located in ",
         "[TT]/usr/local/bin/dssp[tt]. If this is not the case, then you should",
         "set an environment variable [TT]DSSP[tt] pointing to the dssp",
@@ -463,10 +463,10 @@ int gmx_do_dssp(int argc, char *argv[])
         "absolute values (A^2) and in fractions of the maximal accessible",
         "surface of a residue. The maximal accessible surface is defined as",
         "the accessible surface of a residue in a chain of glycines.",
-        "[BB]Note[bb] that the program [TT]g_sas[tt] can also compute SAS",
+        "[BB]Note[bb] that the program [gmx-sas] can also compute SAS",
         "and that is more efficient.[PAR]",
         "Finally, this program can dump the secondary structure in a special file",
-        "[TT]ssdump.dat[tt] for usage in the program [TT]g_chi[tt]. Together",
+        "[TT]ssdump.dat[tt] for usage in the program [gmx-chi]. Together",
         "these two programs can be used to analyze dihedral properties as a",
         "function of secondary structure type."
     };

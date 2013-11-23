@@ -646,9 +646,9 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
 int gmx_disre(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_disre[tt] computes violations of distance restraints.",
+        "[THISMODULE] computes violations of distance restraints.",
         "If necessary, all protons can be added to a protein molecule ",
-        "using the [TT]g_protonate[tt] program.[PAR]",
+        "using the [gmx-protonate] program.[PAR]",
         "The program always",
         "computes the instantaneous violations rather than time-averaged,",
         "because this analysis is done from a trajectory file afterwards",

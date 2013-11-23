@@ -835,7 +835,7 @@ int gmx_rdf(int argc, char *argv[])
         "scattering. The most common way to describe liquid structure is by a",
         "radial distribution function. However, this is not easy to obtain from",
         "a scattering experiment.[PAR]",
-        "[TT]g_rdf[tt] calculates radial distribution functions in different ways.",
+        "[THISMODULE] calculates radial distribution functions in different ways.",
         "The normal method is around a (set of) particle(s), the other methods",
         "are around the center of mass of a set of particles ([TT]-com[tt])",
         "or to the closest particle in a set ([TT]-surf[tt]).",

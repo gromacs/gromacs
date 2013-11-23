@@ -84,7 +84,7 @@ static int ocomp(const void *a, const void *b)
 int gmx_trjorder(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]trjorder[tt] orders molecules according to the smallest distance",
+        "[THISMODULE] orders molecules according to the smallest distance",
         "to atoms in a reference group",
         "or on z-coordinate (with option [TT]-z[tt]).",
         "With distance ordering, it will ask for a group of reference",
@@ -95,7 +95,7 @@ int gmx_trjorder(int argc, char *argv[])
         "be used instead of a reference atom by setting [TT]-da[tt] to 0.",
         "All atoms in the trajectory are written",
         "to the output trajectory.[PAR]",
-        "[TT]trjorder[tt] can be useful for e.g. analyzing the n waters closest to a",
+        "[THISMODULE] can be useful for e.g. analyzing the n waters closest to a",
         "protein.",
         "In that case the reference group would be the protein and the group",
         "of molecules would consist of all the water atoms. When an index group",

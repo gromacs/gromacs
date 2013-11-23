@@ -3655,7 +3655,7 @@ static void sync_hbdata(t_hbdata *p_hb, int nframes)
 int gmx_hbond(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_hbond[tt] computes and analyzes hydrogen bonds. Hydrogen bonds are",
+        "[THISMODULE] computes and analyzes hydrogen bonds. Hydrogen bonds are",
         "determined based on cutoffs for the angle Hydrogen - Donor - Acceptor",
         "(zero is extended) and the distance Donor - Acceptor",
         "(or Hydrogen - Acceptor using [TT]-noda[tt]).",

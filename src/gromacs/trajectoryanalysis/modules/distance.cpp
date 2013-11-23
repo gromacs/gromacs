@@ -132,7 +132,7 @@ void
 Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "[TT]gmx distance[tt] calculates distances between pairs of positions",
+        "[THISMODULE] calculates distances between pairs of positions",
         "as a function of time. Each selection specifies an independent set",
         "of distances to calculate. Each selection should consist of pairs",
         "of positions, and the distances are computed between positions 1-2,",

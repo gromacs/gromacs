@@ -323,7 +323,7 @@ static void zeroq(atom_id index[], gmx_mtop_t *mtop)
 int gmx_tpbconv(int argc, char *argv[])
 {
     const char       *desc[] = {
-        "tpbconv can edit run input files in four ways.[PAR]",
+        "[THISMODULE] can edit run input files in four ways.[PAR]",
         "[BB]1.[bb] by modifying the number of steps in a run input file",
         "with options [TT]-extend[tt], [TT]-until[tt] or [TT]-nsteps[tt]",
         "(nsteps=-1 means unlimited number of steps)[PAR]",

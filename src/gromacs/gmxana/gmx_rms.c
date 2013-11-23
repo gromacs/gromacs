@@ -94,10 +94,9 @@ static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
 
 int gmx_rms(int argc, char *argv[])
 {
-    const char
-                   *desc[] =
+    const char     *desc[] =
     {
-        "[TT]g_rms[tt] compares two structures by computing the root mean square",
+        "[THISMODULE] compares two structures by computing the root mean square",
         "deviation (RMSD), the size-independent [GRK]rho[grk] similarity parameter",
         "([TT]rho[tt]) or the scaled [GRK]rho[grk] ([TT]rhosc[tt]), ",
         "see Maiorov & Crippen, Proteins [BB]22[bb], 273 (1995).",
@@ -118,7 +117,7 @@ int gmx_rms(int argc, char *argv[])
         "Option [TT]-m[tt] produces a matrix in [TT].xpm[tt] format of",
         "comparison values of each structure in the trajectory with respect to",
         "each other structure. This file can be visualized with for instance",
-        "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].[PAR]",
+        "[TT]xv[tt] and can be converted to postscript with [gmx-xpm2ps].[PAR]",
 
         "Option [TT]-fit[tt] controls the least-squares fitting of",
         "the structures on top of each other: complete fit (rotation and",

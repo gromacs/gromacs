@@ -63,7 +63,7 @@ int gmx_nmtraj(int argc, char *argv[])
 {
     const char *desc[] =
     {
-        "[TT]g_nmtraj[tt] generates an virtual trajectory from an eigenvector, ",
+        "[THISMODULE] generates an virtual trajectory from an eigenvector, ",
         "corresponding to a harmonic Cartesian oscillation around the average ",
         "structure. The eigenvectors should normally be mass-weighted, but you can ",
         "use non-weighted eigenvectors to generate orthogonal motions. ",
