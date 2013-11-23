@@ -897,14 +897,14 @@ void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int n
 int gmx_order(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "Compute the order parameter per atom for carbon tails. For atom i the",
+        "[THISMODULE] computes the order parameter per atom for carbon tails. For atom i the",
         "vector i-1, i+1 is used together with an axis. ",
         "The index file should contain only the groups to be used for calculations,",
         "with each group of equivalent carbons along the relevant acyl chain in its own",
         "group. There should not be any generic groups (like System, Protein) in the index",
         "file to avoid confusing the program (this is not relevant to tetrahedral order",
         "parameters however, which only work for water anyway).[PAR]",
-        "The program can also give all",
+        "[THISMODULE] can also give all",
         "diagonal elements of the order tensor and even calculate the deuterium",
         "order parameter Scd (default). If the option [TT]-szonly[tt] is given, only one",
         "order tensor component (specified by the [TT]-d[tt] option) is given and the",

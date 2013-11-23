@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -275,7 +275,7 @@ const char        LimitationsHelpText::title[] =
     "Selection limitations";
 const char *const LimitationsHelpText::text[] = {
     "Some analysis programs may require a special structure for the input",
-    "selections (e.g., [TT]g_angle[tt] requires the index group to be made",
+    "selections (e.g., [TT]gmx angle[tt] requires the index group to be made",
     "of groups of three or four atoms).",
     "For such programs, it is up to the user to provide a proper selection",
     "expression that always returns such positions.",

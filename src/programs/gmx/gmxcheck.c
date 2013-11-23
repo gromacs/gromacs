@@ -713,7 +713,7 @@ void chk_enx(const char *fn)
 int gmx_gmxcheck(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]gmx check[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
+        "[THISMODULE] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
         "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
         "or an index file ([TT].ndx[tt])",
         "and prints out useful information about them.[PAR]",

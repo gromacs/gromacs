@@ -691,7 +691,7 @@ void sas_plot(int nfile, t_filenm fnm[], real solsize, int ndots,
 int gmx_sas(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_sas[tt] computes hydrophobic, hydrophilic and total solvent",
+        "[THISMODULE] computes hydrophobic, hydrophilic and total solvent",
         "accessible surface area. See Eisenhaber F, Lijnzaad P, Argos P,",
         "Sander C, & Scharf M (1995) J. Comput. Chem. 16, 273-284.",
         "As a side effect, the Connolly surface can be generated as well in",

@@ -999,7 +999,7 @@ static void do_geminate(const char *gemFile, int nData,
 int gmx_analyze(int argc, char *argv[])
 {
     static const char *desc[] = {
-        "[TT]g_analyze[tt] reads an ASCII file and analyzes data sets.",
+        "[THISMODULE] reads an ASCII file and analyzes data sets.",
         "A line in the input file may start with a time",
         "(see option [TT]-time[tt]) and any number of [IT]y[it]-values may follow.",
         "Multiple sets can also be",
@@ -1012,7 +1012,7 @@ int gmx_analyze(int argc, char *argv[])
         "All options, except for [TT]-av[tt] and [TT]-power[tt], assume that the",
         "points are equidistant in time.[PAR]",
 
-        "[TT]g_analyze[tt] always shows the average and standard deviation of each",
+        "[THISMODULE] always shows the average and standard deviation of each",
         "set, as well as the relative deviation of the third",
         "and fourth cumulant from those of a Gaussian distribution with the same",
         "standard deviation.[PAR]",
@@ -1086,8 +1086,8 @@ int gmx_analyze(int argc, char *argv[])
         "zero or with a negative value are ignored.[PAR]"
 
         "Option [TT]-luzar[tt] performs a Luzar & Chandler kinetics analysis",
-        "on output from [TT]g_hbond[tt]. The input file can be taken directly",
-        "from [TT]g_hbond -ac[tt], and then the same result should be produced."
+        "on output from [gmx-hbond]. The input file can be taken directly",
+        "from [TT]gmx hbond -ac[tt], and then the same result should be produced."
     };
     static real        tb         = -1, te = -1, frac = 0.5, filtlen = 0, binwidth = 0.1, aver_start = 0;
     static gmx_bool    bHaveT     = TRUE, bDer = FALSE, bSubAv = TRUE, bAverCorr = FALSE, bXYdy = FALSE;
@@ -1127,7 +1127,10 @@ int gmx_analyze(int argc, char *argv[])
         { "-regression", FALSE, etBOOL, {&bRegression},
           "Perform a linear regression analysis on the data. If [TT]-xydy[tt] is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize [MATH][GRK]chi[grk]^2 = (y - A[SUB]0[sub] x[SUB]0[sub] - A[SUB]1[sub] x[SUB]1[sub] - ... - A[SUB]N[sub] x[SUB]N[sub])^2[math] where now Y is the first data set in the input file and x[SUB]i[sub] the others. Do read the information at the option [TT]-time[tt]." },
         { "-luzar",   FALSE, etBOOL, {&bLuzar},
-          "Do a Luzar and Chandler analysis on a correlation function and related as produced by [TT]g_hbond[tt]. When in addition the [TT]-xydy[tt] flag is given the second and fourth column will be interpreted as errors in c(t) and n(t)." },
+          "Do a Luzar and Chandler analysis on a correlation function and "
+          "related as produced by [gmx-hbond]. When in addition the "
+          "[TT]-xydy[tt] flag is given the second and fourth column will be "
+          "interpreted as errors in c(t) and n(t)." },
         { "-temp",    FALSE, etREAL, {&temp},
           "Temperature for the Luzar hydrogen bonding kinetics analysis (K)" },
         { "-fitstart", FALSE, etREAL, {&fit_start},

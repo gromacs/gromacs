@@ -255,7 +255,7 @@ static void dump_w(output_env_t oenv, real beta)
 int gmx_dos(int argc, char *argv[])
 {
     const char         *desc[] = {
-        "[TT]g_dos[tt] computes the Density of States from a simulations.",
+        "[THISMODULE] computes the Density of States from a simulations.",
         "In order for this to be meaningful the velocities must be saved",
         "in the trajecotry with sufficiently high frequency such as to cover",
         "all vibrations. For flexible systems that would be around a few fs",

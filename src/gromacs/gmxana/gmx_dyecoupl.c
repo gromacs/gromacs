@@ -43,7 +43,7 @@ int gmx_dyecoupl(int argc, char *argv[])
 {
     const char *desc[] =
     {
-        "This tool extracts dye dynamics from trajectory files.",
+        "[THISMODULE] extracts dye dynamics from trajectory files.",
         "Currently, R and kappa^2 between dyes is extracted for (F)RET",
         "simulations with assumed dipolar coupling as in the Foerster equation.",
         "It further allows the calculation of R(t) and kappa^2(t), R and",

@@ -1072,7 +1072,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
 int gmx_pme_error(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_pme_error[tt] estimates the error of the electrostatic forces",
+        "[THISMODULE] estimates the error of the electrostatic forces",
         "if using the sPME algorithm. The flag [TT]-tune[tt] will determine",
         "the splitting parameter such that the error is equally",
         "distributed over the real and reciprocal space part.",

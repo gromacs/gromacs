@@ -60,10 +60,10 @@
 int gmx_vanhove(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[TT]g_vanhove[tt] computes the Van Hove correlation function.",
+        "[THISMODULE] computes the Van Hove correlation function.",
         "The Van Hove G(r,t) is the probability that a particle that is at r[SUB]0[sub]",
         "at time zero can be found at position r[SUB]0[sub]+r at time t.",
-        "[TT]g_vanhove[tt] determines G not for a vector r, but for the length of r.",
+        "[THISMODULE] determines G not for a vector r, but for the length of r.",
         "Thus it gives the probability that a particle moves a distance of r",
         "in time t.",
         "Jumps across the periodic boundaries are removed.",

@@ -1499,7 +1499,7 @@ void dipole_atom2molindex(int *n, int *index, t_block *mols)
 int gmx_dipoles(int argc, char *argv[])
 {
     const char    *desc[] = {
-        "[TT]g_dipoles[tt] computes the total dipole plus fluctuations of a simulation",
+        "[THISMODULE] computes the total dipole plus fluctuations of a simulation",
         "system. From this you can compute e.g. the dielectric constant for",
         "low-dielectric media.",
         "For molecules with a net charge, the net charge is subtracted at",
@@ -1526,7 +1526,7 @@ int gmx_dipoles(int argc, char *argv[])
         "the dipoles divided by the distance to the third power.[PAR]",
         "[PAR]",
         "EXAMPLES[PAR]",
-        "[TT]g_dipoles -corr mol -P 1 -o dip_sqr -mu 2.273 -mumax 5.0[tt][PAR]",
+        "[TT]gmx dipoles -corr mol -P 1 -o dip_sqr -mu 2.273 -mumax 5.0[tt][PAR]",
         "This will calculate the autocorrelation function of the molecular",
         "dipoles using a first order Legendre polynomial of the angle of the",
         "dipole vector and itself a time t later. For this calculation 1001",

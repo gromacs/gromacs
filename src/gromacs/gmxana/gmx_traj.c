@@ -592,7 +592,7 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
 int gmx_traj(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_traj[tt] plots coordinates, velocities, forces and/or the box.",
+        "[THISMODULE] plots coordinates, velocities, forces and/or the box.",
         "With [TT]-com[tt] the coordinates, velocities and forces are",
         "calculated for the center of mass of each group.",
         "When [TT]-mol[tt] is set, the numbers in the index file are",

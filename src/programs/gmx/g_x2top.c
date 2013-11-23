@@ -408,7 +408,7 @@ static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
 int gmx_x2top(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_x2top[tt] generates a primitive topology from a coordinate file.",
+        "[THISMODULE] generates a primitive topology from a coordinate file.",
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.",
         "The program can also make an [TT].rtp[tt] entry, which you can then add",
@@ -426,7 +426,7 @@ int gmx_x2top(int argc, char *argv[])
         "information about file formats. By default, the force field selection",
         "is interactive, but you can use the [TT]-ff[tt] option to specify",
         "one of the short names above on the command line instead. In that",
-        "case [TT]g_x2top[tt] just looks for the corresponding file.[PAR]",
+        "case [THISMODULE] just looks for the corresponding file.[PAR]",
     };
     const char        *bugs[] = {
         "The atom type selection is primitive. Virtually no chemical knowledge is used",

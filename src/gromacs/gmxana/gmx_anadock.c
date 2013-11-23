@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -342,12 +342,12 @@ static void cluster_em_all(FILE *fp, int npdb, t_pdbfile *pdbf[],
 int gmx_anadock(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_anadock[tt] analyses the results of an Autodock run and clusters the",
+        "[THISMODULE] analyses the results of an Autodock run and clusters the",
         "structures together, based on distance or RMSD. The docked energy",
         "and free energy estimates are analysed, and for each cluster the",
         "energy statistics are printed.[PAR]",
         "An alternative approach to this is to cluster the structures first",
-        "using [TT]g_cluster[tt] and then sort the clusters on either lowest",
+        "using [gmx-cluster] and then sort the clusters on either lowest",
         "energy or average energy."
     };
     t_filenm        fnm[] = {
