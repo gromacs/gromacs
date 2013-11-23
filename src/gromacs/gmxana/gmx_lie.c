@@ -141,7 +141,7 @@ real calc_lie(t_liedata *ld, t_energy ee[], real lie_lj, real lie_qq,
 int gmx_lie(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_lie[tt] computes a free energy estimate based on an energy analysis",
+        "[THISMODULE] computes a free energy estimate based on an energy analysis",
         "from. One needs an energy file with the following components:",
         "Coul (A-B) LJ-SR (A-B) etc."
     };

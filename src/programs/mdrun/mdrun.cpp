@@ -56,7 +56,7 @@
 int gmx_mdrun(int argc, char *argv[])
 {
     const char   *desc[] = {
-        "The [TT]mdrun[tt] program is the main computational chemistry engine",
+        "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
         "but it can also perform Stochastic Dynamics, Energy Minimization,",
         "test particle insertion or (re)calculation of energies.",
@@ -64,7 +64,7 @@ int gmx_mdrun(int argc, char *argv[])
         "builds a Hessian matrix from single conformation.",
         "For usual Normal Modes-like calculations, make sure that",
         "the structure provided is properly energy-minimized.",
-        "The generated matrix can be diagonalized by [TT]g_nmeig[tt].[PAR]",
+        "The generated matrix can be diagonalized by [gmx-nmeig].[PAR]",
         "The [TT]mdrun[tt] program reads the run input file ([TT]-s[tt])",
         "and distributes the topology over nodes if needed.",
         "[TT]mdrun[tt] produces at least four output files.",
@@ -85,7 +85,7 @@ int gmx_mdrun(int argc, char *argv[])
         "The MPI parallelization uses multiple processes when [TT]mdrun[tt] is",
         "compiled with a normal MPI library or threads when [TT]mdrun[tt] is",
         "compiled with the GROMACS built-in thread-MPI library. OpenMP threads",
-        "are supported when mdrun is compiled with OpenMP. Full OpenMP support",
+        "are supported when [TT]mdrun[tt] is compiled with OpenMP. Full OpenMP support",
         "is only available with the Verlet cut-off scheme, with the (older)",
         "group scheme only PME-only processes can use OpenMP parallelization.",
         "In all cases [TT]mdrun[tt] will by default try to use all the available",
@@ -159,9 +159,9 @@ int gmx_mdrun(int argc, char *argv[])
         "With Intel Hyper-Threading 2 is best when using half or less of the",
         "logical cores, 1 otherwise. The default value of 0 do exactly that:",
         "it minimizes the threads per logical core, to optimize performance.",
-        "If you want to run multiple mdrun jobs on the same physical node,"
+        "If you want to run multiple [TT]mdrun[tt] jobs on the same physical node,"
         "you should set [TT]-pinstride[tt] to 1 when using all logical cores.",
-        "When running multiple mdrun (or other) simulations on the same physical",
+        "When running multiple [TT]mdrun[tt] (or other) simulations on the same physical",
         "node, some simulations need to start pinning from a non-zero core",
         "to avoid overloading cores; with [TT]-pinoffset[tt] you can specify",
         "the offset in logical cores for pinning.",
@@ -449,8 +449,10 @@ int gmx_mdrun(int argc, char *argv[])
      * But unfortunately we are not allowed to call a function here,
      * since declarations follow below.
      */
-    gmx_hw_opt_t    hw_opt = { 0, 0, 0, 0, threadaffSEL, 0, 0,
-                               { NULL, FALSE, 0, NULL } };
+    gmx_hw_opt_t    hw_opt = {
+        0, 0, 0, 0, threadaffSEL, 0, 0,
+        { NULL, FALSE, 0, NULL }
+    };
 
     t_pargs         pa[] = {
 

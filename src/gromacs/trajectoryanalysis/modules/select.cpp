@@ -326,7 +326,7 @@ void
 Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "[TT]g_select[tt] writes out basic data about dynamic selections.",
+        "[THISMODULE] writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
         "analysis programs to calculate more complex things.",

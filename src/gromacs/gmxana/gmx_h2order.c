@@ -261,7 +261,7 @@ void h2order_plot(rvec dipole[], real order[], const char *afile,
 int gmx_h2order(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_h2order[tt] computes the orientation of water molecules with respect to the normal",
+        "[THISMODULE] computes the orientation of water molecules with respect to the normal",
         "of the box. The program determines the average cosine of the angle",
         "between the dipole moment of water and an axis of the box. The box is",
         "divided in slices and the average orientation per slice is printed.",

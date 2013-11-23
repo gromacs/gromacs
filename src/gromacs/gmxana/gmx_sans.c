@@ -60,8 +60,8 @@
 int gmx_sans(int argc, char *argv[])
 {
     const char          *desc[] = {
-        "This is simple tool to compute SANS spectra using Debye formula",
-        "It currently uses topology file (since it need to assigne element for each atom)",
+        "[THISMODULE] computes SANS spectra using Debye formula.",
+        "It currently uses topology file (since it need to assigne element for each atom).",
         "[PAR]",
         "Parameters:[PAR]"
         "[TT]-pr[tt] Computes normalized g(r) function averaged over trajectory[PAR]",
@@ -72,7 +72,7 @@ int gmx_sans(int argc, char *argv[])
         "[TT]-endq[tt] Ending q value in nm[PAR]",
         "[TT]-qstep[tt] Stepping in q space[PAR]",
         "Note: When using Debye direct method computational cost increases as",
-        "1/2 * N * (N - 1) where N is atom number in group of interest",
+        "1/2 * N * (N - 1) where N is atom number in group of interest.",
         "[PAR]",
         "WARNING: If sq or pr specified this tool can produce large number of files! Up to two times larger than number of frames!"
     };

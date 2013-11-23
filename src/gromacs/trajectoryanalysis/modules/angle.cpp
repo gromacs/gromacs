@@ -315,7 +315,7 @@ void
 Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "[TT]gmx gangle[tt] computes different types of angles between vectors.",
+        "[THISMODULE] computes different types of angles between vectors.",
         "It supports both vectors defined by two positions and normals of",
         "planes defined by three positions.",
         "The z axis or the local normal of a sphere can also be used as",

@@ -53,7 +53,7 @@
 int gmx_protonate(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_protonate[tt] reads (a) conformation(s) and adds all missing",
+        "[THISMODULE] reads (a) conformation(s) and adds all missing",
         "hydrogens as defined in [TT]gmx2.ff/aminoacids.hdb[tt]. If only [TT]-s[tt] is",
         "specified, this conformation will be protonated, if also [TT]-f[tt]",
         "is specified, the conformation(s) will be read from this file, ",

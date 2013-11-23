@@ -73,7 +73,7 @@
 int gmx_covar(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_covar[tt] calculates and diagonalizes the (mass-weighted)",
+        "[THISMODULE] calculates and diagonalizes the (mass-weighted)",
         "covariance matrix.",
         "All structures are fitted to the structure in the structure file.",
         "When this is not a run input file periodicity will not be taken into",
@@ -87,7 +87,7 @@ int gmx_covar(int argc, char *argv[])
         "written with t=0, the eigenvectors",
         "are written as frames with the eigenvector number as timestamp.",
         "[PAR]",
-        "The eigenvectors can be analyzed with [TT]g_anaeig[tt].",
+        "The eigenvectors can be analyzed with [gmx-anaeig].",
         "[PAR]",
         "Option [TT]-ascii[tt] writes the whole covariance matrix to",
         "an ASCII file. The order of the elements is: x1x1, x1y1, x1z1, x1x2, ...",

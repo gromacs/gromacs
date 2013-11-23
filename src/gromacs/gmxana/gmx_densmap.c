@@ -65,7 +65,7 @@
 int gmx_densmap(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_densmap[tt] computes 2D number-density maps.",
+        "[THISMODULE] computes 2D number-density maps.",
         "It can make planar and axial-radial density maps.",
         "The output [TT].xpm[tt] file can be visualized with for instance xv",
         "and can be converted to postscript with [TT]xpm2ps[tt].",

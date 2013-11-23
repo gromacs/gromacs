@@ -62,7 +62,7 @@
 int gmx_nmens(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[TT]g_nmens[tt] generates an ensemble around an average structure",
+        "[THISMODULE] generates an ensemble around an average structure",
         "in a subspace that is defined by a set of normal modes (eigenvectors).",
         "The eigenvectors are assumed to be mass-weighted.",
         "The position along each eigenvector is randomly taken from a Gaussian",

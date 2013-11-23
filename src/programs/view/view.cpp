@@ -373,7 +373,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 int gmx_view(int argc, char *argv[])
 {
     const char  *desc[] = {
-        "[TT]view[tt] is the GROMACS trajectory viewer. This program reads a",
+        "[THISMODULE] is the GROMACS trajectory viewer. This program reads a",
         "trajectory file, a run input file and an index file and plots a",
         "3D structure of your molecule on your standard X Window",
         "screen. No need for a high end graphics workstation, it even",
