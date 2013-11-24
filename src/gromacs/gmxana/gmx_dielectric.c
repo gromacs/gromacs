@@ -47,7 +47,7 @@
 #include "smalloc.h"
 #include "gromacs/fileio/futil.h"
 #include "macros.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "xvgr.h"
 #include "gmxcomplex.h"
 #include "correl.h"

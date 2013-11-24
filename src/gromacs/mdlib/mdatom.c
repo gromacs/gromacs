@@ -39,7 +39,7 @@
 #endif
 
 #include "typedefs.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "mdatoms.h"
 #include "smalloc.h"
 #include "main.h"

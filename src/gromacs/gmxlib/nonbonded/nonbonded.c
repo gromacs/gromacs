@@ -46,7 +46,7 @@
 #include "smalloc.h"
 #include "ns.h"
 #include "vec.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "string2.h"
 #include "force.h"

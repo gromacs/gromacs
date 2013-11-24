@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "coulomb.h"
