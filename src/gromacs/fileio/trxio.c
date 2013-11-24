@@ -61,7 +61,7 @@
 #include "pdbio.h"
 #include "confio.h"
 #include "checkpoint.h"
-#include "wgms.h"
+#include "g87io.h"
 #include <math.h>
 
 /* defines for frame counter output */
@@ -370,7 +370,7 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             }
             break;
         case efG87:
-            write_gms(gmx_fio_getfp(status->fio), nind, xout, fr->box);
+            write_g87(gmx_fio_getfp(status->fio), nind, xout, fr->box);
             break;
         case efG96:
             write_g96_conf(gmx_fio_getfp(status->fio), fr, nind, ind);
@@ -467,7 +467,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             }
             break;
         case efG87:
-            write_gms(gmx_fio_getfp(status->fio), fr->natoms, fr->x, fr->box);
+            write_g87(gmx_fio_getfp(status->fio), fr->natoms, fr->x, fr->box);
             break;
         case efG96:
             write_g96_conf(gmx_fio_getfp(status->fio), fr, -1, NULL);

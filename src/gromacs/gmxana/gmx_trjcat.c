@@ -56,7 +56,7 @@
 #include "gromacs/fileio/xtcio.h"
 #include "do_fit.h"
 #include "rmpbc.h"
-#include "wgms.h"
+#include "gromacs/fileio/g87io.h"
 #include "pbc.h"
 #include "xvgr.h"
 #include "gromacs/fileio/xdrf.h"
