@@ -71,7 +71,7 @@
 #include "gmxcpp.h"
 #include "gpp_bond_atomtype.h"
 #include "genborn.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 
 #define CPPMARK     '#' /* mark from cpp			*/
 #define OPENDIR     '[' /* starting sign for directive		*/

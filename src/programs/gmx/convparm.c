@@ -51,7 +51,7 @@
 #include "convparm.h"
 #include "names.h"
 #include "gpp_atomtype.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 
 static int round_check(real r, int limit, int ftype, const char *name)
 {

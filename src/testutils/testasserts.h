@@ -58,7 +58,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/maths.h"
+#include "gromacs/math/utilities.h"
 
 #include "gromacs/utility/exceptions.h"
 

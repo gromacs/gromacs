@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#include "3dview.h"
+#include "gromacs/math/3dview.h"
 #include "statutil.h"
 #include "smalloc.h"
 #include "index.h"

@@ -52,7 +52,7 @@
 #include "matio.h"
 #include "statutil.h"
 #include "gmxfio.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "copyrite.h"
 
 #include "gromacs/utility/exceptions.h"
