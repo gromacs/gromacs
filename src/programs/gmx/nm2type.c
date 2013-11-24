@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@
 #include <config.h>
 #endif
 
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "bondf.h"
 #include "string2.h"
@@ -49,7 +49,7 @@
 #include "physics.h"
 #include "vec.h"
 #include "random.h"
-#include "3dview.h"
+#include "gromacs/math/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"

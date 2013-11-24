@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,25 +38,27 @@
 #include <config.h>
 #endif
 
-#include <sysstuff.h>
-#include <string.h>
-#include <smalloc.h>
 #include <ctype.h>
-#include <typedefs.h>
-#include <smalloc.h>
-#include "gromacs/fileio/tpxio.h"
-#include <macros.h>
-#include <maths.h>
-#include <atomprop.h>
-#include <names.h>
+#include <string.h>
+
+#include "sysstuff.h"
+#include "smalloc.h"
+#include "typedefs.h"
+#include "smalloc.h"
+#include "macros.h"
+#include "atomprop.h"
+#include "names.h"
 #include "manager.h"
-#include "gromacs/fileio/futil.h"
 #include "pbc.h"
 #include "nmol.h"
 #include "copyrite.h"
 #include "gstat.h"
 #include "vec.h"
 #include "string2.h"
+
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/math/utilities.h"
 
 static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)
 {
