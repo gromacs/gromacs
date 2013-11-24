@@ -39,7 +39,7 @@
 #include <math.h>
 
 #include "types/simple.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "force.h"

@@ -34,7 +34,7 @@
  */
 
 #include "adress.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "pbc.h"
 #include "types/simple.h"
 #include "typedefs.h"
