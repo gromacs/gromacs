@@ -52,7 +52,7 @@
  */
 #include <string.h>
 
-#include "gromacs/legacyheaders/maths.h"
+#include "gromacs/maths/utilities.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/vec.h"
 

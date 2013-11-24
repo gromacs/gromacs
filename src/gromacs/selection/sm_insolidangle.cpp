@@ -117,7 +117,7 @@
 #include <math.h>
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/maths.h"
+#include "gromacs/maths/utilities.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/physics.h"
 #include "gromacs/legacyheaders/smalloc.h"

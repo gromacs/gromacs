@@ -37,7 +37,7 @@
 #include <config.h>
 #endif
 
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "nrjac.h"

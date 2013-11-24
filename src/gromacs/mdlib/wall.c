@@ -39,7 +39,7 @@
 
 #include <math.h>
 #include <string.h>
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"

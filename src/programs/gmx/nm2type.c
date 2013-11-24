@@ -37,7 +37,7 @@
 #include <config.h>
 #endif
 
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "macros.h"
 #include "bondf.h"
 #include "string2.h"
@@ -48,7 +48,7 @@
 #include "statutil.h"
 #include "vec.h"
 #include "random.h"
-#include "3dview.h"
+#include "gromacs/maths/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
