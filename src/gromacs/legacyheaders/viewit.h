@@ -57,4 +57,4 @@ void view_all(const output_env_t oenv, int nf, t_filenm fnm[]);
 }
 #endif
 
-#endif  /* _maths_h */
+#endif

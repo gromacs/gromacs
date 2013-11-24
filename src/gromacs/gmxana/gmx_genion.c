@@ -46,7 +46,7 @@
 #include "force.h"
 #include "gmx_fatal.h"
 #include "gromacs/fileio/futil.h"
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "macros.h"
 #include "vec.h"
 #include "gromacs/fileio/tpxio.h"

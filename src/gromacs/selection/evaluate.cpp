@@ -52,10 +52,10 @@
  */
 #include <string.h>
 
-#include "gromacs/legacyheaders/maths.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/maths/utilities.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"

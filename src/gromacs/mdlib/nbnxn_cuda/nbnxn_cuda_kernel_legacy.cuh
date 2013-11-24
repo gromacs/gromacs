@@ -33,7 +33,7 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
