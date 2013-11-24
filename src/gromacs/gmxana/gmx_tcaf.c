@@ -43,7 +43,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"

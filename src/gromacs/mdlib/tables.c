@@ -38,7 +38,7 @@
 #endif
 
 #include <math.h>
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "typedefs.h"
 #include "names.h"
 #include "smalloc.h"

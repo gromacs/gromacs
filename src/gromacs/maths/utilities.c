@@ -32,6 +32,8 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
+#include "gromacs/maths/utilities.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -39,7 +41,6 @@
 
 #include <math.h>
 #include <limits.h>
-#include "maths.h"
 #ifdef HAVE__FINITE
 #include "float.h"
 #endif
@@ -755,6 +756,36 @@ gmx_bool gmx_isnan(real x)
     return x != x;
 }
 
+int
+gmx_within_tol(double   f1,
+               double   f2,
+               double   tol)
+{
+    /* The or-equal is important - otherwise we return false if f1==f2==0 */
+    if (fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2)) )
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+int
+gmx_numzero(double a)
+{
+    return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
+}
+
+real
+gmx_log2(real x)
+{
+    const real iclog2 = 1.0/log( 2.0 );
+
+    return log( x ) * iclog2;
+}
+
 gmx_bool
 check_int_multiply_for_overflow(gmx_large_int_t  a,
                                 gmx_large_int_t  b,
@@ -783,4 +814,16 @@ check_int_multiply_for_overflow(gmx_large_int_t  a,
     }
     *result = sign * a * b;
     return TRUE;
+}
+
+int gmx_greatest_common_divisor(int p, int q)
+{
+    int tmp;
+    while (q != 0)
+    {
+        tmp = q;
+        q = p % q;
+        p = tmp;
+    }
+    return p;
 }

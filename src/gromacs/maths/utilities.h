@@ -34,12 +34,10 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
-#ifndef _maths_h
-#define _maths_h
+#ifndef GMX_MATHS_UTILITIES_H
+#define GMX_MATHS_UTILITIES_H
 
-#include <math.h>
 #include "types/simple.h"
-#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,26 +117,13 @@ gmx_bool gmx_isnan(real x);
  *
  *  \return 1 if the relative difference is within tolerance, 0 if not.
  */
-static int
+int
 gmx_within_tol(double   f1,
                double   f2,
-               double   tol)
-{
-    /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    if (fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2)) )
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-
+               double   tol);
 
 /**
- * Check if a number is smaller than some preset safe minimum
+ * \brief Check if a number is smaller than some preset safe minimum
  * value, currently defined as GMX_REAL_MIN/GMX_REAL_EPS.
  *
  * If a number is smaller than this value we risk numerical overflow
@@ -146,44 +131,34 @@ gmx_within_tol(double   f1,
  *
  * \return 1  if 'almost' numerically zero, 0 otherwise.
  */
-static int
-gmx_numzero(double a)
-{
-    return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
-}
+int
+gmx_numzero(double a);
 
-
-static real
-gmx_log2(real x)
-{
-    const real iclog2 = 1.0/log( 2.0 );
-
-    return log( x ) * iclog2;
-}
+/*! \brief Compute logarithm to base 2
+ *
+ * \return log2(x)
+ */
+real
+gmx_log2(real x);
 
 /*! /brief Multiply two large ints
  *
- *  Returns true when overflow did not occur.
+ *  \return False iff overflow occured
  */
 gmx_bool
 check_int_multiply_for_overflow(gmx_large_int_t  a,
                                 gmx_large_int_t  b,
                                 gmx_large_int_t *result);
 
-static int gmx_greatest_common_divisor(int p, int q)
-{
-    int tmp;
-    while (q != 0)
-    {
-        tmp = q;
-        q = p % q;
-        p = tmp;
-    }
-    return p;
-}
+/*! \brief Find greatest common divisor of two numbers
+ *
+ * \return GCD of the two inputs
+ */
+int
+gmx_greatest_common_divisor(int p, int q);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _maths_h */
+#endif

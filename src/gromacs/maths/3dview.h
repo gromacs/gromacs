@@ -33,8 +33,8 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
-#ifndef _3dview_h
-#define _3dview_h
+#ifndef GMX_MATHS_3DVIEW_H
+#define GMX_MATHS_3DVIEW_H
 
 #include "typedefs.h"
 

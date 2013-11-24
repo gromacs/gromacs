@@ -41,7 +41,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "vec.h"
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "main.h"
 #include "pbc.h"
 #include "smalloc.h"

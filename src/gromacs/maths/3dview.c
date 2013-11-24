@@ -41,7 +41,7 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "physics.h"
-#include "3dview.h"
+#include "gromacs/maths/3dview.h"
 #include "pbc.h"
 #include "vec.h"
 
