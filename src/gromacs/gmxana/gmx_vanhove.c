@@ -44,7 +44,7 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "statutil.h"
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "gromacs/fileio/futil.h"
 #include "index.h"
 #include "typedefs.h"

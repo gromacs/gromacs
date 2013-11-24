@@ -41,7 +41,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "gromacs/fileio/futil.h"
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "macros.h"

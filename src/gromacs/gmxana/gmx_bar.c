@@ -54,7 +54,7 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "string2.h"
 #include "names.h"
 #include "mdebin.h"
