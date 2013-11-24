@@ -42,7 +42,7 @@
 #include "gromacs/analysisdata/modules/displacement.h"
 
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/maths.h"
+#include "gromacs/math/utilities.h"
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"

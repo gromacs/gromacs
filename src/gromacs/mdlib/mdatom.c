@@ -38,8 +38,9 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "typedefs.h"
-#include "maths.h"
 #include "mdatoms.h"
 #include "smalloc.h"
 #include "main.h"

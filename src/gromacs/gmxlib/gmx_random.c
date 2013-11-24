@@ -49,7 +49,7 @@
 #include <process.h>
 #endif
 
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "gmx_random_gausstable.h"
 
 #define RNG_N 624
