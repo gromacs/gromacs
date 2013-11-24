@@ -47,7 +47,7 @@
 #include "string2.h"
 #include "ebin.h"
 #include "main.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "vec.h"
 #include "physics.h"
 

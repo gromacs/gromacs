@@ -36,7 +36,7 @@
 #include "gmx_simd_vec.h"
 #include "../../nbnxn_consts.h"
 #ifdef CALC_COUL_EWALD
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #endif
 
 #ifndef GMX_SIMD_J_UNROLL_SIZE

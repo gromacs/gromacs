@@ -43,7 +43,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "vec.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "macros.h"

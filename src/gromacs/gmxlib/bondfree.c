@@ -41,7 +41,7 @@
 #include <assert.h>
 #include "physics.h"
 #include "vec.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "txtdump.h"
 #include "bondf.h"
 #include "smalloc.h"

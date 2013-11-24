@@ -40,7 +40,7 @@
 #include "typedefs.h"
 #include "x11.h"
 #include "xutil.h"
-#include "3dview.h"
+#include "gromacs/math/3dview.h"
 #include "nleg.h"
 #include "buttons.h"
 #include "statutil.h"

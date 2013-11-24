@@ -46,7 +46,7 @@
 #include "wgms.h"
 #include "hxprops.h"
 #include "macros.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "pbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

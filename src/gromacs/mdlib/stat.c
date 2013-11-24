@@ -47,7 +47,7 @@
 #include "names.h"
 #include "physics.h"
 #include "vec.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "mvdata.h"
 #include "main.h"
 #include "force.h"

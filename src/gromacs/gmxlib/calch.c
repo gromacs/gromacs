@@ -38,7 +38,7 @@
 
 #include "macros.h"
 #include "calch.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "vec.h"
 #include "physics.h"
 
