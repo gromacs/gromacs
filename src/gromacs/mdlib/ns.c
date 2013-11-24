@@ -42,7 +42,7 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "vec.h"
 #include "network.h"
 #include "nsgrid.h"

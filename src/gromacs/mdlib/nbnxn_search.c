@@ -39,7 +39,7 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "maths.h"
+#include "gromacs/maths/utilities.h"
 #include "vec.h"
 #include "pbc.h"
 #include "nbnxn_consts.h"
