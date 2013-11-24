@@ -44,7 +44,7 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "xutil.h"
-#include "3dview.h"
+#include "gromacs/math/3dview.h"
 #include "gmx_fatal.h"
 #include "buttons.h"
 #include "manager.h"

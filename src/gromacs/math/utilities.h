@@ -1,45 +1,43 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MATH_UTILITIES_H
+#define GMX_MATH_UTILITIES_H
 
-#ifndef _maths_h
-#define _maths_h
-
-#include <math.h>
-#include "types/simple.h"
-#include "typedefs.h"
+#include "../legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,26 +117,13 @@ gmx_bool gmx_isnan(real x);
  *
  *  \return 1 if the relative difference is within tolerance, 0 if not.
  */
-static int
+int
 gmx_within_tol(double   f1,
                double   f2,
-               double   tol)
-{
-    /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    if (fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2)) )
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
+               double   tol);
 
-
-
-/**
- * Check if a number is smaller than some preset safe minimum
+/*!
+ * \brief Check if a number is smaller than some preset safe minimum
  * value, currently defined as GMX_REAL_MIN/GMX_REAL_EPS.
  *
  * If a number is smaller than this value we risk numerical overflow
@@ -146,44 +131,34 @@ gmx_within_tol(double   f1,
  *
  * \return 1  if 'almost' numerically zero, 0 otherwise.
  */
-static int
-gmx_numzero(double a)
-{
-    return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
-}
+int
+gmx_numzero(double a);
 
-
-static real
-gmx_log2(real x)
-{
-    const real iclog2 = 1.0/log( 2.0 );
-
-    return log( x ) * iclog2;
-}
+/*! \brief Compute logarithm to base 2
+ *
+ * \return log2(x)
+ */
+real
+gmx_log2(real x);
 
 /*! /brief Multiply two large ints
  *
- *  Returns true when overflow did not occur.
+ *  \return False iff overflow occured
  */
 gmx_bool
 check_int_multiply_for_overflow(gmx_large_int_t  a,
                                 gmx_large_int_t  b,
                                 gmx_large_int_t *result);
 
-static int gmx_greatest_common_divisor(int p, int q)
-{
-    int tmp;
-    while (q != 0)
-    {
-        tmp = q;
-        q = p % q;
-        p = tmp;
-    }
-    return p;
-}
+/*! \brief Find greatest common divisor of two numbers
+ *
+ * \return GCD of the two inputs
+ */
+int
+gmx_greatest_common_divisor(int p, int q);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _maths_h */
+#endif

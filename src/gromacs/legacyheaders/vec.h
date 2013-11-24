@@ -107,7 +107,7 @@
  */
 
 #include "types/simple.h"
-#include "maths.h"
+#include "../math/utilities.h"
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "gmx_fatal.h"
