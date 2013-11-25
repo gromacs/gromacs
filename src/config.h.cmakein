@@ -172,6 +172,9 @@
 /* Can and should use nice(3) to set priority */
 #cmakedefine GMX_USE_NICE
 
+/* Maximum number of OpenMP threads supported */
+#define GMX_OPENMP_MAX_THREADS @GMX_OPENMP_MAX_THREADS@
+
 /* Use if can't rename checkpoints */
 #cmakedefine GMX_NO_RENAME
 
