@@ -57,6 +57,8 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "bitmask.h"
+
 typedef struct {
     int    b0;         /* first constraint for this thread */
     int    b1;         /* b1-1 is the last constraint for this thread */
@@ -96,7 +98,7 @@ typedef struct gmx_lincsdata {
     real           *bllen;        /* the reference bond length */
     int             nth;          /* The number of threads doing LINCS */
     lincs_thread_t *th;           /* LINCS thread division */
-    unsigned       *atf;          /* atom flags for thread parallelization */
+    gmx_bitmask_t  *atf;          /* atom flags for thread parallelization */
     int             atf_nalloc;   /* allocation size of atf */
     /* arrays for temporary storage in the LINCS algorithm */
     rvec           *tmpv;
@@ -1016,7 +1018,7 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
 {
     lincs_thread_t *li_m;
     int             th;
-    unsigned       *atf;
+    gmx_bitmask_t  *atf;
     int             a;
 
     if (natoms > li->atf_nalloc)
@@ -1029,7 +1031,12 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
     /* Clear the atom flags */
     for (a = 0; a < natoms; a++)
     {
-        atf[a] = 0;
+        bitmask_clear(&atf[a]);
+    }
+
+    if (li->nth > BITMASK_SIZE)
+    {
+        gmx_fatal(FARGS, "More than %d threads is not supported for LINCS.", BITMASK_SIZE);
     }
 
     for (th = 0; th < li->nth; th++)
@@ -1043,14 +1050,11 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
         li_th->b0 = (li->nc* th   )/li->nth;
         li_th->b1 = (li->nc*(th+1))/li->nth;
 
-        if (th < sizeof(*atf)*8)
+        /* For each atom set a flag for constraints from each */
+        for (b = li_th->b0; b < li_th->b1; b++)
         {
-            /* For each atom set a flag for constraints from each */
-            for (b = li_th->b0; b < li_th->b1; b++)
-            {
-                atf[li->bla[b*2]  ] |= (1U<<th);
-                atf[li->bla[b*2+1]] |= (1U<<th);
-            }
+            bitmask_set_bit(&atf[li->bla[b*2]], th);
+            bitmask_set_bit(&atf[li->bla[b*2+1]], th);
         }
     }
 
@@ -1058,7 +1062,7 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
     for (th = 0; th < li->nth; th++)
     {
         lincs_thread_t *li_th;
-        unsigned        mask;
+        gmx_bitmask_t   mask;
         int             b;
 
         li_th = &li->th[th];
@@ -1070,35 +1074,24 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
             srenew(li_th->ind_r, li_th->ind_nalloc);
         }
 
-        if (th < sizeof(*atf)*8)
-        {
-            mask = (1U<<th) - 1U;
+        bitmask_init_low_bits(&mask, th);
 
-            li_th->nind   = 0;
-            li_th->nind_r = 0;
-            for (b = li_th->b0; b < li_th->b1; b++)
-            {
-                /* We let the constraint with the lowest thread index
-                 * operate on atoms with constraints from multiple threads.
-                 */
-                if (((atf[li->bla[b*2]]   & mask) == 0) &&
-                    ((atf[li->bla[b*2+1]] & mask) == 0))
-                {
-                    /* Add the constraint to the local atom update index */
-                    li_th->ind[li_th->nind++] = b;
-                }
-                else
-                {
-                    /* Add the constraint to the rest block */
-                    li_th->ind_r[li_th->nind_r++] = b;
-                }
-            }
-        }
-        else
+        li_th->nind   = 0;
+        li_th->nind_r = 0;
+        for (b = li_th->b0; b < li_th->b1; b++)
         {
-            /* We are out of bits, assign all constraints to rest */
-            for (b = li_th->b0; b < li_th->b1; b++)
+            /* We let the constraint with the lowest thread index
+             * operate on atoms with constraints from multiple threads.
+             */
+            if (bitmask_is_disjoint(atf[li->bla[b*2]], mask) &&
+                bitmask_is_disjoint(atf[li->bla[b*2+1]], mask))
             {
+                /* Add the constraint to the local atom update index */
+                li_th->ind[li_th->nind++] = b;
+            }
+            else
+            {
+                /* Add the constraint to the rest block */
                 li_th->ind_r[li_th->nind_r++] = b;
             }
         }

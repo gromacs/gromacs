@@ -667,7 +667,7 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "MPI library:        none\n");
 #endif
 #ifdef GMX_OPENMP
-    fprintf(fp, "OpenMP support:     enabled\n");
+    fprintf(fp, "OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)\n", GMX_OPENMP_MAX_THREADS);
 #else
     fprintf(fp, "OpenMP support:     disabled\n");
 #endif
