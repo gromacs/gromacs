@@ -707,8 +707,9 @@ static void do_update_sd1(gmx_stochd_t *sd,
  
     
  
-   if(!bDoConstr){ // I put all the booleans outside of "for"-cycles  for efficiency reasons
-                  // Maybe we should make 3 separated functions for clarity 
+   if(!bDoConstr){ 
+/* I put all the booleans outside of "for"-cycles  for efficiency reasons
+Maybe we should make 3 separated functions for clarity */
     for (n = 0; n < ngtc; n++)
     {
         kT = BOLTZ*ref_t[n];
@@ -735,16 +736,11 @@ static void do_update_sd1(gmx_stochd_t *sd,
         for (d = 0; d < DIM; d++)
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
-            {
-                               
+            {                               
                 sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
-
                 vn = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
-                
                 v[n][d] = vn*sdc[gt].em + sd_V;
-
                 xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
-                
             }
             else
             {
@@ -758,7 +754,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
    {
         if(bFirstHalfConstr) // just update the velocities and positions without any thermostating
         {
-     
             for (n = start; n < nrend; n++){
             {
                 im = invmass[n];
@@ -782,7 +777,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
                     {
                         v[n][d] = v[n][d] + (im*f[n][d] + accel[ga][d])*dt;
                         xprime[n][d] = x[n][d] +  v[n][d]*dt;
-                
                     }
                     else
                     {
@@ -795,7 +789,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
      }
     else // apply the thermostating for the constraints case
     {
-
      for (n = 0; n < ngtc; n++){
         kT = BOLTZ*ref_t[n];
         /* The mass is encounted for later, since this differs per atom */
@@ -822,12 +815,9 @@ static void do_update_sd1(gmx_stochd_t *sd,
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
-                sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
- 
-                vn = v[n][d];
-                
+                sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand); 
+                vn = v[n][d];                
                 v[n][d] = vn*sdc[gt].em + sd_V;
-
                 xprime[n][d] = xprime[n][d] + 0.5*(v[n][d]-vn)*dt;               
             }
         }
