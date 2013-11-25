@@ -1333,7 +1333,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                 nfptr = 0;
                 for (out = 1; out < nbat->nout; out++)
                 {
-                    if (flags->flag[b] & (1U<<out))
+                    if (flags->flag[b] & (1ULL<<out))
                     {
                         fptr[nfptr++] = nbat->out[out].f;
                     }

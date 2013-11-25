@@ -170,6 +170,7 @@ typedef int             imatrix[DIM][DIM];
 
 /* Long long int is 64 bit */
 typedef long long int gmx_large_int_t;
+typedef long long unsigned int gmx_large_uint_t;
 #define gmx_large_int_fmt   "lld"
 #define gmx_large_int_pfmt "%lld"
 #define SIZEOF_GMX_LARGE_INT  8
@@ -181,6 +182,7 @@ typedef long long int gmx_large_int_t;
 
 /* Long int is 64 bit */
 typedef long int gmx_large_int_t;
+typedef long unsigned int gmx_large_uint_t;
 #define gmx_large_int_fmt   "ld"
 #define gmx_large_int_pfmt "%ld"
 #define SIZEOF_GMX_LARGE_INT  8
@@ -192,6 +194,7 @@ typedef long int gmx_large_int_t;
 
 /* int is 64 bit */
 typedef int gmx_large_int_t;
+typedef unsigned int gmx_large_uint_t;
 #define gmx_large_int_fmt   "d"
 #define gmx_large_int_pfmt  "%d"
 #define SIZEOF_GMX_LARGE_INT  8
