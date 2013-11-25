@@ -3358,7 +3358,7 @@ void free_gpu_resources(const t_forcerec *fr,
         /* uninitialize GPU (by destroying the context) */
         if (!free_gpu(gpu_err_str))
         {
-            gmx_warning("On node %d failed to free GPU #%d: %s",
+            gmx_warning("On rank %d failed to free GPU #%d: %s",
                         cr->nodeid, get_current_gpu_device_id(), gpu_err_str);
         }
     }

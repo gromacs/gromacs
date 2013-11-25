@@ -77,3 +77,11 @@ if(GMX_OPENMP)
         endif()
     endif()
 endif()
+gmx_dependent_cache_variable(GMX_OPENMP_MAX_THREADS
+    "Maximum number of OpenMP Threads supported. Has to be multiple of 64."
+    STRING 64 GMX_OPENMP)
+mark_as_advanced(GMX_OPENMP_MAX_THREADS)
+math(EXPR MAX_THREAD_MOD "${GMX_OPENMP_MAX_THREADS} % 64")
+if (NOT ${MAX_THREAD_MOD} EQUAL 0)
+    message(FATAL_ERROR "Only multiples of 64 supported for GMX_OPENMP_MAX_THREADS.")
+endif()
