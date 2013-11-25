@@ -366,6 +366,11 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME);
         pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
 
+        if (modth.nth[emntNonbonded] != modth.nth[emntPairsearch])
+        {
+            gmx_fatal(FARGS, "Different number of threads for PAIRSEARCH and NONBONDED is not supported.");
+        }
+
         /* set the number of threads globally */
         if (bOMP)
         {
