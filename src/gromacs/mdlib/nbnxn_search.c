@@ -1767,7 +1767,7 @@ static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
     }
     for (b = 0; b < flags->nflag; b++)
     {
-        flags->flag[b] = 0;
+        bitmask_clear(&(flags->flag[b]));
     }
 }
 
@@ -4842,7 +4842,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int               ndistc;
     int               ncpcheck;
     int               gridi_flag_shift = 0, gridj_flag_shift = 0;
-    unsigned int     *gridj_flag       = NULL;
+    gmx_bitmask_t    *gridj_flag       = NULL;
     int               ncj_old_i, ncj_old_j;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
@@ -5348,7 +5348,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                         cbl = nbl->cj[nbl->ncj-1].cj >> gridj_flag_shift;
                                         for (cb = cbf; cb <= cbl; cb++)
                                         {
-                                            gridj_flag[cb] = 1U<<th;
+                                            bitmask_init_bit(&gridj_flag[cb], th);
                                         }
                                     }
                                 }
@@ -5413,7 +5413,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
         if (bFBufferFlag && nbl->ncj > ncj_old_i)
         {
-            work->buffer_flags.flag[(gridi->cell0+ci)>>gridi_flag_shift] = 1U<<th;
+            bitmask_init_bit(&(work->buffer_flags.flag[(gridi->cell0+ci)>>gridi_flag_shift]), th);
         }
     }
 
@@ -5447,8 +5447,8 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
                                 int                         nsrc,
                                 const nbnxn_buffer_flags_t *dest)
 {
-    int                 s, b;
-    const unsigned int *flag;
+    int            s, b;
+    gmx_bitmask_t *flag;
 
     for (s = 0; s < nsrc; s++)
     {
@@ -5456,33 +5456,35 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
 
         for (b = 0; b < dest->nflag; b++)
         {
-            dest->flag[b] |= flag[b];
+            bitmask_union(&(dest->flag[b]), flag[b]);
         }
     }
 }
 
 static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
 {
-    int nelem, nkeep, ncopy, nred, b, c, out;
+    int           nelem, nkeep, ncopy, nred, b, c, out;
+    gmx_bitmask_t mask_0;
 
     nelem = 0;
     nkeep = 0;
     ncopy = 0;
     nred  = 0;
+    bitmask_init_bit(&mask_0, 0);
     for (b = 0; b < flags->nflag; b++)
     {
-        if (flags->flag[b] == 1)
+        if (bitmask_is_equal(flags->flag[b], mask_0))
         {
             /* Only flag 0 is set, no copy of reduction required */
             nelem++;
             nkeep++;
         }
-        else if (flags->flag[b] > 0)
+        else if (!bitmask_is_zero(flags->flag[b]))
         {
             c = 0;
             for (out = 0; out < nout; out++)
             {
-                if (flags->flag[b] & (1U<<out))
+                if (bitmask_is_set(flags->flag[b], out))
                 {
                     c++;
                 }

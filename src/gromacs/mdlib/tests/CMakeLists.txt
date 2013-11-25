@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,14 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.c nbnxn_kernels/simd_2xnn/*.c nbnxn_kernels/*.c *.c *.cpp)
-
-if(GMX_GPU)
-    add_subdirectory(nbnxn_cuda)
-endif()
-
-set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+foreach(BITMASK_SIZE 32 64 128)
+    gmx_add_unit_test(BitmaskUnitTest${BITMASK_SIZE}
+                      bitmask-test-${BITMASK_SIZE} bitmask${BITMASK_SIZE}.cpp)
+endforeach()
