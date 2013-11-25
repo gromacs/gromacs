@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "GROMACS 7"
-.TH GROMACS 7 "" "${PROJECT_VERSION}" "GROMACS Manual"
+.TH GROMACS 7 "" "@VERSION@" "GROMACS Manual"
 .SH "NAME"
 gromacs \- molecular dynamics simulation suite
 .SH "DESCRIPTION"
@@ -146,7 +146,7 @@ to a wide variety of chemical and biological research questions.
 .PP
 The following commands make up the GROMACS suite.  Please refer to their
 individual man pages for further details.
-${PROGMANPAGES}
+@PROGMANPAGES@
 .PP
 .SH "ADDITIONAL DOCUMENTATION"
 .IX Header "ADDITIONAL DOCUMENTATION"
@@ -154,9 +154,7 @@ Consult the manual at <\fIhttp://www.gromacs.org/content/view/27/42/\fR> for an
 introduction to molecular dynamics in general and GROMACS in particular,
 as well as an overview of the individual programs.
 .PP
-The shorter HTML reference and GROMACS FAQ are available in \fB/usr/share/doc/gromacs/html/\fR .
-.PP
-Tutorial files and other miscellaneous references are stored in \fB/usr/share/gromacs/\fR .
+The shorter HTML reference is available in \fB/usr/share/doc/gromacs/html/\fR .
 .SH "REFERENCES"
 .IX Header "REFERENCES"
 The development of GROMACS is mainly funded by academic research grants.
