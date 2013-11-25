@@ -1549,7 +1549,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
             nfptr = 0;
             for (out = 1; out < nbat->nout; out++)
             {
-                if (flags->flag[b] & (1U<<out))
+                if (flags->flag[b] & (1ULL<<out))
                 {
                     fptr[nfptr++] = nbat->out[out].f;
                 }

@@ -4823,7 +4823,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int               ndistc;
     int               ncpcheck;
     int               gridi_flag_shift = 0, gridj_flag_shift = 0;
-    unsigned int     *gridj_flag       = NULL;
+    gmx_uint64_t *gridj_flag  = NULL;
     int               ncj_old_i, ncj_old_j;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
@@ -5329,7 +5329,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                         cbl = nbl->cj[nbl->ncj-1].cj >> gridj_flag_shift;
                                         for (cb = cbf; cb <= cbl; cb++)
                                         {
-                                            gridj_flag[cb] = 1U<<th;
+                                            gridj_flag[cb] = 1ULL<<th;
                                         }
                                     }
                                 }
@@ -5394,7 +5394,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
         if (bFBufferFlag && nbl->ncj > ncj_old_i)
         {
-            work->buffer_flags.flag[(gridi->cell0+ci)>>gridi_flag_shift] = 1U<<th;
+            work->buffer_flags.flag[(gridi->cell0+ci)>>gridi_flag_shift] = 1ULL<<th;
         }
     }
 
@@ -5428,8 +5428,8 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
                                 int                         nsrc,
                                 const nbnxn_buffer_flags_t *dest)
 {
-    int                 s, b;
-    const unsigned int *flag;
+    int s, b;
+    const gmx_uint64_t *flag;
 
     for (s = 0; s < nsrc; s++)
     {
@@ -5463,7 +5463,7 @@ static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
             c = 0;
             for (out = 0; out < nout; out++)
             {
-                if (flags->flag[b] & (1U<<out))
+                if (flags->flag[b] & (1ULL<<out))
                 {
                     c++;
                 }

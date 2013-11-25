@@ -53,12 +53,12 @@ static void
 clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
 {
     const nbnxn_buffer_flags_t *flags;
-    unsigned                    our_flag;
+    gmx_uint64_t our_flag;
     int g, b, a0, a1, i;
 
     flags = &nbat->buffer_flags;
 
-    our_flag = (1U << output_index);
+    our_flag = (1ULL << output_index);
 
     for (b = 0; b < flags->nflag; b++)
     {
