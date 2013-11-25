@@ -38,6 +38,8 @@
 
 #include "types/nblist.h"
 
+#include "bitmask.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -200,21 +202,16 @@ typedef struct {
 #define NBNXN_BUFFERFLAG_SIZE  16
 #endif
 
-/* We currently store the reduction flags as bits in an unsigned int.
- * In most cases this limits the number of flags to 32.
- * The reduction will automatically disable the flagging and do a full
- * reduction when the flags won't fit, but this will lead to very slow
- * reduction. As we anyhow don't expect reasonable performance with
- * more than 32 threads, we put in this hard limit.
- * You can increase this number, but the reduction will be very slow.
+/* We store the reduction flags as gmx_bitmask_t.
+ * This limits the number of flags to BITMASK_SIZE.
  */
-#define NBNXN_BUFFERFLAG_MAX_THREADS  32
+#define NBNXN_BUFFERFLAG_MAX_THREADS  (BITMASK_SIZE)
 
 /* Flags for telling if threads write to force output buffers */
 typedef struct {
-    int           nflag;       /* The number of flag blocks                         */
-    unsigned int *flag;        /* Bit i is set when thread i writes to a cell-block */
-    int           flag_nalloc; /* Allocation size of cxy_flag                       */
+    int               nflag;       /* The number of flag blocks                         */
+    gmx_bitmask_t    *flag;        /* Bit i is set when thread i writes to a cell-block */
+    int               flag_nalloc; /* Allocation size of cxy_flag                       */
 } nbnxn_buffer_flags_t;
 
 /* LJ combination rules: geometric, Lorentz-Berthelot, none */

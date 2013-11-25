@@ -151,6 +151,9 @@
 /* Use OpenMP multithreading */
 #cmakedefine GMX_OPENMP
 
+/* Maximum number of OpenMP threads supported */
+#define GMX_OPENMP_MAX_THREADS @GMX_OPENMP_MAX_THREADS@
+
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
 
