@@ -32,28 +32,40 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(NOT CMAKE_CROSSCOMPILING)
-    set(CAN_BUILD_HTMLHELP ON)
-else()
-    set(CAN_BUILD_HTMLHELP OFF)
+set(OUTPUT_DIR final)
+
+if(SOURCE_IS_SOURCE_DISTRIBUTION)
+    # Make sure source package contains HTML pages.
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${OUTPUT_DIR}/online.html")
+        message(FATAL_ERROR "Man pages are missing from source package.")
+    endif()
 endif()
 
-if(CAN_BUILD_HTMLHELP)
-    set(OUTPUT_DIR final)
-    add_custom_target(html
-        ${CMAKE_COMMAND}
-        -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-        -D OUTPUT_DIR=${OUTPUT_DIR}
-        -D STEP=PRE
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
-        COMMAND gmx -quiet help -export html
-        COMMAND ${CMAKE_COMMAND}
-        -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-        -D OUTPUT_DIR=${OUTPUT_DIR}
-        -D STEP=POST
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
-        COMMENT "Generating HTML help"
-        VERBATIM)
+add_custom_target(html
+    ${CMAKE_COMMAND}
+    -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+    -D OUTPUT_DIR=${OUTPUT_DIR}
+    -D STEP=PRE
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
+    COMMAND gmx -quiet help -export html
+    COMMAND ${CMAKE_COMMAND}
+    -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+    -D OUTPUT_DIR=${OUTPUT_DIR}
+    -D STEP=POST
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
+    COMMENT "Generating HTML help"
+    VERBATIM)
+
+set(HTML_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+if (GMX_BUILD_HELP)
+    set_target_properties(html PROPERTIES EXCLUDE_FROM_ALL OFF)
     set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.html")
+        ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.processed.html")
+    set(HTML_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
+if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
+    install(DIRECTORY ${HTML_PAGE_DIR}/${OUTPUT_DIR}/
+        DESTINATION ${DATA_INSTALL_DIR}/html
+        COMPONENT html)
 endif()
