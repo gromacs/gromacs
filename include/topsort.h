@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 
-/* Returns if the are bonded interactions for free energy calculations */
+/* Returns if there are perturbed bonded interactions */
 GMX_LIBGMX_EXPORT
 gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop);
 
