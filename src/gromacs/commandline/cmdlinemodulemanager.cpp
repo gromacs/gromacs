@@ -447,13 +447,15 @@ class HelpExportMan : public HelpExportInterface
             const std::string                &displayName);
         virtual void finishModuleExport() {}
 
-        virtual void startModuleGroupExport() {}
-        virtual void exportModuleGroup(const char                * /*title*/,
-                                       const ModuleGroupContents & /*modules*/) {}
-        virtual void finishModuleGroupExport() {}
+        virtual void startModuleGroupExport();
+        virtual void exportModuleGroup(const char                *title,
+                                       const ModuleGroupContents &modules);
+        virtual void finishModuleGroupExport();
 
     private:
-        HelpLinks  links_;
+        HelpLinks                links_;
+        boost::scoped_ptr<File>  man7File_;
+        std::string              man7Footer_;
 };
 
 void HelpExportMan::exportModuleHelp(
@@ -481,6 +483,46 @@ void HelpExportMan::exportModuleHelp(
     file.writeLine(".BR gromacs(7)");
     file.writeLine();
     file.writeLine("More information about \\fBGROMACS\\fR is available at <\\fIhttp://www.gromacs.org/\\fR>.");
+}
+
+void HelpExportMan::startModuleGroupExport()
+{
+    const char *const programListPlaceholder = "@PROGMANPAGES@";
+
+    const std::string man7Template = gmx::File::readToString("man7/gromacs.7.in");
+    const size_t      index        = man7Template.find(programListPlaceholder);
+    GMX_RELEASE_ASSERT(index != std::string::npos,
+                       "gromacs.7.in must contain a @PROGMANPAGES@ line");
+    std::string header = man7Template.substr(0, index);
+    man7Footer_ = man7Template.substr(index + std::strlen(programListPlaceholder));
+    header      = replaceAll(header, "@VERSION@", GromacsVersion());
+    man7File_.reset(new File("man7/gromacs.7", "w"));
+    man7File_->writeLine(header);
+}
+
+void HelpExportMan::exportModuleGroup(const char                *title,
+                                      const ModuleGroupContents &modules)
+{
+    man7File_->writeLine(formatString(".Sh \"%s\"", title));
+    man7File_->writeLine(formatString(".IX Subsection \"%s\"", title));
+    man7File_->writeLine(".Vb");
+    man7File_->writeLine(".ta 16n");
+
+    ModuleGroupContents::const_iterator module;
+    for (module = modules.begin(); module != modules.end(); ++module)
+    {
+        const std::string &tag(module->first);
+        man7File_->writeLine(formatString("\\&  %s\t%s",
+                                          tag.c_str(), module->second));
+    }
+
+    man7File_->writeLine(".Ve");
+}
+
+void HelpExportMan::finishModuleGroupExport()
+{
+    man7File_->writeLine(man7Footer_);
+    man7File_->close();
 }
 
 /********************************************************************
@@ -516,8 +558,8 @@ class HelpExportHtml : public HelpExportInterface
         void writeHtmlHeader(File *file, const std::string &title) const;
         void writeHtmlFooter(File *file) const;
 
-        boost::scoped_ptr<File>  indexFile_;
         HelpLinks                links_;
+        boost::scoped_ptr<File>  indexFile_;
         std::string              header_;
         std::string              footer_;
 };
