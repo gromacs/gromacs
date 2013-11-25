@@ -98,7 +98,7 @@ typedef struct gmx_lincsdata {
     real           *bllen;        /* the reference bond length */
     int             nth;          /* The number of threads doing LINCS */
     lincs_thread_t *th;           /* LINCS thread division */
-    unsigned       *atf;          /* atom flags for thread parallelization */
+    gmx_uint64_t   *atf;          /* atom flags for thread parallelization */
     int             atf_nalloc;   /* allocation size of atf */
     /* arrays for temporary storage in the LINCS algorithm */
     rvec           *tmpv;
@@ -1017,7 +1017,7 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
 {
     lincs_thread_t *li_m;
     int             th;
-    unsigned       *atf;
+    gmx_uint64_t   *atf;
     int             a;
 
     if (natoms > li->atf_nalloc)
@@ -1033,6 +1033,11 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
         atf[a] = 0;
     }
 
+    if (li->nth > 64)
+    {
+        gmx_fatal(FARGS, "More than 64 threads is not supported for LINCS.");
+    }
+
     for (th = 0; th < li->nth; th++)
     {
         lincs_thread_t *li_th;
@@ -1044,14 +1049,11 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
         li_th->b0 = (li->nc* th   )/li->nth;
         li_th->b1 = (li->nc*(th+1))/li->nth;
 
-        if (th < sizeof(*atf)*8)
+        /* For each atom set a flag for constraints from each */
+        for (b = li_th->b0; b < li_th->b1; b++)
         {
-            /* For each atom set a flag for constraints from each */
-            for (b = li_th->b0; b < li_th->b1; b++)
-            {
-                atf[li->bla[b*2]  ] |= (1U<<th);
-                atf[li->bla[b*2+1]] |= (1U<<th);
-            }
+            atf[li->bla[b*2]  ] |= (1ULL<<th);
+            atf[li->bla[b*2+1]] |= (1ULL<<th);
         }
     }
 
@@ -1059,7 +1061,7 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
     for (th = 0; th < li->nth; th++)
     {
         lincs_thread_t *li_th;
-        unsigned        mask;
+        gmx_uint64_t    mask;
         int             b;
 
         li_th = &li->th[th];
@@ -1071,35 +1073,24 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
             srenew(li_th->ind_r, li_th->ind_nalloc);
         }
 
-        if (th < sizeof(*atf)*8)
-        {
-            mask = (1U<<th) - 1U;
+        mask = (1ULL<<th) - 1U;
 
-            li_th->nind   = 0;
-            li_th->nind_r = 0;
-            for (b = li_th->b0; b < li_th->b1; b++)
-            {
-                /* We let the constraint with the lowest thread index
-                 * operate on atoms with constraints from multiple threads.
-                 */
-                if (((atf[li->bla[b*2]]   & mask) == 0) &&
-                    ((atf[li->bla[b*2+1]] & mask) == 0))
-                {
-                    /* Add the constraint to the local atom update index */
-                    li_th->ind[li_th->nind++] = b;
-                }
-                else
-                {
-                    /* Add the constraint to the rest block */
-                    li_th->ind_r[li_th->nind_r++] = b;
-                }
-            }
-        }
-        else
+        li_th->nind   = 0;
+        li_th->nind_r = 0;
+        for (b = li_th->b0; b < li_th->b1; b++)
         {
-            /* We are out of bits, assign all constraints to rest */
-            for (b = li_th->b0; b < li_th->b1; b++)
+            /* We let the constraint with the lowest thread index
+             * operate on atoms with constraints from multiple threads.
+             */
+            if (((atf[li->bla[b*2]]   & mask) == 0) &&
+                ((atf[li->bla[b*2+1]] & mask) == 0))
             {
+                /* Add the constraint to the local atom update index */
+                li_th->ind[li_th->nind++] = b;
+            }
+            else
+            {
+                /* Add the constraint to the rest block */
                 li_th->ind_r[li_th->nind_r++] = b;
             }
         }
