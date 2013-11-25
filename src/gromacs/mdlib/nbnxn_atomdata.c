@@ -1521,7 +1521,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                     i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
                     i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
 
-                    if ((flags->flag[b] & (1ULL<<index[1])) || group_size > 2)
+                    if (bitmask_is_set(flags->flag[b], index[1]) || group_size > 2)
                     {
 #ifdef GMX_NBNXN_SIMD
                         nbnxn_atomdata_reduce_reals_simd
@@ -1529,11 +1529,11 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                         nbnxn_atomdata_reduce_reals
 #endif
                             (nbat->out[index[0]].f,
-                            (flags->flag[b] & (1ULL<<index[0])) || group_size > 2,
+                            bitmask_is_set(flags->flag[b], index[0]) || group_size > 2,
                             &(nbat->out[index[1]].f), 1, i0, i1);
 
                     }
-                    else if (!(flags->flag[b] & (1ULL<<index[0])))
+                    else if (!bitmask_is_set(flags->flag[b], index[0]))
                     {
                         nbnxn_atomdata_clear_reals(nbat->out[index[0]].f,
                                                    i0, i1);
@@ -1573,7 +1573,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
             nfptr = 0;
             for (out = 1; out < nbat->nout; out++)
             {
-                if (flags->flag[b] & (1U<<out))
+                if (bitmask_is_set(flags->flag[b], out))
                 {
                     fptr[nfptr++] = nbat->out[out].f;
                 }
@@ -1586,11 +1586,11 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
                 nbnxn_atomdata_reduce_reals
 #endif
                     (nbat->out[0].f,
-                    flags->flag[b] & (1U<<0),
+                    bitmask_is_set(flags->flag[b], 0),
                     fptr, nfptr,
                     i0, i1);
             }
-            else if (!(flags->flag[b] & (1U<<0)))
+            else if (!bitmask_is_set(flags->flag[b], 0))
             {
                 nbnxn_atomdata_clear_reals(nbat->out[0].f,
                                            i0, i1);
