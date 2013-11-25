@@ -51,33 +51,10 @@ else()
 endif()
 
 if(GMX_BUILD_MANPAGES)
-    # create gromacs.7
-    FILE(READ "${CMAKE_SOURCE_DIR}/admin/programs.txt" contents)
-
-    # Convert file contents into a CMake list. First escape ;
-    STRING(REGEX REPLACE ";" "\\\\;" contents "${contents}")
-    STRING(REGEX REPLACE "\n" ";" contents "${contents}")
-
-    set(PROGMANPAGES "")
-    foreach(line ${contents})
-        if (${line} MATCHES "^HEAD\\|")
-            string(REGEX REPLACE "^HEAD\\|" "" DESC ${line})
-            set(PROGMANPAGES "${PROGMANPAGES}.Sh \"${DESC}\"\n.IX Subsection \"${DESC}\"\n.Vb\n.ta 16n\n")
-        elseif(${line} MATCHES "^END$")
-            set(PROGMANPAGES "${PROGMANPAGES}.Ve\n")
-        elseif(${line} MATCHES "\\|")
-            string(REGEX REPLACE "\\|" "\t" line ${line})
-            set(PROGMANPAGES "${PROGMANPAGES}\\&  ${line}\n")
-        else()
-            message(WARNING "Incorrectly formated line \"${line}\" in programs.txt")
-        endif()
-    endforeach()
-    configure_file(man7/gromacs.7.cmakein man7/gromacs.7)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/man7/gromacs.7
-        DESTINATION ${MAN_INSTALL_DIR}/man7
-        COMPONENT man)
-
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/man1)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/man7)
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/man7/gromacs.7.in
+         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/man7)
     # TODO: It could be nicer to not do this as part of the ALL target,
     # but instead on demand as part of make install.
     add_custom_target(man ALL
@@ -87,6 +64,9 @@ if(GMX_BUILD_MANPAGES)
         VERBATIM)
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/man1
         DESTINATION ${MAN_INSTALL_DIR}
+        COMPONENT man)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/man7/gromacs.7
+        DESTINATION ${MAN_INSTALL_DIR}/man7
         COMPONENT man)
     set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES man1)
