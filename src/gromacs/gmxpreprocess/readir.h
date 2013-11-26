@@ -77,7 +77,7 @@ extern void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */
-extern int search_string(char *s, int ng, char *gn[]);
+extern int search_string(const char *s, int ng, char *gn[]);
 /* Returns the index of string s in the index groups */
 
 extern void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr,
@@ -120,9 +120,13 @@ extern char **read_pullparams(int *ninp_p, t_inpfile **inp,
                               warninp_t wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
-extern void make_pull_groups(t_pull *pull, char **pgnames,
-                             t_blocka *grps, char **gnames);
-/* Process the pull parameters after reading the index groups */
+extern void make_pull_groups(t_pull *pull,
+                             char **pgnames,
+                             const t_blocka *grps, char **gnames);
+/* Process the pull group parameters after reading the index groups */
+
+extern void make_pull_coords(t_pull *pull);
+/* Process the pull coordinates after reading the pull groups */
 
 extern void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
                           const output_env_t oenv, gmx_bool bStart);
