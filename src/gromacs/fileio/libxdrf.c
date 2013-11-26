@@ -45,6 +45,7 @@
 #include <string.h>
 #include "statutil.h"
 #include "xdrf.h"
+#include "xdr_datatype.h"
 #include "string2.h"
 #include "futil.h"
 #include "gmx_fatal.h"
