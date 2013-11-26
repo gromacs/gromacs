@@ -67,9 +67,10 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 
 #define GMX_NONBONDED_DO_LR             (1<<0)
 #define GMX_NONBONDED_DO_FORCE          (1<<1)
-#define GMX_NONBONDED_DO_FOREIGNLAMBDA  (1<<2)
-#define GMX_NONBONDED_DO_POTENTIAL      (1<<3)
-#define GMX_NONBONDED_DO_SR             (1<<4)
+#define GMX_NONBONDED_DO_SHIFTFORCE     (1<<2)
+#define GMX_NONBONDED_DO_FOREIGNLAMBDA  (1<<3)
+#define GMX_NONBONDED_DO_POTENTIAL      (1<<4)
+#define GMX_NONBONDED_DO_SR             (1<<5)
 
 void
 do_nonbonded(t_forcerec *fr,
