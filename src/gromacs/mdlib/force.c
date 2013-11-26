@@ -462,7 +462,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
              */
             if ((ir->cutoff_scheme == ecutsGROUP && fr->n_tpi == 0) ||
                 ir->ewald_geometry != eewg3D ||
-                ir->epsilon_surface != 0)
+                ir->epsilon_surface != 0 ||
+                md->nPerturbed > 0)
             {
                 int nthreads, t;
 
@@ -639,11 +640,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 enerd->term[F_RF_EXCL] =
                     RF_excl_correction(fr, graph, md, excl, x, f,
                                        fr->fshift, &pbc, lambda[efptCOUL], &dvdl);
+                enerd->dvdl_lin[efptCOUL] += dvdl;
+                PRINT_SEPDVDL("RF exclusion correction",
+                              enerd->term[F_RF_EXCL], dvdl);
             }
-
-            enerd->dvdl_lin[efptCOUL] += dvdl;
-            PRINT_SEPDVDL("RF exclusion correction",
-                          enerd->term[F_RF_EXCL], dvdl);
         }
     }
     where();
