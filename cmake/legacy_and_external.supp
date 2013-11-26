@@ -153,6 +153,13 @@
 }
 
 {
+    localtime
+    Memcheck:Leak
+    ...
+    fun:localtime
+}
+
+{
    __cxa_get_globals
    Memcheck:Leak
    fun:malloc
