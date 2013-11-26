@@ -688,17 +688,12 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
         }
 #endif  /* GMX_THREAD_MPI */
     }
-    else
-    {
-        init_interaction_const_tables(NULL, ic, bUsesSimpleTables,
-                                      rtab);
-    }
 
-    if (pme_lb->cutoff_scheme == ecutsVERLET && nbv->ngrp > 1)
-    {
-        init_interaction_const_tables(NULL, ic, bUsesSimpleTables,
-                                      rtab);
-    }
+    /* Usually we won't need the simple tables with GPUs.
+     * But we do with hybrid acceleration and with free energy.
+     * To avoid bugs, we always re-initialize the simple tables here.
+     */
+    init_interaction_const_tables(NULL, ic, bUsesSimpleTables, rtab);
 
     if (cr->duty & DUTY_PME)
     {

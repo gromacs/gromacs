@@ -37,8 +37,9 @@
 #define _nbnxn_pairlist_h
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#include <config.h>
 #endif
+#include "nblist.h"
 
 #include "../thread_mpi/atomic.h"
 
@@ -176,6 +177,7 @@ typedef struct {
     int                natpair_ljq; /* Total number of atom pairs for LJ+Q kernel */
     int                natpair_lj;  /* Total number of atom pairs for LJ kernel   */
     int                natpair_q;   /* Total number of atom pairs for Q kernel    */
+    t_nblist         **nbl_fep;
 } nbnxn_pairlist_set_t;
 
 enum {
