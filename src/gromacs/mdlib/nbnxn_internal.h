@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -139,6 +139,7 @@ typedef struct {
                                    * the i- and j-cluster sizes are different    */
     float      *pbb;              /* 3D b. boxes in xxxx format per super cell   */
     int        *flags;            /* Flag for the super cells                    */
+    unsigned   *fep;              /* FEP signal bits for sub cells               */
     int         nc_nalloc;        /* Allocation size for the pointers above      */
 
     float      *bbcz_simple;      /* bbcz for simple grid converted from super   */
@@ -242,6 +243,8 @@ typedef struct {
 
     int                  ndistc;       /* Number of distance checks for flop counting */
 
+    t_nblist            *nbl_fep;      /* Temporary FEP list for load balancing */
+
     nbnxn_cycle_t        cc[enbsCCnr];
 
     gmx_cache_protect_t  cp1;
@@ -249,6 +252,7 @@ typedef struct {
 
 /* Main pair-search struct, contains the grid(s), not the pair-list(s) */
 typedef struct nbnxn_search {
+    gmx_bool            bFEP;            /* Do we have perturbed atoms? */
     int                 ePBC;            /* PBC type enum                              */
     matrix              box;             /* The periodic unit-cell                     */
 
