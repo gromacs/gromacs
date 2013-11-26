@@ -395,22 +395,25 @@ void done_top(t_topology *top)
     done_blocka(&(top->excls));
 }
 
-static void done_pullgrp(t_pullgrp *pgrp)
+static void done_pull_group(t_pull_group *pgrp)
 {
-    sfree(pgrp->ind);
-    sfree(pgrp->ind_loc);
-    sfree(pgrp->weight);
-    sfree(pgrp->weight_loc);
+    if (pgrp->nat > 0)
+    {
+        sfree(pgrp->ind);
+        sfree(pgrp->ind_loc);
+        sfree(pgrp->weight);
+        sfree(pgrp->weight_loc);
+    }
 }
 
 static void done_pull(t_pull *pull)
 {
     int i;
 
-    for (i = 0; i < pull->ngrp+1; i++)
+    for (i = 0; i < pull->ngroup+1; i++)
     {
-        done_pullgrp(pull->grp);
-        done_pullgrp(pull->dyna);
+        done_pull_group(pull->group);
+        done_pull_group(pull->dyna);
     }
 }
 

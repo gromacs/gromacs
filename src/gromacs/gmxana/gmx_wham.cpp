@@ -111,12 +111,12 @@ typedef struct
      * \name Using umbrella pull code since gromacs 4.x
      */
     /*!\{*/
-    int   npullgrps;     //!< nr of pull groups in tpr file
-    int   pull_geometry; //!< such as distance, position
+    int   npullcrds;     //!< nr of pull coordinates in tpr file
+    int   pull_geometry; //!< such as distance, direction
     ivec  pull_dim;      //!< pull dimension with geometry distance
     int   pull_ndim;     //!< nr of pull_dim != 0
     real *k;             //!< force constants in tpr file
-    rvec *init_dist;     //!< reference displacements
+    real *init_dist;     //!< reference displacements
     real *umbInitDist;   //!< reference displacement in umbrella direction
     /*!\}*/
     /*!
@@ -1982,7 +1982,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions *opt)
 {
     t_inputrec  ir;
-    int         i, ngrp, d;
+    int         i, ncrd;
     t_state     state;
     static int  first = 1;
 
@@ -1996,26 +1996,19 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     }
 
     /* nr of pull groups */
-    ngrp = ir.pull->ngrp;
-    if (ngrp < 1)
+    ncrd = ir.pull->ncoord;
+    if (ncrd < 1)
     {
-        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d pull groups\n", ngrp);
+        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d pull coordinates\n", ncrd);
     }
 
-    header->npullgrps     = ir.pull->ngrp;
+    header->npullcrds     = ir.pull->ncoord;
     header->pull_geometry = ir.pull->eGeom;
     copy_ivec(ir.pull->dim, header->pull_dim);
     header->pull_ndim = header->pull_dim[0]+header->pull_dim[1]+header->pull_dim[2];
-    if (header->pull_geometry == epullgPOS && header->pull_ndim > 1)
-    {
-        gmx_fatal(FARGS, "Found pull geometry 'position' and more than 1 pull dimension (%d).\n"
-                  "Hence, the pull potential does not correspond to a one-dimensional umbrella potential.\n"
-                  "If you have some special umbrella setup you may want to write your own pdo files\n"
-                  "and feed them into g_wham. Check g_wham -h !\n", header->pull_ndim);
-    }
-    snew(header->k, ngrp);
-    snew(header->init_dist, ngrp);
-    snew(header->umbInitDist, ngrp);
+    snew(header->k, ncrd);
+    snew(header->init_dist, ncrd);
+    snew(header->umbInitDist, ncrd);
 
     /* only z-direction with epullgCYL? */
     if (header->pull_geometry == epullgCYL)
@@ -2029,35 +2022,26 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
         }
     }
 
-    for (i = 0; i < ngrp; i++)
+    for (i = 0; i < ncrd; i++)
     {
-        header->k[i] = ir.pull->grp[i+1].k;
+        header->k[i] = ir.pull->coord[i].k;
         if (header->k[i] == 0.0)
         {
             gmx_fatal(FARGS, "Pull group %d has force constant of of 0.0 in %s.\n"
                       "That doesn't seem to be an Umbrella tpr.\n",
                       i, fn);
         }
-        copy_rvec(ir.pull->grp[i+1].init, header->init_dist[i]);
+        header->init_dist[i] =  ir.pull->coord[i].init;
 
         /* initial distance to reference */
         switch (header->pull_geometry)
         {
-            case epullgPOS:
-                for (d = 0; d < DIM; d++)
-                {
-                    if (header->pull_dim[d])
-                    {
-                        header->umbInitDist[i] = header->init_dist[i][d];
-                    }
-                }
-                break;
             case epullgCYL:
-            /* umbrella distance stored in init_dist[i][0] for geometry cylinder (not in ...[i][ZZ]) */
+            /* umbrella distance stored in init_dist[i] for geometry cylinder (not in ...[i][ZZ]) */
             case epullgDIST:
             case epullgDIR:
             case epullgDIRPBC:
-                header->umbInitDist[i] = header->init_dist[i][0];
+                header->umbInitDist[i] = header->init_dist[i];
                 break;
             default:
                 gmx_fatal(FARGS, "Pull geometry %s not supported\n", epullg_names[header->pull_geometry]);
@@ -2067,12 +2051,12 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     if (opt->verbose || first)
     {
         printf("File %s, %d groups, geometry \"%s\", dimensions [%s %s %s], (%d dimensions)\n",
-               fn, header->npullgrps, epullg_names[header->pull_geometry],
+               fn, header->npullcrds, epullg_names[header->pull_geometry],
                int2YN(header->pull_dim[0]), int2YN(header->pull_dim[1]), int2YN(header->pull_dim[2]),
                header->pull_ndim);
-        for (i = 0; i < ngrp; i++)
+        for (i = 0; i < ncrd; i++)
         {
-            printf("\tgrp %d) k = %-5g  position = %g\n", i, header->k[i], header->umbInitDist[i]);
+            printf("\tcrd %d) k = %-5g  position = %g\n", i, header->k[i], header->umbInitDist[i]);
         }
     }
     if (!opt->verbose && first)
@@ -2103,7 +2087,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                   t_groupselection *groupsel)
 {
     double        **y = 0, pos = 0., t, force, time0 = 0., dt;
-    int             ny, nt, bins, ibin, i, g, gUsed, dstep = 1, nColPerGrp, nColRefOnce, nColRefEachGrp, nColExpect, ntot;
+    int             ny, nt, bins, ibin, i, g, gUsed, dstep = 1, nColPerCrd, nColRefOnce, nColRefEachCrd, nColExpect, ntot;
     real            min, max, minfound = 1e20, maxfound = -1e20;
     gmx_bool        dt_ok, timeok, bHaveForce;
     const char     *quantity;
@@ -2120,7 +2104,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
        ndim*2 columns per pull group (ndim for ref, ndim for group)
      */
 
-    nColPerGrp = opt->bPullx ? header->pull_ndim : 1;
+    nColPerCrd = opt->bPullx ? header->pull_ndim : 1;
     quantity   = opt->bPullx ? "position" : "force";
 
     if (opt->bPullx)
@@ -2128,23 +2112,23 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         if (header->pull_geometry == epullgCYL)
         {
             /* Geometry cylinder -> reference group before each pull group */
-            nColRefEachGrp = header->pull_ndim;
+            nColRefEachCrd = header->pull_ndim;
             nColRefOnce    = 0;
         }
         else
         {
             /* Geometry NOT cylinder -> reference group only once after time column */
-            nColRefEachGrp = 0;
+            nColRefEachCrd = 0;
             nColRefOnce    = header->pull_ndim;
         }
     }
     else /* read forces, no reference groups */
     {
-        nColRefEachGrp = 0;
+        nColRefEachCrd = 0;
         nColRefOnce    = 0;
     }
 
-    nColExpect = 1 + nColRefOnce + header->npullgrps*(nColRefEachGrp+nColPerGrp);
+    nColExpect = 1 + nColRefOnce + header->npullcrds*(nColRefEachCrd+nColPerCrd);
     bHaveForce = opt->bPullf;
 
     /* With geometry "distance" or "distance_periodic", only force reading is supported so far.
@@ -2175,20 +2159,20 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         printf("Expecting these columns in pull file:\n"
                "\t%d reference columns for all pull groups together\n"
                "\t%d reference columns for each individual pull group\n"
-               "\t%d data columns for each pull group\n", nColRefOnce, nColRefEachGrp, nColPerGrp);
-        printf("With %d pull groups, expect %d columns (including the time column)\n", header->npullgrps, nColExpect);
+               "\t%d data columns for each pull group\n", nColRefOnce, nColRefEachCrd, nColPerCrd);
+        printf("With %d pull groups, expect %d columns (including the time column)\n", header->npullcrds, nColExpect);
         bFirst = FALSE;
     }
     if (ny != nColExpect)
     {
         gmx_fatal(FARGS, "Found %d pull groups in %s,\n but %d data columns in %s (expected %d)\n"
                   "\nMaybe you confused options -ix and -if ?\n",
-                  header->npullgrps, fntpr, ny-1, fn, nColExpect-1);
+                  header->npullcrds, fntpr, ny-1, fn, nColExpect-1);
     }
 
     if (opt->verbose)
     {
-        printf("Found %d times and %d %s sets %s\n", nt, (ny-1)/nColPerGrp, quantity, fn);
+        printf("Found %d times and %d %s sets %s\n", nt, (ny-1)/nColPerCrd, quantity, fn);
     }
 
     if (!bGetMinMax)
@@ -2210,16 +2194,16 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         if (groupsel)
         {
             /* Use only groups selected with option -is file */
-            if (header->npullgrps != groupsel->n)
+            if (header->npullcrds != groupsel->n)
             {
                 gmx_fatal(FARGS, "tpr file contains %d pull groups, but expected %d from group selection file\n",
-                          header->npullgrps, groupsel->n);
+                          header->npullcrds, groupsel->n);
             }
             window->nPull = groupsel->nUse;
         }
         else
         {
-            window->nPull = header->npullgrps;
+            window->nPull = header->npullcrds;
         }
 
         window->nBin = bins;
@@ -2259,7 +2243,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
 
         /* Copying umbrella center and force const is more involved since not
            all pull groups from header (tpr file) may be used in window variable */
-        for (g = 0, gUsed = 0; g < header->npullgrps; ++g)
+        for (g = 0, gUsed = 0; g < header->npullcrds; ++g)
         {
             if (groupsel && (groupsel->bUse[g] == FALSE))
             {
@@ -2319,7 +2303,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
              *          only groups with groupsel.bUse[g]==TRUE are stored. gUsed is not always equal g
              */
             gUsed = -1;
-            for (g = 0; g < header->npullgrps; ++g)
+            for (g = 0; g < header->npullcrds; ++g)
             {
                 /* was this group selected for application in WHAM? */
                 if (groupsel && (groupsel->bUse[g] == FALSE))
@@ -2331,7 +2315,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
 
                 if (bHaveForce)
                 {
-                    /* y has 1 time column y[0] and one column per force y[1],...,y[nGrps] */
+                    /* y has 1 time column y[0] and one column per force y[1],...,y[nCrds] */
                     force = y[g+1][i];
                     pos   = -force/header->k[g] + header->umbInitDist[g];
                 }
@@ -2340,32 +2324,25 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                     switch (header->pull_geometry)
                     {
                         case epullgDIST:
-                            /* y has 1 time column y[0] and nColPerGrps columns per pull group;
+                            /* y has 1 time column y[0] and nColPerCrds columns per pull group;
                                Distance to reference:                                           */
-                            /* pos=dist_ndim(y+1+nColRef+g*nColPerGrp,header->pull_ndim,i); gmx 4.0 */
-                            pos = dist_ndim(y + 1 + nColRefOnce + g*nColPerGrp, header->pull_ndim, i);
+                            /* pos=dist_ndim(y+1+nColRef+g*nColPerCrd,header->pull_ndim,i); gmx 4.0 */
+                            pos = dist_ndim(y + 1 + nColRefOnce + g*nColPerCrd, header->pull_ndim, i);
                             break;
-                        case epullgPOS:
-                        /* Columns
-                           Time ref[ndim] group1[ndim] group2[ndim] ... */
                         case epullgCYL:
                             /* Columns
                                Time ref1[ndim] group1[ndim] ref2[ndim] group2[ndim] ... */
-
-                            /* * with geometry==position, we have the reference once (nColRefOnce==ndim), but
-                               no extra reference group columns before each group (nColRefEachGrp==0)
-
-                             * with geometry==cylinder, we have no initial ref group column (nColRefOnce==0),
-                               but ndim ref group colums before every group (nColRefEachGrp==ndim)
+                            /* with geometry==cylinder, we have no initial ref group column (nColRefOnce==0),
+                               but ndim ref group colums before every group (nColRefEachCrd==ndim)
                                Distance to reference: */
-                            pos = y[1 + nColRefOnce + nColRefEachGrp + g*(nColRefEachGrp+nColPerGrp)][i];
+                            pos = y[1 + nColRefOnce + nColRefEachCrd + g*(nColRefEachCrd+nColPerCrd)][i];
                             break;
                         default:
                             gmx_fatal(FARGS, "Bad error, this error should have been catched before. Ups.\n");
                     }
                 }
 
-                /* printf("grp %d dpos %f poseq %f pos %f \n",g,dpos,poseq,pos); */
+                /* printf("crd %d dpos %f poseq %f pos %f \n",g,dpos,poseq,pos); */
                 if (bGetMinMax)
                 {
                     if (pos < minfound)
