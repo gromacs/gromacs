@@ -591,6 +591,7 @@ enum {
 
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                                    t_forcerec *fr, gmx_bool bNoSolvOpt,
+                                   gmx_bool *bFEP_NonBonded,
                                    gmx_bool *bExcl_IntraCGAll_InterCGNone)
 {
     const t_block        *cgs;
@@ -605,7 +606,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     int                  *a_con;
     int                   ftype;
     int                   ia;
-    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ;
+    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bFEP;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb, mtop->nmolblock);
@@ -623,6 +624,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         }
     }
 
+    *bFEP_NonBonded               = FALSE;
     *bExcl_IntraCGAll_InterCGNone = TRUE;
 
     excl_nalloc = 10;
@@ -722,6 +724,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 bExclInter    = FALSE;
                 bHaveVDW      = FALSE;
                 bHaveQ        = FALSE;
+                bFEP          = FALSE;
                 for (ai = a0; ai < a1; ai++)
                 {
                     /* Check VDW and electrostatic interactions */
@@ -729,6 +732,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                                             type_VDW[molt->atoms.atom[ai].typeB]);
                     bHaveQ  = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
                                             molt->atoms.atom[ai].qB != 0);
+
+                    bFEP    = bFEP || (PERTURBED(molt->atoms.atom[ai]) != 0);
 
                     /* Clear the exclusion list for atom ai */
                     for (aj = a0; aj < a1; aj++)
@@ -789,6 +794,11 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 if (bHaveQ)
                 {
                     SET_CGINFO_HAS_Q(cginfo[cgm+cg]);
+                }
+                if (bFEP)
+                {
+                    SET_CGINFO_FEP(cginfo[cgm+cg]);
+                    *bFEP_NonBonded = TRUE;
                 }
                 /* Store the charge group size */
                 SET_CGINFO_NATOMS(cginfo[cgm+cg], a1-a0);
@@ -1592,7 +1602,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         *kernel_type = nbnxnk4xN_SIMD_4xN;
 
 #ifndef GMX_SIMD_HAVE_FMA
-        if (EEL_PME(ir->coulombtype) || EEL_EWALD(ir->coulombtype) ||
+        if (EEL_PME_EWALD(ir->coulombtype) ||
             EVDW_PME(ir->vdwtype))
         {
             /* We have Ewald kernels without FMA (Intel Sandy/Ivy Bridge).
@@ -2080,6 +2090,7 @@ init_interaction_const(FILE                       *fp,
 
 static void init_nb_verlet(FILE                *fp,
                            nonbonded_verlet_t **nb_verlet,
+                           gmx_bool             bFEP_NonBonded,
                            const t_inputrec    *ir,
                            const t_forcerec    *fr,
                            const t_commrec     *cr,
@@ -2185,6 +2196,7 @@ static void init_nb_verlet(FILE                *fp,
     nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
+                      bFEP_NonBonded,
                       gmx_omp_nthreads_get(emntNonbonded));
 
     for (i = 0; i < nbv->ngrp; i++)
@@ -2278,6 +2290,7 @@ void init_forcerec(FILE              *fp,
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
     gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
+    gmx_bool       bFEP_NonBonded;
     t_nblists     *nbl;
     int           *nm_ind, egp_flags;
 
@@ -3083,6 +3096,7 @@ void init_forcerec(FILE              *fp,
 
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp, mtop, fr, bNoSolvOpt,
+                                   &bFEP_NonBonded,
                                    &fr->bExcl_IntraCGAll_InterCGNone);
     if (DOMAINDECOMP(cr))
     {
@@ -3133,7 +3147,7 @@ void init_forcerec(FILE              *fp,
             gmx_fatal(FARGS, "With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, &fr->nbv, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
     }
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */

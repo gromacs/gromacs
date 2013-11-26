@@ -261,9 +261,14 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         /* Add short-range interactions */
         donb_flags |= GMX_NONBONDED_DO_SR;
 
+        /* Currently all group scheme kernels always calculate (shift-)forces */
         if (flags & GMX_FORCE_FORCES)
         {
             donb_flags |= GMX_NONBONDED_DO_FORCE;
+        }
+        if (flags & GMX_FORCE_VIRIAL)
+        {
+            donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
         }
         if (flags & GMX_FORCE_ENERGY)
         {
@@ -469,7 +474,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
         int  status            = 0;
 
-        if (EEL_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
+        if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
             real dvdl_long_range_correction_q   = 0;
             real dvdl_long_range_correction_lj  = 0;
@@ -561,7 +566,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                 wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
 
-            if (EEL_EWALD(fr->eeltype) && fr->n_tpi == 0)
+            if (EEL_PME_EWALD(fr->eeltype) && fr->n_tpi == 0)
             {
                 Vcorr_q += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
                                                    &dvdl_long_range_correction_q,
@@ -657,7 +662,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
             }
         }
 
-        if (!EEL_PME(fr->eeltype) && EEL_EWALD(fr->eeltype))
+        if (!EEL_PME(fr->eeltype) && EEL_PME_EWALD(fr->eeltype))
         {
             Vlr_q = do_ewald(ir, x, fr->f_novirsum,
                              md->chargeA, md->chargeB,
