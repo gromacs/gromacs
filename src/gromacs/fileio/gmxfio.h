@@ -41,7 +41,6 @@
 #include <stdio.h>
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "xdrf.h"
 #include "futil.h"
 
 #ifdef __cplusplus
@@ -169,12 +168,6 @@ int gmx_fio_seek(t_fileio *fio, gmx_off_t fpos);
 
 FILE *gmx_fio_getfp(t_fileio *fio);
 /* Return the file pointer itself */
-
-XDR *gmx_fio_getxdr(t_fileio *fio);
-/* Return the file pointer itself */
-
-
-
 
 
 /* Element with information about position in a currently open file.

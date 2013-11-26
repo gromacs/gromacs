@@ -40,7 +40,6 @@ set(FILEIO_PUBLIC_HEADERS
     enxio.h
     filenm.h
     futil.h
-    gmx_system_xdr.h
     gmxfio.h
     matio.h
     mdoutf.h
@@ -50,7 +49,7 @@ set(FILEIO_PUBLIC_HEADERS
     trnio.h
     trx.h
     trxio.h
-    xdrf.h
+    xdr_datatype.h
     xtcio.h
     )
 gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
