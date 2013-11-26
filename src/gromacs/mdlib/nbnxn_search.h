@@ -59,6 +59,7 @@ real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density);
 void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
                        ivec               *n_dd_cells,
                        gmx_domdec_zones_t *zones,
+                       gmx_bool            bFEP,
                        int                 nthread_max);
 
 /* Put the atoms on the pair search grid.
@@ -117,6 +118,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
  * number or roughly equally sized ci blocks in nbl.
  * When set >0 ci lists will be chopped up when the estimate
  * for the number of equally sized lists is below min_ci_balanced.
+ * With perturbed particles, also a group scheme style nbl_fep list is made.
  */
 void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          nbnxn_atomdata_t     *nbat,
