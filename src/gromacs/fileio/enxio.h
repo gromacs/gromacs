@@ -34,14 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_FILEIO_ENXIO_H
 #define GMX_FILEIO_ENXIO_H
 
-#include "../legacyheaders/sysstuff.h"
 #include "../legacyheaders/typedefs.h"
 #include "../legacyheaders/pbc.h"
 #include "gmxfio.h"
+#include "xdr_datatype.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -216,4 +215,4 @@ void add_subblocks_enxblock(t_enxblock *eb, int n);
 }
 #endif
 
-#endif  /* GMX_FILEIO_ENERIO_H */
+#endif

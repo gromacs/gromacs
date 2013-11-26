@@ -74,6 +74,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         -I src/gromacs/gmxpreprocess
         -I src/programs/mdrun
         --suppress=variableScope
+        --suppress=unnecessaryForwardDeclaration
         --suppress=unusedVariable
         --suppress=unreadVariable
         --suppress=unusedStructMember
