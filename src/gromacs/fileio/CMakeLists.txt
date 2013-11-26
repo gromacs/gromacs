@@ -50,7 +50,6 @@ set(FILEIO_PUBLIC_HEADERS
     trnio.h
     trx.h
     trxio.h
-    xdrf.h
     xtcio.h
     )
 gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})

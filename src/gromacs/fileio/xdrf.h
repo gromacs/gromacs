@@ -34,10 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_FILEIO_XDRF_H
 #define GMX_FILEIO_XDRF_H
-
 
 #include <stdio.h>
 #include "../legacyheaders/typedefs.h"
@@ -46,7 +44,8 @@
 #define int64_t long long
 #endif
 
-#include "../utility/gmx_header_config.h"
+#include "config.h"
+
 #ifdef GMX_INTERNAL_XDR
 #include "gmx_system_xdr.h"
 #else
@@ -57,14 +56,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/* THESE 3 FUNCTIONS (xdropen, xdrclose and xdr_get_fp) ARE NOW OBSOLETE
-   AND ONLY PROVIDED FOR BACKWARD COMPATIBILITY OF 3D PARTY TOOLS.
-   THEY SHOULD NOT BE USED ANYWHERE IN GROMACS ITSELF.
-   int xdropen(XDR *xdrs, const char *filename, const char *type);
-   int xdrclose(XDR *xdrs);
- */
 
 /* the xdr data types; note that there is no data type 'real' because
    here we deal with the types as they are actually written to disk.  */

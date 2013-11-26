@@ -713,7 +713,6 @@ include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
 
 # include avx test source, used if the AVX flags are set below

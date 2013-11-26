@@ -41,7 +41,6 @@
 #include <stdio.h>
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "xdrf.h"
 #include "futil.h"
 
 #ifdef __cplusplus
