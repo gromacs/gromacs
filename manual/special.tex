@@ -178,12 +178,10 @@ a canonical ensemble of the initial state A and $\beta=1/k_B T$.
 \label{sec:pull}
 The pull code applies forces or constraints between the centers
 of mass of one or more pairs of groups of atoms.
-There is one reference group and one or more other pull groups.
-Instead of a reference group, one can also use absolute reference
-point in space.
-The most common situation consists of a reference group
-and one pull group. In this case, the two groups are treated
-equivalently.
+Each pull reaction coordinate is called a ``coordinate'' and it operates
+on two pull groups. A pull group can be part of one or more pull
+coordinates. Furthermore, a coordinate can also operate on a single group
+and an absolute reference position in space.
 The distance between a pair of groups can be determined
 in 1, 2 or 3 dimensions, or can be along a user-defined vector.
 The reference distance can be constant or can change linearly with time.
@@ -295,7 +293,7 @@ as follows:
 \eeq
 
 \subsubsection{Limitations}
-There is one important limitation:
+There is one theoretical limitation:
 strictly speaking, constraint forces can only be calculated between
 groups that are not connected by constraints to the rest of the system.
 If a group contains part of a molecule of which the bond lengths

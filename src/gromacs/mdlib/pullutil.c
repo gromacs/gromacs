@@ -56,7 +56,7 @@
 #include "pull.h"
 #include "gmx_ga2la.h"
 
-static void pull_set_pbcatom(t_commrec *cr, t_pullgrp *pg,
+static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
                              t_mdatoms *md, rvec *x,
                              rvec x_pbc)
 {
@@ -66,14 +66,14 @@ static void pull_set_pbcatom(t_commrec *cr, t_pullgrp *pg,
     {
         if (DOMAINDECOMP(cr))
         {
-            if (!ga2la_get_home(cr->dd->ga2la, pg->pbcatom, &a))
+            if (!ga2la_get_home(cr->dd->ga2la, pgrp->pbcatom, &a))
             {
                 a = -1;
             }
         }
         else
         {
-            a = pg->pbcatom;
+            a = pgrp->pbcatom;
         }
 
         if (a >= md->start && a < md->start+md->homenr)
@@ -87,7 +87,7 @@ static void pull_set_pbcatom(t_commrec *cr, t_pullgrp *pg,
     }
     else
     {
-        copy_rvec(x[pg->pbcatom], x_pbc);
+        copy_rvec(x[pgrp->pbcatom], x_pbc);
     }
 }
 
@@ -98,15 +98,15 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
     int g, n, m;
 
     n = 0;
-    for (g = 0; g < 1+pull->ngrp; g++)
+    for (g = 0; g < pull->ngroup; g++)
     {
-        if ((g == 0 && PULL_CYL(pull)) || pull->grp[g].pbcatom == -1)
+        if ((g == 0 && PULL_CYL(pull)) || pull->group[g].pbcatom == -1)
         {
             clear_rvec(x_pbc[g]);
         }
         else
         {
-            pull_set_pbcatom(cr, &pull->grp[g], md, x, x_pbc[g]);
+            pull_set_pbcatom(cr, &pull->group[g], md, x, x_pbc[g]);
             for (m = 0; m < DIM; m++)
             {
                 if (pull->dim[m] == 0)
@@ -121,7 +121,7 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
     if (cr && PAR(cr) && n > 0)
     {
         /* Sum over the nodes to get x_pbc from the home node of pbcatom */
-        gmx_sum((1+pull->ngrp)*DIM, x_pbc[0], cr);
+        gmx_sum(pull->ngroup*DIM, x_pbc[0], cr);
     }
 }
 
@@ -149,15 +149,16 @@ static real get_weight(real x, real r1, real r0)
 static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
                              t_pbc *pbc, double t, rvec *x, rvec *xp)
 {
-    int         g, i, ii, m, start, end;
-    rvec        g_x, dx, dir;
-    double      r0_2, sum_a, sum_ap, dr2, mass, weight, wmass, wwmass, inp;
-    t_pullgrp  *pref, *pgrp, *pdyna;
-    gmx_ga2la_t ga2la = NULL;
+    int           c, i, ii, m, start, end;
+    rvec          g_x, dx, dir;
+    double        r0_2, sum_a, sum_ap, dr2, mass, weight, wmass, wwmass, inp;
+    t_pull_coord *pcrd;
+    t_pull_group *pref, *pgrp, *pdyna;
+    gmx_ga2la_t   ga2la = NULL;
 
     if (pull->dbuf_cyl == NULL)
     {
-        snew(pull->dbuf_cyl, pull->ngrp*4);
+        snew(pull->dbuf_cyl, pull->ncoord*4);
     }
 
     if (cr && DOMAINDECOMP(cr))
@@ -171,12 +172,15 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
     r0_2 = dsqr(pull->cyl_r0);
 
     /* loop over all groups to make a reference group for each*/
-    pref = &pull->grp[0];
-    for (g = 1; g < 1+pull->ngrp; g++)
+    for (c = 0; c < pull->ncoord; c++)
     {
-        pgrp  = &pull->grp[g];
-        pdyna = &pull->dyna[g];
-        copy_rvec(pgrp->vec, dir);
+        pcrd  = &pull->coord[c];
+
+        /* pref will be the same group for all pull coordinates */
+        pref  = &pull->group[pcrd->group[0]];
+        pgrp  = &pull->group[pcrd->group[1]];
+        pdyna = &pull->dyna[c];
+        copy_rvec(pcrd->vec, dir);
         sum_a          = 0;
         sum_ap         = 0;
         wmass          = 0;
@@ -185,13 +189,13 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
 
         for (m = 0; m < DIM; m++)
         {
-            g_x[m] = pgrp->x[m] - pgrp->vec[m]*(pgrp->init[0] + pgrp->rate*t);
+            g_x[m] = pgrp->x[m] - pcrd->vec[m]*(pcrd->init + pcrd->rate*t);
         }
 
         /* loop over all atoms in the main ref group */
         for (i = 0; i < pref->nat; i++)
         {
-            ii = pull->grp[0].ind[i];
+            ii = pref->ind[i];
             if (ga2la)
             {
                 if (!ga2la_get_home(ga2la, pref->ind[i], &ii))
@@ -235,42 +239,44 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
                 }
             }
         }
-        pull->dbuf_cyl[(g-1)*4+0] = wmass;
-        pull->dbuf_cyl[(g-1)*4+1] = wwmass;
-        pull->dbuf_cyl[(g-1)*4+2] = sum_a;
-        pull->dbuf_cyl[(g-1)*4+3] = sum_ap;
+        pull->dbuf_cyl[c*4+0] = wmass;
+        pull->dbuf_cyl[c*4+1] = wwmass;
+        pull->dbuf_cyl[c*4+2] = sum_a;
+        pull->dbuf_cyl[c*4+3] = sum_ap;
     }
 
     if (cr && PAR(cr))
     {
         /* Sum the contributions over the nodes */
-        gmx_sumd(pull->ngrp*4, pull->dbuf_cyl, cr);
+        gmx_sumd(pull->ncoord*4, pull->dbuf_cyl, cr);
     }
 
-    for (g = 1; g < 1+pull->ngrp; g++)
+    for (c = 0; c < pull->ncoord; c++)
     {
-        pgrp  = &pull->grp[g];
-        pdyna = &pull->dyna[g];
+        pcrd  = &pull->coord[c];
 
-        wmass         = pull->dbuf_cyl[(g-1)*4+0];
-        wwmass        = pull->dbuf_cyl[(g-1)*4+1];
+        pdyna = &pull->dyna[c];
+        pgrp  = &pull->group[pcrd->group[1]];
+
+        wmass         = pull->dbuf_cyl[c*4+0];
+        wwmass        = pull->dbuf_cyl[c*4+1];
         pdyna->wscale = wmass/wwmass;
         pdyna->invtm  = 1.0/(pdyna->wscale*wmass);
 
         for (m = 0; m < DIM; m++)
         {
-            g_x[m]         = pgrp->x[m] - pgrp->vec[m]*(pgrp->init[0] + pgrp->rate*t);
-            pdyna->x[m]    = g_x[m] + pgrp->vec[m]*pull->dbuf_cyl[(g-1)*4+2]/wmass;
+            g_x[m]      = pgrp->x[m] - pcrd->vec[m]*(pcrd->init + pcrd->rate*t);
+            pdyna->x[m] = g_x[m] + pcrd->vec[m]*pull->dbuf_cyl[c*4+2]/wmass;
             if (xp)
             {
-                pdyna->xp[m] = g_x[m] + pgrp->vec[m]*pull->dbuf_cyl[(g-1)*4+3]/wmass;
+                pdyna->xp[m] = g_x[m] + pcrd->vec[m]*pull->dbuf_cyl[c*4+3]/wmass;
             }
         }
 
         if (debug)
         {
             fprintf(debug, "Pull cylinder group %d:%8.3f%8.3f%8.3f m:%8.3f\n",
-                    g, pdyna->x[0], pdyna->x[1],
+                    c, pdyna->x[0], pdyna->x[1],
                     pdyna->x[2], 1.0/pdyna->invtm);
         }
     }
@@ -293,21 +299,21 @@ void pull_calc_coms(t_commrec *cr,
                     t_pull *pull, t_mdatoms *md, t_pbc *pbc, double t,
                     rvec x[], rvec *xp)
 {
-    int        g, i, ii, m;
-    real       mass, w, wm, twopi_box = 0;
-    double     wmass, wwmass, invwmass;
-    dvec       com, comp;
-    double     cm, sm, cmp, smp, ccm, csm, ssm, csw, snw;
-    rvec      *xx[2], x_pbc = {0, 0, 0}, dx;
-    t_pullgrp *pgrp;
+    int           g, i, ii, m;
+    real          mass, w, wm, twopi_box = 0;
+    double        wmass, wwmass, invwmass;
+    dvec          com, comp;
+    double        cm, sm, cmp, smp, ccm, csm, ssm, csw, snw;
+    rvec         *xx[2], x_pbc = {0, 0, 0}, dx;
+    t_pull_group *pgrp;
 
     if (pull->rbuf == NULL)
     {
-        snew(pull->rbuf, 1+pull->ngrp);
+        snew(pull->rbuf, pull->ngroup);
     }
     if (pull->dbuf == NULL)
     {
-        snew(pull->dbuf, 3*(1+pull->ngrp));
+        snew(pull->dbuf, 3*pull->ngroup);
     }
 
     if (pull->bRefAt)
@@ -327,9 +333,9 @@ void pull_calc_coms(t_commrec *cr,
         twopi_box = 2.0*M_PI/pbc->box[pull->cosdim][pull->cosdim];
     }
 
-    for (g = 0; g < 1+pull->ngrp; g++)
+    for (g = 0; g < pull->ngroup; g++)
     {
-        pgrp = &pull->grp[g];
+        pgrp = &pull->group[g];
         clear_dvec(com);
         clear_dvec(comp);
         wmass  = 0;
@@ -448,12 +454,12 @@ void pull_calc_coms(t_commrec *cr,
     if (cr && PAR(cr))
     {
         /* Sum the contributions over the nodes */
-        gmx_sumd((1+pull->ngrp)*3*DIM, pull->dbuf[0], cr);
+        gmx_sumd(pull->ngroup*3*DIM, pull->dbuf[0], cr);
     }
 
-    for (g = 0; g < 1+pull->ngrp; g++)
+    for (g = 0; g < pull->ngroup; g++)
     {
-        pgrp = &pull->grp[g];
+        pgrp = &pull->group[g];
         if (pgrp->nat > 0 && !(g == 0 && PULL_CYL(pull)))
         {
             if (pgrp->epgrppbc != epgrppbcCOS)

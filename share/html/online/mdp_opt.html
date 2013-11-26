@@ -1263,7 +1263,7 @@ the minimum is 2.
 Ewald summation can only be used with <b>nwall=2</b>, where one
 should use <b><A HREF="#ewald">ewald-geometry</A><tt>=3dc</tt></b>.
 The empty layer in the box serves to decrease the unphysical Coulomb
-interaction between periodic images.
+interaction between periodic images.</dd>
 </dl>
 
 <A NAME="pull"><br>
@@ -1314,10 +1314,7 @@ the relative weights are one, between <b>pull-r1</b> and
 Note that the radii should be smaller than half the box size.
 For tilted cylinders they should be even smaller than half the box size
 since the distance of an atom in the reference group
-from the COM of the pull group has both a radial and an axial component.
-<dt><b>position</b></dt>
-<dd>Pull to the position of the reference group plus
-<b>pull-init</b> + time*<b>pull-rate</b>*<b>pull-vec</b>.</dd>
+from the COM of the pull group has both a radial and an axial component.</dd>
 </dl></dd>
 <dt><b>pull-dim: (Y Y Y)</b></dt>
 <dd>the distance components to be used with geometry <b>distance</b>
@@ -1336,62 +1333,72 @@ to the output files</dd>
 <dt><b>yes</b></dt>
 <dd>add the COM distance of the starting conformation to <b>pull-init</b></dd>
 </dl>
+<dt><b>pull-print-reference: (10)</b></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>do not print the COM of the first group in each pull coordinate</dd>
+<dt><b>yes</b></dt>
+<dd>print the COM of the first group in each pull coordinate</dd>
+</dl>
 <dt><b>pull-nstxout: (10)</b></dt>
 <dd>frequency for writing out the COMs of all the pull group</dd>
 <dt><b>pull-nstfout: (1)</b></dt>
 <dd>frequency for writing out the force of all the pulled group</dd>
 <dt><b>pull-ngroups: (1)</b></dt>
-<dd>The number of pull groups, not including the reference group.
-If there is only one group, there is no difference in treatment
-of the reference and pulled group (except with the cylinder geometry).
-Below only the pull options for the reference group (ending on 0)
-and the first group (ending on 1) are given,
-further groups work analogously, but with the number 1 replaced
-by the group number.</dd>
-<dt><b>pull-group0: </b></dt>
-<dd>The name of the reference group. When this is empty an absolute reference
-of (0,0,0) is used. With an absolute reference the system is no longer
-translation invariant and one should think about what to do with
-the <A HREF="#run">center of mass motion</A>.</dd>
-<dt><b>pull-weights0: </b></dt>
-<dd>see <b>pull-weights1</b></dd>
-<dt><b>pull-pbcatom0: (0)</b></dt>
-<dd>see <b>pull-pbcatom1</b></dd>
-<dt><b>pull-group1: </b></dt>
-<dd>The name of the pull group.</dd>
-<dt><b>pull-weights1: </b></dt>
+<dd>The number of pull groups, not including the absolute reference group,
+when used. Pull groups can be reused un multiple pull coordinates.
+Below only the pull options for group 1 are given, further groups simply
+increase the group index number.</dd>
+<dt><b>pull-ncoords: (1)</b></dt>
+<dd>The number of pull coordinates. Below only the pull options for
+coordinate 1 are given, further coordinates simply increase the coordinate
+index number.</dd>
+
+<dt><b>pull-group1-name: </b></dt>
+<dd>The name of the pull group, is looked up in the index file
+or in the default groups to obtain the atoms involved.</dd>
+<dt><b>pull-group1-weights: </b></dt>
 <dd>Optional relative weights which are multiplied with the masses of the atoms
 to give the total weight for the COM. The number should be 0, meaning all 1,
 or the number of atoms in the pull group.</dd>
-<dt><b>pull-pbcatom1: (0)</b></dt>
+<dt><b>pull-group1-pbcatom: (0)</b></dt>
 <dd>The reference atom for the treatment of periodic boundary conditions
 inside the group
 (this has no effect on the treatment of the pbc between groups).
 This option is only important when the diameter of the pull group
 is larger than half the shortest box vector.
 For determining the COM, all atoms in the group are put at their periodic image
-which is closest to <b>pull-pbcatom1</b>.
+which is closest to <b>pull-group1-pbcatom</b>.
 A value of 0 means that the middle atom (number wise) is used.
 This parameter is not used with geometry <b>cylinder</b>.
 A value of -1 turns on cosine weighting, which is useful for a group
 of molecules in a periodic system, e.g. a water slab (see Engin et al.
 J. Chem. Phys. B 2010).</dd>
-<dt><b>pull-vec1: (0.0 0.0 0.0)</b></dt>
+
+<dt><b>pull-coord1-groups: </b></dt>
+<dd>The two groups indices should be given on which this pull coordinate
+will operate. The first index can be 0, in which case an absolute reference
+of <b>pull-coord1-origin</b> is used. With an absolute reference the system
+is no longer translation invariant and one should think about what to do with
+the <A HREF="#run">center of mass motion</A>.</dd>
+<dt><b>pull-coord1-origin: (0.0 0.0 0.0)</b></dt>
+<dd>The pull reference position for use with an absolute reference.</dd>
+<dt><b>pull-coord1-vec: (0.0 0.0 0.0)</b></dt>
 <dd>The pull direction. <tt>grompp</tt> normalizes the vector.</dd>
-<dt><b>pull-init1: (0.0) / (0.0 0.0 0.0) [nm]</b></dt>
-<dd>The reference distance at t=0. This is a single value,
-except for geometry <b>position</b> which uses a vector.</dd>
-<dt><b>pull-rate1: (0) [nm/ps]</b></dt>
+<dt><b>pull-coord1-init: (0.0) [nm]</b></dt>
+<dd>The reference distance at t=0.</dd>
+<dt><b>pull-coord1-rate: (0) [nm/ps]</b></dt>
 <dd>The rate of change of the reference position.</dd>
-<dt><b>pull-k1: (0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
+<dt><b>pull-coord1-k: (0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
 <dd>The force constant. For umbrella pulling this is the harmonic force
 constant in [kJ mol<sup>-1</sup> nm<sup>-2</sup>]. For constant force pulling
 this is the force constant of the linear potential, and thus minus (!)
 the constant force in [kJ mol<sup>-1</sup> nm<sup>-1</sup>].</dd>
-<dt><b>pull-kB1: (pull-k1) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
-<dd>As <b>pull-k1</b>, but for state B. This is only used when
+<dt><b>pull-coord1-kB: (pull-k1) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
+<dd>As <b>pull-coord1-k</b>, but for state B. This is only used when
 <A HREF="#free"><b>free-energy</b></A> is turned on.
-The force constant is then (1 - lambda)*<b>pull-k1</b> + lambda*<b>pull-kB1</b>.
+The force constant is then (1 - lambda)*<b>pull-coord1-k</b> + lambda*<b>pull-coord1-kB</b></dt>.
+
 </dl>
 
 <A NAME="nmr"><br>
