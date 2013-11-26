@@ -107,7 +107,6 @@ static int init_gb_nblist(int natoms, t_nblist *nl)
 {
     nl->maxnri      = natoms*4;
     nl->maxnrj      = 0;
-    nl->maxlen      = 0;
     nl->nri         = 0;
     nl->nrj         = 0;
     nl->iinr        = NULL;
