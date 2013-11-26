@@ -510,7 +510,7 @@ static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
                 "of supported hardware threads.\n", ret);
     }
 
-#ifdef GMX_OMPENMP
+#ifdef GMX_OPENMP
     if (ret != gmx_omp_get_num_procs())
     {
         md_print_warn(cr, fplog,
