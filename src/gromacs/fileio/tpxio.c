@@ -70,7 +70,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 94;
+static const int tpx_version = 95;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -233,8 +233,45 @@ static void _do_section(t_fileio *fio, int key, gmx_bool bRead, const char *src,
  * Now the higer level routines that do io of the structures and arrays
  *
  **************************************************************/
-static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead,
-                       int file_version)
+static void do_pullgrp_tpx92(t_fileio *fio,
+                             t_pull_group *pgrp,
+                             t_pull_coord *pcrd,
+                             gmx_bool bRead,
+                             int file_version)
+{
+    int  i;
+    rvec tmp;
+
+    gmx_fio_do_int(fio, pgrp->nat);
+    if (bRead)
+    {
+        snew(pgrp->ind, pgrp->nat);
+    }
+    gmx_fio_ndo_int(fio, pgrp->ind, pgrp->nat);
+    gmx_fio_do_int(fio, pgrp->nweight);
+    if (bRead)
+    {
+        snew(pgrp->weight, pgrp->nweight);
+    }
+    gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
+    gmx_fio_do_int(fio, pgrp->pbcatom);
+    gmx_fio_do_rvec(fio, pcrd->vec);
+    clear_rvec(pcrd->origin);
+    gmx_fio_do_rvec(fio, tmp);
+    pcrd->init = tmp[0];
+    gmx_fio_do_real(fio, pcrd->rate);
+    gmx_fio_do_real(fio, pcrd->k);
+    if (file_version >= 56)
+    {
+        gmx_fio_do_real(fio, pcrd->kB);
+    }
+    else
+    {
+        pcrd->kB = pcrd->k;
+    }
+}
+
+static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
 {
     int      i;
 
@@ -251,18 +288,20 @@ static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead,
     }
     gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
     gmx_fio_do_int(fio, pgrp->pbcatom);
-    gmx_fio_do_rvec(fio, pgrp->vec);
-    gmx_fio_do_rvec(fio, pgrp->init);
-    gmx_fio_do_real(fio, pgrp->rate);
-    gmx_fio_do_real(fio, pgrp->k);
-    if (file_version >= 56)
-    {
-        gmx_fio_do_real(fio, pgrp->kB);
-    }
-    else
-    {
-        pgrp->kB = pgrp->k;
-    }
+}
+
+static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd)
+{
+    int      i;
+
+    gmx_fio_do_int(fio, pcrd->group[0]);
+    gmx_fio_do_int(fio, pcrd->group[1]);
+    gmx_fio_do_rvec(fio, pcrd->origin);
+    gmx_fio_do_rvec(fio, pcrd->vec);
+    gmx_fio_do_real(fio, pcrd->init);
+    gmx_fio_do_real(fio, pcrd->rate);
+    gmx_fio_do_real(fio, pcrd->k);
+    gmx_fio_do_real(fio, pcrd->kB);
 }
 
 static void do_expandedvals(t_fileio *fio, t_expanded *expand, t_lambda *fepvals, gmx_bool bRead, int file_version)
@@ -561,21 +600,67 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
 {
     int g;
 
-    gmx_fio_do_int(fio, pull->ngrp);
+    if (file_version >= 95)
+    {
+        gmx_fio_do_int(fio, pull->ngroup);
+    }
+    gmx_fio_do_int(fio, pull->ncoord);
+    if (file_version < 95)
+    {
+        pull->ngroup = pull->ncoord + 1;
+    }
     gmx_fio_do_int(fio, pull->eGeom);
     gmx_fio_do_ivec(fio, pull->dim);
     gmx_fio_do_real(fio, pull->cyl_r1);
     gmx_fio_do_real(fio, pull->cyl_r0);
     gmx_fio_do_real(fio, pull->constr_tol);
+    if (file_version >= 95)
+    {
+        gmx_fio_do_int(fio, pull->bPrintRef);
+    }
     gmx_fio_do_int(fio, pull->nstxout);
     gmx_fio_do_int(fio, pull->nstfout);
     if (bRead)
     {
-        snew(pull->grp, pull->ngrp+1);
+        snew(pull->group, pull->ngroup);
+        snew(pull->coord, pull->ncoord);
     }
-    for (g = 0; g < pull->ngrp+1; g++)
+    if (file_version < 95)
     {
-        do_pullgrp(fio, &pull->grp[g], bRead, file_version);
+        /* epullgPOS for position pulling, before epullgDIRPBC was removed */
+        if (pull->eGeom == epullgDIRPBC)
+        {
+            gmx_fatal(FARGS, "pull-geometry=position is no longer supported");
+        }
+        if (pull->eGeom > epullgDIRPBC)
+        {
+            pull->eGeom -= 1;
+        }
+
+        for (g = 0; g < pull->ngroup; g++)
+        {
+            /* We read and ignore a pull coordinate for group 0 */
+            do_pullgrp_tpx92(fio, &pull->group[g], &pull->coord[max(g-1,0)],
+                             bRead, file_version);
+            if (g > 0)
+            {
+                pull->coord[g-1].group[0] = 0;
+                pull->coord[g-1].group[1] = g;
+            }
+        }
+
+        pull->bPrintRef = (pull->group[0].nat > 0);
+    }
+    else
+    {
+        for (g = 0; g < pull->ngroup; g++)
+        {
+            do_pull_group(fio, &pull->group[g], bRead);
+        }
+        for (g = 0; g < pull->ncoord; g++)
+        {
+            do_pull_coord(fio, &pull->coord[g]);
+        }
     }
 }
 
@@ -968,7 +1053,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->pme_order);
     gmx_fio_do_real(fio, ir->ewald_rtol);
 
-    if (file_version >= 93)
+    if (file_version >= 95)
     {
         gmx_fio_do_real(fio, ir->ewald_rtol_lj);
     }
