@@ -498,7 +498,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
             /* find the smallest of ( nstenergy, nstdhdl ) */
             if (ir->efep != efepNO && ir->fepvals->nstdhdl > 0 &&
-                (ir->fepvals->nstdhdl < ir->nstenergy) )
+                (ir->nstenergy == 0 || ir->fepvals->nstdhdl < ir->nstenergy))
             {
                 min_nst  = ir->fepvals->nstdhdl;
                 min_name = nstdh;
