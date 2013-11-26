@@ -103,7 +103,7 @@ round_up_to_simd_width(int length, int simd_width)
  *
  ************************************************/
 
-static void reallocate_nblist(t_nblist *nl)
+void reallocate_nblist(t_nblist *nl)
 {
     if (gmx_debug_at)
     {
@@ -168,13 +168,14 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
          */
         nl->maxnri      = homenr*4;
         nl->maxnrj      = 0;
-        nl->maxlen      = 0;
         nl->nri         = -1;
         nl->nrj         = 0;
         nl->iinr        = NULL;
         nl->gid         = NULL;
         nl->shift       = NULL;
         nl->jindex      = NULL;
+        nl->jjnr        = NULL;
+        nl->excl_fep    = NULL;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
 
@@ -331,7 +332,6 @@ static void reset_nblist(t_nblist *nl)
 {
     nl->nri       = -1;
     nl->nrj       = 0;
-    nl->maxlen    = 0;
     if (nl->jindex)
     {
         nl->jindex[0] = 0;
@@ -433,14 +433,6 @@ static inline void close_i_nblist(t_nblist *nlist)
         nlist->jindex[nri+1] = nlist->nrj;
 
         len = nlist->nrj -  nlist->jindex[nri];
-
-        /* nlist length for water i molecules is treated statically
-         * in the innerloops
-         */
-        if (len > nlist->maxlen)
-        {
-            nlist->maxlen = len;
-        }
     }
 }
 
