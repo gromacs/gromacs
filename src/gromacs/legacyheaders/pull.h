@@ -47,9 +47,11 @@ extern "C" {
 /* This file contains datatypes and function declarations necessary
    for mdrun to interface with the pull code */
 
-/* Get the distance to the reference and deviation for pull group g */
-void get_pullgrp_distance(t_pull *pull, t_pbc *pbc, int g, double t,
-                          dvec dr, dvec dev);
+/* Get the distance to the reference and deviation for pull coord coord_ind */
+void get_pull_coord_distance(const t_pull *pull,
+                             int coord_ind,
+                             const t_pbc *pbc, double t,
+                             dvec dr, double *dev);
 
 /* Set the all the pull forces to zero */
 void clear_pull_forces(t_pull *pull);
