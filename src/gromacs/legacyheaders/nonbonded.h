@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,9 +69,10 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 
 #define GMX_NONBONDED_DO_LR             (1<<0)
 #define GMX_NONBONDED_DO_FORCE          (1<<1)
-#define GMX_NONBONDED_DO_FOREIGNLAMBDA  (1<<2)
-#define GMX_NONBONDED_DO_POTENTIAL      (1<<3)
-#define GMX_NONBONDED_DO_SR             (1<<4)
+#define GMX_NONBONDED_DO_SHIFTFORCE     (1<<2)
+#define GMX_NONBONDED_DO_FOREIGNLAMBDA  (1<<3)
+#define GMX_NONBONDED_DO_POTENTIAL      (1<<4)
+#define GMX_NONBONDED_DO_SR             (1<<5)
 
 void
 do_nonbonded(t_forcerec *fr,
