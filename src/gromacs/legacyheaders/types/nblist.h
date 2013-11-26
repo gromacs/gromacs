@@ -64,7 +64,6 @@ typedef struct
 
     int             nri, maxnri;  /* Current/max number of i particles	   */
     int             nrj, maxnrj;  /* Current/max number of j particles	   */
-    int             maxlen;       /* maxnr of j atoms for a single i atom  */
     int *           iinr;         /* The i-elements                        */
     int *           iinr_end;     /* The end atom, only with enlistCG      */
     int *           gid;          /* Index in energy arrays                */
@@ -72,6 +71,7 @@ typedef struct
     int *           jindex;       /* Index in jjnr                         */
     int *           jjnr;         /* The j-atom list                       */
     int *           jjnr_end;     /* The end atom, only with enltypeCG     */
+    gmx_bool *      excl_fep;     /* Exclusions for FEP with Verlet scheme */
     t_excl *        excl;         /* Exclusions, only with enltypeCG       */
 
     /* We use separate pointers for kernels that compute both potential
