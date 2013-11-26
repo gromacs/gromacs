@@ -34,47 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_FILEIO_XTCIO_H
-#define GMX_FILEIO_XTCIO_H
-
-#include "../legacyheaders/typedefs.h"
-#include "gmxfio.h"
+#ifndef GMX_FILEIO_XDR_DATATYPE_H
+#define GMX_FILEIO_XDR_DATATYPE_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/* All functions return 1 if successful, 0 otherwise
- * bOK tells if a frame is not corrupted
- */
+/* the xdr data types; note that there is no data type 'real' because
+   here we deal with the types as they are actually written to disk.  */
+typedef enum
+{
+    xdr_datatype_int,
+    xdr_datatype_float,
+    xdr_datatype_double,
+    xdr_datatype_large_int,
+    xdr_datatype_char,
+    xdr_datatype_string
+} xdr_datatype;
 
-t_fileio *open_xtc(const char *filename, const char *mode);
-/* Open a file for xdr I/O */
-
-void close_xtc(t_fileio *fio);
-/* Close the file for xdr I/O */
-
-int read_first_xtc(t_fileio *fio,
-                   int *natoms, int *step, real *time,
-                   matrix box, rvec **x, real *prec, gmx_bool *bOK);
-/* Open xtc file, read xtc file first time, allocate memory for x */
-
-int read_next_xtc(t_fileio *fio,
-                  int natoms, int *step, real *time,
-                  matrix box, rvec *x, real *prec, gmx_bool *bOK);
-/* Read subsequent frames */
-
-int write_xtc(t_fileio *fio,
-              int natoms, int step, real time,
-              matrix box, rvec *x, real prec);
-/* Write a frame to xtc file */
-
-int xtc_check(const char *str, gmx_bool bResult, const char *file, int line);
-#define XTC_CHECK(s, b) xtc_check(s, b, __FILE__, __LINE__)
-
-void xtc_check_fat_err(const char *str, gmx_bool bResult, const char *file, int line);
-#define XTC_CHECK_FAT_ERR(s, b) xtc_check_fat_err(s, b, __FILE__, __LINE__)
+/* names corresponding to the xdr_datatype enum */
+extern const char *xdr_datatype_names[];
 
 #ifdef __cplusplus
 }
