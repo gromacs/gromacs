@@ -95,13 +95,15 @@ typedef struct
  * But there is a smaller limit due to the t_excl data structure
  * which is defined in nblist.h.
  */
-#define SET_CGINFO_GID(cgi, gid)      (cgi) = (((cgi)  &  ~65535)  |  (gid)   )
-#define GET_CGINFO_GID(cgi)        ( (cgi)            &   65535)
+#define SET_CGINFO_GID(cgi, gid)     (cgi) = (((cgi)  &  ~32767) | (gid))
+#define GET_CGINFO_GID(cgi)        ( (cgi)            &   32767)
+#define SET_CGINFO_FEP(cgi)          (cgi) =  ((cgi)  |  (1<<15))
+#define GET_CGINFO_FEP(cgi)        ( (cgi)            &  (1<<15))
 #define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1<<16))
 #define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1<<16))
 #define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<17))
 #define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
-#define SET_CGINFO_SOLOPT(cgi, opt)   (cgi) = (((cgi)  & ~(3<<18)) | ((opt)<<18))
+#define SET_CGINFO_SOLOPT(cgi, opt)  (cgi) = (((cgi)  & ~(3<<18)) | ((opt)<<18))
 #define GET_CGINFO_SOLOPT(cgi)     (((cgi)>>18)       &   3)
 #define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1<<20))
 #define GET_CGINFO_CONSTR(cgi)     ( (cgi)            &  (1<<20))
@@ -114,7 +116,7 @@ typedef struct
 #define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1<<23))
 #define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1<<24))
 #define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1<<24))
-#define SET_CGINFO_NATOMS(cgi, opt)   (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
+#define SET_CGINFO_NATOMS(cgi, opt)  (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
 #define GET_CGINFO_NATOMS(cgi)     (((cgi)>>25)       &   63)
 
 
