@@ -941,6 +941,67 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
     }
 }
 
+/* Set the charges of perturbed atoms in nbnxn_atomdata_t to 0.
+ * This is to automatically remove the RF/PME self term in the nbnxn kernels.
+ * Part of the zero interactions are still calculated in the normal kernels.
+ * All perturbed interactions are calculated in the free energy kernel,
+ * using the original charge and LJ data, not nbnxn_atomdata_t.
+ */
+static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
+                                    int                  ngrid,
+                                    const nbnxn_search_t nbs)
+{
+    real               *q;
+    int                 stride_q, g, nsubc, c_offset, c, subc, i, ind;
+    const nbnxn_grid_t *grid;
+
+    if (nbat->XFormat == nbatXYZQ)
+    {
+        q        = nbat->x + ZZ + 1;
+        stride_q = STRIDE_XYZQ;
+    }
+    else
+    {
+        q        = nbat->q;
+        stride_q = 1;
+    }
+
+    for (g = 0; g < ngrid; g++)
+    {
+        grid = &nbs->grid[g];
+        if (grid->bSimple)
+        {
+            nsubc = 1;
+        }
+        else
+        {
+            nsubc = GPU_NSUBCELL;
+        }
+
+        c_offset = grid->cell0*grid->na_sc;
+
+        /* Loop over all columns and copy and fill */
+        for (c = 0; c < grid->nc*nsubc; c++)
+        {
+            /* Does this cluster contain perturbed particles? */
+            if (grid->fep[c] != 0)
+            {
+                for (i = 0; i < grid->na_c; i++)
+                {
+                    /* Is this a perturbed particle? */
+                    if (grid->fep[c] & (1 << i))
+                    {
+                        ind = c_offset + c*grid->na_c + i;
+                        /* Set atom type and charge to non-interacting */
+                        nbat->type[ind] = nbat->ntype - 1;
+                        q[ind*stride_q] = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* Copies the energy group indices to a reordered and packed array */
 static void copy_egp_to_nbat_egps(const int *a, int na, int na_round,
                                   int na_c, int bit_shift,
@@ -979,6 +1040,11 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t    *nbat,
 {
     int                 g, i, ncz, ash;
     const nbnxn_grid_t *grid;
+
+    if (nbat->nenergrp == 1)
+    {
+        return;
+    }
 
     for (g = 0; g < ngrid; g++)
     {
@@ -1019,10 +1085,12 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
 
     nbnxn_atomdata_set_charges(nbat, ngrid, nbs, mdatoms->chargeA);
 
-    if (nbat->nenergrp > 1)
+    if (nbs->bFEP)
     {
-        nbnxn_atomdata_set_energygroups(nbat, ngrid, nbs, atinfo);
+        nbnxn_atomdata_mask_fep(nbat, ngrid, nbs);
     }
+
+    nbnxn_atomdata_set_energygroups(nbat, ngrid, nbs, atinfo);
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */

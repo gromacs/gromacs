@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,15 +102,15 @@ extern "C" {
  * Bit i*CJ_SIZE + j tells if atom i and j interact.
  */
 /* All interaction mask is the same for all kernels */
-#define NBNXN_INTERACTION_MASK_ALL        0xffffffff
+static const unsigned int NBNXN_INTERACTION_MASK_ALL       = 0xffffffffU;
 /* 4x4 kernel diagonal mask */
-#define NBNXN_INTERACTION_MASK_DIAG       0x08ce
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG      = 0x08ceU;
 /* 4x2 kernel diagonal masks */
-#define NBNXN_INTERACTION_MASK_DIAG_J2_0  0x0002
-#define NBNXN_INTERACTION_MASK_DIAG_J2_1  0x002F
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_0 = 0x0002U;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_1 = 0x002fU;
 /* 4x8 kernel diagonal masks */
-#define NBNXN_INTERACTION_MASK_DIAG_J8_0  0xf0f8fcfe
-#define NBNXN_INTERACTION_MASK_DIAG_J8_1  0x0080c0e0
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
 
 
 #ifdef __cplusplus
