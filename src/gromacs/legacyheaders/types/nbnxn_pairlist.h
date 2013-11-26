@@ -37,8 +37,9 @@
 #define _nbnxn_pairlist_h
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#include <config.h>
 #endif
+#include "nblist.h"
 
 #include "../thread_mpi/atomic.h"
 
@@ -77,11 +78,11 @@ typedef void nbnxn_free_t (void *ptr);
  * is found, all subsequent j-entries in the i-entry also have full masks.
  */
 typedef struct {
-    int      cj;    /* The j-cluster                    */
-    unsigned excl;  /* The exclusion (interaction) bits */
+    int          cj;    /* The j-cluster                    */
+    unsigned int excl;  /* The exclusion (interaction) bits */
 #ifdef GMX_SIMD_IBM_QPX
     /* Indices into the arrays of SIMD interaction masks. */
-    char     interaction_mask_indices[4];
+    char         interaction_mask_indices[4];
 #endif
 } nbnxn_cj_t;
 
@@ -115,8 +116,8 @@ typedef struct {
 } nbnxn_sci_t;
 
 typedef struct {
-    unsigned imask;        /* The i-cluster interactions mask for 1 warp  */
-    int      excl_ind;     /* Index into the exclusion array for 1 warp   */
+    unsigned int imask;    /* The i-cluster interactions mask for 1 warp  */
+    int          excl_ind; /* Index into the exclusion array for 1 warp   */
 } nbnxn_im_ei_t;
 
 typedef struct {
@@ -125,7 +126,7 @@ typedef struct {
 } nbnxn_cj4_t;
 
 typedef struct {
-    unsigned pair[32];     /* Topology exclusion interaction bits for one warp,
+    unsigned int pair[32]; /* Topology exclusion interaction bits for one warp,
                             * each unsigned has bitS for 4*8 i clusters
                             */
 } nbnxn_excl_t;
@@ -176,6 +177,7 @@ typedef struct {
     int                natpair_ljq; /* Total number of atom pairs for LJ+Q kernel */
     int                natpair_lj;  /* Total number of atom pairs for LJ kernel   */
     int                natpair_q;   /* Total number of atom pairs for Q kernel    */
+    t_nblist         **nbl_fep;
 } nbnxn_pairlist_set_t;
 
 enum {
@@ -217,9 +219,9 @@ typedef struct {
 
 /* Flags for telling if threads write to force output buffers */
 typedef struct {
-    int       nflag;       /* The number of flag blocks                         */
-    unsigned *flag;        /* Bit i is set when thread i writes to a cell-block */
-    int       flag_nalloc; /* Allocation size of cxy_flag                       */
+    int           nflag;       /* The number of flag blocks                         */
+    unsigned int *flag;        /* Bit i is set when thread i writes to a cell-block */
+    int           flag_nalloc; /* Allocation size of cxy_flag                       */
 } nbnxn_buffer_flags_t;
 
 /* LJ combination rules: geometric, Lorentz-Berthelot, none */
@@ -262,8 +264,8 @@ typedef struct {
     /* Filters for topology exclusion masks for the SIMD kernels.
      * filter2 is the same as filter1, but with each element duplicated.
      */
-    unsigned                *simd_exclusion_filter1;
-    unsigned                *simd_exclusion_filter2;
+    unsigned int            *simd_exclusion_filter1;
+    unsigned int            *simd_exclusion_filter2;
 #ifdef GMX_SIMD_IBM_QPX
     real                    *simd_interaction_array; /* Array of masks needed for exclusions on QPX */
 #endif
