@@ -384,6 +384,16 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         assert(hw_opt->nthreads_omp == 1);
     }
 
+    /* TODO: remove this check when fep non-bondeds are threaded */
+    if (inputrec->cutoff_scheme == ecutsVERLET &&
+        inputrec->efep != efepNO && ngpu == 0 && hw_opt->nthreads_omp == 0)
+    {
+        /* Perturbed non-bondeds are assigned tp one thread only,
+         * don't use OpenMP so we avoid load imbalance.
+         */
+        hw_opt->nthreads_omp = 1;
+    }
+
     nthreads_tmpi =
         get_tmpi_omp_thread_division(hwinfo, hw_opt, nthreads_tot_max, ngpu);
 
@@ -1552,11 +1562,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          * as this can not be done now with domain decomposition.
          */
         mdatoms = init_mdatoms(fplog, mtop, inputrec->efep != efepNO);
-
-        if (mdatoms->nPerturbed > 0 && inputrec->cutoff_scheme == ecutsVERLET)
-        {
-            gmx_fatal(FARGS, "The Verlet cut-off scheme does not (yet) support free-energy calculations with perturbed atoms, only perturbed interactions. This will be implemented soon. Use the group scheme for now.");
-        }
 
         /* Initialize the virtual site communication */
         vsite = init_vsite(mtop, cr, FALSE);
