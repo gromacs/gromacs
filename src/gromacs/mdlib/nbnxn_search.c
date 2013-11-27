@@ -3732,14 +3732,26 @@ static void icell_set_x_supersub_simd4(int ci,
 }
 #endif
 
-static real nbnxn_rlist_inc_nonloc_fac = 0.6;
+/* Clusters at the cut-off only increase rlist by 60% of their size */
+static real nbnxn_rlist_inc_outside_fac = 0.6;
 
 /* Due to the cluster size the effective pair-list is longer than
  * that of a simple atom pair-list. This function gives the extra distance.
  */
-real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density)
+real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
 {
-    return ((0.5 + nbnxn_rlist_inc_nonloc_fac)*sqr(((cluster_size) - 1.0)/(cluster_size))*pow((cluster_size)/(atom_density), 1.0/3.0));
+    int  cluster_size_i;
+    real vol_inc_i, vol_inc_j;
+
+    /* We should get this from the setup, but currently it's the same for
+     * all setups, including GPUs.
+     */
+    cluster_size_i = NBNXN_CPU_CLUSTER_I_SIZE;
+
+    vol_inc_i = (cluster_size_i - 1)/atom_density;
+    vol_inc_j = (cluster_size_j - 1)/atom_density;
+
+    return nbnxn_rlist_inc_outside_fac*pow(vol_inc_i + vol_inc_j, 1.0/3.0);
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
@@ -3811,7 +3823,7 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_nonloc_fac*sqr((grid->na_c - 1.0)/grid->na_c)*sqrt(xy_diag2/3);
+    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*sqr((grid->na_c - 1.0)/grid->na_c)*sqrt(xy_diag2/3);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
