@@ -461,22 +461,28 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 
 
 /* Environment variable for setting nstlist */
-static const char*  NSTLIST_ENVVAR          =  "GMX_NSTLIST";
+static const char*  nstlist_envvar          =  "GMX_NSTLIST";
 /* Try to increase nstlist when using a GPU with nstlist less than this */
-static const int    NSTLIST_GPU_ENOUGH      = 20;
-/* Increase nstlist until the non-bonded cost increases more than this factor */
-static const float  NBNXN_GPU_LIST_OK_FAC   = 1.20;
-/* Don't increase nstlist beyond a non-bonded cost increases of this factor.
+static const int    nbnxn_nstlist_enough    = 20;
+/* Increase nstlist until the non-bonded cost increases more than listfac_ok,
+ * but never more than listfac_max.
  * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
  * needs 1.28 at rcoulomb=0.9 and 1.24 at rcoulomb=1.0 to get to nstlist=40.
  */
-static const float  NBNXN_GPU_LIST_MAX_FAC  = 1.30;
+/* CPU factors, non-bonded dominates the total time */
+static const float  nbnxn_cpu_listfac_ok    = 1.05;
+static const float  nbnxn_cpu_listfac_max   = 1.10;
+/* GPU factors, pair-search and domain decomposition can take a lot of time */
+static const float  nbnxn_gpu_listfac_ok    = 1.20;
+static const float  nbnxn_gpu_listfac_max   = 1.30;
 
-/* Try to increase nstlist when running on a GPU */
+/* Try to increase nstlist when using the Verlet cut-off scheme */
 static void increase_nstlist(FILE *fp, t_commrec *cr,
-                             t_inputrec *ir, const gmx_mtop_t *mtop, matrix box)
+                             t_inputrec *ir, const gmx_mtop_t *mtop, matrix box,
+                             gmx_bool bGPU)
 {
     char                  *env;
+    float                  listfac_ok, listfac_max;
     int                    nstlist_orig, nstlist_prev;
     verletbuf_list_setup_t ls;
     real                   rlist_nstlist10, rlist_inc, rlist_ok, rlist_max;
@@ -485,7 +491,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     t_state                state_tmp;
     gmx_bool               bBox, bDD, bCont;
     const char            *nstl_fmt = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
-    const char            *vbd_err  = "Can not increase nstlist for GPU run because verlet-buffer-drift is not set or used";
+    const char            *vbd_err  = "Can not increase nstlist for GPU run because verlet-buffer-tolerance is not set or used";
     const char            *box_err  = "Can not increase nstlist for GPU run because the box is too small";
     const char            *dd_err   = "Can not increase nstlist for GPU run because of domain decomposition limitations";
     char                   buf[STRLEN];
@@ -494,7 +500,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     const int nstl[] = { 20, 25, 40 };
 #define NNSTL  sizeof(nstl)/sizeof(nstl[0])
 
-    env = getenv(NSTLIST_ENVVAR);
+    env = getenv(nstlist_envvar);
     if (env == NULL)
     {
         if (fp != NULL)
@@ -503,12 +509,12 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         }
     }
 
-    if (ir->verletbuf_drift == 0)
+    if (ir->verletbuf_tol == 0)
     {
         gmx_fatal(FARGS, "You are using an old tpr file with a GPU, please generate a new tpr file with an up to date version of grompp");
     }
 
-    if (ir->verletbuf_drift < 0)
+    if (ir->verletbuf_tol < 0)
     {
         if (MASTER(cr))
         {
@@ -520,6 +526,17 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         }
 
         return;
+    }
+
+    if (bGPU)
+    {
+        listfac_ok  = nbnxn_gpu_listfac_ok;
+        listfac_max = nbnxn_gpu_listfac_max;
+    }
+    else
+    {
+        listfac_ok  = nbnxn_cpu_listfac_ok;
+        listfac_max = nbnxn_cpu_listfac_max;
     }
 
     nstlist_orig = ir->nstlist;
@@ -537,25 +554,26 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         sscanf(env, "%d", &ir->nstlist);
     }
 
-    verletbuf_get_list_setup(TRUE, &ls);
+    verletbuf_get_list_setup(bGPU, &ls);
 
     /* Allow rlist to make the list a given factor larger than the list
      * would be with nstlist=10.
      */
     nstlist_prev = ir->nstlist;
     ir->nstlist  = 10;
-    calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_drift, &ls,
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_tol, &ls,
                             NULL, &rlist_nstlist10);
     ir->nstlist  = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
-    rlist_inc = nbnxn_get_rlist_effective_inc(NBNXN_GPU_CLUSTER_SIZE, mtop->natoms/det(box));
-    rlist_ok  = (rlist_nstlist10 + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC, 1.0/3.0) - rlist_inc;
-    rlist_max = (rlist_nstlist10 + rlist_inc)*pow(NBNXN_GPU_LIST_MAX_FAC, 1.0/3.0) - rlist_inc;
+    rlist_inc = nbnxn_get_rlist_effective_inc(ls.cluster_size_j,
+                                              mtop->natoms/det(box));
+    rlist_ok  = (rlist_nstlist10 + rlist_inc)*pow(listfac_ok, 1.0/3.0) - rlist_inc;
+    rlist_max = (rlist_nstlist10 + rlist_inc)*pow(listfac_max, 1.0/3.0) - rlist_inc;
     if (debug)
     {
-        fprintf(debug, "GPU nstlist tuning: rlist_inc %.3f rlist_max %.3f\n",
-                rlist_inc, rlist_max);
+        fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n",
+                rlist_inc, rlist_ok, rlist_max);
     }
 
     i            = 0;
@@ -569,7 +587,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         }
 
         /* Set the pair-list buffer size in ir */
-        calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_drift, &ls,
+        calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_tol, &ls,
                                 NULL, &rlist_new);
 
         /* Does rlist fit in the box? */
@@ -584,6 +602,12 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             }
             copy_mat(box, state_tmp.box);
             bDD = change_dd_cutoff(cr, &state_tmp, ir, rlist_new);
+        }
+
+        if (debug)
+        {
+            fprintf(debug, "nstlist %d rlist %.3f bBox %d bDD %d\n",
+                    ir->nstlist, rlist_new, bBox, bDD);
         }
 
         bCont = FALSE;
@@ -652,7 +676,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
      */
     *bUseGPU = hwinfo->bCanUseGPU || (getenv("GMX_EMULATE_GPU") != NULL);
 
-    if (ir->verletbuf_drift > 0)
+    if (ir->verletbuf_tol > 0)
     {
         /* Update the Verlet buffer size for the current run setup */
         verletbuf_list_setup_t ls;
@@ -665,7 +689,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
         verletbuf_get_list_setup(*bUseGPU, &ls);
 
         calc_verlet_buffer_size(mtop, det(box), ir,
-                                ir->verletbuf_drift, &ls,
+                                ir->verletbuf_tol, &ls,
                                 NULL, &rlist_new);
         if (rlist_new != ir->rlist)
         {
@@ -682,12 +706,11 @@ static void prepare_verlet_scheme(FILE                           *fplog,
 
     /* With GPU or emulation we should check nstlist for performance */
     if ((EI_DYNAMICS(ir->eI) &&
-         *bUseGPU &&
-         ir->nstlist < NSTLIST_GPU_ENOUGH) ||
-        getenv(NSTLIST_ENVVAR) != NULL)
+         ir->nstlist < nbnxn_nstlist_enough) ||
+        getenv(nstlist_envvar) != NULL)
     {
         /* Choose a better nstlist */
-        increase_nstlist(fplog, cr, ir, mtop, box);
+        increase_nstlist(fplog, cr, ir, mtop, box, *bUseGPU);
     }
 }
 
@@ -699,8 +722,8 @@ static void convert_to_verlet_scheme(FILE *fplog,
 
     md_print_warn(NULL, fplog, "%s\n", conv_mesg);
 
-    ir->cutoff_scheme   = ecutsVERLET;
-    ir->verletbuf_drift = 0.005;
+    ir->cutoff_scheme = ecutsVERLET;
+    ir->verletbuf_tol = 0.005;
 
     if (ir->rcoulomb != ir->rvdw)
     {
@@ -734,11 +757,11 @@ static void convert_to_verlet_scheme(FILE *fplog,
             }
         }
 
-        /* We set the target energy drift to a small number.
+        /* We set the pair energy error tolerance to a small number.
          * Note that this is only for testing. For production the user
          * should think about this and set the mdp options.
          */
-        ir->verletbuf_drift = 1e-4;
+        ir->verletbuf_tol = 1e-4;
     }
 
     if (inputrec2nboundeddim(ir) != 3)
@@ -756,12 +779,12 @@ static void convert_to_verlet_scheme(FILE *fplog,
         verletbuf_list_setup_t ls;
 
         verletbuf_get_list_setup(FALSE, &ls);
-        calc_verlet_buffer_size(mtop, box_vol, ir, ir->verletbuf_drift, &ls,
+        calc_verlet_buffer_size(mtop, box_vol, ir, ir->verletbuf_tol, &ls,
                                 NULL, &ir->rlist);
     }
     else
     {
-        ir->verletbuf_drift = -1;
+        ir->verletbuf_tol = -1;
         ir->rlist           = 1.05*max(ir->rvdw, ir->rcoulomb);
     }
 

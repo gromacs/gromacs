@@ -1759,14 +1759,14 @@ int gmx_grompp(int argc, char *argv[])
              bGenVel ? state.v : NULL,
              wi);
 
-    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0 &&
+    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 &&
         ir->nstlist > 1)
     {
         if (EI_DYNAMICS(ir->eI) &&
             !(EI_MD(ir->eI) && ir->etc == etcNO) &&
             inputrec2nboundeddim(ir) == 3)
         {
-            set_verlet_buffer(sys, ir, state.box, ir->verletbuf_drift, wi);
+            set_verlet_buffer(sys, ir, state.box, ir->verletbuf_tol, wi);
         }
     }
 
