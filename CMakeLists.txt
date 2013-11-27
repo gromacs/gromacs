@@ -357,6 +357,7 @@ endif()
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
+    add_definitions(-DGMX_DOUBLE)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
 endif(GMX_DOUBLE)
 if(GMX_SOFTWARE_INVSQRT)
