@@ -813,11 +813,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     if (file_version >= 81)
     {
-        gmx_fio_do_real(fio, ir->verletbuf_drift);
+        gmx_fio_do_real(fio, ir->verletbuf_tol);
     }
     else
     {
-        ir->verletbuf_drift = 0;
+        ir->verletbuf_tol = 0;
     }
     gmx_fio_do_real(fio, ir->rlist);
     if (file_version >= 67)
