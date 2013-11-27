@@ -56,9 +56,6 @@
 #pragma warning (disable : 4090)
 #endif
 
-/* Name of package (translate from cmake to autoconf macro name) */
-#define PACKAGE  "@PROJECT_NAME@"
-
 /* Version number of package (translate from cmake to autoconf macro name) */
 #define VERSION  "@PROJECT_VERSION@"
 
@@ -109,9 +106,6 @@
 /* Use Intel MKL FFT library */
 #cmakedefine GMX_FFT_MKL
 
-/* Use AMD core math library */
-#cmakedefine GMX_FFT_ACML
-
 /* Target platform is x86 or x86_64 */
 #cmakedefine GMX_TARGET_X86
 
@@ -155,7 +149,7 @@
 #define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
 
 /* Integer byte order is big endian. */
-#cmakedefine GMX_INTEGER_BIG_ENDIAN 
+#cmakedefine GMX_INTEGER_BIG_ENDIAN
 
 /* Use our own instead of system XDR libraries */
 #cmakedefine GMX_INTERNAL_XDR
@@ -166,7 +160,7 @@
 /* MPI_IN_PLACE exists for collective operations */
 #cmakedefine MPI_IN_PLACE_EXISTS
 
-/* Make a parallel version of GROMACS using message passing 
+/* Make a parallel version of GROMACS using message passing
    (MPI or thread_mpi) */
 #cmakedefine GMX_MPI
 
@@ -229,12 +223,6 @@
 
 /* Define for Linux pthread_setaffinity_np */
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
-
-/* Define for Windows NUMA-aware allocator functions*/
-#cmakedefine TMPI_WINDOWS_NUMA_API
-
-/* Define for GetSystemInfo() */
-#cmakedefine HAVE_SYSTEM_INFO
 
 /* Define for X-Windows */
 #cmakedefine GMX_X11
