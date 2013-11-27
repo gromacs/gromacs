@@ -712,7 +712,7 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
 }
 
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
-                             const t_inputrec *ir, real drift_target,
+                             const t_inputrec *ir,
                              const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist)
@@ -944,7 +944,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                     drift);
         }
 
-        if (fabs(drift) > drift_target)
+        if (fabs(drift) > ir->verletbuf_tol)
         {
             ib0 = ib;
         }
