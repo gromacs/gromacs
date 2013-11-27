@@ -129,6 +129,7 @@ struct mdrunner_arglist
     const char     *ddcsy;
     const char     *ddcsz;
     const char     *nbpu_opt;
+    int             nstlist_cmdline;
     gmx_large_int_t nsteps_cmdline;
     int             nstepout;
     int             resetstep;
@@ -173,7 +174,7 @@ static void mdrunner_start_fn(void *arg)
                         mc.ddxyz, mc.dd_node_order, mc.rdd,
                         mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                         mc.ddcsx, mc.ddcsy, mc.ddcsz,
-                        mc.nbpu_opt,
+                        mc.nbpu_opt, mc.nstlist_cmdline,
                         mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
                         mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
                         mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
@@ -190,7 +191,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          ivec ddxyz, int dd_node_order, real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
-                                         const char *nbpu_opt,
+                                         const char *nbpu_opt, int nstlist_cmdline,
                                          gmx_large_int_t nsteps_cmdline,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
@@ -235,6 +236,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->ddcsy          = ddcsy;
     mda->ddcsz          = ddcsz;
     mda->nbpu_opt       = nbpu_opt;
+    mda->nstlist_cmdline= nstlist_cmdline;
     mda->nsteps_cmdline = nsteps_cmdline;
     mda->nstepout       = nstepout;
     mda->resetstep      = resetstep;
@@ -467,55 +469,73 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 #endif /* GMX_THREAD_MPI */
 
 
-/* Environment variable for setting nstlist */
-static const char*  NSTLIST_ENVVAR          =  "GMX_NSTLIST";
-/* Try to increase nstlist when using a GPU with nstlist less than this */
-static const int    NSTLIST_GPU_ENOUGH      = 20;
-/* Increase nstlist until the non-bonded cost increases more than this factor */
-static const float  NBNXN_GPU_LIST_OK_FAC   = 1.20;
-/* Don't increase nstlist beyond a non-bonded cost increases of this factor.
+/* We determine the extra cost of the non-bonded kernels compared to
+ * a reference nstlist value of 10 (which is the default in grompp).
+ */
+static const int    nbnxn_reference_nstlist = 10;
+/* The values to try when switching  */
+const int nstlist_try[] = { 20, 25, 40 };
+#define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
+/* Increase nstlist until the non-bonded cost increases more than listfac_ok,
+ * but never more than listfac_max.
  * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
  * needs 1.28 at rcoulomb=0.9 and 1.24 at rcoulomb=1.0 to get to nstlist=40.
+ * Note that both CPU and GPU factors are conservative. Performance should
+ * not go down due to this tuning, except with a relatively slow GPU.
+ * On the other hand, at medium/high parallelization or with fast GPUs
+ * nstlist will not be increased enough to reach optimal performance.
  */
-static const float  NBNXN_GPU_LIST_MAX_FAC  = 1.30;
+/* CPU: pair-search is about a factor 1.5 slower than the non-bonded kernel */
+static const float  nbnxn_cpu_listfac_ok    = 1.05;
+static const float  nbnxn_cpu_listfac_max   = 1.09;
+/* GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel */
+static const float  nbnxn_gpu_listfac_ok    = 1.20;
+static const float  nbnxn_gpu_listfac_max   = 1.30;
 
-/* Try to increase nstlist when running on a GPU */
+/* Try to increase nstlist when using the Verlet cut-off scheme */
 static void increase_nstlist(FILE *fp, t_commrec *cr,
-                             t_inputrec *ir, const gmx_mtop_t *mtop, matrix box)
+                             t_inputrec *ir, int nstlist_cmdline,
+                             const gmx_mtop_t *mtop, matrix box,
+                             gmx_bool bGPU)
 {
-    char                  *env;
+    float                  listfac_ok, listfac_max;
     int                    nstlist_orig, nstlist_prev;
     verletbuf_list_setup_t ls;
     real                   rlist_nstlist10, rlist_inc, rlist_ok, rlist_max;
     real                   rlist_new, rlist_prev;
-    int                    i;
+    int                    nstlist_ind = 0;
     t_state                state_tmp;
     gmx_bool               bBox, bDD, bCont;
-    const char            *nstl_fmt = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
-    const char            *vbd_err  = "Can not increase nstlist for GPU run because verlet-buffer-drift is not set or used";
-    const char            *box_err  = "Can not increase nstlist for GPU run because the box is too small";
-    const char            *dd_err   = "Can not increase nstlist for GPU run because of domain decomposition limitations";
+    const char            *nstl_gpu = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
+    const char            *vbd_err  = "Can not increase nstlist because verlet-buffer-tolerance is not set or used";
+    const char            *box_err  = "Can not increase nstlist because the box is too small";
+    const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
     char                   buf[STRLEN];
 
-    /* Number of + nstlist alternative values to try when switching  */
-    const int nstl[] = { 20, 25, 40 };
-#define NNSTL  sizeof(nstl)/sizeof(nstl[0])
-
-    env = getenv(NSTLIST_ENVVAR);
-    if (env == NULL)
+    if (nstlist_cmdline <= 0)
     {
-        if (fp != NULL)
+        if (fp != NULL && bGPU && ir->nstlist < nstlist_try[0])
         {
-            fprintf(fp, nstl_fmt, ir->nstlist);
+            fprintf(fp, nstl_gpu, ir->nstlist);
+        }
+        nstlist_ind = 0;
+        while (nstlist_ind < NNSTL && ir->nstlist >= nstlist_try[nstlist_ind])
+        {
+            nstlist_ind++;
+        }
+        if (nstlist_ind == NNSTL)
+        {
+            /* There are no larger nstlist value to try */
+            return;
         }
     }
 
-    if (ir->verletbuf_drift == 0)
+    if (ir->verletbuf_tol == 0 && bGPU)
     {
         gmx_fatal(FARGS, "You are using an old tpr file with a GPU, please generate a new tpr file with an up to date version of grompp");
     }
 
-    if (ir->verletbuf_drift < 0)
+    if (ir->verletbuf_tol < 0)
     {
         if (MASTER(cr))
         {
@@ -529,55 +549,60 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         return;
     }
 
-    nstlist_orig = ir->nstlist;
-    if (env != NULL)
+    if (bGPU)
     {
-        sprintf(buf, "Getting nstlist from environment variable GMX_NSTLIST=%s", env);
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "%s\n", buf);
-        }
-        if (fp != NULL)
-        {
-            fprintf(fp, "%s\n", buf);
-        }
-        sscanf(env, "%d", &ir->nstlist);
+        listfac_ok  = nbnxn_gpu_listfac_ok;
+        listfac_max = nbnxn_gpu_listfac_max;
+    }
+    else
+    {
+        listfac_ok  = nbnxn_cpu_listfac_ok;
+        listfac_max = nbnxn_cpu_listfac_max;
     }
 
-    verletbuf_get_list_setup(TRUE, &ls);
+    nstlist_orig = ir->nstlist;
+    if (nstlist_cmdline > 0)
+    {
+        if (fp)
+        {
+            sprintf(buf, "Getting nstlist=%d from command line option",
+                    nstlist_cmdline);
+        }
+        ir->nstlist = nstlist_cmdline;
+    }
+
+    verletbuf_get_list_setup(bGPU, &ls);
 
     /* Allow rlist to make the list a given factor larger than the list
      * would be with nstlist=10.
      */
     nstlist_prev = ir->nstlist;
     ir->nstlist  = 10;
-    calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_drift, &ls,
-                            NULL, &rlist_nstlist10);
+    calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_nstlist10);
     ir->nstlist  = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
-    rlist_inc = nbnxn_get_rlist_effective_inc(NBNXN_GPU_CLUSTER_SIZE, mtop->natoms/det(box));
-    rlist_ok  = (rlist_nstlist10 + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC, 1.0/3.0) - rlist_inc;
-    rlist_max = (rlist_nstlist10 + rlist_inc)*pow(NBNXN_GPU_LIST_MAX_FAC, 1.0/3.0) - rlist_inc;
+    rlist_inc = nbnxn_get_rlist_effective_inc(ls.cluster_size_j,
+                                              mtop->natoms/det(box));
+    rlist_ok  = (rlist_nstlist10 + rlist_inc)*pow(listfac_ok, 1.0/3.0) - rlist_inc;
+    rlist_max = (rlist_nstlist10 + rlist_inc)*pow(listfac_max, 1.0/3.0) - rlist_inc;
     if (debug)
     {
-        fprintf(debug, "GPU nstlist tuning: rlist_inc %.3f rlist_max %.3f\n",
-                rlist_inc, rlist_max);
+        fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n",
+                rlist_inc, rlist_ok, rlist_max);
     }
 
-    i            = 0;
     nstlist_prev = nstlist_orig;
     rlist_prev   = ir->rlist;
     do
     {
-        if (env == NULL)
+        if (nstlist_cmdline <= 0)
         {
-            ir->nstlist = nstl[i];
+            ir->nstlist = nstlist_try[nstlist_ind];
         }
 
         /* Set the pair-list buffer size in ir */
-        calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_drift, &ls,
-                                NULL, &rlist_new);
+        calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_new);
 
         /* Does rlist fit in the box? */
         bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC, box));
@@ -593,16 +618,22 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             bDD = change_dd_cutoff(cr, &state_tmp, ir, rlist_new);
         }
 
+        if (debug)
+        {
+            fprintf(debug, "nstlist %d rlist %.3f bBox %d bDD %d\n",
+                    ir->nstlist, rlist_new, bBox, bDD);
+        }
+
         bCont = FALSE;
 
-        if (env == NULL)
+        if (nstlist_cmdline <= 0)
         {
             if (bBox && bDD && rlist_new <= rlist_max)
             {
                 /* Increase nstlist */
                 nstlist_prev = ir->nstlist;
                 rlist_prev   = rlist_new;
-                bCont        = (i+1 < NNSTL && rlist_new < rlist_ok);
+                bCont        = (nstlist_ind+1 < NNSTL && rlist_new < rlist_ok);
             }
             else
             {
@@ -614,7 +645,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             }
         }
 
-        i++;
+        nstlist_ind++;
     }
     while (bCont);
 
@@ -648,11 +679,12 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 static void prepare_verlet_scheme(FILE                           *fplog,
                                   t_commrec                      *cr,
                                   t_inputrec                     *ir,
+                                  int                             nstlist_cmdline,
                                   const gmx_mtop_t               *mtop,
                                   matrix                          box,
                                   gmx_bool                        bUseGPU)
 {
-    if (ir->verletbuf_drift > 0)
+    if (ir->verletbuf_tol > 0)
     {
         /* Update the Verlet buffer size for the current run setup */
         verletbuf_list_setup_t ls;
@@ -664,9 +696,8 @@ static void prepare_verlet_scheme(FILE                           *fplog,
          */
         verletbuf_get_list_setup(bUseGPU, &ls);
 
-        calc_verlet_buffer_size(mtop, det(box), ir,
-                                ir->verletbuf_drift, &ls,
-                                NULL, &rlist_new);
+        calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_new);
+
         if (rlist_new != ir->rlist)
         {
             if (fplog != NULL)
@@ -680,14 +711,16 @@ static void prepare_verlet_scheme(FILE                           *fplog,
         }
     }
 
-    /* With GPU or emulation we should check nstlist for performance */
-    if ((EI_DYNAMICS(ir->eI) &&
-         bUseGPU &&
-         ir->nstlist < NSTLIST_GPU_ENOUGH) ||
-        getenv(NSTLIST_ENVVAR) != NULL)
+    if (nstlist_cmdline > 0 && (!EI_DYNAMICS(ir->eI) || ir->verletbuf_tol <= 0))
     {
-        /* Choose a better nstlist */
-        increase_nstlist(fplog, cr, ir, mtop, box);
+        gmx_fatal(FARGS, "Can not set nstlist without %s",
+                  !EI_DYNAMICS(ir->eI) ? "dynamics" : "verlet-buffer-tolerance");
+    }
+
+    if (EI_DYNAMICS(ir->eI))
+    {
+        /* Set or try nstlist values */
+        increase_nstlist(fplog, cr, ir, nstlist_cmdline, mtop, box, bUseGPU);
     }
 }
 
@@ -699,8 +732,8 @@ static void convert_to_verlet_scheme(FILE *fplog,
 
     md_print_warn(NULL, fplog, "%s\n", conv_mesg);
 
-    ir->cutoff_scheme   = ecutsVERLET;
-    ir->verletbuf_drift = 0.005;
+    ir->cutoff_scheme = ecutsVERLET;
+    ir->verletbuf_tol = 0.005;
 
     if (ir->rcoulomb != ir->rvdw)
     {
@@ -734,11 +767,11 @@ static void convert_to_verlet_scheme(FILE *fplog,
             }
         }
 
-        /* We set the target energy drift to a small number.
+        /* We set the pair energy error tolerance to a small number.
          * Note that this is only for testing. For production the user
          * should think about this and set the mdp options.
          */
-        ir->verletbuf_drift = 1e-4;
+        ir->verletbuf_tol = 1e-4;
     }
 
     if (inputrec2nboundeddim(ir) != 3)
@@ -756,12 +789,11 @@ static void convert_to_verlet_scheme(FILE *fplog,
         verletbuf_list_setup_t ls;
 
         verletbuf_get_list_setup(FALSE, &ls);
-        calc_verlet_buffer_size(mtop, box_vol, ir, ir->verletbuf_drift, &ls,
-                                NULL, &ir->rlist);
+        calc_verlet_buffer_size(mtop, box_vol, ir, &ls, NULL, &ir->rlist);
     }
     else
     {
-        ir->verletbuf_drift = -1;
+        ir->verletbuf_tol = -1;
         ir->rlist           = 1.05*max(ir->rvdw, ir->rcoulomb);
     }
 
@@ -1005,7 +1037,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              ivec ddxyz, int dd_node_order, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt,
+             const char *nbpu_opt, int nstlist_cmdline,
              gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
@@ -1083,30 +1115,36 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                        getenv("GMX_EMULATE_GPU") != NULL);
 
             prepare_verlet_scheme(fplog, cr,
-                                  inputrec, mtop, state->box,
+                                  inputrec, nstlist_cmdline, mtop, state->box,
                                   bUseGPU);
         }
-        else if (hwinfo->gpu_info.ncuda_dev_compatible > 0)
+        else
         {
-            md_print_warn(cr, fplog,
-                          "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
-                          "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n"
-                          "      (for quick performance testing you can use the -testverlet option)\n");
+            if (nstlist_cmdline > 0)
+            {
+                gmx_fatal(FARGS, "Can not set nstlist with the group cut-off scheme");
+            }
+
+            if (hwinfo->gpu_info.ncuda_dev_compatible > 0)
+            {
+                md_print_warn(cr, fplog,
+                              "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
+                              "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n"
+                              "      (for quick performance testing you can use the -testverlet option)\n");
+            }
 
             if (bForceUseGPU)
             {
                 gmx_fatal(FARGS, "GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
-        }
+
 #ifdef GMX_TARGET_BGQ
-        else
-        {
             md_print_warn(cr, fplog,
                           "NOTE: There is no SIMD implementation of the group scheme kernels on\n"
                           "      BlueGene/Q. You will observe better performance from using the\n"
                           "      Verlet cut-off scheme.\n");
-        }
 #endif
+        }
     }
 
     /* Check for externally set OpenMP affinity and turn off internal
@@ -1173,7 +1211,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                         oenv, bVerbose, bCompact, nstglobalcomm,
                                         ddxyz, dd_node_order, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
-                                        nbpu_opt,
+                                        nbpu_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
                                         cpt_period, max_hours, deviceOptions,

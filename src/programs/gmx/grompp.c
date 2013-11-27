@@ -1252,7 +1252,6 @@ static void check_gbsa_params(gpp_atomtype_t atype)
 static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               t_inputrec       *ir,
                               matrix            box,
-                              real              verletbuf_drift,
                               warninp_t         wi)
 {
     real                   ref_T;
@@ -1267,7 +1266,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     {
         if (ir->opts.ref_t[i] < 0)
         {
-            warning(wi, "Some atom groups do not use temperature coupling. This cannot be accounted for in the energy drift estimation for the Verlet buffer size. The energy drift and the Verlet buffer might be underestimated.");
+            warning(wi, "Some atom groups do not use temperature coupling. This cannot be accounted for in the energy error estimation for the Verlet buffer size. The energy error and the Verlet buffer might be underestimated.");
         }
         else
         {
@@ -1275,7 +1274,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
         }
     }
 
-    printf("Determining Verlet buffer for an energy drift of %g kJ/mol/ps at %g K\n", verletbuf_drift, ref_T);
+    printf("Determining Verlet buffer for a tolerance of %g kJ/mol/ps at %g K\n", ir->verletbuf_tol, ref_T);
 
     for (i = 0; i < ir->opts.ngtc; i++)
     {
@@ -1290,17 +1289,17 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     /* Calculate the buffer size for simple atom vs atoms list */
     ls.cluster_size_i = 1;
     ls.cluster_size_j = 1;
-    calc_verlet_buffer_size(mtop, det(box), ir, verletbuf_drift,
+    calc_verlet_buffer_size(mtop, det(box), ir,
                             &ls, &n_nonlin_vsite, &rlist_1x1);
 
     /* Set the pair-list buffer size in ir */
     verletbuf_get_list_setup(FALSE, &ls);
-    calc_verlet_buffer_size(mtop, det(box), ir, verletbuf_drift,
+    calc_verlet_buffer_size(mtop, det(box), ir,
                             &ls, &n_nonlin_vsite, &ir->rlist);
 
     if (n_nonlin_vsite > 0)
     {
-        sprintf(warn_buf, "There are %d non-linear virtual site constructions. Their contribution to the energy drift is approximated. In most cases this does not affect the energy drift significantly.", n_nonlin_vsite);
+        sprintf(warn_buf, "There are %d non-linear virtual site constructions. Their contribution to the energy error is approximated. In most cases this does not affect the error significantly.", n_nonlin_vsite);
         warning_note(wi, warn_buf);
     }
 
@@ -1314,7 +1313,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
 
     if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
     {
-        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-drift.", ir->rlistlong, sqrt(max_cutoff2(ir->ePBC, box)));
+        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlistlong, sqrt(max_cutoff2(ir->ePBC, box)));
     }
 }
 
@@ -1765,14 +1764,14 @@ int gmx_grompp(int argc, char *argv[])
              bGenVel ? state.v : NULL,
              wi);
 
-    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0 &&
+    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 &&
         ir->nstlist > 1)
     {
         if (EI_DYNAMICS(ir->eI) &&
             !(EI_MD(ir->eI) && ir->etc == etcNO) &&
             inputrec2nboundeddim(ir) == 3)
         {
-            set_verlet_buffer(sys, ir, state.box, ir->verletbuf_drift, wi);
+            set_verlet_buffer(sys, ir, state.box, wi);
         }
     }
 

@@ -239,7 +239,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_error(wi, "rvdw should be >= 0");
     }
     if (ir->rlist < 0 &&
-        !(ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0))
+        !(ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0))
     {
         warning_error(wi, "rlist should be >= 0");
     }
@@ -325,11 +325,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         rc_max = max(ir->rvdw, ir->rcoulomb);
 
-        if (ir->verletbuf_drift <= 0)
+        if (ir->verletbuf_tol <= 0)
         {
-            if (ir->verletbuf_drift == 0)
+            if (ir->verletbuf_tol == 0)
             {
-                warning_error(wi, "Can not have an energy drift of exactly 0");
+                warning_error(wi, "Can not have Verlet buffer tolerance of exactly 0");
             }
 
             if (ir->rlist < rc_max)
@@ -346,7 +346,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             if (ir->rlist > rc_max)
             {
-                warning_note(wi, "You have set rlist larger than the interaction cut-off, but you also have verlet-buffer-drift > 0. Will set rlist using verlet-buffer-drift.");
+                warning_note(wi, "You have set rlist larger than the interaction cut-off, but you also have verlet-buffer-tolerance > 0. Will set rlist using verlet-buffer-tolerance.");
             }
 
             if (ir->nstlist == 1)
@@ -360,12 +360,12 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 {
                     if (EI_MD(ir->eI) && ir->etc == etcNO)
                     {
-                        warning_error(wi, "Temperature coupling is required for calculating rlist using the energy drift with verlet-buffer-drift > 0. Either use temperature coupling or set rlist yourself together with verlet-buffer-drift = -1.");
+                        warning_error(wi, "Temperature coupling is required for calculating rlist using the energy tolerance with verlet-buffer-tolerance > 0. Either use temperature coupling or set rlist yourself together with verlet-buffer-tolerance = -1.");
                     }
 
                     if (inputrec2nboundeddim(ir) < 3)
                     {
-                        warning_error(wi, "The box volume is required for calculating rlist from the energy drift with verlet-buffer-drift > 0. You are using at least one unbounded dimension, so no volume can be computed. Either use a finite box, or set rlist yourself together with verlet-buffer-drift = -1.");
+                        warning_error(wi, "The box volume is required for calculating rlist from the energy drift with verlet-buffer-tolerance > 0. You are using at least one unbounded dimension, so no volume can be computed. Either use a finite box, or set rlist yourself together with verlet-buffer-tolerance = -1.");
                     }
                     /* Set rlist temporarily so we can continue processing */
                     ir->rlist = rc_max;
@@ -1713,6 +1713,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
     REPL_TYPE("foreign-lambda", "fep-lambdas");
+    REPL_TYPE("verlet-buffer-drift", "verlet-buffer-tolerance");
 
     CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
     CTYPE ("Preprocessor information: use cpp syntax.");
@@ -1792,9 +1793,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Periodic boundary conditions: xyz, no, xy");
     EETYPE("pbc",         ir->ePBC,       epbc_names);
     EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
-    CTYPE ("Allowed energy drift due to the Verlet buffer in kJ/mol/ps per atom,");
+    CTYPE ("Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
     CTYPE ("a value of -1 means: use rlist");
-    RTYPE("verlet-buffer-drift", ir->verletbuf_drift,    0.005);
+    RTYPE("verlet-buffer-tolerance", ir->verletbuf_tol,    0.005);
     CTYPE ("nblist cut-off");
     RTYPE ("rlist",   ir->rlist,  1.0);
     CTYPE ("long-range cut-off for switched potentials");
