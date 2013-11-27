@@ -132,6 +132,15 @@ int gmx_mdrun(int argc, char *argv[])
         "multiple times, e.g. \"[TT]0011[tt]\" for four ranks sharing two GPUs in this node.",
         "This works within a single simulation, or a multi-simulation, with any form of MPI.",
         "[PAR]",
+        "With the Verlet cut-off scheme and verlet-buffer-tolerance set,",
+        "the pair-list update interval nstlist can be chosen freely and",
+        "the pair-list cut-off adapted to stay within the tolerance.",
+        "By default [TT]mdrun[tt] will try to increase nstlist to improve",
+        "the performance. For CPU runs nstlist might increase to 20, for GPU",
+        "runs up till 40. But for medium to high parallelization or with",
+        "fast GPUs, a larger nstlist value can give much better performance.",
+        "The value of nstlist can be set manually with [TT]-nstlist[tt].",
+        "[PAR]",
         "When using PME with separate PME nodes or with a GPU, the two major",
         "compute tasks, the non-bonded force calculation and the PME calculation",
         "run on different compute resources. If this load is not balanced,",
@@ -419,6 +428,7 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bReproducible = FALSE;
 
     int             npme          = -1;
+    int             nstlist       = 0;
     int             nmultisim     = 0;
     int             nstglobalcomm = -1;
     int             repl_ex_nst   = 0;
@@ -503,6 +513,8 @@ int gmx_mdrun(int argc, char *argv[])
           "Global communication frequency" },
         { "-nb",      FALSE, etENUM, {&nbpu_opt},
           "Calculate non-bonded interactions on" },
+        { "-nstlist", FALSE, etINT, {&nstlist},
+          "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
         { "-tunepme", FALSE, etBOOL, {&bTunePME},
           "Optimize PME load between PP/PME nodes or GPU/CPU" },
         { "-testverlet", FALSE, etBOOL, {&bTestVerlet},
@@ -732,7 +744,7 @@ int gmx_mdrun(int argc, char *argv[])
     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
                   nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
                   dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                  nbpu_opt[0],
+                  nbpu_opt[0], nstlist,
                   nsteps, nstepout, resetstep,
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                   pforce, cpt_period, max_hours, deviceOptions, Flags);
