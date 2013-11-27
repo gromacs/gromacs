@@ -94,9 +94,6 @@
 /* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
 #cmakedefine GMX_DISABLE_FFTW_MEASURE
 
-/* Compile in double precision */
-#cmakedefine GMX_DOUBLE
-
 /* Use Built-in FFTPACK FFT library */
 #cmakedefine GMX_FFT_FFTPACK
 
