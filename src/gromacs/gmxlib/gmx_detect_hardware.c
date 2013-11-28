@@ -40,6 +40,11 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef HAVE_UNISTD_H
+/* For sysconf */
+#include <unistd.h>
+#endif
+
 #include "types/enums.h"
 #include "types/hw_info.h"
 #include "types/commrec.h"
@@ -497,6 +502,8 @@ static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
     ret = sysconf(_SC_NPROCESSORS_CONF);
 #elif defined(_SC_NPROC_CONF)
     ret = sysconf(_SC_NPROC_CONF);
+#else
+#warning "No valid sysconf argument value found. Executables will not be able to determine the number of hardware threads: mdrun will use 1 thread by default!"
 #endif /* End of check for sysconf argument values */
 
 #else
