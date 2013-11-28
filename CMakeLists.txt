@@ -599,17 +599,7 @@ if(GMX_GIT_VERSION_INFO)
     # found or the version is too small, we can't generate version information.
     find_package(Git)
 
-    # Find out the git version
-    if(GIT_FOUND AND NOT GIT_VERSION)
-      execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
-        OUTPUT_VARIABLE _exec_out
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-      string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
-      set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
-      mark_as_advanced(GIT_VERSION)
-    endif()
-
-    if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.3")
+    if(NOT GIT_FOUND OR GIT_VERSION_STRING VERSION_LESS "1.5.3")
         message(FATAL_ERROR
             "No compatible git version found (>= 1.5.3 required). "
             "Won't be able to generate development version information. "
