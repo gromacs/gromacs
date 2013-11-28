@@ -40,6 +40,11 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef HAVE_UNISTD_H
+/* For sysconf */
+#include <unistd.h>
+#endif
+
 #include "types/enums.h"
 #include "types/hw_info.h"
 #include "types/commrec.h"
