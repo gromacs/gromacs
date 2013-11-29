@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -162,19 +163,16 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        int        flags,
                        float      *cycles_pme)
 {
-    int         i, j, status;
+    int         i, j;
     int         donb_flags;
     gmx_bool    bDoEpot, bSepDVDL, bSB;
     int         pme_flags;
     matrix      boxs;
     rvec        box_size;
-    real        Vsr, Vlr, Vcorr = 0;
     t_pbc       pbc;
-    real        dvdgb;
     char        buf[22];
     double      clam_i, vlam_i;
-    real        dvdl_dum[efptNR], dvdl, dvdl_nb[efptNR], lam_i[efptNR];
-    real        dvdlsum;
+    real        dvdl_dum[efptNR], dvdl_nb[efptNR], lam_i[efptNR];
 
 #ifdef GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
@@ -227,10 +225,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     if (ir->nwall)
     {
         /* foreign lambda component for walls */
-        dvdl = do_walls(ir, fr, box, md, x, f, lambda[efptVDW],
-                        enerd->grpp.ener[egLJSR], nrnb);
-        PRINT_SEPDVDL("Walls", 0.0, dvdl);
-        enerd->dvdl_lin[efptVDW] += dvdl;
+        real dvdl_walls = do_walls(ir, fr, box, md, x, f, lambda[efptVDW],
+                                   enerd->grpp.ener[egLJSR], nrnb);
+        PRINT_SEPDVDL("Walls", 0.0, dvdl_walls);
+        enerd->dvdl_lin[efptVDW] += dvdl_walls;
     }
 
     /* If doing GB, reset dvda and calculate the Born radii */
@@ -342,19 +340,23 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
     }
 
-    Vsr = 0;
     if (bSepDVDL)
     {
+        real V_short_range = 0;
+        real dvdl_short_range;
+
         for (i = 0; i < enerd->grpp.nener; i++)
         {
-            Vsr +=
+            V_short_range +=
                 (fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR][i] :
                  enerd->grpp.ener[egLJSR][i])
                 + enerd->grpp.ener[egCOULSR][i] + enerd->grpp.ener[egGB][i];
         }
-        dvdlsum = dvdl_nb[efptVDW] + dvdl_nb[efptCOUL];
-        PRINT_SEPDVDL("VdW and Coulomb SR particle-p.", Vsr, dvdlsum);
+        dvdl_short_range = dvdl_nb[efptVDW] + dvdl_nb[efptCOUL];
+        PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",
+                      V_short_range,
+                      dvdl_short_range);
     }
     debug_gmx();
 
@@ -438,6 +440,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     *cycles_pme = 0;
     if (EEL_FULL(fr->eeltype))
     {
+        real Vlr    = 0, Vcorr = 0, dvdl = 0;
+        int  status = 0;
+
         bSB = (ir->nwall == 2);
         if (bSB)
         {
@@ -450,9 +455,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 
         if (fr->bEwald)
         {
-            Vcorr = 0;
-            dvdl  = 0;
-
             /* With the Verlet scheme exclusion forces are calculated
              * in the non-bonded kernel.
              */
@@ -534,9 +536,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             enerd->dvdl_lin[efptCOUL] += dvdl;
         }
 
-        status = 0;
-        Vlr    = 0;
-        dvdl   = 0;
         switch (fr->eeltype)
         {
             case eelPME:
@@ -628,22 +627,23 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     }
     else
     {
-        if (EEL_RF(fr->eeltype))
+        /* Is there a reaction-field exclusion correction needed? */
+        if (EEL_RF(fr->eeltype) && eelRF_NEC != fr->eeltype)
         {
-            /* With the Verlet scheme exclusion forces are calculated
+            /* With the Verlet scheme, exclusion forces are calculated
              * in the non-bonded kernel.
              */
-            if (ir->cutoff_scheme != ecutsVERLET && fr->eeltype != eelRF_NEC)
+            if (ir->cutoff_scheme != ecutsVERLET)
             {
-                dvdl                   = 0;
+                real dvdl_rf_excl      = 0;
                 enerd->term[F_RF_EXCL] =
                     RF_excl_correction(fr, graph, md, excl, x, f,
-                                       fr->fshift, &pbc, lambda[efptCOUL], &dvdl);
-            }
+                                       fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
 
-            enerd->dvdl_lin[efptCOUL] += dvdl;
-            PRINT_SEPDVDL("RF exclusion correction",
-                          enerd->term[F_RF_EXCL], dvdl);
+                enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
+                PRINT_SEPDVDL("RF exclusion correction",
+                              enerd->term[F_RF_EXCL], dvdl_rf_excl);
+            }
         }
     }
     where();
