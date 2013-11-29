@@ -3677,10 +3677,7 @@ static void set_dd_cell_sizes_dlb_change(gmx_domdec_t *dd,
         {
             if (dd->ci[dd->dim[d1]] > 0)
             {
-                if (d1 > d)
-                {
-                    bRowMember = FALSE;
-                }
+                bRowMember = FALSE;
                 bRowRoot = FALSE;
             }
         }
