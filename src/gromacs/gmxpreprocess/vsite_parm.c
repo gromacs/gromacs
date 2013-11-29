@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1404,18 +1404,21 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
 static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                              int cftype, int vsite_type[])
 {
-    int          ftype, i, parnr, k, l, m, n, nvsite, kept_i, vsnral;
-    atom_id      atom, constr;
-    atom_id      vsiteatoms[4];
-    gmx_bool     bKeep, bUsed, bPresent;
-    t_params    *ps;
+    int       i, kept_i;
+    t_params *ps;
 
     ps = &(plist[cftype]);
 
-    vsnral = 0;
     kept_i = 0;
     for (i = 0; (i < ps->nr); i++) /* for all dihedrals in the plist */
     {
+        int      ftype, parnr, k, l, m, n, nvsite;
+        int      vsnral = 0; /* keep the compiler happy */
+        atom_id  atom, constr;
+        atom_id  vsiteatoms[4] = { 0 }; /* init to zero to make gcc4.8 happy */
+        gmx_bool bKeep, bUsed, bPresent;
+
+
         bKeep = FALSE;
         /* check if all virtual sites are constructed from the same atoms */
         nvsite = 0;
@@ -1424,8 +1427,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
             atom = ps->param[i].a[k];
             if (vsite_type[atom] != NOTSET)
             {
-                nvsite++;
-                if (nvsite == 1)
+                if (nvsite == 0)
                 {
                     /* store construction atoms of first vsite */
                     vsnral = NRAL(pindex[atom].ftype)-1;
@@ -1445,27 +1447,30 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                     }
                 }
                 else
-                /* check if this vsite is constructed from the same atoms */
-                if (vsnral == NRAL(pindex[atom].ftype)-1)
                 {
-                    for (m = 0; (m < vsnral) && !bKeep; m++)
+                    /* check if this vsite is constructed from the same atoms */
+                    if (vsnral == NRAL(pindex[atom].ftype)-1)
                     {
-                        bPresent = FALSE;
-                        constr   =
-                            plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-                        for (n = 0; (n < vsnral) && !bPresent; n++)
+                        for (m = 0; (m < vsnral) && !bKeep; m++)
                         {
-                            if (constr == vsiteatoms[n])
+                            bPresent = FALSE;
+                            constr   =
+                                plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+                            for (n = 0; (n < vsnral) && !bPresent; n++)
                             {
-                                bPresent = TRUE;
+                                if (constr == vsiteatoms[n])
+                                {
+                                    bPresent = TRUE;
+                                }
                             }
-                        }
-                        if (!bPresent)
-                        {
-                            bKeep = TRUE;
+                            if (!bPresent)
+                            {
+                                bKeep = TRUE;
+                            }
                         }
                     }
                 }
+                nvsite++;
             }
         }
 
@@ -1482,6 +1487,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
             atom = ps->param[i].a[k];
             if (vsite_type[atom] == NOTSET)
             {
+                /* vsnral will be set here, we don't get here with nvsite==0 */
                 bUsed = FALSE;
                 for (m = 0; (m < vsnral) && !bUsed; m++)
                 {
