@@ -1406,7 +1406,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
 {
     int          ftype, i, parnr, k, l, m, n, nvsite, kept_i, vsnral;
     atom_id      atom, constr;
-    atom_id      vsiteatoms[4];
+    atom_id      vsiteatoms[4] = { 0 };
     gmx_bool     bKeep, bUsed, bPresent;
     t_params    *ps;
 

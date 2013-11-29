@@ -227,15 +227,15 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                  int                     cginfo,
                  int                    *cg_sp)
 {
-    const t_blocka     *  excl;
+    const t_blocka       *excl;
     t_atom               *atom;
     int                   j, k;
     int                   j0, j1, nj;
     gmx_bool              perturbed;
     gmx_bool              has_vdw[4];
     gmx_bool              match;
-    real                  tmp_charge[4];
-    int                   tmp_vdwtype[4];
+    real                  tmp_charge[4]  = { 0.0 };
+    int                   tmp_vdwtype[4] = { 0 };
     int                   tjA;
     gmx_bool              qm;
     solvent_parameters_t *solvent_parameters;
