@@ -1806,7 +1806,8 @@ static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
         dd_bcast(dd, sizeof(real)*nlam, dfhist->sum_minvar);
         dd_bcast(dd, sizeof(real)*nlam, dfhist->sum_variance);
 
-        for (i = 0; i<nlam; i++) {
+        for (i = 0; i < nlam; i++)
+        {
             dd_bcast(dd, sizeof(real)*nlam, dfhist->accum_p[i]);
             dd_bcast(dd, sizeof(real)*nlam, dfhist->accum_m[i]);
             dd_bcast(dd, sizeof(real)*nlam, dfhist->accum_p2[i]);
@@ -1839,7 +1840,7 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
         copy_mat(state->boxv, state_local->boxv);
         copy_mat(state->svir_prev, state_local->svir_prev);
         copy_mat(state->fvir_prev, state_local->fvir_prev);
-        copy_df_history(&state_local->dfhist,&state->dfhist);
+        copy_df_history(&state_local->dfhist, &state->dfhist);
         for (i = 0; i < state_local->ngtc; i++)
         {
             for (j = 0; j < nh; j++)
@@ -1874,7 +1875,7 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
     dd_bcast(dd, ((state_local->nnhpres*nh)*sizeof(double)), state_local->nhpres_vxi);
 
     /* communicate df_history -- required for restarting from checkpoint */
-    dd_distribute_dfhist(dd,&state_local->dfhist);
+    dd_distribute_dfhist(dd, &state_local->dfhist);
 
     if (dd->nat_home > state_local->nalloc)
     {
@@ -3676,7 +3677,7 @@ static void set_dd_cell_sizes_dlb_change(gmx_domdec_t *dd,
         {
             if (dd->ci[dd->dim[d1]] > 0)
             {
-                if (d1 > d)
+                if (d1 != d)
                 {
                     bRowMember = FALSE;
                 }
