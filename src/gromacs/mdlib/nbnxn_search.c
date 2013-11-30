@@ -1,33 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -877,7 +880,7 @@ static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
     gmx_simd4_pr bb_0_S, bb_1_S;
     gmx_simd4_pr x_S;
 
-    int    i;
+    int          i;
 
     bb_0_S = gmx_simd4_load_bb_pr(x);
     bb_1_S = bb_0_S;
@@ -2096,7 +2099,7 @@ static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
 /* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
 #define SUBC_BB_DIST2_SIMD4_XXXX_INNER(si, bb_i, d2) \
     {                                                \
-        int    shi;                                  \
+        int          shi;                                  \
                                                  \
         gmx_simd4_pr dx_0, dy_0, dz_0;                       \
         gmx_simd4_pr dx_1, dy_1, dz_1;                       \
@@ -2231,8 +2234,8 @@ static gmx_bool subc_in_range_simd4(int na_c,
 
     gmx_simd4_pr rc2_S;
 
-    int    dim_stride;
-    int    j0, j1;
+    int          dim_stride;
+    int          j0, j1;
 
     rc2_S   = gmx_simd4_set1_pr(rl2);
 
@@ -2944,7 +2947,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 #ifdef NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SIMD4 */
         subc_bb_dist2_simd4_xxxx(gridj->pbb+(cj>>STRIDE_PBB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_PBB-1)),
-                               ci1, pbb_ci, d2l);
+                                 ci1, pbb_ci, d2l);
         *ndistc += na_c*2;
 #endif
 

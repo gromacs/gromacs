@@ -331,6 +331,8 @@ def process_options():
                       help='Update the copyright header if outdated')
     parser.add_option('--replace-header', action='store_true',
                       help='Replace any copyright header with the current one')
+    parser.add_option('--remove-old-copyrights', action='store_true',
+                      help='Remove copyright statements not in the new format')
     parser.add_option('--add-missing', action='store_true',
                       help='Add missing copyright headers')
     options, args = parser.parse_args()
@@ -391,6 +393,10 @@ def main():
         comment_block, line_count = comment_handler.extract_first_comment_block(contents)
         state = checker.check_copyright(comment_block)
         need_update, file_years = checker.process_copyright(state, options, years, reporter)
+        if state.other_copyrights and options.remove_old_copyrights:
+            need_update = True
+            state.other_copyrights = []
+            reporter.report('old copyrights removed')
 
         if need_update:
             # Remove the original comment if it was a copyright comment.
