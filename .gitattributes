@@ -9,7 +9,7 @@ CMakeLists.txt  filter=copyright
 *.l             filter=copyright
 *.y             filter=copyright
 *.pre           filter=copyright
-# Exceptions: extra files to incldue
+# Exceptions: extra files to include
 admin/uncrustify.sh                     filter=copyright
 admin/git-pre-commit                    filter=copyright
 # Exceptions: files to exclude
@@ -17,11 +17,12 @@ admin/git-pre-commit                    filter=copyright
 cmake/CheckC*CompilerFlag.cmake         !filter
 cmake/FindBLAS.cmake                    !filter
 cmake/FindLAPACK.cmake                  !filter
-cmake/FindGit.cmake                     !filter
+cmake/Platform/BluegeneQ*.cmake         !filter
 cmake/*.c                               !filter
 cmake/*.c.cmakein                       !filter
 doxygen/*.cmakein                       !filter
-share/man/man7/gromacs.7.cmakein        !filter
+doxygen/*.cpp                           !filter
+manual/UseLATEX.cmake                   !filter
 src/contrib/*                           !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter
