@@ -1,22 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- * This file is part of GROMACS.
- * Copyright (c) 2012-
- *
- * Written by the Gromacs development team under coordination of
- * David van der Spoel, Berk Hess, and Erik Lindahl.
- *
- * This library is free software; you can redistribute it and/or
+ * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -51,7 +65,7 @@
  */
 #ifdef GMX_TARGET_X86
 /* OK, it is x86, but can we execute cpuid? */
-#if defined(GMX_X86_GCC_INLINE_ASM) || ( defined(_MSC_VER) && ( (_MSC_VER > 1500) || (_MSC_VER==1500 & _MSC_FULL_VER >= 150030729)))
+#if defined(GMX_X86_GCC_INLINE_ASM) || ( defined(_MSC_VER) && ( (_MSC_VER > 1500) || (_MSC_VER == 1500 & _MSC_FULL_VER >= 150030729)))
 #    define GMX_CPUID_X86
 #endif
 #endif
@@ -502,7 +516,7 @@ cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid, int *apic_id, int core_bits, int hwt
 
     /* now check for consistency */
     if ( (cpuid->npackages * cpuid->ncores_per_package *
-          cpuid->nhwthreads_per_core) != cpuid->nproc )
+          cpuid->nhwthreads_per_core) != cpuid->nproc)
     {
         /* the packages/cores-per-package/hwthreads-per-core counts are
            inconsistent. */
@@ -607,7 +621,7 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
                 ;
             }
         }
-        ret = cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, 
+        ret = cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits,
                                        hwthread_bits);
         cpuid->have_cpu_topology = (ret == 0);
 #endif
@@ -711,8 +725,8 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
         hwthread_bits    = eax & 0x1F;
         execute_x86cpuid(0xB, 1, &eax, &ebx, &ecx, &edx);
         core_bits        = (eax & 0x1F) - hwthread_bits;
-        ret = cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, 
-                                       hwthread_bits);
+        ret              = cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits,
+                                                    hwthread_bits);
         cpuid->have_cpu_topology = (ret == 0);
 #endif
     }
@@ -727,19 +741,19 @@ static void
 chomp_substring_before_colon(const char *in, char *s, int maxlength)
 {
     char *p;
-    strncpy(s,in,maxlength);
-    p = strchr(s,':');
-    if(p!=NULL)
+    strncpy(s, in, maxlength);
+    p = strchr(s, ':');
+    if (p != NULL)
     {
-        *p='\0';
-        while(isspace(*(--p)) && (p>=s))
+        *p = '\0';
+        while (isspace(*(--p)) && (p >= s))
         {
-            *p='\0';
+            *p = '\0';
         }
     }
     else
     {
-        *s='\0';
+        *s = '\0';
     }
 }
 
@@ -747,20 +761,23 @@ static void
 chomp_substring_after_colon(const char *in, char *s, int maxlength)
 {
     char *p;
-    if( (p = strchr(in,':'))!=NULL)
+    if ( (p = strchr(in, ':')) != NULL)
     {
         p++;
-        while(isspace(*p)) p++;
-        strncpy(s,p,maxlength);
-        p = s+strlen(s);
-        while(isspace(*(--p)) && (p>=s))
+        while (isspace(*p))
         {
-            *p='\0';
+            p++;
+        }
+        strncpy(s, p, maxlength);
+        p = s+strlen(s);
+        while (isspace(*(--p)) && (p >= s))
+        {
+            *p = '\0';
         }
     }
     else
     {
-        *s='\0';
+        *s = '\0';
     }
 }
 
@@ -775,7 +792,7 @@ cpuid_check_vendor(void)
     unsigned int               eax, ebx, ecx, edx;
     char                       vendorstring[13];
     FILE *                     fp;
-    char                       buffer[255],before_colon[255], after_colon[255];
+    char                       buffer[255], before_colon[255], after_colon[255];
 
     /* Set default first */
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
@@ -798,25 +815,25 @@ cpuid_check_vendor(void)
     }
 #elif defined(__linux__) || defined(__linux)
     /* General Linux. Try to get CPU vendor from /proc/cpuinfo */
-    if( (fp = fopen("/proc/cpuinfo","r")) != NULL)
+    if ( (fp = fopen("/proc/cpuinfo", "r")) != NULL)
     {
-        while( (vendor == GMX_CPUID_VENDOR_UNKNOWN) && (fgets(buffer,sizeof(buffer),fp) != NULL))
+        while ( (vendor == GMX_CPUID_VENDOR_UNKNOWN) && (fgets(buffer, sizeof(buffer), fp) != NULL))
         {
-            chomp_substring_before_colon(buffer,before_colon,sizeof(before_colon));
+            chomp_substring_before_colon(buffer, before_colon, sizeof(before_colon));
             /* Intel/AMD use "vendor_id", IBM "vendor"(?) or "model". Fujitsu "manufacture". Add others if you have them! */
-            if( !strcmp(before_colon,"vendor_id")
-                || !strcmp(before_colon,"vendor")
-                || !strcmp(before_colon,"manufacture")
-                || !strcmp(before_colon,"model"))
+            if (!strcmp(before_colon, "vendor_id")
+                || !strcmp(before_colon, "vendor")
+                || !strcmp(before_colon, "manufacture")
+                || !strcmp(before_colon, "model"))
             {
-                chomp_substring_after_colon(buffer,after_colon,sizeof(after_colon));
-                for(i=GMX_CPUID_VENDOR_UNKNOWN; i<GMX_CPUID_NVENDORS; i++)
+                chomp_substring_after_colon(buffer, after_colon, sizeof(after_colon));
+                for (i = GMX_CPUID_VENDOR_UNKNOWN; i < GMX_CPUID_NVENDORS; i++)
                 {
                     /* Be liberal and accept if we find the vendor
                      * string (or alternative string) anywhere. Using
                      * strcasestr() would be non-portable. */
-                    if(strstr(after_colon,gmx_cpuid_vendor_string[i])
-                       || strstr(after_colon,gmx_cpuid_vendor_string_alternative[i]))
+                    if (strstr(after_colon, gmx_cpuid_vendor_string[i])
+                        || strstr(after_colon, gmx_cpuid_vendor_string_alternative[i]))
                     {
                         vendor = i;
                     }
@@ -892,7 +909,7 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
     gmx_cpuid_t cpuid;
     int         i;
     FILE *      fp;
-    char        buffer[255],buffer2[255];
+    char        buffer[255], buffer2[255];
     int         found_brand;
 
     cpuid = malloc(sizeof(*cpuid));
@@ -928,19 +945,19 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
 #endif
         default:
             /* Default value */
-            strncpy(cpuid->brand,"Unknown CPU brand",GMX_CPUID_BRAND_MAXLEN);
+            strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_BRAND_MAXLEN);
 #if defined(__linux__) || defined(__linux)
             /* General Linux. Try to get CPU type from /proc/cpuinfo */
-            if( (fp = fopen("/proc/cpuinfo","r")) != NULL)
+            if ( (fp = fopen("/proc/cpuinfo", "r")) != NULL)
             {
                 found_brand = 0;
-                while( (found_brand==0) && (fgets(buffer,sizeof(buffer),fp) !=NULL))
+                while ( (found_brand == 0) && (fgets(buffer, sizeof(buffer), fp) != NULL))
                 {
-                    chomp_substring_before_colon(buffer,buffer2,sizeof(buffer2));
+                    chomp_substring_before_colon(buffer, buffer2, sizeof(buffer2));
                     /* Intel uses "model name", Fujitsu and IBM "cpu". */
-                    if( !strcmp(buffer2,"model name") || !strcmp(buffer2,"cpu"))
+                    if (!strcmp(buffer2, "model name") || !strcmp(buffer2, "cpu"))
                     {
-                        chomp_substring_after_colon(buffer,cpuid->brand,GMX_CPUID_BRAND_MAXLEN);
+                        chomp_substring_after_colon(buffer, cpuid->brand, GMX_CPUID_BRAND_MAXLEN);
                         found_brand = 1;
                     }
                 }
@@ -950,10 +967,10 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
             cpuid->family         = 0;
             cpuid->model          = 0;
             cpuid->stepping       = 0;
-            
-            for(i=0; i<GMX_CPUID_NFEATURES; i++)
+
+            for (i = 0; i < GMX_CPUID_NFEATURES; i++)
             {
-                cpuid->feature[i]=0;
+                cpuid->feature[i] = 0;
             }
             cpuid->feature[GMX_CPUID_FEATURE_CANNOTDETECT] = 1;
             break;
@@ -1068,16 +1085,16 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
             tmpacc = GMX_CPUID_ACCELERATION_X86_SSE2;
         }
     }
-    else if(gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_FUJITSU)
+    else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_FUJITSU)
     {
-        if(strstr(gmx_cpuid_brand(cpuid),"SPARC64"))
+        if (strstr(gmx_cpuid_brand(cpuid), "SPARC64"))
         {
             tmpacc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
         }
     }
-    else if(gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_IBM)
+    else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_IBM)
     {
-        if(strstr(gmx_cpuid_brand(cpuid),"A2"))
+        if (strstr(gmx_cpuid_brand(cpuid), "A2"))
         {
             tmpacc = GMX_CPUID_ACCELERATION_IBM_QPX;
         }
@@ -1128,8 +1145,8 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
         if (print_to_stderr)
         {
             fprintf(stderr, "Compiled acceleration: %s (Gromacs could use %s on this machine, which is better)\n",
-                   gmx_cpuid_acceleration_string[compiled_acc],
-                   gmx_cpuid_acceleration_string[acc]);
+                    gmx_cpuid_acceleration_string[compiled_acc],
+                    gmx_cpuid_acceleration_string[acc]);
         }
     }
     return rc;
