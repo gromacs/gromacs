@@ -548,13 +548,22 @@ gmx_test_isfinite(HAVE_ISFINITE)
 gmx_test__isfinite(HAVE__ISFINITE)
 gmx_test__finite(HAVE__FINITE)
 
-include(gmxTestCXX11)
-gmx_test_cxx11(GMX_CXX11 GMX_CXX11_FLAGS)
-if(CXX11_FLAG AND GMX_GPU)
-    #FIXME: add proper solution for progate all but cxx11 flag
-    set(CUDA_PROPAGATE_HOST_FLAGS no)
-    message(WARNING "Please manually add compiler flags to CUDA_NVCC_FLAGS. Automatic propogation temporary not working.")
+include(CMakeDependentOption)
+# nvcc does not support C++11 flags, and there is no convenient way to
+# add C++11 flags just to non-CUDA C++ files, so with GPUs we prefer
+# to skip C++11 flags entirely to make sure we keep other kinds of
+# compiler flags for the CUDA code that is not off-loaded.
+cmake_dependent_option(GMX_TRY_CXX11
+    "Use C++11 features if supported by the compiler"
+    ON "NOT GMX_GPU" OFF)
+if(GMX_TRY_CXX11)
+    include(gmxTestCXX11)
+    gmx_test_cxx11(GMX_CXX11 GMX_CXX11_FLAGS)
+else()
+    unset(GMX_CXX11)
+    unset(GMX_CXX11_FLAGS)
 endif()
+
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
