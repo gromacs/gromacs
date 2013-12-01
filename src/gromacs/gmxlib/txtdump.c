@@ -738,7 +738,7 @@ static void pr_fepvals(FILE *fp, int indent, t_lambda *fep, gmx_bool bMDPformat)
         }
     }
     PI("calc-lambda-neighbors", fep->lambda_neighbors);
-    PS("dhdl-print-energy", EBOOL(fep->bPrintEnergy));
+    PS("dhdl-print-energy", edHdLPrintEnergy_names[fep->edHdLPrintEnergy]);
     PR("sc-alpha", fep->sc_alpha);
     PI("sc-power", fep->sc_power);
     PR("sc-r-power", fep->sc_r_power);

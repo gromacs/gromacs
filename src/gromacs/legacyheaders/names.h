@@ -76,6 +76,7 @@ extern const char *esimtemp_names[esimtempNR+1];
 extern const char *efep_names[efepNR+1];
 extern const char *efpt_names[efptNR+1];
 extern const char *efpt_singular_names[efptNR+1];
+extern const char *edHdLPrintEnergy_names[edHdLPrintEnergyNR+1];
 extern const char *elamstats_names[elamstatsNR+1];
 extern const char *elmcmove_names[elmcmoveNR+1];
 extern const char *elmceq_names[elmceqNR+1];
