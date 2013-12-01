@@ -40,28 +40,28 @@
 \newcommand{\vmd}{VMD}
 \newcommand{\pymol}{PyMOL}
 \newcommand{\grace}{Grace}
-%\newcommand{\}{}
+\newcommand{\libxmltwo}{LibXML2}
 %\newcommand{\}{}
 
 % later, make CMake keep this version current for us
 \newcommand{\fftwversion}{3.3.2}
-\newcommand{\cmakeversion}{2.8.0}
+\newcommand{\cmakeversion}{2.8.8}
 \newcommand{\cudaversion}{3.2}
+\newcommand{\gromacsversion}{5.0}
 
 \begin{document}
 \section{Building GROMACS}
 
-These instructions pertain to building \gromacs{} 4.6 and newer releases
-using our new CMake-based build system. 
-For installations instructions for old \gromacs{} versions,
-see the documentation at
+These instructions pertain to building \gromacs{} \gromacsversion{}
+and newer releases. For installations instructions for old \gromacs{}
+versions, see the documentation at
 \url{http://www.gromacs.org/Documentation/Installation_Instructions_4.5}.
 
 \section{Quick and dirty installation}
 
 \begin{enumerate}
 \item Get the latest version of your compiler.
-\item Check you have \cmake{} version 2.8.x or later.
+\item Check you have \cmake{} version \cmakeversion{} or later.
 \item Unpack the \gromacs{} tarball.
 \item Make a separate build directory and change to it. 
 \item Run \cmake{} with the path to the source as an argument
@@ -69,8 +69,8 @@ see the documentation at
 \end{enumerate}
 Or, as a sequence of commands to execute:
 \begin{verbatim}
-tar xfz gromacs-4.6.4.tar.gz
-cd gromacs-4.6.4
+tar xfz gromacs-5.0-beta1.tar.gz
+cd gromacs-gromacs-5.0-beta1
 mkdir build
 cd build
 cmake .. -DGMX_BUILD_OWN_FFTW=ON
@@ -80,8 +80,7 @@ sudo make install
 This will download and build first the prerequisite FFT library followed by \gromacs{}. If you already have
 FFTW installed, you can remove that argument to cmake. Overall, this build 
 of \gromacs{} will be correct and reasonably fast on the
-machine upon which \cmake{} ran. It will generally be 30-50\% faster
-than \gromacs{} 4.5.x, but if you want to get the maximum value
+machine upon which \cmake{} ran. If you want to get the maximum value
 for your hardware with \gromacs{}, you'll have to read further.
 Sadly, the interactions of hardware, libraries, and compilers
 are only going to continue to get more complex. 
@@ -89,32 +88,31 @@ are only going to continue to get more complex.
 \section{Prerequisites}
 \subsection{Platform}
 \gromacs{} can be compiled for any distribution of Linux, Mac OS X,
-Windows (native, Cygwin or MinGW), BlueGene, Cray and many other architectures.
-Technically, it can be compiled on any platform with an ANSI C
-compiler and supporting libraries, such as the GNU C library. However, Gromacs
-also comes with many hardware-specific extensions to provide very high performance
-on those platforms, and to enable these we have slightly more specific requirements
-since old compilers do not support new features, or they can be buggy.
+Windows (native, Cygwin or MinGW), BlueGene, Cray and many other
+architectures. Technically, it can be compiled on any platform with
+an ANSI C89 compiler, an ISO C++98 compiler, and supporting libraries,
+such as the GNU C library. However, \gromacs{} also comes with many
+hardware-specific extensions to provide very high performance on those
+platforms, and to enable these we have slightly more specific
+requirements since old compilers do not support new features, or they
+can be buggy.
 
 \subsection{Compiler}
 
 \gromacs{} requires an ANSI C compiler that complies with the C89
-standard. For best performance, the \gromacs{} team strongly
-recommends you get the most recent version of your preferred compiler
-for your platform (e.g. GCC 4.7 or Intel 12.0 or newer on x86
-hardware). There is a large amount of \gromacs{} code introduced in
-version 4.6 that depends on effective compiler optimization to get
-high performance - the old raw assembly-language kernel routines are all gone.
-Unfortunately this makes \gromacs{} more sensitive to the compiler
-used, and the binary will only work on the hardware for which it is compiled,
-but the good news is that it has enabled us to significantly accelerate performance
-compared to version 4.5. 
+standard, and an ISO C++98 compiler. For best performance, the
+\gromacs{} team strongly recommends you get the most recent version of
+your preferred compiler for your platform (e.g. GCC 4.8 or Intel 14.0
+or newer on x86 hardware). There is a large amount of \gromacs{} code
+introduced in version 4.6 that depends on effective compiler
+optimization to get high performance - the old raw assembly-language
+kernel routines are all gone.  Unfortunately this makes \gromacs{} performance
+more sensitive to the compiler used, and the binary will only work on
+the hardware for which it is compiled.
 
 \begin{itemize}
-\item On Intel-based x86 hardware, we recommend you to use
-the Intel compiler for best performance. It is usually better at instruction
-scheduling, although it does not hurt to try gcc too. Recent versions can
-give icc a run for the money.
+\item On Intel-based x86 hardware, there is very little difference in
+  mdrun performance between the Intel and gcc compilers.
 \item On AMD-based x86 hardware up through the Magny-Cours architecture
 (e.g. Opteron 6100-series processors), it is worth using the Intel compiler for
 better performance, but gcc-4.7 and later are also reasonable.
@@ -125,10 +123,10 @@ icc will only generate code for the subset also supported by Intel processors, a
 is significantly slower right now.
 \item If you are running on Mac OS X, the best option is the Intel compiler.
 Both clang and gcc will work, but they produce lower performance and each have some
-shortcomings. Clang does not fully support OpenMP, and the current gcc ports do not
-support AVX instructions. 
+shortcomings. Clang before 3.4 does not fully support OpenMP, and the current gcc ports do not
+support \avx{} instructions.
 \item For all non-x86 platforms, your best option is typically to use the vendor's 
-default compiler, and check for specialized information below.
+default or recommended compiler, and check for specialized information below.
 \end{itemize}
 
 \subsubsection{Running in parallel}
@@ -137,12 +135,14 @@ default compiler, and check for specialized information below.
 workstation using its built-in \threadmpi. No user action is required
 in order to enable this.
 
-If you wish to use the excellent new native GPU support in \gromacs,
+If you wish to use the excellent native GPU support in \gromacs,
 \nvidia{}'s \cuda{}
 \url{http://www.nvidia.com/object/cuda_home_new.html} version
 \cudaversion{} software development kit is required, and the latest
-version is strongly encouraged. \nvidia{} GPUs with at least \nvidia{} compute
-capability 2.0 are required, e.g. Fermi or Kepler cards.
+version is strongly encouraged. \nvidia{} GPUs with at least \nvidia{}
+compute capability 2.0 are required, e.g. Fermi or Kepler cards. CUDA
+version 3.2 is required, although you are strongly recommended to get
+the latest version and driver supported by your hardware.
 
 If you wish to run in parallel on multiple machines across a network,
 you will need to have
@@ -161,15 +161,16 @@ might depend on accelerations only available in the vendor's library.
 \url{http://www.lam-mpi.org/} might work, but since it has been
 deprecated for years, it is not supported.
 
-In some cases, \openmp{} parallelism is an advantage for \gromacs{},
+Often \openmp{} parallelism is an advantage for \gromacs{},
 but support for this is generally built into your compiler and detected
 automatically. The one common exception is Mac OS X, where the default
 clang compiler currently does not fully support OpenMP. You can install
 gcc-4.7 instead, but the currently available binary distribution of gcc 
-uses an old system assembler that does not support AVX acceleration
+uses an old system assembler that does not support \avx{} acceleration
 instructions. There are some examples on the internet where people have
 hacked this to work, but presently the only straightforward way to get
-both OpenMP and AVX support on Mac OS X is to get the Intel compiler.
+both OpenMP and \avx{} support on Mac OS X is to get the Intel compiler.
+This may change when clang 3.4 becomes available.
 
 In summary, for maximum performance you will need to 
 examine how you will use \gromacs{}, what hardware you plan to run
@@ -177,18 +178,14 @@ on, and whether you can afford a non-free compiler for slightly better
 performance. The only way to find out is unfortunately to test different
 options and parallelization schemes for the actual simulations you
 want to run. You will still get {\em good}\, performance with the default
-build and runtime options (better than in version 4.5), but if you truly
-want to push your hardware to the performance limit the days of just blindly 
-starting programs like '\verb+mdrun+' are gone. 
+build and runtime options, but if you truly want to push your hardware
+to the performance limit, the days of just blindly starting programs
+with '\verb+mdrun+' are gone.
 
 \subsection{CMake}
 
-From version 4.6, \gromacs{} uses the build system
-\cmake{}. The previous build system that used \verb+configure+ from
-the GNU autotools package has been removed permanently. \cmake{}
-permits the \gromacs{} team to support a very wide range of hardware,
-compilers and build configurations while continuing to provide the
-portability, robustness and performance for which \gromacs{} is known.
+\gromacs{} \gromacsversion{} uses the \cmake{} build system, and
+requires version \cmakeversion{} or higher.
 
 \gromacs{} requires \cmake{} version \cmakeversion{} or higher. Lower
 versions will not work. You can check whether \cmake{} is installed,
@@ -198,10 +195,7 @@ management system provides a suitable version, or visit
 \url{http://www.cmake.org/cmake/help/install.html} for pre-compiled
 binaries, source code and installation instructions. The \gromacs{}
 team recommends you install the most recent version of \cmake{} you
-can. If you need to compile \cmake{} yourself and have a really old environment,
-you might first have to compile a moderately recent version (say, 2.6) to
-bootstrap version 2.8. This is a one-time job, and you can find lots of
-documentation on the \cmake{} website if you run into problems.
+can.
 
 \subsection{Fast Fourier Transform library}
 
@@ -227,7 +221,8 @@ recommends either
 \item that you build \fftw{} from the source code.
 Note that the GROMACS-managed download of the FFTW tarball has a
 slight chance of posing a security risk. If you use this option, you
-will see a warning that advises how you can eliminate this risk.
+will see a warning that advises how you can eliminate this risk
+(before the opportunity has arisen).
 \end{itemize}
 
 If you build \fftw{} from source yourself, get the most recent version
@@ -253,7 +248,7 @@ documentation). Then set \verb+-DGMX_FFT_LIBRARY=mkl+ when you run
 \cmake{}. In this case, \gromacs{} will also use \mkl{} for \blas{}
 and \lapack{} (see \hyperref{linear-algebra}{here}).
 
-Otherwise, you can configure \mkl{} by setting
+Otherwise, you can get your hands dirty and configure \mkl{} by setting
 \verb+-DGMX_FFT_LIBRARY=mkl
 -DMKL_LIBRARIES="/full/path/to/libone.so;/full/path/to/libtwo.so"
 -DMKL_INCLUDE_DIR="/full/path/to/mkl/include"+,
@@ -263,19 +258,25 @@ Intel's \mkl{} documentation for your system.
 \subsection{Optional build components}
 
 \begin{itemize}
+\item Compiling to run on Nvidia GPUs requires \cuda{}
 \item Hardware-optimized \blas{} and \lapack{} libraries are useful
   for a few of the \gromacs{} utilities focused on normal modes and
   matrix manipulation, but they do not provide any benefits for normal
   simulations. Configuring these are discussed
   \hyperlink{linear-algebra}{here}.
-\item The built-in \gromacs{} trajectory viewer \verb+ngmx+ requires
-  X11 and Motif/Lesstif libraries and header files. Generally, the
-  \gromacs{} team rather recommends you use third-party software for
-  visualization, such as \vmd{}
+\item The built-in \gromacs{} trajectory viewer \verb+gmx view+ requires
+  X11 and Motif/Lesstif libraries and header files. You may prefer
+  to use third-party software for visualization, such as \vmd{}
   \url{http://www.ks.uiuc.edu/Research/vmd/} or \pymol{}
   \url{http://www.pymol.org/}.
 \item A few \gromacs{} tools get some extra functionality when linked with the
 GNU scientific library GSL.
+\item Running the \gromacs{} test suite requires \libxmltwo{}
+\item Building the \gromacs{} manual requires ImageMagick, pdflatex
+  and bibtex
+\item The \gromacs{} utility programs often write data files in
+  formats suitable for the \grace{} plotting tool, but it is
+  straightforward to use these files in other plotting programs, too.
 \end{itemize}
 
 \section{Doing a build of \gromacs}
@@ -309,8 +310,8 @@ line is the name of the directory containing the
 example, download the source tarball and use
 % TODO: keep up to date with new releases!
 \begin{verbatim}
-$ tar xfz gromacs-4.6.4.tgz
-$ cd gromacs-4.6.4
+$ tar xfz gromacs-5.0-beta1.tgz
+$ cd gromacs-5.0-beta1
 $ mkdir build-cmake
 $ cd build-cmake
 $ cmake ..
@@ -359,23 +360,25 @@ using \verb+ccmake+ - when you are using \verb+cmake+ the
 iteration is done behind the scenes.
 
 A key thing to consider here is the setting of
-\verb+CMAKE_INSTALL_PREFIX+. You will need to be able to write to
-this directory in order to install \gromacs{} later, and if you change
-your mind later, changing it in the cache triggers a full re-build,
+\verb+CMAKE_INSTALL_PREFIX+. You will need to be able to write to this
+directory in order to install \gromacs{} later, and if you change your
+mind later, changing it in the cache triggers a full re-build,
 unfortunately. So if you do not have super-user privileges on your
 machine, then you will need to choose a sensible location within your
-home directory for your \gromacs{} installation.
+home directory for your \gromacs{} installation. Even if you do have
+super-user privileges, you should use them only for the installation
+phase, and never for configuring, building, or running \gromacs{}!
 
 When \verb+cmake+ or \verb+ccmake+ have completed iterating, the
 cache is stable and a build tree can be generated, with '\verb+g+' in
 \verb+ccmake+ or automatically with \verb+cmake+.
 
-You should not attempt to change compilers after the initial run of
+You cannot attempt to change compilers after the initial run of
 \cmake{}. If you need to change, clean up and start again.
 
 \subsection{Using CMake command-line options}
 Once you become comfortable with setting and changing options, you
-may know in advance how you will configure GROMACS. If so, you can
+may know in advance how you will configure \gromacs{}. If so, you can
 speed things up by invoking \verb+cmake+ with a command like:
 \begin{verbatim}
 $ cmake .. -DGMX_GPU=ON -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=/home/marydoe/programs
@@ -392,7 +395,9 @@ think a reasonable number of users might want to consider
 changing. There are a lot more options available, which you can see by
 toggling the advanced mode in \verb+ccmake+ on and off with
 '\verb+t+'. Even there, most of the variables that you might want to
-change have a '\verb+CMAKE_+' or '\verb+GMX_+' prefix.
+change have a '\verb+CMAKE_+' or '\verb+GMX_+' prefix. There are also
+some options that will be visible or not according to whether
+their preconditions are satisfied.
 
 \subsection{Helping CMake find the right libraries/headers/programs}
 
@@ -457,10 +462,10 @@ a working C++ compiler, and in some cases you might need to handle
 this manually, e.g. with the advanced option
 \verb+CUDA_HOST_COMPILER+.
 
-Historically, Linux GPU builds have received most testing, but we 
-want to support GPU builds both under x86 Linux, Windows, Mac OS X and in the
-future ARM. Any feedback on this build process (and fixes in particular) are very
-welcome!
+Historically, Linux GPU builds have received most testing, but we want
+to support GPU builds both under x86 Linux, Windows, Mac OS X and in
+the future ARM. Any feedback on this build process (and particularly
+fixes!) are very welcome.
 
 \subsection{Static linking}
 Dynamic linking of the \gromacs{} executables will lead to a
@@ -469,7 +474,7 @@ platforms where we believe it has been tested repeatedly and found to work.
 In general, this includes Linux, Windows, Mac OS X and BSD systems.
 Static binaries take much more space, but on some hardware and/or under
 some conditions they are necessary, most commonly when you are running a parallel
-simulation using MPI libraries. 
+simulation using MPI libraries (e.g. BlueGene, Cray).
 
 \begin{itemize}
 \item To link \gromacs{} binaries
@@ -481,7 +486,7 @@ used. Note, that in general \cmake{} picks up whatever is available,
 so this option only instructs \cmake{} to prefer static libraries when
 both static and shared are available. If no static version of an
 external library is available, even when the aforementioned option is
-ON, the shared library will be used. Also note, that the resulting
+\verb+ON+, the shared library will be used. Also note, that the resulting
 binaries will still be dynamically linked against system libraries if
 that is all that is available (common on Mac OS X).
 \end{itemize}
@@ -518,24 +523,27 @@ again.
 
 So long as any changes you've made to the configuration are sensible,
 it is expected that the \verb+make+ procedure will always complete
-successfully. The tests \gromacs{} makes on the settings you choose
-are pretty extensive, but there are probably a few cases we haven't
-thought of yet. Search the web first for solutions to problems, but if
-you need help, ask on gmx-users, being sure to provide as much
-information as possible about what you did, the system you are
-building on, and what went wrong.
+successfully, and give few or no warnings. The tests \gromacs{} makes
+on the settings you chooseare pretty extensive, but there are probably
+a few cases we haven't thought of yet. Search the web first for
+solutions to problems, but if you need help, ask on gmx-users, being
+sure to provide as much information as possible about what you did,
+the system you are building on, and what went wrong. This may mean
+scrolling back a long way through the output of \verb+make+ to find
+the first error message!
 
 If you have a multi-core or multi-CPU machine with \verb+N+
 processors, then using
 \begin{verbatim}
 $ make -j N
 \end{verbatim}
-will generally speed things up by quite a bit.
+will generally speed things up by quite a bit. Other make systems
+supported by \cmake{} (e.g. ninja) also work well.
 
 \subsection{Installing \gromacs{}}
 
 Finally, \verb+make install+ will install \gromacs{} in the
-directory given in \verb+GMX_INSTALL_PREFIX+. If this is an system
+directory given in \verb+CMAKE_INSTALL_PREFIX+. If this is an system
 directory, then you will need permission to write there, and you
 should use super-user privileges only for \verb+make install+ and
 not the whole procedure.
@@ -555,13 +563,14 @@ environment for using \gromacs{}. You may wish to arrange for your
 login scripts to do this automatically; please search the web for
 instructions on how to do this for your shell. 
 
-Many of the \gromacs{} programs rely on data installed in our
-\verb+share/gromacs+ directory. By default, the programs will use
-the environment variables set in the GMXRC script, and if this is not
-available they will try to guess the path based on their own location.
-This usually works well unless you change the names of directories
-inside the install tree. If you still need to do that, you might want to recompile
-with the new install location properly set, or edit the \verb+GMXRC+ script.
+Many of the \gromacs{} programs rely on data installed in the
+\verb+share/gromacs+ subdirectory of the installation directory. By
+default, the programs will use the environment variables set in the
+\verb+GMXRC+ script, and if this is not available they will try to guess the
+path based on their own location.  This usually works well unless you
+change the names of directories inside the install tree. If you still
+need to do that, you might want to recompile with the new install
+location properly set, or edit the \verb+GMXRC+ script.
 
 \subsection{Testing \gromacs{} for correctness}
 Since 2011, the \gromacs{} development uses an automated system where
@@ -571,40 +580,41 @@ increasingly rely on cutting edge compiler features there is
 non-negligible risk that the default compiler on your system could
 have bugs. We have tried our best to test and refuse to use known bad
 versions in \cmake{}, but we strongly recommend that you run through
-the regression tests yourself. It only takes a few minutes, after
-which you can trust your build.
+the tests yourself. It only takes a few minutes, after which you can
+trust your build.
 
 The simplest way to run the checks is to build \gromacs{} with
 \verb+-DREGRESSIONTEST_DOWNLOAD+, and run \verb+make check+.
 \gromacs{} will automatically download and run the tests for you.
 Alternatively, you can download and unpack the tarball yourself from
-\url{http://gerrit.gromacs.org/download/regressiontests-4.6.4.tar.gz},
+\url{http://gerrit.gromacs.org/download/regressiontests-5.0-beta1.tar.gz},
 and use the advanced \cmake{} option \verb+REGRESSIONTEST_PATH+ to
 specify the path to the unpacked tarball, which will then be used for
-testing. If this doesn't work, then please read on.
+testing. If the above doesn't work, then please read on.
 
 The regression tests are available from the \gromacs{} website and ftp
 site.  Once you have downloaded them, unpack the tarball, source
 \verb+GMXRC+ as described above, and run \verb+./gmxtest.pl all+
 inside the regression tests folder. You can find more options
-(e.g. adding \verb+double+ when using double precision) if you just
-execute the script without options.
+(e.g. adding \verb+double+ when using double precision, or
+\verb+-only expanded+ to run just the tests whose names match
+``expanded'') if you just execute the script without options.
 
-Hopefully you will get a report that all tests have passed. If there
+Hopefully, you will get a report that all tests have passed. If there
 are individual failed tests it could be a sign of a compiler bug, or
 that a tolerance is just a tiny bit too tight. Check the output files
 the script directs you too, and try a different or newer compiler if
 the errors appear to be real. If you cannot get it to pass the
 regression tests, you might try dropping a line to the gmx-users
 mailing list, but then you should include a detailed description of
-your hardware and an example logfile from mdrun (which contains
-valuable information in the header).
+your hardware, and the output of \verb+mdrun -version+ (which contains
+valuable diagnostic information in the header).
 
 \subsection{Testing \gromacs{} for performance}
 We are still working on a set of benchmark systems for testing
 the performance of \gromacs{}. Until that is ready, we recommend that
-you start by comparing the performance to release 4.5, and also try
-a few different parallelization options.
+you try a few different parallelization options, and experiment with
+tools such as \verb+gmx tune_pme+.
 
 \subsection{Having difficulty?}
 You're not alone - this can be a complex task! If you encounter a
@@ -673,7 +683,7 @@ so the right tools get used.
 
 \subsection{Building on Cray}
 
-Gromacs builds mostly out of the box on modern Cray machines,
+\gromacs{} builds mostly out of the box on modern Cray machines,
 but you want to use static libraries due to the peculiarities with
 parallel job execution.
 
@@ -687,8 +697,8 @@ plans to make one. The default plain C kernels will work.
 \subsubsection{BlueGene/Q}
 
 There is currently native acceleration on this platform for the Verlet
-cut-off scheme. Accelerated kernels for the group cut-off scheme may
-come in the future, but the default plain C kernels will work.
+cut-off scheme. There are no plans to provide accelerated kernels for
+the group cut-off scheme, but the default plain C kernels will work.
 
 Only static linking with XL compilers is supported by \gromacs{}. Dynamic
 linking would be supported by the architecture and \gromacs{}, but has no
@@ -738,14 +748,15 @@ performed for that using the login node's toolchain - not the
 above platform file, or any other compute-node toolchain.
 
 Note that only the MPI build is available for the compute-node
-toolchains. The GROMACS thread-MPI or serial builds are not useful at
+toolchains. The GROMACS thread-MPI or no-MPI builds are not useful at
 all on BlueGene/Q.
 
 \subsubsection{Fujitsu PRIMEHPC}
 
-This is the architecture of the K computer, which uses Fujitsu Sparc64viiifx 
-chips. Gromacs-4.6 will build with default C kernels on this architecture,
-and Gromacs-4.6.2 added accelerated group kernels and a custom toolchain.
+This is the architecture of the K computer, which uses Fujitsu
+Sparc64viiifx chips. On this platform \gromacs{} \gromacsversion{} has
+accelerated group kernels, no accelerated Verlet kernels, and a custom
+build toolchain.
 
 \section{Tested platforms}
 
@@ -755,8 +766,8 @@ it works because we've tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code
 repository is currently tested on x86 with gcc versions ranging
-from 4.4 through 4.7, and versions 12 and 13 of the Intel compiler.
-Under Windows we test both the visual studio compilers and icc,
+from 4.1 through 4.8, and versions 12 and 13 of the Intel compiler.
+Under Windows, we test both the Visual Studio and Intel compilers.
 
 We test irregularly on BlueGene/Q, Cray,
 Fujitsu PRIMEHPC, Google nativeclient and other environments. In 
@@ -765,13 +776,7 @@ is currently not included.
 
 Contributions to this section are welcome.
 
-Later we might set up the ability for users to contribute test results
-to Jenkins.
-
-\section{Other issues}
-
-The \gromacs{} utility programs often write data files in formats
-suitable for the \grace{} plotting tool, but it is straightforward to
-use these files in other plotting programs, too.
+If there is interest, we might set up the ability for users to
+contribute test results to Jenkins.
 
 \end{document}
