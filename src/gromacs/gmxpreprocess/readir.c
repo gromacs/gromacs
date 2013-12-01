@@ -1307,6 +1307,14 @@ nd %s",
         }
     }
 
+    /* FREE ENERGY */
+    if (fep->edHdLPrintEnergy == edHdLPrintEnergyYES)
+    {
+        fep->edHdLPrintEnergy = edHdLPrintEnergyTOTAL;
+        warning_note(wi, "Old option for dhdl-print-energy given: "
+                     "changing \"yes\" to \"total\"\n");
+    }
+
     if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
     {
         sprintf(warn_buf, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
@@ -2126,7 +2134,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("temperature-lambdas", is->fep_lambda[efptTEMPERATURE], NULL);
     ITYPE ("calc-lambda-neighbors", fep->lambda_neighbors, 1);
     STYPE ("init-lambda-weights", is->lambda_weights, NULL);
-    EETYPE("dhdl-print-energy", fep->bPrintEnergy, yesno_names);
+    EETYPE("dhdl-print-energy", fep->edHdLPrintEnergy, edHdLPrintEnergy_names);
     RTYPE ("sc-alpha", fep->sc_alpha, 0.0);
     ITYPE ("sc-power", fep->sc_power, 1);
     RTYPE ("sc-r-power", fep->sc_r_power, 6.0);
@@ -2353,9 +2361,15 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     if (ir->bSimTemp)
     {
-        fep->bPrintEnergy = TRUE;
-        /* always print out the energy to dhdl if we are doing expanded ensemble, since we need the total energy
-           if the temperature is changing. */
+        if (fep->edHdLPrintEnergy == edHdLPrintEnergyNO)
+        {
+            /* always print out the energy to dhdl if we are doing
+               expanded ensemble, since we need the total energy for
+               analysys if the temperature is changing. In some
+               conditions one may only want the potential energy, so
+               we will allow that. */
+            fep->edHdLPrintEnergy = edHdLPrintEnergyTOTAL;
+        }
     }
 
     if ((ir->efep != efepNO) || ir->bSimTemp)
