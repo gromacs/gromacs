@@ -785,7 +785,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         bufplace = sprintf(buf, "T = %g (K) ",
                            ir->opts.ref_t[0]);
     }
-    if (ir->efep != efepSLOWGROWTH)
+    if ((ir->efep != efepSLOWGROWTH) && (ir->efep != efepEXPANDED))
     {
         if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
         {
