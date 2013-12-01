@@ -657,7 +657,7 @@ static void pr_fepvals(FILE *fp, int indent, t_lambda *fep, gmx_bool bMDPformat)
 
     PR("sc-alpha", fep->sc_alpha);
     PS("bScCoul", EBOOL(fep->bScCoul));
-    PS("bScPrintEnergy", EBOOL(fep->bPrintEnergy));
+    PS("edHdLPrintEnergy", edHdLPrintEnergy_names[fep->edHdLPrintEnergy]);
     PI("sc-power", fep->sc_power);
     PR("sc-r-power", fep->sc_r_power);
     PR("sc-sigma", fep->sc_sigma);
