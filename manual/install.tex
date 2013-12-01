@@ -227,16 +227,11 @@ you should consult your local documentation for details.
         {\tt .cpt} file.
 \item   {\tt GMX_CAPACITY}: the maximum capacity of charge groups per
         processor when using particle decomposition.
-\item   {\tt GMX_CUDA_NB_DEFAULT}: Force the use of the default CUDA non-bonded kernels instead of
-        the legacy ones; mutually exclusive of {\tt GMX_CUDA_NB_LEGACY}.
 \item   {\tt GMX_CUDA_NB_EWALD_TWINCUT}: force the use of twin-range cutoff kernel even if {\tt rvdw} =
         {\tt rcoulomb} after PP-PME load balancing. The switch to twin-range kernels is automated,
         so this variable should be used only for benchmarking.
 \item   {\tt GMX_CUDA_NB_ANA_EWALD}: force the use of analytical Ewald kernels. Should be used only for benchmarking.
 \item   {\tt GMX_CUDA_NB_TAB_EWALD}: force the use of tabulated Ewald kernels. Should be used only for benchmarking.
-\item   {\tt GMX_CUDA_NB_LEGACY}: Force the use of the legacy CUDA non-bonded kernels, which are
-        the default when using the CUDA toolkit versions 3.2 or 4.0 on Fermi NVIDIA GPUs (compute capability 2.x);
-        mutually exclusive of {\tt GMX_CUDA_NB_DEFAULT}.
 \item   {\tt GMX_CUDA_STREAMSYNC}: force the use of cudaStreamSynchronize on ECC-enabled GPUs, which leads
         to performance loss due to a known CUDA driver bug present in API v5.0 NVIDIA drivers (pre-30x.xx).
         Cannot be set simultaneously with {\tt GMX_NO_CUDA_STREAMSYNC}.
