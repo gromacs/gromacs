@@ -1181,7 +1181,7 @@ number, constant volume, constant energy ensemble), most quantities
 that we wish to calculate are actually from a constant temperature
 (NVT) ensemble, also called the canonical ensemble. {\gromacs} can use
 the {\em weak-coupling} scheme of Berendsen~\cite{Berendsen84},
-stochastic randomization through the Andersen
+ randomization through the Andersen
 thermostat~\cite{Andersen80}, the extended ensemble Nos{\'e}-Hoover
 scheme~\cite{Nose84,Hoover85}, or a velocity-rescaling
 scheme~\cite{Bussi2007a} to simulate constant temperature, with
@@ -2262,23 +2262,35 @@ When $1/\gamma_i$ is small compared to the time scales present in the system,
 the dynamics will be completely different from MD, but the sampling is
 still correct.
 
-In {\gromacs} there are two algorithms to integrate equation (\ref{SDeq}):
+In {\gromacs} there are two algorithms to integrate equation (\ref{Goga12}):
 a simple and efficient one
 and a more complex leap-frog algorithm~\cite{Gunsteren88}.
 The accuracy of both integrators is equivalent to the normal MD leap-frog and
-velocity-Verlet integrator, except with constraints where the simple
-SD integrator is significantly less accurate. There is a proper way
-of applying constraints with the simple integrator, but that requires
-a second constraining step~\cite{Goga2012}, which diminishes the gain.
-The simple integrator is:
-\bea
-\label{eqn:sd_int1}
-\ve{v}(t+\hDt)  &~=~&   \alpha \, \ve{v}(t-\hDt) + \frac{1 - \alpha}{m \gamma}\ve{F}(t) + \sqrt{\frac{k_B T}{m}(1 - \alpha^2)} \, \ruis_i \\
-\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt \, \ve{v}(t+\hDt) \\
-\alpha &~=~& \left(1 - \frac{\gamma \Dt}{m} \right)
-\eea
-where $\ruis_i$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
-With constraints you should only consider using the simple integrator when $\gamma \Dt/m \ll 0.01$.
+velocity-Verlet integrator. 
+
+The simple integrator consists of two parts: (a) velocity reduction representing the effect of friction, (b)  addition of a random term compensating for the loss of kinetic energy by friction. Thus the phase space evolution during a time step consists of two events: (a) evolution in full phase space according to the (frictionless) equations of motion, (b) evolution in momentum space   due to friction and noise. If one takes care that the additional evolution in momentum space preserves the canonical distribution, the procedure yields a valid solution to the stochastic equations of motion.
+
+The method has been worked out for Langevin dynamics (application to particles) and for DPD dynamics (application to particle pairs) by Goga \textit{et. al.} \cite{Goga12}. Here we describe the Langevin case. In short, if a single degree of freedom is considered with velocity $v$ and mass $m$ (this could also be a velocity difference for a particle pair, with reduced mass $\mu$), the velocity change is given by:\\
+\beq
+   v' =  (1-f) v + g \xi,
+\eeq
+where $f$ is a chosen velocity reduction factor proportional to the strength of the friction; $\xi$ is a random number sampled from a standard normal distribution (mean zero, variance 1) and $g$ is given by
+\beq
+g^2 = \frac{k_\mathrm{B}T_\mathrm{ref}}{m} f(2-f).
+\eeq
+This choice ensures that -- for a system in equilibrium at the reference temperature -- the average kinetic energy is preserved during the impulsive velocity change. This application of friction and noise in fact preserves the canonical momentum distribution.
+
+The method acts as a thermostat: if the temperature deviates from the reference temperature, the temperature deviation will decay to zero with a first order process with rate constant  \cite{Goga12}
+\beq
+   k_{\mbox{\tiny th}}= \frac{3k_\mathrm{B}}{2c_\mathrm{v}} 2 \gamma_{\mbox{\tiny eff}}
+\eeq
+where
+\beq
+    \gamma_{\mbox{\tiny eff}} = - 
+\frac{1}{\Delta t} \mbox{ln} (1-f) \approx \frac {f}{\Delta t}
+\eeq
+
+is the friction constant and $c_{\mbox{\tiny v}}$ is the specific heat per particle.
 
 In the complex algorithm four Gaussian random numbers are required
 per integration step per degree of freedom, and with constraints the

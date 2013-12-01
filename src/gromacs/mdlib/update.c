@@ -50,25 +50,25 @@
 #include "macros.h"
 #include "vec.h"
 #include "main.h"
+#include "confio.h"
 #include "update.h"
 #include "gmx_random.h"
+#include "futil.h"
 #include "mshift.h"
 #include "tgroup.h"
 #include "force.h"
 #include "names.h"
 #include "txtdump.h"
 #include "mdrun.h"
+#include "copyrite.h"
 #include "constr.h"
 #include "edsam.h"
 #include "pull.h"
 #include "disre.h"
 #include "orires.h"
+#include "gmx_wallcycle.h"
 #include "gmx_omp_nthreads.h"
-
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/futil.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/gmxomp.h"
+#include "gmx_omp.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -272,6 +272,7 @@ static void do_update_md(int start, int nrend, double dt,
 }
 
 static void do_update_vv_vel(int start, int nrend, double dt,
+                             t_grp_tcstat *tcstat, t_grp_acc *gstat,
                              rvec accel[], ivec nFreeze[], real invmass[],
                              unsigned short ptype[], unsigned short cFREEZE[],
                              unsigned short cACC[], rvec v[], rvec f[],
@@ -322,10 +323,11 @@ static void do_update_vv_vel(int start, int nrend, double dt,
 } /* do_update_vv_vel */
 
 static void do_update_vv_pos(int start, int nrend, double dt,
-                             ivec nFreeze[],
+                             t_grp_tcstat *tcstat, t_grp_acc *gstat,
+                             rvec accel[], ivec nFreeze[], real invmass[],
                              unsigned short ptype[], unsigned short cFREEZE[],
                              rvec x[], rvec xprime[], rvec v[],
-                             gmx_bool bExtended, real veta)
+                             rvec f[], gmx_bool bExtended, real veta, real alpha)
 {
     double imass, w_dt;
     int    gf = 0;
@@ -492,19 +494,14 @@ static void init_multiple_gaussrand(gmx_stochd_t *sd)
         seed[i] = gmx_rng_uniform_uint32(sd->gaussrand[0]);
     }
 
-    if (ngr != gmx_omp_nthreads_get(emntUpdate))
-    {
-        gmx_incons("The number of Gaussian number generators should be equal to gmx_omp_nthreads_get(emntUpdate)");
-    }
-
-#pragma omp parallel num_threads(gmx_omp_nthreads_get(emntUpdate))
+#pragma omp parallel num_threads(ngr)
     {
         int th;
 
         th = gmx_omp_get_thread_num();
         if (th > 0)
         {
-            /* Initialize on each thread to get memory allocated thread-local */
+            /* Initialize on each thread to have thread-local memory alloced */
             sd->gaussrand[th] = gmx_rng_init(seed[th]);
         }
     }
@@ -512,7 +509,7 @@ static void init_multiple_gaussrand(gmx_stochd_t *sd)
     sfree(seed);
 }
 
-static gmx_stochd_t *init_stochd(t_inputrec *ir, int nthreads)
+static gmx_stochd_t *init_stochd(FILE *fplog, t_inputrec *ir, int nthreads)
 {
     gmx_stochd_t   *sd;
     gmx_sd_const_t *sdc;
@@ -664,7 +661,7 @@ void set_stochd_state(gmx_update_t upd, t_state *state)
     }
 }
 
-gmx_update_t init_update(t_inputrec *ir)
+gmx_update_t init_update(FILE *fplog, t_inputrec *ir)
 {
     t_gmx_update *upd;
 
@@ -672,7 +669,7 @@ gmx_update_t init_update(t_inputrec *ir)
 
     if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
     {
-        upd->sd = init_stochd(ir, gmx_omp_nthreads_get(emntUpdate));
+        upd->sd = init_stochd(fplog, ir, gmx_omp_nthreads_get(emntUpdate));
     }
 
     upd->xp                 = NULL;
@@ -692,18 +689,27 @@ static void do_update_sd1(gmx_stochd_t *sd,
                           unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
-                          int ngtc, real tau_t[], real ref_t[])
+                          rvec sd_X[],
+                          int ngtc, real tau_t[], real ref_t[],
+                          gmx_bool bDoConstr,
+                          gmx_bool bFirstHalfConstr)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
     real            kT;
     int             gf = 0, ga = 0, gt = 0;
-    real            ism, sd_V;
+    real            ism, sd_V, im;
     int             n, d;
+    real            vn;
 
     sdc = sd->sdc;
     sig = sd->sdsig;
-
+ 
+    
+ 
+   if(!bDoConstr){ 
+   /* I put all the booleans outside of "for"-cycles  for efficiency reasons
+      Maybe we should make 3 separated functions for clarity */ 
     for (n = 0; n < ngtc; n++)
     {
         kT = BOLTZ*ref_t[n];
@@ -732,12 +738,9 @@ static void do_update_sd1(gmx_stochd_t *sd,
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
                 sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
-
-                v[n][d] = v[n][d]*sdc[gt].em
-                    + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                    + sd_V;
-
-                xprime[n][d] = x[n][d] + v[n][d]*dt;
+                vn = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
+                v[n][d] = vn*sdc[gt].em + sd_V;
+                xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
             }
             else
             {
@@ -746,6 +749,83 @@ static void do_update_sd1(gmx_stochd_t *sd,
             }
         }
     }
+   } //bDoConstr
+   else // we do have constraints
+   {
+        if(bFirstHalfConstr) // just update the velocities and positions without any thermostating
+        {
+            for (n = start; n < nrend; n++){
+            {
+                im = invmass[n];
+
+                if (cFREEZE)
+                {
+                    gf  = cFREEZE[n];
+                }
+                if (cACC)
+                {
+                    ga  = cACC[n];
+                }
+                if (cTC)
+                {
+                    gt  = cTC[n];
+                }
+
+                for (d = 0; d < DIM; d++)
+                {
+                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                    {
+                        v[n][d] = v[n][d] + (im*f[n][d] + accel[ga][d])*dt;
+                        xprime[n][d] = x[n][d] +  v[n][d]*dt;
+                
+                    }
+                    else
+                    {
+                        v[n][d]      = 0.0;
+                        xprime[n][d] = x[n][d];
+                    }
+                }
+            }
+        }
+     }
+    else // apply the thermostating for the constraints case
+    {
+
+     for (n = 0; n < ngtc; n++){
+        kT = BOLTZ*ref_t[n];
+        /* The mass is encounted for later, since this differs per atom */
+        sig[n].V  = sqrt(kT*(1 - sdc[n].em*sdc[n].em));
+    }
+
+    for (n = start; n < nrend; n++)
+    {
+        ism = sqrt(invmass[n]);
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga  = cACC[n];
+        }
+        if (cTC)
+        {
+            gt  = cTC[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+                vn = v[n][d];                
+                v[n][d] = vn*sdc[gt].em + sd_V;
+                xprime[n][d] = xprime[n][d] + 0.5*(v[n][d]-vn)*dt;               
+            }
+        }
+    }
+    } // second part of constraints
+   } // we do have constraints
 }
 
 static void check_sd2_work_data_allocation(gmx_stochd_t *sd, int nrend)
@@ -754,31 +834,6 @@ static void check_sd2_work_data_allocation(gmx_stochd_t *sd, int nrend)
     {
         sd->sd_V_nalloc = over_alloc_dd(nrend);
         srenew(sd->sd_V, sd->sd_V_nalloc);
-    }
-}
-
-static void do_update_sd2_Tconsts(gmx_stochd_t *sd,
-                                  int           ngtc,
-                                  const real    tau_t[],
-                                  const real    ref_t[])
-{
-    /* This is separated from the update below, because it is single threaded */
-    gmx_sd_const_t *sdc;
-    gmx_sd_sigma_t *sig;
-    int             gt;
-    real            kT;
-
-    sdc = sd->sdc;
-    sig = sd->sdsig;
-
-    for (gt = 0; gt < ngtc; gt++)
-    {
-        kT = BOLTZ*ref_t[gt];
-        /* The mass is encounted for later, since this differs per atom */
-        sig[gt].V  = sqrt(kT*(1-sdc[gt].em));
-        sig[gt].X  = sqrt(kT*sqr(tau_t[gt])*sdc[gt].c);
-        sig[gt].Yv = sqrt(kT*sdc[gt].b/sdc[gt].c);
-        sig[gt].Yx = sqrt(kT*sqr(tau_t[gt])*sdc[gt].b/(1-sdc[gt].em));
     }
 }
 
@@ -792,7 +847,7 @@ static void do_update_sd2(gmx_stochd_t *sd,
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
                           rvec sd_X[],
-                          const real tau_t[],
+                          int ngtc, real tau_t[], real ref_t[],
                           gmx_bool bFirstHalf)
 {
     gmx_sd_const_t *sdc;
@@ -810,6 +865,19 @@ static void do_update_sd2(gmx_stochd_t *sd,
     sdc  = sd->sdc;
     sig  = sd->sdsig;
     sd_V = sd->sd_V;
+
+    if (bFirstHalf)
+    {
+        for (n = 0; n < ngtc; n++)
+        {
+            kT = BOLTZ*ref_t[n];
+            /* The mass is encounted for later, since this differs per atom */
+            sig[n].V  = sqrt(kT*(1-sdc[n].em));
+            sig[n].X  = sqrt(kT*sqr(tau_t[n])*sdc[n].c);
+            sig[n].Yv = sqrt(kT*sdc[n].b/sdc[n].c);
+            sig[n].Yx = sqrt(kT*sqr(tau_t[n])*sdc[n].b/(1-sdc[n].em));
+        }
+    }
 
     for (n = start; n < nrend; n++)
     {
@@ -881,35 +949,13 @@ static void do_update_sd2(gmx_stochd_t *sd,
     }
 }
 
-static void do_update_bd_Tconsts(double dt, real friction_coefficient,
-                                 int ngtc, const real ref_t[],
-                                 real *rf)
-{
-    /* This is separated from the update below, because it is single threaded */
-    int gt;
-
-    if (friction_coefficient != 0)
-    {
-        for (gt = 0; gt < ngtc; gt++)
-        {
-            rf[gt] = sqrt(2.0*BOLTZ*ref_t[gt]/(friction_coefficient*dt));
-        }
-    }
-    else
-    {
-        for (gt = 0; gt < ngtc; gt++)
-        {
-            rf[gt] = sqrt(2.0*BOLTZ*ref_t[gt]);
-        }
-    }
-}
-
 static void do_update_bd(int start, int nrend, double dt,
                          ivec nFreeze[],
                          real invmass[], unsigned short ptype[],
                          unsigned short cFREEZE[], unsigned short cTC[],
                          rvec x[], rvec xprime[], rvec v[],
                          rvec f[], real friction_coefficient,
+                         int ngtc, real tau_t[], real ref_t[],
                          real *rf, gmx_rng_t gaussrand)
 {
     /* note -- these appear to be full step velocities . . .  */
@@ -921,8 +967,18 @@ static void do_update_bd(int start, int nrend, double dt,
     if (friction_coefficient != 0)
     {
         invfr = 1.0/friction_coefficient;
+        for (n = 0; n < ngtc; n++)
+        {
+            rf[n] = sqrt(2.0*BOLTZ*ref_t[n]/(friction_coefficient*dt));
+        }
     }
-
+    else
+    {
+        for (n = 0; n < ngtc; n++)
+        {
+            rf[n] = sqrt(2.0*BOLTZ*ref_t[n]);
+        }
+    }
     for (n = start; (n < nrend); n++)
     {
         if (cFREEZE)
@@ -960,9 +1016,8 @@ static void do_update_bd(int start, int nrend, double dt,
     }
 }
 
-static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
-                        int gmx_unused natoms, rvec gmx_unused x[], rvec gmx_unused xp[],
-                        rvec gmx_unused v[], rvec gmx_unused f[])
+static void dump_it_all(FILE *fp, const char *title,
+                        int natoms, rvec x[], rvec xp[], rvec v[], rvec f[])
 {
 #ifdef DEBUG
     if (fp)
@@ -1035,13 +1090,12 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
         end_t   = md->start + ((thread+1)*md->homenr)/nthread;
 
         ekin_sum    = ekind->ekin_work[thread];
-        dekindl_sum = ekind->dekindl_work[thread];
+        dekindl_sum = &ekind->ekin_work[thread][opts->ngtc][0][0];
 
         for (gt = 0; gt < opts->ngtc; gt++)
         {
             clear_mat(ekin_sum[gt]);
         }
-        *dekindl_sum = 0.0;
 
         ga = 0;
         gt = 0;
@@ -1071,7 +1125,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
             }
             if (md->nMassPerturbed && md->bPerturbed[n])
             {
-                *dekindl_sum +=
+                *dekindl_sum -=
                     0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
             }
         }
@@ -1094,7 +1148,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
             }
         }
 
-        ekind->dekindl += *ekind->dekindl_work[thread];
+        ekind->dekindl += ekind->ekin_work[thread][opts->ngtc][0][0];
     }
 
     inc_nrnb(nrnb, eNR_EKIN, md->homenr);
@@ -1103,7 +1157,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
 static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
                               t_grpopts *opts, t_mdatoms *md,
                               gmx_ekindata_t *ekind,
-                              t_nrnb *nrnb, gmx_bool bEkinAveVel)
+                              t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
 {
     int           start = md->start, homenr = md->homenr;
     int           g, d, n, m, gt = 0;
@@ -1159,7 +1213,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
         }
         if (md->nPerturbed && md->bPerturbed[n])
         {
-            dekindl += 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
+            dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
         }
     }
     ekind->dekindl = dekindl;
@@ -1177,7 +1231,7 @@ void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
     }
     else
     {
-        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
     }
 }
 
@@ -1372,10 +1426,12 @@ static void combine_forces(int nstcalclr,
     }
 }
 
-void update_tcouple(gmx_large_int_t   step,
+void update_tcouple(FILE             *fplog,
+                    gmx_large_int_t   step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
+                    gmx_wallcycle_t   wcycle,
                     gmx_update_t      upd,
                     t_extmass        *MassQ,
                     t_mdatoms        *md)
@@ -1447,6 +1503,8 @@ void update_pcouple(FILE             *fplog,
                     t_state          *state,
                     matrix            pcoupl_mu,
                     matrix            M,
+                    gmx_wallcycle_t   wcycle,
+                    gmx_update_t      upd,
                     gmx_bool          bInitStep)
 {
     gmx_bool   bPCouple = FALSE;
@@ -1514,7 +1572,7 @@ static rvec *get_xprime(const t_state *state, gmx_update_t upd)
 void update_constraints(FILE             *fplog,
                         gmx_large_int_t   step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
-                        t_inputrec       *inputrec,  /* input record and box stuff	*/
+                        t_inputrec       *inputrec,  /* input record and box stuff      */
                         gmx_ekindata_t   *ekind,
                         t_mdatoms        *md,
                         t_state          *state,
@@ -1523,11 +1581,13 @@ void update_constraints(FILE             *fplog,
                         rvec              force[],   /* forces on home particles */
                         t_idef           *idef,
                         tensor            vir_part,
+                        tensor            vir,       /* tensors for virial and ekin, needed for computing */
                         t_commrec        *cr,
                         t_nrnb           *nrnb,
                         gmx_wallcycle_t   wcycle,
                         gmx_update_t      upd,
                         gmx_constr_t      constr,
+                        gmx_bool          bInitStep,
                         gmx_bool          bFirstHalf,
                         gmx_bool          bCalcVir,
                         real              vetanew)
@@ -1551,6 +1611,7 @@ void update_constraints(FILE             *fplog,
 
     /* for now, SD update is here -- though it really seems like it
        should be reformulated as a velocity verlet method, since it has two parts */
+
 
     start  = md->start;
     homenr = md->homenr;
@@ -1658,8 +1719,8 @@ void update_constraints(FILE             *fplog,
                           md->invmass, md->ptype,
                           md->cFREEZE, md->cACC, md->cTC,
                           state->x, xprime, state->v, force, state->sd_X,
-                          inputrec->opts.tau_t,
-                          FALSE);
+                          inputrec->opts.ngtc, inputrec->opts.tau_t,
+                          inputrec->opts.ref_t, FALSE);
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
 
@@ -1676,6 +1737,56 @@ void update_constraints(FILE             *fplog,
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }
+
+
+     if ((inputrec->eI == eiSD1) && !(bFirstHalf))
+    {
+        xprime = get_xprime(state, upd);
+
+        nth = gmx_omp_nthreads_get(emntUpdate);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+
+        for (th = 0; th < nth; th++)
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+
+            /* The second part of the SD integration */
+             do_update_sd1(upd->sd, upd->sd->gaussrand[th],
+                              start_th, end_th, dt,
+                              inputrec->opts.acc, inputrec->opts.nFreeze,
+                              md->invmass, md->ptype,
+                              md->cFREEZE, md->cACC, md->cTC,
+                              state->x, xprime, state->v, force, state->sd_X,
+                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t, bDoConstr, FALSE);
+        }
+        inc_nrnb(nrnb, eNR_UPDATE, homenr);
+
+        if (bDoConstr)
+        {
+          /* Constrain the coordinates xprime */
+         wallcycle_start(wcycle, ewcCONSTR);
+
+         inputrec->delta_t = 0.5* inputrec->delta_t; 
+
+         constrain(NULL, bLog, bEner, constr, idef,
+                      inputrec, NULL, cr, step, 1, md,
+                      state->x, xprime, NULL,
+                      bMolPBC, state->box,
+                      state->lambda[efptBONDED], dvdlambda,
+                      state->v, NULL, nrnb, econqCoord, FALSE, 0, 0);
+
+
+         inputrec->delta_t = 2 * inputrec->delta_t;
+        }
+
+        wallcycle_stop(wcycle, ewcCONSTR);
+    }
+
+
 
     /* We must always unshift after updating coordinates; if we did not shake
        x was shifted in do_force */
@@ -1711,14 +1822,18 @@ void update_constraints(FILE             *fplog,
 
 void update_box(FILE             *fplog,
                 gmx_large_int_t   step,
-                t_inputrec       *inputrec,  /* input record and box stuff	*/
+                t_inputrec       *inputrec,  /* input record and box stuff      */
                 t_mdatoms        *md,
                 t_state          *state,
+                t_graph          *graph,
                 rvec              force[],   /* forces on home particles */
                 matrix           *scale_tot,
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
-                gmx_update_t      upd)
+                gmx_wallcycle_t   wcycle,
+                gmx_update_t      upd,
+                gmx_bool          bInitStep,
+                gmx_bool          bFirstHalf)
 {
     gmx_bool             bExtended, bLastStep, bLog = FALSE, bEner = FALSE;
     double               dt;
@@ -1816,7 +1931,7 @@ void update_box(FILE             *fplog,
 
 void update_coords(FILE             *fplog,
                    gmx_large_int_t   step,
-                   t_inputrec       *inputrec,  /* input record and box stuff	*/
+                   t_inputrec       *inputrec,  /* input record and box stuff   */
                    t_mdatoms        *md,
                    t_state          *state,
                    gmx_bool          bMolPBC,
@@ -1826,6 +1941,7 @@ void update_coords(FILE             *fplog,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
+                   gmx_wallcycle_t   wcycle,
                    gmx_update_t      upd,
                    gmx_bool          bInitStep,
                    int               UpdatePart,
@@ -1834,7 +1950,7 @@ void update_coords(FILE             *fplog,
                    gmx_constr_t      constr,
                    t_idef           *idef)
 {
-    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE;
+    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double            dt, alpha;
     real             *imass, *imassin;
     rvec             *force;
@@ -1845,6 +1961,12 @@ void update_coords(FILE             *fplog,
     tensor            vir_con;
     rvec             *vcom, *xcom, *vall, *xall, *xin, *vin, *forcein, *fall, *xpall, *xprimein, *xprime;
     int               nth, th;
+
+ 
+     bDoConstr = (NULL != constr)?TRUE:FALSE;
+   
+
+   
 
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
@@ -1898,23 +2020,22 @@ void update_coords(FILE             *fplog,
     dump_it_all(fplog, "Before update",
                 state->natoms, state->x, xprime, state->v, force);
 
+    if (EI_RANDOM(inputrec->eI))
+    {
+        /* We still need to take care of generating random seeds properly
+         * when multi-threading.
+         */
+        nth = 1;
+    }
+    else
+    {
+        nth = gmx_omp_nthreads_get(emntUpdate);
+    }
+
     if (inputrec->eI == eiSD2)
     {
         check_sd2_work_data_allocation(upd->sd, nrend);
-
-        do_update_sd2_Tconsts(upd->sd,
-                              inputrec->opts.ngtc,
-                              inputrec->opts.tau_t,
-                              inputrec->opts.ref_t);
     }
-    if (inputrec->eI == eiBD)
-    {
-        do_update_bd_Tconsts(dt, inputrec->bd_fric,
-                             inputrec->opts.ngtc, inputrec->opts.ref_t,
-                             upd->sd->bd_rf);
-    }
-
-    nth = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
     for (th = 0; th < nth; th++)
@@ -1951,13 +2072,14 @@ void update_coords(FILE             *fplog,
                 }
                 break;
             case (eiSD1):
+
                 do_update_sd1(upd->sd, upd->sd->gaussrand[th],
                               start_th, end_th, dt,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
-                              state->x, xprime, state->v, force,
-                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t);
+                              state->x, xprime, state->v, force, state->sd_X,
+                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t, bDoConstr, TRUE);
                 break;
             case (eiSD2):
                 /* The SD update is done in 2 parts, because an extra constraint step
@@ -1969,7 +2091,7 @@ void update_coords(FILE             *fplog,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force, state->sd_X,
-                              inputrec->opts.tau_t,
+                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t,
                               TRUE);
                 break;
             case (eiBD):
@@ -1978,6 +2100,7 @@ void update_coords(FILE             *fplog,
                              md->cFREEZE, md->cTC,
                              state->x, xprime, state->v, force,
                              inputrec->bd_fric,
+                             inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t,
                              upd->sd->bd_rf, upd->sd->gaussrand[th]);
                 break;
             case (eiVV):
@@ -1988,6 +2111,7 @@ void update_coords(FILE             *fplog,
                     case etrtVELOCITY1:
                     case etrtVELOCITY2:
                         do_update_vv_vel(start_th, end_th, dt,
+                                         ekind->tcstat, ekind->grpstat,
                                          inputrec->opts.acc, inputrec->opts.nFreeze,
                                          md->invmass, md->ptype,
                                          md->cFREEZE, md->cACC,
@@ -1996,10 +2120,11 @@ void update_coords(FILE             *fplog,
                         break;
                     case etrtPOSITION:
                         do_update_vv_pos(start_th, end_th, dt,
-                                         inputrec->opts.nFreeze,
-                                         md->ptype, md->cFREEZE,
-                                         state->x, xprime, state->v,
-                                         (bNH || bPR), state->veta);
+                                         ekind->tcstat, ekind->grpstat,
+                                         inputrec->opts.acc, inputrec->opts.nFreeze,
+                                         md->invmass, md->ptype, md->cFREEZE,
+                                         state->x, xprime, state->v, force,
+                                         (bNH || bPR), state->veta, alpha);
                         break;
                 }
                 break;
