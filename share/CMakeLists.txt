@@ -51,6 +51,6 @@ install(FILES README.tutor README_FreeEnergyModifications.txt
     DESTINATION ${DATA_INSTALL_DIR}
     COMPONENT data)
 install(DIRECTORY top
-    DESTINATION ${DATA_INSTALL_DIR}/top
+    DESTINATION ${DATA_INSTALL_DIR}
     COMPONENT data
     PATTERN "*~" EXCLUDE)
