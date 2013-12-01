@@ -193,6 +193,11 @@ enum {
     efptFEP, efptMASS, efptCOUL, efptVDW, efptBONDED, efptRESTRAINT, efptTEMPERATURE, efptNR
 };
 
+/* Printing the energy to the free energy dhdl file. */
+enum {
+    edHdLPrintEnergyNO, edHdLPrintEnergyYES, edHdLPrintEnergyTOTAL, edHdLPrintEnergyPOTENTIAL, edHdLPrintEnergyNR
+};
+
 /* How the lambda weights are calculated:
    elamstatsMETROPOLIS = using the metropolis criteria
    elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett
