@@ -70,8 +70,8 @@ see the documentation at
 \end{enumerate}
 Or, as a sequence of commands to execute:
 \begin{verbatim}
-tar xfz gromacs-4.6.4.tar.gz
-cd gromacs-4.6.4
+tar xfz gromacs-4.6.5.tar.gz
+cd gromacs-4.6.5
 mkdir build
 cd build
 cmake .. -DGMX_BUILD_OWN_FFTW=ON
@@ -321,8 +321,8 @@ line is the name of the directory containing the
 example, download the source tarball and use
 % TODO: keep up to date with new releases!
 \begin{verbatim}
-$ tar xfz gromacs-4.6.4.tgz
-$ cd gromacs-4.6.4
+$ tar xfz gromacs-4.6.5.tgz
+$ cd gromacs-4.6.5
 $ mkdir build-cmake
 $ cd build-cmake
 $ cmake ..
@@ -590,7 +590,7 @@ The simplest way to run the checks is to build \gromacs{} with
 \verb+-DREGRESSIONTEST_DOWNLOAD+, and run \verb+make check+.
 \gromacs{} will automatically download and run the tests for you.
 Alternatively, you can download and unpack the tarball yourself from
-\url{http://gerrit.gromacs.org/download/regressiontests-4.6.4.tar.gz},
+\url{http://gerrit.gromacs.org/download/regressiontests-4.6.5.tar.gz},
 and use the advanced \cmake{} option \verb+REGRESSIONTEST_PATH+ to
 specify the path to the unpacked tarball, which will then be used for
 testing. If this doesn't work, then please read on.
