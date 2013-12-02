@@ -370,15 +370,6 @@ energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
 <dl>
 <dt><b>cutoff-scheme:</b></dt>
 <dd><dl compact>
-<dt><b>group</b></dt>
-<dd>Generate a pair list for groups of atoms. These groups correspond to the 
-charge groups in the topology. This was the only cut-off treatment scheme 
-before version 4.6. 
-There is no explicit buffering of the pair list. This enables efficient force 
-calculations, but energy is only conserved when a buffer is explicitly added. 
-For energy conservation, the <b>Verlet</b> option provides a more convenient 
-and efficient algorithm.</dd>
-
 <dt><b>Verlet</b></dt>
 <dd>Generate a pair list with buffering. The buffer size is automatically set 
 based on <b>verlet-buffer-tolerance</b>, unless this is set to -1, in which case
@@ -386,13 +377,21 @@ based on <b>verlet-buffer-tolerance</b>, unless this is set to -1, in which case
 <b>rvdw</b>=<b>rcoulomb</b>. Currently only cut-off, reaction-field, 
 PME electrostatics and plain LJ are supported. Some <tt>mdrun</tt> functionality 
 is not yet supported with the <b>Verlet</b> scheme, but <tt>grompp</tt> checks for this. 
-Native GPU acceleration is only supported with <b>Verlet</b>. With GPU-accelerated PME,
+Native GPU acceleration is only supported with <b>Verlet</b>.
+With GPU-accelerated PME or with separate PME ranks,
 <tt>mdrun</tt> will automatically tune the CPU/GPU load balance by 
 scaling <b>rcoulomb</b> and the grid spacing. This can be turned off with 
 <tt>-notunepme</tt>.
 
-<b>Verlet</b> is somewhat faster than <b>group</b> when there is no water, or if <b>group</b> would use a pair-list buffer to conserve energy.
+<b>Verlet</b> is faster than <b>group</b> when there is no water, or if <b>group</b> would use a pair-list buffer to conserve energy.
 </dd>
+<dt><b>group</b></dt>
+<dd>Generate a pair list for groups of atoms. These groups correspond to the 
+charge groups in the topology. This was the only cut-off treatment scheme 
+before version 4.6. 
+There is no explicit buffering of the pair list. This enables efficient force 
+calculations for water, but energy is only conserved when a buffer is explicitly added.</dd>
+
 </dl></dd>
 
 <dt><b>nstlist: (10) [steps]</b></dt>
@@ -479,7 +478,7 @@ cells when constructing a new neighbor list every <b>nstlist</b> steps.
 In large systems grid search is much faster than simple search.</dd>
 <dt><b>simple</b></dt>
 <dd>Check every atom in the box when constructing a new neighbor list
-every <b>nstlist</b> steps.</dd>
+every <b>nstlist</b> steps (only with <b>cutoff-scheme=group</b>).</dd>
 </dl></dd>
 
 <dt><b>pbc:</b></dt>

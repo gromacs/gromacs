@@ -1782,7 +1782,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* Neighbor searching */
     CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
-    CTYPE ("cut-off scheme (group: using charge groups, Verlet: particle based cut-offs)");
+    CTYPE ("cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)");
     EETYPE("cutoff-scheme",     ir->cutoff_scheme,    ecutscheme_names);
     CTYPE ("nblist update frequency");
     ITYPE ("nstlist", ir->nstlist,    10);

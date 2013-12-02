@@ -82,7 +82,7 @@ enum {
 };
 
 enum {
-    ecutsGROUP, ecutsVERLET, ecutsNR
+    ecutsVERLET, ecutsGROUP, ecutsNR
 };
 
 /* Coulomb / VdW interaction modifiers.
