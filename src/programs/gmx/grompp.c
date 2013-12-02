@@ -1252,7 +1252,6 @@ static void check_gbsa_params(gpp_atomtype_t atype)
 static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               t_inputrec       *ir,
                               matrix            box,
-                              real              verletbuf_tol,
                               warninp_t         wi)
 {
     real                   ref_T;
@@ -1275,7 +1274,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
         }
     }
 
-    printf("Determining Verlet buffer for a tolerance of %g kJ/mol/ps at %g K\n", verletbuf_tol, ref_T);
+    printf("Determining Verlet buffer for a tolerance of %g kJ/mol/ps at %g K\n", ir->verletbuf_tol, ref_T);
 
     for (i = 0; i < ir->opts.ngtc; i++)
     {
@@ -1290,12 +1289,12 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     /* Calculate the buffer size for simple atom vs atoms list */
     ls.cluster_size_i = 1;
     ls.cluster_size_j = 1;
-    calc_verlet_buffer_size(mtop, det(box), ir, verletbuf_tol,
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_tol,
                             &ls, &n_nonlin_vsite, &rlist_1x1);
 
     /* Set the pair-list buffer size in ir */
     verletbuf_get_list_setup(FALSE, &ls);
-    calc_verlet_buffer_size(mtop, det(box), ir, verletbuf_tol,
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->verletbuf_tol,
                             &ls, &n_nonlin_vsite, &ir->rlist);
 
     if (n_nonlin_vsite > 0)
@@ -1767,7 +1766,7 @@ int gmx_grompp(int argc, char *argv[])
             !(EI_MD(ir->eI) && ir->etc == etcNO) &&
             inputrec2nboundeddim(ir) == 3)
         {
-            set_verlet_buffer(sys, ir, state.box, ir->verletbuf_tol, wi);
+            set_verlet_buffer(sys, ir, state.box, wi);
         }
     }
 
