@@ -38,6 +38,7 @@
 #define _maths_h
 
 #include <math.h>
+#include <limits.h>
 #include "types/simple.h"
 #include "typedefs.h"
 
@@ -152,13 +153,23 @@ gmx_numzero(double a)
     return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
 }
 
-
-static real
-gmx_log2(real x)
+/**
+ * Compute floor of log2 for unsigned integer
+ */
+static gmx_inline unsigned log2i(unsigned n)
 {
-    const real iclog2 = 1.0/log( 2.0 );
-
-    return log( x ) * iclog2;
+#if defined(__INTEL_COMPILER)
+    return _bit_scan_reverse(n);
+#elif defined(__GNUC__) && UINT_MAX == 4294967295U /*also for clang*/
+    return __builtin_clz(n) ^ 31U;                 /* xor gets optimized out */
+#elif defined(_MSC_VER) && _MSC_VER >= 1400
+    uint32_t i;
+    _BitScanReverse((DWORD *)&i, n);
+    return i;
+#else
+#warning "Slow log2i"
+    return (unsigned)log2((double)n);
+#endif
 }
 
 /*! /brief Multiply two large ints
