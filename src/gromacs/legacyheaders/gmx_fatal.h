@@ -127,7 +127,7 @@ void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline);
  * the file is not NULL:
  * if (debug) fprintf(debug,"%s","Hallo");
  */
-extern FILE    *debug;
+__declspec(target(mic)) extern FILE    *debug;
 extern gmx_bool gmx_debug_at;
 
 void init_debug (const int dbglevel, const char *dbgfile);

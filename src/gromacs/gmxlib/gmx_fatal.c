@@ -564,7 +564,7 @@ void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline)
  * 0 to 3 of these filed are redirected to /dev/null
  *
  */
-FILE *debug           = NULL;
+__declspec(target(mic)) FILE *debug           = NULL;
 gmx_bool gmx_debug_at = FALSE;
 
 void init_debug(const int dbglevel, const char *dbgfile)
