@@ -108,10 +108,14 @@ MdrunTestFixture::~MdrunTestFixture()
 {
 }
 
+// TODO The combination of defaulting to Verlet cut-off scheme, NVE,
+// and verlet-buffer-tolerance = -1 gives a grompp error. If we keep
+// things that way, this function should be renamed. For now,
+// force the use of the group scheme.
 void
 MdrunTestFixture::useEmptyMdpFile()
 {
-    useStringAsMdpFile("");
+    useStringAsMdpFile("cutoff-scheme = Group\n");
 }
 
 void

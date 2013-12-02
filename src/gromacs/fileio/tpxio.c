@@ -70,7 +70,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 92;
+static const int tpx_version = 94;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -727,6 +727,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     if (file_version >= 81)
     {
         gmx_fio_do_int(fio, ir->cutoff_scheme);
+        if (file_version < 94)
+        {
+            ir->cutoff_scheme = 1 - ir->cutoff_scheme;
+        }
     }
     else
     {
