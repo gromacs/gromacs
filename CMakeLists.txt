@@ -688,6 +688,9 @@ gmx_test_restrict(RESTRICT_KEYWORD)
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
+include(gmxTest64BitInt)
+gmx_test_64bitint(HAVE_64BITINT)
+
 include(gmxTestIsfinite)
 gmx_test_isfinite(HAVE_ISFINITE)
 gmx_test__isfinite(HAVE__ISFINITE)

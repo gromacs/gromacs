@@ -199,20 +199,9 @@ typedef int gmx_large_int_t;
 #define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
 #define GMX_MPI_LARGE_INT MPI_INT
 
-#elif ( (defined INT_MAX && INT_MAX == 2147483647) || (defined SIZEOF_INT && SIZEOF_INT == 4) )
-
-/* None of the above worked, try a 32 bit integer */
-typedef int gmx_large_int_t;
-#define gmx_large_int_fmt   "d"
-#define gmx_large_int_pfmt "%d"
-#define SIZEOF_GMX_LARGE_INT  4
-#define GMX_LARGE_INT_MAX     2147483647
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1)
-#define GMX_MPI_LARGE_INT MPI_INT
-
 #else
 
-#error "Cannot find any 32 or 64 bit integer data type. Please extend the gromacs simple.h file!"
+#error "Cannot find a 64 bit integer data type. All modern hardware should have support. Please extend the gromacs simple.h file! On old hardware please use Gromacs 4.6.x."
 
 #endif
 
