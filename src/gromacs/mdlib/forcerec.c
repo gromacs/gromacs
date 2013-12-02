@@ -1522,7 +1522,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * of precision. In single precision, this is faster on
          * Bulldozer, and slightly faster on Sandy Bridge.
          */
-#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256 || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
