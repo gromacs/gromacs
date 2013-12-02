@@ -49,6 +49,14 @@
 #ifndef GMX_UTILITY_OMP_H
 #define GMX_UTILITY_OMP_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef GMX_X86_SSE2
+#include <xmmintrin.h>
+#endif
+
 #include "types/commrec.h"
 #include "mdrun.h"
 
@@ -98,6 +106,20 @@ void gmx_omp_set_num_threads(int num_threads);
  */
 void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
                                    gmx_hw_opt_t *hw_opt);
+
+/*! \brief
+ * Pause for use in busy wait loop.
+ */
+static gmx_inline void gmx_pause_busy_wait()
+{
+#if defined GMX_X86_SSE2
+    _mm_pause();
+#elif defined __MIC__
+    _mm_delay_32(32);
+#else
+    /* No wait for unknown architecture */
+#endif
+}
 
 /*! \} */
 

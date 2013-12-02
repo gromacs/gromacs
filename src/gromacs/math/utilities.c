@@ -764,12 +764,39 @@ gmx_numzero(double a)
     return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
 }
 
-real
-gmx_log2(real x)
+unsigned
+log2i(unsigned n)
 {
-    const real iclog2 = 1.0/log( 2.0 );
+#if defined(__INTEL_COMPILER)
+    return _bit_scan_reverse(n);
+#elif defined(__GNUC__) && UINT_MAX == 4294967295U /*also for clang*/
+    return __builtin_clz(n) ^ 31U;                 /* xor gets optimized out */
+#elif defined(_MSC_VER) && _MSC_VER >= 1400
+    unsigned long i;
+    _BitScanReverse(&i, n);
+    return i;
+#else
+    /* http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogLookup */
+    static const char     LogTable256[256] = {
+#define LT(n) n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n
+        -1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+        LT(4), LT(5), LT(5), LT(6), LT(6), LT(6), LT(6),
+        LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7)
+    };
 
-    return log( x ) * iclog2;
+    unsigned              r;     /* r will be lg(n) */
+    register unsigned int t, tt; /* temporaries */
+
+    if ((tt = n >> 16))
+    {
+        r = (t = tt >> 8) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
+    }
+    else
+    {
+        r = (t = n >> 8) ? 8 + LogTable256[t] : LogTable256[n];
+    }
+    return r;
+#endif
 }
 
 gmx_bool
