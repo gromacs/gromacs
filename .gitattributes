@@ -17,6 +17,7 @@ admin/git-pre-commit                    filter=copyright
 cmake/CheckC*CompilerFlag.cmake         !filter
 cmake/FindBLAS.cmake                    !filter
 cmake/FindLAPACK.cmake                  !filter
+cmake/ThreadMPI.cmake                   !filter
 cmake/Platform/BluegeneQ*.cmake         !filter
 cmake/*.c                               !filter
 cmake/*.c.cmakein                       !filter
@@ -24,6 +25,8 @@ doxygen/*.cmakein                       !filter
 doxygen/*.cpp                           !filter
 manual/UseLATEX.cmake                   !filter
 src/contrib/*                           !filter
+src/gromacs/gmxlib/gpu_utils/memtestG80_core.h             !filter
+src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter
 src/gromacs/selection/parser.cpp        !filter
