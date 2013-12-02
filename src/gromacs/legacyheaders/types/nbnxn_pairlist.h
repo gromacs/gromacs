@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
+
+#include "thread_mpi/atomic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -270,6 +272,8 @@ typedef struct {
     int                      nalloc;                 /* Allocation size of all arrays (for x/f *x/fstride) */
     gmx_bool                 bUseBufferFlags;        /* Use the flags or operate on all atoms     */
     nbnxn_buffer_flags_t     buffer_flags;           /* Flags for buffer zeroing+reduc.  */
+    gmx_bool                 bUseTreeReduce;         /* Use tree for force reduction */
+    tMPI_Atomic_t           *syncStep;               /* Synchronization step for tree reduce */
 } nbnxn_atomdata_t;
 
 #ifdef __cplusplus
