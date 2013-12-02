@@ -67,7 +67,7 @@ prepare_table_load_buffer(const int *array)
 
 #else /* GMX_SIMD_REFERENCE_PLAIN_C */
 
-#ifdef GMX_X86_SSE2
+#if defined  GMX_X86_SSE2 && !defined __MIC__
 /* Include x86 SSE2 compatible SIMD functions */
 
 /* Set the stride for the lookup of the two LJ parameters from their
@@ -136,6 +136,10 @@ static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
 #ifdef GMX_CPU_ACCELERATION_IBM_QPX
 #include "nbnxn_kernel_simd_utils_ibm_qpx.h"
 #endif /* GMX_CPU_ACCELERATION_IBM_QPX */
+
+#ifdef __MIC__
+#include "nbnxn_kernel_simd_utils_x86_mic.h"
+#endif
 
 #endif /* GMX_X86_SSE2 */
 #endif /* GMX_SIMD_REFERENCE_PLAIN_C */
