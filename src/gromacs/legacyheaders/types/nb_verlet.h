@@ -74,6 +74,11 @@ extern "C" {
 
 #endif
 
+#ifdef __MIC__
+#define GMX_NBNXN_SIMD
+#define GMX_NBNXN_SIMD_2XNN
+#endif
+
 
 /*! Nonbonded NxN kernel types: plain C, CPU SIMD, GPU CUDA, GPU emulation */
 typedef enum
