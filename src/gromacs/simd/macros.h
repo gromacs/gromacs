@@ -158,14 +158,14 @@
 
 
 #ifdef GMX_USE_HALF_WIDTH_SIMD_HERE
-#if defined GMX_X86_AVX_256
+#if defined GMX_X86_AVX_256 || defined __MIC__
 /* We have half SIMD width support, continue */
 #else
 #error "half SIMD width intrinsics are not supported"
 #endif
 #endif
 
-#ifdef GMX_TARGET_X86
+#if defined GMX_TARGET_X86 && !defined __MIC__
 
 #ifdef GMX_X86_SSE2
 /* This is for general x86 SIMD instruction sets that also support SSE2 */
@@ -799,6 +799,10 @@ gmx_anytrue_pb(gmx_mm_pb a)
 #undef gmx_always_inline
 
 #endif /* GMX_CPU_ACCELERATION_IBM_QPX */
+
+#ifdef __MIC__
+#include "gmx_mic.h"
+#endif
 
 #ifdef GMX_HAVE_SIMD_MACROS
 /* Generic functions to extract a SIMD aligned pointer from a pointer x.
