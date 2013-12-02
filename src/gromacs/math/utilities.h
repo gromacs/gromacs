@@ -38,6 +38,7 @@
 #define GMX_MATH_UTILITIES_H
 
 #include "../legacyheaders/types/simple.h"
+#include <limits.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,12 +135,12 @@ gmx_within_tol(double   f1,
 int
 gmx_numzero(double a);
 
-/*! \brief Compute logarithm to base 2
+/*! \brief Compute floor of logarithm to base 2
  *
  * \return log2(x)
  */
-real
-gmx_log2(real x);
+unsigned
+log2i(unsigned x);
 
 /*! /brief Multiply two large ints
  *
