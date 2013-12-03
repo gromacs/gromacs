@@ -42,6 +42,8 @@
 #ifndef GMX_MMSLAVE_MMSLAVE_H
 #define GMX_MMSLAVE_MMSLAVE_H
 
+#include <vector>
+
 namespace gmx
 {
 
@@ -52,21 +54,19 @@ class MMSlave
 {
     private:
         //! Simulation parameters
-        t_inputrec inputrec_;
+        t_inputrec       inputrec_;
         //! Simulation box
-        matrix     box_;
+        matrix           box_;
         //! Molecular topology
-        gmx_mtop_t mtop_;
-        //! Number of MM atoms
-        int        natoms_mm_;
-        //! Number of QM atoms
-        int        natoms_qm_;
+        gmx_mtop_t       mtop_;
         //! Coordinates
-        rvec      *x_;
+        rvec            *x_;
         //! Velocities
-        rvec      *v_;
+        rvec            *v_;
         //! Forces
-        rvec      *f_;
+        rvec            *f_;
+        //! Group size
+        std::vector<int> groupSize_;       
     public:
         //! Constructor
         MMSlave();
@@ -81,16 +81,6 @@ class MMSlave
          * \return true if successful
          */
         bool readTpr(const char *tpr);
-
-        /*! \brief
-         * \return the number of MM atoms in the system
-         */
-        int nAtomsMM() { return natoms_mm_; }
-
-        /*! \brief
-         * \return the number of QM atoms in the system
-         */
-        int nAtomsQM() { return natoms_qm_; }
 
         /*! \brief
          * Copy internal coordinate array
@@ -130,6 +120,24 @@ class MMSlave
          */
         bool setAtomQ(atom_id id, double q);
 
+        /*! \brief
+         * Function to receive the charge of an atom
+         * data structure
+         * \param[in] id   the atom id
+         * \param[out] q   the charge
+         * \return true if successful
+         */
+        bool getAtomQ(atom_id id, double *q);
+
+        /*! \brief
+         * Function to receive the charge of an atom
+         * data structure
+         * \param[in] id   the atom id
+         * \param[out] n   the atom number
+         * \return true if successful
+         */
+        bool getAtomNumber(atom_id id, int *n);
+        
         /*! \brief
          * Function to compute the energy and forces
          * \param[in]  x   the atomic coordinates for the whole system (MM+QM)

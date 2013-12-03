@@ -59,8 +59,6 @@ MMSlave::MMSlave()
     x_         = NULL;
     v_         = NULL;
     f_         = NULL;
-    natoms_qm_ = 0;
-    natoms_mm_ = 0;
 }
 
 bool MMSlave::readTpr(const char *tpr)
@@ -81,24 +79,29 @@ bool MMSlave::readTpr(const char *tpr)
     gmx_mtop_atomloop_all_t aloop = gmx_mtop_atomloop_all_init(&mtop_);
     int                     at_global;
     t_atom                 *atom;
+    
+    groupSize_.resize(2);
     while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
     {
         if (ggrpnr(&(mtop_.groups), egcQMMM, at_global) == 0)
         {
-            natoms_qm_++;
+            groupSize_[0]++;
         }
         else
         {
-            natoms_mm_++;
+            groupSize_[1]++;
         }
     }
-    GMX_RELEASE_ASSERT((natoms == natoms_qm_ + natoms_mm_),
-                       "Total number of atoms not consistent");
+    GMX_RELEASE_ASSERT((natoms == groupSize_[0] + groupSize_[1]),
+                       "Total number of atoms not consistent with group indices");
 
     return true;
 }
 
-static bool copyIt(int natoms_dst, rvec *x_dst, int natoms_src, rvec *x_src)
+static bool copyIt(int natoms_dst, 
+                   rvec *x_dst, 
+                   int natoms_src, 
+                   rvec *x_src)
 {
     if ((natoms_dst < natoms_src) || (NULL == x_dst))
     {
@@ -113,17 +116,17 @@ static bool copyIt(int natoms_dst, rvec *x_dst, int natoms_src, rvec *x_src)
 
 bool MMSlave::copyX(int natoms, rvec *x)
 {
-    return copyIt(natoms, x, natoms_qm_ + natoms_mm_, x_);
+    return copyIt(natoms, x, groupSize_[0] + groupSize_[1], x_);
 }
 
 bool MMSlave::copyV(int natoms, rvec *v)
 {
-    return copyIt(natoms, v, natoms_qm_ + natoms_mm_, v_);
+    return copyIt(natoms, v, groupSize_[0] + groupSize_[1], v_);
 }
 
 bool MMSlave::copyF(int natoms, rvec *f)
 {
-    return copyIt(natoms, f, natoms_qm_ + natoms_mm_, f_);
+    return copyIt(natoms, f, groupSize_[0] + groupSize_[1], f_);
 }
 
 void MMSlave::cleanUp()
@@ -151,6 +154,34 @@ bool MMSlave::setAtomQ(atom_id id, double q)
     gmx_mtop_atomnr_to_atom(alook, id, &atom);
     atom->q  = q;
     atom->qB = q;
+
+    gmx_mtop_atomlookup_destroy(alook);
+
+    return true;
+}
+
+bool MMSlave::getAtomQ(atom_id id, double *q)
+{
+    t_atom               *atom;
+
+    gmx_mtop_atomlookup_t alook = gmx_mtop_atomlookup_init(&mtop_);
+
+    gmx_mtop_atomnr_to_atom(alook, id, &atom);
+    *q = atom->q;
+
+    gmx_mtop_atomlookup_destroy(alook);
+
+    return true;
+}
+
+bool MMSlave::getAtomNumber(atom_id id, int *n)
+{
+    t_atom               *atom;
+
+    gmx_mtop_atomlookup_t alook = gmx_mtop_atomlookup_init(&mtop_);
+
+    gmx_mtop_atomnr_to_atom(alook, id, &atom);
+    *n = atom->atomnumber;
 
     gmx_mtop_atomlookup_destroy(alook);
 
@@ -200,16 +231,6 @@ int mmslave_read_tpr(const char   *tpr,
     return 0;
 }
 
-int mmslave_natoms_mm(gmx_mmslave_t gms)
-{
-    return gms->mms->nAtomsMM();
-}
-
-int mmslave_natoms_qm(gmx_mmslave_t gms)
-{
-    return gms->mms->nAtomsQM();
-}
-
 int mmslave_copyX(gmx_mmslave_t gms, int natoms, rvec *x)
 {
     if (gms->mms->copyX(natoms, x))
@@ -245,10 +266,35 @@ void mmslave_clean(gmx_mmslave_t gms)
 }
 
 int mmslave_set_q(gmx_mmslave_t gms,
+                  int           group,
                   atom_id       id,
                   double        q)
 {
     if (gms->mms->setAtomQ(id, q))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int mmslave_get_q(gmx_mmslave_t gms,
+                  int           group,
+                  atom_id       id,
+                  double       *q)
+{
+    if (gms->mms->getAtomQ(id, q))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int mmslave_get_atomnumber(gmx_mmslave_t gms,
+                           int           group,
+                           atom_id       id,
+                           int          *atomNumber)
+{
+    if (gms->mms->getAtomNumber(id, atomNumber))
     {
         return 1;
     }

@@ -93,7 +93,7 @@ extern int mmslave_group_natoms(gmx_mmslave_t gms,
  * \param[in]  gms    the data structure
  * \param[in]  group  group index
  * \param[in]  natoms length of array
- * \param[out] x      array of rvecs (must be allocated by the caller)
+ * \param[out] x      array of rvec (must be allocated by the caller)
  * \return 1 on success, 0 otherwise (typically if natoms is too small or x is NULL)
  */
 extern int mmslave_copyX(gmx_mmslave_t gms,
@@ -135,14 +135,40 @@ extern void mmslave_clean(gmx_mmslave_t gms);
 /*! \brief
  * Function to modify the charge of an atom
  * data structure
- * \param[in] gms  the data structure to be modified
- * \param[in] id   the atom id
- * \param[in] q    the new charge
+ * \param[in]  gms    the data structure to be modified
+ * \param[in]  group  group index
+ * \param[in]  id     the atom id
+ * \param[in]  q      the new charge
  * \return 1 if successful, 0 otherwise
  */
 extern int mmslave_set_q(gmx_mmslave_t gms,
+                         int           group,
                          atom_id       id,
                          double        q);
+
+/*! \brief
+ * Function to retrieve the charge of an atom
+ * data structure
+ * \param[in] gms    the data structure to be returned
+ * \param[in] group  group index
+ * \param[in] id     the atom id
+ * \return the charge
+ */
+extern double mmslave_get_q(gmx_mmslave_t gms,
+                            int           group,
+                            atom_id       id);
+
+/*! \brief
+ * Function to retrieve the atom number of an atom 
+ * data structure
+ * \param[in] gms   the data structure to be returned
+ * \param[in] group group index
+ * \param[in] id    the atom id
+ * \return the charge
+ */
+extern int mmslave_get_atomnr(gmx_mmslave_t gms,
+                              int           group,
+                              atom_id       id);
 
 /*! \brief
  * Function to compute the energy and forces
