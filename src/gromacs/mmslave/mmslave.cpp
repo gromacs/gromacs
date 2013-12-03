@@ -84,16 +84,9 @@ bool MMSlave::readTpr(const char *tpr)
     groupSize_.resize(1+inputrec_.opts.ngQM);
     while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
     {
-        if (ggrpnr(&(mtop_.groups), egcQMMM, at_global) == 0)
-        {
-            groupSize_[0]++;
-        }
-        else
-        {
-            groupSize_[1]++;
-        }
+        groupSize_[ggrpnr(&(mtop_.groups), egcQMMM, at_global)]++;
     }
-    GMX_RELEASE_ASSERT((natoms == groupSize_[0] + groupSize_[1]),
+    GMX_RELEASE_ASSERT((natoms == nAtoms()),
                        "Total number of atoms not consistent with group indices");
 
     return true;
