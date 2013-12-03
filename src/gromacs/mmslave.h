@@ -152,17 +152,17 @@ extern double mmslave_get_q(gmx_mmslave_t gms,
  * data structure
  * \param[in] gms   the data structure to be returned
  * \param[in] id    the atom id
- * \return the charge
+ * \return the atom number or NOTSET
  */
-extern int mmslave_get_atomnr(gmx_mmslave_t gms,
-                              atom_id       id);
+extern int mmslave_get_atomnumber(gmx_mmslave_t gms,
+                                  atom_id       id);
 
 /*! \brief
  * Function to retrieve the group ID of an atom 
  * data structure
  * \param[in] gms   the data structure to be returned
  * \param[in] id    the atom id
- * \return the group_id
+ * \return the group_id or NOTSET
  */
 extern int mmslave_get_group_id(gmx_mmslave_t gms,
                                 atom_id       id);

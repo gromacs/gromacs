@@ -81,7 +81,7 @@ bool MMSlave::readTpr(const char *tpr)
     int                     at_global;
     t_atom                 *atom;
     
-    groupSize_.resize(inputrec_.opts.ngQM);
+    groupSize_.resize(1+inputrec_.opts.ngQM);
     while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
     {
         if (ggrpnr(&(mtop_.groups), egcQMMM, at_global) == 0)
@@ -204,15 +204,8 @@ bool MMSlave::getAtomNumber(atom_id id, int *atomNumber)
 
 bool MMSlave::getGroupID(atom_id id, int *groupID)
 {
-    t_atom               *atom;
-
-    gmx_mtop_atomlookup_t alook = gmx_mtop_atomlookup_init(&mtop_);
-
-    gmx_mtop_atomnr_to_atom(alook, id, &atom);
-    *groupID = atom->atomnumber;
-
-    gmx_mtop_atomlookup_destroy(alook);
-
+    *groupID = ggrpnr(&(mtop_.groups), egcQMMM, id);
+    
     return true;
 }
 
@@ -326,25 +319,27 @@ int mmslave_get_q(gmx_mmslave_t gms,
 }
 
 int mmslave_get_atomnumber(gmx_mmslave_t gms,
-                           atom_id       id,
-                           int          *atomNumber)
+                           atom_id       id)
 {
-    if (gms->mms->getAtomNumber(id, atomNumber))
+    int atomNumber;
+    
+    if (gms->mms->getAtomNumber(id, &atomNumber))
     {
-        return 1;
+        return atomNumber;
     }
-    return 0;
+    return NOTSET;
 }
 
 int mmslave_get_group_id(gmx_mmslave_t gms,
-                         atom_id       id,
-                         int          *groupID)
+                         atom_id       id)
 {
-    if (gms->mms->getGroupID(id, groupID))
+    int groupID;
+    
+    if (gms->mms->getGroupID(id, &groupID))
     {
-        return 1;
+        return groupID;
     }
-    return 0;
+    return NOTSET;
 }
 
 int mmslave_calc_energy(gmx_mmslave_t gms,
