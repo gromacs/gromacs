@@ -33,10 +33,11 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # includes: Nothing to build, just installation
-install(DIRECTORY . DESTINATION ${INCL_INSTALL_DIR}/gromacs/legacyheaders
-  COMPONENT development
-  PATTERN "Makefile*" EXCLUDE
-  PATTERN "CMake*" EXCLUDE
-  PATTERN "cmake*" EXCLUDE
-  PATTERN "*.cmakein" EXCLUDE
-)
+file(GLOB ROOT_LEGACY_HEADERS       *.h)
+file(GLOB THREAD_MPI_LEGACY_HEADERS thread_mpi/*.h)
+file(GLOB THREAD_MPI_ATOMIC_LEGACY_HEADERS thread_mpi/atomic/*.h)
+file(GLOB TYPES_LEGACY_HEADERS      types/*.h)
+gmx_install_headers(legacyheaders                   ${ROOT_LEGACY_HEADERS})
+gmx_install_headers(legacyheaders/thread_mpi        ${THREAD_MPI_LEGACY_HEADERS})
+gmx_install_headers(legacyheaders/thread_mpi/atomic ${THREAD_MPI_ATOMIC_LEGACY_HEADERS})
+gmx_install_headers(legacyheaders/types             ${TYPES_LEGACY_HEADERS})

@@ -440,7 +440,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
 int gmx_clustsize(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "This program computes the size distributions of molecular/atomic clusters in",
+        "[THISMODULE] computes the size distributions of molecular/atomic clusters in",
         "the gas phase. The output is given in the form of an [TT].xpm[tt] file.",
         "The total number of clusters is written to an [TT].xvg[tt] file.[PAR]",
         "When the [TT]-mol[tt] option is given clusters will be made out of",

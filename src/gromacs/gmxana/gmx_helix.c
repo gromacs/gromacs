@@ -97,7 +97,7 @@ void dump_otrj(FILE *otrj, int natoms, atom_id all_index[], rvec x[],
 int gmx_helix(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_helix[tt] computes all kinds of helix properties. First, the peptide",
+        "[THISMODULE] computes all kinds of helix properties. First, the peptide",
         "is checked to find the longest helical part, as determined by",
         "hydrogen bonds and [GRK]phi[grk]/[GRK]psi[grk] angles.",
         "That bit is fitted",

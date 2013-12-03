@@ -46,7 +46,7 @@
 #include "vec.h"
 #include "nrnb.h"
 
-#include "gmx_math_x86_avx_256_single.h"
+#include "gromacs/simd/math_x86_avx_256_single.h"
 #include "kernelutil_x86_avx_256_single.h"
 
 /*
@@ -142,7 +142,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW4P1_VF_avx_256_single
     vftabscale       = _mm256_set1_ps(kernel_data->table_vdw->scale);
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 
@@ -951,7 +951,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW4P1_F_avx_256_single
     vftabscale       = _mm256_set1_ps(kernel_data->table_vdw->scale);
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm256_mul_ps(beta,beta);
     beta3            = _mm256_mul_ps(beta,beta2);
 

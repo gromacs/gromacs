@@ -32,71 +32,36 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(NOT SOURCE_IS_SOURCE_DISTRIBUTION)
-    if(NOT CMAKE_CROSSCOMPILING)
-        # Defaults to off to avoid breaking the build.
-        # Can be changed if someone finds a nice solution for cases where the
-        # binary does not execute on the compilation host.
-        option(GMX_BUILD_MANPAGES "Build man pages" OFF)
-        mark_as_advanced(GMX_BUILD_MANPAGES)
-    else()
-        message(STATUS "Building the man pages is not available when "
-            "cross-compiling the developer version from git")
-    endif()
-else()
+if(SOURCE_IS_SOURCE_DISTRIBUTION)
     # Make sure source package contains all man pages.
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/man1/gmx-view.1")
         message(FATAL_ERROR "Man pages are missing from source package.")
     endif()
 endif()
 
-if(GMX_BUILD_MANPAGES)
-    # create gromacs.7
-    FILE(READ "${CMAKE_SOURCE_DIR}/admin/programs.txt" contents)
+add_custom_target(man
+    ${CMAKE_COMMAND} -E make_directory man1
+    COMMAND ${CMAKE_COMMAND} -E make_directory man7
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/man7/gromacs.7.in" man7/
+    COMMAND gmx -quiet help -export man
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating man pages"
+    VERBATIM)
 
-    # Convert file contents into a CMake list. First escape ;
-    STRING(REGEX REPLACE ";" "\\\\;" contents "${contents}")
-    STRING(REGEX REPLACE "\n" ";" contents "${contents}")
-
-    set(PROGMANPAGES "")
-    foreach(line ${contents})
-        if (${line} MATCHES "^HEAD\\|")
-            string(REGEX REPLACE "^HEAD\\|" "" DESC ${line})
-            set(PROGMANPAGES "${PROGMANPAGES}.Sh \"${DESC}\"\n.IX Subsection \"${DESC}\"\n.Vb\n.ta 16n\n")
-        elseif(${line} MATCHES "^END$")
-            set(PROGMANPAGES "${PROGMANPAGES}.Ve\n")
-        elseif(${line} MATCHES "\\|")
-            string(REGEX REPLACE "\\|" "\t" line ${line})
-            set(PROGMANPAGES "${PROGMANPAGES}\\&  ${line}\n")
-        else()
-            message(WARNING "Incorrectly formated line \"${line}\" in programs.txt")
-        endif()
-    endforeach()
-    configure_file(man7/gromacs.7.cmakein man7/gromacs.7)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/man7/gromacs.7
-        DESTINATION ${MAN_INSTALL_DIR}/man7
-        COMPONENT man)
-
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/man1)
-    # TODO: It could be nicer to not do this as part of the ALL target,
-    # but instead on demand as part of make install.
-    add_custom_target(man ALL
-        gmx -quiet help -export man
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating man pages for programs"
-        VERBATIM)
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/man1
-        DESTINATION ${MAN_INSTALL_DIR}
-        COMPONENT man)
+set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+if (GMX_BUILD_HELP)
+    set_target_properties(man PROPERTIES EXCLUDE_FROM_ALL OFF)
     set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES man1)
+        ADDITIONAL_MAKE_CLEAN_FILES "man1;man7/gromacs.7")
+    set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 
 # man pages are only available if they are either build or this is a source archive
-elseif(SOURCE_IS_SOURCE_DISTRIBUTION)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/man7/gromacs.7
+if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
+    install(FILES ${MAN_PAGE_DIR}/man7/gromacs.7
         DESTINATION ${MAN_INSTALL_DIR}/man7
         COMPONENT man)
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/man1
+    install(DIRECTORY ${MAN_PAGE_DIR}/man1
         DESTINATION ${MAN_INSTALL_DIR}
         COMPONENT man)
 endif()

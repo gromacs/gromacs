@@ -52,6 +52,11 @@ struct A {
   A(int *i=NULL) : p(i) {} ;
   std::unique_ptr<int> p;
 };
+template <typename Head, typename... Tail>
+struct VarList {
+  typedef VarList<Tail...> VarListTail;
+  typedef std::pair<Head, typename VarListTail::ListType> ListType;
+};
 int main() {
   typedef std::unique_ptr<int> intPointer;
   intPointer p(new int(10));

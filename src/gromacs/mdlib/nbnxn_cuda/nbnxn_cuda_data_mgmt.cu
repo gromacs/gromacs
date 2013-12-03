@@ -266,7 +266,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
 
     ntypes  = nbat->ntype;
 
-    nbp->ewald_beta = ic->ewaldcoeff;
+    nbp->ewald_beta = ic->ewaldcoeff_q;
     nbp->sh_ewald   = ic->sh_ewald;
     nbp->epsfac     = ic->epsfac;
     nbp->two_k_rf   = 2.0 * ic->k_rf;
@@ -344,7 +344,7 @@ void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
 
     nbp->rlist_sq       = ic->rlist * ic->rlist;
     nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
-    nbp->ewald_beta     = ic->ewaldcoeff;
+    nbp->ewald_beta     = ic->ewaldcoeff_q;
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  cu_nb->dev_info);
@@ -427,77 +427,6 @@ static void init_timings(wallclock_gpu_t *t)
             t->ktime[i][j].c = 0;
         }
     }
-}
-
-/* Decide which kernel version to use (default or legacy) based on:
- *  - CUDA version used for compilation
- *  - non-bonded kernel selector environment variables
- *  - GPU architecture version
- */
-static int pick_nbnxn_kernel_version(FILE            *fplog,
-                                     cuda_dev_info_t *devinfo)
-{
-    bool bForceLegacyKernel, bForceDefaultKernel, bCUDA40, bCUDA32;
-    char sbuf[STRLEN];
-    int  kver;
-
-    /* Legacy kernel (former k2), kept for backward compatibility as it is
-       faster than the default with CUDA 3.2/4.0 on Fermi (not on Kepler). */
-    bForceLegacyKernel  = (getenv("GMX_CUDA_NB_LEGACY") != NULL);
-    /* default kernel (former k3). */
-    bForceDefaultKernel = (getenv("GMX_CUDA_NB_DEFAULT") != NULL);
-
-    if ((unsigned)(bForceLegacyKernel + bForceDefaultKernel) > 1)
-    {
-        gmx_fatal(FARGS, "Multiple CUDA non-bonded kernels requested; to manually pick a kernel set only one \n"
-                  "of the following environment variables: \n"
-                  "GMX_CUDA_NB_DEFAULT, GMX_CUDA_NB_LEGACY");
-    }
-
-    bCUDA32 = bCUDA40 = false;
-#if CUDA_VERSION == 3200
-    bCUDA32 = true;
-    sprintf(sbuf, "3.2");
-#elif CUDA_VERSION == 4000
-    bCUDA40 = true;
-    sprintf(sbuf, "4.0");
-#endif
-
-    /* default is default ;) */
-    kver = eNbnxnCuKDefault;
-
-    /* Consider switching to legacy kernels only on Fermi */
-    if (devinfo->prop.major < 3 && (bCUDA32 || bCUDA40))
-    {
-        /* use legacy kernel unless something else is forced by an env. var */
-        if (bForceDefaultKernel)
-        {
-            md_print_warn(fplog,
-                          "NOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
-                          "      non-bonded kernels perform best. However, the default kernels were\n"
-                          "      selected by the GMX_CUDA_NB_DEFAULT environment variable.\n"
-                          "      For best performance upgrade your CUDA toolkit.\n",
-                          sbuf);
-        }
-        else
-        {
-            kver = eNbnxnCuKLegacy;
-        }
-    }
-    else
-    {
-        /* issue note if the non-default kernel is forced by an env. var */
-        if (bForceLegacyKernel)
-        {
-            md_print_warn(fplog,
-                    "NOTE: Legacy non-bonded CUDA kernels selected by the GMX_CUDA_NB_LEGACY\n"
-                    "      env. var. Consider using using the default kernels which should be faster!\n");
-
-            kver = eNbnxnCuKLegacy;
-        }
-    }
-
-    return kver;
 }
 
 void nbnxn_cuda_init(FILE *fplog,
@@ -697,7 +626,6 @@ void nbnxn_cuda_init(FILE *fplog,
     }
 
     /* set the kernel type for the current GPU */
-    nb->kernel_ver = pick_nbnxn_kernel_version(fplog, nb->dev_info);
     /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig(nb->dev_info);
 

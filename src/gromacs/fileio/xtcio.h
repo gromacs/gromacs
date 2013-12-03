@@ -40,7 +40,6 @@
 
 #include "../legacyheaders/typedefs.h"
 #include "gmxfio.h"
-#include "xdrf.h"
 
 #ifdef __cplusplus
 extern "C" {

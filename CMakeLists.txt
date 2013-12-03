@@ -114,7 +114,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
 set(CPACK_SOURCE_IGNORE_FILES "\\\\.isreposource$;\\\\.git/;\\\\.gitignore$")
 set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/share/man;share/man")
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/share/man1;share/man1;${CMAKE_BINARY_DIR}/share/man7;share/man7;${CMAKE_BINARY_DIR}/share/html/final;share/html/final")
 set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 
 #must come after all cpack settings!
@@ -357,6 +357,7 @@ endif()
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
+    add_definitions(-DGMX_DOUBLE)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
 endif(GMX_DOUBLE)
 if(GMX_SOFTWARE_INVSQRT)
@@ -599,17 +600,7 @@ if(GMX_GIT_VERSION_INFO)
     # found or the version is too small, we can't generate version information.
     find_package(Git)
 
-    # Find out the git version
-    if(GIT_FOUND AND NOT GIT_VERSION)
-      execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
-        OUTPUT_VARIABLE _exec_out
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-      string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
-      set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
-      mark_as_advanced(GIT_VERSION)
-    endif()
-
-    if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.3")
+    if(NOT GIT_FOUND OR GIT_VERSION_STRING VERSION_LESS "1.5.3")
         message(FATAL_ERROR
             "No compatible git version found (>= 1.5.3 required). "
             "Won't be able to generate development version information. "
@@ -714,7 +705,6 @@ include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
 
 # include avx test source, used if the AVX flags are set below

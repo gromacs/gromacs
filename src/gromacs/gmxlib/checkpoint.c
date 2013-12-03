@@ -41,22 +41,23 @@
 #include <sys/locking.h>
 #endif
 
-
-#include "gromacs/fileio/filenm.h"
 #include "names.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/xdrf.h"
 #include "statutil.h"
 #include "txtdump.h"
 #include "vec.h"
 #include "network.h"
 #include "gmx_random.h"
 #include "checkpoint.h"
-#include "gromacs/fileio/futil.h"
 #include "string2.h"
 #include <fcntl.h>
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/fileio/xdr_datatype.h"
 
 #include "buildinfo.h"
 

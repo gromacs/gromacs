@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -575,9 +575,9 @@ int gmx_make_edi(int argc, char *argv[])
 {
 
     static const char *desc[] = {
-        "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with [TT]mdrun[tt]",
-        "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a",
-        "normal modes analysis ([TT]g_nmeig[tt]).",
+        "[THISMODULE] generates an essential dynamics (ED) sampling input file to be used with [TT]mdrun[tt]",
+        "based on eigenvectors of a covariance matrix ([gmx-covar]) or from a",
+        "normal modes analysis ([gmx-nmeig]).",
         "ED sampling can be used to manipulate the position along collective coordinates",
         "(eigenvectors) of (biological) macromolecules during a simulation. Particularly,",
         "it may be used to enhance the sampling efficiency of MD simulations by stimulating",

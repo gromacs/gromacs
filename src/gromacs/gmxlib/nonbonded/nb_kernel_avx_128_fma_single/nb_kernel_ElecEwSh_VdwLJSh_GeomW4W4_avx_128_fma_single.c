@@ -46,7 +46,7 @@
 #include "vec.h"
 #include "nrnb.h"
 
-#include "gmx_math_x86_avx_128_fma_single.h"
+#include "gromacs/simd/math_x86_avx_128_fma_single.h"
 #include "kernelutil_x86_avx_128_fma_single.h"
 
 /*
@@ -142,7 +142,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4W4_VF_avx_128_fma_single
     vdwtype          = mdatoms->typeA;
 
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm_mul_ps(beta,beta);
     beta3            = _mm_mul_ps(beta,beta2);
     ewtab            = fr->ic->tabq_coul_FDV0;
@@ -1443,7 +1443,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4W4_F_avx_128_fma_single
     vdwtype          = mdatoms->typeA;
 
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
-    beta             = _mm_set1_ps(fr->ic->ewaldcoeff);
+    beta             = _mm_set1_ps(fr->ic->ewaldcoeff_q);
     beta2            = _mm_mul_ps(beta,beta);
     beta3            = _mm_mul_ps(beta,beta2);
     ewtab            = fr->ic->tabq_coul_F;

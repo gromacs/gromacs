@@ -1836,8 +1836,7 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
 int gmx_energy(int argc, char *argv[])
 {
     const char        *desc[] = {
-
-        "[TT]g_energy[tt] extracts energy components or distance restraint",
+        "[THISMODULE] extracts energy components or distance restraint",
         "data from an energy file. The user is prompted to interactively",
         "select the desired energy terms.[PAR]",
 
@@ -1851,7 +1850,7 @@ int gmx_energy(int argc, char *argv[])
         "[TT]-nbmin[tt] and [TT]-nbmax[tt].",
         "[BB]Note[bb] that in most cases the energy files contains averages over all",
         "MD steps, or over many more points than the number of frames in",
-        "energy file. This makes the [TT]g_energy[tt] statistics output more accurate",
+        "energy file. This makes the [THISMODULE] statistics output more accurate",
         "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
         "file, the statistics mentioned above are simply over the single, per-frame",
         "energy values.[PAR]",
@@ -1872,7 +1871,7 @@ int gmx_energy(int argc, char *argv[])
         "---------------------------------------------------[BR]",
         "You always need to set the number of molecules [TT]-nmol[tt].",
         "The C[SUB]p[sub]/C[SUB]v[sub] computations do [BB]not[bb] include any corrections",
-        "for quantum effects. Use the [TT]g_dos[tt] program if you need that (and you do).[PAR]"
+        "for quantum effects. Use the [gmx-dos] program if you need that (and you do).[PAR]"
         "When the [TT]-viol[tt] option is set, the time averaged",
         "violations are plotted and the running time-averaged and",
         "instantaneous sum of violations are recalculated. Additionally",

@@ -37,7 +37,7 @@
 
 #include <math.h>
 
-#include "gmx_x86_sse4_1.h"
+#include "gromacs/simd/general_x86_sse4_1.h"
 
 #undef gmx_restrict
 #define gmx_restrict

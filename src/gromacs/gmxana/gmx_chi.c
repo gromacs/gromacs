@@ -1223,7 +1223,8 @@ static void order_params(FILE *log,
 int gmx_chi(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[TT]g_chi[tt] computes [GRK]phi[grk], [GRK]psi[grk], [GRK]omega[grk], and [GRK]chi[grk] dihedrals for all your ",
+        "[THISMODULE] computes [GRK]phi[grk], [GRK]psi[grk], [GRK]omega[grk],",
+        "and [GRK]chi[grk] dihedrals for all your",
         "amino acid backbone and sidechains.",
         "It can compute dihedral angle as a function of time, and as",
         "histogram distributions.",
@@ -1280,7 +1281,11 @@ int gmx_chi(int argc, char *argv[])
 
     const char *bugs[] = {
         "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.",
-        "[GRK]phi[grk] and [GRK]psi[grk] dihedrals are calculated in a non-standard way, using H-N-CA-C for [GRK]phi[grk] instead of C(-)-N-CA-C, and N-CA-C-O for [GRK]psi[grk] instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like [TT]g_rama[tt].",
+        "[GRK]phi[grk] and [GRK]psi[grk] dihedrals are calculated in a "
+        "non-standard way, using H-N-CA-C for [GRK]phi[grk] instead of "
+        "C(-)-N-CA-C, and N-CA-C-O for [GRK]psi[grk] instead of N-CA-C-N(+). "
+        "This causes (usually small) discrepancies with the output of other "
+        "tools like [gmx-rama].",
         "[TT]-r0[tt] option does not work properly",
         "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had multiplicity 3, with the 3rd (g(+)) always having probability 0"
     };

@@ -82,7 +82,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 
 #ifdef GMX_X86_SSE2
-#include "gmx_x86_sse2.h"
+#include "gromacs/simd/general_x86_sse2.h"
 #endif
 
 

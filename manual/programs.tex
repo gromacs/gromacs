@@ -42,9 +42,9 @@
 All the information in this chapter can also be found in HTML
 format in your {\gromacs} data directory. The path depends on
 where your files are installed, but the default location is
-{\tt /usr/local/gromacs/share/html/online.html}.
-If you installed from Linux packages it can be found as
-{\tt /usr/local/share/gromacs/html/online.html}.
+{\tt /usr/local/gromacs/share/gromacs/html/online.html}.
+If you installed from Linux packages it can typically be found as
+{\tt /usr/share/gromacs/html/online.html}.
 You can also use the online manual from the {\gromacs} web site,
 \url{http://manual.gromacs.org/current}.
 
@@ -53,7 +53,8 @@ you have sourced the {\tt GMXRC} script in the {\gromacs} binary directory for
 your host they should already be present in your {\tt MANPATH} environment variable, and you
 should be able to type {\eg} {\tt man gmx-grompp}. You can also use
 the {\tt -h} flag on the command line (e.g. {\tt gmx grompp -h}) to
-see the same information.
+see the same information, as well as {\tt gmx help grompp}.
+The list of all programs are available from {\tt gmx help}.
 
 \section{File types\swapindexquiet{file}{type}}
 \label{sec:fileformats}
@@ -71,7 +72,4 @@ present on UNIX since they are necessary for NFS support.
 \section{Run Parameters\swapindexquiet{run}{parameter}}
 \input{mdp_opt}
 
-\section{Programs by topic\index{programs by topic}}
-\input{proglist}
-
-% LocalWords:  online html GMXRC MANPATH grompp progman xdr NFS
+% LocalWords:  online html GMXRC MANPATH grompp xdr NFS

@@ -70,7 +70,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 93;
+static const int tpx_version = 95;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -154,6 +154,7 @@ static const t_ftupd ftupd[] = {
     { 32, F_BHAM_LR           },
     { 32, F_RF_EXCL           },
     { 32, F_COUL_RECIP        },
+    { 93, F_LJ_RECIP          },
     { 46, F_DPD               },
     { 30, F_POLARIZATION      },
     { 36, F_THOLE_POL         },
@@ -776,6 +777,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     if (file_version >= 81)
     {
         gmx_fio_do_int(fio, ir->cutoff_scheme);
+        if (file_version < 94)
+        {
+            ir->cutoff_scheme = 1 - ir->cutoff_scheme;
+        }
     }
     else
     {
@@ -862,11 +867,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     if (file_version >= 81)
     {
-        gmx_fio_do_real(fio, ir->verletbuf_drift);
+        gmx_fio_do_real(fio, ir->verletbuf_tol);
     }
     else
     {
-        ir->verletbuf_drift = 0;
+        ir->verletbuf_tol = 0;
     }
     gmx_fio_do_real(fio, ir->rlist);
     if (file_version >= 67)
@@ -1012,6 +1017,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->pme_order);
     gmx_fio_do_real(fio, ir->ewald_rtol);
 
+    if (file_version >= 93)
+    {
+        gmx_fio_do_real(fio, ir->ewald_rtol_lj);
+    }
+    else
+    {
+        ir->ewald_rtol_lj = ir->ewald_rtol;
+    }
+
     if (file_version >= 24)
     {
         gmx_fio_do_int(fio, ir->ewald_geometry);
@@ -1036,6 +1050,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
 
     gmx_fio_do_gmx_bool(fio, ir->bOptFFT);
 
+    if (file_version >= 93)
+    {
+        gmx_fio_do_int(fio, ir->ljpme_combination_rule);
+    }
     gmx_fio_do_gmx_bool(fio, ir->bContinuation);
     gmx_fio_do_int(fio, ir->etc);
     /* before version 18, ir->etc was a gmx_bool (ir->btc),
@@ -1570,7 +1588,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
 
     /* Swap ions */
-    if (file_version >= 93)
+    if (file_version >= 95)
     {
         gmx_fio_do_int(fio,ir->eSwapCoords);
         if (ir->eSwapCoords != eswapNO)

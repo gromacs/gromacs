@@ -43,10 +43,10 @@
 #include "vec.h"
 #include "pbc.h"
 #include "nbnxn_consts.h"
-/* nbnxn_internal.h included gmx_simd_macros.h */
+/* nbnxn_internal.h included gromacs/simd/macros.h */
 #include "nbnxn_internal.h"
 #ifdef GMX_NBNXN_SIMD
-#include "gmx_simd_vec.h"
+#include "gromacs/simd/vector_operations.h"
 #endif
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
@@ -552,7 +552,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
  * or easier, allocate at least n*SGSF elements.
  */
 static void sort_atoms(int dim, gmx_bool Backwards,
-                       int dd_zone,
+                       int gmx_unused dd_zone,
                        int *a, int n, rvec *x,
                        real h0, real invh, int n_per_h,
                        int *sort)
@@ -877,7 +877,7 @@ static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
     gmx_simd4_pr bb_0_S, bb_1_S;
     gmx_simd4_pr x_S;
 
-    int    i;
+    int          i;
 
     bb_0_S = gmx_simd4_load_bb_pr(x);
     bb_1_S = bb_0_S;
@@ -2096,7 +2096,7 @@ static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
 /* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
 #define SUBC_BB_DIST2_SIMD4_XXXX_INNER(si, bb_i, d2) \
     {                                                \
-        int    shi;                                  \
+        int          shi;                                  \
                                                  \
         gmx_simd4_pr dx_0, dy_0, dz_0;                       \
         gmx_simd4_pr dx_1, dy_1, dz_1;                       \
@@ -2231,8 +2231,8 @@ static gmx_bool subc_in_range_simd4(int na_c,
 
     gmx_simd4_pr rc2_S;
 
-    int    dim_stride;
-    int    j0, j1;
+    int          dim_stride;
+    int          j0, j1;
 
     rc2_S   = gmx_simd4_set1_pr(rl2);
 
@@ -2944,7 +2944,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 #ifdef NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SIMD4 */
         subc_bb_dist2_simd4_xxxx(gridj->pbb+(cj>>STRIDE_PBB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_PBB-1)),
-                               ci1, pbb_ci, d2l);
+                                 ci1, pbb_ci, d2l);
         *ndistc += na_c*2;
 #endif
 
@@ -3742,14 +3742,26 @@ static void icell_set_x_supersub_simd4(int ci,
 }
 #endif
 
-static real nbnxn_rlist_inc_nonloc_fac = 0.6;
+/* Clusters at the cut-off only increase rlist by 60% of their size */
+static real nbnxn_rlist_inc_outside_fac = 0.6;
 
 /* Due to the cluster size the effective pair-list is longer than
  * that of a simple atom pair-list. This function gives the extra distance.
  */
-real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density)
+real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
 {
-    return ((0.5 + nbnxn_rlist_inc_nonloc_fac)*sqr(((cluster_size) - 1.0)/(cluster_size))*pow((cluster_size)/(atom_density), 1.0/3.0));
+    int  cluster_size_i;
+    real vol_inc_i, vol_inc_j;
+
+    /* We should get this from the setup, but currently it's the same for
+     * all setups, including GPUs.
+     */
+    cluster_size_i = NBNXN_CPU_CLUSTER_I_SIZE;
+
+    vol_inc_i = (cluster_size_i - 1)/atom_density;
+    vol_inc_j = (cluster_size_j - 1)/atom_density;
+
+    return nbnxn_rlist_inc_outside_fac*pow(vol_inc_i + vol_inc_j, 1.0/3.0);
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
@@ -3821,7 +3833,7 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_nonloc_fac*sqr((grid->na_c - 1.0)/grid->na_c)*sqrt(xy_diag2/3);
+    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*sqr((grid->na_c - 1.0)/grid->na_c)*sqrt(xy_diag2/3);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {

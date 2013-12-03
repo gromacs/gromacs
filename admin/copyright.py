@@ -91,15 +91,20 @@ the research papers on the package. Check out http://www.gromacs.org.
 
     def check_copyright(self, comment_block):
         """Analyze existing copyright header for correctness and extract information."""
-        copyright_re = r'Copyright \(c\) (([0-9]{4}[,-])*[0-9]{4}),? by the GROMACS development team'
+        copyright_re = r'Copyright \(c\) (([0-9]{4}[,-])*[0-9]{4}),? by the GROMACS development team,'
         has_copyright = False
         is_newstyle = True
         is_correct = True
         next_header_line = 0
         next_footer_line = 0
+        append_next_line_to_other_copyrights = False
         existing_years = ''
         other_copyrights = []
         for line in comment_block:
+            if append_next_line_to_other_copyrights:
+                other_copyrights[-1] += ' ' + line
+                append_next_line_to_other_copyrights = False
+                continue
             if 'Copyright' in line:
                 has_copyright = True
                 match = re.match(copyright_re, line)
@@ -109,7 +114,9 @@ the research papers on the package. Check out http://www.gromacs.org.
                     if line != new_line:
                         is_correct = False
                 else:
-                    other_copyrights.append(line)
+                    other_copyrights.append(line[line.find('Copyright'):])
+                    if not line.startswith('Copyright'):
+                        append_next_line_to_other_copyrights = True
                 if next_header_line != -1 or next_footer_line != 0:
                     is_correct = False
                 continue

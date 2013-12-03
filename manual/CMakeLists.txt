@@ -81,11 +81,6 @@ if(MANUAL_BUILD_IS_POSSIBLE)
         DEPENDS mkmdp ${CMAKE_SOURCE_DIR}/share/html/online/mdp_opt.html
         )
 
-    ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/proglist.tex
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/mkproglist ARGS ${CMAKE_SOURCE_DIR}/admin/programs.txt
-        DEPENDS mkproglist ${CMAKE_SOURCE_DIR}/admin/programs.txt
-        )
-
     # Finally, the command to build the manual.
 
     ADD_LATEX_DOCUMENT(gromacs.tex
@@ -101,7 +96,7 @@ if(MANUAL_BUILD_IS_POSSIBLE)
         # add_custom_targets() above. They should not be in the git
         # repository, or its directory, or the dependencies will not work
         # properly.
-        DEPENDS proglist.tex mdp_opt.tex
+        DEPENDS mdp_opt.tex
 
         BIBFILES monster.bib unpubl.bib
         IMAGE_DIRS plots

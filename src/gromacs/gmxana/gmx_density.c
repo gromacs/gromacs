@@ -435,8 +435,8 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
 int gmx_density(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "Compute partial densities across the box, using an index file.[PAR]",
-        "For the total density of NPT simulations, use [TT]g_energy[tt] instead.",
+        "[THISMODULE] computes partial densities across the box, using an index file.[PAR]",
+        "For the total density of NPT simulations, use [gmx-energy] instead.",
         "[PAR]",
         "Densities are in kg/m^3, and number densities or electron densities can also be",
         "calculated. For electron densities, a file describing the number of",

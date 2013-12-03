@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,12 +48,19 @@
 #define TEST_DATA_PATH 0
 #endif
 
+#ifndef TEST_TEMP_PATH
+//! Path to test output temporary directory (needs to be set by the build system).
+#define TEST_TEMP_PATH 0
+#endif
+
 /*! \brief
  * Initializes unit testing for \ref module_testutils.
  */
 int main(int argc, char *argv[])
 {
     // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, &argc, &argv);
-    return RUN_ALL_TESTS();
+    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, &argc, &argv);
+    int errcode = RUN_ALL_TESTS();
+    ::gmx::test::finalizeTestUtils();
+    return errcode;
 }

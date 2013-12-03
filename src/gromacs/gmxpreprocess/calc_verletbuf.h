@@ -56,13 +56,13 @@ void verletbuf_get_list_setup(gmx_bool                bGPU,
 /* Calculate the non-bonded pair-list buffer size for the Verlet list
  * based on the particle masses, temperature, LJ types, charges
  * and constraints as well as the non-bonded force behavior at the cut-off.
- * The target is a maximum energy drift.
+ * The target is a maximum energy drift of ir->verletbuf_tol.
  * Returns the number of non-linear virtual sites. For these it's difficult
  * to determine their contribution to the drift exaclty, so we approximate.
  * Returns the pair-list cut-off.
  */
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
-                             const t_inputrec *ir, real drift_target,
+                             const t_inputrec *ir,
                              const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist);

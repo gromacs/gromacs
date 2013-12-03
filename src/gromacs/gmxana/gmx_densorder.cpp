@@ -656,12 +656,12 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
 int gmx_densorder(int argc, char *argv[])
 {
     static const char *desc[] = {
-        "A small program to reduce a two-phase density distribution",
-        "along an axis, computed over a MD trajectory",
+        "[THISMODULE] reduces a two-phase density distribution",
+        "along an axis, computed over a MD trajectory,",
         "to 2D surfaces fluctuating in time, by a fit to",
-        "a functional profile for interfacial densities",
+        "a functional profile for interfacial densities.",
         "A time-averaged spatial representation of the",
-        "interfaces can be output with the option -tavg"
+        "interfaces can be output with the option [TT]-tavg[tt]."
     };
 
     /* Extra arguments - but note how you always get the begin/end

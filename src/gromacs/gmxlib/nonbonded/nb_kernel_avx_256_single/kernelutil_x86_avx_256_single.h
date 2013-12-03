@@ -35,7 +35,7 @@
 #ifndef _kernelutil_x86_avx_256_single_h_
 #define _kernelutil_x86_avx_256_single_h_
 
-#include "gmx_x86_avx_256.h"
+#include "gromacs/simd/general_x86_avx_256.h"
 
 /* Transpose lower/upper half of 256-bit registers separately */
 #define GMX_MM256_HALFTRANSPOSE4_PS(ymm0, ymm1, ymm2, ymm3) {            \

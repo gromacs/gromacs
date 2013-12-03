@@ -1,37 +1,38 @@
-/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.03
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -1251,7 +1252,6 @@ static void check_gbsa_params(gpp_atomtype_t atype)
 static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               t_inputrec       *ir,
                               matrix            box,
-                              real              verletbuf_drift,
                               warninp_t         wi)
 {
     real                   ref_T;
@@ -1266,7 +1266,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     {
         if (ir->opts.ref_t[i] < 0)
         {
-            warning(wi, "Some atom groups do not use temperature coupling. This cannot be accounted for in the energy drift estimation for the Verlet buffer size. The energy drift and the Verlet buffer might be underestimated.");
+            warning(wi, "Some atom groups do not use temperature coupling. This cannot be accounted for in the energy error estimation for the Verlet buffer size. The energy error and the Verlet buffer might be underestimated.");
         }
         else
         {
@@ -1274,7 +1274,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
         }
     }
 
-    printf("Determining Verlet buffer for an energy drift of %g kJ/mol/ps at %g K\n", verletbuf_drift, ref_T);
+    printf("Determining Verlet buffer for a tolerance of %g kJ/mol/ps at %g K\n", ir->verletbuf_tol, ref_T);
 
     for (i = 0; i < ir->opts.ngtc; i++)
     {
@@ -1289,17 +1289,17 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     /* Calculate the buffer size for simple atom vs atoms list */
     ls.cluster_size_i = 1;
     ls.cluster_size_j = 1;
-    calc_verlet_buffer_size(mtop, det(box), ir, verletbuf_drift,
+    calc_verlet_buffer_size(mtop, det(box), ir,
                             &ls, &n_nonlin_vsite, &rlist_1x1);
 
     /* Set the pair-list buffer size in ir */
     verletbuf_get_list_setup(FALSE, &ls);
-    calc_verlet_buffer_size(mtop, det(box), ir, verletbuf_drift,
+    calc_verlet_buffer_size(mtop, det(box), ir,
                             &ls, &n_nonlin_vsite, &ir->rlist);
 
     if (n_nonlin_vsite > 0)
     {
-        sprintf(warn_buf, "There are %d non-linear virtual site constructions. Their contribution to the energy drift is approximated. In most cases this does not affect the energy drift significantly.", n_nonlin_vsite);
+        sprintf(warn_buf, "There are %d non-linear virtual site constructions. Their contribution to the energy error is approximated. In most cases this does not affect the error significantly.", n_nonlin_vsite);
         warning_note(wi, warn_buf);
     }
 
@@ -1313,14 +1313,14 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
 
     if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
     {
-        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-drift.", ir->rlistlong, sqrt(max_cutoff2(ir->ePBC, box)));
+        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlistlong, sqrt(max_cutoff2(ir->ePBC, box)));
     }
 }
 
 int gmx_grompp(int argc, char *argv[])
 {
     static const char *desc[] = {
-        "The gromacs preprocessor",
+        "[THISMODULE] (the gromacs preprocessor)",
         "reads a molecular topology file, checks the validity of the",
         "file, expands the topology from a molecular description to an atomic",
         "description. The topology file contains information about",
@@ -1331,20 +1331,20 @@ int gmx_grompp(int argc, char *argv[])
         "for hydrogens and heavy atoms.",
         "Then a coordinate file is read and velocities can be generated",
         "from a Maxwellian distribution if requested.",
-        "[TT]grompp[tt] also reads parameters for the [TT]mdrun[tt] ",
+        "[THISMODULE] also reads parameters for [gmx-mdrun] ",
         "(eg. number of MD steps, time step, cut-off), and others such as",
         "NEMD parameters, which are corrected so that the net acceleration",
         "is zero.",
         "Eventually a binary file is produced that can serve as the sole input",
         "file for the MD program.[PAR]",
 
-        "[TT]grompp[tt] uses the atom names from the topology file. The atom names",
+        "[THISMODULE] uses the atom names from the topology file. The atom names",
         "in the coordinate file (option [TT]-c[tt]) are only read to generate",
         "warnings when they do not match the atom names in the topology.",
         "Note that the atom names are irrelevant for the simulation as",
         "only the atom types are used for generating interaction parameters.[PAR]",
 
-        "[TT]grompp[tt] uses a built-in preprocessor to resolve includes, macros, ",
+        "[THISMODULE] uses a built-in preprocessor to resolve includes, macros, ",
         "etc. The preprocessor supports the following keywords:[PAR]",
         "#ifdef VARIABLE[BR]",
         "#ifndef VARIABLE[BR]",
@@ -1385,14 +1385,14 @@ int gmx_grompp(int argc, char *argv[])
         "[TT]-e[tt] to read Nose-Hoover and/or Parrinello-Rahman coupling",
         "variables.[PAR]",
 
-        "[TT]grompp[tt] can be used to restart simulations (preserving",
+        "[THISMODULE] can be used to restart simulations (preserving",
         "continuity) by supplying just a checkpoint file with [TT]-t[tt].",
         "However, for simply changing the number of run steps to extend",
-        "a run, using [TT]tpbconv[tt] is more convenient than [TT]grompp[tt].",
-        "You then supply the old checkpoint file directly to [TT]mdrun[tt]",
+        "a run, using [gmx-tpbconv] is more convenient than [THISMODULE].",
+        "You then supply the old checkpoint file directly to [gmx-mdrun]",
         "with [TT]-cpi[tt]. If you wish to change the ensemble or things",
         "like output frequency, then supplying the checkpoint file to",
-        "[TT]grompp[tt] with [TT]-t[tt] along with a new [TT].mdp[tt] file",
+        "[THISMODULE] with [TT]-t[tt] along with a new [TT].mdp[tt] file",
         "with [TT]-f[tt] is the recommended procedure.[PAR]",
 
         "By default, all bonded interactions which have constant energy due to",
@@ -1406,15 +1406,15 @@ int gmx_grompp(int argc, char *argv[])
         "To verify your run input file, please take note of all warnings",
         "on the screen, and correct where necessary. Do also look at the contents",
         "of the [TT]mdout.mdp[tt] file; this contains comment lines, as well as",
-        "the input that [TT]grompp[tt] has read. If in doubt, you can start [TT]grompp[tt]",
+        "the input that [THISMODULE] has read. If in doubt, you can start [THISMODULE]",
         "with the [TT]-debug[tt] option which will give you more information",
         "in a file called [TT]grompp.log[tt] (along with real debug info). You",
-        "can see the contents of the run input file with the [TT]gmxdump[tt]",
-        "program. [TT]gmxcheck[tt] can be used to compare the contents of two",
+        "can see the contents of the run input file with the [gmx-dump]",
+        "program. [gmx-check] can be used to compare the contents of two",
         "run input files.[PAR]"
 
         "The [TT]-maxwarn[tt] option can be used to override warnings printed",
-        "by [TT]grompp[tt] that otherwise halt output. In some cases, warnings are",
+        "by [THISMODULE] that otherwise halt output. In some cases, warnings are",
         "harmless, but usually they are not. The user is advised to carefully",
         "interpret the output messages before attempting to bypass them with",
         "this option."
@@ -1577,6 +1577,11 @@ int gmx_grompp(int argc, char *argv[])
 
         /* Remove all charge groups */
         gmx_mtop_remove_chargegroups(sys);
+
+        if (EVDW_PME(ir->vdwtype))
+        {
+            gmx_fatal(FARGS, "LJ-PME not implemented together with verlet-scheme!");
+        }
     }
 
     if (count_constraints(sys, mi, wi) && (ir->eConstrAlg == econtSHAKE))
@@ -1759,14 +1764,14 @@ int gmx_grompp(int argc, char *argv[])
              bGenVel ? state.v : NULL,
              wi);
 
-    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0 &&
+    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 &&
         ir->nstlist > 1)
     {
         if (EI_DYNAMICS(ir->eI) &&
             !(EI_MD(ir->eI) && ir->etc == etcNO) &&
             inputrec2nboundeddim(ir) == 3)
         {
-            set_verlet_buffer(sys, ir, state.box, ir->verletbuf_drift, wi);
+            set_verlet_buffer(sys, ir, state.box, wi);
         }
     }
 
@@ -1783,6 +1788,7 @@ int gmx_grompp(int argc, char *argv[])
     {
         pr_symtab(debug, 0, "After index", &sys->symtab);
     }
+
     triple_check(mdparin, ir, sys, wi);
     close_symtab(&sys->symtab);
     if (debug)
@@ -1824,7 +1830,7 @@ int gmx_grompp(int argc, char *argv[])
         check_chargegroup_radii(sys, ir, state.x, wi);
     }
 
-    if (EEL_FULL(ir->coulombtype))
+    if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         /* Calculate the optimal grid dimensions */
         copy_mat(state.box, box);
@@ -1851,6 +1857,11 @@ int gmx_grompp(int argc, char *argv[])
        potentially conflict if not handled correctly. */
     if (ir->efep != efepNO)
     {
+        if (EVDW_PME(ir->vdwtype))
+        {
+            gmx_fatal(FARGS, "LJ-PME not implemented together with free energy calculations!");
+        }
+
         state.fep_state = ir->fepvals->init_fep_state;
         for (i = 0; i < efptNR; i++)
         {

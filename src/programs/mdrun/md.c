@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -175,7 +177,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_repl_ex_t     repl_ex = NULL;
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
-    t_mdebin         *mdebin = NULL;
+    t_mdebin         *mdebin   = NULL;
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
     gmx_enerdata_t   *enerd;
@@ -189,8 +191,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_ekindata_t   *ekind, *ekind_save;
     gmx_shellfc_t     shellfc;
     int               count, nconverged = 0;
-    real              timestep = 0;
-    double            tcount   = 0;
+    real              timestep   = 0;
+    double            tcount     = 0;
     gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
     gmx_bool          bAppend;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
@@ -435,7 +437,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (ir->bExpanded)
     {
-        init_expanded_ensemble(bStateFromCP,ir,&mcrng,&state->dfhist);
+        init_expanded_ensemble(bStateFromCP, ir, &mcrng, &state->dfhist);
     }
 
     if (MASTER(cr))
@@ -495,14 +497,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
-    /* PME tuning is only supported with GPUs or PME nodes and not with rerun.
+    /* PME tuning is only supported with GPUs or PME nodes and not with rerun or LJ-PME.
      * With perturbed charges with soft-core we should not change the cut-off.
      */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
         ( (fr->cutoff_scheme == ecutsVERLET && fr->nbv->bUseGPU) || !(cr->duty & DUTY_PME)) &&
         !(ir->efep != efepNO && mdatoms->nChargePerturbed > 0 && ir->fepvals->bScCoul) &&
-        !bRerunMD)
+        !bRerunMD && !EVDW_PME(fr->vdwtype))
     {
         pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata);
         cycles_pmes = 0;
@@ -1318,7 +1320,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, mcrng, state->v, mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
-            copy_df_history(&state_global->dfhist,&state->dfhist);
+            copy_df_history(&state_global->dfhist, &state->dfhist);
         }
 
         /* Now we have the energies and forces corresponding to the
@@ -1920,11 +1922,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                          step);
 
                     /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
-                    fr->ewaldcoeff = fr->ic->ewaldcoeff;
-                    fr->rlist      = fr->ic->rlist;
-                    fr->rlistlong  = fr->ic->rlistlong;
-                    fr->rcoulomb   = fr->ic->rcoulomb;
-                    fr->rvdw       = fr->ic->rvdw;
+                    fr->ewaldcoeff_q = fr->ic->ewaldcoeff_q;
+                    fr->rlist        = fr->ic->rlist;
+                    fr->rlistlong    = fr->ic->rlistlong;
+                    fr->rcoulomb     = fr->ic->rcoulomb;
+                    fr->rvdw         = fr->ic->rvdw;
                 }
                 cycles_pmes = 0;
             }

@@ -32,8 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmx_simd_macros.h"
-#include "gmx_simd_vec.h"
+#include "gromacs/simd/macros.h"
+#include "gromacs/simd/vector_operations.h"
 #include "../../nbnxn_consts.h"
 #ifdef CALC_COUL_EWALD
 #include "maths.h"
@@ -42,8 +42,6 @@
 #ifndef GMX_SIMD_J_UNROLL_SIZE
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
 #endif
-
-#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
@@ -55,34 +53,20 @@
 #define STRIDE     (UNROLLI)
 #endif
 
-#if GMX_SIMD_WIDTH_HERE == 2
-#define SUM_SIMD(x)  (x[0]+x[1])
-#else
-#if GMX_SIMD_WIDTH_HERE == 4
-#define SUM_SIMD(x)  SUM_SIMD4(x)
-#else
-#if GMX_SIMD_WIDTH_HERE == 8
-#define SUM_SIMD(x)  (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
-#else
-#error "unsupported kernel configuration"
-#endif
-#endif
-#endif
-
 #include "../nbnxn_kernel_simd_utils.h"
 
 static inline void
-gmx_load_simd_4xn_interactions(int            excl,
-                               gmx_exclfilter filter_S0,
-                               gmx_exclfilter filter_S1,
-                               gmx_exclfilter filter_S2,
-                               gmx_exclfilter filter_S3,
-                               const char    *interaction_mask_indices,
-                               real          *simd_interaction_array,
-                               gmx_mm_pb     *interact_S0,
-                               gmx_mm_pb     *interact_S1,
-                               gmx_mm_pb     *interact_S2,
-                               gmx_mm_pb     *interact_S3)
+gmx_load_simd_4xn_interactions(int                    excl,
+                               gmx_exclfilter         filter_S0,
+                               gmx_exclfilter         filter_S1,
+                               gmx_exclfilter         filter_S2,
+                               gmx_exclfilter         filter_S3,
+                               const char gmx_unused *interaction_mask_indices,
+                               real gmx_unused       *simd_interaction_array,
+                               gmx_mm_pb             *interact_S0,
+                               gmx_mm_pb             *interact_S1,
+                               gmx_mm_pb             *interact_S2,
+                               gmx_mm_pb             *interact_S3)
 {
 #ifdef GMX_X86_SSE2
     /* Load integer interaction mask */

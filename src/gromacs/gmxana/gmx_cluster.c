@@ -1332,7 +1332,7 @@ static void convert_mat(t_matrix *mat, t_mat *rms)
 int gmx_cluster(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_cluster[tt] can cluster structures using several different methods.",
+        "[THISMODULE] can cluster structures using several different methods.",
         "Distances between structures can be determined from a trajectory",
         "or read from an [TT].xpm[tt] matrix file with the [TT]-dm[tt] option.",
         "RMS deviation after fitting or RMS deviation of atom-pair distances",
@@ -1762,7 +1762,7 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rmsd);
                 }
                 nrms -= (gmx_large_int_t) (nf-i1-1);
-                fprintf(stderr, "\r# RMSD calculations left: "gmx_large_int_pfmt"   ", nrms);
+                fprintf(stderr, "\r# RMSD calculations left: " gmx_large_int_pfmt "   ", nrms);
             }
             sfree(x1);
         }
@@ -1778,7 +1778,7 @@ int gmx_cluster(int argc, char *argv[])
                 snew(d1[i], isize);
                 snew(d2[i], isize);
             }
-            for (i1 = 0; i1 < nf ; i1++)
+            for (i1 = 0; i1 < nf; i1++)
             {
                 calc_dist(isize, xx[i1], d1);
                 for (i2 = i1+1; (i2 < nf); i2++)
@@ -1787,7 +1787,7 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rms_dist(isize, d1, d2));
                 }
                 nrms -= (nf-i1-1);
-                fprintf(stderr, "\r# RMSD calculations left: "gmx_large_int_pfmt"   ", nrms);
+                fprintf(stderr, "\r# RMSD calculations left: " gmx_large_int_pfmt "   ", nrms);
             }
             /* Clean up work arrays */
             for (i = 0; (i < isize); i++)
