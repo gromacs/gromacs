@@ -80,6 +80,7 @@
 #include "macros.h"
 #include "gmx_omp.h"
 #include "gmx_thread_affinity.h"
+#include "swapcoords.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdlib/nbnxn_search.h"
@@ -1473,6 +1474,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_select_gpu_ids(fplog, cr, &hwinfo->gpu_info, bForceUseGPU,
                            &hw_opt->gpu_opt);
     }
+    else
+    {
+        /* Ignore (potentially) manually selected GPUs */
+        hw_opt->gpu_opt.ncuda_dev_use = 0;
+    }
 
     /* check consistency of CPU acceleration and number of GPUs selected */
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
@@ -1672,6 +1678,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, state->x, box, mtop, oenv,
                      bVerbose, Flags);
+        }
+
+        if (inputrec->eSwapCoords != eswapNO)
+        {
+            /* Initialize ion swapping code */
+            init_swapcoords(fplog,bVerbose,inputrec,opt2fn_master("-swap",nfile,fnm,cr),
+                    mtop,state->x,state->box,&state->swapstate,cr,oenv,Flags);
         }
 
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);

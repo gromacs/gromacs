@@ -400,7 +400,8 @@ int gmx_mdrun(int argc, char *argv[])
         { efRND, "-multidir", NULL,      ffOPTRDMULT},
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
-        { efNDX, "-mn",     "membed",   ffOPTRD }
+        { efNDX, "-mn",     "membed",   ffOPTRD },
+        { efXVG, "-swap",   "swapions", ffOPTWR }
     };
 #define NFILE asize(fnm)
 

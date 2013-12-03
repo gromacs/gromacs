@@ -53,6 +53,7 @@
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
 #include "gpu_utils.h"
+#include "gromacs/legacyheaders/swapcoords.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -5675,7 +5676,7 @@ void dd_setup_dlb_resource_sharing(t_commrec           *cr,
 
     physicalnode_id_hash = gmx_physicalnode_id_hash();
 
-    gpu_id = get_gpu_device_id(&hwinfo->gpu_info, &hw_opt->gpu_opt, cr->nodeid);
+    gpu_id = get_gpu_device_id(&hwinfo->gpu_info, &hw_opt->gpu_opt, cr->rank_pp_intranode);
 
     dd = cr->dd;
 
@@ -9800,6 +9801,11 @@ void dd_partition_system(FILE                *fplog,
         dd_make_local_rotation_groups(dd, ir->rot);
     }
 
+    if ( ir->eSwapCoords != eswapNO) // && do_per_step(step, ir->swap->nstswap) )
+    {
+        /* Update the local groups needed for ion swapping */
+        dd_make_local_swap_groups(dd, ir->swap);
+    }
 
     add_dd_statistics(dd);
 
