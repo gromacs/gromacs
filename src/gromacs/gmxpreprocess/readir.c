@@ -2085,7 +2085,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("E-z",     efield_z,   NULL);
     STYPE ("E-zt",    efield_zt,  NULL);
 
-    /* Swap ions */
+    /* Ion/water position swapping ("Computational Electrophysiology") */
     CCTYPE("Swap coordinates: no, X, Y, Z, auto");
     EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
     if (ir->eSwapCoords != eswapNO)
@@ -2105,7 +2105,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         CTYPE("Group name of solvent molecules");
         STYPE("solvent_group", solgrp, NULL);
 
-        CTYPE("Split cylinder: radius, upper and lower extension [nm] (this will define the channels)");
+        CTYPE("Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
         RTYPE("cyl0_r"   , ir->swap->cyl0r, 2.0);
         RTYPE("cyl0_up"  , ir->swap->cyl0u, 1.0);
         RTYPE("cyl0_down", ir->swap->cyl0l, 1.0);
@@ -2113,7 +2113,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         RTYPE("cyl1_up"  , ir->swap->cyl1u, 1.0);
         RTYPE("cyl1_down", ir->swap->cyl1l, 1.0);
 
-        CTYPE("Solvent network cutoff [nm]");
+        CTYPE("Solvent network cutoff (nm)");
         RTYPE("r_solvent", ir->swap->r_sol, 0.5);
         CTYPE("Average the number of ions per compartment over these many swap attempt steps");
         ITYPE("coupl_steps", ir->swap->csteps, 10);
@@ -2347,7 +2347,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
     }
 
-    /* Coordinate swapping checks */
+    /* Ion/water position swapping checks */
     if (ir->eSwapCoords != eswapNO)
     {
         if (ir->swap->nstswap < 1)
@@ -2930,7 +2930,7 @@ static void make_swap_groups(
         t_blocka *grps,
         char **gnames)
 {
-    int  ig=-1,i=0,j;
+    int  ig = -1, i = 0, j;
     char *splitg;
 
 
@@ -2941,13 +2941,13 @@ static void make_swap_groups(
     }
 
     /* First get the swap group index atoms */
-    ig = search_string(swapgname,grps->nr,gnames);
+    ig = search_string(swapgname, grps->nr, gnames);
     swap->nat = grps->index[ig+1] - grps->index[ig];
     if (swap->nat > 0)
     {
-        fprintf(stderr,"Swap group '%s' contains %d atoms.\n",swapgname,swap->nat);
-        snew(swap->ind,swap->nat);
-        for(i=0; i<swap->nat; i++)
+        fprintf(stderr,"Swap group '%s' contains %d atoms.\n", swapgname, swap->nat);
+        snew(swap->ind, swap->nat);
+        for(i = 0; i < swap->nat; i++)
         {
             swap->ind[i] = grps->a[grps->index[ig]+i];
         }
@@ -2958,9 +2958,9 @@ static void make_swap_groups(
     }
 
     /* Now do so for the split groups */
-    for (j=0; j<2; j++)
+    for (j = 0; j < 2; j++)
     {
-        if (j==0)
+        if (j == 0)
         {
             splitg = splitg0name;
         }
@@ -2969,32 +2969,32 @@ static void make_swap_groups(
             splitg = splitg1name;
         }
 
-        ig = search_string(splitg,grps->nr,gnames);
+        ig = search_string(splitg, grps->nr, gnames);
         swap->nat_split[j] = grps->index[ig+1] - grps->index[ig];
         if ( swap->nat_split[j] > 0)
         {
             fprintf(stderr,"Split group %d '%s' contains %d atom%s.\n",
-                    j, splitg, swap->nat_split[j], (swap->nat_split[j]>1)?"s":"");
-            snew(swap->ind_split[j],swap->nat_split[j]);
-            for(i=0; i<swap->nat_split[j]; i++)
+                    j, splitg, swap->nat_split[j], (swap->nat_split[j] > 1) ? "s" : "");
+            snew(swap->ind_split[j], swap->nat_split[j]);
+            for(i = 0; i < swap->nat_split[j]; i++)
             {
                 swap->ind_split[j][i] = grps->a[grps->index[ig]+i];
             }
         }
         else
         {
-            gmx_fatal(FARGS, "Split group %d has to contain at least 1 atom!",j);
+            gmx_fatal(FARGS, "Split group %d has to contain at least 1 atom!", j);
         }
     }
 
     /* Now get the solvent group index atoms */
-    ig = search_string(solgname,grps->nr,gnames);
+    ig = search_string(solgname, grps->nr, gnames);
     swap->nat_sol = grps->index[ig+1] - grps->index[ig];
     if (swap->nat_sol > 0)
     {
-        fprintf(stderr,"Solvent group '%s' contains %d atoms.\n",solgname,swap->nat_sol);
-        snew(swap->ind_sol,swap->nat_sol);
-        for(i=0; i<swap->nat_sol; i++)
+        fprintf(stderr, "Solvent group '%s' contains %d atoms.\n", solgname, swap->nat_sol);
+        snew(swap->ind_sol, swap->nat_sol);
+        for(i = 0; i < swap->nat_sol; i++)
         {
             swap->ind_sol[i] = grps->a[grps->index[ig]+i];
         }

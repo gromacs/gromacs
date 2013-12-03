@@ -944,7 +944,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     }
     if (*file_version >= 16)
     {
-        do_cpt_int_err(xd,"swap",eSwapCoords,list);
+        do_cpt_int_err(xd, "swap", eSwapCoords, list);
     }
 }
 
@@ -1083,12 +1083,12 @@ static int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
 }
 
 
-static int do_cpt_swapstate(XDR *xd,gmx_bool bRead,
+static int do_cpt_swapstate(XDR *xd, gmx_bool bRead,
         int fflags, swapstate_t *swapstate,
         FILE *list)
 {
-    int ii,ic,j;
-    int ret=0;
+    int ii, ic, j;
+    int ret = 0;
     int swap_cpt_version = 2;
     int dummy;
 
@@ -1103,12 +1103,12 @@ static int do_cpt_swapstate(XDR *xd,gmx_bool bRead,
     /* Ugly hack to be able to also read older swap checkpoint files */
     if (bRead)
     {
-        do_cpt_int_err(xd,"test checkpoint version",&dummy,list);
+        do_cpt_int_err(xd, "test checkpoint version", &dummy, list);
         if (dummy < 0)
         {
             /* We use values < 0 to transport the swap checkpoint version */
             swap_cpt_version = -dummy;
-            do_cpt_int_err(xd,"swap coupling steps",&swapstate->csteps,list);
+            do_cpt_int_err(xd, "swap coupling steps", &swapstate->csteps, list);
         }
         else
         {
@@ -1121,33 +1121,33 @@ static int do_cpt_swapstate(XDR *xd,gmx_bool bRead,
     {
         /* If we write, we always write the newest version */
         dummy = -swap_cpt_version;
-        do_cpt_int_err(xd,"swap checkpoint version",&dummy,list);
-        do_cpt_int_err(xd,"swap coupling steps",&swapstate->csteps,list);
+        do_cpt_int_err(xd, "swap checkpoint version", &dummy, list);
+        do_cpt_int_err(xd, "swap coupling steps", &swapstate->csteps, list);
     }
 
     /* When reading, init_swapcoords has not been called yet,
      * so we have to allocate memory first. */
 
-    for (ic=0; ic<eCompNr; ic++)
+    for (ic = 0; ic < eCompNr; ic++)
     {
-        for (ii=0; ii<eIonNr; ii++)
+        for (ii = 0; ii < eIonNr; ii++)
         {
             if (bRead)
             {
-                do_cpt_int_err(xd,"swap requested atoms",&swapstate->nat_req[ic][ii],list);
+                do_cpt_int_err(xd, "swap requested atoms", &swapstate->nat_req[ic][ii], list);
             }
             else
             {
-                do_cpt_int_err(xd,"swap requested atoms p",swapstate->nat_req_p[ic][ii],list);
+                do_cpt_int_err(xd, "swap requested atoms p", swapstate->nat_req_p[ic][ii], list);
             }
 
             if (bRead)
             {
-                do_cpt_int_err(xd,"swap influx netto",&swapstate->inflow_netto[ic][ii],list);
+                do_cpt_int_err(xd, "swap influx netto", &swapstate->inflow_netto[ic][ii], list);
             }
             else
             {
-                do_cpt_int_err(xd,"swap influx netto p",swapstate->inflow_netto_p[ic][ii],list);
+                do_cpt_int_err(xd, "swap influx netto p", swapstate->inflow_netto_p[ic][ii], list);
             }
 
             if ( bRead && (NULL == swapstate->nat_past[ic][ii]) )
@@ -1155,24 +1155,24 @@ static int do_cpt_swapstate(XDR *xd,gmx_bool bRead,
                 snew(swapstate->nat_past[ic][ii], swapstate->csteps);
             }
 
-            for (j=0; j<swapstate->csteps; j++)
+            for (j = 0; j < swapstate->csteps; j++)
             {
                 if (bRead)
                 {
-                    do_cpt_int_err(xd, "swap past atom counts", &swapstate->nat_past[ic][ii][j],list);
+                    do_cpt_int_err(xd, "swap past atom counts", &swapstate->nat_past[ic][ii][j], list);
                 }
                 else
                 {
-                    do_cpt_int_err(xd, "swap past atom counts p", &swapstate->nat_past_p[ic][ii][j],list);
+                    do_cpt_int_err(xd, "swap past atom counts p", &swapstate->nat_past_p[ic][ii][j], list);
                 }
             }
         }
     }
 
     /* Ion flux per channel */
-    for (ic=0; ic<eChanNr; ic++)
+    for (ic = 0; ic < eChanNr; ic++)
     {
-        for (ii=0; ii<eIonNr; ii++)
+        for (ii = 0; ii < eIonNr; ii++)
         {
             if (bRead)
             {
@@ -1198,7 +1198,7 @@ static int do_cpt_swapstate(XDR *xd,gmx_bool bRead,
     if (bRead)
     {
         snew(swapstate->chan_pass, swapstate->nions);
-        snew(swapstate->dom_from , swapstate->nions);
+        snew(swapstate->dom_from, swapstate->nions);
     }
 
     do_cpt_u_chars(xd, "channel history", swapstate->nions, swapstate->chan_pass, list);

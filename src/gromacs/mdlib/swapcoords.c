@@ -9,7 +9,6 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "swapcoords.h"
-//#include "gmx_ga2la.h"
 #include "groupcoord.h"
 #include "mtop_util.h"
 #include "macros.h"
@@ -194,7 +193,7 @@ static void print_ionlist(
 
 
     fprintf(s->fpout, "%12.5e", time);
-    for (icomp=0; icomp<eCompNr; icomp++)
+    for (icomp = 0; icomp < eCompNr; icomp++)
     {
         for (itype = 0; itype < eIonNr; itype++)
         {
@@ -215,9 +214,9 @@ static void print_ionlist(
                 s->group[eGrpSplit1].center[s->swapdim]);
     }
 
-    for (i=0; i<eChanNr; i++)
+    for (i = 0; i < eChanNr; i++)
     {
-        for (j=0; j<eIonNr; j++)
+        for (j = 0; j < eIonNr; j++)
         {
             fprintf(s->fpout, "%12d", s->fluxfromAtoB[i][j]);
         }
@@ -638,8 +637,8 @@ static void compartmentalize_ions(
             }
         }
         /* Correct the time-averaged number of ions in both compartments */
-        update_time_window(&s->comp[comp][eIonNEG],sc->csteps,replace);
-        update_time_window(&s->comp[comp][eIonPOS],sc->csteps,replace);
+        update_time_window(&s->comp[comp][eIonNEG], sc->csteps,replace);
+        update_time_window(&s->comp[comp][eIonPOS], sc->csteps,replace);
     }
 
     /* Flux detection warnings */
@@ -651,7 +650,7 @@ static void compartmentalize_ions(
                     "%s Warning: %d atoms were detected as being in both channels! Probably your split\n"
                     "%s          cylinder is way too large, or one compartment has collapsed (step ",
                     SwS, s->cyl0and1, SwS);
-            fprintf(stderr,gmx_large_int_pfmt,step);
+            fprintf(stderr, gmx_large_int_pfmt, step);
             fprintf(stderr, ")\n");
 
             fprintf(s->fpout, "Warning: %d atoms were assigned to both channels!\n", s->cyl0and1);
@@ -786,19 +785,19 @@ static void compartmentalize_solvent(
 }
 
 
-static void mark_molecule(
-        unsigned char *mask, int nat, unsigned char domain)
+static void mark_molecule(unsigned char *mask, int nat, unsigned char domain)
 {
     int i;
 
 
-    for (i=0; i<nat; i++)
+    for (i = 0; i < nat; i++)
+    {
         mask[i] = domain;
+    }
 }
 
 
-static void compartmentalize_auto(
-        t_swapcoords *sc)
+static void compartmentalize_auto(t_swapcoords *sc)
 {
     int i, sd;
     t_group *g;
@@ -817,12 +816,12 @@ static void compartmentalize_auto(
     g = &s->group[eGrpSolvent];
 
     /* Clear solvent mask from last swap step */
-    for (i=0; i<g->nat; i++)
+    for (i = 0; i < g->nat; i++)
     {
         g->dom_now[i] = eChHistPassedNone;
     }
 
-    for (i=0; i<g->nat; i += g->apm)
+    for (i = 0; i < g->nat; i += g->apm)
     {
         /* Get the center of mass of the solvent molecule. Note that
          * g->m only contains masses for a single molecule since all are
@@ -854,7 +853,7 @@ static void get_initial_ioncounts(
     t_swapcoords *sc;
     t_swap *s;
     int i, ii, ind, ic;
-    int req[2],tot[2];
+    int req[2], tot[2];
 
 
     sc = ir->swap;
@@ -872,7 +871,7 @@ static void get_initial_ioncounts(
     compartmentalize_ions(cr, sc, box, 0, s->fpout, bRerun);
 
     /* Set initial concentrations if requested */
-    for (ic=0; ic<eCompNr; ic++)
+    for (ic = 0; ic < eCompNr; ic++)
     {
         s->comp[ic][eIonPOS].nat_req = sc->ncations[ic];
         s->comp[ic][eIonNEG].nat_req = sc->nanions[ic];
@@ -910,7 +909,7 @@ static void get_initial_ioncounts(
         for (ii = 0; ii < eIonNr; ii++)
         {
             s->comp[ic][ii].nat_av = s->comp[ic][ii].nat;
-            for (i=0; i < sc->csteps; i++)
+            for (i = 0; i < sc->csteps; i++)
             {
                 s->comp[ic][ii].nat_past[i] = s->comp[ic][ii].nat;
             }
@@ -934,11 +933,13 @@ static void get_initial_ioncounts_from_cpt(
     {
         /* Copy the past values from the checkpoint values that have been read in already */
         if (bVerbose)
-            fprintf(stderr, "%s Copying values from checkpoint\n", SwS);
-
-        for (ic=0; ic<eCompNr; ic++)
         {
-            for (ii=0; ii<eIonNr; ii++)
+            fprintf(stderr, "%s Copying values from checkpoint\n", SwS);
+        }
+
+        for (ic = 0; ic < eCompNr; ic++)
+        {
+            for (ii = 0; ii < eIonNr; ii++)
             {
                 s->comp[ic][ii].nat_req = swapstate->nat_req[ic][ii];
                 s->comp[ic][ii].inflow_netto = swapstate->inflow_netto[ic][ii];
@@ -949,7 +950,7 @@ static void get_initial_ioncounts_from_cpt(
                             s->comp[ic][ii].inflow_netto, s->comp[ic][ii].nat_req);
                 }
 
-                for (j=0; j < sc->csteps; j++)
+                for (j = 0; j < sc->csteps; j++)
                 {
                     s->comp[ic][ii].nat_past[j] = swapstate->nat_past[ic][ii][j];
                     if (bVerbose)
@@ -991,7 +992,7 @@ static void bc_initial_concentrations(
 static void ensure_that_groups_differ(t_swap *s, gmx_bool bVerbose)
 {
     t_group *ga, *gb;
-    int i,j,k;
+    int i, j, k;
     gmx_bool bSame;
 
 
@@ -1003,7 +1004,7 @@ static void ensure_that_groups_differ(t_swap *s, gmx_bool bVerbose)
     for (i = 0; i < eGrpNr; i++)
     {
         ga = &s->group[i];
-        for (j = i+1; j < eGrpNr; j++)
+        for (j = i + 1; j < eGrpNr; j++)
         {
             gb = &s->group[j];
             if (bVerbose)
@@ -1013,7 +1014,7 @@ static void ensure_that_groups_differ(t_swap *s, gmx_bool bVerbose)
             if (ga->nat == gb->nat)
             {
                 bSame = TRUE;
-                for (k = 0; k<ga->nat; k++)
+                for (k = 0; k < ga->nat; k++)
                 {
                     if (ga->ind[k] != gb->ind[k])
                     {
@@ -1054,7 +1055,7 @@ static int get_group_apm_check(
     if (bVerbose)
     {
         fprintf(stderr, "%s Checking whether all %s molecules consist of %d atom%s\n",
-                SwS, GrpString[group], apm, apm>1? "s":"");
+                SwS, GrpString[group], apm, apm > 1 ? "s" : "");
     }
 
     /* Check whether this is also true for all other solvent atoms */
@@ -1077,7 +1078,7 @@ static int get_group_apm_check(
 static void print_ionlist_legend(t_inputrec *ir, const output_env_t oenv)
 {
     const char **legend;
-    int ic,count,ii;
+    int ic, count, ii;
     char buf[256];
     t_swap *s;
 
@@ -1085,27 +1086,27 @@ static void print_ionlist_legend(t_inputrec *ir, const output_env_t oenv)
     s = ir->swap->si_priv;
 
     snew(legend, eCompNr*eIonNr*3 + 2 + eChanNr*eIonNr + 1);
-    for (ic=count=0; ic<eCompNr; ic++)
+    for (ic = count = 0; ic < eCompNr; ic++)
     {
-        for (ii=0; ii<eIonNr; ii++)
+        for (ii = 0; ii < eIonNr; ii++)
         {
-            sprintf(buf,"%s %ss", CompStr[ic], IonString[ii]);
+            sprintf(buf, "%s %ss", CompStr[ic], IonString[ii]);
             legend[count++] = gmx_strdup(buf);
-            sprintf(buf,"%s av. mismatch to %d%s",
+            sprintf(buf, "%s av. mismatch to %d%s",
                     CompStr[ic], s->comp[ic][ii].nat_req, IonStr[ii]);
             legend[count++] = gmx_strdup(buf);
-            sprintf(buf,"%s netto %s influx", CompStr[ic], IonString[ii]);
+            sprintf(buf, "%s netto %s influx", CompStr[ic], IonString[ii]);
             legend[count++] = gmx_strdup(buf);
         }
     }
-    sprintf(buf, "%scenter of %s of split group 0", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit0].m)? "mass":"geometry");
+    sprintf(buf, "%scenter of %s of split group 0", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit0].m)? "mass" : "geometry");
     legend[count++] = gmx_strdup(buf);
-    sprintf(buf, "%scenter of %s of split group 1", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit1].m)? "mass":"geometry");
+    sprintf(buf, "%scenter of %s of split group 1", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit1].m)? "mass" : "geometry");
     legend[count++] = gmx_strdup(buf);
 
-    for (ic=0; ic<eChanNr; ic++)
+    for (ic = 0; ic < eChanNr; ic++)
     {
-        for (ii=0; ii<eIonNr; ii++)
+        for (ii = 0; ii < eIonNr; ii++)
         {
             sprintf(buf, "A->ch%d->B %s permeations", ic, IonString[ii]);
             legend[count++] = gmx_strdup(buf);
@@ -1167,7 +1168,7 @@ static void detect_flux_per_channel_init(
     snew(g->dom_now  , g->nat);
 
     /* Initialize the channel and domain history counters */
-    for (i=0; i<g->nat; i++)
+    for (i = 0; i < g->nat; i++)
     {
         g->dom_now[i] = eDomainNotset;
         if (!bStartFromCpt)
@@ -1180,29 +1181,37 @@ static void detect_flux_per_channel_init(
     /************************************/
     /* Channel fluxes for both channels */
     /************************************/
-    s->cyl0ions                 = 0;
-    s->cyl1ions                 = 0;
-    s->cyl0and1                 = 0;
+    s->cyl0ions = 0;
+    s->cyl1ions = 0;
+    s->cyl0and1 = 0;
 
     if (bStartFromCpt)
+    {
         fprintf(stderr, "%s Copying channel fluxes from checkpoint file data\n", SwS);
+    }
 
-    for (ic=0; ic<eChanNr; ic++)
+    for (ic = 0; ic < eChanNr; ic++)
     {
         fprintf(stderr, "%s Channel %d flux history: ", SwS, ic);
-        for (ii=0; ii<eIonNr; ii++)
+        for (ii = 0; ii < eIonNr; ii++)
         {
             if (bStartFromCpt)
+            {
                 s->fluxfromAtoB[ic][ii] = swapstate->fluxfromAtoB[ic][ii];
+            }
             else
+            {
                 s->fluxfromAtoB[ic][ii] = 0;
+            }
 
-            fprintf(stderr, "%d %s%s   ", s->fluxfromAtoB[ic][ii], IonString[ii], s->fluxfromAtoB[ic][ii] == 1? "":"s");
+            fprintf(stderr, "%d %s%s   ", s->fluxfromAtoB[ic][ii], IonString[ii], s->fluxfromAtoB[ic][ii] == 1 ? "" : "s");
         }
         fprintf(stderr, "\n");
     }
     if (bStartFromCpt)
+    {
         s->fluxleak = swapstate->fluxleak;
+    }
     else
     {
         snew(s->fluxleak, 1);
@@ -1212,9 +1221,9 @@ static void detect_flux_per_channel_init(
     }
 
     /* Set pointers for checkpoint writing */
-    for (ic=0; ic<eChanNr; ic++)
+    for (ic = 0; ic < eChanNr; ic++)
     {
-        for (ii=0; ii<eIonNr; ii++)
+        for (ii = 0; ii < eIonNr; ii++)
         {
             swapstate->fluxfromAtoB_p[ic][ii] = &(s->fluxfromAtoB[ic][ii]);
         }
@@ -1360,16 +1369,16 @@ extern void init_swapcoords(
     switch (ir->eSwapCoords)
     {
         case eswapX:
-            s->swapdim=XX;
+            s->swapdim = XX;
             break;
         case eswapY:
-            s->swapdim=YY;
+            s->swapdim = YY;
             break;
         case eswapZ:
-            s->swapdim=ZZ;
+            s->swapdim = ZZ;
             break;
         default:
-            s->swapdim=-1;
+            s->swapdim = -1;
             break;
     }
 
@@ -1495,7 +1504,7 @@ extern void init_swapcoords(
     {
         if (bVerbose)
         {
-            fprintf(stderr, "%s Opening output file %s%s\n", SwS, fn, bAppend? " for appending":"");
+            fprintf(stderr, "%s Opening output file %s%s\n", SwS, fn, bAppend ? " for appending" : "");
         }
 
         s->fpout = gmx_fio_fopen(fn, bAppend ? "a+" : "w+" );
@@ -1507,10 +1516,10 @@ extern void init_swapcoords(
             for (ig = 0; ig < eGrpNr; ig++)
             {
                 g = &(s->group[ig]);
-                fprintf(s->fpout, "# %s group contains %d atom%s", GrpString[ig], g->nat,(g->nat>1)?"s":"");
+                fprintf(s->fpout, "# %s group contains %d atom%s", GrpString[ig], g->nat,(g->nat>1) ? "s" : "");
                 if (eGrpSolvent==ig || eGrpIons==ig)
                 {
-                    fprintf(s->fpout, " with %d atom%s in each molecule", g->apm, (g->apm>1)?"s":"");
+                    fprintf(s->fpout, " with %d atom%s in each molecule", g->apm, (g->apm>1) ? "s" : "");
                 }
                 fprintf(s->fpout, ".\n");
             }
@@ -1581,7 +1590,7 @@ extern void init_swapcoords(
     /* Prepare for parallel or serial run */
     if (PAR(cr))
      {
-        for (ig=0; ig<eGrpNr; ig++)
+        for (ig = 0; ig < eGrpNr; ig++)
         {
             g = &(s->group[ig]);
             g->nat_loc    = 0;
@@ -1591,13 +1600,13 @@ extern void init_swapcoords(
      }
      else
      {
-         for (ig=0; ig<eGrpNr; ig++)
+         for (ig = 0; ig < eGrpNr; ig++)
          {
              g = &(s->group[ig]);
              g->nat_loc = g->nat;
              g->ind_loc = g->ind;
              /* c_ind_loc needs to be set to identity in the serial case */
-             for (i=0; i<g->nat; i++)
+             for (i = 0; i < g->nat; i++)
              {
                  g->c_ind_loc[i] = i;
              }
@@ -1703,7 +1712,7 @@ extern void dd_make_local_swap_groups(gmx_domdec_t *dd,t_swapcoords *sc)
     {
         g = &(sc->si_priv->group[ig]);
         dd_make_local_group_indices(dd->ga2la, g->nat, g->ind,
-                &(g->nat_loc), &(g->ind_loc),&(g->nalloc_loc), g->c_ind_loc);
+                &(g->nat_loc), &(g->ind_loc), &(g->nalloc_loc), g->c_ind_loc);
     }
 }
 
@@ -1744,7 +1753,7 @@ static int get_index_of_distant_atom(
      * prior to doing any swaps. Some of these atoms may already have been
      * swapped out, but then they are marked with a distance of GMX_REAL_MAX
      */
-    for (i=0; i<comp->nat_old; i += apm)
+    for (i = 0; i < comp->nat_old; i += apm)
     {
         if (comp->dist[i] < d)
         {
@@ -1953,7 +1962,7 @@ extern gmx_bool do_swapcoords(
                      iion = get_index_of_distant_atom(&(s->comp[(ic+1)%eCompNr][ii]), s->group[eGrpIons].apm );
 
                      /* Get the solvent molecule's center of mass */
-                     for (im=0; im<s->group[eGrpSolvent].apm; im++)
+                     for (im = 0; im < s->group[eGrpSolvent].apm; im++)
                      {
                          gmx_mtop_atomnr_to_atom(alook, s->group[eGrpSolvent].ind[isol+im], &atom);
                          s->group[eGrpSolvent].m[im] = atom->m;
@@ -1977,7 +1986,7 @@ extern gmx_bool do_swapcoords(
                      /* Correct the past time window to still get the right averages from now on */
                      s->comp[ic              ][ii].nat_av++;
                      s->comp[(ic+1) % eCompNr][ii].nat_av--;
-                     for (j=0; j<sc->csteps; j++)
+                     for (j = 0; j < sc->csteps; j++)
                      {
                          s->comp[ic              ][ii].nat_past[j]++;
                          s->comp[(ic+1) % eCompNr][ii].nat_past[j]--;
@@ -1997,7 +2006,7 @@ extern gmx_bool do_swapcoords(
 
         if (bVerbose)
         {
-            fprintf(stderr, "%s Performed %d swap%s in step ", SwS, nswaps, nswaps>1?"s":"");
+            fprintf(stderr, "%s Performed %d swap%s in step ", SwS, nswaps, nswaps > 1 ? "s" : "");
             fprintf(stderr, gmx_large_int_pfmt, step);
             fprintf(stderr, "\n");
         }

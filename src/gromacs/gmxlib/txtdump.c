@@ -722,9 +722,9 @@ static void pr_rot(FILE *fp, int indent, t_rot *rot)
 }
 
 
-static void pr_swap(FILE *fp,int indent,t_swapcoords *swap)
+static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
 {
-    int i,j;
+    int i, j;
     char str[255];
 
 
@@ -738,19 +738,19 @@ static void pr_swap(FILE *fp,int indent,t_swapcoords *swap)
     PR("r_solvent", swap->r_sol);
     PI("coupling_steps", swap->csteps);
     PR("threshold", swap->threshold);
-    for (j=0; j<2; j++)
+    for (j = 0; j < 2; j++)
     {
         sprintf(str, "nanions%d", j);
-        PI(str , swap->nanions[j]);
+        PI(str, swap->nanions[j]);
         sprintf(str, "ncations%d", j);
         PI(str, swap->ncations[j]);
         sprintf(str, "splitgroup%d_massw", j);
         PS(str, EBOOL(swap->massw_split[j]));
         sprintf(str, "split atoms group %d", j);
-        pr_ivec_block(fp,indent,str,swap->ind_split[j],swap->nat_split[j],TRUE);
+        pr_ivec_block(fp, indent, str, swap->ind_split[j], swap->nat_split[j], TRUE);
     }
-    pr_ivec_block(fp,indent,"swap atoms",swap->ind,swap->nat,TRUE);
-    pr_ivec_block(fp,indent,"solvent atoms",swap->ind_sol,swap->nat_sol,TRUE);
+    pr_ivec_block(fp, indent, "swap atoms", swap->ind, swap->nat, TRUE);
+    pr_ivec_block(fp, indent, "solvent atoms", swap->ind_sol, swap->nat_sol, TRUE);
 }
 
 
@@ -968,7 +968,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PS("eSwapCoords", ESWAPTYPE(ir->eSwapCoords));
         if (ir->eSwapCoords != eswapNO)
         {
-            pr_swap(fp,indent,ir->swap);
+            pr_swap(fp, indent, ir->swap);
         }
         PS("bQMMM", EBOOL(ir->bQMMM));
         PI("QMconstraints", ir->QMconstraints);

@@ -484,15 +484,15 @@ static void zero_ekinstate(ekinstate_t *eks)
 
 static void init_swapstate(swapstate_t *swapstate)
 {
-    int ii,ic;
+    int ii, ic;
 
     swapstate->eSwapCoords = 0;
     swapstate->csteps      = 0;
 
-    /* Coordinate swapping */
-    for (ic=0; ic<eCompNr; ic++)
+    /* Ion/water position swapping */
+    for (ic = 0; ic < eCompNr; ic++)
     {
-        for (ii=0; ii<eIonNr; ii++)
+        for (ii = 0; ii < eIonNr; ii++)
         {
             swapstate->nat_req[ic][ii]        = 0;
             swapstate->nat_req_p[ic][ii]      = NULL;
