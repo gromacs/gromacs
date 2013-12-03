@@ -48,6 +48,7 @@
 #include "gromacs/mmslave.h"
 #include "gromacs/mmslave/mmslave.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
 
 /* Note: the C-interface is all the way down in this file */
 
@@ -80,7 +81,7 @@ bool MMSlave::readTpr(const char *tpr)
     int                     at_global;
     t_atom                 *atom;
     
-    groupSize_.resize(2);
+    groupSize_.resize(inputrec_.opts.ngQM);
     while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
     {
         if (ggrpnr(&(mtop_.groups), egcQMMM, at_global) == 0)
@@ -96,6 +97,16 @@ bool MMSlave::readTpr(const char *tpr)
                        "Total number of atoms not consistent with group indices");
 
     return true;
+}
+
+int MMSlave::nAtoms()
+{
+    int n = 0;
+    for(unsigned int i = 0; (i < groupSize_.size()); i++)
+    {
+        n += groupSize_[i];
+    }
+    return n;
 }
 
 static bool copyIt(int natoms_dst, 
@@ -174,14 +185,31 @@ bool MMSlave::getAtomQ(atom_id id, double *q)
     return true;
 }
 
-bool MMSlave::getAtomNumber(atom_id id, int *n)
+bool MMSlave::getAtomNumber(atom_id id, int *atomNumber)
 {
     t_atom               *atom;
 
     gmx_mtop_atomlookup_t alook = gmx_mtop_atomlookup_init(&mtop_);
 
     gmx_mtop_atomnr_to_atom(alook, id, &atom);
-    *n = atom->atomnumber;
+    *atomNumber = atom->atomnumber;
+    if (NOTSET == *atomNumber)
+    {
+        GMX_THROW(InvalidInputError("No information about atom numbers in the tpr file"));
+    }
+    gmx_mtop_atomlookup_destroy(alook);
+
+    return true;
+}
+
+bool MMSlave::getGroupID(atom_id id, int *groupID)
+{
+    t_atom               *atom;
+
+    gmx_mtop_atomlookup_t alook = gmx_mtop_atomlookup_init(&mtop_);
+
+    gmx_mtop_atomnr_to_atom(alook, id, &atom);
+    *groupID = atom->atomnumber;
 
     gmx_mtop_atomlookup_destroy(alook);
 
@@ -231,6 +259,16 @@ int mmslave_read_tpr(const char   *tpr,
     return 0;
 }
 
+int mmslave_natoms(gmx_mmslave_t gms)
+{
+    return gms->mms->nAtoms();
+}
+
+int mmslave_ngroups(gmx_mmslave_t gms)
+{
+    return gms->mms->nGroups();
+}
+
 int mmslave_copyX(gmx_mmslave_t gms, int natoms, rvec *x)
 {
     if (gms->mms->copyX(natoms, x))
@@ -266,7 +304,6 @@ void mmslave_clean(gmx_mmslave_t gms)
 }
 
 int mmslave_set_q(gmx_mmslave_t gms,
-                  int           group,
                   atom_id       id,
                   double        q)
 {
@@ -278,7 +315,6 @@ int mmslave_set_q(gmx_mmslave_t gms,
 }
 
 int mmslave_get_q(gmx_mmslave_t gms,
-                  int           group,
                   atom_id       id,
                   double       *q)
 {
@@ -290,11 +326,21 @@ int mmslave_get_q(gmx_mmslave_t gms,
 }
 
 int mmslave_get_atomnumber(gmx_mmslave_t gms,
-                           int           group,
                            atom_id       id,
                            int          *atomNumber)
 {
     if (gms->mms->getAtomNumber(id, atomNumber))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int mmslave_get_group_id(gmx_mmslave_t gms,
+                         atom_id       id,
+                         int          *groupID)
+{
+    if (gms->mms->getGroupID(id, groupID))
     {
         return 1;
     }

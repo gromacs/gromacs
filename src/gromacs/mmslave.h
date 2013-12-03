@@ -72,7 +72,8 @@ extern int mmslave_read_tpr(const char   *tpr,
                             gmx_mmslave_t gms);
 
 /*! \brief
- * The number of groups are numbered 0 to N-1. You can use this
+ * The number of groups are numbered 0 to N-1. The group
+ * index of each atom can be extracted using mmslave_get_group_id
  * index in subsequent calls to related routines.
  * \param[in] gms  the data structure
  * \return the number N of atom-groups in the system
@@ -82,48 +83,40 @@ extern int mmslave_ngroups(gmx_mmslave_t gms);
 /*! \brief
  * Return number of atoms in specified group
  * \param[in] gms    the data structure
- * \param[in] group  the data structure to be read
  * \return the number of atoms in group or 0 if group is out of range
  */
-extern int mmslave_group_natoms(gmx_mmslave_t gms,
-                                int           group);
+extern int mmslave_natoms(gmx_mmslave_t gms);
 
 /*! \brief
  * Copy internal coordinate array
  * \param[in]  gms    the data structure
- * \param[in]  group  group index
  * \param[in]  natoms length of array
  * \param[out] x      array of rvec (must be allocated by the caller)
  * \return 1 on success, 0 otherwise (typically if natoms is too small or x is NULL)
  */
 extern int mmslave_copyX(gmx_mmslave_t gms,
-                         int           group,
                          int           natoms,
                          rvec         *x);
 
 /*! \brief
  * Copy internal velocity array
  * \param[in]  gms    the data structure containing the data
- * \param[in]  group  group index
  * \param[in]  natoms length of array
  * \param[out] v      array of rvecs (must be allocated by the caller)
  * \return 1 on success, 0 otherwise (typically if natoms is too small or v is NULL)
  */
 extern int mmslave_copyV(gmx_mmslave_t gms,
-                         int           group,
                          int           natoms,
                          rvec         *v);
 
 /*! \brief
  * Copy internal force array
  * \param[in]  gms    the data structure containing the data
- * \param[in]  group  group index
  * \param[in]  natoms length of array
  * \param[out] f      array of rvecs (must be allocated by the caller)
  * \return 1 on success, 0 otherwise (typically if natoms is too small or f is NULL)
  */
 extern int mmslave_copyF(gmx_mmslave_t gms,
-                         int           group,
                          int           natoms,
                          rvec         *f);
 
@@ -136,13 +129,11 @@ extern void mmslave_clean(gmx_mmslave_t gms);
  * Function to modify the charge of an atom
  * data structure
  * \param[in]  gms    the data structure to be modified
- * \param[in]  group  group index
  * \param[in]  id     the atom id
  * \param[in]  q      the new charge
  * \return 1 if successful, 0 otherwise
  */
 extern int mmslave_set_q(gmx_mmslave_t gms,
-                         int           group,
                          atom_id       id,
                          double        q);
 
@@ -150,25 +141,31 @@ extern int mmslave_set_q(gmx_mmslave_t gms,
  * Function to retrieve the charge of an atom
  * data structure
  * \param[in] gms    the data structure to be returned
- * \param[in] group  group index
  * \param[in] id     the atom id
  * \return the charge
  */
 extern double mmslave_get_q(gmx_mmslave_t gms,
-                            int           group,
                             atom_id       id);
 
 /*! \brief
  * Function to retrieve the atom number of an atom 
  * data structure
  * \param[in] gms   the data structure to be returned
- * \param[in] group group index
  * \param[in] id    the atom id
  * \return the charge
  */
 extern int mmslave_get_atomnr(gmx_mmslave_t gms,
-                              int           group,
                               atom_id       id);
+
+/*! \brief
+ * Function to retrieve the group ID of an atom 
+ * data structure
+ * \param[in] gms   the data structure to be returned
+ * \param[in] id    the atom id
+ * \return the group_id
+ */
+extern int mmslave_get_group_id(gmx_mmslave_t gms,
+                                atom_id       id);
 
 /*! \brief
  * Function to compute the energy and forces

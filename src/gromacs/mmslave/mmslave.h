@@ -83,6 +83,16 @@ class MMSlave
         bool readTpr(const char *tpr);
 
         /*! \brief
+         * \return the total number of atoms in the system
+         */
+        int nAtoms();
+        
+        /*! \brief
+         * \return the total number of groups in the system
+         */
+        int nGroups() { return groupSize_.size(); }
+        
+        /*! \brief
          * Copy internal coordinate array
          * \param[in]  natoms length of array
          * \param[out] x      array of rvecs (must be allocated by the caller)
@@ -130,13 +140,22 @@ class MMSlave
         bool getAtomQ(atom_id id, double *q);
 
         /*! \brief
-         * Function to receive the charge of an atom
+         * Function to receive the atom number of an atom
          * data structure
          * \param[in] id   the atom id
-         * \param[out] n   the atom number
+         * \param[out] atomNumber   the atom number
          * \return true if successful
          */
-        bool getAtomNumber(atom_id id, int *n);
+        bool getAtomNumber(atom_id id, int *atomNumber);
+        
+        /*! \brief
+         * Function to receive the group ID of an atom
+         * data structure
+         * \param[in] id   the atom id
+         * \param[out] groupID   the group ID
+         * \return true if successful
+         */
+        bool getGroupID(atom_id id, int *groupID);
         
         /*! \brief
          * Function to compute the energy and forces
