@@ -516,11 +516,7 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
 }
 
 
-/* Return the number of hardware threads supported by the current CPU.
- * We assume that this is equal with the number of CPUs reported to be
- * online by the OS at the time of the call.
- */
-static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
+int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
 {
     int ret = 0;
 

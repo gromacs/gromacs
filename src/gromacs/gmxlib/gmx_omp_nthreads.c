@@ -49,6 +49,7 @@
 #include "copyrite.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
+#include "gmx_detect_hardware.h"
 
 #include "gromacs/utility/gmxomp.h"
 
@@ -74,14 +75,15 @@ static const char *modth_env_var[emntNR] =
     "GMX_NONBONDED_NUM_THREADS", "GMX_BONDED_NUM_THREADS",
     "GMX_PME_NUM_THREADS", "GMX_UPDATE_NUM_THREADS",
     "GMX_VSITE_NUM_THREADS",
-    "GMX_LINCS_NUM_THREADS", "GMX_SETTLE_NUM_THREADS"
+    "GMX_LINCS_NUM_THREADS", "GMX_SETTLE_NUM_THREADS",
+    "GMX_TOOL_NUM_THREADS",
 };
 
 /** Names of the modules. */
 static const char *mod_name[emntNR] =
 {
     "default", "domain decomposition", "pair search", "non-bonded",
-    "bonded", "PME", "update", "LINCS", "SETTLE"
+    "bonded", "PME", "update", "LINCS", "SETTLE", "tools"
 };
 
 /** Number of threads for each algorithmic module.
@@ -92,7 +94,7 @@ static const char *mod_name[emntNR] =
  *  All fields are initialized to 0 which should result in errors if
  *  the init call is omitted.
  * */
-static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
+static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
 
 
 /** Determine the number of threads for module \p mod.
@@ -243,35 +245,66 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            gmx_bool gmx_unused bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
-    int      nth, nth_pmeonly, gmx_maxth, nppn;
+    int      i, nth, nth_pmeonly, gmx_maxth, nppn;
     char    *env;
-    gmx_bool bSepPME, bOMP;
+    gmx_bool bSepPME, bOMP, bMPI, bTMPI, bMasterNode;
+    gmx_bool bInitTool; /* true if a tool has called us,
+                           NOTE that for now we assume no MPI in tools. */
+
+    /* Just return if the initialization has already been done. */
+    if (modth.initialized)
+    {
+        return;
+    }
 
 #ifdef GMX_OPENMP
     bOMP = TRUE;
 #else
     bOMP = FALSE;
 #endif /* GMX_OPENMP */
+#ifdef GMX_MPI
+    bMPI = TRUE;
+#else
+    bMPI = FALSE;
+#endif /* GMX_MPI */
+#ifdef GMX_THREAD_MPI
+    bTMPI = TRUE;
+#else
+    bTMPI = FALSE;
+#endif /* GMX_THREAD_MPI */
 
-    /* number of MPI processes/threads per physical node */
-    nppn = cr->nrank_intranode;
+    /* cr == NULL means that we're called from a tool. */
+    if (cr != NULL)
+    {
+        /* number of MPI processes/threads per physical node */
+        nppn        = cr->nrank_intranode;
+        /* are we using separate PME ranks */
+        bSepPME     = ((cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
+                       (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
+        bInitTool   = FALSE;
+    }
+    else
+    {
+        nppn        = 1;
+        bSepPME     = FALSE;
+        bInitTool   = TRUE;
+    }
 
-    bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
-        (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
+    /* Tools don't support tMPI/MPI. */
+    if (bInitTool)
+    {
+        bMPI = bTMPI = FALSE;
+    }
+
+    bMasterNode = bInitTool || (cr && SIMMASTER(cr));
 
 #ifdef GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety do the
      * detection is done on the master only. It is not thread-safe with
      * multiple simulations, but that's anyway not supported by tMPI. */
-    if (SIMMASTER(cr))
+    if (bMasterNode)
 #endif
     {
-        /* just return if the initialization has already been done */
-        if (modth.initialized)
-        {
-            return;
-        }
-
         /* With full OpenMP support (verlet scheme) set the number of threads
          * per process / default:
          * - 1 if not compiled with OpenMP or
@@ -354,28 +387,30 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             modth.gnth_pme = 0;
         }
 
-        /* now set the per-module values */
+        /* now set the global default and per-module nthreads values. */
         modth.nth[emntDefault] = modth.gnth;
-        pick_module_nthreads(fplog, emntDomdec, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntPairsearch, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntNonbonded, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntBonded, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntPME, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntUpdate, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntVSITE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-        pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
+        for (i = 0; i < emntNR; i++)
+        {
+            pick_module_nthreads(fplog, i, bMasterNode, bFullOmpSupport, bSepPME);
+        }
 
         /* set the number of threads globally */
         if (bOMP)
         {
-#ifndef GMX_THREAD_MPI
+            /* Setting number of threads in separate PME ranks - multi-threading
+             * in PME is always supported.
+             * With thread-MPI we won't do this because using different number of
+             * threads within the same process in different OpenMP regions is
+             * problematic.
+             */
             if (bThisNodePMEOnly)
             {
-                gmx_omp_set_num_threads(modth.gnth_pme);
+                if (!bTMPI && !bInitTool)
+                {
+                    gmx_omp_set_num_threads(modth.gnth_pme);
+                }
             }
             else
-#endif      /* GMX_THREAD_MPI */
             {
                 if (bFullOmpSupport)
                 {
@@ -392,7 +427,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     }
 #ifdef GMX_THREAD_MPI
     /* Non-master threads have to wait for the detection to be done. */
-    if (PAR(cr))
+    if (!bInitTool && PAR(cr))
     {
         MPI_Barrier(cr->mpi_comm_mysim);
     }
@@ -401,11 +436,16 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     /* inform the user about the settings */
     if (bOMP)
     {
-#ifdef GMX_THREAD_MPI
-        const char *mpi_str = "per tMPI thread";
-#else
-        const char *mpi_str = "per MPI process";
-#endif
+        char mpi_str[STRLEN];
+
+        if (bTMPI)
+        {
+            sprintf(mpi_str, "per tMPI thread");
+        }
+        else if (bMPI)
+        {
+            sprintf(mpi_str, "per MPI process");
+        }
 
         /* for group scheme we print PME threads info only */
         if (bFullOmpSupport)
@@ -424,7 +464,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 
     /* detect and warn about oversubscription
      * TODO: enable this for separate PME nodes as well! */
-    if (!bSepPME && cr->rank_pp_intranode == 0)
+    if (!bSepPME && (cr->rank_pp_intranode == 0 || bInitTool))
     {
         char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
 
@@ -433,18 +473,21 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             sprintf(sbuf, "threads");
             sbuf1[0] = '\0';
             sprintf(sbuf2, "O");
-#ifdef GMX_MPI
+
+            /* We have an MPI-only runconf, what we're running is not just threads. */
             if (modth.gnth == 1)
             {
-#ifdef GMX_THREAD_MPI
-                sprintf(sbuf, "thread-MPI threads");
-#else
-                sprintf(sbuf, "MPI processes");
-                sprintf(sbuf1, " per node");
-                sprintf(sbuf2, "On node %d: o", cr->sim_nodeid);
-#endif
+                if (bTMPI)
+                {
+                    sprintf(sbuf, "thread-MPI threads");
+                }
+                else if (bMPI)
+                {
+                    sprintf(sbuf, "MPI processes");
+                    sprintf(sbuf1, " per node");
+                    sprintf(sbuf2, "On node %d: o", cr->sim_nodeid);
+                }
             }
-#endif
             md_print_warn(cr, fplog,
                           "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
                           "         This will cause considerable performance loss!",
@@ -453,8 +496,27 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     }
 }
 
+void gmx_omp_nthreads_init_tool(int omp_nthreads_req)
+{
+    int nthreads_hw_avail;
+
+    nthreads_hw_avail = get_nthreads_hw_avail(NULL, NULL);
+    gmx_omp_nthreads_init(NULL, NULL,
+                          nthreads_hw_avail,
+                          omp_nthreads_req,
+                          0,
+                          FALSE,
+                          TRUE);
+}
+
 int gmx_omp_nthreads_get(int mod)
 {
+    if (!modth.initialized)
+    {
+        gmx_incons("Initialization has not been done,"
+                   " gmx_omp_nthreads_init has to be called first!");
+    }
+
     if (mod < 0 || mod >= emntNR)
     {
         /* invalid module queried */
