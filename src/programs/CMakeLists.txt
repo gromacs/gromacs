@@ -38,13 +38,6 @@ file(GLOB MDRUN_SOURCES mdrun/*.c mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
 
-if(GMX_X11)
-    file(GLOB VIEW_SOURCES view/*.cpp)
-else()
-    file(GLOB VIEW_SOURCES view/view.cpp)
-endif()
-add_library(view_objlib OBJECT ${VIEW_SOURCES})
-
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
     # may break some generators, according to CMake documentation. If
@@ -62,7 +55,13 @@ else()
     file(GLOB GMX_GENERAL_SOURCES gmx/*.c gmx/*.cpp)
     file(GLOB GMX_MAIN_SOURCES gmx/gmx.cpp gmx/legacymodules.cpp)
     list(REMOVE_ITEM GMX_GENERAL_SOURCES ${GMX_MAIN_SOURCES})
+    if(GMX_X11)
+        file(GLOB VIEW_SOURCES view/*.cpp)
+    else()
+        file(GLOB VIEW_SOURCES view/view.cpp)
+    endif()
     add_library(gmx_objlib OBJECT ${GMX_GENERAL_SOURCES})
+    add_library(view_objlib OBJECT ${VIEW_SOURCES})
     add_executable(gmx
         ${GMX_MAIN_SOURCES}
         $<TARGET_OBJECTS:gmx_objlib>
@@ -101,8 +100,8 @@ else()
     if (GMX_SYMLINK_OLD_BINARY_NAMES)
         install(SCRIPT ${CREATE_LINKS_SCRIPT} COMPONENT links)
     endif ()
-endif()
 
-if(BUILD_TESTING)
-    add_subdirectory(mdrun/tests)
-endif(BUILD_TESTING)
+    if(BUILD_TESTING)
+        add_subdirectory(mdrun/tests)
+    endif(BUILD_TESTING)
+endif()
