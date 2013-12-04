@@ -53,18 +53,28 @@ typedef enum module_nth
      * algorithmic modules listed below. */
     emntDefault, emntDomdec, emntPairsearch, emntNonbonded,
     emntBonded, emntPME,  emntUpdate, emntVSITE, emntLINCS, emntSETTLE,
+    emntTOOL,
     emntNR
 } module_nth_t;
 
-/*! Initializes the per-module thread count. It is compatible with tMPI,
- *  thread-safety is ensured (for the features available with tMPI).
- *  This function should caled only once during the initialization of mdrun. */
+/*! Initializes the per-module thread count in mdrun.
+ *
+ *  This module and initializer is compatible with mdrun using
+ *  MPI, tMPI - thread-safety is ensured (for the features available with tMPI),
+ *  no MPI, with and withouth OpenMP; works with tools to, but for tools
+ *  the provided wrapper is more convenient \gmx_omp_nthreads_init_tool.
+ *
+ *  This function should caled only once during the initialization.
+ *  Note that cr == NULL means that we're called from a tool.
+ */
 void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
                            gmx_bool bCurrNodePMEOnly,
                            gmx_bool bFullOmpSupport);
+
+void gmx_omp_nthreads_init_tool(int omp_nthreads_req);
 
 /*! Returns the number of threads to be used in the given module m. */
 int gmx_omp_nthreads_get(int mod);

@@ -68,6 +68,13 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
                                       gmx_bool             bUseGPU);
+
+/* Return the number of hardware threads supported by the current CPU.
+ * We assume that this is equal with the number of CPUs reported to be
+ * online by the OS at the time of the call.
+ */
+int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr);
+
 #endif
 
 
