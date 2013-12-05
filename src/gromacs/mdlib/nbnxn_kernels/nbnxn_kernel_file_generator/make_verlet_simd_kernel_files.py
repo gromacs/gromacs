@@ -107,11 +107,12 @@ ElectrostaticsDict['ElecEwTwinCut'] = { 'define' : '#define CALC_COUL_EWALD\n#de
  
 # The dict order must match the order of a C enumeration.
 VdwTreatmentDict = collections.OrderedDict()
-VdwTreatmentDict['VdwLJCombGeom'] = { 'define' : '#define LJ_COMB_GEOM' }
-VdwTreatmentDict['VdwLJCombLB'] = { 'define' : '#define LJ_COMB_LB' }
-VdwTreatmentDict['VdwLJ'] = { 'define' : '/* Use no LJ combination rule */' }
-VdwTreatmentDict['VdwLJFSw'] = { 'define' : '/* Use no LJ combination rule */\n#define LJ_FORCE_SWITCH' }
-VdwTreatmentDict['VdwLJPSw'] = { 'define' : '/* Use no LJ combination rule */\n#define LJ_POT_SWITCH' }
+VdwTreatmentDict['VdwLJCombGeom'] = { 'define' : '#define LJ_CUT\n#define LJ_COMB_GEOM' }
+VdwTreatmentDict['VdwLJCombLB'] = { 'define' : '#define LJ_CUT\n#define LJ_COMB_LB' }
+VdwTreatmentDict['VdwLJ'] = { 'define' : '#define LJ_CUT\n/* Use full LJ combination matrix */' }
+VdwTreatmentDict['VdwLJFSw'] = { 'define' : '#define LJ_FORCE_SWITCH\n/* Use full LJ combination matrix */' }
+VdwTreatmentDict['VdwLJPSw'] = { 'define' : '#define LJ_POT_SWITCH\n/* Use full LJ combination matrix */' }
+VdwTreatmentDict['VdwLJEwCombGeom'] = { 'define' : '#define LJ_CUT\n#define LJ_EWALD_GEOM\n/* Use full LJ combination matrix + geometric rule for the grid correction */' }
 
 # This is OK as an unordered dict
 EnergiesComputationDict = {
