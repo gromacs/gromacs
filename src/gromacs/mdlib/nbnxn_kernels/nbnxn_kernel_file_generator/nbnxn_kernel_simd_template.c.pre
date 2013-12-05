@@ -61,11 +61,11 @@ enum {{
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch functions.
  */
-static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
+static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+3] =
 {7}
-static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
+static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+3] =
 {8}
-static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
+static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+3] =
 {9}
 
 static void
@@ -165,21 +165,36 @@ void
         }}
     }}
 
-    switch (ic->vdw_modifier)
+    if (ic->vdwtype == evdwCUT)
     {{
-        case eintmodNONE:
-        case eintmodPOTSHIFT:
-            ljtreatment = nbat->comb_rule;
-            break;
-        /* Switch functions follow after cut-off combination rule kernels */
-        case eintmodFORCESWITCH:
-            ljtreatment = ljcrNR;
-            break;
-        case eintmodPOTSWITCH:
-            ljtreatment = ljcrNR + 1;
-            break;
-        default:
-            gmx_incons("Unsupported VdW interaction modifier");
+        switch (ic->vdw_modifier)
+        {{
+            case eintmodNONE:
+            case eintmodPOTSHIFT:
+                ljtreatment = nbat->comb_rule;
+                break;
+            /* Switch functions follow after cut-off combination rule kernels */
+            case eintmodFORCESWITCH:
+                ljtreatment = ljcrNR;
+                break;
+            case eintmodPOTSWITCH:
+                ljtreatment = ljcrNR + 1;
+                break;
+            default:
+                gmx_incons("Unsupported VdW interaction modifier");
+        }}
+    }}
+    else if (ic->vdwtype == evdwPME)
+    {{
+        if (ic->ljpme_comb_rule == eljpmeLB)
+        {{
+            gmx_incons("The nbnxn SIMD kernels don't suport LJ-PME with LB");
+        }}
+        ljtreatment = ljcrNR + 2;
+    }}
+    else
+    {{
+        gmx_incons("Unsupported VdW interaction type");
     }}
 
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))

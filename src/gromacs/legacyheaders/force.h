@@ -133,6 +133,17 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
  * and fp (if !=NULL) on the master node.
  */
 
+
+gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
+                                      const t_commrec  *cr,
+                                      const t_inputrec *ir,
+                                      gmx_bool          bGPU);
+/* Return if GPU/CPU-SIMD acceleration is supported with the given inputrec
+ * with bGPU TRUE/FALSE.
+ * If the return value is FALSE and fplog/cr != NULL, prints a fallback
+ * message to fplog/stderr.
+ */
+
 gmx_bool uses_simple_tables(int                 cutoff_scheme,
                             nonbonded_verlet_t *nbv,
                             int                 group);

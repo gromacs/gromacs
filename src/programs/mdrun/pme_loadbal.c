@@ -662,6 +662,10 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     ic->rlistlong    = set->rlistlong;
     ir->nstcalclr    = set->nstcalclr;
     ic->ewaldcoeff_q = set->ewaldcoeff_q;
+    if (ic->sh_ewald != 0)
+    {
+        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+    }
 
     bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
     if (pme_lb->cutoff_scheme == ecutsVERLET &&

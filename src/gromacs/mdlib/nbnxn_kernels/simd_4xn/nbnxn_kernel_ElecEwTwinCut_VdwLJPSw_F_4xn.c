@@ -48,8 +48,8 @@
 
 #define CALC_COUL_EWALD
 #define VDW_CUTOFF_CHECK /* Use twin-range cut-off */
-/* Use no LJ combination rule */
 #define LJ_POT_SWITCH
+/* Use full LJ combination matrix */
 /* Will not calculate energies */
 
 #ifdef GMX_NBNXN_SIMD_4XN
