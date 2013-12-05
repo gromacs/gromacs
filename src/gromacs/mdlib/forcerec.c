@@ -864,7 +864,7 @@ static int *cginfo_expand(int nmb, cginfo_mb_t *cgi_mb)
 static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
 {
     /*This now calculates sum for q and c6*/
-    double         qsum, q2sum, q, c6sum, c6, sqrc6;
+    double         qsum, q2sum, q, c6sum, c6;
     int            mb, nmol, i;
     const t_atoms *atoms;
 
@@ -881,13 +881,12 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
             qsum   += nmol*q;
             q2sum  += nmol*q*q;
             c6      = mtop->ffparams.iparams[atoms->atom[i].type*(mtop->ffparams.atnr+1)].lj.c6;
-            sqrc6   = sqrt(c6);
-            c6sum  += nmol*sqrc6*sqrc6;
+            c6sum  += nmol*c6;
         }
     }
     fr->qsum[0]   = qsum;
     fr->q2sum[0]  = q2sum;
-    fr->c6sum[0]  = c6sum/12;
+    fr->c6sum[0]  = c6sum;
 
     if (fr->efep != efepNO)
     {
@@ -904,12 +903,11 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
                 qsum   += nmol*q;
                 q2sum  += nmol*q*q;
                 c6      = mtop->ffparams.iparams[atoms->atom[i].typeB*(mtop->ffparams.atnr+1)].lj.c6;
-                sqrc6   = sqrt(c6);
-                c6sum  += nmol*sqrc6*sqrc6;
+                c6sum  += nmol*c6;
             }
             fr->qsum[1]   = qsum;
             fr->q2sum[1]  = q2sum;
-            fr->c6sum[1]  = c6sum/12;
+            fr->c6sum[1]  = c6sum;
         }
     }
     else
@@ -1532,6 +1530,35 @@ static void init_forcerec_f_threads(t_forcerec *fr, int nenergrp)
 }
 
 
+gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
+                                      const t_commrec  *cr,
+                                      const t_inputrec *ir,
+                                      gmx_bool          bGPU)
+{
+    /* TODO: remove these GPU specific restrictions by implementing CUDA kernels */
+    if (bGPU)
+    {
+        if (ir->vdw_modifier == eintmodFORCESWITCH ||
+            ir->vdw_modifier == eintmodPOTSWITCH ||
+            ir->vdwtype == evdwPME)
+        {
+            md_print_warn(cr, fplog, "LJ switch functions and LJ-PME are not yet supported on the GPU, falling back to CPU only\n");
+            return FALSE;
+        }
+    }
+
+    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
+    {
+        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with %s, falling back to %s\n",
+                      bGPU ? "GPUs" : "SIMD kernels",
+                      bGPU ? "CPU only" : "plain-C kernels");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+
 static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
                                   int                         *kernel_type,
                                   int                         *ewald_excl)
@@ -1690,7 +1717,11 @@ static void pick_nbnxn_kernel(FILE                *fp,
 
     if (*kernel_type == nbnxnkNotSet)
     {
-        if (use_cpu_acceleration)
+        /* LJ PME with LB combination rule does 7 mesh operations.
+         * This so slow that we don't compile SIMD non-bonded kernels for that.
+         */
+        if (use_cpu_acceleration &&
+            nbnxn_acceleration_supported(fp, cr, ir, FALSE))
         {
             pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
@@ -1896,13 +1927,17 @@ init_interaction_const(FILE                       *fp,
     snew_aligned(ic->tabq_coul_F, 16, 32);
     snew_aligned(ic->tabq_coul_V, 16, 32);
 
-    ic->rlist       = fr->rlist;
-    ic->rlistlong   = fr->rlistlong;
+    ic->rlist           = fr->rlist;
+    ic->rlistlong       = fr->rlistlong;
 
     /* Lennard-Jones */
-    ic->vdw_modifier = fr->vdw_modifier;
-    ic->rvdw         = fr->rvdw;
-    ic->rvdw_switch  = fr->rvdw_switch;
+    ic->vdwtype         = fr->vdwtype;
+    ic->vdw_modifier    = fr->vdw_modifier;
+    ic->rvdw            = fr->rvdw;
+    ic->rvdw_switch     = fr->rvdw_switch;
+    ic->ewaldcoeff_lj   = fr->ewaldcoeff_lj;
+    ic->ljpme_comb_rule = fr->ljpme_combination_rule;
+    ic->sh_lj_ewald     = 0;
     clear_force_switch_constants(&ic->dispersion_shift);
     clear_force_switch_constants(&ic->repulsion_shift);
 
@@ -1912,6 +1947,17 @@ init_interaction_const(FILE                       *fp,
             /* Only shift the potential, don't touch the force */
             ic->dispersion_shift.cpot = -pow(ic->rvdw, -6.0);
             ic->repulsion_shift.cpot  = -pow(ic->rvdw, -12.0);
+            if (EVDW_PME(ic->vdwtype))
+            {
+                real crc2;
+
+                if (fr->cutoff_scheme == ecutsGROUP)
+                {
+                    gmx_fatal(FARGS, "Potential-shift is not (yet) implemented for LJ-PME with cutoff-scheme=group");
+                }
+                crc2 = sqr(ic->ewaldcoeff_lj*ic->rvdw);
+                ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
+            }
             break;
         case eintmodFORCESWITCH:
             /* Switch the force, switch and shift the potential */
@@ -1936,14 +1982,11 @@ init_interaction_const(FILE                       *fp,
     ic->sh_invrc6 = -ic->dispersion_shift.cpot;
 
     /* Electrostatics */
-    ic->eeltype     = fr->eeltype;
-    ic->rcoulomb    = fr->rcoulomb;
-    ic->epsilon_r   = fr->epsilon_r;
-    ic->epsfac      = fr->epsfac;
-
-    /* Ewald */
-    ic->ewaldcoeff_q   = fr->ewaldcoeff_q;
-    ic->ewaldcoeff_lj  = fr->ewaldcoeff_lj;
+    ic->eeltype       = fr->eeltype;
+    ic->rcoulomb      = fr->rcoulomb;
+    ic->epsilon_r     = fr->epsilon_r;
+    ic->epsfac        = fr->epsfac;
+    ic->ewaldcoeff_q  = fr->ewaldcoeff_q;
 
     if (fr->coulomb_modifier == eintmodPOTSHIFT)
     {
@@ -1978,11 +2021,19 @@ init_interaction_const(FILE                       *fp,
 
     if (fp != NULL)
     {
-        fprintf(fp, "Potential shift: LJ r^-12: %.3f r^-6 %.3f",
-                ic->repulsion_shift.cpot, ic->dispersion_shift.cpot);
+        real dispersion_shift;
+        
+        dispersion_shift = ic->dispersion_shift.cpot;
+        if (EVDW_PME(ic->vdwtype))
+        {
+            dispersion_shift -= ic->sh_lj_ewald;
+        }
+        fprintf(fp, "Potential shift: LJ r^-12: %.3e r^-6: %.3e",
+                ic->repulsion_shift.cpot, dispersion_shift);
+
         if (ic->eeltype == eelCUT)
         {
-            fprintf(fp, ", Coulomb %.3f", -ic->c_rf);
+            fprintf(fp, ", Coulomb %.e", -ic->c_rf);
         }
         else if (EEL_PME(ic->eeltype))
         {
@@ -2153,15 +2204,39 @@ static void init_nb_verlet(FILE                *fp,
             nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
         {
             gmx_bool bSimpleList;
+            int      enbnxninitcombrule;
 
             bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type);
+
+            if (bSimpleList && (fr->vdwtype == evdwCUT && (fr->vdw_modifier == eintmodNONE || fr->vdw_modifier == eintmodPOTSHIFT)))
+            {
+                /* Plain LJ cut-off: we can optimize with combination rules */
+                enbnxninitcombrule = enbnxninitcombruleDETECT;
+            }
+            else if (fr->vdwtype == evdwPME)
+            {
+                /* LJ-PME: we need to use a combination rule for the grid */
+                if (fr->ljpme_combination_rule == eljpmeGEOM)
+                {
+                    enbnxninitcombrule = enbnxninitcombruleGEOM;
+                }
+                else
+                {
+                    enbnxninitcombrule = enbnxninitcombruleLB;
+                }
+            }
+            else
+            {
+                /* We use a full combination matrix: no rule required */
+                enbnxninitcombrule = enbnxninitcombruleNONE;
+            }
+
 
             snew(nbv->grp[i].nbat, 1);
             nbnxn_atomdata_init(fp,
                                 nbv->grp[i].nbat,
                                 nbv->grp[i].kernel_type,
-                                /* SIMD LJ switch kernels don't support LJ combination rules */
-                                bSimpleList && !(fr->vdw_modifier == eintmodFORCESWITCH || fr->vdw_modifier == eintmodPOTSWITCH),
+                                enbnxninitcombrule,
                                 fr->ntype, fr->nbfp,
                                 ir->opts.ngener,
                                 bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
@@ -2625,7 +2700,7 @@ void init_forcerec(FILE              *fp,
         {
             fprintf(fp, "Will do PME sum in reciprocal space for LJ dispersion interactions.\n");
         }
-        please_cite(fp, "Essman95a");
+        please_cite(fp, "Essmann95a");
         fr->ewaldcoeff_lj = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
         if (fp)
         {

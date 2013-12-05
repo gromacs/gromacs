@@ -47,8 +47,8 @@
 #include "nbnxn_kernel_simd_2xnn.h"
 
 #define CALC_COUL_TAB
-/* Use no LJ combination rule */
 #define LJ_FORCE_SWITCH
+/* Use full LJ combination matrix */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 

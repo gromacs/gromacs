@@ -321,9 +321,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
         }
 
-        if (ir->vdwtype != evdwCUT)
+        if (!(ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME))
         {
-            warning_error(wi, "With Verlet lists only cut-off LJ interactions are supported");
+            warning_error(wi, "With Verlet lists only cut-off and PME LJ interactions are supported");
         }
         if (!(ir->coulombtype == eelCUT ||
               (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
@@ -1152,23 +1152,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    if (EVDW_PME(ir->vdwtype))
-    {
-        if (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype))
-        {
-            sprintf(err_buf, "With vdwtype = %s, rvdw must be <= rlist",
-                    evdw_names[ir->vdwtype]);
-            CHECK(ir->rvdw > ir->rlist);
-        }
-        else
-        {
-            sprintf(err_buf,
-                    "With vdwtype = %s, rvdw must be equal to rlist\n",
-                    evdw_names[ir->vdwtype]);
-            CHECK(ir->rvdw != ir->rlist);
-        }
-    }
-
     if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         if (ir->pme_order < 3)
@@ -1196,7 +1179,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 evdw_names[ir->vdwtype]);
         CHECK(ir->rvdw_switch >= ir->rvdw);
     }
-    else if (ir->vdwtype == evdwCUT)
+    else if (ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME)
     {
         if (ir->cutoff_scheme == ecutsGROUP && ir->vdw_modifier == eintmodNONE)
         {
@@ -3691,24 +3674,18 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
                 warning_note(wi, "You are using geometric combination rules in "
                              "LJ-PME, but your non-bonded C6 parameters do "
                              "not follow these rules. "
-                             "If your force field uses Lorentz-Berthelot combination rules this "
-                             "will introduce small errors in the forces and energies in "
-                             "your simulations. Dispersion correction will correct total "
-                             "energy and/or pressure, but not forces or surface tensions. "
-                             "Please check the LJ-PME section in the manual "
-                             "before proceeding further.");
+                             "This will introduce very small errors in the forces and energies in "
+                             "your simulations. Dispersion correction will correct total energy "
+                             "and/or pressure for isotropic systems, but not forces or surface tensions.");
             }
             else
             {
                 warning_note(wi, "You are using geometric combination rules in "
                              "LJ-PME, but your non-bonded C6 parameters do "
                              "not follow these rules. "
-                             "If your force field uses Lorentz-Berthelot combination rules this "
-                             "will introduce small errors in the forces and energies in "
-                             "your simulations. Consider using dispersion correction "
-                             "for the total energy and pressure. "
-                             "Please check the LJ-PME section in the manual "
-                             "before proceeding further.");
+                             "This will introduce very small errors in the forces and energies in "
+                             "your simulations. If your system is homogeneous, consider using dispersion correction "
+                             "for the total energy and pressure.");
             }
         }
     }
