@@ -48,6 +48,7 @@
 
 #define CALC_COUL_TAB
 #define VDW_CUTOFF_CHECK /* Use twin-range cut-off */
+#define LJ_CUT
 #define LJ_COMB_LB
 #define CALC_ENERGIES
 

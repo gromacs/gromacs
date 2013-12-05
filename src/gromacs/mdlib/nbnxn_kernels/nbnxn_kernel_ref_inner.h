@@ -36,7 +36,7 @@
 /* When calculating RF or Ewald interactions we calculate the electrostatic
  * forces and energies on excluded atom pairs here in the non-bonded loops.
  */
-#if defined CHECK_EXCLS && defined CALC_COULOMB
+#if defined CHECK_EXCLS && (defined CALC_COULOMB || defined LJ_EWALD)
 #define EXCL_FORCES
 #endif
 
@@ -70,7 +70,7 @@
             real rinvsq, rinvsix;
             real c6, c12;
             real FrLJ6 = 0, FrLJ12 = 0, frLJ = 0, VLJ = 0;
-#if defined VDW_FORCE_SWITCH || defined VDW_POT_SWITCH
+#if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
             real r, rsw;
 #endif
 
@@ -151,10 +151,11 @@
             if (i < UNROLLI/2)
 #endif
             {
-                rinvsix = interact*rinvsq*rinvsq*rinvsq;
-
                 c6      = nbfp[type_i_off+type[aj]*2  ];
                 c12     = nbfp[type_i_off+type[aj]*2+1];
+
+#if defined LJ_CUT || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
+                rinvsix = interact*rinvsq*rinvsq*rinvsq;
                 FrLJ6   = c6*rinvsix;
                 FrLJ12  = c12*rinvsix*rinvsix;
                 frLJ    = FrLJ12 - FrLJ6;
@@ -164,14 +165,15 @@
                     (FrLJ6 + c6*ic->dispersion_shift.cpot)/6;
                 /* 7 flops for LJ energy */
 #endif
+#endif
 
-#if defined VDW_FORCE_SWITCH || defined VDW_POT_SWITCH
+#if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
                 /* Force or potential switching from ic->rvdw_switch */
                 r       = rsq*rinv;
                 rsw     = r - ic->rvdw_switch;
                 rsw     = (rsw >= 0.0 ? rsw : 0.0);
 #endif
-#ifdef VDW_FORCE_SWITCH
+#ifdef LJ_FORCE_SWITCH
                 frLJ   +=
                     -c6*(ic->dispersion_shift.c2 + ic->dispersion_shift.c3*rsw)*rsw*rsw*r
                     + c12*(ic->repulsion_shift.c2 + ic->repulsion_shift.c3*rsw)*rsw*rsw*r;
@@ -183,16 +185,14 @@
 #endif
 
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-                /* Masking shoule be done after force switching,
+                /* Masking should be done after force switching,
                  * but before potential switching.
                  */
-                /* Need to zero the interaction if r >= rcut
-                 * or there should be exclusion. */
-                VLJ     = VLJ * skipmask * interact;
-                /* 2 more flops for LJ energy */
+                /* Need to zero the interaction if there should be exclusion. */
+                VLJ     = VLJ * interact;
 #endif
 
-#ifdef VDW_POT_SWITCH
+#ifdef LJ_POT_SWITCH
                 {
                     real sw, dsw;
 
@@ -203,6 +203,52 @@
                     VLJ  *= sw;
                 }
 #endif
+
+#ifdef LJ_EWALD
+                {
+                    real c6grid, rinvsix_nm, cr2, expmcr2, poly, sh_mask;
+
+#ifdef LJ_EWALD_COMB_GEOM
+                    c6grid       = ljc[type[ai]*2]*ljc[type[aj]*2];
+#elif defined LJ_EWALD_COMB_LB
+                    {
+                        real sigma, sigma2, epsilon;
+
+                        /* These sigma and epsilon are scaled to give 6*C6 */
+                        sigma   = ljc[type[ai]*2] + ljc[type[aj]*2];
+                        epsilon = ljc[type[ai]*2+1]*ljc[type[aj]*2+1];
+
+                        sigma2  = sigma*sigma;
+                        c6grid  = epsilon*sigma2*sigma2*sigma2;
+                    }
+#else
+#error "No LJ Ewald combination rule defined"
+#endif
+
+#ifdef CHECK_EXCLS
+                    /* Recalculate rinvsix without exclusion mask */
+                    rinvsix_nm   = rinvsq*rinvsq*rinvsq;
+#else
+                    rinvsix_nm   = rinvsix;
+#endif
+                    cr2          = lje_coeff2*rsq;
+#ifdef GMX_DOUBLE
+                    expmcr2      = exp(-cr2);
+#else
+                    expmcr2      = expf(-cr2);
+#endif
+                    poly         = 1 + cr2 + 0.5*cr2*cr2;
+
+                    /* Subtract the grid force from the total LJ force */
+                    frLJ        += c6grid*(rinvsix_nm - expmcr2*(rinvsix_nm*poly + lje_coeff6_6));
+#ifdef CALC_ENERGIES
+                    /* Shift should only be applied to real LJ pairs */
+                    sh_mask      = lje_vc*interact;
+
+                    VLJ         += c6grid/6*(rinvsix_nm*(1 - expmcr2*poly) + sh_mask);
+#endif
+                }
+#endif          /* LJ_EWALD */
 
 #ifdef VDW_CUTOFF_CHECK
                 /* Mask for VdW cut-off shorter than Coulomb cut-off */
@@ -215,7 +261,14 @@
                     VLJ    *= skipmask_rvdw;
 #endif
                 }
+#else
+#if defined CALC_ENERGIES
+                /* Need to zero the interaction if r >= rcut */
+                VLJ     = VLJ * skipmask;
+                /* 1 more flop for LJ energy */
 #endif
+#endif          /* VDW_CUTOFF_CHECK */
+
 
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS

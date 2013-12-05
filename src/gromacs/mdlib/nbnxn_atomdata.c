@@ -45,6 +45,7 @@
 #include "vec.h"
 #include "nbnxn_consts.h"
 #include "nbnxn_internal.h"
+#include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gmx_omp_nthreads.h"
@@ -367,9 +368,27 @@ static void set_ljparam_simd_data(nbnxn_atomdata_t *nbat)
 
     nt = nbat->ntype;
 
+    /* nbfp_s4 stores two parameters using a stride of 4,
+     * because this would suit x86 SIMD single-precision
+     * quad-load intrinsics. There's a slight inefficiency in
+     * allocating and initializing nbfp_s4 when it might not
+     * be used, but introducing the conditional code is not
+     * really worth it. */
+    nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
+    for (i = 0; i < nt; i++)
+    {
+        for (j = 0; j < nt; j++)
+        {
+            nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
+            nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
+            nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
+            nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
+        }
+    }
+
     switch (nbat->comb_rule)
     {
-        case  ljcrGEOM:
+        case ljcrGEOM:
             nbat->comb_rule = ljcrGEOM;
 
             for (i = 0; i < nt; i++)
@@ -401,23 +420,7 @@ static void set_ljparam_simd_data(nbnxn_atomdata_t *nbat)
             }
             break;
         case ljcrNONE:
-            /* nbfp_s4 stores two parameters using a stride of 4,
-             * because this would suit x86 SIMD single-precision
-             * quad-load intrinsics. There's a slight inefficiency in
-             * allocating and initializing nbfp_s4 when it might not
-             * be used, but introducing the conditional code is not
-             * really worth it. */
-            nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
-            for (i = 0; i < nt; i++)
-            {
-                for (j = 0; j < nt; j++)
-                {
-                    nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
-                    nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
-                    nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
-                    nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
-                }
-            }
+            /* We always store the full matrix (see code above) */
             break;
         default:
             gmx_incons("Unknown combination rule");
@@ -514,7 +517,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 void nbnxn_atomdata_init(FILE *fp,
                          nbnxn_atomdata_t *nbat,
                          int nb_kernel_type,
-                         gmx_bool bTryCombinationRule,
+                         int enbnxninitcombrule,
                          int ntype, const real *nbfp,
                          int n_energygroups,
                          int nout,
@@ -636,44 +639,53 @@ void nbnxn_atomdata_init(FILE *fp,
 
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
-    if (bTryCombinationRule)
+    switch (enbnxninitcombrule)
     {
-        /* We prefer the geometic combination rule,
-         * as that gives a slightly faster kernel than the LB rule.
-         */
-        if (bCombGeom)
-        {
-            nbat->comb_rule = ljcrGEOM;
-        }
-        else if (bCombLB)
-        {
-            nbat->comb_rule = ljcrLB;
-        }
-        else
-        {
-            nbat->comb_rule = ljcrNONE;
-
-            nbat->free(nbat->nbfp_comb);
-        }
-
-        if (fp)
-        {
-            if (nbat->comb_rule == ljcrNONE)
+        case enbnxninitcombruleDETECT:
+            /* We prefer the geometic combination rule,
+             * as that gives a slightly faster kernel than the LB rule.
+             */
+            if (bCombGeom)
             {
-                fprintf(fp, "Using full Lennard-Jones parameter combination matrix\n\n");
+                nbat->comb_rule = ljcrGEOM;
+            }
+            else if (bCombLB)
+            {
+                nbat->comb_rule = ljcrLB;
             }
             else
             {
-                fprintf(fp, "Using %s Lennard-Jones combination rule\n\n",
-                        nbat->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
-            }
-        }
-    }
-    else
-    {
-        nbat->comb_rule = ljcrNONE;
+                nbat->comb_rule = ljcrNONE;
 
-        nbat->free(nbat->nbfp_comb);
+                nbat->free(nbat->nbfp_comb);
+            }
+
+            if (fp)
+            {
+                if (nbat->comb_rule == ljcrNONE)
+                {
+                    fprintf(fp, "Using full Lennard-Jones parameter combination matrix\n\n");
+                }
+                else
+                {
+                    fprintf(fp, "Using %s Lennard-Jones combination rule\n\n",
+                            nbat->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
+                }
+            }
+            break;
+        case enbnxninitcombruleGEOM:
+            nbat->comb_rule = ljcrGEOM;
+            break;
+        case enbnxninitcombruleLB:
+            nbat->comb_rule = ljcrLB;
+            break;
+        case enbnxninitcombruleNONE:
+            nbat->comb_rule = ljcrNONE;
+
+            nbat->free(nbat->nbfp_comb);
+            break;
+        default:
+            gmx_incons("Unknown enbnxninitcombrule");
     }
 
     if (simple)
