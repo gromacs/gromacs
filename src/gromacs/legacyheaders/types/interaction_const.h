@@ -67,6 +67,7 @@ typedef struct {
 
 typedef struct {
     /* VdW */
+    int             vdwtype;
     int             vdw_modifier;
     real            rvdw;
     real            rvdw_switch;
@@ -80,6 +81,7 @@ typedef struct {
 
     /* type of electrostatics (defined in enums.h) */
     int  eeltype;
+    int  coulomb_modifier;
 
     /* Coulomb */
     real rcoulomb;
@@ -91,7 +93,9 @@ typedef struct {
     /* PME/Ewald */
     real ewaldcoeff_q;
     real ewaldcoeff_lj;
-    real sh_ewald;   /* -sh_ewald is added to the direct space potential */
+    int  ljpme_comb_rule; /* LJ combination rule for the LJ PME mesh part */
+    real sh_ewald;        /* -sh_ewald is added to the direct space potential */
+    real sh_lj_ewald;     /* sh_lj_ewald is added to the correction potential */
 
     /* Dielectric constant resp. multiplication factor for charges */
     real epsilon_r;

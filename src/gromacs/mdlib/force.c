@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -535,8 +535,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                                        cr, t, fr,
                                        md->chargeA,
                                        md->nChargePerturbed ? md->chargeB : NULL,
-                                       md->c6A,
-                                       md->nChargePerturbed ? md->c6B : NULL,
+                                       md->sqrt_c6A,
+                                       md->nChargePerturbed ? md->sqrt_c6B : NULL,
                                        md->sigmaA,
                                        md->nChargePerturbed ? md->sigmaB : NULL,
                                        md->sigma3A,
@@ -562,7 +562,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                 wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
 
-            if (fr->n_tpi == 0)
+            if (EEL_EWALD(fr->eeltype) && fr->n_tpi == 0)
             {
                 Vcorr_q += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
                                                    &dvdl_long_range_correction_q,
@@ -615,7 +615,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                                         md->start, md->homenr - fr->n_tpi,
                                         x, fr->f_novirsum,
                                         md->chargeA, md->chargeB,
-                                        md->c6A, md->c6B,
+                                        md->sqrt_c6A, md->sqrt_c6B,
                                         md->sigmaA, md->sigmaB,
                                         bSB ? boxs : box, cr,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
@@ -667,11 +667,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                              lambda[efptCOUL], &dvdl_long_range_q, fr->ewald_table);
             PRINT_SEPDVDL("Ewald long-range", Vlr_q, dvdl_long_range_q);
         }
-        else if (!EEL_EWALD(fr->eeltype))
-        {
-            gmx_fatal(FARGS, "No such electrostatics method implemented %s",
-                      eel_names[fr->eeltype]);
-        }
+
         /* Note that with separate PME nodes we get the real energies later */
         enerd->dvdl_lin[efptCOUL] += dvdl_long_range_q;
         enerd->dvdl_lin[efptVDW]  += dvdl_long_range_lj;
