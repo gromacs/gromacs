@@ -2618,10 +2618,10 @@ in reciprocal space is determined by {\tt lj-pme-comb-rule}. If the
 current force field uses Lorentz-Berthelot combination rules, it is
 possible to set {\tt lj-pme-comb-rule = geometric} in order to gain a
 significant increase in performance for a small loss in accuracy. The
-details of this approximation can be found in the section above.  The
-implementation of LJ-PME is currently unsupported together with the
-Verlet cut-off scheme and/or free energy calculations. These features
-will be added in upcoming releases
+details of this approximation can be found in the section above. The
+implementation of LJ-PME is supported with both cut-off schemes, but
+not free energy calculations. These features will be added in upcoming
+releases.
 %} % Brace matches ifthenelse test for gmxlite
 
 \section{Force field\index{force field}}
