@@ -63,14 +63,20 @@
 #endif
 #endif
 
-#ifdef VDW_FORCE_SWITCH
-#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJFsw, feg)
-#else
-#ifdef VDW_POT_SWITCH
-#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJPsw, feg)
-#else
+#if defined LJ_CUT && !defined LJ_EWALD
 #define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJ, feg)
+#elif defined LJ_FORCE_SWITCH
+#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJFsw, feg)
+#elif defined LJ_POT_SWITCH
+#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJPsw, feg)
+#elif defined LJ_EWALD
+#ifdef LJ_EWALD_COMB_GEOM
+#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombGeom, feg)
+#else
+#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombLB, feg)
 #endif
+#else
+#error "No VdW type defined"
 #endif
 
 static void
@@ -117,7 +123,7 @@ NBK_FUNC_NAME(_VgrpF)
     real               *nbfp_i;
     int                 n, ci, ci_sh;
     int                 ish, ishf;
-    gmx_bool            do_LJ, half_LJ, do_coul;
+    gmx_bool            do_LJ, half_LJ, do_coul, do_self;
     int                 cjind0, cjind1, cjind;
     int                 ip, jp;
 
@@ -134,9 +140,13 @@ NBK_FUNC_NAME(_VgrpF)
     int        egp_sh_i[UNROLLI];
 #endif
 #endif
-#ifdef VDW_POT_SWITCH
+#ifdef LJ_POT_SWITCH
     real       swV3, swV4, swV5;
     real       swF2, swF3, swF4;
+#endif
+#ifdef LJ_EWALD
+    real        lje_coeff2, lje_coeff6_6, lje_vc;
+    const real *ljc;
 #endif
 
 #ifdef CALC_COUL_RF
@@ -164,13 +174,21 @@ NBK_FUNC_NAME(_VgrpF)
     int npair = 0;
 #endif
 
-#ifdef VDW_POT_SWITCH
+#ifdef LJ_POT_SWITCH
     swV3 = ic->vdw_switch.c3;
     swV4 = ic->vdw_switch.c4;
     swV5 = ic->vdw_switch.c5;
     swF2 = 3*ic->vdw_switch.c3;
     swF3 = 4*ic->vdw_switch.c4;
     swF4 = 5*ic->vdw_switch.c5;
+#endif
+
+#ifdef LJ_EWALD
+    lje_coeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
+    lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2/6.0;
+    lje_vc       = ic->sh_lj_ewald;
+
+    ljc          = nbat->nbfp_comb;
 #endif
 
 #ifdef CALC_COUL_RF
@@ -239,6 +257,11 @@ NBK_FUNC_NAME(_VgrpF)
         do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
         do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
         half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
+#ifdef LJ_EWALD
+        do_self = TRUE;
+#else
+        do_self = do_coul;
+#endif
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
@@ -259,11 +282,13 @@ NBK_FUNC_NAME(_VgrpF)
                 xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
                 fi[i*FI_STRIDE+d] = 0;
             }
+
+            qi[i] = facel*q[ci*UNROLLI+i];
         }
 
-        if (do_coul)
-        {
 #ifdef CALC_ENERGIES
+        if (do_self)
+        {
             real Vc_sub_self;
 
 #ifdef CALC_COUL_RF
@@ -276,25 +301,28 @@ NBK_FUNC_NAME(_VgrpF)
             Vc_sub_self = 0.5*tab_coul_FDV0[2];
 #endif
 #endif
-#endif
 
-            for (i = 0; i < UNROLLI; i++)
+            if (l_cj[nbln->cj_ind_start].cj == ci_sh)
             {
-                qi[i] = facel*q[ci*UNROLLI+i];
-
-#ifdef CALC_ENERGIES
-                if (l_cj[nbln->cj_ind_start].cj == ci_sh)
+                for (i = 0; i < UNROLLI; i++)
                 {
+                    int egp_ind;
 #ifdef ENERGY_GROUPS
-                    Vc[egp_sh_i[i]+((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)]
+                    egp_ind = egp_sh_i[i] + ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask);
 #else
-                    Vc[0]
+                    egp_ind = 0;
 #endif
-                        -= qi[i]*q[ci*UNROLLI+i]*Vc_sub_self;
+                    /* Coulomb self interaction */
+                    Vc[egp_ind]   -= qi[i]*q[ci*UNROLLI+i]*Vc_sub_self;
+
+#ifdef LJ_EWALD
+                    /* LJ Ewald self interaction */
+                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(nbat->ntype + 1)*2]/6*lje_coeff6_6;
+#endif
                 }
-#endif
             }
         }
+#endif  /* CALC_ENERGIES */
 
         cjind = cjind0;
         while (cjind < cjind1 && nbl->cj[cjind].excl != 0xffff)
