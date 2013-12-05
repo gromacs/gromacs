@@ -67,15 +67,20 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                             rvec *x, int nbatFormat, real *xnb, int a0,
                             int cx, int cy, int cz);
 
+enum {
+    enbnxninitcombruleDETECT, enbnxninitcombruleGEOM, enbnxninitcombruleLB, enbnxninitcombruleNONE
+};
+
 /* Initialize the non-bonded atom data structure.
  * The enum for nbatXFormat is in the file defining nbnxn_atomdata_t.
  * Copy the ntypes*ntypes*2 sized nbfp non-bonded parameter list
  * to the atom data structure.
+ * enbnxninitcombrule sets what combination rule data gets stored in nbat.
  */
 void nbnxn_atomdata_init(FILE *fp,
                          nbnxn_atomdata_t *nbat,
                          int nb_kernel_type,
-                         gmx_bool bTryCombinationRule,
+                         int enbnxninitcombrule,
                          int ntype, const real *nbfp,
                          int n_energygroups,
                          int nout,

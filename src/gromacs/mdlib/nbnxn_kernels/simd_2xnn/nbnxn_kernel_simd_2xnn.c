@@ -70,7 +70,7 @@ enum {
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch functions.
  */
-static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
+static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+3] =
 {
     {
         nbnxn_kernel_ElecRF_VdwLJCombGeom_F_2xnn,
@@ -78,6 +78,7 @@ static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecRF_VdwLJ_F_2xnn,
         nbnxn_kernel_ElecRF_VdwLJFSw_F_2xnn,
         nbnxn_kernel_ElecRF_VdwLJPSw_F_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_2xnn,
     },
     {
         nbnxn_kernel_ElecQSTab_VdwLJCombGeom_F_2xnn,
@@ -85,6 +86,7 @@ static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecQSTab_VdwLJ_F_2xnn,
         nbnxn_kernel_ElecQSTab_VdwLJFSw_F_2xnn,
         nbnxn_kernel_ElecQSTab_VdwLJPSw_F_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_F_2xnn,
     },
     {
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_F_2xnn,
@@ -92,6 +94,7 @@ static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_2xnn,
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_F_2xnn,
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_F_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_F_2xnn,
     },
     {
         nbnxn_kernel_ElecEw_VdwLJCombGeom_F_2xnn,
@@ -99,6 +102,7 @@ static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecEw_VdwLJ_F_2xnn,
         nbnxn_kernel_ElecEw_VdwLJFSw_F_2xnn,
         nbnxn_kernel_ElecEw_VdwLJPSw_F_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_2xnn,
     },
     {
         nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_2xnn,
@@ -106,10 +110,11 @@ static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_2xnn,
         nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_F_2xnn,
         nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_F_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_2xnn,
     },
 };
 
-static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
+static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+3] =
 {
     {
         nbnxn_kernel_ElecRF_VdwLJCombGeom_FE_2xnn,
@@ -117,6 +122,7 @@ static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecRF_VdwLJ_FE_2xnn,
         nbnxn_kernel_ElecRF_VdwLJFSw_FE_2xnn,
         nbnxn_kernel_ElecRF_VdwLJPSw_FE_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJEwCombGeom_FE_2xnn,
     },
     {
         nbnxn_kernel_ElecQSTab_VdwLJCombGeom_FE_2xnn,
@@ -124,6 +130,7 @@ static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecQSTab_VdwLJ_FE_2xnn,
         nbnxn_kernel_ElecQSTab_VdwLJFSw_FE_2xnn,
         nbnxn_kernel_ElecQSTab_VdwLJPSw_FE_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_FE_2xnn,
     },
     {
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_FE_2xnn,
@@ -131,6 +138,7 @@ static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_FE_2xnn,
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_FE_2xnn,
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_FE_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_FE_2xnn,
     },
     {
         nbnxn_kernel_ElecEw_VdwLJCombGeom_FE_2xnn,
@@ -138,6 +146,7 @@ static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecEw_VdwLJ_FE_2xnn,
         nbnxn_kernel_ElecEw_VdwLJFSw_FE_2xnn,
         nbnxn_kernel_ElecEw_VdwLJPSw_FE_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJEwCombGeom_FE_2xnn,
     },
     {
         nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_FE_2xnn,
@@ -145,10 +154,11 @@ static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecEwTwinCut_VdwLJ_FE_2xnn,
         nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_FE_2xnn,
         nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_FE_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_FE_2xnn,
     },
 };
 
-static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
+static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+3] =
 {
     {
         nbnxn_kernel_ElecRF_VdwLJCombGeom_FEgrp_2xnn,
@@ -156,6 +166,7 @@ static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecRF_VdwLJ_FEgrp_2xnn,
         nbnxn_kernel_ElecRF_VdwLJFSw_FEgrp_2xnn,
         nbnxn_kernel_ElecRF_VdwLJPSw_FEgrp_2xnn,
+        nbnxn_kernel_ElecRF_VdwLJEwCombGeom_FEgrp_2xnn,
     },
     {
         nbnxn_kernel_ElecQSTab_VdwLJCombGeom_FEgrp_2xnn,
@@ -163,6 +174,7 @@ static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecQSTab_VdwLJ_FEgrp_2xnn,
         nbnxn_kernel_ElecQSTab_VdwLJFSw_FEgrp_2xnn,
         nbnxn_kernel_ElecQSTab_VdwLJPSw_FEgrp_2xnn,
+        nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_FEgrp_2xnn,
     },
     {
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_FEgrp_2xnn,
@@ -170,6 +182,7 @@ static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_FEgrp_2xnn,
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_FEgrp_2xnn,
         nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_FEgrp_2xnn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_FEgrp_2xnn,
     },
     {
         nbnxn_kernel_ElecEw_VdwLJCombGeom_FEgrp_2xnn,
@@ -177,6 +190,7 @@ static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecEw_VdwLJ_FEgrp_2xnn,
         nbnxn_kernel_ElecEw_VdwLJFSw_FEgrp_2xnn,
         nbnxn_kernel_ElecEw_VdwLJPSw_FEgrp_2xnn,
+        nbnxn_kernel_ElecEw_VdwLJEwCombGeom_FEgrp_2xnn,
     },
     {
         nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_FEgrp_2xnn,
@@ -184,6 +198,7 @@ static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR+2] =
         nbnxn_kernel_ElecEwTwinCut_VdwLJ_FEgrp_2xnn,
         nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_FEgrp_2xnn,
         nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_FEgrp_2xnn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_FEgrp_2xnn,
     },
 };
 
@@ -285,21 +300,36 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         }
     }
 
-    switch (ic->vdw_modifier)
+    if (ic->vdwtype == evdwCUT)
     {
-        case eintmodNONE:
-        case eintmodPOTSHIFT:
-            ljtreatment = nbat->comb_rule;
-            break;
-        /* Switch functions follow after cut-off combination rule kernels */
-        case eintmodFORCESWITCH:
-            ljtreatment = ljcrNR;
-            break;
-        case eintmodPOTSWITCH:
-            ljtreatment = ljcrNR + 1;
-            break;
-        default:
-            gmx_incons("Unsupported VdW interaction modifier");
+        switch (ic->vdw_modifier)
+        {
+            case eintmodNONE:
+            case eintmodPOTSHIFT:
+                ljtreatment = nbat->comb_rule;
+                break;
+            /* Switch functions follow after cut-off combination rule kernels */
+            case eintmodFORCESWITCH:
+                ljtreatment = ljcrNR;
+                break;
+            case eintmodPOTSWITCH:
+                ljtreatment = ljcrNR + 1;
+                break;
+            default:
+                gmx_incons("Unsupported VdW interaction modifier");
+        }
+    }
+    else if (ic->vdwtype == evdwPME)
+    {
+        if (ic->ljpme_comb_rule == eljpmeLB)
+        {
+            gmx_incons("The nbnxn SIMD kernels don't suport LJ-PME with LB");
+        }
+        ljtreatment = ljcrNR + 2;
+    }
+    else
+    {
+        gmx_incons("Unsupported VdW interaction type");
     }
 
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))

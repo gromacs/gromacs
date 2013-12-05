@@ -47,6 +47,7 @@
 #include "nbnxn_kernel_simd_2xnn.h"
 
 #define CALC_COUL_EWALD
+#define LJ_CUT
 #define LJ_COMB_GEOM
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
