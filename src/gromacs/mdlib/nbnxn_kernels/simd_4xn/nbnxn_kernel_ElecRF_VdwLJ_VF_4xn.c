@@ -47,7 +47,8 @@
 #include "nbnxn_kernel_simd_4xn.h"
 
 #define CALC_COUL_RF
-/* Use no LJ combination rule */
+#define LJ_CUT
+/* Use full LJ combination matrix */
 #define CALC_ENERGIES
 
 #ifdef GMX_NBNXN_SIMD_4XN
