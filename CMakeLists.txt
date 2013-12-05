@@ -52,7 +52,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # machine with no git.
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "5.0-beta1-dev")
+set(PROJECT_VERSION "5.0-beta2-dev")
 # The version number of the regressiontest tarball against which this
 # git branch can be tested. Normally, this will be the version of the
 # last patch release. Comment the next line out for branches leading
