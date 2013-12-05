@@ -47,6 +47,7 @@
 #include "nbnxn_kernel_simd_2xnn.h"
 
 #define CALC_COUL_RF
+#define LJ_CUT
 #define LJ_COMB_LB
 #define CALC_ENERGIES
 
