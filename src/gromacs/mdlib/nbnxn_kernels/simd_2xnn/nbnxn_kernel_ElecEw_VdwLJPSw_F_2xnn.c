@@ -47,8 +47,8 @@
 #include "nbnxn_kernel_simd_2xnn.h"
 
 #define CALC_COUL_EWALD
-/* Use no LJ combination rule */
 #define LJ_POT_SWITCH
+/* Use full LJ combination matrix */
 /* Will not calculate energies */
 
 #ifdef GMX_NBNXN_SIMD_2XNN

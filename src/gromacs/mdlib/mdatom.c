@@ -114,12 +114,14 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
               int start, int homenr,
               t_mdatoms *md)
 {
+    gmx_bool              bLJPME;
     gmx_mtop_atomlookup_t alook;
     int                   i;
     t_grpopts            *opts;
-    real                  c6, c12;
     gmx_groups_t         *groups;
     gmx_molblock_t       *molblock;
+
+    bLJPME = EVDW_PME(ir->vdwtype);
 
     opts = &ir->opts;
 
@@ -152,15 +154,21 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
         srenew(md->massT, md->nalloc);
         srenew(md->invmass, md->nalloc);
         srenew(md->chargeA, md->nalloc);
-        srenew(md->c6A, md->nalloc);
-        srenew(md->sigmaA, md->nalloc);
-        srenew(md->sigma3A, md->nalloc);
+        if (bLJPME)
+        {
+            srenew(md->sqrt_c6A, md->nalloc);
+            srenew(md->sigmaA, md->nalloc);
+            srenew(md->sigma3A, md->nalloc);
+        }
         if (md->nPerturbed)
         {
             srenew(md->chargeB, md->nalloc);
-            srenew(md->c6B, md->nalloc);
-            srenew(md->sigmaB, md->nalloc);
-            srenew(md->sigma3B, md->nalloc);
+            if (bLJPME)
+            {
+                srenew(md->sqrt_c6B, md->nalloc);
+                srenew(md->sigmaB, md->nalloc);
+                srenew(md->sigma3B, md->nalloc);
+            }
         }
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
@@ -229,6 +237,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
     {
         int      g, ag, molb;
         real     mA, mB, fac;
+        real     c6, c12;
         t_atom  *atom;
 
         if (index == NULL)
@@ -313,36 +322,41 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
         }
         md->chargeA[i]      = atom->q;
         md->typeA[i]        = atom->type;
-        c6                  = mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c6;
-        c12                 = mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c12;
-        md->c6A[i]          = sqrt(c6);
-        if (c6 == 0.0 || c12 == 0.0)
+        if (bLJPME)
         {
-            md->sigmaA[i]     = 1.0;
+            c6                = mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c6;
+            c12               = mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c12;
+            md->sqrt_c6A[i]   = sqrt(c6);
+            if (c6 == 0.0)
+            {
+                md->sigmaA[i] = 1.0;
+            }
+            else
+            {
+                md->sigmaA[i] = pow(c12/c6, 1.0/6.0);
+            }
+            md->sigma3A[i]    = 1/(md->sigmaA[i]*md->sigmaA[i]*md->sigmaA[i]);
         }
-        else
-        {
-            md->sigmaA[i]     = pow(c12/c6, 1.0/6.0);
-        }
-        md->sigma3A[i] = 1/(md->sigmaA[i]*md->sigmaA[i]*md->sigmaA[i]);
-
         if (md->nPerturbed)
         {
             md->chargeB[i]    = atom->qB;
             md->typeB[i]      = atom->typeB;
-            c6                = mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c6;
-            c12               = mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c12;
-            md->c6B[i]        = sqrt(c6);
-            if (c6 == 0.0 || c12 == 0.0)
+            if (bLJPME)
             {
-                md->sigmaB[i]   = 1.0;
+                c6                = mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c6;
+                c12               = mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c12;
+                md->sqrt_c6B[i]   = sqrt(c6);
+                if (c6 == 0.0)
+                {
+                    md->sigmaB[i] = 1.0;
+                }
+                else
+                {
+                    md->sigmaB[i] = pow(c12/c6, 1.0/6.0);
+                }
+                md->bPerturbed[i] = PERTURBED(*atom);
+                md->sigma3B[i]    = 1/(md->sigmaB[i]*md->sigmaB[i]*md->sigmaB[i]);
             }
-            else
-            {
-                md->sigmaB[i]   = pow(c12/c6, 1.0/6.0);
-            }
-            md->bPerturbed[i] = PERTURBED(*atom);
-            md->sigma3B[i]    = 1/(md->sigmaB[i]*md->sigmaB[i]*md->sigmaB[i]);
         }
         md->ptype[i]    = atom->ptype;
         if (md->cTC)

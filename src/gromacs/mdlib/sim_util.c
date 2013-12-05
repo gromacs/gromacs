@@ -639,13 +639,19 @@ static void do_nb_verlet(t_forcerec *fr,
     if (ic->vdw_modifier == eintmodFORCESWITCH)
     {
         /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
                  nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
     if (ic->vdw_modifier == eintmodPOTSWITCH)
     {
         /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
+    }
+    if (ic->vdwtype == evdwPME)
+    {
+        /* We add up the LJ Ewald cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_EWALD+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
                  nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
 }
@@ -2259,13 +2265,22 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             virs[0]  +=  pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3);
             virs[1]  += -16.0*M_PI/(3.0*rc9);
         }
-        else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER))
+        else if (fr->vdwtype == evdwCUT ||
+                 fr->vdwtype == evdwPME ||
+                 fr->vdwtype == evdwUSER)
         {
             if (fr->vdwtype == evdwUSER && fplog)
             {
                 fprintf(fplog,
                         "WARNING: using dispersion correction with user tables\n");
             }
+
+            /* Nothe that with LJ-PME the dispersion correction is multiplied
+             * with the difference of C6 with the combination rule C6.
+             * This means the normal energy and virial difference formulas
+             * can be used here.
+             */
+
             rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
             rc9  = rc3*rc3*rc3;
             /* Contribution beyond the cut-off */
@@ -2287,6 +2302,23 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                       "Dispersion correction is not implemented for vdw-type = %s",
                       evdw_names[fr->vdwtype]);
         }
+
+        /* TODO: remove this code once we have group LJ-PME kernels
+         * that calculate the exact, full LJ param C6/r^6 within the cut-off,
+         * as the current nbnxn kernels do.
+         */
+        if (fr->vdwtype == evdwPME && fr->cutoff_scheme == ecutsGROUP)
+        {
+            /* Calculate self-interaction coefficient (assuming that
+             * the reciprocal-space contribution is constant in the
+             * region that contributes to the self-interaction).
+             */
+            fr->enershiftsix = pow(fr->ewaldcoeff_lj, 6) / 6.0;
+
+            eners[0] += -pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3)/3.0;
+            virs[0]  +=  pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3);
+        }
+
         fr->enerdiffsix    = eners[0];
         fr->enerdifftwelve = eners[1];
         /* The 0.5 is due to the Gromacs definition of the virial */
