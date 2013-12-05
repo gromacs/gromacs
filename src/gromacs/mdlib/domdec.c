@@ -9799,7 +9799,7 @@ void dd_partition_system(FILE                *fplog,
         /* Send the charges and/or c6/sigmas to our PME only node */
         gmx_pme_send_parameters(cr, mdatoms->nChargePerturbed, mdatoms->nTypePerturbed,
                                 mdatoms->chargeA, mdatoms->chargeB,
-                                mdatoms->c6A, mdatoms->c6B,
+                                mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA, mdatoms->sigmaB,
                                 dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
     }

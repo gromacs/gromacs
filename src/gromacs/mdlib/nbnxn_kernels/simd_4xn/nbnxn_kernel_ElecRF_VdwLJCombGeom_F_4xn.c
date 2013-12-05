@@ -47,6 +47,7 @@
 #include "nbnxn_kernel_simd_4xn.h"
 
 #define CALC_COUL_RF
+#define LJ_CUT
 #define LJ_COMB_GEOM
 /* Will not calculate energies */
 
