@@ -1163,9 +1163,10 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
 
         if (!b14only && fr->vdw_modifier != eintmodNONE)
         {
-            if (fr->vdwtype != evdwCUT)
+            if (fr->vdw_modifier != eintmodPOTSHIFT &&
+                fr->vdwtype != evdwCUT)
             {
-                gmx_incons("Potential modifiers only implemented for LJ cut-off");
+                gmx_incons("Potential modifiers other than potential-shift are only implemented for LJ cut-off");
             }
 
             switch (fr->vdw_modifier)

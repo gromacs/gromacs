@@ -1149,10 +1149,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             bUseGPU = (hwinfo->gpu_info.ncuda_dev_compatible > 0 ||
                        getenv("GMX_EMULATE_GPU") != NULL);
 
-            if (bUseGPU && (inputrec->vdw_modifier == eintmodFORCESWITCH ||
-                            inputrec->vdw_modifier == eintmodPOTSWITCH))
+            /* TODO add GPU kernels for this and replace this check by:
+             * (bUseGPU && (ir->vdwtype == evdwPME &&
+             *               ir->ljpme_combination_rule == eljpmeLB))
+             * update the message text and the content of nbnxn_acceleration_supported.
+             */
+            if (bUseGPU &&
+                !nbnxn_acceleration_supported(fplog, cr, inputrec, bUseGPU))
             {
-                md_print_warn(cr, fplog, "LJ switch functions are not yet supported on the GPU, falling back to CPU-only");
+                /* Fallback message printed by nbnxn_acceleration_supported */
+                if (bForceUseGPU)
+                {
+                    gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
+                }
                 bUseGPU = FALSE;
             }
 
