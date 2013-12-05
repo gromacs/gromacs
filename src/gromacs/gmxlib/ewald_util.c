@@ -168,7 +168,7 @@ void ewald_LRcorrection(int start, int end,
     vr0_q         = ewc_q*M_2_SQRTPI;
     if (EVDW_PME(fr->vdwtype))
     {
-        vr0_lj        = -pow(ewc_lj, 6)/6.0;
+        vr0_lj    = -pow(ewc_lj, 6)/6.0;
     }
 
     AA           = excl->a;
@@ -543,7 +543,7 @@ void ewald_LRcorrection(int start, int end,
                 Vself_q[q] = ewc_q*one_4pi_eps*fr->q2sum[q]*M_1_SQRTPI;
                 if (EVDW_PME(fr->vdwtype))
                 {
-                    Vself_lj[q] = -pow(ewc_lj, 6)*fr->c6sum[q];
+                    Vself_lj[q] =  fr->c6sum[q]*0.5*vr0_lj;
                 }
             }
 
