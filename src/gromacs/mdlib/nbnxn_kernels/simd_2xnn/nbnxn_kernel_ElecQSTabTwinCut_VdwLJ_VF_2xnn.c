@@ -48,7 +48,8 @@
 
 #define CALC_COUL_TAB
 #define VDW_CUTOFF_CHECK /* Use twin-range cut-off */
-/* Use no LJ combination rule */
+#define LJ_CUT
+/* Use full LJ combination matrix */
 #define CALC_ENERGIES
 
 #ifdef GMX_NBNXN_SIMD_2XNN

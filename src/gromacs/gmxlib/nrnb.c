@@ -116,6 +116,8 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "NxN LJ add F-switch [V&F]",      22 },
     { "NxN LJ add P-switch [F]",        27 }, /* extra cost for LJ P-switch */
     { "NxN LJ add P-switch [V&F]",      20 },
+    { "NxN LJ add LJ Ewald [F]",        36 }, /* extra cost for LJ Ewald */
+    { "NxN LJ add LJ Ewald [V&F]",      33 },
     { "1,4 nonbonded interactions",     90 },
     { "Born radii (Still)",             47 },
     { "Born radii (HCT/OBC)",          183 },
@@ -314,10 +316,10 @@ static gmx_bool nrnb_is_nbnxn_vdw_kernel(int enr)
     return (enr >= eNR_NBNXN_LJ_RF && enr <= eNR_NBNXN_LJ_E);
 }
 
-/* Returns in enr is the index of an nbnxn kernel addition (switch function) */
+/* Returns in enr is the index of an nbnxn kernel addition (LJ modification) */
 static gmx_bool nrnb_is_nbnxn_kernel_addition(int enr)
 {
-    return (enr >= eNR_NBNXN_LJ_FSW && enr <= eNR_NBNXN_LJ_PSW_E);
+    return (enr >= eNR_NBNXN_ADD_LJ_FSW && enr <= eNR_NBNXN_ADD_LJ_EWALD_E);
 }
 
 void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
@@ -392,8 +394,8 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
             flop    = nbdata[i].flop;
             if (nrnb_is_nbnxn_vdw_kernel(i))
             {
-                /* Possibly add the cost of a switch function */
-                for (j = eNR_NBNXN_LJ_FSW; j <= eNR_NBNXN_LJ_PSW; j += 2)
+                /* Possibly add the cost of an LJ switch/Ewald function */
+                for (j = eNR_NBNXN_ADD_LJ_FSW; j <= eNR_NBNXN_ADD_LJ_EWALD; j += 2)
                 {
                     int e_kernel_add;
 
