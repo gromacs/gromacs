@@ -1620,11 +1620,6 @@ int gmx_grompp(int argc, char *argv[])
 
         /* Remove all charge groups */
         gmx_mtop_remove_chargegroups(sys);
-
-        if (EVDW_PME(ir->vdwtype))
-        {
-            gmx_fatal(FARGS, "LJ-PME not implemented together with verlet-scheme!");
-        }
     }
 
     if (count_constraints(sys, mi, wi) && (ir->eConstrAlg == econtSHAKE))

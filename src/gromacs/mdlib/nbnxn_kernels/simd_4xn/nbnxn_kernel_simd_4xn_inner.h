@@ -228,7 +228,7 @@
     gmx_mm_pr  c6s_j_S, c12s_j_S;
 #endif
 
-#if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+#if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
     /* Index for loading LJ parameters, complicated when interleaving */
     int         aj2;
 #endif
@@ -282,7 +282,7 @@
 
     /* Atom indices (of the first atom in the cluster) */
     aj            = cj*UNROLLJ;
-#if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB)
+#if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM)
 #if UNROLLJ == STRIDE
     aj2           = aj*2;
 #else
@@ -720,8 +720,8 @@
 #endif
 #endif
 
-#ifndef LJ_FORCE_SWITCH
-    /* We have plain LJ with simple C6/6 C12/12 coefficients */
+#if defined LJ_CUT || defined LJ_POT_SWITCH
+    /* We have plain LJ or LJ-PME with simple C6/6 C12/12 coefficients */
     FrLJ6_S0    = gmx_mul_pr(c6_S0, rinvsix_S0);
     FrLJ6_S1    = gmx_mul_pr(c6_S1, rinvsix_S1);
 #ifndef HALF_LJ
@@ -855,8 +855,9 @@
     frLJ_S3     = gmx_sub_pr(FrLJ12_S3, FrLJ6_S3);
 #endif
 
-#if defined CALC_ENERGIES && !defined LJ_POT_SWITCH
-#ifndef LJ_FORCE_SWITCH
+#if (defined LJ_CUT || defined LJ_FORCE_SWITCH) && defined CALC_ENERGIES
+
+#ifdef LJ_CUT
     /* Calculate the LJ energies, with constant potential shift */
     VLJ6_S0     = gmx_mul_pr(sixth_S, gmx_madd_pr(c6_S0, p6_cpot_S, FrLJ6_S0));
     VLJ6_S1     = gmx_mul_pr(sixth_S, gmx_madd_pr(c6_S1, p6_cpot_S, FrLJ6_S1));
@@ -870,8 +871,9 @@
     VLJ12_S2    = gmx_mul_pr(twelveth_S, gmx_madd_pr(c12_S2, p12_cpot_S, FrLJ12_S2));
     VLJ12_S3    = gmx_mul_pr(twelveth_S, gmx_madd_pr(c12_S3, p12_cpot_S, FrLJ12_S3));
 #endif
-#else
+#endif /* LJ_CUT */
 
+#ifdef LJ_FORCE_SWITCH
 #define v_fswitch_pr(rsw, rsw2, c0, c3, c4) gmx_madd_pr(gmx_madd_pr(c4, rsw, c3), gmx_mul_pr(rsw2, rsw), c0)
 
     VLJ6_S0     = gmx_mul_pr(c6_S0, gmx_madd_pr(sixth_S, rinvsix_S0, v_fswitch_pr(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
@@ -896,7 +898,8 @@
     VLJ_S2      = gmx_sub_pr(VLJ12_S2, VLJ6_S2);
     VLJ_S3      = gmx_sub_pr(VLJ12_S3, VLJ6_S3);
 #endif
-#endif /* CALC_ENERGIES && !LJ_POT_SWITCH */
+
+#endif /* (LJ_CUT || LJ_FORCE_SWITCH) && CALC_ENERGIES */
 
 #ifdef LJ_POT_SWITCH
     /* We always need the potential, since it is needed for the force */
@@ -948,6 +951,119 @@
     }
 #endif /* LJ_POT_SWITCH */
 
+#if defined CALC_ENERGIES && defined CHECK_EXCLS
+    /* The potential shift should be removed for excluded pairs */
+    VLJ_S0      = gmx_blendzero_pr(VLJ_S0, interact_S0);
+    VLJ_S1      = gmx_blendzero_pr(VLJ_S1, interact_S1);
+#ifndef HALF_LJ
+    VLJ_S2      = gmx_blendzero_pr(VLJ_S2, interact_S2);
+    VLJ_S3      = gmx_blendzero_pr(VLJ_S3, interact_S3);
+#endif
+#endif
+
+#ifdef LJ_EWALD_GEOM
+    {
+        gmx_mm_pr c6s_j_S;
+        gmx_mm_pr c6grid_S0, rinvsix_nm_S0, cr2_S0, expmcr2_S0, poly_S0;
+        gmx_mm_pr c6grid_S1, rinvsix_nm_S1, cr2_S1, expmcr2_S1, poly_S1;
+#ifndef HALF_LJ
+        gmx_mm_pr c6grid_S2, rinvsix_nm_S2, cr2_S2, expmcr2_S2, poly_S2;
+        gmx_mm_pr c6grid_S3, rinvsix_nm_S3, cr2_S3, expmcr2_S3, poly_S3;
+#endif
+#ifdef CALC_ENERGIES
+        gmx_mm_pr sh_mask_S0;
+        gmx_mm_pr sh_mask_S1;
+#ifndef HALF_LJ
+        gmx_mm_pr sh_mask_S2;
+        gmx_mm_pr sh_mask_S3;
+#endif
+#endif
+
+        /* Determine C6 for the grid using the geometric combination rule */
+        c6s_j_S         = gmx_load_pr(ljc+aj2+0);
+        c6grid_S0       = gmx_mul_pr(c6s_S0, c6s_j_S);
+        c6grid_S1       = gmx_mul_pr(c6s_S1, c6s_j_S);
+#ifndef HALF_LJ
+        c6grid_S2       = gmx_mul_pr(c6s_S2, c6s_j_S);
+        c6grid_S3       = gmx_mul_pr(c6s_S3, c6s_j_S);
+#endif
+
+#ifdef CHECK_EXCLS
+        /* Recalculate rinvsix without exclusion mask (compiler might optimize) */
+        rinvsix_nm_S0 = gmx_mul_pr(rinvsq_S0, gmx_mul_pr(rinvsq_S0, rinvsq_S0));
+        rinvsix_nm_S1 = gmx_mul_pr(rinvsq_S1, gmx_mul_pr(rinvsq_S1, rinvsq_S1));
+#ifndef HALF_LJ
+        rinvsix_nm_S2 = gmx_mul_pr(rinvsq_S2, gmx_mul_pr(rinvsq_S2, rinvsq_S2));
+        rinvsix_nm_S3 = gmx_mul_pr(rinvsq_S3, gmx_mul_pr(rinvsq_S3, rinvsq_S3));
+#endif
+#else
+        /* We didn't use a mask, so we can copy */
+        rinvsix_nm_S0 = rinvsix_S0;
+        rinvsix_nm_S1 = rinvsix_S1;
+#ifndef HALF_LJ
+        rinvsix_nm_S2 = rinvsix_S2;
+        rinvsix_nm_S3 = rinvsix_S3;
+#endif
+#endif
+
+        cr2_S0        = gmx_mul_pr(lje_c2_S, rsq_S0);
+        cr2_S1        = gmx_mul_pr(lje_c2_S, rsq_S1);
+#ifndef HALF_LJ
+        cr2_S2        = gmx_mul_pr(lje_c2_S, rsq_S2);
+        cr2_S3        = gmx_mul_pr(lje_c2_S, rsq_S3);
+#endif
+        expmcr2_S0    = gmx_exp_pr(gmx_mul_pr(mone_S, cr2_S0));
+        expmcr2_S1    = gmx_exp_pr(gmx_mul_pr(mone_S, cr2_S1));
+#ifndef HALF_LJ
+        expmcr2_S2    = gmx_exp_pr(gmx_mul_pr(mone_S, cr2_S2));
+        expmcr2_S3    = gmx_exp_pr(gmx_mul_pr(mone_S, cr2_S3));
+#endif
+
+        /* 1 + cr2 + 1/2*cr2^2 */
+        poly_S0       = gmx_madd_pr(gmx_madd_pr(half_S, cr2_S0, one_S), cr2_S0, one_S);
+        poly_S1       = gmx_madd_pr(gmx_madd_pr(half_S, cr2_S1, one_S), cr2_S1, one_S);
+#ifndef HALF_LJ
+        poly_S2       = gmx_madd_pr(gmx_madd_pr(half_S, cr2_S2, one_S), cr2_S2, one_S);
+        poly_S3       = gmx_madd_pr(gmx_madd_pr(half_S, cr2_S3, one_S), cr2_S3, one_S);
+#endif
+
+        /* We calculate LJ F*r = (6*C6)*(r^-6 - F_mesh/6), we use:
+         * r^-6*cexp*(1 + cr2 + cr2^2/2 + cr2^3/6) = cexp*(r^-6*poly + c^6/6)
+         */
+        frLJ_S0       = gmx_madd_pr(c6grid_S0, gmx_nmsub_pr(expmcr2_S0, gmx_madd_pr(rinvsix_nm_S0, poly_S0, lje_c6_6_S), rinvsix_nm_S0), frLJ_S0);
+        frLJ_S1       = gmx_madd_pr(c6grid_S1, gmx_nmsub_pr(expmcr2_S1, gmx_madd_pr(rinvsix_nm_S1, poly_S1, lje_c6_6_S), rinvsix_nm_S1), frLJ_S1);
+#ifndef HALF_LJ
+        frLJ_S2       = gmx_madd_pr(c6grid_S2, gmx_nmsub_pr(expmcr2_S2, gmx_madd_pr(rinvsix_nm_S2, poly_S2, lje_c6_6_S), rinvsix_nm_S2), frLJ_S2);
+        frLJ_S3       = gmx_madd_pr(c6grid_S3, gmx_nmsub_pr(expmcr2_S3, gmx_madd_pr(rinvsix_nm_S3, poly_S3, lje_c6_6_S), rinvsix_nm_S3), frLJ_S3);
+#endif
+
+#ifdef CALC_ENERGIES
+#ifdef CHECK_EXCLS
+        sh_mask_S0    = gmx_blendzero_pr(lje_vc_S, interact_S0);
+        sh_mask_S1    = gmx_blendzero_pr(lje_vc_S, interact_S1);
+#ifndef HALF_LJ
+        sh_mask_S2    = gmx_blendzero_pr(lje_vc_S, interact_S2);
+        sh_mask_S3    = gmx_blendzero_pr(lje_vc_S, interact_S3);
+#endif
+#else
+        sh_mask_S0    = lje_vc_S;
+        sh_mask_S1    = lje_vc_S;
+#ifndef HALF_LJ
+        sh_mask_S2    = lje_vc_S;
+        sh_mask_S3    = lje_vc_S;
+#endif
+#endif
+
+        VLJ_S0        = gmx_madd_pr(gmx_mul_pr(sixth_S, c6grid_S0), gmx_madd_pr(rinvsix_nm_S0, gmx_nmsub_pr(expmcr2_S0, poly_S0, one_S), sh_mask_S0), VLJ_S0);
+        VLJ_S1        = gmx_madd_pr(gmx_mul_pr(sixth_S, c6grid_S1), gmx_madd_pr(rinvsix_nm_S1, gmx_nmsub_pr(expmcr2_S1, poly_S1, one_S), sh_mask_S1), VLJ_S1);
+#ifndef HALF_LJ
+        VLJ_S2        = gmx_madd_pr(gmx_mul_pr(sixth_S, c6grid_S2), gmx_madd_pr(rinvsix_nm_S2, gmx_nmsub_pr(expmcr2_S2, poly_S2, one_S), sh_mask_S2), VLJ_S2);
+        VLJ_S3        = gmx_madd_pr(gmx_mul_pr(sixth_S, c6grid_S3), gmx_madd_pr(rinvsix_nm_S3, gmx_nmsub_pr(expmcr2_S3, poly_S3, one_S), sh_mask_S3), VLJ_S3);
+#endif
+#endif /* CALC_ENERGIES */
+    }
+#endif /* LJ_EWALD_GEOM */
+
 #if defined VDW_CUTOFF_CHECK
     /* frLJ is multiplied later by rinvsq, which is masked for the Coulomb
      * cut-off, but if the VdW cut-off is shorter, we need to mask with that.
@@ -969,17 +1085,6 @@
     VLJ_S3      = gmx_blendzero_pr(VLJ_S3, wco_vdw_S3);
 #endif
 #endif
-
-#if defined CALC_ENERGIES && defined CHECK_EXCLS
-    /* The potential shift should be removed for excluded pairs */
-    VLJ_S0      = gmx_blendzero_pr(VLJ_S0, interact_S0);
-    VLJ_S1      = gmx_blendzero_pr(VLJ_S1, interact_S1);
-#ifndef HALF_LJ
-    VLJ_S2      = gmx_blendzero_pr(VLJ_S2, interact_S2);
-    VLJ_S3      = gmx_blendzero_pr(VLJ_S3, interact_S3);
-#endif
-#endif
-
 
 #endif /* CALC_LJ */
 
