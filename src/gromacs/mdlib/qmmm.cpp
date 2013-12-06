@@ -752,7 +752,7 @@ void init_QMMMrec(t_commrec  *cr,
 
     /* these variables get updated in the update QMMMrec */
 
-    if (qr->nrQMlayers == 1)
+    if ((qr->nrQMlayers == 1) && (eQMMMschemeslave != qr->QMMMscheme))
     {
         /* with only one layer there is only one initialisation
          * needed. Multilayer is a bit more complicated as it requires

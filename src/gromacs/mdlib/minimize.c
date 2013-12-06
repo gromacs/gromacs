@@ -690,11 +690,9 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
     tensor   force_vir, shake_vir, ekin;
     real     dvdl_constr, prescorr, enercorr, dvdlcorr;
     real     terminate = 0;
-    int      popo      = 0;
 
     /* Set the time to the initial time, the time does not change during EM */
     t = inputrec->init_t;
-    printf("POPO %d\n", popo++);
     if (bFirst ||
         (DOMAINDECOMP(cr) && ems->s.ddp_count < cr->dd->ddp_count))
     {
@@ -718,7 +716,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
             bNS = (nabnsb > 0);
         }
     }
-    printf("POPO %d\n", popo++);
 
     if (vsite)
     {
@@ -726,7 +723,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
                          top->idef.iparams, top->idef.il,
                          fr->ePBC, fr->bMolPBC, graph, cr, ems->s.box);
     }
-    printf("POPO %d\n", popo++);
 
     if (DOMAINDECOMP(cr))
     {
@@ -738,7 +734,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
                                    nrnb, wcycle);
         }
     }
-    printf("POPO %d\n", popo++);
 
     /* Calc force & energy on new trial position  */
     /* do_force always puts the charge groups in the box and shifts again
@@ -752,7 +747,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS | GMX_FORCE_DO_LR : 0));
-    printf("POPO %d\n", popo++);
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -773,7 +767,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
 
         wallcycle_stop(wcycle, ewcMoveE);
     }
-    printf("POPO %d\n", popo++);
 
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(fplog, inputrec, fr, count, top_global->natoms, ems->s.box, ems->s.lambda[efptVDW],
@@ -784,7 +777,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
     enerd->term[F_DVDL]    += dvdlcorr;
 
     ems->epot = enerd->term[F_EPOT];
-    printf("POPO %d\n", popo++);
 
     if (constr)
     {
@@ -808,7 +800,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
     {
         copy_mat(force_vir, vir);
     }
-    printf("POPO %d\n", popo++);
 
     clear_mat(ekin);
     enerd->term[F_PRES] =
@@ -820,7 +811,6 @@ void evaluate_energy(FILE *fplog, t_commrec *cr,
     {
         get_state_f_norm_max(cr, &(inputrec->opts), mdatoms, ems);
     }
-    printf("POPO %d\n", popo++);
 }
 
 static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,

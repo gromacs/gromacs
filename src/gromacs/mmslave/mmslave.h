@@ -59,17 +59,20 @@ class GromacsInABox
         //! Dipole
         rvec mu_tot_;
 
+        //! Force arrays
+        rvec *f_, *f_global_;
+        
         //! Output stuff
         output_env_t oenv_;
 
         //! EM state
-        em_state_t *s_min_;
+        em_state_t *ems_;
 
-        //! Normal state
+        //! Global state
         t_state     state_;
 
         //! Local topology
-        gmx_localtop_t *top_;
+        gmx_localtop_t *ltop_;
 
         //! Flops
         t_nrnb          nrnb_;
@@ -98,7 +101,10 @@ class GromacsInABox
         //! Force record
         t_forcerec *fr_;
 
-        //! Energy data
+        //! Energy data part for I/O
+        t_mdebin       *mdebin_;
+        
+        //! Energy data part for internal use
         gmx_enerdata_t *enerd_;
 
         //! Accounting

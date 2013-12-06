@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdlib/minimize.h"
 #include "gromacs/mmslave.h"
@@ -70,50 +71,57 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
                              const t_inputrec *ir,
                              matrix            box)
 {
-    int koko = 0;
+    t_filenm fnm[] = {
+        { efTPX, NULL,      NULL,       ffREAD },
+        { efTRN, "-o",      NULL,       ffWRITE },
+        { efXTC, "-x",      NULL,       ffOPTWR },
+        { efCPT, "-cpi",    NULL,       ffOPTRD },
+        { efCPT, "-cpo",    NULL,       ffOPTWR },
+        { efSTO, "-c",      "confout",  ffWRITE },
+        { efEDR, "-e",      "ener",     ffWRITE },
+        { efLOG, "-g",      "md",       ffWRITE }
+    };
+    int nfile = sizeof(fnm)/sizeof(fnm[0]);
+    int argc = 0;
+    char *argv[] = { "MM-Slave" };
+    
+    if (!parse_common_args(&argc, argv, 0, nfile, fnm, 0, NULL,
+                           0, NULL, 0, NULL, &oenv_))
+    {
+        GMX_THROW(InvalidInputError("Death Horror"));
+    }
+
     // Initiate everything
-    printf("MOMO %d\n", koko++);
     bFirst_ = TRUE;
 
-    printf("MOMO %d\n", koko++);
+    ems_ = init_em_state();
+    //top_ = gmx_mtop_generate_local_top(mtop, ir);;
 
-    s_min_ = init_em_state();
-    copy_mat(box, s_min_->s.box);
-    printf("MOMO %d\n", koko++);
-
-    top_ = gmx_mtop_generate_local_top(mtop, ir);;
-
-    printf("MOMO %d\n", koko++);
     //! Flops
     init_nrnb(&nrnb_);
-    printf("MOMO %d\n", koko++);
 
     //! CPU Accounting
     wcycle_ = wallcycle_init(fplog, 1, (t_commrec *)cr, cr->nnodes, 0);
-    printf("MOMO %d\n", koko++);
 
     //! Energetics
     gstat_ = global_stat_init((t_inputrec *)ir);
 
-    printf("MOMO %d\n", koko++);
     //! Virtual sites
     vsite_ = NULL; // init_vsite((gmx_mtop_t *)mtop, (t_commrec *)cr, FALSE);
-    printf("MOMO %d\n", koko++);
 
+    //! Global state
+    init_state(&state_, mtop->natoms, 1, 0, 0, 0);
+    copy_mat(box, state_.box);
+    
     //! Constraints
     //gmx_edsam_t ed = NULL;
-    //init_state(&state_, mtop->natoms, 1, 0, 0, 0);
     constr_ = NULL; //init_constraints(fplog, (gmx_mtop_t *)mtop, (t_inputrec *)ir, ed, &state_, (t_commrec *)cr);
-    printf("MOMO %d\n", koko++);
 
     //! FC Data
     fcd_ = (t_fcdata *)calloc(1, sizeof(*fcd_));
-    printf("MOMO %d\n", koko++);
 
     //! Molecular graph
-    graph_ = mk_graph(fplog, &(top_->idef), 0,
-                      mtop->natoms, FALSE, FALSE);
-    printf("MOMO %d\n", koko++);
+    //graph_ = mk_graph(fplog, &(ltop_->idef), 0, mtop->natoms, FALSE, FALSE);
 
     //! MD Atoms
     mdatoms_ = init_mdatoms(fplog, (gmx_mtop_t *)mtop, FALSE);
@@ -121,7 +129,6 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
              0, NULL,
              0, mtop->natoms,
              mdatoms_);
-    printf("MOMO %d\n", koko++);
 
     //! Force record
     output_env_init_default(&oenv_);
@@ -130,16 +137,20 @@ GromacsInABox::GromacsInABox(FILE             *fplog,
                   NULL, NULL, NULL, NULL, NULL,
                   FALSE, 0.0);
     fr_->qr->QMMMscheme = eQMMMschemeslave;
-    printf("MOMO %d\n", koko++);
-
+    fr_->nthreads = 1;
     //! Energy data
     enerd_ = (gmx_enerdata_t *)calloc(1, sizeof(*enerd_));
 
     //! Check lambda stuff
     int n_lambda = 0;
-    init_enerdata(ir->opts.ngener, n_lambda, enerd_);
-    printf("MOMO %d\n", koko++);
-
+    init_enerdata(std::min(1,ir->opts.ngener), n_lambda, enerd_);
+    gmx_mdoutf_t *outf = NULL;
+    init_em(NULL, "MM-Slave",(t_commrec *)cr, (t_inputrec *)ir,
+            &state_, (gmx_mtop_t *)mtop, ems_, &ltop_, &f_, &f_global_,
+            &nrnb_, mu_tot_, fr_, &enerd_, &graph_, mdatoms_, &gstat_, vsite_, constr_,
+            nfile, fnm, &outf, &mdebin_);
+    fr_->print_force = -1;
+    
     //! Accounting
     count_ = 0;
 
@@ -311,7 +322,6 @@ bool MMSlave::calcEnergy(FILE       *fplog,
                          rvec       *f,
                          double     *energy)
 {
-    int hoho = 0;
     clear_mat(giab_->vir_);
     clear_mat(giab_->pres_);
     clear_rvec(giab_->mu_tot_);
@@ -321,15 +331,14 @@ bool MMSlave::calcEnergy(FILE       *fplog,
     {
         GMX_THROW(InternalError("Copying coordinates"));
     }
-    printf("HOHOHO %d\n", hoho++);
     // Make sure the coordinates are in the state too!
-    giab_->s_min_->s.x = (rvec *)x;
-    giab_->s_min_->f = (rvec *)f;
-    evaluate_energy(fplog,
+    giab_->ems_->s.x = (rvec *)x;
+    giab_->ems_->f = (rvec *)f;
+    evaluate_energy(NULL,
                     (t_commrec *)cr_,
                     &mtop_,
-                    giab_->s_min_,
-                    giab_->top_,
+                    giab_->ems_,
+                    giab_->ltop_,
                     &inputrec_,
                     &giab_->nrnb_,
                     giab_->wcycle_,
@@ -347,15 +356,12 @@ bool MMSlave::calcEnergy(FILE       *fplog,
                     giab_->count_,
                     giab_->bFirst_);
     giab_->bFirst_ = FALSE;
-    printf("HOHOHO %d\n", hoho++);
 
     // Copy the forces. Check!
-    copyIt(nAtoms(), f, nAtoms(), giab_->s_min_->f);
-    printf("HOHOHO %d\n", hoho++);
+    copyIt(nAtoms(), f, nAtoms(), giab_->ems_->f);
 
     // Copy the enery
     *energy = giab_->enerd_->term[F_EPOT];
-    printf("HOHOHO %d\n", hoho++);
 
     return true;
 }
