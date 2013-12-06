@@ -2830,6 +2830,10 @@ void init_md(FILE *fplog,
         {
             please_cite(fplog, "Bussi2007a");
         }
+        if (ir->eI == eiSD1)
+        {
+            please_cite(fplog, "Goga2012");
+        }
     }
 
     init_nrnb(nrnb);

@@ -1202,6 +1202,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           "      Verlet cut-off scheme.\n");
 #endif
         }
+
+        if (inputrec->eI == eiSD2)
+        {
+            md_print_warn(cr, fplog, "The stochastic dynamics integrator %s is deprecated, since\n"
+                          "it is slower than integrator %s and is slightly less accurate\n"
+                          "with constraints. Use the %s integrator.",
+                          ei_names[inputrec->eI], ei_names[eiSD1], ei_names[eiSD1]);
+        }
     }
 
     /* Check for externally set OpenMP affinity and turn off internal
