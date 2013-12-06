@@ -174,16 +174,13 @@ bool MMSlave::readTpr(const char *tpr)
 {
     t_tpxheader tpx;
     int         version, generation, natoms;
-    int         koko = 0;
 
-    printf("KOKO %d\n", koko++);
     read_tpxheader(tpr, &tpx, FALSE, &version, &generation);
     natoms = tpx.natoms;
     x_     = (rvec *)calloc(natoms, sizeof(rvec));
     v_     = (rvec *)calloc(natoms, sizeof(rvec));
     f_     = (rvec *)calloc(natoms, sizeof(rvec));
 
-    printf("KOKO %d\n", koko++);
     (void) read_tpx(tpr, &inputrec_, box_, &natoms, x_,
                     (tpx.bV ? v_ : NULL),
                     (tpx.bF ? f_ : NULL), &mtop_);
@@ -199,10 +196,8 @@ bool MMSlave::readTpr(const char *tpr)
     }
     GMX_RELEASE_ASSERT((natoms == nAtoms()),
                        "Total number of atoms not consistent with group indices");
-    printf("KOKO %d\n", koko++);
 
     giab_ = new GromacsInABox(stdout, cr_, &mtop_, &inputrec_, box_);
-    printf("KOKO %d\n", koko++);
 
     return true;
 }
@@ -394,7 +389,6 @@ void mmslave_done(gmx_mmslave_t gms)
 int mmslave_read_tpr(const char   *tpr,
                      gmx_mmslave_t gms)
 {
-    printf("Koko\n");
     if (gms->mms->readTpr(tpr))
     {
         return 1;
