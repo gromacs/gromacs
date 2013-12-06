@@ -1970,12 +1970,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
-    if (ret)
-    {
-        cp_error();
-    }
-
     if (file_version < 6)
     {
         const char *warn = "Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the averages stored in the energy file will be incorrect.";
@@ -1990,6 +1984,12 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     }
 
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
     if (ret)
     {
         cp_error();
