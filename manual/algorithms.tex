@@ -543,17 +543,15 @@ given a certain limit on the energy drift.
 
 The Verlet scheme specific settings in the {\tt mdp} file are:
 \begin{verbatim}
-cutoff-scheme           = Verlet
-verlet-buffer-tolerance = 0.005
+cutoff-scheme        = Verlet
+verlet-buffer-drift  = 0.005
 \end{verbatim}
 The Verlet buffer size is determined from the latter option, which is
-by default set to 0.005 kJ/mol/ps pair energy error per atom. Note that
-errors in pair energies cancel and the effect on the total energy drift
-is usually at least an order of magnitude smaller than the tolerance.
-Furthermore, the drift of the total energy is affected by many other
-factors, the constraint contribution is often the dominating one.
-For constant energy (NVE) simulations, this drift should be set to -1
-and a buffer has to be set manually by specifying {\tt rlist} $>$ {\tt
+by default set to 0.005 kJ/mol/ps energy drift per atom. Note that the
+total energy drift in the system is affected by many factors and it is
+usually much smaller than this default setting for the estimate. For
+constant energy (NVE) simulations, this drift should be set to -1 and
+a buffer has to be set manually by specifying {\tt rlist} $>$ {\tt
   rcoulomb}. The simplest way to get a reasonable buffer size is to
 use an NVT {\tt mdp} file with the target temperature set to what you
 expect in your NVE simulation, and transfer the buffer size printed by
@@ -608,7 +606,7 @@ native GPU support                &         & $\surd$ \\
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Energy drift and pair-list buffering}
-For a canonical ensemble, the average energy error caused by the
+For a canonical ensemble, the average energy drift caused by the
 finite Verlet buffer size can be determined from the atomic
 displacements and the shape of the potential at the cut-off.
 %Since we are interested in the small drift regime, we will assume
@@ -623,7 +621,7 @@ t\,k_B T(1/m_1+1/m_2)$.  Note that in practice particles usually
 interact with other particles over time $t$ and therefore the real
 displacement distribution is much narrower.  Given a non-bonded
 interaction cut-off distance of $r_c$ and a pair-list cut-off
-$r_\ell=r_c+r_b$, we can then write the average energy error after
+$r_\ell=r_c+r_b$, we can then write the average energy drift after
 time $t$ for pair interactions between one particle of type 1
 surrounded by particles of type 2 with number density $\rho_2$, when
 the inter particle distance changes from $r_0$ to $r_t$, as:
@@ -656,31 +654,31 @@ V''(r_c)\frac{1}{2}(r_t - r_c)^2 \Big] G\!\left(\frac{r_t-r_0}{\sigma}\right) d 
 
 where $G$ is a Gaussian distribution with 0 mean and unit variance and
 $E(x)=\frac{1}{2}\mathrm{erfc}(x/\sqrt{2})$. We always want to achieve
-small energy error, so $\sigma$ will be small compared to both $r_c$
+small energy drift, so $\sigma$ will be small compared to both $r_c$
 and $r_\ell$, thus the approximations in the equations above are good,
-since the Gaussian distribution decays rapidly. The energy error needs
+since the Gaussian distribution decays rapidly. The energy drift needs
 to be averaged over all particle pair types and weighted with the
-particle counts. In {\gromacs} we don't allow cancellation of error
+particle counts. In {\gromacs} we don't allow cancellation of drift
 between pair types, so we average the absolute values. To obtain the
-average energy error per unit time, it needs to be divided by the
+average energy drift per unit time, it needs to be divided by the
 neighbor-list life time $t = ({\tt nstlist} - 1)\times{\tt dt}$. This
 function can not be inverted analytically, so we use bisection to
 obtain the buffer size $r_b$ for a target drift.  Again we note that
-in practice the error we usually be much smaller than this estimate,
+in practice the drift we usually be much smaller than this estimate,
 as in the condensed phase particle displacements will be much smaller
 than for freely moving particles, which is the assumption used here.
 
 When (bond) constraints are present, some particles will have fewer
-degrees of freedom. This will reduce the energy errors. The
+degrees of freedom. This will reduce the energy drift. The
 displacement in an arbitrary direction of a particle with 2 degrees of
 freedom is not Gaussian, but rather follows the complementary error
 function: \beq
 \frac{\sqrt{\pi}}{2\sqrt{2}\sigma}\,\mathrm{erfc}\left(\frac{|r|}{\sqrt{2}\,\sigma}\right)
 \eeq where $\sigma^2$ is again $k_B T/m$.  This distribution can no
-longer be integrated analytically to obtain the energy error. But we
+longer be integrated analytically to obtain the energy drift. But we
 can generate a tight upper bound using a scaled and shifted Gaussian
 distribution (not shown). This Gaussian distribution can then be used
-to calculate the energy error as described above. We consider
+to calculate the energy drift as described above. We consider
 particles constrained, i.e. having 2 degrees of freedom or fewer, when
 they are connected by constraints to particles with a total mass of at
 least 1.5 times the mass of the particles itself. For a particle with
@@ -694,7 +692,7 @@ very complex, we consider those as particles with 2 degrees of
 freedom.
 
 There is one important implementation detail that reduces the energy
-errors caused by the finite Verlet buffer list size. The derivation
+drift caused by the finite Verlet buffer list size. The derivation
 above assumes a particle pair-list. However, the {\gromacs}
 implementation uses a cluster pair-list for efficiency. The pair list
 consists of pairs of clusters of 4 particles in most cases, also
@@ -708,7 +706,7 @@ determined in a simulation and accurately estimated under some
 reasonable assumptions. The fraction decreases with increasing
 pair-list range, meaning that a smaller buffer can be used. For
 typical all-atom simulations with a cut-off of 0.9 nm this fraction is
-around 0.9, which gives a reduction in the energy errors of a factor of
+around 0.9, which gives a reduction in the energy drift of a factor of
 10. This reduction is taken into account during the automatic Verlet
 buffer calculation and results in a smaller buffer size.
 
@@ -718,24 +716,23 @@ buffer calculation and results in a smaller buffer size.
   a time step of 2 fs and a pair-list update period of 10 steps
   (pair-list life time: 18 fs). PME was used with {\tt ewald-rtol} set
   to 10$^{-5}$; this parameter affects the shape of the potential at
-  the cut-off. Error estimates due to finite Verlet buffer size are
+  the cut-off. Drift estimates due to finite Verlet buffer size are
   shown for a $1 \times 1$ atom pair list and $4 \times 4$ atom pair
   list without and with (dashed line) cancellation of positive and
-  negative errors. Real energy drift is shown for double- and
+  negative drift. Real energy drift is shown for double- and
   single-precision simulations. Single-precision rounding errors in
   the SETTLE constraint algorithm cause the drift to become negative
   at large buffer size. Note that at zero buffer size, the real drift
-  is small because positive (H-H) and negative (O-H) energy errors
-  cancel.}
+  is small because the positive (H-H) and negative (O-H) drift
+  cancels.}
 \label{fig:verletdrift}
 \end{figure}
 
-In \figref{verletdrift} one can see that for small buffer sizes the drift
-of the total energy is much smaller than the pair energy error tolerance,
-due to cancellation of errors. For larger buffer size, the error estimate
-is a factor of 6 higher than drift of the total energy, or alternatively
-the buffer estimate is 0.024 nm too large. This is because the protons
-don't move freely over 18 fs, but rather vibrate.
+In \figref{verletdrift} one can see that for water with a pair-list
+life time of 18 fs, the drift estimate is a factor of 6 higher than
+the real drift, or alternatively the buffer estimate is 0.024 nm too
+large.  This is because the protons don't move freely over 18 fs, but
+rather vibrate.
 %At a buffer size of zero there is cancellation of
 %drift due to repulsive (H-H) and attractive (O-H) interactions.
 
@@ -2269,19 +2266,32 @@ In {\gromacs} there are two algorithms to integrate equation (\ref{SDeq}):
 a simple and efficient one
 and a more complex leap-frog algorithm~\cite{Gunsteren88}.
 The accuracy of both integrators is equivalent to the normal MD leap-frog and
-velocity-Verlet integrator, except with constraints where the simple
-SD integrator is significantly less accurate. There is a proper way
-of applying constraints with the simple integrator, but that requires
-a second constraining step~\cite{Goga2012}, which diminishes the gain.
-The simple integrator is:
-\bea
-\label{eqn:sd_int1}
-\ve{v}(t+\hDt)  &~=~&   \alpha \, \ve{v}(t-\hDt) + \frac{1 - \alpha}{m \gamma}\ve{F}(t) + \sqrt{\frac{k_B T}{m}(1 - \alpha^2)} \, \ruis_i \\
-\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt \, \ve{v}(t+\hDt) \\
-\alpha &~=~& \left(1 - \frac{\gamma \Dt}{m} \right)
-\eea
-where $\ruis_i$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
-With constraints you should only consider using the simple integrator when $\gamma \Dt/m \ll 0.01$.
+velocity-Verlet integrator.
+
+
+The simple integrator consists of two parts: (a) velocity reduction representing the effect of friction, (b)  addition of a random term compensating for the loss of kinetic energy by friction. Thus the phase space evolution during a time step consists of two events: (a) evolution in full phase space according to the (frictionless) equations of motion, (b) evolution in momentum space   due to friction and noise. If one takes care that the additional evolution in momentum space preserves the canonical distribution, the procedure yields a valid solution to the stochastic equations of motion.
+
+The method has been worked out for Langevin dynamics (application to particles) and for DPD dynamics (application to particle pairs) by Goga \textit{et. al.} \cite{Goga12}. Here we describe the Langevin case. In short, if a single degree of freedom is considered with velocity $v$ and mass $m$ (this could also be a velocity difference for a particle pair, with reduced mass $\mu$), the velocity change is given by:\\
+\beq
+   v' =  (1-f) v + g \xi,
+\eeq
+where $f$ is a chosen velocity reduction factor proportional to the strength of the friction; $\xi$ is a random number sampled from a standard normal distribution (mean zero, variance 1) and $g$ is given by
+\beq
+g^2 = \frac{k_\mathrm{B}T_\mathrm{ref}}{m} f(2-f).
+\eeq
+This choice ensures that -- for a system in equilibrium at the reference temperature -- the average kinetic energy is preserved during the impulsive velocity change. This application of friction and noise in fact preserves the canonical momentum distribution.
+
+The method acts as a thermostat: if the temperature deviates from the reference temperature, the temperature deviation will decay to zero with a first order process with rate constant  \cite{Goga12}
+\beq
+   k_{\mbox{\tiny th}}= \frac{3k_\mathrm{B}}{2c_\mathrm{v}} 2 \gamma_{\mbox{\tiny eff}}
+\eeq
+where
+\beq
+    \gamma_{\mbox{\tiny eff}} = - 
+\frac{1}{\Delta t} \mbox{ln} (1-f) \approx \frac {f}{\Delta t}
+\eeq
+
+is the friction constant and $c_{\mbox{\tiny v}}$ is the specific heat per particle.
 
 In the complex algorithm four Gaussian random numbers are required
 per integration step per degree of freedom, and with constraints the
