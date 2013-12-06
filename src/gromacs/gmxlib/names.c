@@ -238,7 +238,7 @@ const char *eQMbasis_names[eQMbasisNR+1] = {
 };
 
 const char *eQMMMscheme_names[eQMMMschemeNR+1] = {
-    "normal", "ONIOM", NULL
+    "normal", "ONIOM", "slave", NULL
 };
 
 const char *eMultentOpt_names[eMultentOptNR+1] = {

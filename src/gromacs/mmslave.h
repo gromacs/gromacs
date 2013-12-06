@@ -44,6 +44,7 @@
 #define GMX_MMSLAVE_H
 
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/network.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,8 +53,11 @@ extern "C" {
 //! Abstract type for the mmslave code
 typedef struct gmx_mmslave *gmx_mmslave_t;
 
-//! Create the data structure and returns it
-extern gmx_mmslave_t mmslave_init(void);
+/*! \brief
+ * Create the data structure and returns it
+ * \param[in] gms  the data structure to be freed
+ */
+extern gmx_mmslave_t mmslave_init(const t_commrec *cr);
 
 /*! \brief
  * Function to clean up
@@ -148,7 +152,7 @@ extern double mmslave_get_q(gmx_mmslave_t gms,
                             atom_id       id);
 
 /*! \brief
- * Function to retrieve the atom number of an atom 
+ * Function to retrieve the atom number of an atom
  * data structure
  * \param[in] gms   the data structure to be returned
  * \param[in] id    the atom id
@@ -158,7 +162,7 @@ extern int mmslave_get_atomnumber(gmx_mmslave_t gms,
                                   atom_id       id);
 
 /*! \brief
- * Function to retrieve the group ID of an atom 
+ * Function to retrieve the group ID of an atom
  * data structure
  * \param[in] gms   the data structure to be returned
  * \param[in] id    the atom id
@@ -170,12 +174,14 @@ extern int mmslave_get_group_id(gmx_mmslave_t gms,
 /*! \brief
  * Function to compute the energy and forces
  * \param[in]  gms    the data structure to be modified
+ * \param[in]  fplog  a File pointer for (debug) output. May be NULL, or stdout.
  * \param[in]  x      the atomic coordinates for the whole system (MM+QM)
  * \param[out] f      the forces on all atoms
  * \param[out] energy the total MM energy
  * \return 1 if successful, 0 otherwise
  */
 extern int mmslave_calc_energy(gmx_mmslave_t gms,
+                               FILE         *fplog,
                                const rvec   *x,
                                rvec         *f,
                                double       *energy);

@@ -48,11 +48,90 @@ namespace gmx
 {
 
 /*! \brief
+ * class for containing all the crap needed to do an md run.
+ */
+class GromacsInABox
+{
+    public:
+        //! Virial and pressure
+        tensor vir_, pres_;
+
+        //! Dipole
+        rvec mu_tot_;
+
+        //! Output stuff
+        output_env_t oenv_;
+
+        //! EM state
+        em_state_t *s_min_;
+
+        //! Normal state
+        t_state     state_;
+
+        //! Local topology
+        gmx_localtop_t *top_;
+
+        //! Flops
+        t_nrnb          nrnb_;
+
+        //! CPU Accounting
+        gmx_wallcycle_t wcycle_;
+
+        //! Energetics
+        gmx_global_stat_t gstat_;
+
+        //! Virtual sites
+        gmx_vsite_t *vsite_;
+
+        //! Constraints
+        gmx_constr_t constr_;
+
+        //! FC Data
+        t_fcdata *fcd_;
+
+        //! Molecular graph
+        t_graph *graph_;
+
+        //! MD Atoms
+        t_mdatoms *mdatoms_;
+
+        //! Force record
+        t_forcerec *fr_;
+
+        //! Energy data
+        gmx_enerdata_t *enerd_;
+
+        //! Accounting
+        gmx_large_int_t count_;
+
+        //! First time call?
+        gmx_bool bFirst_;
+
+        /*! \brief
+         * Constructor
+         * \param[in] fplog File pointer to write debug stuff to
+         * \param[in] cr    Communication data structure
+         * \param[in] mtop  Topology structure
+         * \param[in] ir    Run parameters
+         * \param[in] box   The simulation box
+         */
+        GromacsInABox(FILE             *fplog,
+                      const t_commrec  *cr,
+                      const gmx_mtop_t *mtop,
+                      const t_inputrec *ir,
+                      matrix            box);
+
+        ~GromacsInABox();
+};
+
+/*! \brief
  * class for serving a quantum chemistry program by computing energies and forces
  */
 class MMSlave
 {
     private:
+        //! Communication data structure
+        const t_commrec *cr_;
         //! Simulation parameters
         t_inputrec       inputrec_;
         //! Simulation box
@@ -66,10 +145,12 @@ class MMSlave
         //! Forces
         rvec            *f_;
         //! Group size
-        std::vector<int> groupSize_;       
+        std::vector<int> groupSize_;
+        //! GROMACS container
+        GromacsInABox   *giab_;
     public:
         //! Constructor
-        MMSlave();
+        MMSlave(const t_commrec  *cr);
 
         //! Destructor
         ~MMSlave() {}
@@ -86,12 +167,12 @@ class MMSlave
          * \return the total number of atoms in the system
          */
         int nAtoms();
-        
+
         /*! \brief
          * \return the total number of groups in the system
          */
         int nGroups() { return groupSize_.size(); }
-        
+
         /*! \brief
          * Copy internal coordinate array
          * \param[in]  natoms length of array
@@ -147,7 +228,7 @@ class MMSlave
          * \return true if successful
          */
         bool getAtomNumber(atom_id id, int *atomNumber);
-        
+
         /*! \brief
          * Function to receive the group ID of an atom
          * data structure
@@ -156,15 +237,17 @@ class MMSlave
          * \return true if successful
          */
         bool getGroupID(atom_id id, int *groupID);
-        
+
         /*! \brief
          * Function to compute the energy and forces
+         * \param[in]  fplog Log file for (debug) output. May be NULL
          * \param[in]  x   the atomic coordinates for the whole system (MM+QM)
          * \param[out] f   the forces on all atoms
          * \param[out] energy the total MM energy
          * \return TRUE if successful
          */
-        bool calcEnergy(const rvec *x,
+        bool calcEnergy(FILE       *fplog,
+                        const rvec *x,
                         rvec       *f,
                         double     *energy);
 };

@@ -488,6 +488,10 @@ void init_QMMMrec(t_commrec  *cr,
     t_ilist                 *ilist_mol;
     gmx_mtop_atomlookup_t    alook;
 
+    if (fr->qr->QMMMscheme == eQMMMschemeslave)
+    {
+        return;
+    }
     c6au  = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM, 6));
     c12au = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM, 12));
     /* issue a fatal if the user wants to run with more than one node */
@@ -608,7 +612,7 @@ void init_QMMMrec(t_commrec  *cr,
             init_QMrec(j, qr->qm[j], qm_nr, qm_arr, mtop, ir);
 
             /* LPW */
-            new QMSystem(j,qm_nr,qm_arr,mtop,ir);
+            //new QMSystem(j,qm_nr,qm_arr,mtop,ir);
       
             /* we now store the LJ C6 and C12 parameters in QM rec in case
              * we need to do an optimization
@@ -816,6 +820,10 @@ void update_QMMMrec(t_commrec      *cr,
     real
         c12au, c6au;
 
+    if (eQMMMschemeslave == fr->qr->QMMMscheme)
+    {
+        return;
+    }
     c6au  = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM, 6));
     c12au = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM, 12));
 
@@ -1102,6 +1110,11 @@ real calculate_QMMM(t_commrec *cr,
     *forces2 = NULL, *fshift2 = NULL; /* needed for multilayer ONIOM */
     int
         i, j, k;
+        
+    if (fr->qr->QMMMscheme == eQMMMschemeslave)
+    {
+        return 0;
+    }
     /* make a local copy the QMMMrec pointer
      */
     qr = fr->qr;

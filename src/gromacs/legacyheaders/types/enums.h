@@ -330,7 +330,7 @@ enum {
 };
 
 enum {
-    eQMMMschemenormal, eQMMMschemeoniom, eQMMMschemeNR
+    eQMMMschemenormal, eQMMMschemeoniom, eQMMMschemeslave, eQMMMschemeNR
 };
 
 enum {

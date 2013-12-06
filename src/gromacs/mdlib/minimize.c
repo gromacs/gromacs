@@ -79,23 +79,15 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/mdlib/minimize.h"
 
-typedef struct {
-    t_state  s;
-    rvec    *f;
-    real     epot;
-    real     fnorm;
-    real     fmax;
-    int      a_fmax;
-} em_state_t;
-
-static em_state_t *init_em_state()
+em_state_t *init_em_state()
 {
     em_state_t *ems;
 
     snew(ems, 1);
 
-    /* does this need to be here?  Should the array be declared differently (staticaly)in the state definition? */
+    /* does this need to be here?  Should the array be declared differently (staticaly) in the state definition? */
     snew(ems->s.lambda, efptNR);
 
     return ems;
@@ -679,18 +671,18 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
     wallcycle_stop(wcycle, ewcDOMDEC);
 }
 
-static void evaluate_energy(FILE *fplog, t_commrec *cr,
-                            gmx_mtop_t *top_global,
-                            em_state_t *ems, gmx_localtop_t *top,
-                            t_inputrec *inputrec,
-                            t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                            gmx_global_stat_t gstat,
-                            gmx_vsite_t *vsite, gmx_constr_t constr,
-                            t_fcdata *fcd,
-                            t_graph *graph, t_mdatoms *mdatoms,
-                            t_forcerec *fr, rvec mu_tot,
-                            gmx_enerdata_t *enerd, tensor vir, tensor pres,
-                            gmx_large_int_t count, gmx_bool bFirst)
+void evaluate_energy(FILE *fplog, t_commrec *cr,
+                     gmx_mtop_t *top_global,
+                     em_state_t *ems, gmx_localtop_t *top,
+                     t_inputrec *inputrec,
+                     t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     gmx_global_stat_t gstat,
+                     gmx_vsite_t *vsite, gmx_constr_t constr,
+                     t_fcdata *fcd,
+                     t_graph *graph, t_mdatoms *mdatoms,
+                     t_forcerec *fr, rvec mu_tot,
+                     gmx_enerdata_t *enerd, tensor vir, tensor pres,
+                     gmx_large_int_t count, gmx_bool bFirst)
 {
     real     t;
     gmx_bool bNS;
@@ -698,10 +690,11 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     tensor   force_vir, shake_vir, ekin;
     real     dvdl_constr, prescorr, enercorr, dvdlcorr;
     real     terminate = 0;
+    int      popo      = 0;
 
     /* Set the time to the initial time, the time does not change during EM */
     t = inputrec->init_t;
-
+    printf("POPO %d\n", popo++);
     if (bFirst ||
         (DOMAINDECOMP(cr) && ems->s.ddp_count < cr->dd->ddp_count))
     {
@@ -725,6 +718,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
             bNS = (nabnsb > 0);
         }
     }
+    printf("POPO %d\n", popo++);
 
     if (vsite)
     {
@@ -732,6 +726,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                          top->idef.iparams, top->idef.il,
                          fr->ePBC, fr->bMolPBC, graph, cr, ems->s.box);
     }
+    printf("POPO %d\n", popo++);
 
     if (DOMAINDECOMP(cr))
     {
@@ -743,6 +738,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                                    nrnb, wcycle);
         }
     }
+    printf("POPO %d\n", popo++);
 
     /* Calc force & energy on new trial position  */
     /* do_force always puts the charge groups in the box and shifts again
@@ -756,6 +752,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS | GMX_FORCE_DO_LR : 0));
+    printf("POPO %d\n", popo++);
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -776,6 +773,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
 
         wallcycle_stop(wcycle, ewcMoveE);
     }
+    printf("POPO %d\n", popo++);
 
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(fplog, inputrec, fr, count, top_global->natoms, ems->s.box, ems->s.lambda[efptVDW],
@@ -786,6 +784,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     enerd->term[F_DVDL]    += dvdlcorr;
 
     ems->epot = enerd->term[F_EPOT];
+    printf("POPO %d\n", popo++);
 
     if (constr)
     {
@@ -809,6 +808,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     {
         copy_mat(force_vir, vir);
     }
+    printf("POPO %d\n", popo++);
 
     clear_mat(ekin);
     enerd->term[F_PRES] =
@@ -820,6 +820,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     {
         get_state_f_norm_max(cr, &(inputrec->opts), mdatoms, ems);
     }
+    printf("POPO %d\n", popo++);
 }
 
 static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
@@ -2610,7 +2611,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     rvec                 mu_tot;
     rvec                *fneg, *dfdx;
     gmx_bool             bSparse; /* use sparse matrix storage format */
-    size_t               sz=0;
+    size_t               sz = 0;
     gmx_sparsematrix_t * sparse_matrix           = NULL;
     real           *     full_matrix             = NULL;
     em_state_t       *   state_work;
