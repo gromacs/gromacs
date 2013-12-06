@@ -2674,6 +2674,7 @@ void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
     rvec    *xfit   = NULL, *xstart = NULL; /* dummy arrays to determine initial RMSDs  */
     rvec     fit_transvec;                  /* translation ... */
     matrix   fit_rotmat;                    /* ... and rotation from fit to reference structure */
+    rvec    *ref_x_old = NULL;              /* helper pointer */
 
 
     if (!DOMAINDECOMP(cr) && PAR(cr) && MASTER(cr))
@@ -2719,13 +2720,13 @@ void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
      * not before dd_partition_system which is called after init_edsam */
     if (MASTER(cr))
     {
-        /* Remove pbc, make molecule whole.
-         * When ir->bContinuation=TRUE this has already been done, but ok.
-         */
-        snew(x_pbc, mtop->natoms);
-        m_rveccopy(mtop->natoms, x, x_pbc);
-        do_pbc_first_mtop(NULL, ir->ePBC, box, mtop, x_pbc);
-
+        if (!EDstate->bFromCpt)
+        {
+            /* Remove PBC, make molecule(s) subject to ED whole. */
+            snew(x_pbc, mtop->natoms);
+            m_rveccopy(mtop->natoms, x, x_pbc);
+            do_pbc_first_mtop(NULL, ir->ePBC, box, mtop, x_pbc);
+        }
         /* Reset pointer to first ED data set which contains the actual ED data */
         edi = ed->edpar;
         /* Loop over all ED/flooding data sets (usually only one, though) */
@@ -2762,7 +2763,16 @@ void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
                the size of the buffers is likely different for every ED group */
             srenew(xfit, edi->sref.nr );
             srenew(xstart, edi->sav.nr  );
-            copy_rvecn(edi->sref.x_old, xfit, 0, edi->sref.nr);
+            if (edi->bRefEqAv)
+            {
+                /* Reference indices are the same as average indices */
+                ref_x_old = edi->sav.x_old;
+            }
+            else
+            {
+                ref_x_old = edi->sref.x_old;
+            }
+            copy_rvecn(ref_x_old, xfit, 0, edi->sref.nr);
             copy_rvecn(edi->sav.x_old, xstart, 0, edi->sav.nr);
 
             /* Make the fit to the REFERENCE structure, get translation and rotation */
@@ -2902,7 +2912,10 @@ void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
             edi = edi->next_edi;
         }
         /* Cleaning up on the master node: */
-        sfree(x_pbc);
+        if (!EDstate->bFromCpt)
+        {
+            sfree(x_pbc);
+        }
         sfree(xfit);
         sfree(xstart);
 
@@ -2963,8 +2976,8 @@ void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
     edi = ed->edpar;
     for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
     {
-        /* Allocate space for ED buffer */
-        snew(edi->buf, 1);
+        /* Allocate space for ED buffer variables */
+        snew_bc(cr, edi->buf, 1); /* MASTER has already allocated edi->buf in init_edi() */
         snew(edi->buf->do_edsam, 1);
 
         /* Space for collective ED buffer variables */
