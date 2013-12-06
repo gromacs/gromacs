@@ -117,10 +117,8 @@ With Nose-Hoover and/or Parrinello-Rahman coupling this comes with
 a slight increase in computational cost.
 </dd>
 <dt><b>sd</b></dt>
-<dd> An accurate leap-frog stochastic dynamics integrator.
-Four Gaussian random number are required
-per integration step per degree of freedom. With constraints,
-coordinates needs to be constrained twice per integration step.
+<dd> An accurate and efficient leap-frog stochastic dynamics integrator.
+With constraints, coordinates needs to be constrained twice per integration step.
 Depending on the computational cost of the force calculation,
 this can take a significant part of the simulation time.
 The temperature for one or more groups of atoms
@@ -133,16 +131,12 @@ The random generator is initialized with <b><A HREF="#ld">ld-seed</A></b>.
 When used as a thermostat, an appropriate value for <b>tau-t</b> is 2 ps,
 since this results in a friction that is lower than the internal friction
 of water, while it is high enough to remove excess heat
-(unless <b>cut-off</b> or <b>reaction-field</b> electrostatics is used).
 NOTE: temperature deviations decay twice as fast as with
 a Berendsen thermostat with the same <b>tau-t</b>.</dd>
-<dt><b>sd1</b></dt>
-<dd> An efficient leap-frog stochastic dynamics integrator.
-This integrator is equivalent to <b>sd</b>, except that it requires
-only one Gaussian random number and one constraint step and is therefore
-significantly faster. Without constraints the accuracy is the same as <b>sd</b>.
-With constraints the accuracy is significantly reduced, so then <b>sd</b>
-will often be preferred.</dd>
+<dt><b>sd2</b></dt>
+<dd> This used to be the default sd integrator, but is now depreacted.
+Four Gaussian random number are required per coordinate per step.
+With constraints, the temperature will be slightly too high.</dd>
 <dt><b>bd</b></dt>
 <dd>An Euler integrator for Brownian or position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
