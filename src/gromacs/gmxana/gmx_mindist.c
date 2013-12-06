@@ -617,7 +617,7 @@ void dump_res(FILE *out, int nres, atom_id *resindex, atom_id index[])
 int gmx_mindist(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_mindist[tt] computes the distance between one group and a number of",
+        "[THISMODULE] computes the distance between one group and a number of",
         "other groups. Both the minimum distance",
         "(between any pair of atoms from the respective groups)",
         "and the number of contacts within a given",
@@ -633,8 +633,7 @@ int gmx_mindist(int argc, char *argv[])
         "each direction is considered, giving a total of 26 shifts.",
         "It also plots the maximum distance within the group and the lengths",
         "of the three box vectors.[PAR]",
-        "Other programs that calculate distances are [TT]g_dist[tt]",
-        "and [TT]g_bond[tt]."
+        "Also [gmx-distance] calculates distances."
     };
     const char     *bugs[] = {
         "The [TT]-pi[tt] option is very slow."

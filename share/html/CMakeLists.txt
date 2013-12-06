@@ -2,9 +2,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -32,28 +32,40 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(NOT CMAKE_CROSSCOMPILING)
-    set(CAN_BUILD_HTMLHELP ON)
-else()
-    set(CAN_BUILD_HTMLHELP OFF)
+set(OUTPUT_DIR final)
+
+if(SOURCE_IS_SOURCE_DISTRIBUTION)
+    # Make sure source package contains HTML pages.
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/online.html")
+        message(FATAL_ERROR "Online HTML pages are missing from source package.")
+    endif()
 endif()
 
-if(CAN_BUILD_HTMLHELP)
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/programs)
-    add_custom_target(html-programs
-        gmx -quiet help -export html
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/programs
-        COMMENT "Generating HTML help for programs"
-        VERBATIM)
-    # TODO: May not work for an in-source build.
-    add_custom_target(html
-        ${CMAKE_COMMAND}
-        -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating HTML help"
-        VERBATIM)
-    add_dependencies(html html-programs)
+add_custom_target(html
+    ${CMAKE_COMMAND}
+    -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+    -D OUTPUT_DIR=${OUTPUT_DIR}
+    -D STEP=PRE
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
+    COMMAND gmx -quiet help -export html
+    COMMAND ${CMAKE_COMMAND}
+    -D SOURCE_HTML_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+    -D OUTPUT_DIR=${OUTPUT_DIR}
+    -D STEP=POST
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
+    COMMENT "Generating HTML help"
+    VERBATIM)
+
+set(HTML_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+if (GMX_BUILD_HELP)
+    set_target_properties(html PROPERTIES EXCLUDE_FROM_ALL OFF)
     set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES programs)
+        ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.processed.html")
+    set(HTML_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_DIR})
+endif()
+
+if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
+    install(DIRECTORY ${HTML_PAGE_DIR}
+        DESTINATION ${DATA_INSTALL_DIR}
+        COMPONENT html)
 endif()

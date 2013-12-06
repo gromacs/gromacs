@@ -2,9 +2,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -32,6 +32,17 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+option(GMX_BUILD_HELP "Build man pages and HTML help automatically" OFF)
+mark_as_advanced(GMX_BUILD_HELP)
+if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND
+    "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+
+    message(FATAL_ERROR
+        "Rebuilding HTML and man pages it not supported for in-source "
+        "builds from a source distribution. "
+        "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
+endif()
+
 add_subdirectory(html)
 add_subdirectory(man)
 add_subdirectory(template)
@@ -40,15 +51,6 @@ install(FILES README.tutor README_FreeEnergyModifications.txt
     DESTINATION ${DATA_INSTALL_DIR}
     COMPONENT data)
 install(DIRECTORY top
-    DESTINATION ${DATA_INSTALL_DIR}/top
+    DESTINATION ${DATA_INSTALL_DIR}
     COMPONENT data
     PATTERN "*~" EXCLUDE)
-
-install(DIRECTORY . DESTINATION ${DATA_INSTALL_DIR}
-  COMPONENT data
-  PATTERN "Makefile*" EXCLUDE
-  PATTERN "CMake*" EXCLUDE
-  PATTERN "cmake*" EXCLUDE
-  PATTERN "*~" EXCLUDE
-  PATTERN "template" EXCLUDE
-)

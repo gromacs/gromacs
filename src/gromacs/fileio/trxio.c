@@ -52,6 +52,7 @@
 #include "gmxfio.h"
 #include "trxio.h"
 #include "gromacs/legacyheaders/statutil.h"
+#include "tpxio.h"
 #include "trnio.h"
 #include "names.h"
 #include "vec.h"
@@ -60,7 +61,7 @@
 #include "pdbio.h"
 #include "confio.h"
 #include "checkpoint.h"
-#include "wgms.h"
+#include "g87io.h"
 #include <math.h>
 
 /* defines for frame counter output */
@@ -87,6 +88,27 @@ struct t_trxstatus
 };
 
 /* utility functions */
+
+gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
+{
+    int    iq;
+    double tol;
+
+    tol = 2*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
+
+    iq = (int)((a - b + tol*a)/c);
+
+    if (fabs(a - b - c*iq) <= tol*fabs(a))
+    {
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+
 
 int check_times2(real t, real t0, gmx_bool bDouble)
 {
@@ -348,7 +370,7 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             }
             break;
         case efG87:
-            write_gms(gmx_fio_getfp(status->fio), nind, xout, fr->box);
+            write_g87(gmx_fio_getfp(status->fio), nind, xout, fr->box);
             break;
         case efG96:
             write_g96_conf(gmx_fio_getfp(status->fio), fr, nind, ind);
@@ -445,7 +467,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             }
             break;
         case efG87:
-            write_gms(gmx_fio_getfp(status->fio), fr->natoms, fr->x, fr->box);
+            write_g87(gmx_fio_getfp(status->fio), fr->natoms, fr->x, fr->box);
             break;
         case efG96:
             write_g96_conf(gmx_fio_getfp(status->fio), fr, -1, NULL);
@@ -1157,4 +1179,21 @@ void rewind_trj(t_trxstatus *status)
     initcount(status);
 
     gmx_fio_rewind(status->fio);
+}
+
+/***** T O P O L O G Y   S T U F F ******/
+
+t_topology *read_top(const char *fn, int *ePBC)
+{
+    int         epbc, natoms;
+    t_topology *top;
+
+    snew(top, 1);
+    epbc = read_tpx_top(fn, NULL, NULL, &natoms, NULL, NULL, NULL, top);
+    if (ePBC)
+    {
+        *ePBC = epbc;
+    }
+
+    return top;
 }

@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -125,8 +125,10 @@
  *
  * \if libapi
  *
- * The header gmxmpi.h abstract away the mechanism of including either MPI or
+ * The header gmxmpi.h abstracts away the mechanism of including either MPI or
  * thread-MPI headers depending on compilation options.
+ * Similarly, gmxomp.h removes the need to use conditional compilation for code
+ * that needs to include omp.h for OpenMP functions.
  *
  * The header gmxregex.h declares gmx::Regex and regexMatch() for basic regular
  * expression matching using an interface similar to C++11.

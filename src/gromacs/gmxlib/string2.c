@@ -36,7 +36,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gromacs/utility/gmx_header_config.h"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -381,6 +380,18 @@ gmx_strndup(const char *src, int n)
 const unsigned int
     gmx_string_hash_init = 5381;
 
+
+unsigned int
+gmx_string_fullhash_func(const char *s, unsigned int hash_init)
+{
+    int c;
+
+    while ((c = (*s++)) != '\0')
+    {
+        hash_init = ((hash_init << 5) + hash_init) ^ c; /* (hash * 33) xor c */
+    }
+    return hash_init;
+}
 
 unsigned int
 gmx_string_hash_func(const char *s, unsigned int hash_init)

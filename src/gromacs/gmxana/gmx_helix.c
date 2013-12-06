@@ -43,7 +43,7 @@
 #include "fitahx.h"
 #include "gromacs/fileio/futil.h"
 #include "gstat.h"
-#include "wgms.h"
+#include "gromacs/fileio/g87io.h"
 #include "hxprops.h"
 #include "macros.h"
 #include "maths.h"
@@ -91,13 +91,13 @@ void dump_otrj(FILE *otrj, int natoms, atom_id all_index[], rvec x[],
             x[ai][m]   = xm;
         }
     }
-    write_gms_ndx(otrj, natoms, all_index, x, NULL);
+    write_g87_ndx(otrj, natoms, all_index, x, NULL);
 }
 
 int gmx_helix(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_helix[tt] computes all kinds of helix properties. First, the peptide",
+        "[THISMODULE] computes all kinds of helix properties. First, the peptide",
         "is checked to find the longest helical part, as determined by",
         "hydrogen bonds and [GRK]phi[grk]/[GRK]psi[grk] angles.",
         "That bit is fitted",

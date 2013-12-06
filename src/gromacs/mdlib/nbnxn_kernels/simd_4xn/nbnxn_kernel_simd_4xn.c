@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -48,9 +48,9 @@
 #ifdef GMX_NBNXN_HALF_WIDTH_SIMD
 #define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
+#include "gromacs/simd/macros.h"
+#include "gromacs/simd/vector_operations.h"
 
-#include "gmx_simd_macros.h"
-#include "gmx_simd_vec.h"
 #if !(GMX_SIMD_WIDTH_HERE == 2 || GMX_SIMD_WIDTH_HERE == 4 || GMX_SIMD_WIDTH_HERE == 8)
 #error "unsupported SIMD width"
 #endif
@@ -280,12 +280,7 @@ nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
             }
         }
 
-        /* With Ewald type electrostatics we the forces for excluded atom pairs
-         * should not contribute to the virial sum. The exclusion forces
-         * are not calculate in the energy kernels, but are in _noener.
-         */
-        if (!((force_flags & GMX_FORCE_ENERGY) ||
-              (EEL_FULL(ic->eeltype) && (force_flags & GMX_FORCE_VIRIAL))))
+        if (!(force_flags & GMX_FORCE_ENERGY))
         {
             /* Don't calculate energies */
             p_nbk_noener[coult][nbat->comb_rule](nbl[nb], nbat,
@@ -294,7 +289,7 @@ nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
                                                  out->f,
                                                  fshift_p);
         }
-        else if (out->nV == 1 || !(force_flags & GMX_FORCE_ENERGY))
+        else if (out->nV == 1)
         {
             /* No energy groups */
             out->Vvdw[0] = 0;

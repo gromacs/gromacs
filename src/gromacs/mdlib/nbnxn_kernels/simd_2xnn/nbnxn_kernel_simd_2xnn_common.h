@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -32,8 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmx_simd_macros.h"
-#include "gmx_simd_vec.h"
+#include "gromacs/simd/macros.h"
+#include "gromacs/simd/vector_operations.h"
 #include "../../nbnxn_consts.h"
 #ifdef CALC_COUL_EWALD
 #include "maths.h"
@@ -43,30 +43,15 @@
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 2xnn kernel common header file"
 #endif
 
-#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
-
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
 
 /* The stride of all the atom data arrays is equal to half the SIMD width */
 #define STRIDE     (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
 
-#if GMX_SIMD_WIDTH_HERE == 8
-#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
-#else
-#if GMX_SIMD_WIDTH_HERE == 16
-/* This is getting ridiculous, SIMD horizontal adds would help,
- * but this is not performance critical (only used to reduce energies)
- */
-#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7]+x[8]+x[9]+x[10]+x[11]+x[12]+x[13]+x[14]+x[15])
-#else
-#error "unsupported kernel configuration"
-#endif
-#endif
-
 #include "../nbnxn_kernel_simd_utils.h"
 
-static inline void
+static gmx_inline void
 gmx_load_simd_2xnn_interactions(int            excl,
                                 gmx_exclfilter filter_S0,
                                 gmx_exclfilter filter_S2,

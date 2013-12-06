@@ -1,31 +1,11 @@
-<HTML>
-<HEAD>
 <TITLE>Getting started</TITLE>
-<LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
-<TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=400>
-<TABLE WIDTH=400 NOBORDER>
-<TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>Getting started</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
-Sat 19 Jan 2013</B></td></tr></TABLE>
-<HR>
 <H3>Contents</H3>
 
 <ul>
 <li><a href="#start">Introduction</a>
 <ul>
 	<li><a href="#setup">Setting up your environment</a>
-	<li><a href="#examples">Examples</a>
 </ul>
-<li><a href="gmxdemo.html">The GROMACS demo</a>
-<li><a href="water.html">Water</a>
-<li><a href="methanol.html">Methanol</a>
-<li><a href="mixed.html">Water/Methanol mixture</a>
-<li><a href="speptide.html">Ribonuclease S-Peptide</a>
-<li><a href="protunf.html">Protein unfolding</a>
 <li><a href="#files">GROMACS files</a>
 <ul>
 	<li><a href="#top">Molecular topology file</a>
@@ -42,7 +22,7 @@ Sat 19 Jan 2013</B></td></tr></TABLE>
 More info can be found in the 
 <A HREF="flow.html">flowchart</A> 
 (for a quick overview) and the 
-<A HREF="../gmxfaq.html">GMX FAQ</A>.
+<A HREF="http://www.gromacs.org/Documentation/FAQs">GROMACS FAQs</A>.
 </P>
 
 <br><hr><br>
@@ -135,82 +115,6 @@ successful using:<br><br>
 </table>
 <br>
 If it prints a directory name you are ready to rock, otherwise go back two steps.
-
-<P><H3><A NAME="examples">Examples</A></H3>
-Before starting the examples, you have to copy all the neccesary
-files, to your own directory, let us call it work. 
-Mkdir and chdir to the directory you want to put
-the examples directory. This directory (named <tt>tutor</tt>) 
-will need
-about 20 MB of disk space, when it is completely filled.<br><br>
-<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
-<tr NOSAVE>
-<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
-
-<tt> mkdir work; cd work
-</tt>
-<td></td>
-</tr>
-</table>
-<br> 
-then copy the examples: <br><br>
-<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
-<tr NOSAVE>
-<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
-
-<tt> cp -r $GMXDATA/gromacs/tutor .
-</tt>
-<td></td>
-</tr>
-</table>
-<br>
-(NOTE: include the "<TT>.</TT>")<br>
-If that directory doesn't exist you could look for the files
-in <tt>/usr/local/share/gromacs/tutor</tt>, or ask your local GROMACS expert.
-<br> You now have a subdirectory
-<tt>tutor</tt>. Move there<br><br>
-<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
-<tr NOSAVE>
-<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
-
-<tt>  cd tutor
- </tt>
-<td></td>
-</tr>
-</table>
-<br>
-and view the contents of this directory
-<br><br>
-<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
-<tr NOSAVE>
-<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
-
-<tt> ls -l
-</tt>
-<td></td>
-</tr>
-</table>
-<br>
-If all is well you will have seven subdirectories with examples 
-with names like <tt>gmxdemo</tt>, <tt>methanol</tt>, 
-<tt>mixed</tt>, <tt>nmr1</tt>, <tt>nmr2</tt>, 
-<tt>speptide</tt> and <tt>water</tt>.
-<P>
-You are encouraged to look up the different programs and
-file formats in <a href="../online.html">
-the online manual</a> while you are browsing through the examples.</p>
-
-<b>While going through the tutorial you will find questions 
-(<font color="red">in a red font</font>). Try to answer them, to increase
-your understanding of molecular simulation.</b>
-
-
-
-<a href="gmxdemo.html"><h3>Go to the first step</h3></a>
 
 <br><hr><br>
 <H2><A NAME="files">GROMACS files</A></h2>
@@ -328,12 +232,3 @@ vol. 1, p. 211. New York: Freeman, 3 edition.</dd><p>
 
 </dl>
 </blockquote>
-
-<br>
-<hr>
-<div ALIGN=RIGHT>
-<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
-
-</div>
-</BODY>
-</HTML>

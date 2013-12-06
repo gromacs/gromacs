@@ -47,9 +47,10 @@
 #include "macros.h"
 #include "network.h"
 #include "statutil.h"
-#include "gmx_omp.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
+
+#include "gromacs/utility/gmxomp.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
  *  algorithmic module in mdrun. */

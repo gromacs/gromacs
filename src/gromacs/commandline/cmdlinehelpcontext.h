@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -57,6 +57,11 @@ namespace gmx
  * onlinehelp module is not exposed to extra features of the command-line help
  * export.
  *
+ * Copying a context works like with HelpWriterContext: the output file and
+ * most state is shared.  However, setModuleDisplayName() and setShowHidden()
+ * can be set independently for the child context.  Defaults for these options
+ * are inherited from the parent.
+ *
  * \ingroup module_commandline
  */
 class CommandLineHelpContext
@@ -67,7 +72,10 @@ class CommandLineHelpContext
          *
          * Wraps the constructor of HelpWriterContext.
          */
-        CommandLineHelpContext(File *file, HelpOutputFormat format);
+        CommandLineHelpContext(File *file, HelpOutputFormat format,
+                               const HelpLinks *links);
+        //! Creates a copy of the context.
+        explicit CommandLineHelpContext(const CommandLineHelpContext &other);
         ~CommandLineHelpContext();
 
         /*! \brief
@@ -76,14 +84,6 @@ class CommandLineHelpContext
          * \throws std::bad_alloc if out of memory.
          */
         void setModuleDisplayName(const std::string &name);
-        /*! \brief
-         * Sets the links to process in help output.
-         *
-         * A reference to \p links is stored until the CommandLineHelpContext
-         * is destructed.  The caller is responsible for ensuring that the
-         * links object remains valid long enough.
-         */
-        void setLinks(const HelpLinks &links);
         //! Sets whether hidden options should be shown in help output.
         void setShowHidden(bool bHidden);
 
@@ -102,6 +102,8 @@ class CommandLineHelpContext
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
+
+        GMX_DISALLOW_ASSIGN(CommandLineHelpContext);
 };
 
 /*! \libinternal \brief

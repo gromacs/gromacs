@@ -1,37 +1,38 @@
-/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.03
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -58,7 +59,7 @@
 #ifdef GMX_NBNXN_HALF_WIDTH_SIMD
 #define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
-#include "gmx_simd_macros.h"
+#include "gromacs/simd/macros.h"
 #endif
 
 
@@ -157,7 +158,7 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
                    const atom_nonbonded_kinetic_prop_t *prop,
                    int nmol)
 {
-    verletbuf_atomtype_t *att;
+    verletbuf_atomtype_t   *att;
     int                     natt, i;
 
     if (prop->mass == 0)
@@ -188,10 +189,10 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
     }
 }
 
-static void get_vsite_masses(const gmx_moltype_t *moltype,
+static void get_vsite_masses(const gmx_moltype_t  *moltype,
                              const gmx_ffparams_t *ffparams,
-                             real *vsite_m,
-                             int *n_nonlin_vsite)
+                             real                 *vsite_m,
+                             int                  *n_nonlin_vsite)
 {
     int            ft, i;
     const t_ilist *il;
@@ -400,7 +401,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             }
             prop[a].type     = atoms->atom[a].type;
             prop[a].q        = atoms->atom[a].q;
-             /* We consider an atom constrained, #DOF=2, when it is
+            /* We consider an atom constrained, #DOF=2, when it is
              * connected with constraints to (at least one) atom with
              * a mass of more than 0.4x its own mass. This is not a critical
              * parameter, since with roughly equal masses the unconstrained
@@ -422,7 +423,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
         {
             fprintf(debug, "type %d: m %5.2f t %d q %6.3f con %d con_m %5.3f con_l %5.3f n %d\n",
                     a, att[a].prop.mass, att[a].prop.type, att[a].prop.q,
-                    att[a].prop.bConstr, att[a].prop.con_mass, att[a].prop.con_len, 
+                    att[a].prop.bConstr, att[a].prop.con_mass, att[a].prop.con_len,
                     att[a].n);
         }
     }
@@ -442,10 +443,10 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
  * into account. If an atom has multiple constraints, this will result in
  * an overestimate of the displacement, which gives a larger drift and buffer.
  */
-static void constrained_atom_sigma2(real kT_fac,
+static void constrained_atom_sigma2(real                                 kT_fac,
                                     const atom_nonbonded_kinetic_prop_t *prop,
-                                    real *sigma2_2d,
-                                    real *sigma2_3d)
+                                    real                                *sigma2_2d,
+                                    real                                *sigma2_3d)
 {
     real sigma2_rot;
     real com_dist;
@@ -507,10 +508,10 @@ static void constrained_atom_sigma2(real kT_fac,
     *sigma2_3d = kT_fac/(prop->mass + prop->con_mass);
 }
 
-static void get_atom_sigma2(real kT_fac,
+static void get_atom_sigma2(real                                 kT_fac,
                             const atom_nonbonded_kinetic_prop_t *prop,
-                            real *sigma2_2d,
-                            real *sigma2_3d)
+                            real                                *sigma2_2d,
+                            real                                *sigma2_3d)
 {
     if (prop->bConstr)
     {
@@ -573,7 +574,7 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             tj = att[j].prop.type;
 
             /* Add up the up to four independent variances */
-            s2 = s2i_2d + s2i_3d + s2j_2d + s2j_3d; 
+            s2 = s2i_2d + s2i_3d + s2j_2d + s2j_3d;
 
             /* Note that attractive and repulsive potentials for individual
              * pairs will partially cancel.
@@ -712,7 +713,7 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
 }
 
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
-                             const t_inputrec *ir, real drift_target,
+                             const t_inputrec *ir,
                              const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist)
@@ -789,6 +790,20 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         md_ljr = reppow*pow(ir->rvdw, -(reppow+1));
         /* The contribution of the second derivative is negligible */
     }
+    else if (EVDW_PME(ir->vdwtype))
+    {
+        real b, r, br, br2, br4, br6;
+        b        = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
+        r        = ir->rvdw;
+        br       = b*r;
+        br2      = br*br;
+        br4      = br2*br2;
+        br6      = br4*br2;
+        /* -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2), see LJ-PME equations in manual] and r^-reppow */
+        md_ljd   = -exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*pow(r, -7.0);
+        md_ljr   = reppow*pow(r, -(reppow+1));
+        /* The contribution of the second derivative is negligible */
+    }
     else
     {
         gmx_fatal(FARGS, "Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
@@ -832,7 +847,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     {
         real b, rc, br;
 
-        b     = calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+        b     = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
         rc    = ir->rcoulomb;
         br    = b*rc;
         md_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
@@ -944,7 +959,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                     drift);
         }
 
-        if (fabs(drift) > drift_target)
+        if (fabs(drift) > ir->verletbuf_tol)
         {
             ib0 = ib;
         }

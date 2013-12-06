@@ -45,6 +45,7 @@
 #include "statutil.h"
 #include <ctype.h>
 #include "macros.h"
+#include "string2.h"
 
 #include "gromacs/utility/gmxmpi.h"
 
@@ -64,7 +65,7 @@ gmx_bool gmx_mpi_initialized(void)
 #endif
 }
 
-void gmx_fill_commrec_from_mpi(t_commrec *cr)
+void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_fill_commrec_from_mpi");
@@ -102,7 +103,7 @@ t_commrec *init_commrec()
     // TODO cr->duty should not be initialized here
     cr->duty = (DUTY_PP | DUTY_PME);
 
-#if defined GMX_LIB_MPI && !defined MPI_IN_PLACE_EXISTS
+#if defined GMX_MPI && !defined MPI_IN_PLACE_EXISTS
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(cr->mpb, 1);
     cr->mpb->ibuf        = NULL;
@@ -118,7 +119,7 @@ t_commrec *init_commrec()
     return cr;
 }
 
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro)
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 {
 #ifdef GMX_THREAD_MPI
     t_commrec *cr;
@@ -163,10 +164,45 @@ int gmx_node_rank(void)
 #endif
 }
 
-#if defined GMX_LIB_MPI && defined GMX_IS_BGQ
+#if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
 #include <spi/include/kernel/location.h>
 #endif
 
+int gmx_physicalnode_id_hash(void)
+{
+    int hash_int;
+
+#ifndef GMX_LIB_MPI
+    /* We have a single physical node */
+    hash_int = 0;
+#else
+    int  resultlen;
+    char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
+
+    /* This procedure can only differentiate nodes with different names.
+     * Architectures where different physical nodes have identical names,
+     * such as IBM Blue Gene, should use an architecture specific solution.
+     */
+    MPI_Get_processor_name(mpi_hostname, &resultlen);
+
+    /* The string hash function returns an unsigned int. We cast to an int.
+     * Negative numbers are converted to positive by setting the sign bit to 0.
+     * This makes the hash one bit smaller.
+     * A 63-bit hash (with 64-bit int) should be enough for unique node hashes,
+     * even on a million node machine. 31 bits might not be enough though!
+     */
+    hash_int =
+        (int)gmx_string_fullhash_func(mpi_hostname, gmx_string_hash_init);
+    if (hash_int < 0)
+    {
+        hash_int -= INT_MIN;
+    }
+#endif
+
+    return hash_int;
+}
+
+/* TODO: this function should be fully replaced by gmx_physicalnode_id_hash */
 int gmx_hostname_num()
 {
 #ifndef GMX_MPI
@@ -183,7 +219,7 @@ int gmx_hostname_num()
     char mpi_hostname[MPI_MAX_PROCESSOR_NAME], hostnum_str[MPI_MAX_PROCESSOR_NAME];
 
     MPI_Get_processor_name(mpi_hostname, &resultlen);
-#ifdef GMX_IS_BGQ
+#ifdef GMX_TARGET_BGQ
     Personality_t personality;
     Kernel_GetPersonality(&personality, sizeof(personality));
     /* Each MPI rank has a unique coordinate in a 6-dimensional space
@@ -235,7 +271,7 @@ int gmx_hostname_num()
     {
         fprintf(debug, "In gmx_hostname_num: hostname '%s', hostnum %d\n",
                 mpi_hostname, hostnum);
-#ifdef GMX_IS_BGQ
+#ifdef GMX_TARGET_BGQ
         fprintf(debug,
                 "Torus ID A: %d / %d B: %d / %d C: %d / %d D: %d / %d E: %d / %d\nNode ID T: %d / %d core: %d / %d hardware thread: %d / %d\n",
                 personality.Network_Config.Acoord,
@@ -434,7 +470,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
 }
 
 
-void gmx_barrier(const t_commrec *cr)
+void gmx_barrier(const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_barrier");
@@ -470,7 +506,7 @@ void gmx_abort(int gmx_unused noderank, int gmx_unused nnodes, int gmx_unused er
 #endif
 }
 
-void gmx_bcast(int nbytes, void *b, const t_commrec *cr)
+void gmx_bcast(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_bast");
@@ -479,7 +515,7 @@ void gmx_bcast(int nbytes, void *b, const t_commrec *cr)
 #endif
 }
 
-void gmx_bcast_sim(int nbytes, void *b, const t_commrec *cr)
+void gmx_bcast_sim(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_bast");
@@ -488,12 +524,12 @@ void gmx_bcast_sim(int nbytes, void *b, const t_commrec *cr)
 #endif
 }
 
-void gmx_sumd(int nr, double r[], const t_commrec *cr)
+void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumd");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
+#if defined(MPI_IN_PLACE_EXISTS)
     if (cr->nc.bUse)
     {
         if (cr->nc.rank_intra == 0)
@@ -551,12 +587,12 @@ void gmx_sumd(int nr, double r[], const t_commrec *cr)
 #endif
 }
 
-void gmx_sumf(int nr, float r[], const t_commrec *cr)
+void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumf");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
+#if defined(MPI_IN_PLACE_EXISTS)
     if (cr->nc.bUse)
     {
         /* Use two step summing.  */
@@ -613,12 +649,12 @@ void gmx_sumf(int nr, float r[], const t_commrec *cr)
 #endif
 }
 
-void gmx_sumi(int nr, int r[], const t_commrec *cr)
+void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumi");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
+#if defined(MPI_IN_PLACE_EXISTS)
     if (cr->nc.bUse)
     {
         /* Use two step summing */
@@ -671,12 +707,12 @@ void gmx_sumi(int nr, int r[], const t_commrec *cr)
 #endif
 }
 
-void gmx_sumli(int nr, gmx_large_int_t r[], const t_commrec *cr)
+void gmx_sumli(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumli");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
+#if defined(MPI_IN_PLACE_EXISTS)
     if (cr->nc.bUse)
     {
         /* Use two step summing */
@@ -739,7 +775,7 @@ void gmx_sumli(int nr, gmx_large_int_t r[], const t_commrec *cr)
 #ifdef GMX_MPI
 void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 {
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
+#if defined(MPI_IN_PLACE_EXISTS)
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
 #else
     /* this function is only used in code that is not performance critical,
@@ -762,7 +798,7 @@ void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 #ifdef GMX_MPI
 void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 {
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
+#if defined(MPI_IN_PLACE_EXISTS)
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
 #else
     /* this function is only used in code that is not performance critical,
@@ -782,7 +818,7 @@ void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 }
 #endif
 
-void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms)
+void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumd_sim");
@@ -791,7 +827,7 @@ void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms)
 #endif
 }
 
-void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms)
+void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumf_sim");
@@ -800,12 +836,12 @@ void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms)
 #endif
 }
 
-void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms)
+void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumi_sim");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
+#if defined(MPI_IN_PLACE_EXISTS)
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mpi_comm_masters);
 #else
     /* this is thread-unsafe, but it will do for now: */
@@ -825,12 +861,12 @@ void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms)
 #endif
 }
 
-void gmx_sumli_sim(int nr, gmx_large_int_t r[], const gmx_multisim_t *ms)
+void gmx_sumli_sim(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumli_sim");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
+#if defined(MPI_IN_PLACE_EXISTS)
     MPI_Allreduce(MPI_IN_PLACE, r, nr, GMX_MPI_LARGE_INT, MPI_SUM,
                   ms->mpi_comm_masters);
 #else

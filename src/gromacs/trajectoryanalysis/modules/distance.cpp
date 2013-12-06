@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -132,7 +132,7 @@ void
 Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "[TT]gmx distance[tt] calculates distances between pairs of positions",
+        "[THISMODULE] calculates distances between pairs of positions",
         "as a function of time. Each selection specifies an independent set",
         "of distances to calculate. Each selection should consist of pairs",
         "of positions, and the distances are computed between positions 1-2,",

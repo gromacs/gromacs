@@ -34,10 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_FILEIO_GMXFIO_INT_H
 #define GMX_FILEIO_GMXFIO_INT_H
-
 
 /* This is the new improved and thread safe version of gmxfio.  */
 
@@ -58,7 +56,8 @@
  */
 #define USE_XDR
 
-
+#include "gromacs/legacyheaders/thread_mpi/lock.h"
+#include "xdrf.h"
 
 /* the reader/writer functions  for t_iotype */
 typedef gmx_bool read_func (t_fileio *fio, void *item, int nitem, int eio,
@@ -97,12 +96,10 @@ struct t_fileio
 
     t_fileio   *next, *prev;           /* next and previous file pointers in the
                                           linked list */
-#ifdef GMX_THREAD_MPI
     tMPI_Lock_t  mtx;                  /* content locking mutex. This is a fast lock
                                           for performance reasons: in some cases every
                                           single byte that gets read/written requires
                                           a lock */
-#endif
 };
 
 

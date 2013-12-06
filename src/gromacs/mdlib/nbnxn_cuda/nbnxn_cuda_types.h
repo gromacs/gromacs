@@ -2,12 +2,11 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
+ * Copyright (c) 2001-2012, The GROMACS development team.
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -64,23 +63,11 @@ extern "C" {
  *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
  *
  *  The order of pointers to different electrostatic kernels defined in
- *  nbnxn_cuda.cu by the nb_default_kfunc_ptr and nb_legacy_kfunc_ptr arrays
+ *  nbnxn_cuda.cu by the nb_default_kfunc_ptr array
  *  should match the order of enumerated types below. */
 enum {
     eelCuCUT, eelCuRF, eelCuEWALD_TAB, eelCuEWALD_TAB_TWIN, eelCuEWALD_ANA, eelCuEWALD_ANA_TWIN, eelCuNR
 };
-
-/** Kernel flavors with different set of optimizations: default for CUDA <=v4.1
- *  compilers and legacy for earlier, 3.2 and 4.0 CUDA compilers. */
-enum {
-    eNbnxnCuKDefault, eNbnxnCuKLegacy, eNbnxnCuKNR
-};
-
-#define NBNXN_KVER_OLD(k)      (k == eNbnxnCuKOld)
-#define NBNXN_KVER_LEGACY(k)   (k == eNbnxnCuKLegacy)
-#define NBNXN_KVER_DEFAULT(k)  (k == eNbnxnCuKDefault)
-
-/* Non-bonded kernel versions. */
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
  * are passed to the kernels, except cu_timers_t. */
@@ -192,8 +179,6 @@ struct cu_timers
 struct nbnxn_cuda
 {
     cuda_dev_info_t *dev_info;       /**< CUDA device information                              */
-    int              kernel_ver;     /**< The version of the kernel to be executed on the
-                                          device in use, possible values: eNbnxnCuK*           */
     bool             bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
     bool             bUseStreamSync; /**< true if the standard cudaStreamSynchronize is used
                                           and not memory polling-based waiting                 */

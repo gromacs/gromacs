@@ -45,9 +45,7 @@
 #include "macros.h"
 #include <string.h>
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
@@ -55,22 +53,16 @@
 
 
 static gmx_bool            bOverAllocDD = FALSE;
-#ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 
 void set_over_alloc_dd(gmx_bool set)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&over_alloc_mutex);
     /* we just make sure that we don't set this at the same time.
        We don't worry too much about reading this rarely-set variable */
-#endif
     bOverAllocDD = set;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&over_alloc_mutex);
-#endif
 }
 
 int over_alloc_dd(int n)
@@ -395,22 +387,25 @@ void done_top(t_topology *top)
     done_blocka(&(top->excls));
 }
 
-static void done_pullgrp(t_pullgrp *pgrp)
+static void done_pull_group(t_pull_group *pgrp)
 {
-    sfree(pgrp->ind);
-    sfree(pgrp->ind_loc);
-    sfree(pgrp->weight);
-    sfree(pgrp->weight_loc);
+    if (pgrp->nat > 0)
+    {
+        sfree(pgrp->ind);
+        sfree(pgrp->ind_loc);
+        sfree(pgrp->weight);
+        sfree(pgrp->weight_loc);
+    }
 }
 
 static void done_pull(t_pull *pull)
 {
     int i;
 
-    for (i = 0; i < pull->ngrp+1; i++)
+    for (i = 0; i < pull->ngroup+1; i++)
     {
-        done_pullgrp(pull->grp);
-        done_pullgrp(pull->dyna);
+        done_pull_group(pull->group);
+        done_pull_group(pull->dyna);
     }
 }
 

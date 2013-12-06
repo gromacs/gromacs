@@ -2,9 +2,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -134,5 +134,14 @@ if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
         -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
         -DMODE=CHECK
         -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
-        COMMENT "Checking include dependencies and documentation" VERBATIM)
+        COMMENT "Checking include dependencies" VERBATIM)
+    add_custom_target(doccheck
+        ${CMAKE_COMMAND}
+        -DSRCDIR=${CMAKE_SOURCE_DIR}
+        -DBUILDDIR=${CMAKE_BINARY_DIR}
+        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
+        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+        -DMODE=CHECKDOC
+        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
+        COMMENT "Checking some aspects of Doxygen documentation" VERBATIM)
 endif ()

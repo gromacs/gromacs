@@ -35,12 +35,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -59,23 +60,23 @@
 #include <io.h>
 #endif
 
-#include "sysstuff.h"
-#include "string2.h"
-#include "futil.h"
-#include "network.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "statutil.h"
-
-
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
-
 /* Windows file stuff, only necessary for visual studio */
 #ifdef _MSC_VER
-#include "windows.h"
+#include <windows.h>
 #endif
+
+#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
+
+#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 /* we keep a linked list of all files opened through pipes (i.e.
    compressed or .gzipped files. This way we can distinguish between them
@@ -89,11 +90,9 @@ typedef struct t_pstack {
 static t_pstack    *pstack      = NULL;
 static gmx_bool     bUnbuffered = FALSE;
 
-#ifdef GMX_THREAD_MPI
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
 static tMPI_Thread_mutex_t pstack_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 void no_buffers(void)
 {
@@ -104,17 +103,14 @@ void push_ps(FILE *fp)
 {
     t_pstack *ps;
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
-#endif
 
     snew(ps, 1);
     ps->fp   = fp;
     ps->prev = pstack;
     pstack   = ps;
-#ifdef GMX_THREAD_MPI
+
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
 }
 
 #ifdef GMX_FAHCORE
@@ -153,9 +149,8 @@ int ffclose(FILE *fp)
 #else
     t_pstack *ps, *tmp;
     int       ret = 0;
-#ifdef GMX_THREAD_MPI
+
     tMPI_Thread_mutex_lock(&pstack_mutex);
-#endif
 
     ps = pstack;
     if (ps == NULL)
@@ -198,9 +193,8 @@ int ffclose(FILE *fp)
             }
         }
     }
-#ifdef GMX_THREAD_MPI
+
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
     return ret;
 #endif
 }
@@ -212,28 +206,21 @@ int ffclose(FILE *fp)
 
 void frewind(FILE *fp)
 {
-    t_pstack *ps;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
-#endif
 
-    ps = pstack;
+    t_pstack *ps = pstack;
     while (ps != NULL)
     {
         if (ps->fp == fp)
         {
             fprintf(stderr, "Cannot rewind compressed file!\n");
-#ifdef GMX_THREAD_MPI
             tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
             return;
         }
         ps = ps->prev;
     }
     rewind(fp);
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
 }
 
 int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
@@ -265,26 +252,19 @@ gmx_off_t gmx_ftell(FILE *stream)
 
 gmx_bool is_pipe(FILE *fp)
 {
-    t_pstack *ps;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
-#endif
 
-    ps = pstack;
+    t_pstack *ps = pstack;
     while (ps != NULL)
     {
         if (ps->fp == fp)
         {
-#ifdef GMX_THREAD_MPI
             tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
             return TRUE;
         }
         ps = ps->prev;
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
     return FALSE;
 }
 
@@ -343,38 +323,6 @@ gmx_bool gmx_fexist(const char *fname)
     else
     {
         fclose(test);
-        return TRUE;
-    }
-}
-
-static gmx_bool gmx_is_file(const char *fname)
-{
-    FILE *test;
-
-    if (fname == NULL)
-    {
-        return FALSE;
-    }
-    test = fopen(fname, "r");
-    if (test == NULL)
-    {
-        return FALSE;
-    }
-    else
-    {
-        fclose(test);
-        /*Windows doesn't allow fopen of directory - so we don't need to check this seperately */
-        #if (!((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__))
-        {
-            int         status;
-            struct stat st_buf;
-            status = stat (fname, &st_buf);
-            if (status != 0 || !S_ISREG(st_buf.st_mode))
-            {
-                return FALSE;
-            }
-        }
-        #endif
         return TRUE;
     }
 }
@@ -815,144 +763,48 @@ static gmx_bool search_subdirs(const char *parent, char *libdir)
 }
 
 
-/* Check if the program name begins with "/" on unix/cygwin, or
- * with "\" or "X:\" on windows. If not, the program name
- * is relative to the current directory.
- */
-static gmx_bool filename_is_absolute(char *name)
-{
-#ifdef GMX_NATIVE_WINDOWS
-    return ((name[0] == DIR_SEPARATOR) || ((strlen(name) > 3) && strncmp(name+1, ":\\", 2)) == 0);
-#else
-    return (name[0] == DIR_SEPARATOR);
-#endif
-}
-
 void get_libdir(char *libdir)
 {
-#define GMX_BINNAME_MAX 512
-    char     bin_name[GMX_BINNAME_MAX];
-    char     buf[GMX_BINNAME_MAX];
-    char     full_path[GMX_PATH_MAX+GMX_BINNAME_MAX];
-    char     system_path[GMX_PATH_MAX];
-    char    *dir, *ptr, *s;
-    gmx_bool found = FALSE;
-    int      i;
-
-    if (Program() != NULL)
+    // TODO: There is a potential buffer overrun in the way libdir is passed in.
+    try
     {
+        std::string fullPath = gmx::ProgramInfo::getInstance().fullBinaryPath();
 
-        /* First - detect binary name */
-        if (strlen(Program()) >= GMX_BINNAME_MAX)
-        {
-            gmx_fatal(FARGS, "The name of the binary is longer than the allowed buffer size (%d):\n'%s'", GMX_BINNAME_MAX, Program());
-        }
-        strncpy(bin_name, Program(), GMX_BINNAME_MAX-1);
-
-        /* On windows & cygwin we need to add the .exe extension
-         * too, or we wont be able to detect that the file exists
-         */
-#if (defined GMX_NATIVE_WINDOWS || defined GMX_CYGWIN)
-        if (strlen(bin_name) < 3 || gmx_strncasecmp(bin_name+strlen(bin_name)-4, ".exe", 4))
-        {
-            strcat(bin_name, ".exe");
-        }
-#endif
-
-        /* Only do the smart search part if we got a real name */
-        if (NULL != bin_name && strncmp(bin_name, "GROMACS", GMX_BINNAME_MAX))
-        {
-
-            if (!strchr(bin_name, DIR_SEPARATOR))
-            {
-                /* No slash or backslash in name means it must be in the path - search it! */
-                /* Add the local dir since it is not in the path on windows */
-                gmx_getcwd(system_path, sizeof(system_path));
-                sprintf(full_path, "%s%c%s", system_path, DIR_SEPARATOR, bin_name);
-                found = gmx_is_file(full_path);
-                if (!found && (s = getenv("PATH")) != NULL)
-                {
-                    char *dupped;
-
-                    dupped = gmx_strdup(s);
-                    s      = dupped;
-                    while (!found && (dir = gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
-                    {
-                        sprintf(full_path, "%s%c%s", dir, DIR_SEPARATOR, bin_name);
-                        found = gmx_is_file(full_path);
-                    }
-                    sfree(dupped);
-                }
-                if (!found)
-                {
-                    strcpy(libdir, GMXLIB_FALLBACK);
-                    return;
-                }
-            }
-            else if (!filename_is_absolute(bin_name))
-            {
-                /* name contains directory separators, but
-                 * it does not start at the root, i.e.
-                 * name is relative to the current dir
-                 */
-                gmx_getcwd(buf, sizeof(buf));
-                sprintf(full_path, "%s%c%s", buf, DIR_SEPARATOR, bin_name);
-            }
-            else
-            {
-                strncpy(full_path, bin_name, GMX_PATH_MAX);
-            }
-
-            /* Now we should have a full path and name in full_path,
-             * but on unix it might be a link, or a link to a link to a link..
-             */
-#ifndef GMX_NATIVE_WINDOWS
-            while ( (i = readlink(full_path, buf, sizeof(buf)-1)) > 0)
-            {
-                buf[i] = '\0';
-                /* If it doesn't start with "/" it is relative */
-                if (buf[0] != DIR_SEPARATOR)
-                {
-                    strncpy(strrchr(full_path, DIR_SEPARATOR)+1, buf, GMX_PATH_MAX);
-                }
-                else
-                {
-                    strncpy(full_path, buf, GMX_PATH_MAX);
-                }
-            }
-#endif
-
-            /* If running directly from the build tree, try to use the source
-             * directory.
-             */
+        // If running directly from the build tree, try to use the source
+        // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
-            if (strncmp(full_path, CMAKE_BINARY_DIR, strlen(CMAKE_BINARY_DIR)) == 0)
+        // TODO: Consider adding Path::startsWith(), as this may not work as
+        // expected.
+        if (gmx::startsWith(fullPath, CMAKE_BINARY_DIR))
+        {
+            if (search_subdirs(CMAKE_SOURCE_DIR, libdir))
             {
-                if (search_subdirs(CMAKE_SOURCE_DIR, libdir))
-                {
-                    return;
-                }
+                return;
             }
+        }
 #endif
 
-            /* Remove the executable name - it always contains at least one slash */
-            *(strrchr(full_path, DIR_SEPARATOR)+1) = '\0';
-            /* Now we have the full path to the gromacs executable.
-             * Use it to find the library dir.
-             */
-            found = FALSE;
-            while (!found && ( (ptr = strrchr(full_path, DIR_SEPARATOR)) != NULL ) )
+        // Remove the executable name
+        fullPath = gmx::Path::splitToPathAndFilename(fullPath).first;
+        // Now we have the full path to the gromacs executable.
+        // Use it to find the library dir.
+        while (!fullPath.empty())
+        {
+            if (search_subdirs(fullPath.c_str(), libdir))
             {
-                *ptr  = '\0';
-                found = search_subdirs(full_path, libdir);
+                return;
             }
+            fullPath = gmx::Path::splitToPathAndFilename(fullPath).first;
         }
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
     /* End of smart searching. If we didn't find it in our parent tree,
      * or if the program name wasn't set, at least try some standard
      * locations before giving up, in case we are running from e.g.
      * a users home directory. This only works on unix or cygwin...
      */
+    bool found = false;
 #ifndef GMX_NATIVE_WINDOWS
     if (!found)
     {

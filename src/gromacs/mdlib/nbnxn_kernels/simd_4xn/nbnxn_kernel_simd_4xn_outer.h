@@ -1,12 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS Development Team
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -74,14 +72,6 @@
     gmx_mm_pr  fix_S3, fiy_S3, fiz_S3;
 #if UNROLLJ >= 4
     /* We use an i-force SIMD register width of 4 */
-#if UNROLLJ == 4
-#define gmx_mm_pr4    gmx_mm_pr
-#define gmx_load_pr4  gmx_load_pr
-#define gmx_store_pr4 gmx_store_pr
-#define gmx_add_pr4   gmx_add_pr
-#else
-    /* The pr4 stuff is defined in nbnxn_kernel_simd_utils.h */
-#endif
     gmx_mm_pr4 fix_S, fiy_S, fiz_S;
 #else
     /* We use an i-force SIMD register width of 2 */
@@ -120,12 +110,12 @@
     const real *tab_coul_V;
 #endif
     /* Thread-local working buffers for force and potential lookups */
-    int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1], *ti0 = NULL;
-    int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1], *ti1 = NULL;
-    int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2 = NULL;
-    int        ti3_array[2*GMX_SIMD_WIDTH_HERE-1], *ti3 = NULL;
+    int         ti0_array[2*GMX_SIMD_WIDTH_HERE], *ti0 = NULL;
+    int         ti1_array[2*GMX_SIMD_WIDTH_HERE], *ti1 = NULL;
+    int         ti2_array[2*GMX_SIMD_WIDTH_HERE], *ti2 = NULL;
+    int         ti3_array[2*GMX_SIMD_WIDTH_HERE], *ti3 = NULL;
 #ifdef CALC_ENERGIES
-    gmx_mm_pr  mhalfsp_S;
+    gmx_mm_pr   mhalfsp_S;
 #endif
 #endif
 
@@ -275,8 +265,8 @@
 #endif /* CALC_COUL_TAB */
 
 #ifdef CALC_COUL_EWALD
-    beta2_S = gmx_set1_pr(ic->ewaldcoeff*ic->ewaldcoeff);
-    beta_S  = gmx_set1_pr(ic->ewaldcoeff);
+    beta2_S = gmx_set1_pr(ic->ewaldcoeff_q*ic->ewaldcoeff_q);
+    beta_S  = gmx_set1_pr(ic->ewaldcoeff_q);
 #endif
 
 #if (defined CALC_COUL_TAB || defined CALC_COUL_EWALD) && defined CALC_ENERGIES
@@ -435,7 +425,7 @@
 #endif
 #ifdef CALC_COUL_EWALD
             /* beta/sqrt(pi) */
-            Vc_sub_self = 0.5*ic->ewaldcoeff*M_2_SQRTPI;
+            Vc_sub_self = 0.5*ic->ewaldcoeff_q*M_2_SQRTPI;
 #endif
 
             for (ia = 0; ia < UNROLLI; ia++)
@@ -598,12 +588,9 @@
         gmx_store_pr4(f+sciz, gmx_add_pr4(fiz_S, gmx_load_pr4(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
-        gmx_store_pr4(shf, fix_S);
-        fshift[ish3+0] += SUM_SIMD4(shf);
-        gmx_store_pr4(shf, fiy_S);
-        fshift[ish3+1] += SUM_SIMD4(shf);
-        gmx_store_pr4(shf, fiz_S);
-        fshift[ish3+2] += SUM_SIMD4(shf);
+        fshift[ish3+0] += gmx_sum_simd4(fix_S, shf);
+        fshift[ish3+1] += gmx_sum_simd4(fiy_S, shf);
+        fshift[ish3+2] += gmx_sum_simd4(fiz_S, shf);
 #endif
 #else
         fix0_S = gmx_mm_transpose_sum2_pr(fix_S0, fix_S1);
@@ -622,24 +609,19 @@
         gmx_store_pr(f+sciz+2, gmx_add_pr(fiz2_S, gmx_load_pr(f+sciz+2)));
 
 #ifdef CALC_SHIFTFORCES
-        gmx_store_pr(shf, gmx_add_pr(fix0_S, fix2_S));
-        fshift[ish3+0] += shf[0] + shf[1];
-        gmx_store_pr(shf, gmx_add_pr(fiy0_S, fiy2_S));
-        fshift[ish3+1] += shf[0] + shf[1];
-        gmx_store_pr(shf, gmx_add_pr(fiz0_S, fiz2_S));
-        fshift[ish3+2] += shf[0] + shf[1];
+        fshift[ish3+0] += gmx_sum_simd2(gmx_add_pr(fix0_S, fix2_S), shf);
+        fshift[ish3+1] += gmx_sum_simd2(gmx_add_pr(fiy0_S, fiy2_S), shf);
+        fshift[ish3+2] += gmx_sum_simd2(gmx_add_pr(fiz0_S, fiz2_S), shf);
 #endif
 #endif
 
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
-            gmx_store_pr(tmpsum, vctot_S);
-            *Vc += SUM_SIMD(tmpsum);
+            *Vc += gmx_sum_simd(vctot_S, tmpsum);
         }
 
-        gmx_store_pr(tmpsum, Vvdwtot_S);
-        *Vvdw += SUM_SIMD(tmpsum);
+        *Vvdw += gmx_sum_simd(Vvdwtot_S, tmpsum);
 #endif
 
         /* Outer loop uses 6 flops/iteration */

@@ -1,12 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS Development Team
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -113,14 +111,14 @@
     unsigned      *exclusion_filter;
     gmx_exclfilter filter_S0, filter_S2;
 
-    gmx_mm_pr   zero_S = gmx_set1_pr(0);
+    gmx_mm_pr      zero_S = gmx_set1_pr(0);
 
-    gmx_mm_pr   one_S = gmx_set1_pr(1.0);
-    gmx_mm_pr   iq_S0 = gmx_setzero_pr();
-    gmx_mm_pr   iq_S2 = gmx_setzero_pr();
-    gmx_mm_pr   mrc_3_S;
+    gmx_mm_pr      one_S = gmx_set1_pr(1.0);
+    gmx_mm_pr      iq_S0 = gmx_setzero_pr();
+    gmx_mm_pr      iq_S2 = gmx_setzero_pr();
+    gmx_mm_pr      mrc_3_S;
 #ifdef CALC_ENERGIES
-    gmx_mm_pr   hrc_3_S, moh_rc_S;
+    gmx_mm_pr      hrc_3_S, moh_rc_S;
 #endif
 
 #ifdef CALC_COUL_TAB
@@ -262,8 +260,8 @@
 #endif /* CALC_COUL_TAB */
 
 #ifdef CALC_COUL_EWALD
-    beta2_S = gmx_set1_pr(ic->ewaldcoeff*ic->ewaldcoeff);
-    beta_S  = gmx_set1_pr(ic->ewaldcoeff);
+    beta2_S = gmx_set1_pr(ic->ewaldcoeff_q*ic->ewaldcoeff_q);
+    beta_S  = gmx_set1_pr(ic->ewaldcoeff_q);
 #endif
 
 #if (defined CALC_COUL_TAB || defined CALC_COUL_EWALD) && defined CALC_ENERGIES
@@ -419,7 +417,7 @@
 #endif
 #ifdef CALC_COUL_EWALD
             /* beta/sqrt(pi) */
-            Vc_sub_self = 0.5*ic->ewaldcoeff*M_2_SQRTPI;
+            Vc_sub_self = 0.5*ic->ewaldcoeff_q*M_2_SQRTPI;
 #endif
 
             for (ia = 0; ia < UNROLLI; ia++)
@@ -571,23 +569,17 @@
         gmx_store_pr4(f+sciz, gmx_add_pr4(fiz_S, gmx_load_pr4(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
-        gmx_store_pr4(shf, fix_S);
-        fshift[ish3+0] += SUM_SIMD4(shf);
-        gmx_store_pr4(shf, fiy_S);
-        fshift[ish3+1] += SUM_SIMD4(shf);
-        gmx_store_pr4(shf, fiz_S);
-        fshift[ish3+2] += SUM_SIMD4(shf);
+        fshift[ish3+0] += gmx_sum_simd4(fix_S, shf);
+        fshift[ish3+1] += gmx_sum_simd4(fiy_S, shf);
+        fshift[ish3+2] += gmx_sum_simd4(fiz_S, shf);
 #endif
 
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
-            gmx_store_pr(tmpsum, vctot_S);
-            *Vc += SUM_SIMD(tmpsum);
+            *Vc += gmx_sum_simd(vctot_S, tmpsum);
         }
-
-        gmx_store_pr(tmpsum, Vvdwtot_S);
-        *Vvdw += SUM_SIMD(tmpsum);
+        *Vvdw += gmx_sum_simd(Vvdwtot_S, tmpsum);
 #endif
 
         /* Outer loop uses 6 flops/iteration */

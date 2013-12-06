@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -43,6 +43,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 
 #include <new>
 #include <vector>
@@ -73,7 +74,7 @@ class CommandLine::Impl
 CommandLine::Impl::Impl(const char *const cmdline[], size_t count)
 {
     args_.reserve(count);
-    argv_.reserve(count);
+    argv_.reserve(count + 1);
     argc_ = static_cast<int>(count);
     for (size_t i = 0; i < count; ++i)
     {
@@ -85,6 +86,7 @@ CommandLine::Impl::Impl(const char *const cmdline[], size_t count)
         args_.push_back(arg);
         argv_.push_back(arg);
     }
+    argv_.push_back(NULL);
 }
 
 CommandLine::Impl::~Impl()
@@ -124,15 +126,58 @@ void CommandLine::append(const char *arg)
                        "Command-line has been modified externally");
     size_t newSize = impl_->args_.size() + 1;
     impl_->args_.reserve(newSize);
-    impl_->argv_.reserve(newSize);
+    impl_->argv_.reserve(newSize + 1);
     char *newArg = strdup(arg);
     if (newArg == NULL)
     {
         throw std::bad_alloc();
     }
     impl_->args_.push_back(newArg);
+    impl_->argv_.pop_back(); // Remove the trailing NULL.
     impl_->argv_.push_back(newArg);
+    impl_->argv_.push_back(NULL);
     impl_->argc_ = static_cast<int>(newSize);
+}
+
+namespace
+{
+
+//! Helper function for converting values to strings
+template <typename T>
+std::string value2string(T value)
+{
+    std::stringstream ss;
+    ss << value;
+    return ss.str();
+}
+
+}
+
+void CommandLine::addOption(const char *name,
+                            const char *value)
+{
+    append(name);
+    append(value);
+}
+
+void CommandLine::addOption(const char        *name,
+                            const std::string &value)
+{
+    addOption(name, value.c_str());
+}
+
+void CommandLine::addOption(const char *name,
+                            int         value)
+{
+    append(name);
+    append(value2string(value));
+}
+
+void CommandLine::addOption(const char *name,
+                            double      value)
+{
+    append(name);
+    append(value2string(value));
 }
 
 int &CommandLine::argc()

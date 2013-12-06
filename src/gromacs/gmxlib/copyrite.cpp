@@ -159,9 +159,11 @@ static void printCopyright(FILE *fp)
         "GROMACS is written by:",
         "Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
         "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra,",
-        "Gerrit Groenhof, Peter Kasson, Per Larsson, Pieter Meulenhoff,",
-        "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz,",
+        "Gerrit Groenhof, Peter Kasson, Per Larsson,"
+        "Magnus Lundborg, Pieter Meulenhoff, Teemu Murtola,",
+        "Szilard Pall, Sander Pronk, Roland Schulz,",
         "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
+        "Christian Wennberg, Mark Abraham\n",
         "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
         "Copyright (c) 2001-2013, The GROMACS development team at",
@@ -696,7 +698,7 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
     fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
             GromacsVersion(), precisionString, suffix);
     fprintf(fp, "%sExecutable: %s%s\n", prefix,
-            programInfo.programNameWithPath().c_str(), suffix);
+            programInfo.fullBinaryPath().c_str(), suffix);
     fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
             prefix, suffix, prefix, programInfo.commandLine().c_str(), suffix);
     if (settings.bExtendedInfo_)

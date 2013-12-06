@@ -2,9 +2,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -124,16 +124,6 @@ if (HAS_NO_DEPRECATED_REGISTER)
     set(_scanner_cpp_compiler_flags "${_scanner_cpp_compiler_flags} -Wno-deprecated-register")
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
-
-if(GMX_BUILD_OWN_FFTW)
-    # Only needed for cmake 2.8.7, otherwise this should be automatic
-    # This dependency has to be made here rather than the CMakeLists.txt that
-    # does the FFTW build, because of the order in which
-    # add_subdirectory() calls are made in the top-level CMakeLists.txt; the
-    # md library target does not necessarily exist yet. Also enabling and
-    # disabling GMX_BUILD_OWN_FFTW changes dependencies correctly.
-    add_dependencies(libgromacs gmxfftw)
-endif()
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}

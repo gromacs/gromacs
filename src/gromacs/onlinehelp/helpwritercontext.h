@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -73,27 +73,37 @@ enum HelpOutputFormat
  * This is used when exporting all the help from the wrapper binary to avoid
  * repeatedly constructing the same data structure for each help item.
  *
+ * While the links are in principle independent of the output format, the
+ * constructor takes the output format to be able to preformat the links,
+ * avoiding repeated processing during markup substitution.  Could be hidden
+ * behind the scenes in HelpWriterContext, but that would complicate the
+ * implementation.
+ *
  * \ingroup module_onlinehelp
  */
 class HelpLinks
 {
     public:
-        //! Initializes an empty links collection.
-        HelpLinks();
+        /*! \brief
+         * Initializes an empty links collection for the given output format.
+         */
+        explicit HelpLinks(HelpOutputFormat format);
         ~HelpLinks();
 
         /*! \brief
          * Adds a link.
          *
-         * \param[in] linkName   Name of the link in input text.
-         * \param[in] targetName Hyperlink target.
+         * \param[in] linkName     Name of the link in input text.
+         * \param[in] targetName   Hyperlink target.
+         * \param[in] displayName  Text to show as the link.
          *
          * Any occurrence of \p linkName in the text passed to markup
          * substitution methods in HelpWriterContext is made into a hyperlink
          * to \p targetName if the markup format supports that.
          */
         void addLink(const std::string &linkName,
-                     const std::string &targetName);
+                     const std::string &targetName,
+                     const std::string &displayName);
 
     private:
         class Impl;
@@ -110,9 +120,10 @@ class HelpLinks
  * The purpose of this class is to pass information about the output format to
  * methods that write help, and to abstract away most of the details of
  * different output formats.
- * Additionally, it can keep other context information, although it currently
- * does not.  Such additional context information would be useful for
- * formatting links/references to other help topics.
+ *
+ * The state of a context object (excluding the fact that the output file is
+ * written to) does not change after initial construction of the object.
+ * Copying creates a context object that shares state with the source.
  *
  * TODO: This class will need additional work as part of Redmine issue #969.
  *
@@ -128,10 +139,35 @@ class HelpWriterContext
          * \throws std::bad_alloc if out of memory.
          */
         HelpWriterContext(File *file, HelpOutputFormat format);
+        /*! \brief
+         * Initializes a context with the given output file, format and links.
+         *
+         * \throws std::bad_alloc if out of memory.
+         *
+         * A reference to \p links is stored until the HelpWriterContext
+         * is destructed.  The caller is responsible for ensuring that the
+         * links object remains valid long enough.
+         */
+        HelpWriterContext(File *file, HelpOutputFormat format,
+                          const HelpLinks *links);
+        //! Creates a copy of the context.
+        HelpWriterContext(const HelpWriterContext &other);
         ~HelpWriterContext();
 
-        //! Sets the links to use in this context.
-        void setLinks(const HelpLinks &links);
+        /*! \brief
+         * Adds a string replacement for markup subsitution.
+         *
+         * \param[in] search   Text to replace in input.
+         * \param[in] replace  Text that each occurrence of \p search is
+         *     replaced with.
+         * \throws std::bad_alloc if out of memory.
+         *
+         * \todo
+         * Improve semantics if the same \p search item is set multiple
+         * times.
+         */
+        void setReplacement(const std::string &search,
+                            const std::string &replace);
 
         /*! \brief
          * Returns the active output format.
@@ -213,7 +249,18 @@ class HelpWriterContext
     private:
         class Impl;
 
+        /*! \brief
+         * Constructs a context object with the given implementation class.
+         *
+         * \param[in] impl  Implementation object.
+         *
+         * Does not throw.
+         */
+        explicit HelpWriterContext(Impl *impl);
+
         PrivateImplPointer<Impl> impl_;
+
+        GMX_DISALLOW_ASSIGN(HelpWriterContext);
 };
 
 } // namespace gmx

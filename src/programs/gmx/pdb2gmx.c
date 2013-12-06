@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -1092,20 +1093,20 @@ typedef struct {
 int gmx_pdb2gmx(int argc, char *argv[])
 {
     const char *desc[] = {
-        "This program reads a [TT].pdb[tt] (or [TT].gro[tt]) file, reads",
+        "[THISMODULE] reads a [TT].pdb[tt] (or [TT].gro[tt]) file, reads",
         "some database files, adds hydrogens to the molecules and generates",
         "coordinates in GROMACS (GROMOS), or optionally [TT].pdb[tt], format",
         "and a topology in GROMACS format.",
         "These files can subsequently be processed to generate a run input file.",
         "[PAR]",
-        "[TT]pdb2gmx[tt] will search for force fields by looking for",
+        "[THISMODULE] will search for force fields by looking for",
         "a [TT]forcefield.itp[tt] file in subdirectories [TT]<forcefield>.ff[tt]",
         "of the current working directory and of the GROMACS library directory",
         "as inferred from the path of the binary or the [TT]GMXLIB[tt] environment",
         "variable.",
         "By default the forcefield selection is interactive,",
         "but you can use the [TT]-ff[tt] option to specify one of the short names",
-        "in the list on the command line instead. In that case [TT]pdb2gmx[tt] just looks",
+        "in the list on the command line instead. In that case [THISMODULE] just looks",
         "for the corresponding [TT]<forcefield>.ff[tt] directory.",
         "[PAR]",
         "After choosing a force field, all files will be read only from",
@@ -1156,7 +1157,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "two protein chains or if you have a HEME group bound to a protein.",
         "In such cases multiple chains should be contained in a single",
         "[TT]moleculetype[tt] definition.",
-        "To handle this, [TT]pdb2gmx[tt] uses two separate options.",
+        "To handle this, [THISMODULE] uses two separate options.",
         "First, [TT]-chainsep[tt] allows you to choose when a new chemical chain should",
         "start, and termini added when applicable. This can be done based on the",
         "existence of TER records, when the chain id changes, or combinations of either",
@@ -1166,7 +1167,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "This can be turned off (no merging), all non-water chains can be merged into a",
         "single molecule, or the selection can be done interactively.[PAR]",
 
-        "[TT]pdb2gmx[tt] will also check the occupancy field of the [TT].pdb[tt] file.",
+        "[THISMODULE] will also check the occupancy field of the [TT].pdb[tt] file.",
         "If any of the occupancies are not one, indicating that the atom is",
         "not resolved well in the structure, a warning message is issued.",
         "When a [TT].pdb[tt] file does not originate from an X-ray structure determination",

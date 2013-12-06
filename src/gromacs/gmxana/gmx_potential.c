@@ -406,7 +406,7 @@ void plot_potential(double *potential[], double *charge[], double *field[],
 int gmx_potential(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_potential[tt] computes the electrostatical potential across the box. The potential is",
+        "[THISMODULE] computes the electrostatical potential across the box. The potential is",
         "calculated by first summing the charges per slice and then integrating",
         "twice of this charge distribution. Periodic boundaries are not taken",
         "into account. Reference of potential is taken to be the left side of",

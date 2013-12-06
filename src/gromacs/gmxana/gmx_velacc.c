@@ -177,7 +177,7 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
 int gmx_velacc(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_velacc[tt] computes the velocity autocorrelation function.",
+        "[THISMODULE] computes the velocity autocorrelation function.",
         "When the [TT]-m[tt] option is used, the momentum autocorrelation",
         "function is calculated.[PAR]",
         "With option [TT]-mol[tt] the velocity autocorrelation function of",

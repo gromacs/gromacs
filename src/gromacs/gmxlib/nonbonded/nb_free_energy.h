@@ -36,7 +36,7 @@
 #define _nb_free_energy_h_
 
 #include "nb_kernel.h"
-#include <typedefs.h>
+#include "typedefs.h"
 
 void
 gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,

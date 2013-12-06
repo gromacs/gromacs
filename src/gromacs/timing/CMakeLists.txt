@@ -2,9 +2,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -35,7 +35,9 @@
 file(GLOB TIMING_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TIMING_SOURCES} PARENT_SCOPE)
 
-# No installed headers for this module
+set(TIMING_PUBLIC_HEADERS
+    walltime_accounting.h)
+gmx_install_headers(timing ${TIMING_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

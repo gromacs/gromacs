@@ -54,10 +54,6 @@
 #include "gmxfio.h"
 #include "md5.h"
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
-
 #include "gmxfio_int.h"
 
 

@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -222,7 +222,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_covar, "covar",
                    "Calculate and diagonalize the covariance matrix");
     registerModule(manager, &gmx_current, "current",
-                   "Calculate dielectric constants and charge autocorrelation function");
+                   "Calculate dielectric constants and current autocorrelation function");
     registerModule(manager, &gmx_density, "density",
                    "Calculate the density of the system");
     registerModule(manager, &gmx_densmap, "densmap",
@@ -305,11 +305,11 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_saltbr, "saltbr",
                    "Compute salt bridges");
     registerModule(manager, &gmx_sans, "sans",
-                   "Compute the small angle neutron scattering spectra");
+                   "Compute small angle neutron scattering spectra");
     registerModule(manager, &gmx_sas, "sas",
                    "Compute solvent accessible surface area");
     registerModule(manager, &gmx_saxs, "saxs",
-                   "Calculates SAXS structure factors based on Cromer's method");
+                   "Compute small angle X-ray scattering spectra");
     registerModule(manager, &gmx_sham, "sham",
                    "Compute free energies or other histograms from histograms");
     registerModule(manager, &gmx_sigeps, "sigeps",
@@ -327,7 +327,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_tune_pme, "tune_pme",
                    "Time mdrun as a function of PME nodes to optimize settings");
     registerModule(manager, &gmx_vanhove, "vanhove",
-                   "Compute Van Hove correlation functions");
+                   "Compute Van Hove displacement and correlation functions");
     registerModule(manager, &gmx_velacc, "velacc",
                    "Calculate velocity autocorrelation functions");
     registerModule(manager, &gmx_wham, "wham",
@@ -337,7 +337,182 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_view, "view",
                    "View a trajectory on an X-Windows terminal");
 
-    // TODO: Also include binaries from other directories than src/tools/:
-    //        "mdrun|finds a potential energy minimum and calculates the Hessian");
-    //        "mdrun|with -rerun (re)calculates energies for trajectory frames");
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Generating topologies and coordinates");
+        group.addModuleWithDescription("editconf", "Edit the box and write subgroups");
+        group.addModule("protonate");
+        group.addModule("x2top");
+        group.addModule("genbox");
+        group.addModule("genconf");
+        group.addModule("genion");
+        group.addModule("genrestr");
+        group.addModule("pdb2gmx");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Running a simulation");
+        group.addModule("grompp");
+        group.addModule("mdrun");
+        group.addModule("tpbconv");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Viewing trajectories");
+        group.addModule("nmtraj");
+        group.addModule("view");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Processing energies");
+        group.addModule("enemat");
+        group.addModule("energy");
+        group.addModuleWithDescription("mdrun", "(Re)calculate energies for trajectory frames with -rerun");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Converting files");
+        group.addModule("editconf");
+        group.addModule("eneconv");
+        group.addModule("sigeps");
+        group.addModule("trjcat");
+        group.addModule("trjconv");
+        group.addModule("xpm2ps");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Tools");
+        group.addModule("analyze");
+        group.addModule("dyndom");
+        group.addModule("filter");
+        group.addModule("lie");
+        group.addModule("morph");
+        group.addModule("pme_error");
+        group.addModule("sham");
+        group.addModule("spatial");
+        group.addModule("traj");
+        group.addModule("tune_pme");
+        group.addModule("wham");
+        group.addModule("check");
+        group.addModule("dump");
+        group.addModule("make_ndx");
+        group.addModule("mk_angndx");
+        group.addModule("trjorder");
+        group.addModule("xpm2ps");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Distances between structures");
+        group.addModule("cluster");
+        group.addModule("confrms");
+        group.addModule("rms");
+        group.addModule("rmsf");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Distances in structures over time");
+        group.addModule("mindist");
+        group.addModule("mdmat");
+        group.addModule("polystat");
+        group.addModule("rmsdist");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Mass distribution properties over time");
+        group.addModule("gyrate");
+        group.addModule("msd");
+        group.addModule("polystat");
+        group.addModule("rdf");
+        group.addModule("rotacf");
+        group.addModule("rotmat");
+        group.addModule("sans");
+        group.addModule("saxs");
+        group.addModule("traj");
+        group.addModule("vanhove");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Analyzing bonded interactions");
+        group.addModule("angle");
+        group.addModule("mk_angndx");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Structural properties");
+        group.addModule("anadock");
+        group.addModule("bundle");
+        group.addModule("clustsize");
+        group.addModule("disre");
+        group.addModule("hbond");
+        group.addModule("order");
+        group.addModule("principal");
+        group.addModule("rdf");
+        group.addModule("saltbr");
+        group.addModule("sas");
+        group.addModule("sorient");
+        group.addModule("spol");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Kinetic properties");
+        group.addModule("bar");
+        group.addModule("current");
+        group.addModule("dos");
+        group.addModule("dyecoupl");
+        group.addModule("kinetics");
+        group.addModule("principal");
+        group.addModule("tcaf");
+        group.addModule("traj");
+        group.addModule("vanhove");
+        group.addModule("velacc");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Electrostatic properties");
+        group.addModule("current");
+        group.addModule("dielectric");
+        group.addModule("dipoles");
+        group.addModule("potential");
+        group.addModule("spol");
+        group.addModule("genion");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Protein-specific analysis");
+        group.addModule("do_dssp");
+        group.addModule("chi");
+        group.addModule("helix");
+        group.addModule("helixorient");
+        group.addModule("rama");
+        group.addModule("wheel");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Interfaces");
+        group.addModule("bundle");
+        group.addModule("density");
+        group.addModule("densmap");
+        group.addModule("densorder");
+        group.addModule("h2order");
+        group.addModule("hydorder");
+        group.addModule("order");
+        group.addModule("potential");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Covariance analysis");
+        group.addModuleWithDescription("anaeig", "Analyze the eigenvectors");
+        group.addModule("covar");
+        group.addModule("make_edi");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Normal modes");
+        group.addModuleWithDescription("anaeig", "Analyze the normal modes");
+        group.addModule("nmeig");
+        group.addModule("nmtraj");
+        group.addModule("nmens");
+        group.addModule("grompp");
+        group.addModuleWithDescription("mdrun", "Find a potential energy minimum and calculate the Hessian");
+    }
 }

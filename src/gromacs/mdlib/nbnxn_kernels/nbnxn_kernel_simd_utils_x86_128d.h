@@ -1,12 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS Development Team
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -36,6 +34,8 @@
  */
 #ifndef _nbnxn_kernel_simd_utils_x86_128d_h_
 #define _nbnxn_kernel_simd_utils_x86_128d_h_
+
+#include "gromacs/legacyheaders/types/simple.h"
 
 /* This files contains all functions/macros for the SIMD kernels
  * which have explicit dependencies on the j-cluster size and/or SIMD-width.
@@ -130,7 +130,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * AVX_256. */
 
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
+load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int gmx_unused *ti,
              __m128d *ctab0_S, __m128d *ctab1_S)
 {
     int     idx[2];
@@ -150,7 +150,7 @@ load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_epi32 ti_S, int *ti,
+               gmx_epi32 ti_S, int gmx_unused *ti,
                __m128d *ctab0_S, __m128d *ctab1_S, __m128d *ctabv_S)
 {
     int     idx[2];

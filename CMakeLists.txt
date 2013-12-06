@@ -1,6 +1,38 @@
-cmake_minimum_required(VERSION 2.8)
-# Keep CMake suitably quiet on Cygwin
-set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
+cmake_minimum_required(VERSION 2.8.8)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -20,12 +52,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # machine with no git.
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "5.0-dev")
+set(PROJECT_VERSION "5.0-beta2-dev")
 # The version number of the regressiontest tarball against which this
 # git branch can be tested. Normally, this will be the version of the
 # last patch release. Comment the next line out for branches leading
 # to a major/minor release.
-set(REGRESSIONTEST_VERSION "4.6.2")
+set(REGRESSIONTEST_VERSION "5.0-beta1")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -65,6 +97,9 @@ include(gmxBuildTypeReference)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference." FORCE)
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+        "MinSizeRel" "RelWithDebInfo")
 endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
@@ -79,7 +114,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
 set(CPACK_SOURCE_IGNORE_FILES "\\\\.isreposource$;\\\\.git/;\\\\.gitignore$")
 set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/share/man;share/man")
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/share/man/man1;share/man/man1;${CMAKE_BINARY_DIR}/share/man/man7;share/man/man7;${CMAKE_BINARY_DIR}/share/html/final;share/html")
 set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 
 #must come after all cpack settings!
@@ -219,6 +254,14 @@ mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 # These need to be done early (before further tests).
 #####################################################################
 
+# Warn if C and C++ compilers do not match
+if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    message(WARNING "The ids of the C and C++ compilers do not match (respectively ${CMAKE_C_COMPILER_ID} and ${CMAKE_CXX_COMPILER_ID}). Note that mixing different C/C++ compilers can cause problems!")
+endif()
+if(NOT "${CMAKE_C_COMPILER_VERSION}" STREQUAL "${CMAKE_CXX_COMPILER_VERSION}")
+    message(WARNING "The versions of the C and C++ compilers do not match (respectively ${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}). Note that mixing different C/C++ compilers can cause problems!")
+endif()
+
 # The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
 # are used with permission from CMake v2.8.9 so that GROMACS can detect
 # invalid options with the Intel Compilers.
@@ -227,16 +270,11 @@ mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
-# Get compiler version information, needs to be done early as check that depend
-# on compiler verison follow below.
-include(gmxGetCompilerInfo)
-get_compiler_version()
-
 # First exclude compilers known to not work with OpenMP although claim to support it:
 # gcc 4.2.1 and gcc-llvm 4.2.1 (also claims to be 4.2.1) on Mac OS X
 # This fixes redmine 900 and needs to run before OpenMP flags are set below.
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND
-    (CMAKE_COMPILER_IS_GNUCC AND C_COMPILER_VERSION AND C_COMPILER_VERSION VERSION_LESS 4.3))
+    (CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.3))
     message(STATUS "OpenMP multithreading not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled")
     set(GMX_OPENMP OFF CACHE BOOL
         "OpenMP multithreading not not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled!" FORCE)
@@ -302,10 +340,10 @@ endif()
 # (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
 # We can work around this by not using the integrated assembler (except on OS X
 # which has an outdated assembler that does not support AVX instructions).
-if (${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND C_COMPILER_VERSION VERSION_LESS "3.3")
+if (${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.3")
     set(GMX_USE_CLANG_C_FMA_BUG_WORKAROUND TRUE)
 endif()
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND CXX_COMPILER_VERSION VERSION_LESS "3.3")
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
     set(GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND TRUE)
 endif()
 
@@ -313,12 +351,13 @@ if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
     message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
 endif()
 
-if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_LESS "12.0.0")
+if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "12.0.0")
     message(WARNING "Intel compilers before 12.0.0 are not routinely tested, so there may be problems. Version 11.1 with SSE4.1 is known to produce incorrect results. It is highly recommended to use a more up-to-date compiler. If you choose to use this version, make sure you run the regressiontests.")
 endif()
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
+    add_definitions(-DGMX_DOUBLE)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
 endif(GMX_DOUBLE)
 if(GMX_SOFTWARE_INVSQRT)
@@ -429,7 +468,7 @@ option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with 
 if (UNIX)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static archives (it will only work if static versions of external dependencies are available and found)")
-elseif (WIN32 and NOT CYGWIN)
+elseif (WIN32 AND NOT CYGWIN)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static system libraries (MT instead of MD)")
 endif()
@@ -511,11 +550,12 @@ if (GMX_X11)
     find_package(X11)
     # X11 includes/libraries are only set in the ngmx subdirectory!
     if(NOT X11_FOUND)
-        message(WARNING "X11 include files and/or libraries were not found. Will not build the GROMACS X11-binaries, such as ngmx")
-    else()
-        set(HAVE_X11 1)
-        include_directories(${X11_INCLUDE_DIR})
+        message(FATAL_ERROR
+                "X11 include files and/or libraries were not found. "
+                "Set GMX_X11=OFF to compile without X11 support. "
+                "gmx view will not be available.")
     endif()
+    include_directories(${X11_INCLUDE_DIR})
 endif(GMX_X11)
 
 include(ThreadMPI)
@@ -529,6 +569,7 @@ if(GMX_THREAD_MPI)
     tmpi_enable()
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     set(GMX_MPI 1)
+    set(MPI_IN_PLACE_EXISTS 1)
 endif(GMX_THREAD_MPI)
 tmpi_get_source_list(THREAD_MPI_SRC)
 
@@ -559,17 +600,7 @@ if(GMX_GIT_VERSION_INFO)
     # found or the version is too small, we can't generate version information.
     find_package(Git)
 
-    # Find out the git version
-    if(GIT_FOUND AND NOT GIT_VERSION)
-      execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
-        OUTPUT_VARIABLE _exec_out
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-      string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
-      set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
-      mark_as_advanced(GIT_VERSION)
-    endif()
-
-    if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.3")
+    if(NOT GIT_FOUND OR GIT_VERSION_STRING VERSION_LESS "1.5.3")
         message(FATAL_ERROR
             "No compatible git version found (>= 1.5.3 required). "
             "Won't be able to generate development version information. "
@@ -676,7 +707,6 @@ include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
 
 # include avx test source, used if the AVX flags are set below
@@ -759,7 +789,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
         message(FATAL_ERROR "Cannot find smmintrin.h, which is required for SSE4.1 intrinsics support.")
     endif(NOT HAVE_SMMINTRIN_H)
 
-    if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_EQUAL "11.1")
+    if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_EQUAL "11.1")
         message(FATAL_ERROR "You are using Intel compiler version 11.1, and that compiler is known to produce incorrect results with SSE4.1 acceleration. You need to use another compiler (e.g. icc 12 or newer) or different acceleration (probably slower simulations).")
     endif()
 
@@ -842,12 +872,12 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
 
         if (GMX_USE_CLANG_C_FMA_BUG_WORKAROUND)
             # we assume that we have an external assembler that supports AVX
-            message(STATUS "Clang ${C_COMPILER_VERSION} detected, enabling FMA bug workaround")
+            message(STATUS "Clang ${CMAKE_C_COMPILER_VERSION} detected, enabling FMA bug workaround")
             set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -no-integrated-as")
         endif()
         if (GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND)
             # we assume that we have an external assembler that supports AVX
-            message(STATUS "Clang ${CXX_COMPILER_VERSION} detected, enabling FMA bug workaround")
+            message(STATUS "Clang ${CMAKE_CXX_COMPILER_VERSION} detected, enabling FMA bug workaround")
             set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} -no-integrated-as")
         endif()
 
@@ -911,7 +941,7 @@ set(PKG_FFT_LIBS "")
 # stuff...
 set(MKL_MANUALLY FALSE)
 if (GMX_FFT_LIBRARY STREQUAL "MKL" AND
-    NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_GREATER "11"))
+    NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER "11"))
     # The user will have to provide the set of magic libraries in
     # MKL_LIBRARIES (see below), which we cache (non-advanced), so that they
     # don't have to keep specifying it, and can easily see that
@@ -1115,15 +1145,6 @@ else()
     set(GMX_SHARED_LINKER_FLAGS ${GMX_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS})
 endif()
 set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
-
-######################################
-# Output compiler and CFLAGS used
-######################################
-get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-if(GMX_GPU)
-    get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
-endif(GMX_GPU)
 
 ########################################################################
 # Specify install locations

@@ -53,10 +53,7 @@
 #include "types/membedt.h"
 #include "types/globsig.h"
 
-
-#ifdef GMX_THREAD_MPI
 #include "thread_mpi/threads.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,31 +83,15 @@ enum {
     ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
-/* The options for the thread affinity setting, default: auto */
-enum {
-    threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
-};
-
-typedef struct {
-    int      nthreads_tot;        /* Total number of threads requested (TMPI) */
-    int      nthreads_tmpi;       /* Number of TMPI threads requested         */
-    int      nthreads_omp;        /* Number of OpenMP threads requested       */
-    int      nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
-    int      thread_affinity;     /* Thread affinity switch, see enum above   */
-    int      core_pinning_stride; /* Logical core pinning stride              */
-    int      core_pinning_offset; /* Logical core pinning offset              */
-    char    *gpu_id;              /* GPU id's to use, each specified as chars */
-} gmx_hw_opt_t;
-
 /* Variables for temporary use with the deform option,
  * used in runner.c and md.c.
  * (These variables should be stored in the tpx file.)
  */
 extern gmx_large_int_t     deform_init_init_step_tpx;
 extern matrix              deform_init_box_tpx;
-#ifdef GMX_THREAD_MPI
 extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
+#ifdef GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
  * the number of threads will get lowered.
  */
@@ -197,7 +178,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_bool bCompact, int nstglobalcomm, ivec ddxyz, int dd_node_order,
              real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt,
+             const char *nbpu_opt, int nstlist_cmdline,
              gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,

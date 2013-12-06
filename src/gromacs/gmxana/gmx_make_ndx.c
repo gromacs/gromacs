@@ -2,12 +2,11 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -1500,13 +1499,13 @@ void merge_blocks(t_blocka *dest, t_blocka *source)
 int gmx_make_ndx(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "Index groups are necessary for almost every gromacs program.",
+        "Index groups are necessary for almost every GROMACS program.",
         "All these programs can generate default index groups. You ONLY",
-        "have to use [TT]make_ndx[tt] when you need SPECIAL index groups.",
+        "have to use [THISMODULE] when you need SPECIAL index groups.",
         "There is a default index group for the whole system, 9 default",
         "index groups for proteins, and a default index group",
         "is generated for every other residue name.[PAR]",
-        "When no index file is supplied, also [TT]make_ndx[tt] will generate the",
+        "When no index file is supplied, also [THISMODULE] will generate the",
         "default groups.",
         "With the index editor you can select on atom, residue and chain names",
         "and numbers.",

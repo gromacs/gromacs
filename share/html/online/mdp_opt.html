@@ -1,17 +1,4 @@
-<HTML>
-<HEAD>
 <TITLE>mdp options</TITLE>
-<LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
-<TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=400>
-<TABLE WIDTH=400 NOBORDER>
-<TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>mdp options</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p> </p><B>VERSION 4.6.3</B></td></tr></TABLE>
-<HR>
-
 <!-- 
 
 PLEASE BE VERY CAREFUL WHEN EDITING THIS FILE: IT MUST BE
@@ -34,7 +21,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><a HREF="#shellmd"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxtcout, xtc-precision, xtc-grps, energygrps)
-<li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-drift, rlist, rlistlong)
+<li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-tolerance, rlist, rlistlong)
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, coulomb-modifier, rcoulomb-switch, rcoulomb, epsilon-r, epsilon-rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, vdw-modifier, rvdw-switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp-table)
@@ -383,29 +370,28 @@ energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
 <dl>
 <dt><b>cutoff-scheme:</b></dt>
 <dd><dl compact>
+<dt><b>Verlet</b></dt>
+<dd>Generate a pair list with buffering. The buffer size is automatically set 
+based on <b>verlet-buffer-tolerance</b>, unless this is set to -1, in which case
+<b>rlist</b> will be used. This option has an explicit, exact cut-off at 
+<b>rvdw</b>=<b>rcoulomb</b>. Currently only cut-off, reaction-field, 
+PME electrostatics and plain LJ are supported. Some <tt>mdrun</tt> functionality 
+is not yet supported with the <b>Verlet</b> scheme, but <tt>grompp</tt> checks for this. 
+Native GPU acceleration is only supported with <b>Verlet</b>.
+With GPU-accelerated PME or with separate PME ranks,
+<tt>mdrun</tt> will automatically tune the CPU/GPU load balance by 
+scaling <b>rcoulomb</b> and the grid spacing. This can be turned off with 
+<tt>-notunepme</tt>.
+
+<b>Verlet</b> is faster than <b>group</b> when there is no water, or if <b>group</b> would use a pair-list buffer to conserve energy.
+</dd>
 <dt><b>group</b></dt>
 <dd>Generate a pair list for groups of atoms. These groups correspond to the 
 charge groups in the topology. This was the only cut-off treatment scheme 
 before version 4.6. 
 There is no explicit buffering of the pair list. This enables efficient force 
-calculations, but energy is only conserved when a buffer is explicitly added. 
-For energy conservation, the <b>Verlet</b> option provides a more convenient 
-and efficient algorithm.</dd>
+calculations for water, but energy is only conserved when a buffer is explicitly added.</dd>
 
-<dt><b>Verlet</b></dt>
-<dd>Generate a pair list with buffering. The buffer size is automatically set 
-based on <b>verlet-buffer-drift</b>, unless this is set to -1, in which case
-<b>rlist</b> will be used. This option has an explicit, exact cut-off at 
-<b>rvdw</b>=<b>rcoulomb</b>. Currently only cut-off, reaction-field, 
-PME electrostatics and plain LJ are supported. Some <tt>mdrun</tt> functionality 
-is not yet supported with the <b>Verlet</b> scheme, but <tt>grompp</tt> checks for this. 
-Native GPU acceleration is only supported with <b>Verlet</b>. With GPU-accelerated PME,
-<tt>mdrun</tt> will automatically tune the CPU/GPU load balance by 
-scaling <b>rcoulomb</b> and the grid spacing. This can be turned off with 
-<tt>-notunepme</tt>.
-
-<b>Verlet</b> is somewhat faster than <b>group</b> when there is no water, or if <b>group</b> would use a pair-list buffer to conserve energy.
-</dd>
 </dl></dd>
 
 <dt><b>nstlist: (10) [steps]</b></dt>
@@ -416,8 +402,13 @@ the long-range forces, when using twin-range cut-offs). When this is 0,
 the neighbor list is made only once.
 With energy minimization the neighborlist will be updated for every
 energy evaluation when <b>nstlist</b><tt>&gt;0</tt>.
-With non-bonded force calculation on the GPU, a value of 20 or more gives
-the best performance.</dd>
+With <b>cutoff-scheme=Verlet</b> and <b>verlet-buffer-tolerance</b> set,
+<b>nstlist</b> is actually a minimum value and <tt>mdrun</tt> might increase it.
+With parallel simulations and/or non-bonded force calculation on the GPU,
+a value of 20 or 40 often gives the best performance.
+With <b>cutoff-scheme=Group</b> and non-exact cut-off's, <b>nstlist</b> will
+affect the accuracy of your simulation and it can not be chosen freely.
+</dd>
 <dt><b>0</b></dt>
 <dd>The neighbor list is only constructed once and never updated.
 This is mainly useful for vacuum simulations in which all particles
@@ -487,7 +478,7 @@ cells when constructing a new neighbor list every <b>nstlist</b> steps.
 In large systems grid search is much faster than simple search.</dd>
 <dt><b>simple</b></dt>
 <dd>Check every atom in the box when constructing a new neighbor list
-every <b>nstlist</b> steps.</dd>
+every <b>nstlist</b> steps (only with <b>cutoff-scheme=group</b>).</dd>
 </dl></dd>
 
 <dt><b>pbc:</b></dt>
@@ -520,30 +511,33 @@ the periodic boundary conditions, this requires a slower PBC algorithm
 and molecules are not made whole in the output</dd>
 </dl></dd>
 
-<dt><b>verlet-buffer-drift: (0.005) [kJ/mol/ps]</b></dt>
-<dd>Useful only with <b>cutoff-scheme</b>=<b>Verlet</b>. This sets the target energy drift
-per particle caused by the Verlet buffer, which indirectly sets <b>rlist</b>. 
+<dt><b>verlet-buffer-tolerance: (0.005) [kJ/mol/ps]</b></dt>
+<dd>Useful only with <b>cutoff-scheme</b>=<b>Verlet</b>. This sets the maximum
+allowed error for pair interactions per particle caused by the Verlet buffer,
+which indirectly sets <b>rlist</b>. 
 As both <b>nstlist</b> and the Verlet buffer size are fixed 
 (for performance reasons), particle pairs not in the pair list can occasionally 
 get within the cut-off distance during <b>nstlist</b>-1 nsteps. This 
-generates energy drift. In a constant-temperature ensemble, the drift can be 
+causes very small jumps in the energy. In a constant-temperature ensemble,
+these very small energy jumps can be 
 estimated for a given cut-off and <b>rlist</b>. The estimate assumes a 
-homogeneous particle distribution, hence the drift might be slightly 
+homogeneous particle distribution, hence the errors might be slightly 
 underestimated for multi-phase systems. For longer pair-list life-time
-(<b>nstlist</b>-1)*dt the drift is overestimated, because the interactions
+(<b>nstlist</b>-1)*dt the buffer is overestimated, because the interactions
 between particles are ignored. Combined with cancellation of errors,
-the actual energy drift is usually one to two orders of magnitude smaller.
+the actual drift of the total energy is usually one to two orders of magnitude
+smaller.
 Note that the generated buffer size takes into account that
 the GROMACS pair-list setup leads to a reduction in the drift by
 a factor 10, compared to a simple particle-pair based list.
 Without dynamics (energy minimization etc.), the buffer is 5% of the cut-off.
 For dynamics without temperature coupling or to override the buffer size,
-use <b>verlet-buffer-drift</b>=-1 and set <b>rlist</b> manually.</dd>
+use <b>verlet-buffer-tolerance</b>=-1 and set <b>rlist</b> manually.</dd>
 
 <dt><b>rlist: (1) [nm]</b></dt>
 <dd>Cut-off distance for the short-range neighbor list.
 With <b>cutoff-scheme</b>=<b>Verlet</b>, this is by default set by the
-<b>verlet-buffer-drift</b> option and the value of <b>rlist</b> is ignored.</dd>
+<b>verlet-buffer-tolerance</b> option and the value of <b>rlist</b> is ignored.</dd>
 
 <dt><b>rlistlong: (-1) [nm]</b></dt>
 <dd>Cut-off distance for the long-range neighbor list.
@@ -738,6 +732,16 @@ A value of 0 means infinity.</dd>
 <dd>Twin range cut-offs with neighbor list cut-off <b>rlist</b> and
 VdW cut-off <b>rvdw</b>,
 where <b>rvdw</b> <tt>&ge;</tt> <b>rlist</b>.</dd>
+
+<dt><b>PME</b></dt>
+<dd>Fast smooth Particle-mesh Ewald (SPME) for VdW interactions. The
+grid dimensions are controlled with <b>fourierspacing</b> in the same
+way as for electrostatics, and the interpolation order is controlled
+with <b>pme-order</b>. The relative accuracy of direct/reciprocal
+space is controlled by <b>ewald-rtol-lj</b>, and the specific
+combination rules that are to be used by the reciprocal routine are
+set using <b>lj-pme-comb-rule</b>.</dd>
+
 <dt><b>Shift</b></dt>
 <dd>The LJ (not Buckingham) potential is decreased over the whole
 range and the forces decay smoothly to zero between <b>rvdw-switch</b>
@@ -861,6 +865,22 @@ by the same factor.</dd>
 <b>rcoulomb</b> is given by <b>ewald-rtol</b>.
 Decreasing this will give a more accurate direct sum,
 but then you need more wave vectors for the reciprocal sum.</dd>
+
+<dt><b>ewald-rtol-lj (1e-3)</b></dt>
+<dd>When doing PME for VdW-interactions, <b>ewald-rtol-lj</b> is used
+to control the relative strength of the dispersion potential at <b>rvdw</b> in
+the same way as <b>ewald-rtol</b> controls the electrostatic potential.</dd>
+
+<dt><b>lj-pme-comb-rule (Geometric)</b></dt>
+<dd>The combination rules used to combine VdW-parameters in the reciprocal part of LJ-PME. 
+Geometric rules are much faster than Lorentz-Berthelot and usually the recommended choice, even
+when the rest of the force field uses the Lorentz-Berthelot rules.</dd>
+<dd><dl compact>
+<dt><b>Geometric</b></dt>
+<dd>Apply geometric combination rules</dd>
+<dt><b>Lorentz-Berthelot</b></dt>
+<dd>Apply Lorentz-Berthelot combination rules</dd>
+</dl></dd>
 
 <dt><b>ewald-geometry: (3d)</b></dt>
 <dd><dl compact>
@@ -1263,7 +1283,7 @@ the minimum is 2.
 Ewald summation can only be used with <b>nwall=2</b>, where one
 should use <b><A HREF="#ewald">ewald-geometry</A><tt>=3dc</tt></b>.
 The empty layer in the box serves to decrease the unphysical Coulomb
-interaction between periodic images.
+interaction between periodic images.</dd>
 </dl>
 
 <A NAME="pull"><br>
@@ -1314,10 +1334,7 @@ the relative weights are one, between <b>pull-r1</b> and
 Note that the radii should be smaller than half the box size.
 For tilted cylinders they should be even smaller than half the box size
 since the distance of an atom in the reference group
-from the COM of the pull group has both a radial and an axial component.
-<dt><b>position</b></dt>
-<dd>Pull to the position of the reference group plus
-<b>pull-init</b> + time*<b>pull-rate</b>*<b>pull-vec</b>.</dd>
+from the COM of the pull group has both a radial and an axial component.</dd>
 </dl></dd>
 <dt><b>pull-dim: (Y Y Y)</b></dt>
 <dd>the distance components to be used with geometry <b>distance</b>
@@ -1336,62 +1353,72 @@ to the output files</dd>
 <dt><b>yes</b></dt>
 <dd>add the COM distance of the starting conformation to <b>pull-init</b></dd>
 </dl>
+<dt><b>pull-print-reference: (10)</b></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>do not print the COM of the first group in each pull coordinate</dd>
+<dt><b>yes</b></dt>
+<dd>print the COM of the first group in each pull coordinate</dd>
+</dl>
 <dt><b>pull-nstxout: (10)</b></dt>
 <dd>frequency for writing out the COMs of all the pull group</dd>
 <dt><b>pull-nstfout: (1)</b></dt>
 <dd>frequency for writing out the force of all the pulled group</dd>
 <dt><b>pull-ngroups: (1)</b></dt>
-<dd>The number of pull groups, not including the reference group.
-If there is only one group, there is no difference in treatment
-of the reference and pulled group (except with the cylinder geometry).
-Below only the pull options for the reference group (ending on 0)
-and the first group (ending on 1) are given,
-further groups work analogously, but with the number 1 replaced
-by the group number.</dd>
-<dt><b>pull-group0: </b></dt>
-<dd>The name of the reference group. When this is empty an absolute reference
-of (0,0,0) is used. With an absolute reference the system is no longer
-translation invariant and one should think about what to do with
-the <A HREF="#run">center of mass motion</A>.</dd>
-<dt><b>pull-weights0: </b></dt>
-<dd>see <b>pull-weights1</b></dd>
-<dt><b>pull-pbcatom0: (0)</b></dt>
-<dd>see <b>pull-pbcatom1</b></dd>
-<dt><b>pull-group1: </b></dt>
-<dd>The name of the pull group.</dd>
-<dt><b>pull-weights1: </b></dt>
+<dd>The number of pull groups, not including the absolute reference group,
+when used. Pull groups can be reused in multiple pull coordinates.
+Below only the pull options for group 1 are given, further groups simply
+increase the group index number.</dd>
+<dt><b>pull-ncoords: (1)</b></dt>
+<dd>The number of pull coordinates. Below only the pull options for
+coordinate 1 are given, further coordinates simply increase the coordinate
+index number.</dd>
+
+<dt><b>pull-group1-name: </b></dt>
+<dd>The name of the pull group, is looked up in the index file
+or in the default groups to obtain the atoms involved.</dd>
+<dt><b>pull-group1-weights: </b></dt>
 <dd>Optional relative weights which are multiplied with the masses of the atoms
 to give the total weight for the COM. The number should be 0, meaning all 1,
 or the number of atoms in the pull group.</dd>
-<dt><b>pull-pbcatom1: (0)</b></dt>
+<dt><b>pull-group1-pbcatom: (0)</b></dt>
 <dd>The reference atom for the treatment of periodic boundary conditions
 inside the group
 (this has no effect on the treatment of the pbc between groups).
 This option is only important when the diameter of the pull group
 is larger than half the shortest box vector.
 For determining the COM, all atoms in the group are put at their periodic image
-which is closest to <b>pull-pbcatom1</b>.
+which is closest to <b>pull-group1-pbcatom</b>.
 A value of 0 means that the middle atom (number wise) is used.
 This parameter is not used with geometry <b>cylinder</b>.
 A value of -1 turns on cosine weighting, which is useful for a group
 of molecules in a periodic system, e.g. a water slab (see Engin et al.
 J. Chem. Phys. B 2010).</dd>
-<dt><b>pull-vec1: (0.0 0.0 0.0)</b></dt>
+
+<dt><b>pull-coord1-groups: </b></dt>
+<dd>The two groups indices should be given on which this pull coordinate
+will operate. The first index can be 0, in which case an absolute reference
+of <b>pull-coord1-origin</b> is used. With an absolute reference the system
+is no longer translation invariant and one should think about what to do with
+the <A HREF="#run">center of mass motion</A>.</dd>
+<dt><b>pull-coord1-origin: (0.0 0.0 0.0)</b></dt>
+<dd>The pull reference position for use with an absolute reference.</dd>
+<dt><b>pull-coord1-vec: (0.0 0.0 0.0)</b></dt>
 <dd>The pull direction. <tt>grompp</tt> normalizes the vector.</dd>
-<dt><b>pull-init1: (0.0) / (0.0 0.0 0.0) [nm]</b></dt>
-<dd>The reference distance at t=0. This is a single value,
-except for geometry <b>position</b> which uses a vector.</dd>
-<dt><b>pull-rate1: (0) [nm/ps]</b></dt>
+<dt><b>pull-coord1-init: (0.0) [nm]</b></dt>
+<dd>The reference distance at t=0.</dd>
+<dt><b>pull-coord1-rate: (0) [nm/ps]</b></dt>
 <dd>The rate of change of the reference position.</dd>
-<dt><b>pull-k1: (0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
+<dt><b>pull-coord1-k: (0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
 <dd>The force constant. For umbrella pulling this is the harmonic force
 constant in [kJ mol<sup>-1</sup> nm<sup>-2</sup>]. For constant force pulling
 this is the force constant of the linear potential, and thus minus (!)
 the constant force in [kJ mol<sup>-1</sup> nm<sup>-1</sup>].</dd>
-<dt><b>pull-kB1: (pull-k1) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
-<dd>As <b>pull-k1</b>, but for state B. This is only used when
+<dt><b>pull-coord1-kB: (pull-k1) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
+<dd>As <b>pull-coord1-k</b>, but for state B. This is only used when
 <A HREF="#free"><b>free-energy</b></A> is turned on.
-The force constant is then (1 - lambda)*<b>pull-k1</b> + lambda*<b>pull-kB1</b>.
+The force constant is then (1 - lambda)*<b>pull-coord1-k</b> + lambda*<b>pull-coord1-kB</b></dt>.
+
 </dl>
 
 <A NAME="nmr"><br>
@@ -2145,7 +2172,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#user">userreal4</A><br>
 <A HREF="#vdw">vdwtype</A><br>
 <A HREF="#vdw">vdw-modifier</A><br>
-<A HREF="#nl">verlet-buffer-drift</A><br>
+<A HREF="#nl">verlet-buffer-tolerance</A><br>
 <A HREF="#out">xtc-grps</A><br>
 <A HREF="#out">xtc-precision</A><br>
 <A HREF="#sa">zero-temp-time</A><br>
@@ -2162,12 +2189,3 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#expanded">wl-ratio</A><br>
 <A HREF="#expanded">wl-scale</A><br>
 </multicol>
-
-<hr>
-<div ALIGN=RIGHT>
-<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
-
-</div>
-</BODY>
-</HTML>
-

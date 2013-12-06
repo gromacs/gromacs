@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -163,7 +163,7 @@ FreeVolume::initOptions(Options                    *options,
                         TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
-        "g_freevol can calculate the free volume in a box as",
+        "[THISMODULE] can calculate the free volume in a box as",
         "a function of time. The free volume is",
         "plotted as a fraction of the total volume.",
         "The program tries to insert a probe with a given radius,",

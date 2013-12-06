@@ -1,3 +1,37 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
 # Download and build a suitable copy of FFTW.
 # The GROMACS team won't distribute source or binaries linked to FFTW
 # because we are choosing to be very clear about distributing only
@@ -51,15 +85,9 @@ set(${UPPERFFTW}_INCLUDE_DIRS ${CMAKE_BINARY_PREFIX}/${INSTALL_DIR}/include PARE
 set(${UPPERFFTW}_FOUND TRUE PARENT_SCOPE)
 set(${UPPERFFTW}_HAVE_SIMD TRUE PARENT_SCOPE)
 
-if(CMAKE_VERSION VERSION_GREATER 2.8.7) #add_library GLOBAL is broken in 2.8.7
-    add_library(gmxfftw STATIC IMPORTED GLOBAL)
-    set_target_properties(gmxfftw PROPERTIES IMPORTED_LOCATION ${${UPPERFFTW}_LIBRARIES})
-    set(${UPPERFFTW}_LIBRARIES gmxfftw PARENT_SCOPE)
-else()
-    # The dependency that triggers building the gmxfftw target gets made where libmd is constructed
-    add_custom_target(gmxfftw)
-    set(${UPPERFFTW}_LIBRARIES ${${UPPERFFTW}_LIBRARIES} PARENT_SCOPE)
-endif()
+add_library(gmxfftw STATIC IMPORTED GLOBAL)
+set_target_properties(gmxfftw PROPERTIES IMPORTED_LOCATION ${${UPPERFFTW}_LIBRARIES})
+set(${UPPERFFTW}_LIBRARIES gmxfftw PARENT_SCOPE)
 add_dependencies(gmxfftw fftwBuild)
 
 message(STATUS "The GROMACS-managed build of FFTW 3 will configure with the following optimizations: ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}")

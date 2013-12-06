@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -81,7 +81,7 @@ void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
     std::string                 filename = tempFiles_.getTemporaryFilePath("helptext.txt");
     gmx::File                   file(filename, "w");
-    gmx::CommandLineHelpContext context(&file, gmx::eHelpOutputFormat_Console);
+    gmx::CommandLineHelpContext context(&file, gmx::eHelpOutputFormat_Console, NULL);
     context.setShowHidden(bHidden_);
     writer->writeHelp(context);
     file.close();

@@ -64,11 +64,11 @@
 #include "disre.h"
 #include "orires.h"
 #include "gmx_omp_nthreads.h"
-#include "gmx_omp.h"
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/gmxomp.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -758,9 +758,9 @@ static void check_sd2_work_data_allocation(gmx_stochd_t *sd, int nrend)
 }
 
 static void do_update_sd2_Tconsts(gmx_stochd_t *sd,
-                                  int ngtc,
-                                  const real tau_t[],
-                                  const real ref_t[])
+                                  int           ngtc,
+                                  const real    tau_t[],
+                                  const real    ref_t[])
 {
     /* This is separated from the update below, because it is single threaded */
     gmx_sd_const_t *sdc;

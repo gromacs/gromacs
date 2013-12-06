@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -49,11 +49,13 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fileio/futil.h"
+#include <sys/stat.h>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "gmx_header_config.h"
 
 namespace gmx
 {
@@ -256,7 +258,30 @@ void File::writeLine()
 // static
 bool File::exists(const char *filename)
 {
-    return gmx_fexist(filename);
+    if (filename == NULL)
+    {
+        return false;
+    }
+    FILE *test = fopen(filename, "r");
+    if (test == NULL)
+    {
+        return false;
+    }
+    else
+    {
+        fclose(test);
+        // Windows doesn't allow fopen of directory, so we don't need to check
+        // this separately.
+#ifndef GMX_NATIVE_WINDOWS
+        struct stat st_buf;
+        int         status = stat(filename, &st_buf);
+        if (status != 0 || !S_ISREG(st_buf.st_mode))
+        {
+            return false;
+        }
+#endif
+        return true;
+    }
 }
 
 // static

@@ -34,10 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_FILEIO_XDRF_H
 #define GMX_FILEIO_XDRF_H
-
 
 #include <stdio.h>
 #include "../legacyheaders/typedefs.h"
@@ -46,7 +44,8 @@
 #define int64_t long long
 #endif
 
-#include "../utility/gmx_header_config.h"
+#include "config.h"
+
 #ifdef GMX_INTERNAL_XDR
 #include "gmx_system_xdr.h"
 #else
@@ -58,28 +57,7 @@
 extern "C" {
 #endif
 
-
-/* THESE 3 FUNCTIONS (xdropen, xdrclose and xdr_get_fp) ARE NOW OBSOLETE
-   AND ONLY PROVIDED FOR BACKWARD COMPATIBILITY OF 3D PARTY TOOLS.
-   THEY SHOULD NOT BE USED ANYWHERE IN GROMACS ITSELF.
-   int xdropen(XDR *xdrs, const char *filename, const char *type);
-   int xdrclose(XDR *xdrs);
- */
-
-/* the xdr data types; note that there is no data type 'real' because
-   here we deal with the types as they are actually written to disk.  */
-typedef enum
-{
-    xdr_datatype_int,
-    xdr_datatype_float,
-    xdr_datatype_double,
-    xdr_datatype_large_int,
-    xdr_datatype_char,
-    xdr_datatype_string
-} xdr_datatype;
-
-/* names corresponding to the xdr_datatype enum */
-extern const char *xdr_datatype_names[];
+struct t_fileio;
 
 /* Read or write reduced precision *float* coordinates */
 int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
@@ -113,6 +91,16 @@ float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bO
 
 
 int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
+
+
+/* Defined in gmxfio.c.
+ * TODO: It would be nice to decouple this header from t_fileio completely,
+ * and not need the XDR struct in gmxfio.h, but that would require some
+ * extra code that is not warranted for this single function.
+ * Can be reconsidered if the file I/O gets refactored in the future.
+ */
+XDR *gmx_fio_getxdr(struct t_fileio *fio);
+/* Return the file pointer itself */
 
 #ifdef __cplusplus
 }
