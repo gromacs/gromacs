@@ -2368,7 +2368,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     sfree(dumstr[1]);
 }
 
-static int search_QMstring(char *s, int ng, const char *gn[])
+static int search_QMstring(const char *s, int ng, const char *gn[])
 {
     /* same as normal search_string, but this one searches QM strings */
     int i;
@@ -2387,8 +2387,8 @@ static int search_QMstring(char *s, int ng, const char *gn[])
 
 } /* search_QMstring */
 
-
-int search_string(char *s, int ng, char *gn[])
+/* We would like gn to be const as well, but C doesn't allow this */
+int search_string(const char *s, int ng, char *gn[])
 {
     int i;
 
@@ -2558,7 +2558,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     t_grpopts              *opts;
     gmx_groups_t           *groups;
     t_pull                 *pull;
-    int                     natoms, ai, aj, i, j, d, g, imin, jmin, nc;
+    int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     t_iatom                *ia;
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, n_sub = 0;
@@ -2702,42 +2702,33 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
          * to determine the optimal nrdf assignment.
          */
         pull = ir->pull;
-        if (pull->eGeom == epullgPOS)
+
+        for (i = 0; i < pull->ncoord; i++)
         {
-            nc = 0;
-            for (i = 0; i < DIM; i++)
+            imin = 1;
+
+            for (j = 0; j < 2; j++)
             {
-                if (pull->dim[i])
+                const t_pull_group *pgrp;
+
+                pgrp = &pull->group[pull->coord[i].group[j]];
+
+                if (pgrp->nat > 0)
                 {
-                    nc++;
+                    /* Subtract 1/2 dof from each group */
+                    ai = pgrp->ind[0];
+                    nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
+                    nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
+                    if (nrdf_tc[ggrpnr(groups, egcTC, ai)] < 0)
+                    {
+                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[ggrpnr(groups, egcTC, ai)]]);
+                    }
                 }
-            }
-        }
-        else
-        {
-            nc = 1;
-        }
-        for (i = 0; i < pull->ngrp; i++)
-        {
-            imin = 2*nc;
-            if (pull->grp[0].nat > 0)
-            {
-                /* Subtract 1/2 dof from the reference group */
-                ai = pull->grp[0].ind[0];
-                if (nrdf_tc[ggrpnr(groups, egcTC, ai)] > 1)
+                else
                 {
-                    nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5;
-                    nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5;
-                    imin--;
+                    /* We need to subtract the whole DOF from group j=1 */
+                    imin += 1;
                 }
-            }
-            /* Subtract 1/2 dof from the pulled group */
-            ai = pull->grp[1+i].ind[0];
-            nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
-            nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
-            if (nrdf_tc[ggrpnr(groups, egcTC, ai)] < 0)
-            {
-                gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[ggrpnr(groups, egcTC, ai)]]);
             }
         }
     }
@@ -3321,6 +3312,8 @@ void do_index(const char* mdparin, const char *ndx,
     if (ir->ePull != epullNO)
     {
         make_pull_groups(ir->pull, pull_grp, grps, gnames);
+
+        make_pull_coords(ir->pull);
     }
 
     if (ir->bRot)
@@ -3852,7 +3845,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
     char                      err_buf[256];
-    int                       i, m, g, nmol, npct;
+    int                       i, m, c, nmol, npct;
     gmx_bool                  bCharge, bAcc;
     real                      gdt_max, *mgrp, mt;
     rvec                      acc;
@@ -4007,7 +4000,16 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 
     if (ir->ePull != epullNO)
     {
-        if (ir->pull->grp[0].nat == 0)
+        gmx_bool bPullAbsoluteRef;
+
+        bPullAbsoluteRef = FALSE;
+        for (i = 0; i < ir->pull->ncoord; i++)
+        {
+            bPullAbsoluteRef = bPullAbsoluteRef ||
+                ir->pull->coord[i].group[0] == 0 ||
+                ir->pull->coord[i].group[1] == 0;
+        }
+        if (bPullAbsoluteRef)
         {
             absolute_reference(ir, sys, FALSE, AbsRef);
             for (m = 0; m < DIM; m++)
@@ -4029,9 +4031,9 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                     if ((ir->epc != epcNO && ir->compress[i][m] != 0) ||
                         ir->deform[i][m] != 0)
                     {
-                        for (g = 1; g < ir->pull->ngrp; g++)
+                        for (c = 0; c < ir->pull->ncoord; c++)
                         {
-                            if (ir->pull->grp[g].vec[m] != 0)
+                            if (ir->pull->coord[c].vec[m] != 0)
                             {
                                 gmx_fatal(FARGS, "Can not have dynamic box while using pull geometry '%s' (dim %c)", EPULLGEOM(ir->pull->eGeom), 'x'+m);
                             }

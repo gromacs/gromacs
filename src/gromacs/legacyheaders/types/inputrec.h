@@ -111,19 +111,28 @@ typedef struct {
     real       *weight_loc; /* Weights for the local indices */
     int         epgrppbc;   /* The type of pbc for this pull group, see enum above */
     atom_id     pbcatom;    /* The reference atom for pbc (global number) */
-    rvec        vec;        /* The pull vector, direction or position */
-    rvec        init;       /* Initial reference displacement */
-    real        rate;       /* Rate of motion (nm/ps) */
-    real        k;          /* force constant */
-    real        kB;         /* force constant for state B */
+
+    /* Variables not present in mdp, but used at run time */
     real        wscale;     /* scaling factor for the weights: sum w m/sum w w m */
     real        invtm;      /* inverse total mass of the group: 1/wscale sum w m */
     dvec        x;          /* center of mass before update */
     dvec        xp;         /* center of mass after update before constraining */
+} t_pull_group;
+
+typedef struct {
+    int         group[2];   /* The pull groups, index in group in t_pull */
+    rvec        origin;     /* The origin for the absolute reference */
+    rvec        vec;        /* The pull vector, direction or position */
+    real        init;       /* Initial reference displacement */
+    real        rate;       /* Rate of motion (nm/ps) */
+    real        k;          /* force constant */
+    real        kB;         /* force constant for state B */
+
+    /* Variables not present in mdp, but used at run time */
     dvec        dr;         /* The distance from the reference group */
     double      f_scal;     /* Scalar force for directional pulling */
     dvec        f;          /* force due to the pulling/constraining */
-} t_pullgrp;
+} t_pull_coord;
 
 typedef struct {
     int   eSimTempScale; /* simulated temperature scaling; linear or exponential */
@@ -195,12 +204,14 @@ typedef struct {
 } t_expanded;
 
 typedef struct {
-    int            ngrp;       /* number of groups */
+    int            ngroup;     /* number of pull groups */
+    int            ncoord;     /* number of pull coordinates */
     int            eGeom;      /* pull geometry */
     ivec           dim;        /* used to select components for constraint */
     real           cyl_r1;     /* radius of cylinder for dynamic COM */
     real           cyl_r0;     /* radius of cylinder including switch length */
     real           constr_tol; /* absolute tolerance for constraints in (nm) */
+    gmx_bool       bPrintRef;  /* Print coordinates of the first group in each coord */
     int            nstxout;    /* Output frequency for pull x */
     int            nstfout;    /* Output frequency for pull f */
     int            ePBC;       /* the boundary conditions */
@@ -208,8 +219,11 @@ typedef struct {
     gmx_bool       bRefAt;     /* do we need reference atoms for a group COM ? */
     int            cosdim;     /* dimension for cosine weighting, -1 if none */
     gmx_bool       bVirial;    /* do we need to add the pull virial? */
-    t_pullgrp     *grp;        /* groups to pull/restrain/etc/ */
-    t_pullgrp     *dyna;       /* dynamic groups for use with local constraints */
+    t_pull_group  *group;      /* groups to pull/restrain/etc/ */
+    t_pull_coord  *coord;      /* the pull coordinates */
+
+    /* Variables not present in mdp, but used at run time */
+    t_pull_group  *dyna;       /* dynamic groups for use with local constraints */
     rvec          *rbuf;       /* COM calculation buffer */
     dvec          *dbuf;       /* COM calculation buffer */
     double        *dbuf_cyl;   /* cylinder ref. groups COM calculation buffer */

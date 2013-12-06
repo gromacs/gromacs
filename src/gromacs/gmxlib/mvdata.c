@@ -486,7 +486,7 @@ static void bc_cosines(const t_commrec *cr, t_cosines *cs)
     }
 }
 
-static void bc_pullgrp(const t_commrec *cr, t_pullgrp *pgrp)
+static void bc_pull_group(const t_commrec *cr, t_pull_group *pgrp)
 {
     block_bc(cr, *pgrp);
     if (pgrp->nat > 0)
@@ -506,11 +506,13 @@ static void bc_pull(const t_commrec *cr, t_pull *pull)
     int g;
 
     block_bc(cr, *pull);
-    snew_bc(cr, pull->grp, pull->ngrp+1);
-    for (g = 0; g < pull->ngrp+1; g++)
+    snew_bc(cr, pull->group, pull->ngroup);
+    for (g = 0; g < pull->ngroup; g++)
     {
-        bc_pullgrp(cr, &pull->grp[g]);
+        bc_pull_group(cr, &pull->group[g]);
     }
+    snew_bc(cr, pull->coord, pull->ncoord);
+    nblock_bc(cr, pull->ncoord, pull->coord);
 }
 
 static void bc_rotgrp(const t_commrec *cr, t_rotgrp *rotg)

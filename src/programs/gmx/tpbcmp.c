@@ -900,10 +900,10 @@ static void comp_pull_AB(FILE *fp, t_pull *pull, real ftol, real abstol)
 {
     int i;
 
-    for (i = 0; i < pull->ngrp+1; i++)
+    for (i = 0; i < pull->ncoord; i++)
     {
-        fprintf(fp, "comparing pull group %d\n", i);
-        cmp_real(fp, "pullgrp->k", -1, pull->grp[i].k, pull->grp[i].kB, ftol, abstol);
+        fprintf(fp, "comparing pull coord %d\n", i);
+        cmp_real(fp, "pull-coord->k", -1, pull->coord[i].k, pull->coord[i].kB, ftol, abstol);
     }
 }
 

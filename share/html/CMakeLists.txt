@@ -36,8 +36,8 @@ set(OUTPUT_DIR final)
 
 if(SOURCE_IS_SOURCE_DISTRIBUTION)
     # Make sure source package contains HTML pages.
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${OUTPUT_DIR}/online.html")
-        message(FATAL_ERROR "Man pages are missing from source package.")
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/online.html")
+        message(FATAL_ERROR "Online HTML pages are missing from source package.")
     endif()
 endif()
 
@@ -61,11 +61,11 @@ if (GMX_BUILD_HELP)
     set_target_properties(html PROPERTIES EXCLUDE_FROM_ALL OFF)
     set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.processed.html")
-    set(HTML_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+    set(HTML_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_DIR})
 endif()
 
 if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
-    install(DIRECTORY ${HTML_PAGE_DIR}/${OUTPUT_DIR}/
-        DESTINATION ${DATA_INSTALL_DIR}/html
+    install(DIRECTORY ${HTML_PAGE_DIR}
+        DESTINATION ${DATA_INSTALL_DIR}
         COMPONENT html)
 endif()

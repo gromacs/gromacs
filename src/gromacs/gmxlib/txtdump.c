@@ -545,19 +545,28 @@ static void pr_cosine(FILE *fp, int indent, const char *title, t_cosines *cos,
 #define PR(t, s) pr_real(fp, indent, t, s)
 #define PD(t, s) pr_double(fp, indent, t, s)
 
-static void pr_pullgrp(FILE *fp, int indent, int g, t_pullgrp *pg)
+static void pr_pull_group(FILE *fp, int indent, int g, t_pull_group *pgrp)
 {
     pr_indent(fp, indent);
     fprintf(fp, "pull-group %d:\n", g);
     indent += 2;
-    pr_ivec_block(fp, indent, "atom", pg->ind, pg->nat, TRUE);
-    pr_rvec(fp, indent, "weight", pg->weight, pg->nweight, TRUE);
-    PI("pbcatom", pg->pbcatom);
-    pr_rvec(fp, indent, "vec", pg->vec, DIM, TRUE);
-    pr_rvec(fp, indent, "init", pg->init, DIM, TRUE);
-    PR("rate", pg->rate);
-    PR("k", pg->k);
-    PR("kB", pg->kB);
+    pr_ivec_block(fp, indent, "atom", pgrp->ind, pgrp->nat, TRUE);
+    pr_rvec(fp, indent, "weight", pgrp->weight, pgrp->nweight, TRUE);
+    PI("pbcatom", pgrp->pbcatom);
+}
+
+static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
+{
+    pr_indent(fp, indent);
+    fprintf(fp, "pull-coord %d:\n", c);
+    PI("group[0]", pcrd->group[0]);
+    PI("group[1]", pcrd->group[1]);
+    pr_rvec(fp, indent, "origin", pcrd->origin, DIM, TRUE);
+    pr_rvec(fp, indent, "vec", pcrd->vec, DIM, TRUE);
+    PR("init", pcrd->init);
+    PR("rate", pcrd->rate);
+    PR("k", pcrd->k);
+    PR("kB", pcrd->kB);
 }
 
 static void pr_simtempvals(FILE *fp, int indent, t_simtemp *simtemp, int n_lambda)
@@ -678,12 +687,18 @@ static void pr_pull(FILE *fp, int indent, t_pull *pull)
     PR("pull-r1", pull->cyl_r1);
     PR("pull-r0", pull->cyl_r0);
     PR("pull-constr-tol", pull->constr_tol);
+    PS("pull-bPrintRef", EBOOL(pull->bPrintRef));
     PI("pull-nstxout", pull->nstxout);
     PI("pull-nstfout", pull->nstfout);
-    PI("pull-ngrp", pull->ngrp);
-    for (g = 0; g < pull->ngrp+1; g++)
+    PI("pull-ngroup", pull->ngroup);
+    for (g = 0; g < pull->ngroup; g++)
     {
-        pr_pullgrp(fp, indent, g, &pull->grp[g]);
+        pr_pull_group(fp, indent, g, &pull->group[g]);
+    }
+    PI("pull-ncoord", pull->ncoord);
+    for (g = 0; g < pull->ncoord; g++)
+    {
+        pr_pull_coord(fp, indent, g, &pull->coord[g]);
     }
 }
 
