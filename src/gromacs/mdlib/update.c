@@ -581,14 +581,16 @@ static void do_update_sd1(gmx_stochd_t *sd,
                           unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
-                          int ngtc, real tau_t[], real ref_t[],
+                          int ngtc, real ref_t[],
+                          gmx_bool bDoConstr,
+                          gmx_bool bFirstHalfConstr,
                           gmx_int64_t step, int seed, int* gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
     real            kT;
     int             gf = 0, ga = 0, gt = 0;
-    real            ism, sd_V;
+    real            ism;
     int             n, d;
 
     sdc = sd->sdc;
@@ -601,41 +603,125 @@ static void do_update_sd1(gmx_stochd_t *sd,
         sig[n].V  = sqrt(kT*(1 - sdc[n].em*sdc[n].em));
     }
 
-    for (n = start; n < nrend; n++)
+    if (!bDoConstr)
     {
-        real rnd[3];
-        int  ng  = gatindex ? gatindex[n] : n;
-        ism = sqrt(invmass[n]);
-        if (cFREEZE)
+        for (n = start; n < nrend; n++)
         {
-            gf  = cFREEZE[n];
-        }
-        if (cACC)
-        {
-            ga  = cACC[n];
-        }
-        if (cTC)
-        {
-            gt  = cTC[n];
-        }
+            real rnd[3];
+            int  ng = gatindex ? gatindex[n] : n;
 
-        gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
-        for (d = 0; d < DIM; d++)
-        {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            ism = sqrt(invmass[n]);
+            if (cFREEZE)
             {
-                sd_V = ism*sig[gt].V*rnd[d];
-
-                v[n][d] = v[n][d]*sdc[gt].em
-                    + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                    + sd_V;
-
-                xprime[n][d] = x[n][d] + v[n][d]*dt;
+                gf  = cFREEZE[n];
             }
-            else
+            if (cACC)
             {
-                v[n][d]      = 0.0;
-                xprime[n][d] = x[n][d];
+                ga  = cACC[n];
+            }
+            if (cTC)
+            {
+                gt  = cTC[n];
+            }
+
+            gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
+
+            for (d = 0; d < DIM; d++)
+            {
+                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                {
+                    real sd_V, vn;
+
+                    sd_V         = ism*sig[gt].V*rnd[d];
+                    vn           = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
+                    v[n][d]      = vn*sdc[gt].em + sd_V;
+                    xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
+                }
+                else
+                {
+                    v[n][d]      = 0.0;
+                    xprime[n][d] = x[n][d];
+                }
+            }
+        }
+    }
+    else
+    {
+        /* We do have constraints */
+        if (bFirstHalfConstr)
+        {
+            /* First update without friction and noise */
+            real im;
+
+            for (n = start; n < nrend; n++)
+            {
+                im = invmass[n];
+
+                if (cFREEZE)
+                {
+                    gf  = cFREEZE[n];
+                }
+                if (cACC)
+                {
+                    ga  = cACC[n];
+                }
+                if (cTC)
+                {
+                    gt  = cTC[n];
+                }
+
+                for (d = 0; d < DIM; d++)
+                {
+                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                    {
+                        v[n][d]      = v[n][d] + (im*f[n][d] + accel[ga][d])*dt;
+                        xprime[n][d] = x[n][d] +  v[n][d]*dt;
+                    }
+                    else
+                    {
+                        v[n][d]      = 0.0;
+                        xprime[n][d] = x[n][d];
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Update friction and noise only */
+            for (n = start; n < nrend; n++)
+            {
+                real rnd[3];
+                int  ng = gatindex ? gatindex[n] : n;
+
+                ism = sqrt(invmass[n]);
+                if (cFREEZE)
+                {
+                    gf  = cFREEZE[n];
+                }
+                if (cACC)
+                {
+                    ga  = cACC[n];
+                }
+                if (cTC)
+                {
+                    gt  = cTC[n];
+                }
+
+                gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
+
+                for (d = 0; d < DIM; d++)
+                {
+                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                    {
+                        real sd_V, vn;
+
+                        sd_V         = ism*sig[gt].V*rnd[d];
+                        vn           = v[n][d];
+                        v[n][d]      = vn*sdc[gt].em + sd_V;
+                        /* Add the friction and noise contribution only */
+                        xprime[n][d] = xprime[n][d] + 0.5*(v[n][d] - vn)*dt;
+                    }
+                }
             }
         }
     }
@@ -1540,6 +1626,52 @@ void update_constraints(FILE             *fplog,
     }
 
     where();
+
+    if (inputrec->eI == eiSD1 && bDoConstr && !bFirstHalf)
+    {
+        xprime = get_xprime(state, upd);
+
+        nth = gmx_omp_nthreads_get(emntUpdate);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+
+        for (th = 0; th < nth; th++)
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+
+            /* The second part of the SD integration */
+            do_update_sd1(upd->sd,
+                          start_th, end_th, dt,
+                          inputrec->opts.acc, inputrec->opts.nFreeze,
+                          md->invmass, md->ptype,
+                          md->cFREEZE, md->cACC, md->cTC,
+                          state->x, xprime, state->v, force,
+                          inputrec->opts.ngtc, inputrec->opts.ref_t,
+                          bDoConstr, FALSE,
+                          step, inputrec->ld_seed,
+                          DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+        }
+        inc_nrnb(nrnb, eNR_UPDATE, homenr);
+
+        if (bDoConstr)
+        {
+            /* Constrain the coordinates xprime for half a time step */
+            wallcycle_start(wcycle, ewcCONSTR);
+
+            constrain(NULL, bLog, bEner, constr, idef,
+                      inputrec, NULL, cr, step, 0.5, md,
+                      state->x, xprime, NULL,
+                      bMolPBC, state->box,
+                      state->lambda[efptBONDED], dvdlambda,
+                      state->v, NULL, nrnb, econqCoord, FALSE, 0, 0);
+
+            wallcycle_stop(wcycle, ewcCONSTR);
+        }
+    }
+
     if ((inputrec->eI == eiSD2) && !(bFirstHalf))
     {
         xprime = get_xprime(state, upd);
@@ -1580,6 +1712,7 @@ void update_constraints(FILE             *fplog,
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }
+
 
     /* We must always unshift after updating coordinates; if we did not shake
        x was shifted in do_force */
@@ -1738,7 +1871,7 @@ void update_coords(FILE             *fplog,
                    gmx_constr_t      constr,
                    t_idef           *idef)
 {
-    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE;
+    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double            dt, alpha;
     real             *imass, *imassin;
     rvec             *force;
@@ -1750,6 +1883,7 @@ void update_coords(FILE             *fplog,
     rvec             *vcom, *xcom, *vall, *xall, *xin, *vin, *forcein, *fall, *xpall, *xprimein, *xprime;
     int               nth, th;
 
+     bDoConstr = (NULL != constr)?TRUE:FALSE;
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
         !EI_VV(inputrec->eI))
@@ -1861,7 +1995,8 @@ void update_coords(FILE             *fplog,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force,
-                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t,
+                              inputrec->opts.ngtc, inputrec->opts.ref_t,
+                              bDoConstr, TRUE,
                               step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 break;
             case (eiSD2):
