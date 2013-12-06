@@ -38,6 +38,8 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+
 #include "gromacs/fileio/confio.h"
 #include "types/commrec.h"
 #include "constr.h"
@@ -95,9 +97,13 @@ typedef struct {
     atom_id blocknr;
 } t_sortblock;
 
+/* delta_t should be used instead of ir->delta_t, to permit the time
+   step to be scaled by the calling code */
 static void *init_vetavars(t_vetavars *vars,
                            gmx_bool constr_deriv,
-                           real veta, real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal)
+                           real veta, real vetanew,
+                           t_inputrec *ir, real delta_t,
+                           gmx_ekindata_t *ekind, gmx_bool bPscal)
 {
     double g;
     int    i;
@@ -111,9 +117,9 @@ static void *init_vetavars(t_vetavars *vars,
     {
         vars->alpha = 1.0;
     }
-    g             = 0.5*veta*ir->delta_t;
+    g             = 0.5*veta*delta_t;
     vars->rscale  = exp(g)*series_sinhx(g);
-    g             = -0.25*vars->alpha*veta*ir->delta_t;
+    g             = -0.25*vars->alpha*veta*delta_t;
     vars->vscale  = exp(g)*series_sinhx(g);
     vars->rvscale = vars->vscale*vars->rscale;
     vars->veta    = vetanew;
@@ -312,6 +318,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    t_idef *idef, t_inputrec *ir, gmx_ekindata_t *ekind,
                    t_commrec *cr,
                    gmx_int64_t step, int delta_step,
+                   real step_scaling,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -326,6 +333,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     int         ncons, settle_error;
     tensor      vir_r_m_dr;
     rvec       *vstor;
+    real        scaled_delta_t;
     real        invdt, vir_fac, t;
     t_ilist    *settle;
     int         nsettle;
@@ -346,17 +354,21 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     homenr = md->homenr;
     nrend  = start+homenr;
 
+    scaled_delta_t = step_scaling * ir->delta_t;
+
     /* set constants for pressure control integration */
     init_vetavars(&vetavar, econq != econqCoord,
-                  veta, vetanew, ir, ekind, bPscal);
+                  veta, vetanew, ir, scaled_delta_t, ekind, bPscal);
 
+    /* Prepare time step for use in constraint implementations, and
+       avoid generating inf when ir->delta_t = 0. */
     if (ir->delta_t == 0)
     {
-        invdt = 0;
+        invdt = 0.0;
     }
     else
     {
-        invdt  = 1/ir->delta_t;
+        invdt = 1.0/scaled_delta_t;
     }
 
     if (ir->efep != efepNO && EI_DYNAMICS(ir->eI))
@@ -605,6 +617,14 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (vir != NULL)
     {
+        /* The normal uses of constrain() pass step_scaling = 1.0.
+         * The call to constrain() for SD1 that passes step_scaling =
+         * 0.5 also passes vir = NULL, so cannot reach this
+         * assertion. This assertion should remain until someone knows
+         * that this path works for their intended purpose, and then
+         * they can use scaled_delta_t instead of ir->delta_t
+         * below. */
+        assert(gmx_within_tol(step_scaling, 1.0, GMX_REAL_EPS));
         switch (econq)
         {
             case econqCoord:

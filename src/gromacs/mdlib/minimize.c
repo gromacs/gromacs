@@ -415,7 +415,7 @@ void init_em(FILE *fplog, const char *title,
             /* Constrain the starting coordinates */
             dvdl_constr = 0;
             constrain(PAR(cr) ? NULL : fplog, TRUE, TRUE, constr, &(*top)->idef,
-                      ir, NULL, cr, -1, 0, mdatoms,
+                      ir, NULL, cr, -1, 0, 1.0, mdatoms,
                       ems->s.x, ems->s.x, NULL, fr->bMolPBC, ems->s.box,
                       ems->s.lambda[efptFEP], &dvdl_constr,
                       NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
@@ -648,7 +648,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
         wallcycle_start(wcycle, ewcCONSTR);
         dvdl_constr = 0;
         constrain(NULL, TRUE, TRUE, constr, &top->idef,
-                  ir, NULL, cr, count, 0, md,
+                  ir, NULL, cr, count, 0, 1.0, md,
                   s1->x, s2->x, NULL, bMolPBC, s2->box,
                   s2->lambda[efptBONDED], &dvdl_constr,
                   NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
@@ -785,7 +785,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcCONSTR);
         dvdl_constr = 0;
         constrain(NULL, FALSE, FALSE, constr, &top->idef,
-                  inputrec, NULL, cr, count, 0, mdatoms,
+                  inputrec, NULL, cr, count, 0, 1.0, mdatoms,
                   ems->s.x, ems->f, ems->f, fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
                   NULL, &shake_vir, nrnb, econqForceDispl, FALSE, 0, 0);

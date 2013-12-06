@@ -138,6 +138,7 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_ekindata_t *ekind,
                    t_commrec *cr,
                    gmx_int64_t step, int delta_step,
+                   real step_scaling,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -161,6 +162,11 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
  * when lenA != lenB or will the pull code with a pulling rate.
  * step + delta_step is the step at which the final configuration
  * is meant to be; for update delta_step = 1.
+ *
+ * step_scaling can be used to update coordinates based on the time
+ * step multiplied by this factor. Thus, normally 1.0 is passed. The
+ * SD1 integrator uses 0.5 in one of its calls, to correct positions
+ * for half a step of changed velocities.
  *
  * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *

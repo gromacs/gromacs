@@ -4103,11 +4103,12 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
     }
 
-    if (ir->eI == eiSD1 &&
-        (gmx_mtop_ftype_count(sys, F_CONSTR) > 0 ||
-         gmx_mtop_ftype_count(sys, F_SETTLE) > 0))
+    if (ir->eI == eiSD2)
     {
-        sprintf(warn_buf, "With constraints integrator %s is less accurate, consider using %s instead", ei_names[ir->eI], ei_names[eiSD2]);
+        sprintf(warn_buf, "The stochastic dynamics integrator %s is deprecated, since\n"
+                "it is slower than integrator %s and is slightly less accurate\n"
+                "with constraints. Use the %s integrator.",
+                ei_names[ir->eI], ei_names[eiSD1], ei_names[eiSD1]);
         warning_note(wi, warn_buf);
     }
 
