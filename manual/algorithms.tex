@@ -1904,7 +1904,7 @@ The trajectory file contains frames that could include positions,
 velocities and/or forces, as well as information about the dimensions
 of the simulation volume, integration step, integration time, etc. The
 interpretation of the time varies with the integrator chosen, as
-described above. For velocity-Verlet integrators, velocities labeled
+described above. For Velocity Verlet integrators, velocities labeled
 at time $t$ are for that time. For other integrators (e.g. leap-frog,
 stochastic dynamics), the velocities labeled at time $t$ are for time
 $t - \hDt$.
@@ -2279,35 +2279,34 @@ still correct.
 
 In {\gromacs} there are two algorithms to integrate equation (\ref{SDeq}):
 a simple and efficient one
-and a more complex leap-frog algorithm~\cite{Gunsteren88}.
+and a more complex leap-frog algorithm~\cite{Gunsteren88}, which is now deprecated.
 The accuracy of both integrators is equivalent to the normal MD leap-frog and
-velocity-Verlet integrator, except with constraints where the simple
-SD integrator is significantly less accurate. There is a proper way
-of applying constraints with the simple integrator, but that requires
-a second constraining step~\cite{Goga2012}, which diminishes the gain.
+Velocity Verlet integrator, except with constraints where the complex
+SD integrator samples at a temperature that it slightly too high (although that error is smaller than the one from the Velocity Verlet integrator that uses the kinetic energy from the full step velocity). The simple integrator is nearly identical to the common way of discretizing the Langevin equation, but the friction and velocity term are applied in an impuls fashion~\cite{Goga2012}.
 The simple integrator is:
 \bea
 \label{eqn:sd_int1}
-\ve{v}(t+\hDt)  &~=~&   \alpha \, \ve{v}(t-\hDt) + \frac{1 - \alpha}{m \gamma}\ve{F}(t) + \sqrt{\frac{k_B T}{m}(1 - \alpha^2)} \, \ruis_i \\
-\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\Dt \, \ve{v}(t+\hDt) \\
-\alpha &~=~& \left(1 - \frac{\gamma \Dt}{m} \right)
+\ve{v}'  &~=~&   \ve{v}(t-\hDt) + \frac{1}{m}\ve{F}(t)\Dt \\
+\Delta\ve{v}     &~=~&   -\alpha \, \ve{v}'(t+\hDt) + \sqrt{\frac{k_B T}{m}(1 - \alpha^2)} \, \ruis_i \\
+\ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\left(\ve{v}' +\frac{1}{2}\Delta \ve{v}\right)\Dt \label{eqn:sd1_x_upd}\\
+\ve{v}(t+\hDt)  &~=~&   \ve{v}' + \Delta \ve{v} \\
+\alpha &~=~& 1 - e^{-\gamma \Dt}
 \eea
 where $\ruis_i$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
-With constraints you should only consider using the simple integrator when $\gamma \Dt/m \ll 0.01$.
+The velocity is first updated a full time step without friction and noise to get $\ve{v}'$, identical to the normal update in leap-frog. The friction and noise are then applied as an impuls at step $t+\Dt$. The advantage of this scheme is that the velocity dependent terms act at the full time step, which makes the correct integration of forces that depend on both coordinates and velocities, such as constraints and dissipative particle dynamics (DPD, not implented yet), straightforward. With constraints, the coordinate update \eqnref{sd1_x_upd} is split into a normal leap-frog update and a $\Delta \ve{v}$. After both of these updates the constraints are applied to coordinates and velocities.
 
-In the complex algorithm four Gaussian random numbers are required
+In the deprecated complex algorithm four Gaussian random numbers are required
 per integration step per degree of freedom, and with constraints the
 coordinates need to be constrained twice per integration step.
 Depending on the computational cost of the force calculation,
 this can take a significant part of the simulation time.
 Exact continuation of a stochastic dynamics simulation is not possible,
 because the state of the random number generator is not stored.
-When using SD as a thermostat, an appropriate value for $\gamma$ is 0.5 ps$^{-1}$,
+
+When using SD as a thermostat, an appropriate value for $\gamma$ is e.g. 0.5 ps$^{-1}$,
 since this results in a friction that is lower than the internal friction
-of water, while it is high enough to remove excess heat
-(unless plain cut-off or reaction-field electrostatics is used).
-With this value of $\gamma$ the efficient algorithm will usually be accurate
-enough.
+of water, while it still provides efficient thermostatting.
+
 
 \section{Brownian Dynamics\swapindexquiet{Brownian}{dynamics}}
 \label{sec:BD}
