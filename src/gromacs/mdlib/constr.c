@@ -97,7 +97,9 @@ typedef struct {
 
 static void *init_vetavars(t_vetavars *vars,
                            gmx_bool constr_deriv,
-                           real veta, real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal)
+                           real veta, real vetanew,
+                           t_inputrec *ir, double delta_t,
+                           gmx_ekindata_t *ekind, gmx_bool bPscal)
 {
     double g;
     int    i;
@@ -111,9 +113,9 @@ static void *init_vetavars(t_vetavars *vars,
     {
         vars->alpha = 1.0;
     }
-    g             = 0.5*veta*ir->delta_t;
+    g             = 0.5*veta*delta_t;
     vars->rscale  = exp(g)*series_sinhx(g);
-    g             = -0.25*vars->alpha*veta*ir->delta_t;
+    g             = -0.25*vars->alpha*veta*delta_t;
     vars->vscale  = exp(g)*series_sinhx(g);
     vars->rvscale = vars->vscale*vars->rscale;
     vars->veta    = vetanew;
@@ -311,7 +313,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
                    t_idef *idef, t_inputrec *ir, gmx_ekindata_t *ekind,
                    t_commrec *cr,
-                   gmx_int64_t step, int delta_step,
+                   gmx_int64_t step, real delta_step,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -326,6 +328,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     int         ncons, settle_error;
     tensor      vir_r_m_dr;
     rvec       *vstor;
+    double      delta_t;
     real        invdt, vir_fac, t;
     t_ilist    *settle;
     int         nsettle;
@@ -346,17 +349,19 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     homenr = md->homenr;
     nrend  = start+homenr;
 
+    delta_t = delta_step*ir->delta_t;
+
     /* set constants for pressure control integration */
     init_vetavars(&vetavar, econq != econqCoord,
-                  veta, vetanew, ir, ekind, bPscal);
+                  veta, vetanew, ir, delta_t, ekind, bPscal);
 
-    if (ir->delta_t == 0)
+    if (delta_t == 0)
     {
         invdt = 0;
     }
     else
     {
-        invdt  = 1/ir->delta_t;
+        invdt = 1/delta_t;
     }
 
     if (ir->efep != efepNO && EI_DYNAMICS(ir->eI))
@@ -608,10 +613,10 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         switch (econq)
         {
             case econqCoord:
-                vir_fac = 0.5/(ir->delta_t*ir->delta_t);
+                vir_fac = 0.5/(delta_t*delta_t);
                 break;
             case econqVeloc:
-                vir_fac = 0.5/ir->delta_t;
+                vir_fac = 0.5/delta_t;
                 break;
             case econqForce:
             case econqForceDispl:
@@ -646,14 +651,14 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         {
             if (EI_DYNAMICS(ir->eI))
             {
-                t = ir->init_t + (step + delta_step)*ir->delta_t;
+                t = ir->init_t + ((double)step + delta_step)*delta_t;
             }
             else
             {
                 t = ir->init_t;
             }
             set_pbc(&pbc, ir->ePBC, box);
-            pull_constraint(ir->pull, md, &pbc, cr, ir->delta_t, t, x, xprime, v, *vir);
+            pull_constraint(ir->pull, md, &pbc, cr, delta_t, t, x, xprime, v, *vir);
         }
         if (constr->ed && delta_step > 0)
         {
