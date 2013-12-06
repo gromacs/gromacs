@@ -750,7 +750,6 @@ static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
     PR("cyl1_radius", swap->cyl1r);
     PR("cyl1_upper" , swap->cyl1u);
     PR("cyl1_lower" , swap->cyl1l);
-    PR("r_solvent", swap->r_sol);
     PI("coupling_steps", swap->csteps);
     PR("threshold", swap->threshold);
     for (j = 0; j < 2; j++)

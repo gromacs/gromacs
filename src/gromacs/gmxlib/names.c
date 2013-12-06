@@ -232,7 +232,7 @@ const char *erotg_fitnames[erotgFitNR+1] = {
 };
 
 const char *eSwapTypes_names[eSwapTypesNR+1] = {
-  "no", "X", "Y", "Z", "auto", NULL
+  "no", "X", "Y", "Z", NULL
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {

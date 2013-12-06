@@ -2085,8 +2085,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("E-z",     efield_z,   NULL);
     STYPE ("E-zt",    efield_zt,  NULL);
 
-    /* Ion/water position swapping ("Computational Electrophysiology") */
-    CCTYPE("Swap coordinates: no, X, Y, Z, auto");
+    /* Ion/water position swapping a.k.a "Computational Electrophysiology" */
+    CCTYPE("Swap positions dimension: no, X, Y, Z");
     EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
     if (ir->eSwapCoords != eswapNO)
     {
@@ -2096,7 +2096,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         CTYPE("Two index groups that contain the compartment-partitioning atoms");
         STYPE("split_group0", splitgrp0, NULL);
         STYPE("split_group1", splitgrp1, NULL);
-        CTYPE("Use center of mass of split groups (yes/no), otherwise geometrical center is used");
+        CTYPE("Use center of mass of split groups (yes/no), otherwise center of geometry is used");
         EETYPE("massw_split0", ir->swap->massw_split[0], yesno_names);
         EETYPE("massw_split1", ir->swap->massw_split[1], yesno_names);
 
@@ -2106,6 +2106,8 @@ void get_ir(const char *mdparin, const char *mdparout,
         STYPE("solvent_group", solgrp, NULL);
 
         CTYPE("Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
+        CTYPE("Note that the split cylinder settings do not have an influence on the swapping protocol,");
+        CTYPE("however, if correctly defined, the ion permeation events are counted per channel");
         RTYPE("cyl0_r"   , ir->swap->cyl0r, 2.0);
         RTYPE("cyl0_up"  , ir->swap->cyl0u, 1.0);
         RTYPE("cyl0_down", ir->swap->cyl0l, 1.0);
@@ -2113,8 +2115,6 @@ void get_ir(const char *mdparin, const char *mdparout,
         RTYPE("cyl1_up"  , ir->swap->cyl1u, 1.0);
         RTYPE("cyl1_down", ir->swap->cyl1l, 1.0);
 
-        CTYPE("Solvent network cutoff (nm)");
-        RTYPE("r_solvent", ir->swap->r_sol, 0.5);
         CTYPE("Average the number of ions per compartment over these many swap attempt steps");
         ITYPE("coupl_steps", ir->swap->csteps, 10);
         CTYPE("Requested number of anions and cations for each of the two compartments");

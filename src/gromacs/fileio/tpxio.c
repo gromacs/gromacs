@@ -727,7 +727,6 @@ static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead, int
     gmx_fio_do_int(fio, swap->nstswap);
     gmx_fio_do_int(fio, swap->csteps);
     gmx_fio_do_real(fio, swap->threshold);
-    gmx_fio_do_real(fio, swap->r_sol);
     gmx_fio_do_real(fio, swap->cyl0r);
     gmx_fio_do_real(fio, swap->cyl0u);
     gmx_fio_do_real(fio, swap->cyl0l);

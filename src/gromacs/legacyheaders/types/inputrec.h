@@ -286,9 +286,6 @@ typedef struct {
     real     cyl0u, cyl1u;    /* ... lower extension. The split cylinders de- */
     real     cyl0l, cyl1l;    /* ... fine the channels and are each anchored  */
                               /* ... in the center of the split group         */
-    real     r_sol;           /* All solvent atoms with a mutual distance of
-                                 at most r_sol are considered as belonging to
-                                 the same compartment                         */
     int      nanions[eCompNr]; /* Requested number of anions and              */
     int      csteps;          /* Coupling constant (nr of time steps)         */
     real     threshold;       /* Ion counts may deviate from the requested

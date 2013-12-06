@@ -8,7 +8,6 @@
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "swapcoords.h"
 #include "groupcoord.h"
 #include "mtop_util.h"
 #include "macros.h"
@@ -34,7 +33,7 @@ enum {eGrpIons, eGrpSplit0, eGrpSplit1, eGrpSolvent, eGrpNr};
 static char* GrpString[eGrpNr] = { "ion", "split0", "split1", "solvent" };
 
 static char *SwapStr[eSwapTypesNR+1] = {
-  "", "X-", "Y-", "Z-", "", NULL
+  "", "X-", "Y-", "Z-", NULL
 };
 
 static char *DimStr[DIM+1] = {
@@ -105,7 +104,7 @@ typedef struct group
 
 typedef struct swap
 {
-    int      swapdim;        /* 0=X, 1=Y, 2=Z, -1=auto                        */
+    int      swapdim;        /* 0=X, 1=Y, 2=Z                                 */
     t_pbc    *pbc;           /* Needed to be able to make molecules whole     */
     FILE     *fpout;         /* Output file                                   */
     t_group  group[eGrpNr];
@@ -1440,26 +1439,6 @@ extern void init_swapcoords(
      * center at at time */
     g = &(s->group[eGrpSolvent]);
     snew(g->m, g->apm);
-    if (eswapAuto == ir->eSwapCoords)
-    {
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "%s Solvent atom masses used for auto-compartmentalization: ", SwS);
-        }
-        for (i = 0; i < g->apm; i++)
-        {
-            gmx_mtop_atomnr_to_atom(alook, g->ind[i], &atom);
-            g->m[i] = atom->m;
-            if (MASTER(cr))
-            {
-                fprintf(stderr, "%f ", g->m[i]);
-            }
-        }
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "u\n");
-        }
-    }
 
     /* Need mass-weighted center of split group? */
     for (j = 0, ig = eGrpSplit0; j < eChanNr; ig++, j++)
@@ -1490,12 +1469,6 @@ extern void init_swapcoords(
         g->qc[i] = atom->q;
     }
 
-    /* Auto-compartmentalization needs some extra initialization */
-    if (eswapAuto == ir->eSwapCoords)
-    {
-        g = &(s->group[eGrpSolvent]);
-        snew(g->dom_now, g->nat);
-    }
     snew(s->pbc, 1);
     set_pbc(s->pbc, -1, box);
 
@@ -1547,16 +1520,8 @@ extern void init_swapcoords(
             }
             if (!bAppend)
             {
-                if (eswapAuto == ir->eSwapCoords)
-                {
-                    fprintf(s->fpout, "# %s group center %5f %5f %5f nm\n", GrpString[ig],
-                            g->center[XX],g->center[YY],g->center[ZZ]);
-                }
-                else
-                {
-                    fprintf(s->fpout, "# %s group %s-center %5f nm\n", GrpString[ig],
-                            DimStr[s->swapdim], g->center[s->swapdim]);
-                }
+                fprintf(s->fpout, "# %s group %s-center %5f nm\n", GrpString[ig],
+                        DimStr[s->swapdim], g->center[s->swapdim]);
             }
         }
 
@@ -1859,10 +1824,6 @@ extern gmx_bool do_swapcoords(
     /* Assemble all the positions of the swap group (ig = 0), the split groups
      * (ig = 1,2), and possibly the solvent group (ig = 3) */
     gmax = eGrpNr;
-    if (s->swapdim == eswapAuto)
-    {
-        gmax--;
-    }
 
     for (ig = 0; ig < gmax; ig++)
     {
@@ -1889,14 +1850,7 @@ extern gmx_bool do_swapcoords(
 
     /* Set up the compartments and get lists of atoms in each compartment, 
      * determine how many ions each compartment contains */
-    if (eswapAuto == ir->eSwapCoords)
-    {
-        compartmentalize_auto(sc);
-    }
-    else
-    {
-        compartmentalize_ions(cr, sc, box, step, s->fpout, bRerun);
-    }
+    compartmentalize_ions(cr, sc, box, step, s->fpout, bRerun);
 
     /* Output how many ions are in the compartments */
     if (MASTER(cr))
@@ -1915,14 +1869,11 @@ extern gmx_bool do_swapcoords(
     bSwap = need_swap(sc);
     if (bSwap)
     {
-        if (ir->eSwapCoords != eswapAuto)
-        {
-            g = &(s->group[eGrpSolvent]);
-            communicate_group_positions_noshift(cr, g->xc, x, g->nat,
-                    g->nat_loc, g->ind_loc, g->c_ind_loc);
+        g = &(s->group[eGrpSolvent]);
+        communicate_group_positions_noshift(cr, g->xc, x, g->nat,
+                g->nat_loc, g->ind_loc, g->c_ind_loc);
 
-            compartmentalize_solvent(cr, sc, box, s->fpout);
-        }
+        compartmentalize_solvent(cr, sc, box, s->fpout);
 
         /* Determine where ions are missing and where ions are too many */
         for (ic = 0; ic < eCompNr; ic++)

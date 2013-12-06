@@ -320,9 +320,9 @@ enum {
     erotgFitRMSD, erotgFitNORM, erotgFitPOT, erotgFitNR
 };
 
-/* Computational electrophysiology ion/water position swapping */
+/* "Computational Electrophysiology" ion/water position swapping */
 enum eSwaptype {
-    eswapNO, eswapX, eswapY, eswapZ, eswapAuto, eSwapTypesNR
+    eswapNO, eswapX, eswapY, eswapZ, eSwapTypesNR
 };
 /* The two compartments */
 enum eCompartment {
