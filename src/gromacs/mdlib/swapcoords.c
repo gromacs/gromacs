@@ -997,7 +997,7 @@ static void ensure_that_groups_differ(t_swap *s, gmx_bool bVerbose)
 
     if (bVerbose)
     {
-        fprintf(stderr, "%s Making shure the groups have no overlapping atoms.\n", SwS);
+        fprintf(stderr, "%s Making sure the groups have no overlapping atoms.\n", SwS);
     }
 
     for (i = 0; i < eGrpNr; i++)
@@ -1428,7 +1428,7 @@ extern void init_swapcoords(
         }
     }
 
-    /* Make shure that all molecules in the ion and solvent groups contain the
+    /* Make sure that all molecules in the ion and solvent groups contain the
      * same number of atoms each */
     s->group[eGrpIons   ].apm = get_group_apm_check(eGrpIons   , s, MASTER(cr) && bVerbose, alook, mtop);
     s->group[eGrpSolvent].apm = get_group_apm_check(eGrpSolvent, s, MASTER(cr) && bVerbose, alook, mtop);
