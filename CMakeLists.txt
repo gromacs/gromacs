@@ -191,12 +191,16 @@ include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
 include(gmxDetectAcceleration)
 gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
+if("${GMX_SUGGESTED_CPU_ACCELERATION}" STREQUAL "AVX2_256")
+    message(STATUS "Changing acceleration from AVX2 to AVX (AVX2 implementation still in pipeline)")
+    set(GMX_SUGGESTED_CPU_ACCELERATION "AVX_256")
+endif()
 
 gmx_option_multichoice(
     GMX_CPU_ACCELERATION
     "Acceleration for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_CPU_ACCELERATION}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 IBM_QPX Sparc64_HPC_ACE)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 IBM_QPX Sparc64_HPC_ACE)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
@@ -249,37 +253,6 @@ option(GMX_BUILD_FOR_COVERAGE
        OFF)
 mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
-######################################################################
-# Compiler tests
-# These need to be done early (before further tests).
-#####################################################################
-
-# Warn if C and C++ compilers do not match
-if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    message(WARNING "The ids of the C and C++ compilers do not match (respectively ${CMAKE_C_COMPILER_ID} and ${CMAKE_CXX_COMPILER_ID}). Note that mixing different C/C++ compilers can cause problems!")
-endif()
-if(NOT "${CMAKE_C_COMPILER_VERSION}" STREQUAL "${CMAKE_CXX_COMPILER_VERSION}")
-    message(WARNING "The versions of the C and C++ compilers do not match (respectively ${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}). Note that mixing different C/C++ compilers can cause problems!")
-endif()
-
-# The cmake/Check{C,CXX}CompilerFlag.cmake files in the GROMACS distribution
-# are used with permission from CMake v2.8.9 so that GROMACS can detect
-# invalid options with the Intel Compilers.
-# These files should be removed from the source tree when a CMake version that
-# includes the features in question becomes required for building GROMACS.
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-# First exclude compilers known to not work with OpenMP although claim to support it:
-# gcc 4.2.1 and gcc-llvm 4.2.1 (also claims to be 4.2.1) on Mac OS X
-# This fixes redmine 900 and needs to run before OpenMP flags are set below.
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND
-    (CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.3))
-    message(STATUS "OpenMP multithreading not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled")
-    set(GMX_OPENMP OFF CACHE BOOL
-        "OpenMP multithreading not not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled!" FORCE)
-endif()
-
 # OpenMP check must come before other CFLAGS!
 if(GMX_OPENMP)
     find_package(OpenMP)
@@ -302,10 +275,21 @@ if(GMX_OPENMP)
         endif()
     else(OPENMP_FOUND)
         message(WARNING
-                "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
+                "The compiler you are using does not support OpenMP parallelism. "
+                "This might hurt your performance a lot, in particular with GPUs. "
+                "Try using a more recent version, or a different compiler. "
+                "For now, we are proceeding by turning off OpenMP.")
         set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
     endif(OPENMP_FOUND)
 endif()
+
+
+######################################################################
+# Test for buggy or problematic compilers or compiler combinations.
+# These need to be done early (before further tests).
+#####################################################################
+include(gmxTestCompilerProblems)
+gmx_test_compiler_problems()
 
 
 include(gmxCFlags)
@@ -316,44 +300,6 @@ gmx_c_flags()
 set(EXTRA_C_FLAGS "")
 set(EXTRA_CXX_FLAGS "")
 
-# gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
-# Detect here whether applying a workaround is needed and will apply it later
-# on the affected files.
-include(gmxGCC44O3BugWorkaround)
-gmx_check_gcc44_bug_workaround_needed(GMX_USE_GCC44_BUG_WORKAROUND)
-
-# clang 3.0 is buggy for some unknown reason detected during adding
-# the SSE2 group kernels for GROMACS 4.6. If we ever work out what
-# that is, we should replace these tests with a compiler feature test,
-# update GROMACS Redmine task #1039 and perhaps report a clang bug.
-#
-# In the meantime, until we require CMake 2.8.10 we cannot rely on it to detect
-# the compiler version for us. So we need a manual check for clang 3.0.
-include(gmxDetectClang30)
-gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
-if(COMPILER_IS_CLANG_3_0)
-    message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
-endif()
-
-# clang <=3.2 contains a bug that causes incorrect code to be generated for the
-# vfmaddps instruction and therefore the bug is triggered with AVX_128_FMA.
-# (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
-# We can work around this by not using the integrated assembler (except on OS X
-# which has an outdated assembler that does not support AVX instructions).
-if (${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.3")
-    set(GMX_USE_CLANG_C_FMA_BUG_WORKAROUND TRUE)
-endif()
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
-    set(GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND TRUE)
-endif()
-
-if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
-    message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
-endif()
-
-if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "12.0.0")
-    message(WARNING "Intel compilers before 12.0.0 are not routinely tested, so there may be problems. Version 11.1 with SSE4.1 is known to produce incorrect results. It is highly recommended to use a more up-to-date compiler. If you choose to use this version, make sure you run the regressiontests.")
-endif()
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
@@ -707,214 +653,13 @@ if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
 endif(NOT GMX_SYSTEM_XDR)
 
-# include avx test source, used if the AVX flags are set below
-include(gmxTestAVXMaskload)
 
-# Process nonbonded accelerated kernels settings
-#
-# Note that for the backward-compatible x86 SIMD architectures, the
-# GMX_CPU_ACCELERATION determines the maximum level of the instruction
-# set used (e.g. GMX_CPU_ACCLERATION=SSE4.1 implies
-# SSE2). Accordingly, there are a set of CMake variables
-# GMX_<arch>_<feature-set> that are exported to the C code to specify
-# CPU features that should be used. This means that the logic for
-# requiring such backward compatibility is all located here.
-if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
-    # nothing to do
-    set(ACCELERATION_STATUS_MESSAGE "CPU acceleration disabled")
+########################################################################
+# Test and possibly modify nonbonded accelerated kernels settings
+########################################################################
+include(gmxTestCPUAcceleration)
+gmx_test_cpu_acceleration()
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
-
-    GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" ACCELERATION_C_FLAGS)
-    if(NOT GNU_SSE2_CFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" ACCELERATION_C_FLAGS)
-    endif(NOT GNU_SSE2_CFLAG AND GMX_NATIVE_WINDOWS)
-
-    GMX_TEST_CXXFLAG(GNU_SSE2_CXXFLAG "-msse2" ACCELERATION_CXX_FLAGS)
-    if(NOT GNU_SSE2_CXXFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" ACCELERATION_CXX_FLAGS)
-    endif(NOT GNU_SSE2_CXXFLAG AND GMX_NATIVE_WINDOWS)
-
-    # We dont warn for lacking SSE2 flag support, since that is probably standard today.
-
-    # Only test the include after we have tried to add the correct flag for SSE2 support
-    check_include_file(emmintrin.h  HAVE_EMMINTRIN_H ${ACCELERATION_C_FLAGS})
-
-    if(NOT HAVE_EMMINTRIN_H)
-        message(FATAL_ERROR "Cannot find emmintrin.h, which is required for SSE2 intrinsics support.")
-    endif(NOT HAVE_EMMINTRIN_H)
-
-    set(GMX_CPU_ACCELERATION_X86_SSE2 1)
-    # The user should not be able to set this orthogonally to the acceleration
-    set(GMX_X86_SSE2 1)
-    set(ACCELERATION_STATUS_MESSAGE
-        "Enabling SSE2 Gromacs acceleration")
-
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
-
-    GMX_TEST_CFLAG(GNU_SSE4_CFLAG "-msse4.1" ACCELERATION_C_FLAGS)
-    if (NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CFLAG(MSVC_SSE4_CFLAG "/arch:SSE4.1" ACCELERATION_C_FLAGS)
-    endif(NOT GNU_SSE4_CFLAG AND GMX_NATIVE_WINDOWS)
-    if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
-        # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
-        # intrinsics when SSE2 support is enabled, so we try that instead first.
-        if (GMX_NATIVE_WINDOWS)
-            GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" ACCELERATION_C_FLAGS)
-            message(WARNING "Neither SSE4.1 or SSE2 seems to be supported by your Windows compiler. Something is likely broken.")
-        else()
-            message(WARNING "No C SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance")
-        endif()
-    endif(NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
-
-    GMX_TEST_CXXFLAG(GNU_SSE4_CXXFLAG "-msse4.1" ACCELERATION_CXX_FLAGS)
-    if (NOT GNU_SSE4_CXXFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CXXFLAG(MSVC_SSE4_CXXFLAG "/arch:SSE4.1" ACCELERATION_CXX_FLAGS)
-    endif(NOT GNU_SSE4_CXXFLAG AND GMX_NATIVE_WINDOWS)
-    if (NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
-        message(WARNING "No C++ SSE4.1 flag found. Consider a newer compiler, or use SSE2 for slightly lower performance.")
-        # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
-        # intrinsics when SSE2 support is enabled, so we try that instead.
-        if (GMX_NATIVE_WINDOWS)
-            GMX_TEST_CXXFLAG(MSVC_SSE2_CXXFLAG "/arch:SSE2" ACCELERATION_CXX_FLAGS)
-        endif()
-    endif(NOT GNU_SSE4_CXXFLAG AND NOT MSVC_SSE4_CXXFLAG)
-
-    # This must come after we have added the -msse4.1 flag on some platforms.
-    check_include_file(smmintrin.h  HAVE_SMMINTRIN_H ${ACCELERATION_C_FLAGS})
-
-    if(NOT HAVE_SMMINTRIN_H)
-        message(FATAL_ERROR "Cannot find smmintrin.h, which is required for SSE4.1 intrinsics support.")
-    endif(NOT HAVE_SMMINTRIN_H)
-
-    if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_EQUAL "11.1")
-        message(FATAL_ERROR "You are using Intel compiler version 11.1, and that compiler is known to produce incorrect results with SSE4.1 acceleration. You need to use another compiler (e.g. icc 12 or newer) or different acceleration (probably slower simulations).")
-    endif()
-
-    set(GMX_CPU_ACCELERATION_X86_SSE4_1 1)
-    # The user should not be able to set this orthogonally to the acceleration
-    set(GMX_X86_SSE4_1 1)
-    set(GMX_X86_SSE2   1)
-    set(ACCELERATION_STATUS_MESSAGE
-        "Enabling SSE4.1 Gromacs acceleration")
-
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION} STREQUAL "AVX_256")
-
-    # Set the AVX compiler flag for both these choices!
-
-    GMX_TEST_CFLAG(GNU_AVX_CFLAG "-mavx" ACCELERATION_C_FLAGS)
-    if (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" ACCELERATION_C_FLAGS)
-    endif (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
-    if (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
-        message(WARNING "No C AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance) giving the -DGMX_CPU_ACCELERATION=SSE4.1 to cmake.")
-    endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
-
-    GMX_TEST_CXXFLAG(GNU_AVX_CXXFLAG "-mavx" ACCELERATION_CXX_FLAGS)
-    if (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
-        GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" ACCELERATION_CXX_FLAGS)
-    endif (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
-    if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
-        message(WARNING "No C++ AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance) giving the -DGMX_CPU_ACCELERATION=SSE4.1 to cmake.")
-    endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
-
-    # Set the FMA4 flags (MSVC doesn't require any)
-    if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
-        GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" ACCELERATION_C_FLAGS)
-        if (NOT GNU_FMA_CFLAG)
-            message(WARNING "No C FMA4 flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
-        endif(NOT GNU_FMA_CFLAG)
-        GMX_TEST_CFLAG(GNU_XOP_CFLAG "-mxop" ACCELERATION_C_FLAGS)
-        # No big deal if we do not have xop, so no point yelling warnings about it.
-        GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" ACCELERATION_CXX_FLAGS)
-        if (NOT GNU_FMA_CXXFLAG)
-            message(WARNING "No C++ FMA flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
-        endif (NOT GNU_FMA_CXXFLAG)
-        GMX_TEST_CXXFLAG(GNU_XOP_CXXFLAG "-mxop" ACCELERATION_CXX_FLAGS)
-        # No big deal if we do not have xop, so no point yelling warnings about it.
-    endif()
-
-    # Only test the header after we have tried to add the flag for AVX support
-    check_include_file(immintrin.h  HAVE_IMMINTRIN_H ${ACCELERATION_C_FLAGS})
-
-    if(NOT HAVE_IMMINTRIN_H)
-        message(FATAL_ERROR "Cannot find immintrin.h, which is required for AVX intrinsics support. Consider switching compiler.")
-    endif(NOT HAVE_IMMINTRIN_H)
-
-    if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_256")
-        try_compile(TEST_AVX ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestAVX.c"
-            COMPILE_DEFINITIONS "${ACCELERATION_C_FLAGS}")
-        if(NOT TEST_AVX)
-            message(FATAL_ERROR "Cannot compile AVX intrinsics. Consider switching compiler.")
-        endif()
-    endif()
-
-    # GCC requires x86intrin.h for FMA support. MSVC 2010 requires intrin.h for FMA support.
-    check_include_file(x86intrin.h HAVE_X86INTRIN_H ${ACCELERATION_C_FLAGS})
-    check_include_file(intrin.h HAVE_INTRIN_H ${ACCELERATION_C_FLAGS})
-
-    # The user should not be able to set this orthogonally to the acceleration
-    set(GMX_X86_SSE4_1 1)
-    set(GMX_X86_SSE2   1)
-
-    # But just enable one of the choices internally...
-    if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA")
-        # We don't have the full compiler version string yet (BUILD_C_COMPILER),
-        # so we can't distinguish vanilla and Apple clang, but catering for AMD
-        # hackintoshes is not worth the effort.
-        if (APPLE AND (${CMAKE_C_COMPILER_ID} STREQUAL "Clang" OR
-                    ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
-            message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA acceleration. As we can not work around this bug on OS X, you will have to select a different compiler or CPU acceleration.")
-        endif()
-
-        if (GMX_USE_CLANG_C_FMA_BUG_WORKAROUND)
-            # we assume that we have an external assembler that supports AVX
-            message(STATUS "Clang ${CMAKE_C_COMPILER_VERSION} detected, enabling FMA bug workaround")
-            set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -no-integrated-as")
-        endif()
-        if (GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND)
-            # we assume that we have an external assembler that supports AVX
-            message(STATUS "Clang ${CMAKE_CXX_COMPILER_VERSION} detected, enabling FMA bug workaround")
-            set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} -no-integrated-as")
-        endif()
-
-        set(GMX_CPU_ACCELERATION_X86_AVX_128_FMA 1)
-        set(GMX_X86_AVX_128_FMA 1)
-        set(ACCELERATION_STATUS_MESSAGE
-            "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add)")
-
-    else()
-        # If we are not doing AVX_128, it must be AVX_256...
-        set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
-        set(GMX_X86_AVX_256 1)
-        set(ACCELERATION_STATUS_MESSAGE
-            "Enabling 256-bit AVX Gromacs acceleration")
-    endif()
-
-    # Unfortunately gcc-4.5.2 and gcc-4.6.0 has a bug where they use the wrong datatype for the formal
-    # parameter of the mask for maskload/maskstore arguments. Check if this is present, since we can work around it.
-    gmx_test_avx_gcc_maskload_bug(${ACCELERATION_C_FLAGS} GMX_X86_AVX_GCC_MASKLOAD_BUG)
-
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
-    try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
-        "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c")
-
-    if (TEST_QPX)
-        message(WARNING "IBM QPX acceleration was selected. This will work, but SIMD-accelerated kernels are only available for the Verlet cut-off scheme. The plain C kernels that are used for the group cut-off scheme kernels will be slow, so please consider using the Verlet cut-off scheme.")
-        set(GMX_CPU_ACCELERATION_IBM_QPX 1)
-    else()
-        message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics. If you are compiling for BlueGene/Q with the XL compilers, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-C' to set up the tool chain.")
-    endif()
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
-    set(GMX_CPU_ACCELERATION_SPARC64_HPC_ACE 1)
-else()
-    gmx_invalid_option_value(GMX_CPU_ACCELERATION)
-endif()
-gmx_check_if_changed(ACCELERATION_CHANGED GMX_CPU_ACCELERATION)
-if (ACCELERATION_CHANGED AND DEFINED ACCELERATION_STATUS_MESSAGE)
-    message(STATUS "${ACCELERATION_STATUS_MESSAGE}")
-endif()
 
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
@@ -986,7 +731,15 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     if((${GMX_CPU_ACCELERATION} MATCHES "SSE" OR ${GMX_CPU_ACCELERATION} MATCHES "AVX") AND ${FFTW}_HAVE_AVX)
         # If we're not doing CPU acceleration, we don't care about FFTW performance on x86 either
-        message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
+        message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. "
+                        "That might sound like a good idea for yourprocessor, but for FFTW versions up to 3.3.3, "
+                        "these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. "
+                        "Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either "
+                        "GROMACS or FFTW to make the decision for you based on runtime performance. You should compile "
+                        "a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, "
+                        "you may like to compare the performance of GROMACS with FFTW libraries compiled with and without "
+                        "--enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to "
+                        "help, because the performance is limited by memory access, not computation.")
     endif()
 
     set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
