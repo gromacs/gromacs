@@ -122,7 +122,7 @@ typedef struct gmx_update
     gmx_bool  randatom_list_init;
 
     /* Variables for the deform algorithm */
-    gmx_large_int_t deformref_step;
+    gmx_int64_t deformref_step;
     matrix          deformref_box;
 } t_gmx_update;
 
@@ -1265,7 +1265,7 @@ void restore_ekinstate_from_state(t_commrec *cr,
     }
 }
 
-void set_deform_reference_box(gmx_update_t upd, gmx_large_int_t step, matrix box)
+void set_deform_reference_box(gmx_update_t upd, gmx_int64_t step, matrix box)
 {
     upd->deformref_step = step;
     copy_mat(box, upd->deformref_box);
@@ -1273,7 +1273,7 @@ void set_deform_reference_box(gmx_update_t upd, gmx_large_int_t step, matrix box
 
 static void deform(gmx_update_t upd,
                    int start, int homenr, rvec x[], matrix box, matrix *scale_tot,
-                   const t_inputrec *ir, gmx_large_int_t step)
+                   const t_inputrec *ir, gmx_int64_t step)
 {
     matrix bnew, invbox, mu;
     real   elapsed_time;
@@ -1333,7 +1333,7 @@ static void combine_forces(int nstcalclr,
                            gmx_constr_t constr,
                            t_inputrec *ir, t_mdatoms *md, t_idef *idef,
                            t_commrec *cr,
-                           gmx_large_int_t step,
+                           gmx_int64_t step,
                            t_state *state, gmx_bool bMolPBC,
                            int start, int nrend,
                            rvec f[], rvec f_lr[],
@@ -1372,7 +1372,7 @@ static void combine_forces(int nstcalclr,
     }
 }
 
-void update_tcouple(gmx_large_int_t   step,
+void update_tcouple(gmx_int64_t   step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
@@ -1442,7 +1442,7 @@ void update_tcouple(gmx_large_int_t   step,
 }
 
 void update_pcouple(FILE             *fplog,
-                    gmx_large_int_t   step,
+                    gmx_int64_t   step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     matrix            pcoupl_mu,
@@ -1512,7 +1512,7 @@ static rvec *get_xprime(const t_state *state, gmx_update_t upd)
 }
 
 void update_constraints(FILE             *fplog,
-                        gmx_large_int_t   step,
+                        gmx_int64_t   step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
                         gmx_ekindata_t   *ekind,
@@ -1710,7 +1710,7 @@ void update_constraints(FILE             *fplog,
 }
 
 void update_box(FILE             *fplog,
-                gmx_large_int_t   step,
+                gmx_int64_t   step,
                 t_inputrec       *inputrec,  /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
@@ -1815,7 +1815,7 @@ void update_box(FILE             *fplog,
 }
 
 void update_coords(FILE             *fplog,
-                   gmx_large_int_t   step,
+                   gmx_int64_t   step,
                    t_inputrec       *inputrec,  /* input record and box stuff	*/
                    t_mdatoms        *md,
                    t_state          *state,
@@ -2066,7 +2066,7 @@ void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[]
             mv[XX], mv[YY], mv[ZZ]);
 }
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr)
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr)
 {
 
     int  i;

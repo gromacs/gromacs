@@ -326,7 +326,7 @@ real calc_temp(real ekin, real nrdf)
     }
 }
 
-void parrinellorahman_pcoupl(FILE *fplog, gmx_large_int_t step,
+void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                              t_inputrec *ir, real dt, tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu, gmx_bool bFirstStep)
@@ -524,7 +524,7 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_large_int_t step,
     mmul_ur0(invbox, t1, mu);
 }
 
-void berendsen_pcoupl(FILE *fplog, gmx_large_int_t step,
+void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
                       t_inputrec *ir, real dt, tensor pres, matrix box,
                       matrix mu)
 {
@@ -964,7 +964,7 @@ void destroy_bufstate(t_state *state)
     sfree(state);
 }
 
-void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
+void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state,
                     tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
@@ -973,7 +973,7 @@ void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
     int             n, i, j, d, ntgrp, ngtc, gc = 0;
     t_grp_tcstat   *tcstat;
     t_grpopts      *opts;
-    gmx_large_int_t step_eff;
+    gmx_int64_t step_eff;
     real            ecorr, pcorr, dvdlcorr;
     real            bmass, qmass, reft, kT, dt, nd;
     tensor          dumpres, dumvir;

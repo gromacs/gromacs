@@ -437,7 +437,7 @@ int gmx_mdrun(int argc, char *argv[])
     int             repl_ex_nex   = 0;
     int             nstepout      = 100;
     int             resetstep     = -1;
-    gmx_large_int_t nsteps        = -2; /* the value -2 means that the mdp option will be used */
+    gmx_int64_t nsteps        = -2; /* the value -2 means that the mdp option will be used */
 
     rvec            realddxyz          = {0, 0, 0};
     const char     *ddno_opt[ddnoNR+1] =

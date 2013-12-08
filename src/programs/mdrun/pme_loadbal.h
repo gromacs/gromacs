@@ -66,7 +66,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
                           interaction_const_t *ic,
                           nonbonded_verlet_t  *nbv,
                           gmx_pme_t           *pmedata,
-                          gmx_large_int_t      step);
+                          gmx_int64_t      step);
 
 /* Restart the PME load balancing discarding all timings gathered up till now */
 void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
