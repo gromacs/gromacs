@@ -336,7 +336,7 @@ static void pr_int(FILE *fp, int indent, const char *title, int i)
     fprintf(fp, "%-20s = %d\n", title, i);
 }
 
-static void pr_gmx_large_int(FILE *fp, int indent, const char *title, gmx_large_int_t i)
+static void pr_gmx_large_int(FILE *fp, int indent, const char *title, gmx_int64_t i)
 {
     char buf[STEPSTRSIZE];
 

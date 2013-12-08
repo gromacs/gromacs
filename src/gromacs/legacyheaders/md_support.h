@@ -87,8 +87,8 @@ void check_nst_param(FILE *fplog, t_commrec *cr,
 
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */
-gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
-                                    gmx_large_int_t  nsteps);
+gmx_int64_t get_multisim_nsteps(const t_commrec *cr,
+                                    gmx_int64_t  nsteps);
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bNotLastFrame);
@@ -98,7 +98,7 @@ real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state,
                                       t_extmass *MassQ);
 
 /* set the lambda values at each step of mdrun when they change */
-void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bRerunMD,
+void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
                          t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[]);
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);

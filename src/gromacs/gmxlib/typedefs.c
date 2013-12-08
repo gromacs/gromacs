@@ -77,7 +77,7 @@ int over_alloc_dd(int n)
     }
 }
 
-int gmx_large_int_to_int(gmx_large_int_t step, const char *warn)
+int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 {
     int i;
 
@@ -87,16 +87,16 @@ int gmx_large_int_to_int(gmx_large_int_t step, const char *warn)
     {
         fprintf(stderr, "\nWARNING during %s:\n", warn);
         fprintf(stderr, "step value ");
-        fprintf(stderr, gmx_large_int_pfmt, step);
+        fprintf(stderr, "%"GMX_PRId64, step);
         fprintf(stderr, " does not fit in int, converted to %d\n\n", i);
     }
 
     return i;
 }
 
-char *gmx_step_str(gmx_large_int_t i, char *buf)
+char *gmx_step_str(gmx_int64_t i, char *buf)
 {
-    sprintf(buf, gmx_large_int_pfmt, i);
+    sprintf(buf, "%"GMX_PRId64, i);
 
     return buf;
 }

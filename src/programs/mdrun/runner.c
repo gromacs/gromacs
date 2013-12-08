@@ -102,7 +102,7 @@ typedef struct {
 /* The array should match the eI array in include/types/enums.h */
 const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
 
-gmx_large_int_t     deform_init_init_step_tpx;
+gmx_int64_t     deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
@@ -130,7 +130,7 @@ struct mdrunner_arglist
     const char     *ddcsz;
     const char     *nbpu_opt;
     int             nstlist_cmdline;
-    gmx_large_int_t nsteps_cmdline;
+    gmx_int64_t nsteps_cmdline;
     int             nstepout;
     int             resetstep;
     int             nmultisim;
@@ -192,7 +192,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
                                          const char *nbpu_opt, int nstlist_cmdline,
-                                         gmx_large_int_t nsteps_cmdline,
+                                         gmx_int64_t nsteps_cmdline,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                          real pforce, real cpt_period, real max_hours,
@@ -957,7 +957,7 @@ static void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
 
 /* Override the value in inputrec with value passed on the command line (if any) */
 static void override_nsteps_cmdline(FILE            *fplog,
-                                    gmx_large_int_t  nsteps_cmdline,
+                                    gmx_int64_t  nsteps_cmdline,
                                     t_inputrec      *ir,
                                     const t_commrec *cr)
 {
@@ -1038,7 +1038,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,
-             gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
+             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags)
@@ -1068,7 +1068,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       list;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
-    gmx_large_int_t           reset_counters;
+    gmx_int64_t           reset_counters;
     gmx_edsam_t               ed           = NULL;
     t_commrec                *cr_old       = cr;
     int                       nthreads_pme = 1;

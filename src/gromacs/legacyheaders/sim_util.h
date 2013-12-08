@@ -77,13 +77,13 @@ void global_stat(FILE *log, gmx_global_stat_t gs,
                  gmx_bool bSumEkinhOld, int flags);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
-int do_per_step(gmx_large_int_t step, gmx_large_int_t nstep);
+int do_per_step(gmx_int64_t step, gmx_int64_t nstep);
 /* Return TRUE if io should be done */
 
 /* ROUTINES from sim_util.c */
 
 void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
-                gmx_large_int_t step, t_inputrec *ir, t_commrec *cr);
+                gmx_int64_t step, t_inputrec *ir, t_commrec *cr);
 
 void print_date_and_time(FILE *log, int pid, const char *title,
                          const gmx_walltime_accounting_t walltime_accounting);
@@ -98,7 +98,7 @@ void finish_run(FILE *log, t_commrec *cr,
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
 
 void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
-                   gmx_large_int_t step, int natoms,
+                   gmx_int64_t step, int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr);
 
