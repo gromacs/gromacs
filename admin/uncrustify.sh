@@ -3,9 +3,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -34,21 +34,34 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # This script runs uncrustify on modified files and reports/applies the
-# results.  By default, the current HEAD commit is compared to the work tree,
+# results.  It also checks for outdated copyright years or headers.
+# By default, the current HEAD commit is compared to the work tree,
 # and files that
 #  1. are different between these two trees and
-#  2. change under uncrustify
+#  2. change under uncrustify and/or have outdated copyright header
 # are reported.  This behavior can be changed by
 #  1. Specifying an --rev=REV argument, which uses REV instead of HEAD as
 #     the base of the comparison.
 #  2. Specifying an action:
-#       check-* reports the files that uncrustify changes
-#       diff-* prints the actual diff of what would change
-#       update-* applies the changes to the repository
-#       *-workdir operates on the working directory (files on disk)
-#       *-index operates on the index of the repository
+#       check-*:   reports the files that uncrustify changes
+#       diff-*:    prints the actual diff of what would change
+#       update-*:  applies the changes to the repository
+#       *-workdir: operates on the working directory (files on disk)
+#       *-index:   operates on the index of the repository
 #     For convenience, if you omit the workdir/index suffix, workdir is assumed
 #     (i.e., diff equals diff-workdir).
+#  3. Specifying --uncrustify=off, which does not run uncrustify.
+#  4. Specifying --copyright=<mode>, which alters the level of copyright
+#     checking is done:
+#       off:     does not check copyright headers at all
+#       year:    only update copyright year in new-format copyright headers
+#       add:     in addition to 'year', add copyright headers to files that
+#                don't have any
+#       update:  in addition to 'year' and 'add', also update new-format
+#                copyright headers if they are broken or outdated.
+#       replace: replace any copyright header with a new-format copyright
+#                header
+#       full:    do all of the above
 # By default, update-* refuses to update "dirty" files (i.e., that differ
 # between the disk and the index) to make it easy to revert the changes.
 # This can be overridden by adding a -f/--force option.
@@ -68,7 +81,9 @@
 # To identify which files to run through uncrustify, the script uses git
 # filters, specified in .gitattributes files.  Only files that have the filter
 # set as "uncrustify" (or something ending in "uncrustify") are processed: if
-# other files have been changed, they are ignored by the script.
+# other files have been changed, they are ignored by the script.  Files passed
+# to uncrustify, as well as files with filter "copyright", get their copyright
+# header checked.
 #
 # If you want to run uncrustify automatically for changes you make, there are
 # two options:
@@ -84,21 +99,26 @@
 # The pre-commit hook + manually running the script gives better/more intuitive
 # control (with the filter, it is possible to have a work tree that is
 # different from HEAD and still have an empty 'git diff') and provides better
-# performance for changes that modify many files.
+# performance for changes that modify many files.  It is the only way that
+# currently also checks the copyright headers.
 # The filter allows one to transparently merge branches that have not been run
 # through uncrustify, and is applied more consistently (the pre-commit hook is
 # not run for every commit, e.g., during a rebase).
 
 # Parse command-line arguments
 function usage() {
-    echo "usage: uncrustify.sh [-f|--force] [--rev=REV] [action]"
-    echo "actions: (check|diff|update)[-(index|workdir)] (default:check-workdir)"
+    echo "usage: uncrustify.sh [-f|--force] [--rev=REV]"
+    echo "           [--uncrustify=(off|check)] [--copyright=<cmode>] [<action>]"
+    echo "<action>: (check*|diff|update)[-(index|workdir*)] (*=default)"
+    echo "<cmode>:  off|add|update*|replace|full"
 }
 
 action="check-workdir"
 declare -a diffargs
 baserev="HEAD"
 force=
+uncrustify_mode=check
+copyright_mode=update
 for arg in "$@" ; do
     if [[ "$arg" == "check-index" || "$arg" == "check-workdir" || \
           "$arg" == "diff-index" || "$arg" == "diff-workdir" || \
@@ -109,6 +129,16 @@ for arg in "$@" ; do
         action=$arg-workdir
     elif [[ "$action" == diff-* ]] ; then
         diffargs+=("$arg")
+    elif [[ "$arg" == --uncrustify=* ]] ; then
+        uncrustify_mode=${arg#--uncrustify=}
+        if [[ "$uncrustify_mode" != "off" && "$uncrustify_mode" != "check" ]] ; then
+            echo "Unknown option: $arg"
+            echo
+            usage
+            exit 2
+        fi
+    elif [[ "$arg" == --copyright=* ]] ; then
+        copyright_mode=${arg#--copyright=}
     elif [[ "$arg" == "-f" || "$arg" == "--force" ]] ; then
         force=1
     elif [[ "$arg" == --rev=* ]] ; then
@@ -125,17 +155,20 @@ for arg in "$@" ; do
 done
 
 # Check that uncrustify is present
-if [ -z "$UNCRUSTIFY" ]
+if [[ "$uncrustify_mode" != "off" ]]
 then
-    echo "Please set the path to uncrustify using UNCRUSTIFY."
-    echo "Note that you need a custom version of uncrustify."
-    echo "See comments in the script file for how to get one."
-    exit 2
-fi
-if ! which "$UNCRUSTIFY" 1>/dev/null
-then
-    echo "Uncrustify not found: $UNCRUSTIFY"
-    exit 2
+    if [ -z "$UNCRUSTIFY" ]
+    then
+        echo "Please set the path to uncrustify using UNCRUSTIFY."
+        echo "Note that you need a custom version of uncrustify."
+        echo "See comments in the script file for how to get one."
+        exit 2
+    fi
+    if ! which "$UNCRUSTIFY" 1>/dev/null
+    then
+        echo "Uncrustify not found: $UNCRUSTIFY"
+        exit 2
+    fi
 fi
 
 # Switch to the root of the source tree and check the config file
@@ -153,7 +186,7 @@ fi
 tmpdir=`mktemp -d -t gmxuncrust.XXXXXX`
 
 # Produce a list of changed files
-# Only include files that have uncrustify set as filter in .gitattributes
+# Only include files that have proper filter set in .gitattributes
 internal_diff_args=
 if [[ $action == *-index ]]
 then
@@ -164,29 +197,83 @@ cut -f2 <$tmpdir/difflist | \
     git check-attr --stdin filter | \
     sed -e 's/.*: filter: //' | \
     paste $tmpdir/difflist - | \
-    grep 'uncrustify$' >$tmpdir/filtered
-cut -f2 <$tmpdir/filtered >$tmpdir/filelist
-git diff-files --name-only | grep -Ff $tmpdir/filelist >$tmpdir/localmods
+    grep -E '(uncrustify|copyright)$' >$tmpdir/filtered
+cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
+grep 'uncrustify$' <$tmpdir/filtered | cut -f2 >$tmpdir/filelist_uncrustify
+git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 
 # Extract changed files to a temporary directory
 mkdir $tmpdir/org
-mkdir $tmpdir/new
 if [[ $action == *-index ]] ; then
-    git checkout-index --prefix=$tmpdir/org/ --stdin <$tmpdir/filelist
+    git checkout-index --prefix=$tmpdir/org/ --stdin <$tmpdir/filelist_all
 else
-    rsync --files-from=$tmpdir/filelist $srcdir $tmpdir/org
+    rsync --files-from=$tmpdir/filelist_all $srcdir $tmpdir/org
 fi
+# Duplicate the original files to a separate directory, where all changes will
+# be made.
+cp -r $tmpdir/org $tmpdir/new
+
+# Create output file for what was done (in case no messages get written)
+touch $tmpdir/messages
 
 # Run uncrustify on the temporary directory
-cd $tmpdir/org
-
-if ! $UNCRUSTIFY -c $cfg_file -F $tmpdir/filelist --prefix=../new/ >$tmpdir/uncrustify.out 2>&1 ; then
-    echo "Reformatting failed. Check uncrustify output below for errors:"
-    cat $tmpdir/uncrustify.out
-    rm -rf $tmpdir
-    exit 2
+cd $tmpdir/new
+if [[ $uncrustify_mode != "off" ]] ; then
+    if ! $UNCRUSTIFY -c $cfg_file -F $tmpdir/filelist_uncrustify --no-backup >$tmpdir/uncrustify.out 2>&1 ; then
+        echo "Reformatting failed. Check uncrustify output below for errors:"
+        cat $tmpdir/uncrustify.out
+        rm -rf $tmpdir
+        exit 2
+    fi
+    # Find the changed files if necessary
+    if [[ $action != diff-* ]] ; then
+        msg="needs uncrustify"
+        if [[ $action == update-* ]] ; then
+            msg="uncrustified"
+        fi
+        git diff --no-index --name-only ../org/ . | \
+            awk -v msg="$msg" '{sub(/.\//,""); print $0 ": " msg}' >> $tmpdir/messages
+    fi
+    # TODO: Consider checking whether rerunning uncrustify causes additional changes
 fi
-# TODO: Consider checking whether rerunning uncrustify causes additional changes
+
+# Update the copyright headers using the requested mode
+if [[ $copyright_mode != "off" ]] ; then
+    cpscript_args="--update-year"
+    case "$copyright_mode" in
+        year)
+            ;;
+        add)
+            cpscript_args+=" --add-missing"
+            ;;
+        update)
+            cpscript_args+=" --add-missing --update-header"
+            ;;
+        replace)
+            cpscript_args+=" --replace-header"
+            ;;
+        full)
+            cpscript_args+=" --add-missing --update-header --replace-header"
+            ;;
+        *)
+            echo "Unknown copyright mode: $copyright_mode"
+            exit 2
+    if [[ $copyright -eq 2 ]] ; then
+        cpscript_args+=" --update-header"
+    fi
+    esac
+    if [[ $action == check-* ]] ; then
+        cpscript_args+=" --check"
+    fi
+    # TODO: Probably better to invoke python explicitly through a customizable
+    # variable.
+    if ! $admin_dir/copyright.py -F $tmpdir/filelist_all $cpscript_args >>$tmpdir/messages
+    then
+        echo "Copyright checking failed!"
+        rm -rf $tmpdir
+        exit 2
+    fi
+fi
 
 cd $tmpdir
 
@@ -198,24 +285,23 @@ if [[ $action == diff-* ]] ; then
 fi
 
 # Find the changed files
-touch $tmpdir/messages
 changes=
 set -o pipefail
 if ! git diff --no-index --name-only --exit-code org/ new/ | \
          sed -e 's#new/##' > $tmpdir/changed
 then
     changes=1
-    awk '{print $0 ": needs uncrustify"}' $tmpdir/changed \
-        >> $tmpdir/messages
 fi
+
 # Check if changed files have changed outside the index
 if grep -Ff $tmpdir/localmods $tmpdir/changed > $tmpdir/conflicts
 then
     awk '{print $0 ": has changes in work tree"}' $tmpdir/conflicts \
         >> $tmpdir/messages
     if [[ ! $force && $action == update-* ]] ; then
+        echo "Modified files found in work tree, skipping update. Use -f to override."
+        echo "The following would have been done:"
         sort $tmpdir/messages
-        echo "Modified files found in work tree, skipping update."
         rm -rf $tmpdir
         exit 2
     fi
@@ -247,11 +333,7 @@ elif [[ $action == update-workdir ]] ; then
 fi
 
 # Report what was done
-if [[ $action == update-* ]] ; then
-    sort $tmpdir/messages | sed -e 's/needs uncrustify/uncrustified/'
-else
-    sort $tmpdir/messages
-fi
+sort $tmpdir/messages
 
 rm -rf $tmpdir
 exit $changes

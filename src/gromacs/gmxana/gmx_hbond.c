@@ -40,14 +40,10 @@
 
 /*#define HAVE_NN_LOOPS*/
 
-#include "gmx_omp.h"
-
 #include "statutil.h"
 #include "copyrite.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "futil.h"
-#include "tpxio.h"
 #include "physics.h"
 #include "macros.h"
 #include "gmx_fatal.h"
@@ -56,12 +52,17 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "matio.h"
 #include "string2.h"
 #include "pbc.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "geminate.h"
+
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/utility/gmxomp.h"
 
 typedef short int t_E;
 typedef int t_EEst;
@@ -2448,14 +2449,16 @@ static real quality_of_fit(real chi2, int N)
 }
 
 #else
-static real optimize_luzar_parameters(FILE *fp, t_luzar *tl, int maxiter,
-                                      real tol)
+static real optimize_luzar_parameters(FILE gmx_unused    *fp,
+                                      t_luzar gmx_unused *tl,
+                                      int gmx_unused      maxiter,
+                                      real gmx_unused     tol)
 {
     fprintf(stderr, "This program needs the GNU scientific library to work.\n");
 
     return -1;
 }
-static real quality_of_fit(real chi2, int N)
+static real quality_of_fit(real gmx_unused chi2, int gmx_unused N)
 {
     fprintf(stderr, "This program needs the GNU scientific library to work.\n");
 
@@ -3654,7 +3657,7 @@ static void sync_hbdata(t_hbdata *p_hb, int nframes)
 int gmx_hbond(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_hbond[tt] computes and analyzes hydrogen bonds. Hydrogen bonds are",
+        "[THISMODULE] computes and analyzes hydrogen bonds. Hydrogen bonds are",
         "determined based on cutoffs for the angle Hydrogen - Donor - Acceptor",
         "(zero is extended) and the distance Donor - Acceptor",
         "(or Hydrogen - Acceptor using [TT]-noda[tt]).",

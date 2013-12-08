@@ -70,7 +70,7 @@ HW_tip5p     1       1.008   0.0000  A   0.00000e+00  0.00000e+00
 OW_tip5p     8      16.00    0.0000  A   3.12000e-01  6.69440e-01
 ; dummy defs
 ; MW=Dummy mass for tip4p/EW/5p water extra point charge
-MW           0       0.0000  0.0000  A   0.00000e+00  0.00000e+00
+MW           0       0.0000  0.0000  D   0.00000e+00  0.00000e+00
 ; Dummy masses for rigid CH3 and NH3 groups
 MCH3         0       0.0000  0.0000  A   0.00000e+00  0.00000e+00
 MNH3         0       0.0000  0.0000  A   0.00000e+00  0.00000e+00

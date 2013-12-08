@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -46,7 +46,7 @@
 namespace gmx
 {
 
-/*! \addtopublicapi
+/*! \addtogroup module_utility
  * \{
  */
 
@@ -57,6 +57,7 @@ enum ErrorCode
 {
     //! Zero for successful return.
     eeOK,
+
     //! Not enough memory to complete operation.
     eeOutOfMemory,
     //! Provided file could not be opened.
@@ -70,8 +71,12 @@ enum ErrorCode
     //! Simulation instability detected.
     eeInstability,
 
-    // Error codes below are for internal error checking; if triggered, they
-    // should indicate a bug in the code.
+    /*! \name Error codes for buggy code
+     *
+     * Error codes below are for internal error checking; if triggered, they
+     * should indicate a bug in the code.
+     * \{
+     */
     //! Requested feature not yet implemented.
     eeNotImplemented,
     //! Input value violates API specification.
@@ -86,6 +91,7 @@ enum ErrorCode
     eeRange,
     //! Communication consistency check failed.
     eeCommunication,
+    //!\}
 
     //! Unknown error detected.
     eeUnknownError,
@@ -122,14 +128,15 @@ typedef void (*ErrorHandlerFunc)(int retcode, const char *msg,
  * \returns   Old error handler function.
  *
  * The default error handler prints out the location and reason of the error to
- * stderr, and then calls abort().
+ * stderr, and then calls std::abort().
  */
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler);
 
 /*! \brief
  * Macro for raising an error and returning from a function.
  *
- * The function should return \c int ; if it doesn't, use GMX_ERROR_NORET.
+ * The function should return \c int.
+ * If it doesn't, use ::GMX_ERROR_NORET.
  */
 #define GMX_ERROR(retcode, msg) \
     do { \
@@ -152,7 +159,7 @@ ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler);
 namespace internal
 {
 
-/*! \brief
+/*! \internal \brief
  * Raises a fatal error.
  *
  * \param[in] retcode Error code to raise.

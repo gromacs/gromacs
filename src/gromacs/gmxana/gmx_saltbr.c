@@ -42,9 +42,10 @@
 #include "vec.h"
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/trxio.h"
 #include "statutil.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "pbc.h"
@@ -129,7 +130,7 @@ static real calc_dist(t_pbc *pbc, rvec x[], t_block *cgs, int icg, int jcg)
 int gmx_saltbr(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_saltbr[tt] plots the distance between all combination of charged groups",
+        "[THISMODULE] plots the distance between all combination of charged groups",
         "as a function of time. The groups are combined in different ways.",
         "A minimum distance can be given (i.e. a cut-off), such that groups",
         "that are never closer than that distance will not be plotted.[PAR]",

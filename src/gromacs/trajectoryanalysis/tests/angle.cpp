@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -57,7 +57,7 @@ using gmx::test::CommandLine;
  */
 
 //! Test fixture for the angle analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::Angle>
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::AngleInfo>
     AngleModuleTest;
 
 TEST_F(AngleModuleTest, ComputesSimpleAngles)
@@ -166,6 +166,35 @@ TEST_F(AngleModuleTest, HandlesDynamicSelections)
     const char *const cmdline[] = {
         "angle",
         "-g1", "angle", "-group1", "resname RA1 RA2 and name A1 A2 A3 and z < 0.5",
+        "-binw", "60"
+    };
+    setTopology("angle.gro");
+    runTest(CommandLine::create(cmdline));
+}
+
+TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorAngles)
+{
+    const char *const cmdline[] = {
+        "angle",
+        "-g1", "vector", "-group1", "resname RV1 RV2 and name A1 A2",
+        "-g2", "vector", "-group2", "resname RV3 and name A1 A2",
+        "-binw", "60"
+    };
+    setTopology("angle.gro");
+    runTest(CommandLine::create(cmdline));
+}
+
+TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorGroupsAngles)
+{
+    const char *const cmdline[] = {
+        "angle",
+        "-g1", "vector",
+        "-group1",
+        "resname RV1 and name A1 A2",
+        "resname RV3 RV4 and name A1 A2",
+        "-g2", "plane",
+        "-group2",
+        "resname RP1 RP2 and name A1 A2 A3",
         "-binw", "60"
     };
     setTopology("angle.gro");

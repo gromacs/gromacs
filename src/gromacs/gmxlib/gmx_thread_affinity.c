@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -48,15 +48,13 @@
 #include "types/commrec.h"
 #include "types/hw_info.h"
 #include "gmx_cpuid.h"
-#include "gmx_omp.h"
 #include "gmx_omp_nthreads.h"
-#include "mdrun.h"
 #include "md_logging.h"
 #include "statutil.h"
 #include "gmx_thread_affinity.h"
 
 #include "thread_mpi/threads.h"
-
+#include "gromacs/utility/gmxomp.h"
 
 static int
 get_thread_affinity_layout(FILE *fplog,
@@ -185,7 +183,7 @@ gmx_set_thread_affinity(FILE                *fplog,
                         gmx_hw_opt_t        *hw_opt,
                         const gmx_hw_info_t *hwinfo)
 {
-    int        nth_affinity_set, thread_id_node, thread_id,
+    int        nth_affinity_set, thread0_id_node,
                nthread_local, nthread_node, nthread_hw_max, nphyscore;
     int        offset;
     const int *locality_order;
@@ -225,8 +223,8 @@ gmx_set_thread_affinity(FILE                *fplog,
     }
 
     /* map the current process to cores */
-    thread_id_node = 0;
-    nthread_node   = nthread_local;
+    thread0_id_node = 0;
+    nthread_node    = nthread_local;
 #ifdef GMX_MPI
     if (PAR(cr) || MULTISIM(cr))
     {
@@ -237,9 +235,9 @@ gmx_set_thread_affinity(FILE                *fplog,
 
         MPI_Comm_split(MPI_COMM_WORLD, gmx_hostname_num(), cr->rank_intranode,
                        &comm_intra);
-        MPI_Scan(&nthread_local, &thread_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
+        MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
         /* MPI_Scan is inclusive, but here we need exclusive */
-        thread_id_node -= nthread_local;
+        thread0_id_node -= nthread_local;
         /* Get the total number of threads on this physical node */
         MPI_Allreduce(&nthread_local, &nthread_node, 1, MPI_INT, MPI_SUM, comm_intra);
         MPI_Comm_free(&comm_intra);
@@ -286,15 +284,15 @@ gmx_set_thread_affinity(FILE                *fplog,
      * of threads on which we succeeded.
      */
     nth_affinity_set = 0;
-#pragma omp parallel firstprivate(thread_id_node) num_threads(nthread_local) \
-    reduction(+:nth_affinity_set)
+#pragma omp parallel num_threads(nthread_local) reduction(+:nth_affinity_set)
     {
+        int      thread_id, thread_id_node;
         int      index, core;
         gmx_bool setaffinity_ret;
 
-        thread_id       = gmx_omp_get_thread_num();
-        thread_id_node += thread_id;
-        index           = offset + thread_id_node*hw_opt->core_pinning_stride;
+        thread_id      = gmx_omp_get_thread_num();
+        thread_id_node = thread0_id_node + thread_id;
+        index          = offset + thread_id_node*hw_opt->core_pinning_stride;
         if (locality_order != NULL)
         {
             core = locality_order[index];
@@ -311,8 +309,8 @@ gmx_set_thread_affinity(FILE                *fplog,
 
         if (debug)
         {
-            fprintf(debug, "On rank %2d, thread %2d, core %2d the affinity setting returned %d\n",
-                    cr->nodeid, gmx_omp_get_thread_num(), core, setaffinity_ret);
+            fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
+                    cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
         }
     }
 
@@ -367,9 +365,11 @@ gmx_set_thread_affinity(FILE                *fplog,
  * Note that this will only work on Linux as we use a GNU feature.
  */
 void
-gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
-                              gmx_hw_opt_t *hw_opt, int ncpus,
-                              gmx_bool bAfterOpenmpInit)
+gmx_check_thread_affinity_set(FILE            gmx_unused *fplog,
+                              const t_commrec gmx_unused *cr,
+                              gmx_hw_opt_t    gmx_unused *hw_opt,
+                              int             gmx_unused  ncpus,
+                              gmx_bool        gmx_unused  bAfterOpenmpInit)
 {
 #ifdef HAVE_SCHED_GETAFFINITY
     cpu_set_t mask_current;

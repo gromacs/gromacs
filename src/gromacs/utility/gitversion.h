@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -32,6 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Declares variables that hold generated version information.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \ingroup module_utility
+ */
 #ifndef GMX_UTILITY_GITVERSION_H
 #define GMX_UTILITY_GITVERSION_H
 
@@ -40,9 +47,19 @@ extern "C"
 {
 #endif
 
+/*! \cond internal */
+//! \addtogroup module_utility
+//! \{
+
+//! Version string, containing the version, date, and abbreviated hash.
 extern const char _gmx_ver_string[];
+//! Full git hash of the latest commit.
 extern const char _gmx_full_git_hash[];
+//! Full git hash of the latest commit in a central Gromacs repository.
 extern const char _gmx_central_base_hash[];
+
+//! \}
+//! \endcond
 
 #ifdef __cplusplus
 }

@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -74,7 +74,7 @@ using gmx::SelectionTreeElementPointer;
 namespace
 {
 
-/*! \internal \brief
+/*! \brief
  * Reserves memory for a selection element from the evaluation memory pool.
  *
  * This class implements RAII semantics for allocating memory for selection
@@ -131,7 +131,7 @@ class MempoolSelelemReserver
         SelectionTreeElementPointer     sel_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Reserves memory for an index group from the evaluation memory pool.
  *
  * This class implements RAII semantics for allocating memory for an index
@@ -181,7 +181,7 @@ class MempoolGroupReserver
         gmx_ana_index_t        *g_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Assigns a temporary value for a selection element.
  *
  * This class implements RAII semantics for temporarily assigning the value
@@ -480,25 +480,10 @@ _gmx_sel_evaluate_children(gmx_sel_evaluate_t                *data,
     }
 }
 
-/*!
- * \param[in] data Data for the current frame.
- * \param[in] sel Selection element being evaluated.
- * \param[in] g   Group for which \p sel should be evaluated
- *   (not used, can be NULL).
- * \returns   0 on success, a non-zero error code on error.
- *
- * Evaluates the first child element in the group defined by \p sel->u.cgrp.
- * If \p sel->u.cgrp is empty, nothing is done.
- * The value of \p sel is not touched (root elements do not evaluate to
- * values).
- *
- * This function can be used as gmx::SelectionTreeElement::evaluate for
- * \ref SEL_ROOT elements.
- */
 void
-_gmx_sel_evaluate_root(gmx_sel_evaluate_t                *data,
-                       const SelectionTreeElementPointer &sel,
-                       gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_root(gmx_sel_evaluate_t                     *data,
+                       const gmx::SelectionTreeElementPointer &sel,
+                       gmx_ana_index_t                         * /* g */)
 {
     if (sel->u.cgrp.isize == 0 || !sel->child->evaluate)
     {
@@ -509,21 +494,10 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t                *data,
                          sel->u.cgrp.isize < 0 ? NULL : &sel->u.cgrp);
 }
 
-/*!
- * \param[in] data Data for the current frame.
- * \param[in] sel Selection element being evaluated.
- * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 for success.
- *
- * Sets the value of \p sel to the intersection of \p g and \p sel->u.cgrp.
- *
- * This function can be used as gmx::SelectionTreeElement::evaluate for
- * \ref SEL_CONST elements with value type \ref GROUP_VALUE.
- */
 void
-_gmx_sel_evaluate_static(gmx_sel_evaluate_t                *data,
-                         const SelectionTreeElementPointer &sel,
-                         gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_static(gmx_sel_evaluate_t                      * /* data */,
+                         const gmx::SelectionTreeElementPointer &sel,
+                         gmx_ana_index_t                        *g)
 {
     gmx_ana_index_intersection(sel->v.u.g, &sel->u.cgrp, g);
 }

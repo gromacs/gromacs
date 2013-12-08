@@ -42,7 +42,7 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "copyrite.h"
 #include "vec.h"
@@ -51,7 +51,7 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "trnio.h"
+#include "gromacs/fileio/trnio.h"
 #include "gmx_ana.h"
 
 
@@ -101,12 +101,12 @@ static void dump_dih_trn(int nframes, int nangles, real **dih, const char *fn,
 int gmx_g_angle(int argc, char *argv[])
 {
     static const char *desc[] = {
-        "[TT]g_angle[tt] computes the angle distribution for a number of angles",
+        "[THISMODULE] computes the angle distribution for a number of angles",
         "or dihedrals.[PAR]",
         "With option [TT]-ov[tt], you can plot the average angle of",
         "a group of angles as a function of time. With the [TT]-all[tt] option,",
         "the first graph is the average and the rest are the individual angles.[PAR]",
-        "With the [TT]-of[tt] option, [TT]g_angle[tt] also calculates the fraction of trans",
+        "With the [TT]-of[tt] option, [THISMODULE] also calculates the fraction of trans",
         "dihedrals (only for dihedrals) as function of time, but this is",
         "probably only fun for a select few.[PAR]",
         "With option [TT]-oc[tt], a dihedral correlation function is calculated.[PAR]",
@@ -115,7 +115,7 @@ int gmx_g_angle(int argc, char *argv[])
         "If this is not the case, the program will crash.[PAR]",
         "With option [TT]-or[tt], a trajectory file is dumped containing cos and",
         "sin of selected dihedral angles, which subsequently can be used as",
-        "input for a principal components analysis using [TT]g_covar[tt].[PAR]",
+        "input for a principal components analysis using [gmx-covar].[PAR]",
         "Option [TT]-ot[tt] plots when transitions occur between",
         "dihedral rotamers of multiplicity 3 and [TT]-oh[tt]",
         "records a histogram of the times between such transitions,",

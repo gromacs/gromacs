@@ -47,13 +47,14 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "mshift.h"
 #include "xvgr.h"
 #include "rmpbc.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "do_fit.h"
 #include "gmx_ana.h"
 
@@ -180,7 +181,7 @@ static void get_refx(output_env_t oenv, const char *trxfn, int nfitdim, int skip
 int gmx_rotmat(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_rotmat[tt] plots the rotation matrix required for least squares fitting",
+        "[THISMODULE] plots the rotation matrix required for least squares fitting",
         "a conformation onto the reference conformation provided with",
         "[TT]-s[tt]. Translation is removed before fitting.",
         "The output are the three vectors that give the new directions",
@@ -191,7 +192,7 @@ int gmx_rotmat(int argc, char *argv[])
         "This tool is useful for, for instance,",
         "determining the orientation of a molecule",
         "at an interface, possibly on a trajectory produced with",
-        "[TT]trjconv -fit rotxy+transxy[tt] to remove the rotation",
+        "[TT]gmx trjconv -fit rotxy+transxy[tt] to remove the rotation",
         "in the [IT]x-y[it] plane.",
         "[PAR]",
         "Option [TT]-ref[tt] determines a reference structure for fitting,",

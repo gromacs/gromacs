@@ -47,17 +47,18 @@
 #include "index.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "pbc.h"
 #include "do_fit.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 int gmx_helixorient(int argc, char *argv[])
 {
     const char      *desc[] = {
-        "[TT]g_helixorient[tt] calculates the coordinates and direction of the average",
+        "[THISMODULE] calculates the coordinates and direction of the average",
         "axis inside an alpha helix, and the direction/vectors of both the",
         "C[GRK]alpha[grk] and (optionally) a sidechain atom relative to the axis.[PAR]",
         "As input, you need to specify an index group with C[GRK]alpha[grk] atoms",

@@ -41,7 +41,7 @@
 #include "statutil.h"
 #include "viewit.h"
 #include "string2.h"
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "macros.h"
 #include "gmx_fatal.h"
 

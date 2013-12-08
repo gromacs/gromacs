@@ -2,10 +2,10 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -85,7 +85,6 @@ class Link(object):
     """
 
     priorities = {
-            'unknown': 0,
             'undocumented': 1,
             'intramodule': 2,
             'library': 3,
@@ -98,8 +97,10 @@ class Link(object):
         self.fromnode = fromnode
         self.tonode = tonode
         self.link_type = link_type
+        if not link_type:
+            self.refresh_type()
 
-    def refresh_type(self, reporter):
+    def refresh_type(self):
         """Initialize type of a link between two file nodes.
 
         Both endpoints of the link must be file objects when this method is
@@ -114,9 +115,6 @@ class Link(object):
             if intramodule:
                 link_type = 'intramodule'
             else:
-                reporter.error(fromfile.path,
-                        'included file "{0}" is missing API definition'
-                            .format(tofile.path))
                 link_type = 'undocumented'
         elif fromfile.type == 'test':
             link_type = 'test'
@@ -126,23 +124,18 @@ class Link(object):
             elif tofile.type == 'libheader':
                 link_type = 'libimpl'
             else:
-                reporter.error(fromfile.path,
-                        'unknown link type to "{0}"'.format(tofile.path))
-                link_type = 'unknown'
+                raise ValueError('Unknown link type between {0} and {1}'
+                        .format(fromfile.path, tofile.path))
         elif fromfile.type == 'libheader':
             link_type = 'library'
         elif fromfile.type == 'publicheader':
             if tofile.type == 'publicheader' or tofile.doctype == 'public':
                 link_type = 'public'
             else:
-                reporter.error(fromfile.path,
-                        'public API file includes non-public header "{0}"'
-                            .format(tofile.path))
                 link_type = 'undocumented'
         else:
-            reporter.error(fromfile.path,
-                    'unknown link type to "{0}"'.format(tofile.path))
-            link_type = 'unknown'
+            raise ValueError('Unknown link type between {0} and {1}'
+                    .format(fromfile.path, tofile.path))
         self.link_type = link_type
 
     def merge_link(self, other):
@@ -170,14 +163,16 @@ class Link(object):
             properties = 'color=black, style=dashed'
         elif self.link_type == 'public':
             properties = 'color=black'
-        else: #unknown or undocumented
+        else: # undocumented
             properties = 'color=red'
-        return '{0} -> {1} [{2}]'.format(self.fromnode.obj.nodename,
-                                         self.tonode.obj.nodename,
+        return '{0} -> {1} [{2}]'.format(self.fromnode.nodename,
+                                         self.tonode.nodename,
                                          properties)
 
 class Node(object):
-    def __init__(self, obj):
+    def __init__(self, obj, nodename, label):
+        self.nodename = nodename
+        self.label = label
         self.obj = obj
         self.children = []
         self.root = False
@@ -206,15 +201,15 @@ class Node(object):
         if self.children:
             if not self.root:
                 result += '    subgraph cluster_{0} {{\n' \
-                              .format(self.obj.nodename)
-                result += '        label = "{0}"\n'.format(self.obj.name)
+                              .format(self.nodename)
+                result += '        label = "{0}"\n'.format(self.label)
             for child in self.children:
                 result += child.format()
             if not self.root:
                 result += '    }\n'
         else:
             result += '    {0} [{1}]\n'.format(
-                    self.obj.nodename, self.obj.node_properties())
+                    self.nodename, self.obj.node_properties())
         return result
 
 
@@ -299,11 +294,19 @@ def find_include_file(filename, includedirs):
     return None
 
 
+class IncludedFile(object):
+    def __init__(self, included_file, included_path, is_relative, is_system):
+        self._included_file = included_file
+        self._included_path = included_path
+        #self._used_include_path = used_include_path
+        self._is_relative = is_relative
+        self._is_system = is_system
+
+
 class File(object):
     def __init__(self, path, module):
         self.path = path
         self.name = os.path.basename(path)
-        self.nodename = re.subn(r'[-./]', '_', path)[0]
         self.module = module
         if module.name == 'tests':
             self.type = 'test'
@@ -314,9 +317,11 @@ class File(object):
         self.doctype = 'none'
         #headername = re.sub(r'\.cpp$', '.h', self.name)
         #implheadername = re.sub(r'\.cpp$', '-impl.h', self.name)
-        self.links = []
-        self.node = Node(self)
+        self._included = []
         self.installed = False
+
+    def is_documented(self):
+        return self.doctype != 'none'
 
     def set_installed(self, reporter):
         if self.type != 'header':
@@ -325,14 +330,8 @@ class File(object):
             return
         self.installed = True
 
-    def add_dependency(self, dep):
-        self.links.append(Link(self.node, dep.node))
-
-    def get_node(self):
-        return self.node
-
-    def get_links(self):
-        return self.links
+    def get_included_files(self):
+        return self._included
 
     def node_properties(self):
         properties = []
@@ -363,53 +362,49 @@ class File(object):
         and adds the dependency link to the other file if applicable.
         """
         fullpath = None
-        match = re.match(r'#include <([^>]*)>', line)
+        includedpath = None
+        includedfile = None
+        is_system = False
+        is_relative = False
+        match = re.match(r'#include *<([^>]*)>', line)
         if match:
-            includedfile = match.group(1)
-            fullpath = find_include_file(includedfile, includedirs)
-            if fullpath:
-                reporter.error(self.path,
-                        'local file included as <{0}>'
-                            .format(includedfile))
+            includedpath = match.group(1)
+            is_system = True
+            fullpath = find_include_file(includedpath, includedirs)
         else:
-            match = re.match(r'#include "([^"]*)"', line)
+            match = re.match(r'#include *"([^"]*)"', line)
             if match:
-                includedfile = match.group(1)
-                fullpath = os.path.join(selfdir, includedfile)
+                includedpath = match.group(1)
+                fullpath = os.path.join(selfdir, includedpath)
                 #if os.path.abspath(fullpath) in ignorelist:
                 #    return
-                if not os.path.exists(fullpath):
-                    fullpath = find_include_file(includedfile, includedirs)
-                    if fullpath:
-                        if self.installed:
-                            reporter.error(self.path,
-                                    'installed header includes "{0}", '
-                                    'which is not found using relative path'
-                                        .format(includedfile))
-                    else:
+                if os.path.exists(fullpath):
+                    is_relative = True
+                else:
+                    fullpath = find_include_file(includedpath, includedirs)
+                    if not fullpath:
                         reporter.input_warning(self.path,
                                 'included file "{0}" not found'
-                                    .format(includedfile))
-        if fullpath:
-            if fullpath in allfiles:
-                other = allfiles[fullpath]
-                if self.installed and not other.installed:
-                    reporter.error(self.path,
-                            'installed header includes '
-                            'non-installed header "{0}"'
-                                .format(other.path))
-                self.add_dependency(other)
+                                    .format(includedpath))
+        if not includedpath:
+            reporter.input_warning(self.path, 'line "{0}" could not be parsed'
+                    .format(line))
+        else:
+            if fullpath and fullpath in allfiles:
+                includedfile = allfiles[fullpath]
             #elif not dep in ignorelist:
             #    depfile = File(dep, None)
             #    files[dep] = depfile
             #    file.add_dependency(depfile)
             #    extrafiles.append(dep)
+            self._included.append(IncludedFile(includedfile, includedpath,
+                    is_relative, is_system))
 
     def scan(self, filename, allfiles, includedirs, ignorelist, reporter):
         selfdir = os.path.dirname(filename)
         infileblock = False
         foundfileblock = False
-        docmodule = None
+        self.docmodule = None
         with open(filename, 'r') as scanfile:
             for line in scanfile:
                 if line.startswith('#include'):
@@ -418,7 +413,7 @@ class File(object):
                     continue
                 if not foundfileblock:
                     if infileblock:
-                        if line.startswith(r' */'):
+                        if r'*/' in line:
                             infileblock = False
                             foundfileblock = True
                             continue
@@ -429,10 +424,10 @@ class File(object):
                                 self.type = 'libheader'
                         match = re.match(r' \* \\ingroup module_([a-z_]*)', line)
                         if match:
-                            if docmodule:
+                            if self.docmodule:
                                 reporter.error(self.path,
                                         'file documented in multiple modules')
-                            docmodule = match.group(1)
+                            self.docmodule = match.group(1)
                     else:
                         match = re.match(r'/\*! *(\\[a-z]*internal)? *\\file', line)
                         if match:
@@ -451,28 +446,6 @@ class File(object):
                             if self.type == 'header':
                                 # Default type if no other found
                                 self.type = 'implheader'
-        if self.doctype == 'none':
-            reporter.error(self.path, 'file not documented')
-        elif self.doctype == 'implementation' and \
-                self.type in ('publicheader', 'libheader'):
-            reporter.error(self.path,
-                    'file documentation visibility incorrect')
-        elif self.doctype == 'library' and self.type == 'publicheader':
-            reporter.error(self.path,
-                    'file documentation visibility incorrect')
-        if self.installed and self.doctype not in ('public', 'unknown'):
-            reporter.error(self.path,
-                    'installed header has no public documentation')
-        elif not self.installed and self.doctype == 'public':
-            reporter.error(self.path,
-                    'non-installed file has public documentation')
-        selfmodnodename = self.module.nodename
-        if docmodule and \
-                not selfmodnodename.startswith('module_' + docmodule) and \
-                not selfmodnodename.startswith('module_gromacs_' + docmodule):
-            reporter.error(self.path,
-                    'file documented in incorrect module "{0}"'
-                        .format(docmodule))
 
 
 class Module(object):
@@ -480,9 +453,9 @@ class Module(object):
         self.parent = parent
         self.name = name
         if parent:
-            self.nodename = parent.nodename + '_' + name
+            self.fullname = parent.fullname + '_' + name
         else:
-            self.nodename = 'module'
+            self.fullname = 'module'
         self.files = []
         self.children = dict()
         self.is_top_level = (not parent or parent.name in ('', 'gromacs'))
@@ -512,14 +485,6 @@ class Module(object):
                 module = self.children[modules[0]]
             newfile = module.add_nested_file(modules[1:], path)
         return newfile
-
-    def create_node(self):
-        node = Node(self)
-        for childfile in self.files:
-            node.add_child(childfile.get_node())
-        for childmodule in self.children.itervalues():
-            node.add_child(childmodule.create_node())
-        return node
 
     def node_properties(self):
         properties = 'label="{0}", shape=ellipse'.format(self.name)
@@ -560,44 +525,6 @@ class Dependencies(object):
         for (filename, scanfile) in self.files.iteritems():
             scanfile.scan(filename, self.files, self.includedirs, ignorelist,
                     reporter)
-        for scanfile in self.files.itervalues():
-            for link in scanfile.get_links():
-                link.refresh_type(reporter)
-
-    def create_file_graph(self):
-        rootnode = self.root.create_node()
-        rootnode.set_root()
-        links = []
-        for scanfile in self.files.itervalues():
-            links.extend(scanfile.get_links())
-        graph = Graph([rootnode], links)
-        return graph
-
-    def create_modules_graph(self):
-        rootnode = self.root.create_node()
-        rootnode.set_root()
-        links = []
-        for scanfile in self.files.itervalues():
-            links.extend(scanfile.get_links())
-        graph = Graph([rootnode], links)
-        for node in rootnode.get_children():
-            if node.obj.name == 'gromacs':
-                for child in node.get_children():
-                    graph.collapse_node(child)
-            else:
-                graph.collapse_node(node)
-        graph.set_options(concentrate=False)
-        return graph
-
-    def create_module_file_graph(self, module):
-        rootnode = module.create_node()
-        rootnode.set_root()
-        links = []
-        for scanfile in self.files.itervalues():
-            links.extend(scanfile.get_links())
-        graph = Graph([rootnode], links)
-        graph.prune_links()
-        return graph
 
     def get_toplevel_modules(self):
         result = []
@@ -609,12 +536,156 @@ class Dependencies(object):
         return result
 
 
-def print_module_graph(outfile, deps, options):
-    graph = deps.create_modules_graph()
+class IncludeFileChecker(object):
+    def __init__(self, deps, options):
+        self._deps = deps
+        self._options = options
+
+    def _check_file(self, checkfile, reporter):
+        if not self._options.check_doc:
+            return
+        if not checkfile.is_documented():
+            if self._options.warn_undoc:
+                reporter.error(checkfile.path, 'file not documented')
+        elif checkfile.doctype == 'implementation' and \
+                checkfile.type in ('publicheader', 'libheader'):
+            reporter.error(checkfile.path,
+                    'file documentation visibility incorrect')
+        elif checkfile.doctype == 'library' and checkfile.type == 'publicheader':
+            reporter.error(checkfile.path,
+                    'file documentation visibility incorrect')
+        elif checkfile.installed and checkfile.doctype not in ('public', 'unknown'):
+            reporter.error(checkfile.path,
+                    'installed header has no public documentation')
+        elif not checkfile.installed and checkfile.doctype == 'public':
+            reporter.error(checkfile.path,
+                    'non-installed file has public documentation')
+        selfmodfullname = checkfile.module.fullname
+        docmodule = checkfile.docmodule
+        if docmodule and \
+                not selfmodfullname.startswith('module_' + docmodule) and \
+                not selfmodfullname.startswith('module_gromacs_' + docmodule):
+            reporter.error(checkfile.path,
+                    'file documented in incorrect module "{0}"'
+                        .format(docmodule))
+
+    def _check_included_file(self, checkfile, includedfile, reporter):
+        otherfile = includedfile._included_file
+        if includedfile._is_system:
+            if otherfile:
+                reporter.error(checkfile.path,
+                        'local file included as <{0}>'
+                            .format(includedfile._included_path))
+        elif not includedfile._is_relative and checkfile.installed:
+            reporter.error(checkfile.path,
+                    'installed header includes "{0}", '
+                    'which is not found using relative path'
+                        .format(includedfile._included_path))
+        if not otherfile:
+            return
+        if checkfile.installed and not otherfile.installed:
+            reporter.error(checkfile.path,
+                    'installed header includes '
+                    'non-installed header "{0}"'
+                        .format(includedfile._included_path))
+        if not otherfile.is_documented():
+            return
+        if not self._options.check_doc:
+            return
+        intramodule = \
+                (checkfile.module.get_top_level_module() == \
+                 otherfile.module.get_top_level_module())
+        if otherfile.type not in ('publicheader', 'libheader'):
+            if not intramodule:
+                reporter.error(checkfile.path,
+                        'included file "{0}" is missing API definition'
+                            .format(otherfile.path))
+        elif checkfile.type == 'publicheader':
+            if not otherfile.type == 'publicheader' and not otherfile.doctype == 'public':
+                reporter.error(checkfile.path,
+                        'public API file includes non-public header "{0}"'
+                            .format(otherfile.path))
+
+    def check_all(self, reporter):
+        for checkfile in self._deps.files.itervalues():
+            self._check_file(checkfile, reporter)
+            for includedfile in checkfile.get_included_files():
+                self._check_included_file(checkfile, includedfile, reporter)
+
+
+class GraphBuilder(object):
+    def __init__(self, deps):
+        self._deps = deps
+
+    def create_file_node(self, fileobj, filenodes):
+        nodename = re.subn(r'[-./]', '_', fileobj.path)[0]
+        node = Node(fileobj, nodename, fileobj.name)
+        filenodes[fileobj] = node
+        return node
+
+    def create_file_edges(self, fileobj, filenodes):
+        links = []
+        if fileobj in filenodes:
+            for includedfile in fileobj.get_included_files():
+                otherfile = includedfile._included_file
+                if otherfile and otherfile in filenodes:
+                    link = Link(filenodes[fileobj], filenodes[otherfile])
+                    links.append(link)
+        return links
+
+    def create_module_node(self, module, filenodes):
+        node = Node(module, module.fullname, module.name)
+        for childfile in module.files:
+            node.add_child(self.create_file_node(childfile, filenodes))
+        for childmodule in module.children.itervalues():
+            node.add_child(self.create_module_node(childmodule, filenodes))
+        return node
+
+    def create_file_graph(self):
+        filenodes = dict()
+        rootnode = self.create_module_node(self._deps.root, filenodes)
+        rootnode.set_root()
+        links = []
+        for scanfile in self._deps.files.itervalues():
+            links.extend(self.create_file_edges(scanfile, filenodes))
+        graph = Graph([rootnode], links)
+        return graph
+
+    def create_modules_graph(self):
+        filenodes = dict()
+        rootnode = self.create_module_node(self._deps.root, filenodes)
+        rootnode.set_root()
+        links = []
+        for scanfile in self._deps.files.itervalues():
+            links.extend(self.create_file_edges(scanfile, filenodes))
+        graph = Graph([rootnode], links)
+        for node in rootnode.get_children():
+            if node.label == 'gromacs':
+                for child in node.get_children():
+                    graph.collapse_node(child)
+            else:
+                graph.collapse_node(node)
+        graph.set_options(concentrate=False)
+        return graph
+
+    def create_module_file_graph(self, module):
+        filenodes = dict()
+        rootnode = self.create_module_node(module, filenodes)
+        rootnode.set_root()
+        links = []
+        for scanfile in self._deps.files.itervalues():
+            links.extend(self.create_file_edges(scanfile, filenodes))
+        graph = Graph([rootnode], links)
+        graph.prune_links()
+        return graph
+
+
+def print_module_graph(outfile, graphbuilder, options):
+    graph = graphbuilder.create_modules_graph()
     graph.write(outfile)
 
-def print_file_graph(outfile, deps, options):
-    graph = deps.create_file_graph()
+def print_file_graph(outfile, graphbuilder, options):
+    graph = graphbuilder.create_file_graph()
     graph.set_options(left_to_right=options.left_to_right)
     graph.write(outfile)
     #if options.source_at_top:
@@ -632,8 +703,8 @@ def print_file_graph(outfile, deps, options):
     #    if extnodes:
     #        outfile.write('    { rank = max; ' + '; '.join(extnodes) + '}\n')
 
-def print_module_file_graph(outfile, deps, module, options):
-    graph = deps.create_module_file_graph(module)
+def print_module_file_graph(outfile, graphbuilder, module, options):
+    graph = graphbuilder.create_module_file_graph(module)
     graph.set_options(left_to_right=options.left_to_right)
     graph.write(outfile)
 
@@ -657,6 +728,12 @@ def main():
     #parser.add_option('--external-at-bottom', action='store_true',
     #                  help='Force external dependencies files at the bottom '
     #                       'of the graph')
+    parser.add_option('--check', action='store_true',
+                      help='Check for problems in include file dependencies')
+    parser.add_option('--check-doc', action='store_true',
+                      help='Check for problems in Doxygen documentation')
+    parser.add_option('--warn-undoc', action='store_true',
+                      help='Warn for files that do not have Doxygen documentation')
     parser.add_option('--left-to-right', action='store_true',
                       help='Lay out from left to right')
     parser.add_option('--file-graph',
@@ -666,6 +743,10 @@ def main():
     parser.add_option('--module-file-graphs', action='store_true',
                       help='Write file graphs for each module')
     options, args = parser.parse_args()
+
+    if not options.file_graph and not options.module_graph and \
+            not options.module_file_graphs:
+        options.check = True
 
     # Constructs lists of files
     filelist = []
@@ -692,6 +773,10 @@ def main():
 
     deps.scan_files(ignorelist, reporter)
 
+    if options.check or options.check_doc:
+        checker = IncludeFileChecker(deps, options)
+        checker.check_all(reporter)
+
     #if options.with_external:
     #    for filename in extrafiles:
     #        file = files[filename]
@@ -705,19 +790,20 @@ def main():
     #                            file.api = "library"
 
     # Prints out the graph
+    graphbuilder = GraphBuilder(deps)
     if options.module_graph:
         graphpath = os.path.join(options.outdir, options.module_graph)
         with open(graphpath, 'w') as outfile:
-            print_module_graph(outfile, deps, options)
+            print_module_graph(outfile, graphbuilder, options)
     if options.file_graph:
         graphpath = os.path.join(options.outdir, options.file_graph)
         with open(graphpath, 'w') as outfile:
-            print_file_graph(outfile, deps, options)
+            print_file_graph(outfile, graphbuilder, options)
     if options.module_file_graphs:
         options.left_to_right = True
         for module in deps.get_toplevel_modules():
             filename = 'module_{0}-deps.dot'.format(module.name)
             with open(os.path.join(options.outdir, filename), 'w') as outfile:
-                print_module_file_graph(outfile, deps, module, options)
+                print_module_file_graph(outfile, graphbuilder, module, options)
 
 main()

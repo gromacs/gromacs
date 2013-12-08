@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -32,9 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  * \brief
  * Declares gmx::ProgramInfo.
+ *
+ * This header is installed to support init.h because some compilers don't
+ * allow returning a reference to an incomplete type from a function.
+ * It should not be necessary to use gmx::ProgramInfo outside the Gromacs
+ * library.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -44,11 +49,48 @@
 #define GMX_UTILITY_PROGRAMINFO_H
 
 #include <string>
+#include <vector>
 
 #include "common.h"
+#include "uniqueptr.h"
 
 namespace gmx
 {
+
+//! \addtogroup module_utility
+//! \{
+
+/*! \libinternal \brief
+ * Allows customization of the way various directories are found by
+ * ProgramInfo.
+ *
+ * For the ProgramInfo constructors that do not take this interface as a
+ * parameter, a default implementation is used that forwards the calls to the
+ * corresponding methods in gmx::Path.
+ *
+ * \inlibraryapi
+ */
+class ExecutableEnvironmentInterface
+{
+    public:
+        virtual ~ExecutableEnvironmentInterface() {}
+
+        /*! \brief
+         * Returns the working directory when the program was launched.
+         */
+        virtual std::string getWorkingDirectory() const = 0;
+        /*! \brief
+         * Returns list of paths where executables are searched for.
+         *
+         * The returned list should be in priority order.  An empty string in
+         * the returned list corresponds to getWorkindDirectory().
+         */
+        virtual std::vector<std::string> getExecutablePaths() const = 0;
+};
+
+//! Shorthand for a smart pointer to ExecutableEnvironmentInterface.
+typedef gmx_unique_ptr<ExecutableEnvironmentInterface>::type
+    ExecutableEnvironmentPointer;
 
 /*! \libinternal \brief
  * Helper class for managing information about the running binary.
@@ -70,7 +112,6 @@ namespace gmx
  * exceptions.
  *
  * \inlibraryapi
- * \ingroup module_utility
  */
 class ProgramInfo
 {
@@ -150,6 +191,28 @@ class ProgramInfo
          */
         ProgramInfo(const char *realBinaryName,
                     int argc, const char *const argv[]);
+        /*! \brief
+         * Initializes a program information object based on binary name and
+         * command line.
+         *
+         * \param[in] realBinaryName  Name of the binary
+         *     (without Gromacs binary suffix or .exe on Windows).
+         * \param[in] argc  argc value passed to main().
+         * \param[in] argv  argv array passed to main().
+         * \param[in] env   Customizes the way the binary name is handled.
+         *
+         * This overload allows one to customize the way the binary is located
+         * by providing a custom ExecutableEnvironmentInterface implementation.
+         * This is mainly useful for testing purposes to make it possible to
+         * test different paths without setting environment variables, changing
+         * the working directory or doing other process-wide operations.
+         * It may also be useful for making Gromacs behave better when linked
+         * into a non-Gromacs executable (with possible extensions in
+         * ExecutableEnvironmentInterface).
+         */
+        ProgramInfo(const char *realBinaryName,
+                    int argc, const char *const argv[],
+                    ExecutableEnvironmentPointer env);
         ~ProgramInfo();
 
         /*! \brief
@@ -172,12 +235,6 @@ class ProgramInfo
          * Does not throw.
          */
         const std::string &realBinaryName() const;
-        /*! \brief
-         * Returns the path and name of the binary as it was invoked.
-         *
-         * Does not throw.
-         */
-        const std::string &programNameWithPath() const;
         /*! \brief
          * Returns the name of the binary as it was invoked without any path.
          *
@@ -208,6 +265,15 @@ class ProgramInfo
          * Does not throw.
          */
         const std::string &commandLine() const;
+
+        /*! \brief
+         * Returns the full path of the invoked binary.
+         *
+         * Returns argv[0] if there was an error in finding the absolute path.
+         *
+         * Does not throw.
+         */
+        const std::string &fullBinaryPath() const;
 
     private:
         class Impl;

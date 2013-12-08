@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -59,7 +59,7 @@ namespace gmx
 {
 
 /*! \cond internal */
-/*! \internal \brief
+/*! \brief
  * Flags for options.
  *
  * These flags are not part of the public interface, even though they are in an
@@ -79,7 +79,7 @@ enum SelectionFlag
     efSelection_EvaluateForces          = 1<<6,
 };
 
-//! \internal Holds a collection of ::SelectionFlag values.
+//! Holds a collection of ::SelectionFlag values.
 typedef FlagsTemplate<SelectionFlag> SelectionFlags;
 //! \endcond
 

@@ -45,7 +45,8 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "xvgr.h"
 #include "rmpbc.h"
 #include "pbc.h"
@@ -872,7 +873,7 @@ int gmx_current(int argc, char *argv[])
 
 
     const char *desc[] = {
-        "[TT]g_current[tt] is a tool for calculating the current autocorrelation function, the correlation",
+        "[THISMODULE] is a tool for calculating the current autocorrelation function, the correlation",
         "of the rotational and translational dipole moment of the system, and the resulting static",
         "dielectric constant. To obtain a reasonable result, the index group has to be neutral.",
         "Furthermore, the routine is capable of extracting the static conductivity from the current ",

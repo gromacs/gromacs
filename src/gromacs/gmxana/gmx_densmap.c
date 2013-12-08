@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "mshift.h"
@@ -54,9 +54,10 @@
 #include "princ.h"
 #include "rmpbc.h"
 #include "txtdump.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "pbc.h"
 #include "gmx_ana.h"
 
@@ -64,7 +65,7 @@
 int gmx_densmap(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_densmap[tt] computes 2D number-density maps.",
+        "[THISMODULE] computes 2D number-density maps.",
         "It can make planar and axial-radial density maps.",
         "The output [TT].xpm[tt] file can be visualized with for instance xv",
         "and can be converted to postscript with [TT]xpm2ps[tt].",

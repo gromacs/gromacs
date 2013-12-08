@@ -42,7 +42,7 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "vec.h"
 #include "index.h"
@@ -50,7 +50,8 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "rmpbc.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "nrjac.h"
 #include "gmx_ana.h"
 
@@ -106,7 +107,7 @@ static void calc_int_dist(double *intd, rvec *x, int i0, int i1)
 int gmx_polystat(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_polystat[tt] plots static properties of polymers as a function of time",
+        "[THISMODULE] plots static properties of polymers as a function of time",
         "and prints the average.[PAR]",
         "By default it determines the average end-to-end distance and radii",
         "of gyration of polymers. It asks for an index group and split this",

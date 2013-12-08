@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -49,7 +49,8 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/statutil.h"
 
@@ -57,6 +58,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/lifetime.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -246,19 +248,59 @@ void IndexFileWriterModule::dataFinished()
     closeFile();
 }
 
-}       // namespace
-
-
 /********************************************************************
  * Select
  */
 
-const char Select::name[]             = "select";
-const char Select::shortDescription[] =
-    "Print general information about selections";
+class Select : public TrajectoryAnalysisModule
+{
+    public:
+        Select();
+
+        virtual void initOptions(Options                    *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(Options                    *options,
+                                     TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
+
+    private:
+        SelectionList                       sel_;
+        SelectionOptionInfo                *selOpt_;
+
+        std::string                         fnSize_;
+        std::string                         fnFrac_;
+        std::string                         fnIndex_;
+        std::string                         fnNdx_;
+        std::string                         fnMask_;
+        std::string                         fnOccupancy_;
+        std::string                         fnPDB_;
+        std::string                         fnLifetime_;
+        bool                                bTotNorm_;
+        bool                                bFracNorm_;
+        bool                                bResInd_;
+        bool                                bCumulativeLifetimes_;
+        std::string                         resNumberType_;
+        std::string                         pdbAtoms_;
+
+        const TopologyInformation          *top_;
+        std::vector<int>                    totsize_;
+        AnalysisData                        sdata_;
+        AnalysisData                        cdata_;
+        AnalysisData                        idata_;
+        AnalysisData                        mdata_;
+        AnalysisDataAverageModulePointer    occupancyModule_;
+        AnalysisDataLifetimeModulePointer   lifetimeModule_;
+};
 
 Select::Select()
-    : TrajectoryAnalysisModule(name, shortDescription),
+    : TrajectoryAnalysisModule(SelectInfo::name, SelectInfo::shortDescription),
       selOpt_(NULL),
       bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       bCumulativeLifetimes_(true), top_(NULL),
@@ -280,16 +322,11 @@ Select::Select()
 }
 
 
-Select::~Select()
-{
-}
-
-
 void
 Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "[TT]g_select[tt] writes out basic data about dynamic selections.",
+        "[THISMODULE] writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
         "analysis programs to calculate more complex things.",
@@ -531,7 +568,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 void
-Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
                      TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle   sdh = pdata->dataHandle(sdata_);
@@ -688,6 +725,17 @@ Select::writeOutput()
                                "Mismatch between -pdbatoms enum values and implementation");
         }
     }
+}
+
+}       // namespace
+
+const char SelectInfo::name[]             = "select";
+const char SelectInfo::shortDescription[] =
+    "Print general information about selections";
+
+TrajectoryAnalysisModulePointer SelectInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new Select);
 }
 
 } // namespace analysismodules

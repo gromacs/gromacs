@@ -53,8 +53,18 @@
 extern "C" {
 #endif
 
-int gmx_setup(int *argc, char ***argv, int *nnodes);
-/* Initializes the parallel communication, return the ID of the node */
+t_commrec *init_commrec(void);
+/* Allocate, initialize and return the commrec. */
+
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
+/* Initialize communication records for thread-parallel simulations.
+   Must be called on all threads before any communication takes place by
+   the individual threads. Copies the original commrec to
+   thread-local versions (a small memory leak results because we don't
+   deallocate the old shared version).  */
+
+void gmx_fill_commrec_from_mpi(t_commrec *cr);
+/* Continues t_commrec construction */
 
 int gmx_node_num(void);
 /* return the number of nodes in the ring */
@@ -62,9 +72,17 @@ int gmx_node_num(void);
 int gmx_node_rank(void);
 /* return the rank of the node */
 
+int gmx_physicalnode_id_hash(void);
+/* Return a non-negative hash that is, hopefully, unique for each physical node.
+ * This hash is useful for determining hardware locality.
+ */
+
 int gmx_hostname_num(void);
-/* If the first part of the hostname (up to the first dot) ends with a number, returns this number.
-   If the first part of the hostname does not ends in a number (0-9 characters), returns 0.
+/* Ostensibly, returns a integer characteristic of and unique to each
+   physical node in the MPI system. If the first part of the MPI
+   hostname (up to the first dot) ends with a number, returns this
+   number. If the first part of the MPI hostname does not ends in a
+   number (0-9 characters), returns 0.
  */
 
 void gmx_setup_nodecomm(FILE *fplog, t_commrec *cr);
@@ -120,9 +138,6 @@ void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
 
 void gmx_abort(int nodeid, int nnodes, int errorno);
 /* Abort the parallel run */
-
-void gmx_finalize_par(void);
-/* Finish the parallel run in an ordered manner */
 
 #ifdef GMX_DOUBLE
 #define gmx_sum_comm  gmx_sumd_comm

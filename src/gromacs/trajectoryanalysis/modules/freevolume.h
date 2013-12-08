@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Declares trajectory analysis module for distance calculations.
+ * Declares trajectory analysis module for free volume calculations.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_trajectoryanalysis
@@ -42,14 +42,7 @@
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_FREEVOLUME_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_FREEVOLUME_H
 
-#include <string>
-#include "gromacs/legacyheaders/gmx_random.h"
 #include "../analysismodule.h"
-#include "gromacs/selection/nbsearch.h"
-#include "gromacs/selection/indexutil.h"
-#include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/selection/selection.h"
 
 namespace gmx
 {
@@ -57,65 +50,12 @@ namespace gmx
 namespace analysismodules
 {
 
-/*! \brief
- * Class used to compute free volume in a simulations box.
- *
- * Inherits TrajectoryAnalysisModule and all functions from there.
- * Does not implement any new functionality.
- *
- * \inpublicapi
- * \ingroup module_trajectoryanalysis
- */
-class FreeVolume : public TrajectoryAnalysisModule
+class FreeVolumeInfo
 {
     public:
-        //! Name of the tool
         static const char name[];
-
-        //! One line description
         static const char shortDescription[];
-
-        //! Constructor
-        FreeVolume();
-
-        //! Destructor
-        virtual ~FreeVolume();
-
-        //! Set the options and setting
-        virtual void initOptions(Options                    *options,
-                                 TrajectoryAnalysisSettings *settings);
-
-        //! First routine called by the analysis frame work
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-
-        //! Call for each frame of the trajectory
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-
-        //! Last routine called by the analysis frame work
-        virtual void finishAnalysis(int nframes);
-
-        //! Routine to write output, that is additional over the built-in
-        virtual void writeOutput();
-
-    private:
-        std::string                       fnFreevol_;
-        Selection                         sel_;
-        AnalysisData                      data_;
-        AnalysisDataAverageModulePointer  adata_;
-
-        int                               nmol_;
-        double                            mtot_;
-        double                            cutoff_;
-        double                            probeRadius_;
-        gmx_rng_t                         rng_;
-        int                               seed_, ninsert_;
-        AnalysisNeighborhood              nb_;
-        //! The van der Waals radius per atom
-        std::vector<double>               vdw_radius_;
-
-        // Copy and assign disallowed by base.
+        static TrajectoryAnalysisModulePointer create();
 };
 
 } // namespace analysismodules

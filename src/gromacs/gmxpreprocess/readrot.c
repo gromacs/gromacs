@@ -38,8 +38,8 @@
 #include "smalloc.h"
 #include "readir.h"
 #include "names.h"
-#include "futil.h"
-#include "trnio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/trnio.h"
 #include "txtdump.h"
 
 static char *RotStr = {"Enforced rotation:"};

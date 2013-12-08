@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2013, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2013, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gyas ROwers Mature At Cryogenic Speed
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -100,56 +102,45 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 
 static void ps_draw_bond(t_psdata ps,
                          atom_id ai, atom_id aj, iv2 vec2[],
-                         rvec x[], char **atomnm[], int size[], bool bBalls)
+                         rvec x[], char **atomnm[])
 {
     char    *ic, *jc;
     int      xi, yi, xj, yj;
     int      xm, ym;
 
-    if (bBalls)
+    if (local_pbc_dx(x[ai], x[aj]))
     {
-        ps_draw_atom(ps, ai, vec2, atomnm);
-        ps_draw_atom(ps, aj, vec2, atomnm);
-    }
-    else
-    {
-        if (local_pbc_dx(x[ai], x[aj]))
+        ic = *atomnm[ai];
+        jc = *atomnm[aj];
+        xi = vec2[ai][XX];
+        yi = vec2[ai][YY];
+        xj = vec2[aj][XX];
+        yj = vec2[aj][YY];
+
+        if (ic != jc)
         {
-            ic = *atomnm[ai];
-            jc = *atomnm[aj];
-            xi = vec2[ai][XX];
-            yi = vec2[ai][YY];
-            xj = vec2[aj][XX];
-            yj = vec2[aj][YY];
+            xm = (xi+xj) >> 1;
+            ym = (yi+yj) >> 1;
 
-            if (ic != jc)
-            {
-                xm = (xi+xj) >> 1;
-                ym = (yi+yj) >> 1;
-
-                ps_rgb(ps, Type2RGB(ic));
-                ps_line(ps, xi, yi, xm, ym);
-                ps_rgb(ps, Type2RGB(jc));
-                ps_line(ps, xm, ym, xj, yj);
-            }
-            else
-            {
-                ps_rgb(ps, Type2RGB(ic));
-                ps_line(ps, xi, yi, xj, yj);
-            }
+            ps_rgb(ps, Type2RGB(ic));
+            ps_line(ps, xi, yi, xm, ym);
+            ps_rgb(ps, Type2RGB(jc));
+            ps_line(ps, xm, ym, xj, yj);
+        }
+        else
+        {
+            ps_rgb(ps, Type2RGB(ic));
+            ps_line(ps, xi, yi, xj, yj);
         }
     }
 }
 
-void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[], rvec x[],
-                     char **atomnm[], int size[], bool bShowHydro, int bond_type,
-                     bool bPlus)
+static void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[],
+                            rvec x[], char **atomnm[], bool bShowHydro)
 {
-    bool         bBalls;
     int          i;
     t_object    *obj;
 
-    bBalls = false;
     for (i = 0; (i < nobj); i++)
     {
         obj = &(objs[i]);
@@ -159,12 +150,12 @@ void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[], rvec x[
                 ps_draw_atom(ps, obj->ai, vec2, atomnm);
                 break;
             case eOBond:
-                ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm, size, bBalls);
+                ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm);
                 break;
             case eOHBond:
                 if (bShowHydro)
                 {
-                    ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm, size, bBalls);
+                    ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm);
                 }
                 break;
             default:
@@ -256,7 +247,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
     }
-    set_sizes(man, sx, sy);
+    set_sizes(man);
 
     z_fill (man, man->zz);
 
@@ -278,8 +269,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     /* Draw the objects */
     ps_draw_objects(ps,
                     nvis, man->obj, man->ix, man->x, man->top.atoms.atomname,
-                    man->size,
-                    mw->bShowHydrogen, mw->bond_type, man->bPlus);
+                    mw->bShowHydrogen);
 
     /* Draw the labels */
     ps_color(ps, 0, 0, 0);

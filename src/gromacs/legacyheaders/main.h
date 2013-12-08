@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include "network.h"
+#include "../fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,18 +79,6 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
  * these simulations.
  * If bParFn is set, the nodeid is appended to the tpx and each output file.
  */
-
-t_commrec *init_par(void);
-/* Initiate the parallel computer. Return the communication record
- * (see network.h).
- */
-
-t_commrec *init_par_threads(const t_commrec *cro);
-/* Initialize communication records for thread-parallel simulations.
-   Must be called on all threads before any communication takes place by
-   the individual threads. Copies the original commrec to
-   thread-local versions (a small memory leak results because we don't
-   deallocate the old shared version).  */
 
 #ifdef __cplusplus
 }

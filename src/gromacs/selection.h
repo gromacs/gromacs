@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_selection Parsing and Evaluation of Analysis Selections
+/*! \defgroup module_selection Parsing and Evaluation of Analysis Selections (selection)
  * \ingroup group_analysismodules
  * \brief
  * Provides functionality for initializing and evaluating selections.
@@ -66,15 +66,6 @@
  * currently internal to it (centerofmass.h, indexutil.h, poscalc.h,
  * position.h), but could possibly be useful also outside the module.
  * It should be considered whether they should be moved somewhere else.
- * \endif
- *
- * \if internal
- * Implementation details of different parts of the module are discussed on
- * separate pages:
- *   - \ref page_module_selection_custom
- *   - \ref page_module_selection_parser
- *   - \ref page_module_selection_compiler
- *   - \ref page_module_selection_insolidangle
  * \endif
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>

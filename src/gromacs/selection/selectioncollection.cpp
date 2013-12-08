@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -136,7 +136,7 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
     {
         fprintf(stderr, "> ");
     }
-    if (!infile->readLine(line))
+    if (!infile->readLineWithTrailingSpace(line))
     {
         return false;
     }
@@ -150,7 +150,7 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
         std::string buffer;
         // Return value ignored, buffer remains empty and works correctly
         // if there is nothing to read.
-        infile->readLine(&buffer);
+        infile->readLineWithTrailingSpace(&buffer);
         line->append(buffer);
     }
     if (endsWith(*line, "\n"))

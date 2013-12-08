@@ -38,6 +38,7 @@
 #endif
 
 #include <math.h>
+#include <assert.h>
 #include "physics.h"
 #include "vec.h"
 #include "maths.h"
@@ -57,10 +58,10 @@
 #include "nonbonded.h"
 
 /* Include the SIMD macro file and then check for support */
-#include "gmx_simd_macros.h"
+#include "gromacs/simd/macros.h"
 #if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_TRIGONOMETRIC
 #define SIMD_BONDEDS
-#include "gmx_simd_vec.h"
+#include "gromacs/simd/vector_operations.h"
 #endif
 
 /* Find a better place for this? */
@@ -1060,10 +1061,11 @@ angles_noener_simd(int nbonds,
     gmx_mm_pr      rijx_S, rijy_S, rijz_S;
     gmx_mm_pr      rkjx_S, rkjy_S, rkjz_S;
     gmx_mm_pr      one_S;
+    gmx_mm_pr      min_one_plus_eps_S;
     gmx_mm_pr      rij_rkj_S;
     gmx_mm_pr      nrij2_S, nrij_1_S;
     gmx_mm_pr      nrkj2_S, nrkj_1_S;
-    gmx_mm_pr      cos_S, sin_S;
+    gmx_mm_pr      cos_S, invsin_S;
     gmx_mm_pr      theta_S;
     gmx_mm_pr      st_S, sth_S;
     gmx_mm_pr      cik_S, cii_S, ckk_S;
@@ -1079,6 +1081,9 @@ angles_noener_simd(int nbonds,
     set_pbc_simd(pbc, &pbc_simd);
 
     one_S = gmx_set1_pr(1.0);
+
+    /* The smallest number > -1 */
+    min_one_plus_eps_S = gmx_set1_pr(-1.0 + 2*GMX_REAL_EPS);
 
     /* nbonds is the number of angles times nfa1, here we step UNROLL angles */
     for (i = 0; (i < nbonds); i += UNROLL*nfa1)
@@ -1138,12 +1143,21 @@ angles_noener_simd(int nbonds,
 
         cos_S     = gmx_mul_pr(rij_rkj_S, gmx_mul_pr(nrij_1_S, nrkj_1_S));
 
+        /* To allow for 180 degrees, we take the max of cos and -1 + 1bit,
+         * so we can safely get the 1/sin from 1/sqrt(1 - cos^2).
+         * This also ensures that rounding errors would cause the argument
+         * of gmx_acos_pr to be < -1.
+         * Note that we do not take precautions for cos(0)=1, so the outer
+         * atoms in an angle should not be on top of each other.
+         */
+        cos_S     = gmx_max_pr(cos_S, min_one_plus_eps_S);
+
         theta_S   = gmx_acos_pr(cos_S);
 
-        sin_S     = gmx_invsqrt_pr(gmx_max_pr(gmx_sub_pr(one_S, gmx_mul_pr(cos_S, cos_S)),
-                                              gmx_setzero_pr()));
+        invsin_S  = gmx_invsqrt_pr(gmx_sub_pr(one_S, gmx_mul_pr(cos_S, cos_S)));
+
         st_S      = gmx_mul_pr(gmx_mul_pr(k_S, gmx_sub_pr(theta0_S, theta_S)),
-                               sin_S);
+                               invsin_S);
         sth_S     = gmx_mul_pr(st_S, cos_S);
 
         cik_S     = gmx_mul_pr(st_S,  gmx_mul_pr(nrij_1_S, nrkj_1_S));
@@ -1518,8 +1532,18 @@ dih_angle_simd(const rvec *x,
     gmx_mm_pr ipr_S;
     gmx_mm_pr iprm_S, iprn_S;
     gmx_mm_pr nrkj2_S, nrkj_1_S, nrkj_2_S, nrkj_S;
+    gmx_mm_pr toler_S;
     gmx_mm_pr p_S, q_S;
-    gmx_mm_pr fmin_S = gmx_set1_pr(GMX_FLOAT_MIN);
+    gmx_mm_pr nrkj2_min_S;
+    gmx_mm_pr real_eps_S;
+
+    /* Used to avoid division by zero.
+     * We take into acount that we multiply the result by real_eps_S.
+     */
+    nrkj2_min_S = gmx_set1_pr(GMX_REAL_MIN/(2*GMX_REAL_EPS));
+
+    /* The value of the last significant bit (GMX_REAL_EPS is half of that) */
+    real_eps_S  = gmx_set1_pr(2*GMX_REAL_EPS);
 
     for (s = 0; s < UNROLL; s++)
     {
@@ -1578,13 +1602,19 @@ dih_angle_simd(const rvec *x,
     /* Avoid division by zero. When zero, the result is multiplied by 0
      * anyhow, so the 3 max below do not affect the final result.
      */
-    nrkj2_S    = gmx_max_pr(nrkj2_S, fmin_S);
+    nrkj2_S    = gmx_max_pr(nrkj2_S, nrkj2_min_S);
     nrkj_1_S   = gmx_invsqrt_pr(nrkj2_S);
     nrkj_2_S   = gmx_mul_pr(nrkj_1_S, nrkj_1_S);
     nrkj_S     = gmx_mul_pr(nrkj2_S, nrkj_1_S);
 
-    iprm_S     = gmx_max_pr(iprm_S, fmin_S);
-    iprn_S     = gmx_max_pr(iprn_S, fmin_S);
+    toler_S    = gmx_mul_pr(nrkj2_S, real_eps_S);
+
+    /* Here the plain-C code uses a conditional, but we can't do that in SIMD.
+     * So we take a max with the tolerance instead. Since we multiply with
+     * m or n later, the max does not affect the results.
+     */
+    iprm_S     = gmx_max_pr(iprm_S, toler_S);
+    iprn_S     = gmx_max_pr(iprn_S, toler_S);
     *nrkj_m2_S = gmx_mul_pr(nrkj_S, gmx_inv_pr(iprm_S));
     *nrkj_n2_S = gmx_mul_pr(nrkj_S, gmx_inv_pr(iprn_S));
 
@@ -3757,6 +3787,73 @@ real tab_dihs(int nbonds,
     return vtot;
 }
 
+/* Return if this is a potential calculated in bondfree.c,
+ * i.e. an interaction that actually calculates a potential and
+ * works on multiple atoms (not e.g. a connection or a position restraint).
+ */
+static gmx_inline gmx_bool ftype_is_bonded_potential(int ftype)
+{
+    return
+        (interaction_function[ftype].flags & IF_BOND) &&
+        !(ftype == F_CONNBONDS || ftype == F_POSRES) &&
+        (ftype < F_GB12 || ftype > F_GB14);
+}
+
+static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
+{
+    int ftype;
+    int nat1;
+    int t;
+    int il_nr_thread;
+
+    idef->nthreads = nthreads;
+
+    if (F_NRE*(nthreads+1) > idef->il_thread_division_nalloc)
+    {
+        idef->il_thread_division_nalloc = F_NRE*(nthreads+1);
+        snew(idef->il_thread_division, idef->il_thread_division_nalloc);
+    }
+
+    for (ftype = 0; ftype < F_NRE; ftype++)
+    {
+        if (ftype_is_bonded_potential(ftype))
+        {
+            nat1 = interaction_function[ftype].nratoms + 1;
+
+            for (t = 0; t <= nthreads; t++)
+            {
+                /* Divide the interactions equally over the threads.
+                 * When the different types of bonded interactions
+                 * are distributed roughly equally over the threads,
+                 * this should lead to well localized output into
+                 * the force buffer on each thread.
+                 * If this is not the case, a more advanced scheme
+                 * (not implemented yet) will do better.
+                 */
+                il_nr_thread = (((idef->il[ftype].nr/nat1)*t)/nthreads)*nat1;
+
+                /* Ensure that distance restraint pairs with the same label
+                 * end up on the same thread.
+                 * This is slighlty tricky code, since the next for iteration
+                 * may have an initial il_nr_thread lower than the final value
+                 * in the previous iteration, but this will anyhow be increased
+                 * to the approriate value again by this while loop.
+                 */
+                while (ftype == F_DISRES &&
+                       il_nr_thread > 0 &&
+                       il_nr_thread < idef->il[ftype].nr &&
+                       idef->iparams[idef->il[ftype].iatoms[il_nr_thread]].disres.label ==
+                       idef->iparams[idef->il[ftype].iatoms[il_nr_thread-nat1]].disres.label)
+                {
+                    il_nr_thread += nat1;
+                }
+
+                idef->il_thread_division[ftype*(nthreads+1)+t] = il_nr_thread;
+            }
+        }
+    }
+}
+
 static unsigned
 calc_bonded_reduction_mask(const t_idef *idef,
                            int shift,
@@ -3769,9 +3866,7 @@ calc_bonded_reduction_mask(const t_idef *idef,
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (interaction_function[ftype].flags & IF_BOND &&
-            !(ftype == F_CONNBONDS || ftype == F_POSRES) &&
-            (ftype<F_GB12 || ftype>F_GB14))
+        if (ftype_is_bonded_potential(ftype))
         {
             nb = idef->il[ftype].nr;
             if (nb > 0)
@@ -3781,8 +3876,8 @@ calc_bonded_reduction_mask(const t_idef *idef,
                 /* Divide this interaction equally over the threads.
                  * This is not stored: should match division in calc_bonds.
                  */
-                nb0 = (((nb/nat1)* t   )/nt)*nat1;
-                nb1 = (((nb/nat1)*(t+1))/nt)*nat1;
+                nb0 = idef->il_thread_division[ftype*(nt+1)+t];
+                nb1 = idef->il_thread_division[ftype*(nt+1)+t+1];
 
                 for (i = nb0; i < nb1; i += nat1)
                 {
@@ -3798,14 +3893,18 @@ calc_bonded_reduction_mask(const t_idef *idef,
     return mask;
 }
 
-void init_bonded_thread_force_reduction(t_forcerec   *fr,
-                                        const t_idef *idef)
+void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
 {
 #define MAX_BLOCK_BITS 32
     int t;
     int ctot, c, b;
 
-    if (fr->nthreads <= 1)
+    assert(fr->nthreads >= 1);
+
+    /* Divide the bonded interaction over the threads */
+    divide_bondeds_over_threads(idef, fr->nthreads);
+
+    if (fr->nthreads == 1)
     {
         fr->red_nblock = 0;
 
@@ -4029,14 +4128,14 @@ static real calc_one_bond(FILE *fplog, int thread,
                           rvec x[], rvec f[], rvec fshift[],
                           t_forcerec *fr,
                           const t_pbc *pbc, const t_graph *g,
-                          gmx_enerdata_t gmx_unused *enerd, gmx_grppairener_t *grpp,
+                          gmx_grppairener_t *grpp,
                           t_nrnb *nrnb,
                           real *lambda, real *dvdl,
                           const t_mdatoms *md, t_fcdata *fcd,
                           gmx_bool bCalcEnerVir,
                           int *global_atom_index, gmx_bool bPrintSepPot)
 {
-    int      ind, nat1, nbonds, efptFTYPE;
+    int      nat1, nbonds, efptFTYPE;
     real     v = 0;
     t_iatom *iatoms;
     int      nb0, nbn;
@@ -4050,170 +4149,88 @@ static real calc_one_bond(FILE *fplog, int thread,
         efptFTYPE = efptBONDED;
     }
 
-    if (interaction_function[ftype].flags & IF_BOND &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES))
+    nat1      = interaction_function[ftype].nratoms + 1;
+    nbonds    = idef->il[ftype].nr/nat1;
+    iatoms    = idef->il[ftype].iatoms;
+
+    nb0 = idef->il_thread_division[ftype*(idef->nthreads+1)+thread];
+    nbn = idef->il_thread_division[ftype*(idef->nthreads+1)+thread+1] - nb0;
+
+    if (!IS_LISTED_LJ_C(ftype))
     {
-        ind       = interaction_function[ftype].nrnb_ind;
-        nat1      = interaction_function[ftype].nratoms + 1;
-        nbonds    = idef->il[ftype].nr/nat1;
-        iatoms    = idef->il[ftype].iatoms;
-
-        nb0 = ((nbonds* thread   )/(fr->nthreads))*nat1;
-        nbn = ((nbonds*(thread+1))/(fr->nthreads))*nat1 - nb0;
-
-        if (!IS_LISTED_LJ_C(ftype))
+        if (ftype == F_CMAP)
         {
-            if (ftype == F_CMAP)
-            {
-                v = cmap_dihs(nbn, iatoms+nb0,
-                              idef->iparams, &idef->cmap_grid,
-                              (const rvec*)x, f, fshift,
-                              pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
-                              md, fcd, global_atom_index);
-            }
+            v = cmap_dihs(nbn, iatoms+nb0,
+                          idef->iparams, &idef->cmap_grid,
+                          (const rvec*)x, f, fshift,
+                          pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
+                          md, fcd, global_atom_index);
+        }
 #ifdef SIMD_BONDEDS
-            else if (ftype == F_ANGLES &&
-                     !bCalcEnerVir && fr->efep == efepNO)
-            {
-                /* No energies, shift forces, dvdl */
-                angles_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
-                                   idef->iparams,
-                                   (const rvec*)x, f,
-                                   pbc, g, lambda[efptFTYPE], md, fcd,
-                                   global_atom_index);
-                v = 0;
-            }
+        else if (ftype == F_ANGLES &&
+                 !bCalcEnerVir && fr->efep == efepNO)
+        {
+            /* No energies, shift forces, dvdl */
+            angles_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+                               idef->iparams,
+                               (const rvec*)x, f,
+                               pbc, g, lambda[efptFTYPE], md, fcd,
+                               global_atom_index);
+            v = 0;
+        }
 #endif
-            else if (ftype == F_PDIHS &&
-                     !bCalcEnerVir && fr->efep == efepNO)
-            {
-                /* No energies, shift forces, dvdl */
+        else if (ftype == F_PDIHS &&
+                 !bCalcEnerVir && fr->efep == efepNO)
+        {
+            /* No energies, shift forces, dvdl */
 #ifndef SIMD_BONDEDS
-                pdihs_noener
+            pdihs_noener
 #else
-                pdihs_noener_simd
+            pdihs_noener_simd
 #endif
-                    (nbn, idef->il[ftype].iatoms+nb0,
-                    idef->iparams,
-                    (const rvec*)x, f,
-                    pbc, g, lambda[efptFTYPE], md, fcd,
-                    global_atom_index);
-                v = 0;
-            }
-            else
-            {
-                v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
-                                                      idef->iparams,
-                                                      (const rvec*)x, f, fshift,
-                                                      pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
-                                                      md, fcd, global_atom_index);
-            }
-            if (bPrintSepPot)
-            {
-                fprintf(fplog, "  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-                        interaction_function[ftype].longname,
-                        nbonds/nat1, v, lambda[efptFTYPE]);
-            }
+                (nbn, idef->il[ftype].iatoms+nb0,
+                 idef->iparams,
+                 (const rvec*)x, f,
+                 pbc, g, lambda[efptFTYPE], md, fcd,
+                 global_atom_index);
+            v = 0;
         }
         else
         {
-            v = do_nonbonded_listed(ftype, nbn, iatoms+nb0, idef->iparams, (const rvec*)x, f, fshift,
-                                    pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
-
-            if (bPrintSepPot)
-            {
-                fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-                        interaction_function[ftype].longname,
-                        interaction_function[F_LJ14].longname, nbonds/nat1, dvdl[efptVDW]);
-                fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-                        interaction_function[ftype].longname,
-                        interaction_function[F_COUL14].longname, nbonds/nat1, dvdl[efptCOUL]);
-            }
+            v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
+                                                  idef->iparams,
+                                                  (const rvec*)x, f, fshift,
+                                                  pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
+                                                  md, fcd, global_atom_index);
         }
-        if (ind != -1 && thread == 0)
+        if (bPrintSepPot)
         {
-            inc_nrnb(nrnb, ind, nbonds);
+            fprintf(fplog, "  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
+                    interaction_function[ftype].longname,
+                    nbonds, v, lambda[efptFTYPE]);
         }
-    }
-
-    return v;
-}
-
-/* WARNING!  THIS FUNCTION MUST EXACTLY TRACK THE calc
-   function, or horrible things will happen when doing free energy
-   calculations!  In a good coding world, this would not be a
-   different function, but for speed reasons, it needs to be made a
-   separate function.  TODO for 5.0 - figure out a way to reorganize
-   to reduce duplication.
- */
-
-static real calc_one_bond_foreign(FILE gmx_unused *fplog, int ftype, const t_idef *idef,
-                                  rvec x[], rvec f[], t_forcerec *fr,
-                                  const t_pbc *pbc, const t_graph *g,
-                                  gmx_grppairener_t *grpp, t_nrnb *nrnb,
-                                  real *lambda, real *dvdl,
-                                  const t_mdatoms *md, t_fcdata *fcd,
-                                  int *global_atom_index, gmx_bool gmx_unused bPrintSepPot)
-{
-    int      ind, nat1, nbonds, efptFTYPE, nbonds_np;
-    real     v = 0;
-    t_iatom *iatoms;
-
-    if (IS_RESTRAINT_TYPE(ftype))
-    {
-        efptFTYPE = efptRESTRAINT;
     }
     else
     {
-        efptFTYPE = efptBONDED;
-    }
-
-    if (ftype < F_GB12 || ftype > F_GB14)
-    {
-        if (interaction_function[ftype].flags & IF_BOND &&
-            !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES))
+        v = do_nonbonded_listed(ftype, nbn, iatoms+nb0, idef->iparams, (const rvec*)x, f, fshift,
+                                pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
+        
+        if (bPrintSepPot)
         {
-            ind       = interaction_function[ftype].nrnb_ind;
-            nat1      = interaction_function[ftype].nratoms+1;
-            nbonds_np = idef->il[ftype].nr_nonperturbed;
-            nbonds    = idef->il[ftype].nr - nbonds_np;
-            iatoms    = idef->il[ftype].iatoms + nbonds_np;
-            if (nbonds > 0)
-            {
-                if (!IS_LISTED_LJ_C(ftype))
-                {
-                    if (ftype == F_CMAP)
-                    {
-                        v = cmap_dihs(nbonds, iatoms,
-                                      idef->iparams, &idef->cmap_grid,
-                                      (const rvec*)x, f, fr->fshift,
-                                      pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd,
-                                      global_atom_index);
-                    }
-                    else
-                    {
-                        v =     interaction_function[ftype].ifunc(nbonds, iatoms,
-                                                                  idef->iparams,
-                                                                  (const rvec*)x, f, fr->fshift,
-                                                                  pbc, g, lambda[efptFTYPE], &dvdl[efptFTYPE],
-                                                                  md, fcd, global_atom_index);
-                    }
-                }
-                else
-                {
-                    v = do_nonbonded_listed(ftype, nbonds, iatoms,
-                                            idef->iparams,
-                                            (const rvec*)x, f, fr->fshift,
-                                            pbc, g, lambda, dvdl,
-                                            md, fr, grpp, global_atom_index);
-                }
-                if (ind != -1)
-                {
-                    inc_nrnb(nrnb, ind, nbonds/nat1);
-                }
-            }
+            fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+                    interaction_function[ftype].longname,
+                    interaction_function[F_LJ14].longname, nbonds, dvdl[efptVDW]);
+            fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+                    interaction_function[ftype].longname,
+                    interaction_function[F_COUL14].longname, nbonds, dvdl[efptCOUL]);
         }
     }
+
+    if (thread == 0)
+    {
+        inc_nrnb(nrnb, interaction_function[ftype].nrnb_ind, nbonds);
+    }
+
     return v;
 }
 
@@ -4237,6 +4254,8 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
     const  t_pbc *pbc_null;
     char          buf[22];
     int           thread;
+
+    assert(fr->nthreads == idef->nthreads);
 
     bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
 
@@ -4276,22 +4295,27 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
     }
     if (idef->il[F_DISRES].nr)
     {
-        calc_disres_R_6(ms, idef->il[F_DISRES].nr,
+        calc_disres_R_6(idef->il[F_DISRES].nr,
                         idef->il[F_DISRES].iatoms,
                         idef->iparams, (const rvec*)x, pbc_null,
                         fcd, hist);
+#ifdef GMX_MPI
+        if (fcd->disres.nsystems > 1)
+        {
+            gmx_sum_sim(2*fcd->disres.nres, fcd->disres.Rt_6, ms);
+        }
+#endif
     }
 
 #pragma omp parallel for num_threads(fr->nthreads) schedule(static)
     for (thread = 0; thread < fr->nthreads; thread++)
     {
-        int                ftype, nbonds, ind, nat1;
+        int                ftype;
         real              *epot, v;
         /* thread stuff */
         rvec              *ft, *fshift;
         real              *dvdlt;
         gmx_grppairener_t *grpp;
-        int                nb0, nbn;
 
         if (thread == 0)
         {
@@ -4315,17 +4339,14 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
         /* Loop over all bonded force types to calculate the bonded forces */
         for (ftype = 0; (ftype < F_NRE); ftype++)
         {
-            if (idef->il[ftype].nr > 0 &&
-                (interaction_function[ftype].flags & IF_BOND) &&
-                (ftype < F_GB12 || ftype > F_GB14) &&
-                !(ftype == F_CONNBONDS || ftype == F_POSRES))
+            if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
             {
                 v = calc_one_bond(fplog, thread, ftype, idef, x,
-                                  ft, fshift, fr, pbc_null, g, enerd, grpp,
+                                  ft, fshift, fr, pbc_null, g, grpp,
                                   nrnb, lambda, dvdlt,
                                   md, fcd, bCalcEnerVir,
                                   global_atom_index, bPrintSepPot);
-                epot[ftype]        += v;
+                epot[ftype] += v;
             }
         }
     }
@@ -4365,12 +4386,12 @@ void calc_bonds_lambda(FILE *fplog,
                        t_fcdata *fcd,
                        int *global_atom_index)
 {
-    int           i, ftype, nbonds_np, nbonds, ind, nat;
-    real          v, dr, dr2;
+    int           i, ftype, nr_nonperturbed, nr;
+    real          v;
     real          dvdl_dum[efptNR];
-    rvec         *f, *fshift_orig;
+    rvec         *f, *fshift;
     const  t_pbc *pbc_null;
-    t_iatom      *iatom_fe;
+    t_idef       idef_fe;
 
     if (fr->bMolPBC)
     {
@@ -4381,21 +4402,43 @@ void calc_bonds_lambda(FILE *fplog,
         pbc_null = NULL;
     }
 
-    snew(f, fr->natoms_force);
-    /* We want to preserve the fshift array in forcerec */
-    fshift_orig = fr->fshift;
-    snew(fr->fshift, SHIFTS);
+    /* Copy the whole idef, so we can modify the contents locally */
+    idef_fe          = *idef;
+    idef_fe.nthreads = 1;
+    snew(idef_fe.il_thread_division, F_NRE*(idef_fe.nthreads+1));
 
-    /* Loop over all bonded force types to calculate the bonded forces */
+    /* We already have the forces, so we use temp buffers here */
+    snew(f, fr->natoms_force);
+    snew(fshift, SHIFTS);
+
+    /* Loop over all bonded force types to calculate the bonded energies */
     for (ftype = 0; (ftype < F_NRE); ftype++)
     {
-        v = calc_one_bond_foreign(fplog, ftype, idef, x,
-                                  f, fr, pbc_null, g, grpp, nrnb, lambda, dvdl_dum,
-                                  md, fcd, global_atom_index, FALSE);
-        epot[ftype] += v;
+        if (ftype_is_bonded_potential(ftype))
+        {
+            /* Set the work range of thread 0 to the perturbed bondeds only */
+            nr_nonperturbed                       = idef->il[ftype].nr_nonperturbed;
+            nr                                    = idef->il[ftype].nr;
+            idef_fe.il_thread_division[ftype*2+0] = nr_nonperturbed;
+            idef_fe.il_thread_division[ftype*2+1] = nr;
+
+            /* This is only to get the flop count correct */
+            idef_fe.il[ftype].nr = nr - nr_nonperturbed;
+
+            if (nr - nr_nonperturbed > 0)
+            {
+                v = calc_one_bond(fplog, 0, ftype, &idef_fe,
+                                  x, f, fshift, fr, pbc_null, g,
+                                  grpp, nrnb, lambda, dvdl_dum,
+                                  md, fcd, TRUE,
+                                  global_atom_index, FALSE);
+                epot[ftype] += v;
+            }
+        }
     }
 
-    sfree(fr->fshift);
-    fr->fshift = fshift_orig;
+    sfree(fshift);
     sfree(f);
+
+    sfree(idef_fe.il_thread_division);
 }

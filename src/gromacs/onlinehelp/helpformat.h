@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -51,6 +51,7 @@ namespace gmx
 {
 
 class File;
+class HelpWriterContext;
 
 /*! \libinternal \brief
  * Formats rows of a table for text output.
@@ -164,6 +165,19 @@ class TextTableFormatter
          * fits the column.
          */
         void addColumnLine(int index, const std::string &text);
+        /*! \brief
+         * Adds text containing help markup to be printed in a column.
+         *
+         * \param[in]  index     Zero-based column index.
+         * \param[in]  context   Context to use for markup processing.
+         * \param[in]  text      Text to add.
+         *
+         * Works as addColumnLine(), except that it uses
+         * HelpWriterContext::substituteMarkupAndWrapToVector() to process
+         * markup in the input text instead of just wrapping it as plain text.
+         */
+        void addColumnHelpTextBlock(int index, const HelpWriterContext &context,
+                                    const std::string &text);
         /*! \brief
          * Sets the first line to which text is printed for a column.
          *

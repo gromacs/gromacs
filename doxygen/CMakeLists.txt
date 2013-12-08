@@ -2,9 +2,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -77,9 +77,30 @@ if (DOXYGEN_FOUND)
     add_custom_target(doc-user
         ${CMAKE_COMMAND} -DDOCTYPE=user -P RunDoxygen.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating user documentation with Doxygen" VERBATIM)
+        COMMENT "Generating public API documentation with Doxygen" VERBATIM)
     add_custom_target(doc-all)
     add_dependencies(doc-all doc-full doc-lib doc-user)
+
+    if (GMX_GIT_VERSION_INFO)
+        add_custom_target(doxygen-version
+                COMMAND ${CMAKE_COMMAND}
+                    -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
+                    -D PROJECT_VERSION="${PROJECT_VERSION}"
+                    -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+                    -D VERSION_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-version.cmakein"
+                    -D VERSION_OUT="${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-version"
+                    -D VERSION_NO_REMOTE_HASH=
+                    -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-version.cmakein
+                COMMENT "Generating version information for Doxygen")
+        add_dependencies(doc-full doxygen-version)
+        add_dependencies(doc-lib doxygen-version)
+        add_dependencies(doc-user doxygen-version)
+    else()
+        set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
+        configure_file(Doxyfile-version.cmakein Doxyfile-version)
+    endif()
 endif (DOXYGEN_FOUND)
 
 find_package(PythonInterp)
@@ -113,5 +134,14 @@ if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
         -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
         -DMODE=CHECK
         -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
-        COMMENT "Checking include dependencies and documentation" VERBATIM)
+        COMMENT "Checking include dependencies" VERBATIM)
+    add_custom_target(doccheck
+        ${CMAKE_COMMAND}
+        -DSRCDIR=${CMAKE_SOURCE_DIR}
+        -DBUILDDIR=${CMAKE_BINARY_DIR}
+        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
+        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+        -DMODE=CHECKDOC
+        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
+        COMMENT "Checking some aspects of Doxygen documentation" VERBATIM)
 endif ()

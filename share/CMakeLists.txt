@@ -1,10 +1,56 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
+option(GMX_BUILD_HELP "Build man pages and HTML help automatically" OFF)
+mark_as_advanced(GMX_BUILD_HELP)
+if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND
+    "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+
+    message(FATAL_ERROR
+        "Rebuilding HTML and man pages it not supported for in-source "
+        "builds from a source distribution. "
+        "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
+endif()
+
+add_subdirectory(html)
+add_subdirectory(man)
 add_subdirectory(template)
 
-install(DIRECTORY . DESTINATION ${DATA_INSTALL_DIR}
-  COMPONENT data
-  PATTERN "Makefile*" EXCLUDE
-  PATTERN "CMake*" EXCLUDE
-  PATTERN "cmake*" EXCLUDE
-  PATTERN "*~" EXCLUDE
-  PATTERN "template" EXCLUDE
-)
+install(FILES README.tutor README_FreeEnergyModifications.txt
+    DESTINATION ${DATA_INSTALL_DIR}
+    COMPONENT data)
+install(DIRECTORY top
+    DESTINATION ${DATA_INSTALL_DIR}
+    COMPONENT data
+    PATTERN "*~" EXCLUDE)

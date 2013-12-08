@@ -43,7 +43,7 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "vec.h"
 #include "pbc.h"
 #include "toputil.h"

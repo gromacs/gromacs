@@ -51,12 +51,12 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "tpxio.h"
-#include "matio.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/matio.h"
 #include "binsearch.h"
 #include "powerspect.h"
 
@@ -591,14 +591,14 @@ static void writeraw(real ***surf, int tblocks, int xbins, int ybins, char **fnm
 int gmx_hydorder(int argc, char *argv[])
 {
     static const char *desc[] = {
-        "g_hydorder computes the tetrahedrality order parameters around a ",
+        "[THISMODULE] computes the tetrahedrality order parameters around a ",
         "given atom. Both angle an distance order parameters are calculated. See",
         "P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.",
-        "for more details.[BR]"
-        "This application calculates the orderparameter in a 3d-mesh in the box, and",
+        "for more details.[PAR]"
+        "[THISMODULE] calculates the order parameter in a 3d-mesh in the box, and",
         "with 2 phases in the box gives the user the option to define a 2D interface in time",
-        "separating the faces by specifying parameters -sgang1 and -sgang2 (It is important",
-        "to select these judiciously)"
+        "separating the faces by specifying parameters [TT]-sgang1[tt] and",
+        "[TT]-sgang2[tt] (it is important to select these judiciously)."
     };
 
     int                axis      = 0;

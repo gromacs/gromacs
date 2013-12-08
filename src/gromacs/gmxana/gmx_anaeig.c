@@ -45,13 +45,14 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "pdbio.h"
-#include "confio.h"
-#include "tpxio.h"
-#include "matio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/matio.h"
 #include "mshift.h"
 #include "xvgr.h"
 #include "do_fit.h"
@@ -956,9 +957,9 @@ static void rmsf(const char *outfile, int natoms, real *sqrtm,
 int gmx_anaeig(int argc, char *argv[])
 {
     static const char *desc[] = {
-        "[TT]g_anaeig[tt] analyzes eigenvectors. The eigenvectors can be of a",
-        "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes analysis",
-        "([TT]g_nmeig[tt]).[PAR]",
+        "[THISMODULE] analyzes eigenvectors. The eigenvectors can be of a",
+        "covariance matrix ([gmx-covar]) or of a Normal Modes analysis",
+        "([gmx-nmeig]).[PAR]",
 
         "When a trajectory is projected on eigenvectors, all structures are",
         "fitted to the structure in the eigenvector file, if present, otherwise",
@@ -981,7 +982,7 @@ int gmx_anaeig(int argc, char *argv[])
         "since the pc's of random diffusion are cosines with the number",
         "of periods equal to half the pc index.",
         "The cosine content of the pc's can be calculated with the program",
-        "[TT]g_analyze[tt].[PAR]",
+        "[gmx-analyze].[PAR]",
 
         "[TT]-2d[tt]: calculate a 2d projection of a trajectory on eigenvectors",
         "[TT]-first[tt] and [TT]-last[tt].[PAR]",

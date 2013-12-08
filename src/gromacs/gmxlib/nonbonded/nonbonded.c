@@ -37,9 +37,7 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_THREAD_MPI
-#include <thread_mpi.h>
-#endif
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -101,9 +99,7 @@
 #endif
 
 
-#ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 static gmx_bool            nonbonded_setup_done  = FALSE;
 
 
@@ -111,9 +107,7 @@ void
 gmx_nonbonded_setup(t_forcerec *   fr,
                     gmx_bool       bGenericKernelOnly)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
-#endif
     /* Here we are guaranteed only one thread made it. */
     if (nonbonded_setup_done == FALSE)
     {
@@ -162,9 +156,7 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 
         nonbonded_setup_done = TRUE;
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&nonbonded_setup_mutex);
-#endif
 }
 
 

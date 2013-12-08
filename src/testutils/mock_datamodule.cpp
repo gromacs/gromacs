@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -283,7 +283,7 @@ void checkFrame(const AnalysisDataFrameRef       &frame,
     }
 }
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame header against static test input data.
  *
  * This functor is designed to be invoked as a handled for
@@ -315,7 +315,7 @@ class StaticDataFrameHeaderChecker
         const AnalysisDataTestInputFrame *frame_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame points against static test input data.
  *
  * This functor is designed to be invoked as a handled for
@@ -366,7 +366,7 @@ class StaticDataPointsChecker
         int                                  n_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for requesting data storage.
  *
  * This functor is designed to be invoked as a handled for
@@ -395,7 +395,7 @@ class DataStorageRequester
         int                     count_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame points and storage against static test input
  * data.
  *
@@ -574,7 +574,7 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
 void
 MockAnalysisDataModule::setupStaticColumnCheck(
         const AnalysisDataTestInput &data,
-        int firstcol, int n, AbstractAnalysisData *source)
+        int firstcol, int n, AbstractAnalysisData * /*source*/)
 {
     impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 

@@ -49,7 +49,7 @@
 #include "vec.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "string2.h"
 #include "readinp.h"
 #include "calcgrid.h"
@@ -58,7 +58,7 @@
 #include "gmx_ana.h"
 #include "names.h"
 #include "perf_est.h"
-
+#include "gromacs/timing/walltime_accounting.h"
 
 
 /* Enum for situations that can occur during log file parsing, the
@@ -73,6 +73,7 @@ enum {
     eParselogNoDDGrid,
     eParselogTPXVersion,
     eParselogNotParallel,
+    eParselogLargePrimeFactor,
     eParselogFatal,
     eParselogNr
 };
@@ -284,6 +285,11 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 {
                     fclose(fp);
                     return eParselogNoDDGrid;
+                }
+                else if (str_starts(line, "The number of nodes you selected"))
+                {
+                    fclose(fp);
+                    return eParselogLargePrimeFactor;
                 }
                 else if (str_starts(line, "reading tpx file"))
                 {
@@ -586,26 +592,14 @@ static gmx_bool analyze_data(
 
 
 /* Get the commands we need to set up the runs from environment variables */
-static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np[],
-                              char *cmd_mdrun[], int repeats)
+static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_mdrun[])
 {
-    char      *command = NULL;
     char      *cp;
-    char      *cp2;
-    char       line[STRLEN];
     FILE      *fp;
     const char def_mpirun[]   = "mpirun";
     const char def_mdrun[]    = "mdrun";
-    const char filename[]     = "benchtest.log";
 
-    /* This string should always be identical to the one in copyrite.c,
-     * gmx_print_version_info() in the defined(GMX_MPI) section */
-    const char match_mpi[]    = "MPI library:        MPI";
-    const char match_mdrun[]  = "Program: ";
     const char empty_mpirun[] = "";
-    gmx_bool   bMdrun         = FALSE;
-    gmx_bool   bMPI           = FALSE;
-
 
     /* Get the commands we need to set up the runs from environment variables */
     if (!bThreads)
@@ -632,25 +626,40 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np
     {
         *cmd_mdrun  = strdup(def_mdrun);
     }
+}
 
+/* Check that the commands will run mdrun (perhaps via mpirun) by
+ * running a very quick test simulation. Requires MPI environment to
+ * be available if applicable. */
+static void check_mdrun_works(gmx_bool    bThreads,
+                              const char *cmd_mpirun,
+                              const char *cmd_np,
+                              const char *cmd_mdrun)
+{
+    char      *command = NULL;
+    char      *cp;
+    char       line[STRLEN];
+    FILE      *fp;
+    const char filename[]     = "benchtest.log";
 
-    /* If no simulations have to be performed, we are done here */
-    if (repeats <= 0)
-    {
-        return;
-    }
+    /* This string should always be identical to the one in copyrite.c,
+     * gmx_print_version_info() in the defined(GMX_MPI) section */
+    const char match_mpi[]    = "MPI library:        MPI";
+    const char match_mdrun[]  = "Program: ";
+    gmx_bool   bMdrun         = FALSE;
+    gmx_bool   bMPI           = FALSE;
 
     /* Run a small test to see whether mpirun + mdrun work  */
     fprintf(stdout, "Making sure that mdrun can be executed. ");
     if (bThreads)
     {
-        snew(command, strlen(*cmd_mdrun) + strlen(cmd_np) + strlen(filename) + 50);
-        sprintf(command, "%s%s-version -maxh 0.001 1> %s 2>&1", *cmd_mdrun, cmd_np, filename);
+        snew(command, strlen(cmd_mdrun) + strlen(cmd_np) + strlen(filename) + 50);
+        sprintf(command, "%s%s-version -maxh 0.001 1> %s 2>&1", cmd_mdrun, cmd_np, filename);
     }
     else
     {
-        snew(command, strlen(*cmd_mpirun) + strlen(cmd_np) + strlen(*cmd_mdrun) + strlen(filename) + 50);
-        sprintf(command, "%s%s%s -version -maxh 0.001 1> %s 2>&1", *cmd_mpirun, cmd_np, *cmd_mdrun, filename);
+        snew(command, strlen(cmd_mpirun) + strlen(cmd_np) + strlen(cmd_mdrun) + strlen(filename) + 50);
+        sprintf(command, "%s%s%s -version -maxh 0.001 1> %s 2>&1", cmd_mpirun, cmd_np, cmd_mdrun, filename);
     }
     fprintf(stdout, "Trying '%s' ... ", command);
     make_backup(filename);
@@ -667,8 +676,8 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np
      * also writes stuff to stdout/err */
     while (!feof(fp) )
     {
-        cp2 = fgets(line, STRLEN, fp);
-        if (cp2 != NULL)
+        cp = fgets(line, STRLEN, fp);
+        if (cp != NULL)
         {
             if (str_starts(line, match_mdrun) )
             {
@@ -1376,6 +1385,7 @@ static void do_the_tests(
         "No DD grid found for these settings.",
         "TPX version conflict!",
         "mdrun was not started in parallel!",
+        "Number of PP nodes has a prime factor that is too large.",
         "An error occured."
     };
     char        str_PME_f_load[13];
@@ -1985,50 +1995,29 @@ static void couple_files_options(int nfile, t_filenm fnm[])
 }
 
 
-static double gettime()
-{
-#ifdef HAVE_GETTIMEOFDAY
-    struct timeval t;
-    double         seconds;
-
-    gettimeofday(&t, NULL);
-
-    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
-
-    return seconds;
-#else
-    double  seconds;
-
-    seconds = time(NULL);
-
-    return seconds;
-#endif
-}
-
-
 #define BENCHSTEPS (1000)
 
 int gmx_tune_pme(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "For a given number [TT]-np[tt] or [TT]-ntmpi[tt] of processors/threads, this program systematically",
-        "times [TT]mdrun[tt] with various numbers of PME-only nodes and determines",
+        "For a given number [TT]-np[tt] or [TT]-ntmpi[tt] of processors/threads, [THISMODULE] systematically",
+        "times [gmx-mdrun] with various numbers of PME-only nodes and determines",
         "which setting is fastest. It will also test whether performance can",
         "be enhanced by shifting load from the reciprocal to the real space",
         "part of the Ewald sum. ",
-        "Simply pass your [TT].tpr[tt] file to [TT]g_tune_pme[tt] together with other options",
-        "for [TT]mdrun[tt] as needed.[PAR]",
+        "Simply pass your [TT].tpr[tt] file to [THISMODULE] together with other options",
+        "for [gmx-mdrun] as needed.[PAR]",
         "Which executables are used can be set in the environment variables",
         "MPIRUN and MDRUN. If these are not present, 'mpirun' and 'mdrun'",
         "will be used as defaults. Note that for certain MPI frameworks you",
         "need to provide a machine- or hostfile. This can also be passed",
         "via the MPIRUN variable, e.g.[PAR]",
         "[TT]export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"[tt][PAR]",
-        "Please call [TT]g_tune_pme[tt] with the normal options you would pass to",
-        "[TT]mdrun[tt] and add [TT]-np[tt] for the number of processors to perform the",
+        "Please call [THISMODULE] with the normal options you would pass to",
+        "[gmx-mdrun] and add [TT]-np[tt] for the number of processors to perform the",
         "tests on, or [TT]-ntmpi[tt] for the number of threads. You can also add [TT]-r[tt]",
         "to repeat each test several times to get better statistics. [PAR]",
-        "[TT]g_tune_pme[tt] can test various real space / reciprocal space workloads",
+        "[THISMODULE] can test various real space / reciprocal space workloads",
         "for you. With [TT]-ntpr[tt] you control how many extra [TT].tpr[tt] files will be",
         "written with enlarged cutoffs and smaller Fourier grids respectively.",
         "Typically, the first test (number 0) will be with the settings from the input",
@@ -2046,9 +2035,9 @@ int gmx_tune_pme(int argc, char *argv[])
         "for a higher accuarcy of the measurements, you should set [TT]-resetstep[tt] to a higher value.",
         "From the 'DD' load imbalance entries in the md.log output file you",
         "can tell after how many steps the load is sufficiently balanced. Example call:[PAR]"
-        "[TT]g_tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
-        "After calling [TT]mdrun[tt] several times, detailed performance information",
-        "is available in the output file [TT]perf.out.[tt] ",
+        "[TT]gmx tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
+        "After calling [gmx-mdrun] several times, detailed performance information",
+        "is available in the output file [TT]perf.out[tt].",
         "[BB]Note[bb] that during the benchmarks, a couple of temporary files are written",
         "(options [TT]-b[tt]*), these will be automatically deleted after each test.[PAR]",
         "If you want the simulation to be started automatically with the",
@@ -2121,9 +2110,6 @@ int gmx_tune_pme(int argc, char *argv[])
         { efXVG, "-tpid",   "tpidist",  ffOPTWR },
         { efEDI, "-ei",     "sam",      ffOPTRD },
         { efXVG, "-eo",     "edsam",    ffOPTWR },
-        { efGCT, "-j",      "wham",     ffOPTRD },
-        { efGCT, "-jo",     "bam",      ffOPTWR },
-        { efXVG, "-ffout",  "gct",      ffOPTWR },
         { efXVG, "-devout", "deviatie", ffOPTWR },
         { efXVG, "-runav",  "runaver",  ffOPTWR },
         { efXVG, "-px",     "pullx",    ffOPTWR },
@@ -2146,8 +2132,6 @@ int gmx_tune_pme(int argc, char *argv[])
         { efXVG, "-bfield", "benchfld", ffOPTWR },
         { efXVG, "-btpi",   "benchtpi", ffOPTWR },
         { efXVG, "-btpid",  "benchtpid", ffOPTWR },
-        { efGCT, "-bjo",    "bench",    ffOPTWR },
-        { efXVG, "-bffout", "benchgct", ffOPTWR },
         { efXVG, "-bdevout", "benchdev", ffOPTWR },
         { efXVG, "-brunav", "benchrnav", ffOPTWR },
         { efXVG, "-bpx",    "benchpx",  ffOPTWR },
@@ -2231,7 +2215,7 @@ int gmx_tune_pme(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    seconds = gettime();
+    seconds = gmx_gettime();
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
@@ -2365,7 +2349,11 @@ int gmx_tune_pme(int argc, char *argv[])
     }
 
     /* Get the commands we need to set up the runs from environment variables */
-    get_program_paths(bThreads, &cmd_mpirun, cmd_np, &cmd_mdrun, repeats);
+    get_program_paths(bThreads, &cmd_mpirun, &cmd_mdrun);
+    if (bBenchmark && repeats > 0)
+    {
+        check_mdrun_works(bThreads, cmd_mpirun, cmd_np, cmd_mdrun);
+    }
 
     /* Print some header info to file */
     sep_line(fp);
@@ -2465,7 +2453,7 @@ int gmx_tune_pme(int argc, char *argv[])
                      repeats, nnodes, ntprs, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,
                      cmd_args_bench, fnm, NFILE, presteps, cpt_steps);
 
-        fprintf(fp, "\nTuning took%8.1f minutes.\n", (gettime()-seconds)/60.0);
+        fprintf(fp, "\nTuning took%8.1f minutes.\n", (gmx_gettime()-seconds)/60.0);
 
         /* Analyse the results and give a suggestion for optimal settings: */
         bKeepTPR = analyze_data(fp, opt2fn("-p", NFILE, fnm), perfdata, nnodes, ntprs, pmeentries,

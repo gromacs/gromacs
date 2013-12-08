@@ -51,9 +51,10 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "mtop_util.h"
-#include "gmxfio.h"
 #include "gmx_omp_nthreads.h"
-#include "gmx_omp.h"
+
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/gmxomp.h"
 
 typedef struct {
     int    b0;         /* first constraint for this thread */

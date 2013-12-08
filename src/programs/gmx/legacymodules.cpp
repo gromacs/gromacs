@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -39,10 +39,10 @@
  */
 #include "legacymodules.h"
 
+#include <cstdio>
+
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/onlinehelp/helpwritercontext.h"
-#include "gromacs/utility/exceptions.h"
 
 #include "gromacs/gmxana/gmx_ana.h"
 
@@ -66,6 +66,54 @@ namespace
 {
 
 /*! \brief
+ * Command line module that provides information about obsolescence.
+ *
+ * Prints a message directing the user to a wiki page describing replacement
+ * options.
+ */
+class ObsoleteToolModule : public gmx::CommandLineModuleInterface
+{
+    public:
+        //! Creates an obsolete tool module for a tool with the given name.
+        explicit ObsoleteToolModule(const char *name)
+            : name_(name)
+        {
+        }
+
+        virtual const char *name() const
+        {
+            return name_;
+        }
+        virtual const char *shortDescription() const
+        {
+            return NULL;
+        }
+
+        virtual int run(int /*argc*/, char * /*argv*/[])
+        {
+            printMessage();
+            return 0;
+        }
+        virtual void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const
+        {
+            printMessage();
+        }
+
+    private:
+        void printMessage() const
+        {
+            std::fprintf(stderr,
+                         "This tool has been removed from Gromacs 5.0. Please see\n"
+                         "  http://www.gromacs.org/Documentation/How-tos/Tool_Changes_for_5.0\n"
+                         "for ideas how to perform the same tasks with the "
+                         "new tools.\n");
+        }
+
+        const char             *name_;
+
+};
+
+/*! \brief
  * Convenience function for creating and registering a module.
  *
  * \param[in] manager          Module manager to which to register the module.
@@ -80,14 +128,27 @@ void registerModule(gmx::CommandLineModuleManager                *manager,
     manager->addModuleCMain(name, shortDescription, mainFunction);
 }
 
+/*! \brief
+ * Convenience function for registering a module for an obsolete tool.
+ *
+ * \param[in] manager          Module manager to which to register the module.
+ * \param[in] name             Name for the obsolete tool.
+ */
+void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
+                          const char                    *name)
+{
+    gmx::CommandLineModulePointer module(new ObsoleteToolModule(name));
+    manager->addModule(move(module));
+}
+
 } // namespace
 
 void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 {
     // Modules from this directory (were in src/kernel/).
-    registerModule(manager, &gmx_gmxcheck, "gmxcheck",
+    registerModule(manager, &gmx_gmxcheck, "check",
                    "Check and compare files");
-    registerModule(manager, &gmx_gmxdump, "gmxdump",
+    registerModule(manager, &gmx_gmxdump, "dump",
                    "Make binary files human readable");
     registerModule(manager, &gmx_grompp, "grompp",
                    "Make a run input file");
@@ -144,8 +205,10 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate distributions and correlations for angles and dihedrals");
     registerModule(manager, &gmx_bar, "bar",
                    "Calculate free energy difference estimates through Bennett's acceptance ratio");
-    registerModule(manager, &gmx_bond, "bond",
-                   "Calculate distances between atoms and bond length distributions");
+    registerObsoleteTool(manager, "bond");
+    registerObsoleteTool(manager, "dist");
+    registerObsoleteTool(manager, "sgangle");
+
     registerModule(manager, &gmx_bundle, "bundle",
                    "Analyze bundles of axes, e.g., helices");
     registerModule(manager, &gmx_chi, "chi",
@@ -159,7 +222,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_covar, "covar",
                    "Calculate and diagonalize the covariance matrix");
     registerModule(manager, &gmx_current, "current",
-                   "Calculate dielectric constants and charge autocorrelation function");
+                   "Calculate dielectric constants and current autocorrelation function");
     registerModule(manager, &gmx_density, "density",
                    "Calculate the density of the system");
     registerModule(manager, &gmx_densmap, "densmap",
@@ -172,8 +235,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Compute the total dipole plus fluctuations");
     registerModule(manager, &gmx_disre, "disre",
                    "Analyze distance restraints");
-    registerModule(manager, &gmx_dist, "dist",
-                   "Calculate distances between centers of mass of two groups");
     registerModule(manager, &gmx_dos, "dos",
                    "Analyze density of states and properties based on that");
     registerModule(manager, &gmx_dyecoupl, "dyecoupl",
@@ -244,13 +305,11 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_saltbr, "saltbr",
                    "Compute salt bridges");
     registerModule(manager, &gmx_sans, "sans",
-                   "Compute the small angle neutron scattering spectra");
+                   "Compute small angle neutron scattering spectra");
     registerModule(manager, &gmx_sas, "sas",
                    "Compute solvent accessible surface area");
     registerModule(manager, &gmx_saxs, "saxs",
-                   "Calculates SAXS structure factors based on Cromer's method");
-    registerModule(manager, &gmx_sgangle, "sgangle",
-                   "Compute the angle and distance between two groups");
+                   "Compute small angle X-ray scattering spectra");
     registerModule(manager, &gmx_sham, "sham",
                    "Compute free energies or other histograms from histograms");
     registerModule(manager, &gmx_sigeps, "sigeps",
@@ -268,7 +327,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_tune_pme, "tune_pme",
                    "Time mdrun as a function of PME nodes to optimize settings");
     registerModule(manager, &gmx_vanhove, "vanhove",
-                   "Compute Van Hove correlation functions");
+                   "Compute Van Hove displacement and correlation functions");
     registerModule(manager, &gmx_velacc, "velacc",
                    "Calculate velocity autocorrelation functions");
     registerModule(manager, &gmx_wham, "wham",
@@ -278,8 +337,182 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_view, "view",
                    "View a trajectory on an X-Windows terminal");
 
-    // TODO: Also include binaries from other directories than src/tools/:
-    //        "g_xrama|Show animated Ramachandran plots");
-    //        "mdrun|finds a potential energy minimum and calculates the Hessian");
-    //        "mdrun|with -rerun (re)calculates energies for trajectory frames");
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Generating topologies and coordinates");
+        group.addModuleWithDescription("editconf", "Edit the box and write subgroups");
+        group.addModule("protonate");
+        group.addModule("x2top");
+        group.addModule("genbox");
+        group.addModule("genconf");
+        group.addModule("genion");
+        group.addModule("genrestr");
+        group.addModule("pdb2gmx");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Running a simulation");
+        group.addModule("grompp");
+        group.addModule("mdrun");
+        group.addModule("tpbconv");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Viewing trajectories");
+        group.addModule("nmtraj");
+        group.addModule("view");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Processing energies");
+        group.addModule("enemat");
+        group.addModule("energy");
+        group.addModuleWithDescription("mdrun", "(Re)calculate energies for trajectory frames with -rerun");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Converting files");
+        group.addModule("editconf");
+        group.addModule("eneconv");
+        group.addModule("sigeps");
+        group.addModule("trjcat");
+        group.addModule("trjconv");
+        group.addModule("xpm2ps");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Tools");
+        group.addModule("analyze");
+        group.addModule("dyndom");
+        group.addModule("filter");
+        group.addModule("lie");
+        group.addModule("morph");
+        group.addModule("pme_error");
+        group.addModule("sham");
+        group.addModule("spatial");
+        group.addModule("traj");
+        group.addModule("tune_pme");
+        group.addModule("wham");
+        group.addModule("check");
+        group.addModule("dump");
+        group.addModule("make_ndx");
+        group.addModule("mk_angndx");
+        group.addModule("trjorder");
+        group.addModule("xpm2ps");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Distances between structures");
+        group.addModule("cluster");
+        group.addModule("confrms");
+        group.addModule("rms");
+        group.addModule("rmsf");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Distances in structures over time");
+        group.addModule("mindist");
+        group.addModule("mdmat");
+        group.addModule("polystat");
+        group.addModule("rmsdist");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Mass distribution properties over time");
+        group.addModule("gyrate");
+        group.addModule("msd");
+        group.addModule("polystat");
+        group.addModule("rdf");
+        group.addModule("rotacf");
+        group.addModule("rotmat");
+        group.addModule("sans");
+        group.addModule("saxs");
+        group.addModule("traj");
+        group.addModule("vanhove");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Analyzing bonded interactions");
+        group.addModule("angle");
+        group.addModule("mk_angndx");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Structural properties");
+        group.addModule("anadock");
+        group.addModule("bundle");
+        group.addModule("clustsize");
+        group.addModule("disre");
+        group.addModule("hbond");
+        group.addModule("order");
+        group.addModule("principal");
+        group.addModule("rdf");
+        group.addModule("saltbr");
+        group.addModule("sas");
+        group.addModule("sorient");
+        group.addModule("spol");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Kinetic properties");
+        group.addModule("bar");
+        group.addModule("current");
+        group.addModule("dos");
+        group.addModule("dyecoupl");
+        group.addModule("kinetics");
+        group.addModule("principal");
+        group.addModule("tcaf");
+        group.addModule("traj");
+        group.addModule("vanhove");
+        group.addModule("velacc");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Electrostatic properties");
+        group.addModule("current");
+        group.addModule("dielectric");
+        group.addModule("dipoles");
+        group.addModule("potential");
+        group.addModule("spol");
+        group.addModule("genion");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Protein-specific analysis");
+        group.addModule("do_dssp");
+        group.addModule("chi");
+        group.addModule("helix");
+        group.addModule("helixorient");
+        group.addModule("rama");
+        group.addModule("wheel");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Interfaces");
+        group.addModule("bundle");
+        group.addModule("density");
+        group.addModule("densmap");
+        group.addModule("densorder");
+        group.addModule("h2order");
+        group.addModule("hydorder");
+        group.addModule("order");
+        group.addModule("potential");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Covariance analysis");
+        group.addModuleWithDescription("anaeig", "Analyze the eigenvectors");
+        group.addModule("covar");
+        group.addModule("make_edi");
+    }
+    {
+        gmx::CommandLineModuleGroup group =
+            manager->addModuleGroup("Normal modes");
+        group.addModuleWithDescription("anaeig", "Analyze the normal modes");
+        group.addModule("nmeig");
+        group.addModule("nmtraj");
+        group.addModule("nmens");
+        group.addModule("grompp");
+        group.addModuleWithDescription("mdrun", "Find a potential energy minimum and calculate the Hessian");
+    }
 }

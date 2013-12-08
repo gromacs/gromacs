@@ -1,65 +1,57 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef GMX_CRAY_XT3
-#include <catamount/dclock.h>
-#endif
-
-
 #include <stdio.h>
-#include <time.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #include <math.h>
 #include "typedefs.h"
 #include "string2.h"
-#include "gmxfio.h"
 #include "smalloc.h"
 #include "names.h"
-#include "confio.h"
 #include "mvdata.h"
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
 #include "vec.h"
-#include <time.h>
 #include "nrnb.h"
 #include "mshift.h"
 #include "mdrun.h"
@@ -77,22 +69,21 @@
 #include "calcmu.h"
 #include "constr.h"
 #include "xvgr.h"
-#include "trnio.h"
-#include "xtcio.h"
 #include "copyrite.h"
 #include "pull_rotation.h"
 #include "gmx_random.h"
 #include "domdec.h"
 #include "partdec.h"
-#include "gmx_wallcycle.h"
 #include "genborn.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "nbnxn_kernels/nbnxn_kernel_ref.h"
-#include "nbnxn_kernels/nbnxn_kernel_simd_4xn.h"
-#include "nbnxn_kernels/nbnxn_kernel_simd_2xnn.h"
+#include "nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
+#include "nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "adress.h"
@@ -101,36 +92,15 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "nbnxn_cuda/nbnxn_cuda.h"
 
-double
-gmx_gettime()
-{
-#ifdef HAVE_GETTIMEOFDAY
-    struct timeval t;
-    double         seconds;
-
-    gettimeofday(&t, NULL);
-
-    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
-
-    return seconds;
-#else
-    double  seconds;
-
-    seconds = time(NULL);
-
-    return seconds;
-#endif
-}
-
-
-#define difftime(end, start) ((double)(end)-(double)(start))
-
-void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
-                t_inputrec *ir, t_commrec gmx_unused *cr)
+void print_time(FILE                     *out,
+                gmx_walltime_accounting_t walltime_accounting,
+                gmx_large_int_t           step,
+                t_inputrec               *ir,
+                t_commrec gmx_unused     *cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
-    double dt;
+    double dt, elapsed_seconds, time_per_step;
     char   buf[48];
 
 #ifndef GMX_THREAD_MPI
@@ -142,17 +112,16 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     fprintf(out, "step %s", gmx_step_str(step, buf));
     if ((step >= ir->nstlist))
     {
-        runtime->last          = gmx_gettime();
-        dt                     = difftime(runtime->last, runtime->real);
-        runtime->time_per_step = dt/(step - ir->init_step + 1);
-
-        dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
+        double seconds_since_epoch = gmx_gettime();
+        elapsed_seconds = seconds_since_epoch - walltime_accounting_get_start_time_stamp(walltime_accounting);
+        time_per_step   = elapsed_seconds/(step - ir->init_step + 1);
+        dt              = (ir->nsteps + ir->init_step - step) * time_per_step;
 
         if (ir->nsteps >= 0)
         {
             if (dt >= 300)
             {
-                finish = (time_t) (runtime->last + dt);
+                finish = (time_t) (seconds_since_epoch + dt);
                 gmx_ctime_r(&finish, timebuf, STRLEN);
                 sprintf(buf, "%s", timebuf);
                 buf[strlen(buf)-1] = '\0';
@@ -160,13 +129,13 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
             }
             else
             {
-                fprintf(out, ", remaining runtime: %5d s          ", (int)dt);
+                fprintf(out, ", remaining wall clock time: %5d s          ", (int)dt);
             }
         }
         else
         {
             fprintf(out, " performance: %.1f ns/day    ",
-                    ir->delta_t/1000*24*60*60/runtime->time_per_step);
+                    ir->delta_t/1000*24*60*60/time_per_step);
         }
     }
 #ifndef GMX_THREAD_MPI
@@ -179,66 +148,8 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     fflush(out);
 }
 
-#ifdef NO_CLOCK
-#define clock() -1
-#endif
-
-static double set_proctime(gmx_runtime_t *runtime)
-{
-    double diff;
-#ifdef GMX_CRAY_XT3
-    double prev;
-
-    prev          = runtime->proc;
-    runtime->proc = dclock();
-
-    diff = runtime->proc - prev;
-#else
-    clock_t prev;
-
-    prev          = runtime->proc;
-    runtime->proc = clock();
-
-    diff = (double)(runtime->proc - prev)/(double)CLOCKS_PER_SEC;
-#endif
-    if (diff < 0)
-    {
-        /* The counter has probably looped, ignore this data */
-        diff = 0;
-    }
-
-    return diff;
-}
-
-void runtime_start(gmx_runtime_t *runtime)
-{
-    runtime->real          = gmx_gettime();
-    runtime->proc          = 0;
-    set_proctime(runtime);
-    runtime->realtime      = 0;
-    runtime->proctime      = 0;
-    runtime->last          = 0;
-    runtime->time_per_step = 0;
-}
-
-void runtime_end(gmx_runtime_t *runtime)
-{
-    double now;
-
-    now = gmx_gettime();
-
-    runtime->proctime += set_proctime(runtime);
-    runtime->realtime  = now - runtime->real;
-    runtime->real      = now;
-}
-
-void runtime_upd_proc(gmx_runtime_t *runtime)
-{
-    runtime->proctime += set_proctime(runtime);
-}
-
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
-                         const gmx_runtime_t *runtime)
+                         const gmx_walltime_accounting_t walltime_accounting)
 {
     int    i;
     char   timebuf[STRLEN];
@@ -247,9 +158,9 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
 
     if (fplog)
     {
-        if (runtime != NULL)
+        if (walltime_accounting != NULL)
         {
-            tmptime = (time_t) runtime->real;
+            tmptime = (time_t) walltime_accounting_get_start_time_stamp(walltime_accounting);
             gmx_ctime_r(&tmptime, timebuf, STRLEN);
         }
         else
@@ -479,7 +390,7 @@ static void pme_receive_force_ener(FILE           *fplog,
                                    gmx_enerdata_t *enerd,
                                    t_forcerec     *fr)
 {
-    real   e, v, dvdl;
+    real   e_q, e_lj, v, dvdl_q, dvdl_lj;
     float  cycles_ppdpme, cycles_seppme;
 
     cycles_ppdpme = wallcycle_stop(wcycle, ewcPPDURINGPME);
@@ -489,15 +400,21 @@ static void pme_receive_force_ener(FILE           *fplog,
      * forces, virial and energy from the PME nodes here.
      */
     wallcycle_start(wcycle, ewcPP_PMEWAITRECVF);
-    dvdl = 0;
-    gmx_pme_receive_f(cr, fr->f_novirsum, fr->vir_el_recip, &e, &dvdl,
+    dvdl_q  = 0;
+    dvdl_lj = 0;
+    gmx_pme_receive_f(cr, fr->f_novirsum, fr->vir_el_recip, &e_q,
+                      fr->vir_lj_recip, &e_lj, &dvdl_q, &dvdl_lj,
                       &cycles_seppme);
     if (bSepDVDL)
     {
-        gmx_print_sepdvdl(fplog, "PME mesh", e, dvdl);
+        gmx_print_sepdvdl(fplog, "Electrostatic PME mesh", e_q, dvdl_q);
+        gmx_print_sepdvdl(fplog, "Lennard-Jones PME mesh", e_lj, dvdl_lj);
     }
-    enerd->term[F_COUL_RECIP] += e;
-    enerd->dvdl_lin[efptCOUL] += dvdl;
+    enerd->term[F_COUL_RECIP] += e_q;
+    enerd->term[F_LJ_RECIP]   += e_lj;
+    enerd->dvdl_lin[efptCOUL] += dvdl_q;
+    enerd->dvdl_lin[efptVDW]  += dvdl_lj;
+
     if (wcycle)
     {
         dd_cycles_add(cr->dd, cycles_seppme, ddCyclPME);
@@ -570,6 +487,11 @@ static void post_process_forces(t_commrec *cr,
                 /* Add the mesh contribution to the virial */
                 m_add(vir_force, fr->vir_el_recip, vir_force);
             }
+            if (EVDW_PME(fr->vdwtype))
+            {
+                /* Add the mesh contribution to the virial */
+                m_add(vir_force, fr->vir_lj_recip, vir_force);
+            }
             if (debug)
             {
                 pr_rvecs(debug, 0, "vir_force", vir_force, DIM);
@@ -588,12 +510,13 @@ static void do_nb_verlet(t_forcerec *fr,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
                          int clearF,
-                         t_nrnb *nrnb)
+                         t_nrnb *nrnb,
+                         gmx_wallcycle_t wcycle)
 {
     int                        nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     char                      *env;
     nonbonded_verlet_group_t  *nbvg;
-    gmx_bool                  bCUDA;
+    gmx_bool                   bCUDA;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -740,12 +663,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     matrix              boxs;
     rvec                vzero, box_diag;
     real                e, v, dvdl;
-    float               cycles_pme, cycles_force;
+    float               cycles_pme, cycles_force, cycles_wait_gpu;
     nonbonded_verlet_t *nbv;
 
-    cycles_force   = 0;
-    nbv            = fr->nbv;
-    nb_kernel_type = fr->nbv->grp[0].kernel_type;
+    cycles_force    = 0;
+    cycles_wait_gpu = 0;
+    nbv             = fr->nbv;
+    nb_kernel_type  = fr->nbv->grp[0].kernel_type;
 
     start  = mdatoms->start;
     homenr = mdatoms->homenr;
@@ -826,6 +750,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          * we do not need to worry about shifting.
          */
 
+        int pme_flags = 0;
+
         wallcycle_start(wcycle, ewcPP_PMESENDX);
 
         bBS = (inputrec->nwall == 2);
@@ -835,9 +761,24 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             svmul(inputrec->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
         }
 
-        gmx_pme_send_x(cr, bBS ? boxs : box, x,
-                       mdatoms->nChargePerturbed, lambda[efptCOUL],
-                       (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)), step);
+        if (EEL_PME(fr->eeltype))
+        {
+            pme_flags |= GMX_PME_DO_COULOMB;
+        }
+
+        if (EVDW_PME(fr->vdwtype))
+        {
+            pme_flags |= GMX_PME_DO_LJ;
+            if (fr->ljpme_combination_rule == eljpmeLB)
+            {
+                pme_flags |= GMX_PME_LJ_LB;
+            }
+        }
+
+        gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
+                                 mdatoms->nChargePerturbed, mdatoms->nTypePerturbed, lambda[efptCOUL], lambda[efptVDW],
+                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
+                                 pme_flags, step);
 
         wallcycle_stop(wcycle, ewcPP_PMESENDX);
     }
@@ -949,7 +890,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
         /* launch local nonbonded F on GPU */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
-                     nrnb);
+                     nrnb, wcycle);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -1030,7 +971,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
-                         nrnb);
+                         nrnb, wcycle);
             cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
     }
@@ -1161,7 +1102,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         /* Maybe we should move this into do_force_lowlevel */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
-                     nrnb);
+                     nrnb, wcycle);
     }
 
     if (!bUseOrEmulGPU || bDiffKernels)
@@ -1172,7 +1113,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal,
                          bDiffKernels ? enbvClearFYes : enbvClearFNo,
-                         nrnb);
+                         nrnb, wcycle);
         }
 
         if (!bUseOrEmulGPU)
@@ -1251,19 +1192,23 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             if (bUseGPU)
             {
+                float cycles_tmp;
+
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_cuda_wait_gpu(nbv->cu_nbv,
                                     nbv->grp[eintNonlocal].nbat,
                                     flags, eatNonlocal,
                                     enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                     fr->fshift);
-                cycles_force += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
+                cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
+                cycles_wait_gpu += cycles_tmp;
+                cycles_force    += cycles_tmp;
             }
             else
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
-                             nrnb);
+                             nrnb, wcycle);
                 cycles_force += wallcycle_stop(wcycle, ewcFORCE);
             }
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1323,7 +1268,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 flags, eatLocal,
                                 enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                 fr->fshift);
-            wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
 
@@ -1336,7 +1281,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start_nocount(wcycle, ewcFORCE);
             do_nb_verlet(fr, ic, enerd, flags, eintLocal,
                          DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
-                         nrnb);
+                         nrnb, wcycle);
             wallcycle_stop(wcycle, ewcFORCE);
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1357,6 +1302,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (wcycle)
         {
             dd_cycles_add(cr->dd, cycles_force-cycles_pme, ddCyclF);
+            if (bUseGPU)
+            {
+                dd_cycles_add(cr->dd, cycles_wait_gpu, ddCyclWaitGPU);
+            }
         }
     }
 
@@ -1566,6 +1515,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
          * we do not need to worry about shifting.
          */
 
+        int pme_flags = 0;
+
         wallcycle_start(wcycle, ewcPP_PMESENDX);
 
         bBS = (inputrec->nwall == 2);
@@ -1575,9 +1526,24 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             svmul(inputrec->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
         }
 
-        gmx_pme_send_x(cr, bBS ? boxs : box, x,
-                       mdatoms->nChargePerturbed, lambda[efptCOUL],
-                       (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)), step);
+        if (EEL_PME(fr->eeltype))
+        {
+            pme_flags |= GMX_PME_DO_COULOMB;
+        }
+
+        if (EVDW_PME(fr->vdwtype))
+        {
+            pme_flags |= GMX_PME_DO_LJ;
+            if (fr->ljpme_combination_rule == eljpmeLB)
+            {
+                pme_flags |= GMX_PME_LJ_LB;
+            }
+        }
+
+        gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
+                                 mdatoms->nChargePerturbed, mdatoms->nTypePerturbed, lambda[efptCOUL], lambda[efptVDW],
+                                 (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),
+                                 pme_flags, step);
 
         wallcycle_stop(wcycle, ewcPP_PMESENDX);
     }
@@ -2092,6 +2058,74 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
     sfree(savex);
 }
 
+
+static void
+integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
+                double *enerout, double *virout)
+{
+    double enersum, virsum;
+    double invscale, invscale2, invscale3;
+    double r, ea, eb, ec, pa, pb, pc, pd;
+    double y0, f, g, h;
+    int    ri, offset, tabfactor;
+
+    invscale  = 1.0/scale;
+    invscale2 = invscale*invscale;
+    invscale3 = invscale*invscale2;
+
+    /* Following summation derived from cubic spline definition,
+     * Numerical Recipies in C, second edition, p. 113-116.  Exact for
+     * the cubic spline.  We first calculate the negative of the
+     * energy from rvdw to rvdw_switch, assuming that g(r)=1, and then
+     * add the more standard, abrupt cutoff correction to that result,
+     * yielding the long-range correction for a switched function.  We
+     * perform both the pressure and energy loops at the same time for
+     * simplicity, as the computational cost is low. */
+
+    if (offstart == 0)
+    {
+        /* Since the dispersion table has been scaled down a factor
+         * 6.0 and the repulsion a factor 12.0 to compensate for the
+         * c6/c12 parameters inside nbfp[] being scaled up (to save
+         * flops in kernels), we need to correct for this.
+         */
+        tabfactor = 6.0;
+    }
+    else
+    {
+        tabfactor = 12.0;
+    }
+
+    enersum = 0.0;
+    virsum  = 0.0;
+    for (ri = rstart; ri < rend; ++ri)
+    {
+        r  = ri*invscale;
+        ea = invscale3;
+        eb = 2.0*invscale2*r;
+        ec = invscale*r*r;
+
+        pa = invscale3;
+        pb = 3.0*invscale2*r;
+        pc = 3.0*invscale*r*r;
+        pd = r*r*r;
+
+        /* this "8" is from the packing in the vdwtab array - perhaps
+           should be defined? */
+
+        offset = 8*ri + offstart;
+        y0     = vdwtab[offset];
+        f      = vdwtab[offset+1];
+        g      = vdwtab[offset+2];
+        h      = vdwtab[offset+3];
+
+        enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2) + g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);
+        virsum  +=  f*(pa/4 + pb/3 + pc/2 + pd) + 2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
+    }
+    *enerout = 4.0*M_PI*enersum*tabfactor;
+    *virout  = 4.0*M_PI*virsum*tabfactor;
+}
+
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 {
     double eners[2], virs[2], enersum, virsum, y0, f, g, h;
@@ -2150,63 +2184,11 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              */
             eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
             eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
-
-            invscale  = 1.0/(scale);
-            invscale2 = invscale*invscale;
-            invscale3 = invscale*invscale2;
-
-            /* following summation derived from cubic spline definition,
-               Numerical Recipies in C, second edition, p. 113-116.  Exact
-               for the cubic spline.  We first calculate the negative of
-               the energy from rvdw to rvdw_switch, assuming that g(r)=1,
-               and then add the more standard, abrupt cutoff correction to
-               that result, yielding the long-range correction for a
-               switched function.  We perform both the pressure and energy
-               loops at the same time for simplicity, as the computational
-               cost is low. */
-
             for (i = 0; i < 2; i++)
             {
-                enersum = 0.0; virsum = 0.0;
-                if (i == 0)
-                {
-                    offstart = 0;
-                    /* Since the dispersion table has been scaled down a factor 6.0 and the repulsion
-                     * a factor 12.0 to compensate for the c6/c12 parameters inside nbfp[] being scaled
-                     * up (to save flops in kernels), we need to correct for this.
-                     */
-                    tabfactor = 6.0;
-                }
-                else
-                {
-                    offstart  = 4;
-                    tabfactor = 12.0;
-                }
-                for (ri = ri0; ri < ri1; ri++)
-                {
-                    r  = ri*invscale;
-                    ea = invscale3;
-                    eb = 2.0*invscale2*r;
-                    ec = invscale*r*r;
-
-                    pa = invscale3;
-                    pb = 3.0*invscale2*r;
-                    pc = 3.0*invscale*r*r;
-                    pd = r*r*r;
-
-                    /* this "8" is from the packing in the vdwtab array - perhaps should be #define'ed? */
-                    offset = 8*ri + offstart;
-                    y0     = vdwtab[offset];
-                    f      = vdwtab[offset+1];
-                    g      = vdwtab[offset+2];
-                    h      = vdwtab[offset+3];
-
-                    enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2) + g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);
-                    virsum  += f*(pa/4 + pb/3 + pc/2 + pd) + 2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
-                }
-
-                enersum  *= 4.0*M_PI*tabfactor;
-                virsum   *= 4.0*M_PI*tabfactor;
+                enersum = 0;
+                virsum  = 0;
+                integrate_table(vdwtab, scale, (i == 0 ? 0 : 4), ri0, ri1, &enersum, &virsum);
                 eners[i] -= enersum;
                 virs[i]  -= virsum;
             }
@@ -2215,6 +2197,49 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[0] += -4.0*M_PI/(3.0*rc3);
             eners[1] +=  4.0*M_PI/(9.0*rc9);
             virs[0]  +=  8.0*M_PI/rc3;
+            virs[1]  += -16.0*M_PI/(3.0*rc9);
+        }
+        else if (EVDW_PME(fr->vdwtype))
+        {
+            if (EVDW_SWITCHED(fr->vdwtype) && fr->rvdw_switch == 0)
+            {
+                gmx_fatal(FARGS,
+                          "With dispersion correction rvdw-switch can not be zero "
+                          "for vdw-type = %s", evdw_names[fr->vdwtype]);
+            }
+
+            scale  = fr->nblists[0].table_vdw.scale;
+            vdwtab = fr->nblists[0].table_vdw.data;
+
+            ri0  = floor(fr->rvdw_switch*scale);
+            ri1  = ceil(fr->rvdw*scale);
+            r0   = ri0/scale;
+            r1   = ri1/scale;
+            rc3  = r0*r0*r0;
+            rc9  = rc3*rc3*rc3;
+
+            /* Calculate self-interaction coefficient (assuming that
+             * the reciprocal-space contribution is constant in the
+             * region that contributes to the self-interaction).
+             */
+            fr->enershiftsix = pow(fr->ewaldcoeff_lj, 6) / 6.0;
+
+            /* Calculate C12 values as without PME. */
+            if (EVDW_SWITCHED(fr->vdwtype))
+            {
+                enersum = 0;
+                virsum  = 0;
+                integrate_table(vdwtab, scale, 4, ri0, ri1, &enersum, &virsum);
+                eners[1] -= enersum;
+                virs[1]  -= virsum;
+            }
+            /* Add analytical corrections, C6 for the whole range, C12
+             * from rvdw_switch to infinity.
+             */
+
+            eners[0] += -pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3)/3.0;
+            eners[1] +=  4.0*M_PI/(9.0*rc9);
+            virs[0]  +=  pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3);
             virs[1]  += -16.0*M_PI/(3.0*rc9);
         }
         else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER))
@@ -2462,7 +2487,7 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
 void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
-                gmx_runtime_t *runtime,
+                gmx_walltime_accounting_t walltime_accounting,
                 wallclock_gpu_t *gputimes,
                 gmx_bool bWriteStat)
 {
@@ -2470,7 +2495,10 @@ void finish_run(FILE *fplog, t_commrec *cr,
     t_nrnb *nrnb_tot = NULL;
     real    delta_t;
     double  nbfs, mflop;
-
+    double  elapsed_time,
+            elapsed_time_over_all_ranks,
+            elapsed_time_over_all_threads,
+            elapsed_time_over_all_threads_over_all_ranks;
     wallcycle_sum(cr, wcycle);
 
     if (cr->nnodes > 1)
@@ -2486,14 +2514,25 @@ void finish_run(FILE *fplog, t_commrec *cr,
         nrnb_tot = nrnb;
     }
 
-#if defined(GMX_MPI) && !defined(GMX_THREAD_MPI)
+    elapsed_time                                 = walltime_accounting_get_elapsed_time(walltime_accounting);
+    elapsed_time_over_all_ranks                  = elapsed_time;
+    elapsed_time_over_all_threads                = walltime_accounting_get_elapsed_time_over_all_threads(walltime_accounting);
+    elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
+#ifdef GMX_MPI
     if (cr->nnodes > 1)
     {
-        /* reduce nodetime over all MPI processes in the current simulation */
-        double sum;
-        MPI_Allreduce(&runtime->proctime, &sum, 1, MPI_DOUBLE, MPI_SUM,
+        /* reduce elapsed_time over all MPI ranks in the current simulation */
+        MPI_Allreduce(&elapsed_time,
+                      &elapsed_time_over_all_ranks,
+                      1, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
-        runtime->proctime = sum;
+        elapsed_time_over_all_ranks /= cr->nnodes;
+        /* Reduce elapsed_time_over_all_threads over all MPI ranks in the
+         * current simulation. */
+        MPI_Allreduce(&elapsed_time_over_all_threads,
+                      &elapsed_time_over_all_threads_over_all_ranks,
+                      1, MPI_DOUBLE, MPI_SUM,
+                      cr->mpi_comm_mysim);
     }
 #endif
 
@@ -2540,7 +2579,8 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
-        wallcycle_print(fplog, cr->nnodes, cr->npmenodes, runtime->realtime,
+        wallcycle_print(fplog, cr->nnodes, cr->npmenodes,
+                        elapsed_time_over_all_ranks,
                         wcycle, gputimes);
 
         if (EI_DYNAMICS(inputrec->eI))
@@ -2554,13 +2594,17 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
         if (fplog)
         {
-            print_perf(fplog, runtime->proctime, runtime->realtime,
-                       runtime->nsteps_done, delta_t, nbfs, mflop);
+            print_perf(fplog, elapsed_time_over_all_threads_over_all_ranks,
+                       elapsed_time_over_all_ranks,
+                       walltime_accounting_get_nsteps_done(walltime_accounting),
+                       delta_t, nbfs, mflop);
         }
         if (bWriteStat)
         {
-            print_perf(stderr, runtime->proctime, runtime->realtime,
-                       runtime->nsteps_done, delta_t, nbfs, mflop);
+            print_perf(stderr, elapsed_time_over_all_threads_over_all_ranks,
+                       elapsed_time_over_all_ranks,
+                       walltime_accounting_get_nsteps_done(walltime_accounting),
+                       delta_t, nbfs, mflop);
         }
     }
 }

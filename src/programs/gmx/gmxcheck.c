@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2013, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -42,23 +44,24 @@
 #include "main.h"
 #include "macros.h"
 #include <math.h>
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
-#include "gmxfio.h"
-#include "trnio.h"
-#include "xtcio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "atomprop.h"
 #include "vec.h"
 #include "pbc.h"
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
-#include "confio.h"
-#include "enxio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "names.h"
 #include "mtop_util.h"
 
@@ -712,7 +715,7 @@ void chk_enx(const char *fn)
 int gmx_gmxcheck(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]gmxcheck[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
+        "[THISMODULE] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
         "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
         "or an index file ([TT].ndx[tt])",
         "and prints out useful information about them.[PAR]",
@@ -728,7 +731,7 @@ int gmx_gmxcheck(int argc, char *argv[])
         "the program will check whether the bond lengths defined in the tpr",
         "file are indeed correct in the trajectory. If not you may have",
         "non-matching files due to e.g. deshuffling or due to problems with",
-        "virtual sites. With these flags, [TT]gmxcheck[tt] provides a quick check for such problems.[PAR]",
+        "virtual sites. With these flags, [TT]gmx check[tt] provides a quick check for such problems.[PAR]",
         "The program can compare two run input ([TT].tpr[tt], [TT].tpb[tt] or",
         "[TT].tpa[tt]) files",
         "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",

@@ -68,12 +68,13 @@ setenv MANPATH $tmppath
 ##########################################################
 # This is the real configuration part. We save the Gromacs
 # things in separate vars, so we can remove them later.
-# If you move gromacs, change the next four line.
+# If you move gromacs, change the first line.
 ##########################################################
-setenv GMXBIN @BIN_INSTALL_DIR@
-setenv GMXLDLIB @LIB_INSTALL_DIR@
-setenv GMXMAN @MAN_INSTALL_DIR@
-setenv GMXDATA @DATA_INSTALL_DIR@
+setenv GMXPREFIX @CMAKE_INSTALL_PREFIX@
+setenv GMXBIN ${GMXPREFIX}/@BIN_INSTALL_DIR@
+setenv GMXLDLIB ${GMXPREFIX}/@LIB_INSTALL_DIR@
+setenv GMXMAN ${GMXPREFIX}/@MAN_INSTALL_DIR@
+setenv GMXDATA ${GMXPREFIX}/@DATA_INSTALL_DIR@
 
 #make them begin with :
 if ($?LD_LIBRARY_PATH) setenv LD_LIBRARY_PATH ":${LD_LIBRARY_PATH}"

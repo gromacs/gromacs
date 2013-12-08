@@ -42,7 +42,7 @@
 #include "network.h"
 #include "sim_util.h"
 #include "tgroup.h"
-#include "filenm.h"
+#include "../fileio/filenm.h"
 #include "mshift.h"
 #include "edsam.h"
 #include "mdebin.h"
@@ -53,17 +53,13 @@
 #include "types/membedt.h"
 #include "types/globsig.h"
 
-
-#ifdef GMX_THREAD_MPI
 #include "thread_mpi/threads.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define MD_POLARISE       (1<<2)
-#define MD_IONIZE         (1<<3)
 #define MD_RERUN          (1<<4)
 #define MD_RERUN_VSITE    (1<<5)
 #define MD_SEPPOT         (1<<7)
@@ -87,31 +83,15 @@ enum {
     ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
-/* The options for the thread affinity setting, default: auto */
-enum {
-    threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
-};
-
-typedef struct {
-    int      nthreads_tot;        /* Total number of threads requested (TMPI) */
-    int      nthreads_tmpi;       /* Number of TMPI threads requested         */
-    int      nthreads_omp;        /* Number of OpenMP threads requested       */
-    int      nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
-    int      thread_affinity;     /* Thread affinity switch, see enum above   */
-    int      core_pinning_stride; /* Logical core pinning stride              */
-    int      core_pinning_offset; /* Logical core pinning offset              */
-    char    *gpu_id;              /* GPU id's to use, each specified as chars */
-} gmx_hw_opt_t;
-
 /* Variables for temporary use with the deform option,
  * used in runner.c and md.c.
  * (These variables should be stored in the tpx file.)
  */
 extern gmx_large_int_t     deform_init_init_step_tpx;
 extern matrix              deform_init_box_tpx;
-#ifdef GMX_THREAD_MPI
 extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
+#ifdef GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
  * the number of threads will get lowered.
  */
@@ -138,7 +118,7 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  real cpt_period, real max_hours,
                                  const char *deviceOptions,
                                  unsigned long Flags,
-                                 gmx_runtime_t *runtime);
+                                 gmx_walltime_accounting_t walltime_accounting);
 
 /* ROUTINES from md.c */
 
@@ -166,13 +146,15 @@ gmx_integrator_t do_tpi;
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
+void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rng_t *mcrng, df_history_t *dfhist);
+
 int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, df_history_t *dfhist,
+                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              gmx_large_int_t step, gmx_rng_t mcrng,
                              rvec *v, t_mdatoms *mdatoms);
 
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                               int nlam, int frequency, gmx_large_int_t step);
+                               int fep_state, int frequency, gmx_large_int_t step);
 
 void get_mc_state(gmx_rng_t rng, t_state *state);
 
@@ -196,7 +178,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_bool bCompact, int nstglobalcomm, ivec ddxyz, int dd_node_order,
              real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt,
+             const char *nbpu_opt, int nstlist_cmdline,
              gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,

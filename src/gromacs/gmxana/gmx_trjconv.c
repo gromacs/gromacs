@@ -42,20 +42,21 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "gmxfio.h"
-#include "tpxio.h"
-#include "trnio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/trnio.h"
 #include "statutil.h"
-#include "futil.h"
-#include "pdbio.h"
-#include "confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "index.h"
 #include "vec.h"
-#include "xtcio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "do_fit.h"
 #include "rmpbc.h"
-#include "wgms.h"
+#include "gromacs/fileio/g87io.h"
 #include "pbc.h"
 #include "viewit.h"
 #include "xvgr.h"
@@ -545,7 +546,7 @@ void do_trunc(const char *fn, real t0)
 int gmx_trjconv(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[TT]trjconv[tt] can convert trajectory files in many ways:[BR]",
+        "[THISMODULE] can convert trajectory files in many ways:[BR]",
         "[BB]1.[bb] from one format to another[BR]",
         "[BB]2.[bb] select a subset of atoms[BR]",
         "[BB]3.[bb] change the periodicity representation[BR]",
@@ -564,7 +565,7 @@ int gmx_trjconv(int argc, char *argv[])
         "[BB]10.[bb] select frames within a certain range of a quantity given",
         "in an [TT].xvg[tt] file.[PAR]",
 
-        "The program [TT]trjcat[tt] is better suited for concatenating multiple trajectory files.",
+        "[gmx-trjcat] is better suited for concatenating multiple trajectory files.",
         "[PAR]",
 
         "Currently seven formats are supported for input and output:",
@@ -577,7 +578,7 @@ int gmx_trjconv(int argc, char *argv[])
         "is always taken from [TT]-ndec[tt], when this option is set.",
         "All other formats have fixed precision. [TT].trr[tt] and [TT].trj[tt]",
         "output can be single or double precision, depending on the precision",
-        "of the [TT]trjconv[tt] binary.",
+        "of the [THISMODULE] binary.",
         "Note that velocities are only supported in",
         "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
 
@@ -657,18 +658,18 @@ int gmx_trjconv(int argc, char *argv[])
 
         "It is not always possible to use combinations of [TT]-pbc[tt],",
         "[TT]-fit[tt], [TT]-ur[tt] and [TT]-center[tt] to do exactly what",
-        "you want in one call to [TT]trjconv[tt]. Consider using multiple",
+        "you want in one call to [THISMODULE]. Consider using multiple",
         "calls, and check out the GROMACS website for suggestions.[PAR]",
 
         "With [TT]-dt[tt], it is possible to reduce the number of ",
         "frames in the output. This option relies on the accuracy of the times",
         "in your input trajectory, so if these are inaccurate use the",
         "[TT]-timestep[tt] option to modify the time (this can be done",
-        "simultaneously). For making smooth movies, the program [TT]g_filter[tt]",
+        "simultaneously). For making smooth movies, the program [gmx-filter]",
         "can reduce the number of frames while using low-pass frequency",
         "filtering, this reduces aliasing of high frequency motions.[PAR]",
 
-        "Using [TT]-trunc[tt] [TT]trjconv[tt] can truncate [TT].trj[tt] in place, i.e.",
+        "Using [TT]-trunc[tt] [THISMODULE] can truncate [TT].trj[tt] in place, i.e.",
         "without copying the file. This is useful when a run has crashed",
         "during disk I/O (i.e. full disk), or when two contiguous",
         "trajectories must be concatenated without having double frames.[PAR]",

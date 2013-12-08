@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -76,16 +76,49 @@ init_data_pos(int npar, gmx_ana_selparam_t *param);
 /** Sets the position calculation collection for position evaluation selection methods. */
 static void
 set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data);
-/** Initializes position evaluation keywords. */
+/*! \brief
+ * Initializes position evaluation keywords.
+ *
+ * \param[in] top   Not used.
+ * \param[in] npar  Not used.
+ * \param[in] param Not used.
+ * \param[in,out] data  Should point to \c t_methoddata_pos.
+ * \returns       0 on success, a non-zero error code on error.
+ *
+ * The \c t_methoddata_pos::type field should have been initialized
+ * externally using _gmx_selelem_set_kwpos_type().
+ */
 static void
 init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/** Initializes the \p cog selection method. */
+/*! Initializes the \p cog selection method.
+ *
+ * \param[in]     top   Topology data structure.
+ * \param[in]     npar  Not used.
+ * \param[in]     param Not used.
+ * \param[in,out] data  Should point to \c t_methoddata_pos.
+ * \returns       0 on success, a non-zero error code on error.
+ */
 static void
 init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/** Initializes the \p cog selection method. */
+/*! \brief
+ * Initializes the \p cog selection method.
+ *
+ * \param[in]     top   Topology data structure.
+ * \param[in]     npar  Not used.
+ * \param[in]     param Not used.
+ * \param[in,out] data  Should point to \c t_methoddata_pos.
+ * \returns       0 on success, a non-zero error code on error.
+ */
 static void
 init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/** Initializes output for position evaluation selection methods. */
+/*! \brief
+ * Initializes output for position evaluation selection methods.
+ *
+ * \param[in]     top   Topology data structure.
+ * \param[in,out] out   Pointer to output data structure.
+ * \param[in,out] data  Should point to \c t_methoddata_pos.
+ * \returns       0 for success.
+ */
 static void
 init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the data allocated for position evaluation selection methods. */
@@ -93,8 +126,7 @@ static void
 free_data_pos(void *data);
 /** Evaluates position evaluation selection methods. */
 static void
-evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-             gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+evaluate_pos(t_topology * /* top */, t_trxframe *fr, t_pbc *pbc, gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for position keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_pos[] = {
@@ -246,18 +278,8 @@ _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
     }
 }
 
-/*!
- * \param[in] top   Not used.
- * \param[in] npar  Not used.
- * \param[in] param Not used.
- * \param[in,out] data  Should point to \c t_methoddata_pos.
- * \returns       0 on success, a non-zero error code on error.
- *
- * The \c t_methoddata_pos::type field should have been initialized
- * externally using _gmx_selelem_set_kwpos_type().
- */
 static void
-init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_kwpos(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -273,15 +295,8 @@ init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 
-/*!
- * \param[in]     top   Topology data structure.
- * \param[in]     npar  Not used.
- * \param[in]     param Not used.
- * \param[in,out] data  Should point to \c t_methoddata_pos.
- * \returns       0 on success, a non-zero error code on error.
- */
 static void
-init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_cog(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -290,15 +305,8 @@ init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 
-/*!
- * \param[in]     top   Topology data structure.
- * \param[in]     npar  Not used.
- * \param[in]     param Not used.
- * \param[in,out] data  Should point to \c t_methoddata_pos.
- * \returns       0 on success, a non-zero error code on error.
- */
 static void
-init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_com(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -308,14 +316,8 @@ init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 
-/*!
- * \param[in]     top   Topology data structure.
- * \param[in,out] out   Pointer to output data structure.
- * \param[in,out] data  Should point to \c t_methoddata_pos.
- * \returns       0 for success.
- */
 static void
-init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_pos(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -346,8 +348,8 @@ free_data_pos(void *data)
  * in \c t_methoddata_pos::g and stores the results in \p out->u.p.
  */
 static void
-evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-             gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_pos(t_topology * /* top */, t_trxframe *fr, t_pbc *pbc,
+             gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 

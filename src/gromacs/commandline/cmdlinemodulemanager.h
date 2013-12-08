@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -50,12 +50,18 @@
 namespace gmx
 {
 
+class CommandLineModuleGroup;
 class CommandLineModuleInterface;
 class ProgramInfo;
 
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
     CommandLineModulePointer;
+
+namespace internal
+{
+class CommandLineModuleGroupData;
+}   // namespace internal
 
 /*! \brief
  * Implements a wrapper command-line interface for multiple modules.
@@ -182,6 +188,24 @@ class CommandLineModuleManager
         void setQuiet(bool bQuiet);
 
         /*! \brief
+         * Makes the manager always run a single module.
+         *
+         * \param     module  Module to run.
+         *
+         * This method disables all mechanisms for selecting a module, and
+         * directly passes all command-line arguments to \p module.
+         * Help arguments are an exception: these are still recognized by the
+         * manager and translated into a call to
+         * CommandLineModuleInterface::writeHelp().
+         *
+         * This is public mainly for unit testing purposes; for other code,
+         * runAsMainSingleModule() typically provides the desired
+         * functionality.
+         *
+         * Does not throw.
+         */
+        void setSingleModule(CommandLineModuleInterface *module);
+        /*! \brief
          * Adds a given module to this manager.
          *
          * \param   module  Module to add.
@@ -235,7 +259,20 @@ class CommandLineModuleManager
         }
 
         /*! \brief
-         * Make given help topic available through the manager's help module.
+         * Adds a group for modules to use in help output.
+         *
+         * \param[in] title  Short title for the group.
+         * \returns   Handle that can be used to add modules to the group.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Creates a group that is used to structure the list of all modules in
+         * help output.  Modules are added to the group using the returned
+         * object.
+         */
+        CommandLineModuleGroup addModuleGroup(const char *title);
+
+        /*! \brief
+         * Makes given help topic available through the manager's help module.
          *
          * \param[in]  topic  Help topic to add.
          * \throws     std::bad_alloc if out of memory.
@@ -263,6 +300,58 @@ class CommandLineModuleManager
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
+};
+
+/*! \brief
+ * Handle to add content to a group added with
+ * CommandLineModuleManager::addModuleGroup().
+ *
+ * This class only provides a public interface to construct a module group for
+ * CommandLineModuleManager, and has semantics similar to a pointer: copies all
+ * point to the same group.  The actual state of the group is maintained in an
+ * internal implementation class.
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
+class CommandLineModuleGroup
+{
+    public:
+        /*! \cond internal */
+        //! Shorthand for the implementation type that holds all the data.
+        typedef internal::CommandLineModuleGroupData Impl;
+
+        //! Creates a new group (only called by CommandLineModuleManager).
+        explicit CommandLineModuleGroup(Impl *impl) : impl_(impl) {}
+        //! \endcond
+
+        /*! \brief
+         * Adds a module to this group.
+         *
+         * \param[in] name  Name of the module.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This works as addModuleWithDescription(), but uses the short
+         * description of the module itself as the description.
+         *
+         * \see addModuleWithDescription()
+         */
+        void addModule(const char *name);
+        /*! \brief
+         * Adds a module to this group with a custom description.
+         *
+         * \param[in] name        Name of the module.
+         * \param[in] description Description of the module in this group.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * \p name must name a module added into the CommandLineModuleManager.
+         * It is possible to add the same module into multiple groups.
+         */
+        void addModuleWithDescription(const char *name, const char *description);
+
+    private:
+        //! Pointer to the data owned by CommandLineModuleManager.
+        Impl                     *impl_;
 };
 
 } // namespace gmx

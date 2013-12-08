@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -44,15 +45,16 @@
 #include "nonbonded.h"
 #include "nb_kernel.h"
 #include "nrnb.h"
+#include "nb_free_energy.h"
 
 void
-gmx_nb_free_energy_kernel(t_nblist *                nlist,
-                          rvec *                    xx,
-                          rvec *                    ff,
-                          t_forcerec *              fr,
-                          t_mdatoms *               mdatoms,
-                          nb_kernel_data_t *        kernel_data,
-                          t_nrnb *                  nrnb)
+gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
+                          rvec * gmx_restrict              xx,
+                          rvec * gmx_restrict              ff,
+                          t_forcerec * gmx_restrict        fr,
+                          const t_mdatoms * gmx_restrict   mdatoms,
+                          nb_kernel_data_t * gmx_restrict  kernel_data,
+                          t_nrnb * gmx_restrict            nrnb)
 {
 
 #define  STATE_A  0
@@ -76,32 +78,32 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
     real          rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV;
     real          sigma2[NSTATES], sigma_pow[NSTATES], sigma_powm2[NSTATES], rs, rs2;
-    int           do_coultab, do_vdwtab, do_tab, tab_elemsize;
+    int           do_tab, tab_elemsize;
     int           n0, n1C, n1V, nnn;
     real          Y, F, G, H, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, VV, FF;
     int           icoul, ivdw;
     int           nri;
-    int *         iinr;
-    int *         jindex;
-    int *         jjnr;
-    int *         shift;
-    int *         gid;
-    int *         typeA;
-    int *         typeB;
+    const int *   iinr;
+    const int *   jindex;
+    const int *   jjnr;
+    const int *   shift;
+    const int *   gid;
+    const int *   typeA;
+    const int *   typeB;
     int           ntype;
-    real *        shiftvec;
+    const real *  shiftvec;
     real          dvdl_part;
     real *        fshift;
     real          tabscale;
-    real *        VFtab;
-    real *        x;
+    const real *  VFtab;
+    const real *  x;
     real *        f;
     real          facel, krf, crf;
-    real *        chargeA;
-    real *        chargeB;
+    const real *  chargeA;
+    const real *  chargeB;
     real          sigma6_min, sigma6_def, lam_power, sc_power, sc_r_power;
     real          alpha_coul, alpha_vdw, lambda_coul, lambda_vdw, ewc;
-    real *        nbfp;
+    const real *  nbfp;
     real *        dvdl;
     real *        Vv;
     real *        Vc;
@@ -109,15 +111,14 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     real          rcoulomb, rvdw, sh_invrc6;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff;
     real          rcutoff, rcutoff2, rswitch, d, d2, swV3, swV4, swV5, swF2, swF3, swF4, sw, dsw, rinvcorr;
+    const real *  tab_ewald_F;
+    const real *  tab_ewald_V;
+    real          tab_ewald_scale, tab_ewald_halfsp;
 
     x                   = xx[0];
     f                   = ff[0];
 
     fshift              = fr->fshift[0];
-    Vc                  = kernel_data->energygrp_elec;
-    Vv                  = kernel_data->energygrp_vdw;
-    tabscale            = kernel_data->table_elec_vdw->scale;
-    VFtab               = kernel_data->table_elec_vdw->data;
 
     nri                 = nlist->nri;
     iinr                = nlist->iinr;
@@ -134,11 +135,15 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     facel               = fr->epsfac;
     krf                 = fr->k_rf;
     crf                 = fr->c_rf;
-    ewc                 = fr->ewaldcoeff;
+    ewc                 = fr->ewaldcoeff_q;
+    Vc                  = kernel_data->energygrp_elec;
     typeA               = mdatoms->typeA;
     typeB               = mdatoms->typeB;
     ntype               = fr->ntype;
     nbfp                = fr->nbfp;
+    Vv                  = kernel_data->energygrp_vdw;
+    tabscale            = kernel_data->table_elec_vdw->scale;
+    VFtab               = kernel_data->table_elec_vdw->data;
     lambda_coul         = kernel_data->lambda[efptCOUL];
     lambda_vdw          = kernel_data->lambda[efptVDW];
     dvdl                = kernel_data->dvdl;
@@ -153,6 +158,12 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     rcoulomb            = fr->rcoulomb;
     rvdw                = fr->rvdw;
     sh_invrc6           = fr->ic->sh_invrc6;
+
+    /* Ewald (PME) reciprocal force and energy quadratic spline tables */
+    tab_ewald_F         = fr->ic->tabq_coul_F;
+    tab_ewald_V         = fr->ic->tabq_coul_V;
+    tab_ewald_scale     = fr->ic->tabq_scale;
+    tab_ewald_halfsp    = 0.5/tab_ewald_scale;
 
     if (fr->coulomb_modifier == eintmodPOTSWITCH || fr->vdw_modifier == eintmodPOTSWITCH)
     {
@@ -216,10 +227,8 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
 
     /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
 
-    do_coultab = (icoul == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE);
-    do_vdwtab  = (ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
-
-    do_tab = do_coultab || do_vdwtab;
+    do_tab = (icoul == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE ||
+              ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
 
     /* we always use the combined table here */
     tab_elemsize = 12;
@@ -385,13 +394,13 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                             case GMX_NBKERNEL_ELEC_EWALD:
                                 /* simple cutoff (yes, ewald is done all on direct space for free energy) */
                                 Vcoul[i]   = qq[i]*rinvC;
-                                FscalC[i]  = Vcoul[i]*rpinvC;
+                                FscalC[i]  = Vcoul[i];
                                 break;
 
                             case GMX_NBKERNEL_ELEC_REACTIONFIELD:
                                 /* reaction-field */
-                                Vcoul[i]   = qq[i]*(rinvC+krf*rC*rC-crf);
-                                FscalC[i]  = qq[i]*(rinvC*rpinvC-2.0*krf);
+                                Vcoul[i]   = qq[i]*(rinvC + krf*rC*rC-crf);
+                                FscalC[i]  = qq[i]*(rinvC - 2.0*krf*rC*rC);
                                 break;
 
                             case GMX_NBKERNEL_ELEC_CUBICSPLINETABLE:
@@ -405,7 +414,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 VV         = Y+epsC*Fp;
                                 FF         = Fp+Geps+2.0*Heps2;
                                 Vcoul[i]   = qq[i]*VV;
-                                FscalC[i]  = -qq[i]*tabscale*FF*rC*rpinvC;
+                                FscalC[i]  = -qq[i]*tabscale*FF*rC;
                                 break;
 
                             case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
@@ -459,9 +468,9 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 }
                                 else
                                 {
-                                    Vvdw[i]          = Vvdw12*(1.0/12.0)-Vvdw6*(1.0/6.0);
+                                    Vvdw[i]          = Vvdw12*(1.0/12.0) - Vvdw6*(1.0/6.0);
                                 }
-                                FscalV[i]        = (Vvdw12-Vvdw6)*rpinvV;
+                                FscalV[i]        = Vvdw12 - Vvdw6;
                                 break;
 
                             case GMX_NBKERNEL_VDW_BUCKINGHAM:
@@ -480,7 +489,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 VV         = Y+epsV*Fp;
                                 FF         = Fp+Geps+2.0*Heps2;
                                 Vvdw[i]   += c6[i]*VV;
-                                FscalV[i] -= c6[i]*tabscale*FF*rV*rpinvV;
+                                FscalV[i] -= c6[i]*tabscale*FF*rV;
 
                                 /* repulsion */
                                 Y          = VFtab[nnn+4];
@@ -491,7 +500,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 VV         = Y+epsV*Fp;
                                 FF         = Fp+Geps+2.0*Heps2;
                                 Vvdw[i]   += c12[i]*VV;
-                                FscalV[i] -= c12[i]*tabscale*FF*rV*rpinvV;
+                                FscalV[i] -= c12[i]*tabscale*FF*rV;
                                 break;
 
                             case GMX_NBKERNEL_VDW_NONE:
@@ -519,6 +528,14 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                             Vvdw[i]          = (rV < rvdw) ? Vvdw[i] : 0.0;
                         }
                     }
+
+                    /* FscalC (and FscalV) now contain: dV/drC * rC
+                     * Now we multiply by rC^-p, so it will be: dV/drC * rC^1-p
+                     * Further down we first multiply by r^p-2 and then by
+                     * the vector r, which in total gives: dV/drC * (r/rC)^1-p
+                     */
+                    FscalC[i] *= rpinvC;
+                    FscalV[i] *= rpinvV;
                 }
             }
 
@@ -527,27 +544,20 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
             if (icoul == GMX_NBKERNEL_ELEC_EWALD &&
                 !(bExactElecCutoff && r >= rcoulomb))
             {
-                /* because we compute the softcore normally,
-                   we have to remove the ewald short range portion. Done outside of
-                   the states loop because this part doesn't depend on the scaled R */
+                /* Because we compute the soft-core normally,
+                 * we have to remove the Ewald short range portion.
+                 * Done outside of the states loop because this part
+                 * doesn't depend on the scaled R.
+                 */
+                real rs, frac, f_lr;
+                int  ri;
 
-#ifdef GMX_DOUBLE
-                /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
-#define         R_ERF_R_INACC 0.006
-#else
-                /* Relative accuracy at R_ERF_R_INACC of 2e-5 */
-#define         R_ERF_R_INACC 0.1
-#endif
-                if (ewc*r > R_ERF_R_INACC)
-                {
-                    VV    = gmx_erf(ewc*r)*rinv;
-                    FF    = rinv*rinv*(VV - ewc*M_2_SQRTPI*exp(-ewc*ewc*rsq));
-                }
-                else
-                {
-                    VV    = ewc*M_2_SQRTPI;
-                    FF    = ewc*ewc*ewc*M_2_SQRTPI*(2.0/3.0 - 0.4*ewc*ewc*rsq);
-                }
+                rs     = rsq*rinv*tab_ewald_scale;
+                ri     = (int)rs;
+                frac   = rs - ri;
+                f_lr   = (1 - frac)*tab_ewald_F[ri] + frac*tab_ewald_F[ri+1];
+                FF     = f_lr*rinv;
+                VV     = tab_ewald_V[ri] - tab_ewald_halfsp*frac*(tab_ewald_F[ri] + f_lr);
 
                 for (i = 0; i < NSTATES; i++)
                 {

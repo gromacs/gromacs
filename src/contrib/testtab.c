@@ -49,8 +49,6 @@ int main(int argc,char *argv[])
   fr->rc = 0.9;
   fr->eeltype = eelTWIN;
   box[XX]=box[YY]=box[ZZ]=1.0;
-  
-  set_shift_consts(stdout,fr->r1,fr->rc,box,fr);
 
   make_tables(fr);
   

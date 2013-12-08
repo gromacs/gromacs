@@ -46,9 +46,10 @@
 #include "names.h"
 #include "macros.h"
 #include "gmx_fatal.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "vec.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -496,7 +497,7 @@ int gmx_eneconv(int argc, char *argv[])
         "in the later file is used. By specifying [TT]-settime[tt] you will be",
         "asked for the start time of each file. The input files are taken",
         "from the command line,",
-        "such that the command [TT]eneconv -f *.edr -o fixed.edr[tt] should do",
+        "such that the command [TT]gmx eneconv -f *.edr -o fixed.edr[tt] should do",
         "the trick. [PAR]",
         "With [IT]one file[it] specified for [TT]-f[tt]:[BR]",
         "Reads one energy file and writes another, applying the [TT]-dt[tt],",

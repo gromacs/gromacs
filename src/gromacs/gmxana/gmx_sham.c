@@ -44,15 +44,15 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "readinp.h"
 #include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
 #include "xvgr.h"
 #include "physics.h"
-#include "pdbio.h"
-#include "matio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
 
@@ -925,9 +925,9 @@ static void ehisto(const char *fh, int n, real **enerT, const output_env_t oenv)
 int gmx_sham(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_sham[tt] makes multi-dimensional free-energy, enthalpy and entropy plots.",
-        "[TT]g_sham[tt] reads one or more [TT].xvg[tt] files and analyzes data sets.",
-        "The basic purpose of [TT]g_sham[tt] is to plot Gibbs free energy landscapes",
+        "[THISMODULE] makes multi-dimensional free-energy, enthalpy and entropy plots.",
+        "[THISMODULE] reads one or more [TT].xvg[tt] files and analyzes data sets.",
+        "The basic purpose of [THISMODULE] is to plot Gibbs free energy landscapes",
         "(option [TT]-ls[tt])",
         "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt]),",
         "but it can also",

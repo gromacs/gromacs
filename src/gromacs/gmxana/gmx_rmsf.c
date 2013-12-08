@@ -45,15 +45,16 @@
 #include "string2.h"
 #include "vec.h"
 #include "index.h"
-#include "pdbio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "do_fit.h"
 #include "princ.h"
 #include "rmpbc.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
@@ -188,7 +189,7 @@ void print_dir(FILE *fp, real *Uaver)
 int gmx_rmsf(int argc, char *argv[])
 {
     const char      *desc[] = {
-        "[TT]g_rmsf[tt] computes the root mean square fluctuation (RMSF, i.e. standard ",
+        "[THISMODULE] computes the root mean square fluctuation (RMSF, i.e. standard ",
         "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
         "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
         "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
@@ -198,7 +199,7 @@ int gmx_rmsf(int argc, char *argv[])
         "coordinates.[PAR]",
         "With the option [TT]-od[tt] the root mean square deviation with",
         "respect to the reference structure is calculated.[PAR]",
-        "With the option [TT]-aniso[tt], [TT]g_rmsf[tt] will compute anisotropic",
+        "With the option [TT]-aniso[tt], [THISMODULE] will compute anisotropic",
         "temperature factors and then it will also output average coordinates",
         "and a [TT].pdb[tt] file with ANISOU records (corresonding to the [TT]-oq[tt]",
         "or [TT]-ox[tt] option). Please note that the U values",
