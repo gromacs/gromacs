@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-#  GMX_TEST_AVX_GCC_MASKLOAD_BUG(VARIABLE)
+#  GMX_TEST_AVX_GCC_MASKLOAD_BUG(VARIABLE AVX_CFLAGS)
 #
 #  VARIABLE will be set if the compiler is a buggy version
 #  of GCC (prior to 4.5.3, and maybe 4.6) that has an incorrect second
@@ -41,9 +41,9 @@
 #  You need to use this variable in a cmakedefine, and then handle
 #  the case separately in your code - no automatic cure, unfortunately.
 #
-MACRO(GMX_TEST_AVX_GCC_MASKLOAD_BUG AVX_CFLAGS VARIABLE)
+MACRO(GMX_TEST_AVX_GCC_MASKLOAD_BUG VARIABLE AVX_CFLAGS)
     IF(NOT DEFINED ${VARIABLE})
-        MESSAGE(STATUS "Checking for gcc AVX maskload bug") 
+        MESSAGE(STATUS "Checking for gcc AVX maskload bug")
         # some compilers like clang accept both cases, 
         # so first try a normal compile to avoid flagging those as buggy.
         TRY_COMPILE(${VARIABLE}_COMPILEOK "${CMAKE_BINARY_DIR}"
@@ -65,7 +65,7 @@ MACRO(GMX_TEST_AVX_GCC_MASKLOAD_BUG AVX_CFLAGS VARIABLE)
             ENDIF()
         ENDIF()
     ENDIF(NOT DEFINED ${VARIABLE})
-ENDMACRO(GMX_TEST_AVX_GCC_MASKLOAD_BUG VARIABLE)
+ENDMACRO()
 
 
 

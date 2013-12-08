@@ -193,11 +193,11 @@ macro(gmx_gpu_setup)
 
     # no OpenMP is no good!
     if(NOT GMX_OPENMP)
-        message(WARNING "
-    To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading.
-    Without OpenMP a single CPU core can be used with a GPU which is not optimal.
-    Note that with MPI multiple processes can be forced to use a single GPU, but this
-    typically inefficient. Note that you need to set both C and C++ compilers that
-    support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
+        message(WARNING 
+            "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. "
+            "Without OpenMP a single CPU core can be used with a GPU which is not optimal. "
+            "Note that with MPI multiple processes can be forced to use a single GPU, but this "
+            "is typically inefficient. Note that you need to set both C and C++ compilers that "
+            "support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
     endif()
 endmacro()
