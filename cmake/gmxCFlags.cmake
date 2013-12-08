@@ -55,7 +55,9 @@ MACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 
 
-# This is the actual exported function to be called 
+
+
+# Macro to test a large number of different cflags for different compilers
 MACRO(gmx_c_flags)
 
     include(CheckCCompilerFlag)
