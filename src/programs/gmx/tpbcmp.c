@@ -71,14 +71,14 @@ static void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
     }
 }
 
-static void cmp_gmx_large_int(FILE *fp, const char *s, gmx_large_int_t i1, gmx_large_int_t i2)
+static void cmp_gmx_large_int(FILE *fp, const char *s, gmx_int64_t i1, gmx_int64_t i2)
 {
     if (i1 != i2)
     {
         fprintf(fp, "%s (", s);
-        fprintf(fp, gmx_large_int_pfmt, i1);
+        fprintf(fp, "%"GMX_PRId64, i1);
         fprintf(fp, " - ");
-        fprintf(fp, gmx_large_int_pfmt, i2);
+        fprintf(fp, "%"GMX_PRId64, i2);
         fprintf(fp, ")\n");
     }
 }

@@ -67,7 +67,7 @@ static void insert_ion(int nsa, int *nwater,
     int             i, ei, nw;
     real            rmin2;
     rvec            dx;
-    gmx_large_int_t maxrand;
+    gmx_int64_t     maxrand;
 
     ei       = -1;
     nw       = *nwater;

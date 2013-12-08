@@ -792,7 +792,7 @@ static void write_edo_flood(t_edpar *edi, FILE *fp, real rmsd)
 
 
 /* From flood.xproj compute the Vfl(x) at this point */
-static real flood_energy(t_edpar *edi, gmx_large_int_t step)
+static real flood_energy(t_edpar *edi, gmx_int64_t step)
 {
     /* compute flooding energy Vfl
        Vfl = Efl * exp( - \frac {kT} {2Efl alpha^2} * sum_i { \lambda_i c_i^2 } )
@@ -940,7 +940,7 @@ static void do_single_flood(
         rvec            x[],
         rvec            force[],
         t_edpar        *edi,
-        gmx_large_int_t step,
+        gmx_int64_t     step,
         matrix          box,
         t_commrec      *cr,
         gmx_bool        bNS) /* Are we in a neighbor searching step? */
@@ -1047,7 +1047,7 @@ extern void do_flood(
         rvec             force[], /* forcefield forces, to these the flooding forces are added */
         gmx_edsam_t      ed,      /* ed data structure contains all ED and flooding groups */
         matrix           box,     /* the box */
-        gmx_large_int_t  step,    /* The relative time step since ir->init_step is already subtracted */
+        gmx_int64_t      step,    /* The relative time step since ir->init_step is already subtracted */
         gmx_bool         bNS)     /* Are we in a neighbor searching step? */
 {
     t_edpar *edi;
@@ -1940,7 +1940,7 @@ static inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec 
 }
 
 
-static void do_linfix(rvec *xcoll, t_edpar *edi, gmx_large_int_t step)
+static void do_linfix(rvec *xcoll, t_edpar *edi, gmx_int64_t step)
 {
     int  i, j;
     real proj, add;
@@ -2190,7 +2190,7 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
 }
 
 
-static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_large_int_t step)
+static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_int64_t step)
 {
     int i;
 
@@ -2985,7 +2985,7 @@ void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
 
 
 void do_edsam(t_inputrec     *ir,
-              gmx_large_int_t step,
+              gmx_int64_t     step,
               t_commrec      *cr,
               rvec            xs[], /* The local current positions on this processor */
               rvec            v[],  /* The velocities */

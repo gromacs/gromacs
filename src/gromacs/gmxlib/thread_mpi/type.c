@@ -151,6 +151,15 @@
 #define INTTYPE 1
 #include "tmpi_ops.h"
 
+#ifdef _MSC_VER
+#define TYPE __int64
+#else
+#define TYPE int64_t
+#endif
+#define TYPENM INT64_T
+#define INTTYPE 1
+#include "tmpi_ops.h"
+
 
 /* These are the fundamental data types. They exist as global variables */
 tmpi_dt tmpi_char    = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
@@ -174,7 +183,7 @@ tmpi_dt tmpi_double  = {sizeof(double),            oplist_DOUBLE,   0, NULL, TRU
 tmpi_dt tmpi_l_double = {sizeof(long double),       oplist_L_DOUBLE, 0, NULL, TRUE};
 tmpi_dt tmpi_byte    = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
 tmpi_dt tmpi_pointer = {sizeof(void*),             NULL,            0, NULL, TRUE};
-
+tmpi_dt tmpi_int64_t = {8,                         oplist_INT64_T,  0, NULL, TRUE};
 
 
 /* the variable types as they are referred to from MPI */
@@ -204,6 +213,7 @@ const tMPI_Datatype TMPI_BYTE               = &tmpi_byte;
 
 const tMPI_Datatype TMPI_POINTER            = &tmpi_pointer;
 
+const tMPI_Datatype TMPI_INT64_T            = &tmpi_int64_t;
 
 
 

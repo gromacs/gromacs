@@ -265,7 +265,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     gmx_fio_fclose(out);
 }
 
-static void dump_confs(FILE *fplog, gmx_large_int_t step, gmx_mtop_t *mtop,
+static void dump_confs(FILE *fplog, gmx_int64_t step, gmx_mtop_t *mtop,
                        int start, int homenr, t_commrec *cr,
                        rvec x[], rvec xprime[], matrix box)
 {
@@ -307,7 +307,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
                    t_idef *idef, t_inputrec *ir, gmx_ekindata_t *ekind,
                    t_commrec *cr,
-                   gmx_large_int_t step, int delta_step,
+                   gmx_int64_t step, int delta_step,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -583,7 +583,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             {
                 char buf[256];
                 sprintf(buf,
-                        "\nstep " gmx_large_int_pfmt ": Water molecule starting at atom %d can not be "
+                        "\nstep " "%"GMX_PRId64 ": Water molecule starting at atom %d can not be "
                         "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
                         step, ddglatnr(cr->dd, settle->iatoms[settle_error*(1+NRAL(F_SETTLE))+1]));
                 if (fplog)

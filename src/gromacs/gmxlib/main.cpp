@@ -165,10 +165,10 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
 }
 
 void check_multi_large_int(FILE *log, const gmx_multisim_t *ms,
-                           gmx_large_int_t val, const char *name,
+                           gmx_int64_t val, const char *name,
                            gmx_bool bQuiet)
 {
-    gmx_large_int_t  *ibuf;
+    gmx_int64_t      *ibuf;
     int               p;
     gmx_bool          bCompatible;
 
@@ -210,7 +210,7 @@ void check_multi_large_int(FILE *log, const gmx_multisim_t *ms,
                 char strbuf[255];
                 /* first make the format string */
                 snprintf(strbuf, 255, "  subsystem %%d: %s\n",
-                         gmx_large_int_pfmt);
+                         "%" GMX_PRId64);
                 fprintf(log, strbuf, p, ibuf[p]);
             }
         }

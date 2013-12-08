@@ -706,7 +706,7 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused 
 #endif
 }
 
-void gmx_sumli(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const t_commrec gmx_unused *cr)
+void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gmx_unused *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumli");
@@ -717,23 +717,23 @@ void gmx_sumli(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const t_commre
         /* Use two step summing */
         if (cr->nc.rank_intra == 0)
         {
-            MPI_Reduce(MPI_IN_PLACE, r, nr, GMX_MPI_LARGE_INT, MPI_SUM, 0,
+            MPI_Reduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, 0,
                        cr->nc.comm_intra);
             /* Sum with the buffers reversed */
-            MPI_Allreduce(MPI_IN_PLACE, r, nr, GMX_MPI_LARGE_INT, MPI_SUM,
+            MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM,
                           cr->nc.comm_inter);
         }
         else
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, GMX_MPI_LARGE_INT, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, NULL, nr, MPI_INT64_T, MPI_SUM, 0, cr->nc.comm_intra);
         }
-        MPI_Bcast(r, nr, GMX_MPI_LARGE_INT, 0, cr->nc.comm_intra);
+        MPI_Bcast(r, nr, MPI_INT64_T, 0, cr->nc.comm_intra);
     }
     else
     {
-        MPI_Allreduce(MPI_IN_PLACE, r, nr, GMX_MPI_LARGE_INT, MPI_SUM, cr->mpi_comm_mygroup);
+        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, cr->mpi_comm_mygroup);
     }
 #else
     int i;
@@ -746,19 +746,19 @@ void gmx_sumli(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const t_commre
     if (cr->nc.bUse)
     {
         /* Use two step summing */
-        MPI_Allreduce(r, cr->mpb->libuf, nr, GMX_MPI_LARGE_INT, MPI_SUM,
+        MPI_Allreduce(r, cr->mpb->libuf, nr, MPI_INT64_T, MPI_SUM,
                       cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0)
         {
             /* Sum with the buffers reversed */
-            MPI_Allreduce(cr->mpb->libuf, r, nr, GMX_MPI_LARGE_INT, MPI_SUM,
+            MPI_Allreduce(cr->mpb->libuf, r, nr, MPI_INT64_T, MPI_SUM,
                           cr->nc.comm_inter);
         }
-        MPI_Bcast(r, nr, GMX_MPI_LARGE_INT, 0, cr->nc.comm_intra);
+        MPI_Bcast(r, nr, MPI_INT64_T, 0, cr->nc.comm_intra);
     }
     else
     {
-        MPI_Allreduce(r, cr->mpb->libuf, nr, GMX_MPI_LARGE_INT, MPI_SUM,
+        MPI_Allreduce(r, cr->mpb->libuf, nr, MPI_INT64_T, MPI_SUM,
                       cr->mpi_comm_mygroup);
         for (i = 0; i < nr; i++)
         {
@@ -860,13 +860,13 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
 #endif
 }
 
-void gmx_sumli_sim(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
+void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_sumli_sim");
 #else
 #if defined(MPI_IN_PLACE_EXISTS)
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, GMX_MPI_LARGE_INT, MPI_SUM,
+    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM,
                   ms->mpi_comm_masters);
 #else
     /* this is thread-unsafe, but it will do for now: */
@@ -877,7 +877,7 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_large_int_t gmx_unused r[], const gmx_
         ms->mpb->libuf_alloc = nr;
         srenew(ms->mpb->libuf, ms->mpb->libuf_alloc);
     }
-    MPI_Allreduce(r, ms->mpb->libuf, nr, GMX_MPI_LARGE_INT, MPI_SUM,
+    MPI_Allreduce(r, ms->mpb->libuf, nr, MPI_INT64_T, MPI_SUM,
                   ms->mpi_comm_masters);
     for (i = 0; i < nr; i++)
     {

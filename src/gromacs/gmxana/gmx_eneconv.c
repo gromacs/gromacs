@@ -347,8 +347,8 @@ static void copy_ee(t_energy *src, t_energy *dst, int nre)
     }
 }
 
-static void update_ee(t_energy *lastee, gmx_large_int_t laststep,
-                      t_energy *startee, gmx_large_int_t startstep,
+static void update_ee(t_energy *lastee, gmx_int64_t laststep,
+                      t_energy *startee, gmx_int64_t startstep,
                       t_energy *ee, int step,
                       t_energy *outee, int nre)
 {
@@ -383,8 +383,8 @@ static void update_ee(t_energy *lastee, gmx_large_int_t laststep,
          */
         if (startstep > 0)
         {
-            gmx_large_int_t q = laststep+step;
-            gmx_large_int_t p = startstep+1;
+            gmx_int64_t q = laststep+step;
+            gmx_int64_t p = startstep+1;
             prestart_esum  = startee[i].esum-startee[i].e;
             sigmacorr      = prestart_esum-(p-1)*startee[i].e;
             prestart_sigma = startee[i].eav-
@@ -407,13 +407,13 @@ static void update_ee(t_energy *lastee, gmx_large_int_t laststep,
 }
 
 static void update_ee_sum(int nre,
-                          gmx_large_int_t *ee_sum_step,
-                          gmx_large_int_t *ee_sum_nsteps,
-                          gmx_large_int_t *ee_sum_nsum,
+                          gmx_int64_t *ee_sum_step,
+                          gmx_int64_t *ee_sum_nsteps,
+                          gmx_int64_t *ee_sum_nsum,
                           t_energy *ee_sum,
                           t_enxframe *fr, int out_step)
 {
-    gmx_large_int_t nsteps, nsum, fr_nsum;
+    gmx_int64_t     nsteps, nsum, fr_nsum;
     int             i;
 
     nsteps = *ee_sum_nsteps;
@@ -517,9 +517,9 @@ int gmx_eneconv(int argc, char *argv[])
     gmx_enxnm_t    *enm = NULL;
 #endif
     t_enxframe     *fr, *fro;
-    gmx_large_int_t ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
+    gmx_int64_t     ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
     t_energy       *ee_sum;
-    gmx_large_int_t lastfilestep, laststep, startstep, startstep_file = 0;
+    gmx_int64_t     lastfilestep, laststep, startstep, startstep_file = 0;
     int             noutfr;
     int             nre, nremax, this_nre, nfile, f, i, j, kkk, nset, *set = NULL;
     double          last_t;
@@ -725,8 +725,8 @@ int gmx_eneconv(int argc, char *argv[])
                 }
                 else
                 {
-                    fro->nsum = gmx_large_int_to_int(ee_sum_nsum,
-                                                     "energy average summation");
+                    fro->nsum = gmx_int64_to_int(ee_sum_nsum,
+                                                 "energy average summation");
                     /* Copy the energy sums */
                     for (i = 0; i < nre; i++)
                     {

@@ -73,9 +73,9 @@ void replace_inp_entry(int ninp, t_inpfile *inp,
 int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
              warninp_t wi);
 
-gmx_large_int_t get_egmx_large_int(int *ninp, t_inpfile **inp,
-                                   const char *name, gmx_large_int_t def,
-                                   warninp_t);
+gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
+                       const char *name, gmx_int64_t def,
+                       warninp_t);
 
 double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
                  warninp_t wi);
@@ -98,7 +98,7 @@ int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs);
 #define STYPE(name, var, def)  if ((tmp = get_estr(&ninp, &inp, name, def)) != NULL) strcpy(var, tmp)
 #define STYPENC(name, def) get_estr(&ninp, &inp, name, def)
 #define ITYPE(name, var, def)  var    = get_eint(&ninp, &inp, name, def, wi)
-#define STEPTYPE(name, var, def)  var = get_egmx_large_int(&ninp, &inp, name, def, wi)
+#define STEPTYPE(name, var, def)  var = get_eint64(&ninp, &inp, name, def, wi)
 #define RTYPE(name, var, def)  var    = get_ereal(&ninp, &inp, name, def, wi)
 #define ETYPE(name, var, defs) var    = get_eenum(&ninp, &inp, name, defs)
 #define EETYPE(name, var, defs) var   = get_eeenum(&ninp, &inp, name, defs, wi)

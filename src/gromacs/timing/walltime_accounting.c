@@ -82,7 +82,7 @@ typedef struct gmx_walltime_accounting {
      * with respect to parallelism implementation. */
     int             numOpenMPThreads;
     //! Set by integrators to report the amount of work they did
-    gmx_large_int_t nsteps_done;
+    gmx_int64_t     nsteps_done;
 } t_gmx_walltime_accounting;
 
 /*! \brief Calls system timing routines (e.g. clock_gettime) to get
@@ -184,7 +184,7 @@ walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accountin
 
 void
 walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_accounting,
-                                    gmx_large_int_t             nsteps_done)
+                                    gmx_int64_t                 nsteps_done)
 {
     walltime_accounting->nsteps_done = nsteps_done;
 }

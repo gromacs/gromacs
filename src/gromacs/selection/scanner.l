@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,12 @@
  *
  * \ingroup module_selection
  */
+%top{
+// Required before flex definitions, since it includes <stdint.h>.
+// Otherwise, compilers not strictly C99 get macro redefinition errors,
+// since flex defines INT32_MAX etc. in such cases.
+#include "gromacs/legacyheaders/types/simple.h"
+}
 %{
 #include "gromacs/legacyheaders/string2.h"
 
@@ -53,8 +59,8 @@
 #include "scanner.h"
 #include "scanner_internal.h"
 
-/* This macro is here to make the actions a bit shorter, since nearly every
- * action needs this call. */
+// This macro makes the actions a bit shorter, since nearly every action needs
+// this call.
 #define ADD_TOKEN _gmx_sel_lexer_add_token(yytext, yyleng, state)
 
 %}

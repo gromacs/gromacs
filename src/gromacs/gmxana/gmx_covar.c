@@ -132,7 +132,7 @@ int gmx_covar(int argc, char *argv[])
     real            min, max, *axis;
     int             ntopatoms, step;
     int             natoms, nat, count, nframes0, nframes, nlevels;
-    gmx_large_int_t ndim, i, j, k, l;
+    gmx_int64_t     ndim, i, j, k, l;
     int             WriteXref;
     const char     *fitfile, *trxfile, *ndxfile;
     const char     *eigvalfile, *eigvecfile, *averfile, *logfile;
@@ -266,7 +266,7 @@ int gmx_covar(int argc, char *argv[])
     snew(x, natoms);
     snew(xav, natoms);
     ndim = natoms*DIM;
-    if (sqrt(GMX_LARGE_INT_MAX) < ndim)
+    if (sqrt(GMX_INT64_MAX) < ndim)
     {
         gmx_fatal(FARGS, "Number of degrees of freedoms to large for matrix.\n");
     }

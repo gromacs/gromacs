@@ -166,9 +166,9 @@ gmx_log2(real x)
  *  Returns true when overflow did not occur.
  */
 gmx_bool
-check_int_multiply_for_overflow(gmx_large_int_t  a,
-                                gmx_large_int_t  b,
-                                gmx_large_int_t *result);
+check_int_multiply_for_overflow(gmx_int64_t  a,
+                                gmx_int64_t  b,
+                                gmx_int64_t *result);
 
 static int gmx_greatest_common_divisor(int p, int q)
 {
@@ -176,8 +176,8 @@ static int gmx_greatest_common_divisor(int p, int q)
     while (q != 0)
     {
         tmp = q;
-        q = p % q;
-        p = tmp;
+        q   = p % q;
+        p   = tmp;
     }
     return p;
 }

@@ -162,7 +162,7 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
                               gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir, int pme_flags,
-                              gmx_large_int_t step);
+                              gmx_int64_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
 void gmx_pme_send_finish(t_commrec *cr);
@@ -171,7 +171,7 @@ void gmx_pme_send_finish(t_commrec *cr);
 void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj);
 /* Tell our PME-only node to switch to a new grid size */
 
-void gmx_pme_send_resetcounters(t_commrec *cr, gmx_large_int_t step);
+void gmx_pme_send_resetcounters(t_commrec *cr, gmx_int64_t step);
 /* Tell our PME-only node to reset all cycle and flop counters */
 
 void gmx_pme_receive_f(t_commrec *cr,
@@ -199,7 +199,7 @@ int gmx_pme_recv_params_coords(gmx_pme_pp_t pme_pp,
                                gmx_bool *bFreeEnergy_q, gmx_bool *bFreeEnergy_lj,
                                real *lambda_q, real *lambda_lj,
                                gmx_bool *bEnerVir, int *pme_flags,
-                               gmx_large_int_t *step,
+                               gmx_int64_t *step,
                                ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
 ;
 /* With return value:

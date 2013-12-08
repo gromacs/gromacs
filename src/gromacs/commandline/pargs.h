@@ -61,7 +61,7 @@ typedef struct
     {
         void            *v; /* This is a nasty workaround, to be able to use initialized */
         int             *i; /* arrays */
-        gmx_large_int_t *is;
+        gmx_int64_t     *is;
         real            *r;
         const char     **c; /* Must be pointer to string (when type == etSTR)         */
         /* or null terminated list of enums (when type == etENUM) */
