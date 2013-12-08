@@ -204,7 +204,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
 
 extern void do_force(FILE *log, t_commrec *cr,
                      t_inputrec *inputrec,
-                     gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                      gmx_localtop_t *top,
                      gmx_groups_t *groups,
                      matrix box, rvec x[], history_t *hist,
@@ -241,7 +241,7 @@ void ns(FILE              *fplog,
 /* Call the neighborsearcher */
 
 extern void do_force_lowlevel(FILE         *fplog,
-                              gmx_large_int_t   step,
+                              gmx_int64_t   step,
                               t_forcerec   *fr,
                               t_inputrec   *ir,
                               t_idef       *idef,

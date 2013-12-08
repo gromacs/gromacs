@@ -105,9 +105,9 @@ static void log_action(int bMal, const char *what, const char *file, int line,
 }
 #endif
 
-static char *gmx_large_int_str(gmx_large_int_t i, char *buf)
+static char *gmx_large_int_str(gmx_int64_t i, char *buf)
 {
-    sprintf(buf, gmx_large_int_pfmt, i);
+    sprintf(buf, "%"GMX_PRId64, i);
 
     return buf;
 }
@@ -129,7 +129,7 @@ void *save_malloc(const char *name, const char *file, int line, size_t size)
             gmx_fatal(errno, __FILE__, __LINE__,
                       "Not enough memory. Failed to malloc %s bytes for %s\n"
                       "(called from file %s, line %d)",
-                      gmx_large_int_str((gmx_large_int_t)size, cbuf),
+                      gmx_large_int_str((gmx_int64_t)size, cbuf),
                       name, file, line);
         }
         (void) memset(p, 0, size);
@@ -169,10 +169,10 @@ void *save_calloc(const char *name, const char *file, int line,
         if ((p = malloc((size_t)nelem*(size_t)elsize)) == NULL)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to calloc %"gmx_large_int_fmt
-                      " elements of size %"gmx_large_int_fmt
+                      "Not enough memory. Failed to calloc %"GMX_PRId64
+                      " elements of size %"GMX_PRId64
                       " for %s\n(called from file %s, line %d)",
-                      (gmx_large_int_t)nelem, (gmx_large_int_t)elsize,
+                      (gmx_int64_t)nelem, (gmx_int64_t)elsize,
                       name, file, line);
         }
         memset(p, 0, (size_t) (nelem * elsize));
@@ -180,10 +180,10 @@ void *save_calloc(const char *name, const char *file, int line,
         if ((p = calloc((size_t)nelem, (size_t)elsize)) == NULL)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to calloc %"gmx_large_int_fmt
-                      " elements of size %"gmx_large_int_fmt
+                      "Not enough memory. Failed to calloc %"GMX_PRId64
+                      " elements of size %"GMX_PRId64
                       " for %s\n(called from file %s, line %d)",
-                      (gmx_large_int_t)nelem, (gmx_large_int_t)elsize, name, file, line);
+                      (gmx_int64_t)nelem, (gmx_int64_t)elsize, name, file, line);
         }
 #endif
     }
@@ -231,7 +231,7 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
             gmx_fatal(errno, __FILE__, __LINE__,
                       "Not enough memory. Failed to realloc %s bytes for %s, %s=%x\n"
                       "(called from file %s, line %d)",
-                      gmx_large_int_str((gmx_large_int_t)size, cbuf),
+                      gmx_large_int_str((gmx_int64_t)size, cbuf),
                       name, name, ptr, file, line);
         }
 #ifdef DEBUG

@@ -52,7 +52,7 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
 
 /* Optimize shell positions */
 int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
-                        gmx_large_int_t mdstep, t_inputrec *inputrec,
+                        gmx_int64_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
                         gmx_localtop_t *top,
                         gmx_constr_t constr,

@@ -56,14 +56,14 @@ gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
 
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */
-gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
-                                    gmx_large_int_t  nsteps)
+gmx_int64_t get_multisim_nsteps(const t_commrec *cr,
+                                    gmx_int64_t  nsteps)
 {
-    gmx_large_int_t steps_out;
+    gmx_int64_t steps_out;
 
     if MASTER(cr)
     {
-        gmx_large_int_t *buf;
+        gmx_int64_t *buf;
         int              s;
 
         snew(buf, cr->ms->nsim);
@@ -86,12 +86,12 @@ gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
         if (steps_out >= 0 && steps_out < nsteps)
         {
             char strbuf[255];
-            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", gmx_large_int_pfmt);
+            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", "%"GMX_PRId64);
             fprintf(stderr, strbuf, cr->ms->sim, steps_out);
         }
     }
     /* broadcast to non-masters */
-    gmx_bcast(sizeof(gmx_large_int_t), &steps_out, cr);
+    gmx_bcast(sizeof(gmx_int64_t), &steps_out, cr);
     return steps_out;
 }
 
@@ -507,7 +507,7 @@ void check_nst_param(FILE *fplog, t_commrec *cr,
     }
 }
 
-void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bRerunMD,
+void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
                          t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[])
 /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
    requiring different logic. */
