@@ -142,11 +142,11 @@ void upd_mdebin(t_mdebin       *md,
 void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
 
-void print_ebin_header(FILE *log, gmx_large_int_t steps, double time, real lamb);
+void print_ebin_header(FILE *log, gmx_int64_t steps, double time, real lamb);
 
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
-                gmx_large_int_t step, double time,
+                gmx_int64_t step, double time,
                 int mode, gmx_bool bCompact,
                 t_mdebin *md, t_fcdata *fcd,
                 gmx_groups_t *groups, t_grpopts *opts);

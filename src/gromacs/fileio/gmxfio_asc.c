@@ -171,8 +171,8 @@ static gmx_bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio,
                                                                           buf));
             break;
         case eioGMX_LARGE_INT:
-            sprintf(strbuf, "%s%s%s", "%", gmx_large_int_fmt, "\n");
-            res = fprintf(fp, strbuf, *((gmx_large_int_t *) item),
+            sprintf(strbuf, "%s%s%s", "%", GMX_PRId64, "\n");
+            res = fprintf(fp, strbuf, *((gmx_int64_t *) item),
                           gmx_fio_dbgstr(fio, desc, buf));
             break;
         case eioUCHAR:
@@ -292,7 +292,7 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
 {
     FILE           *fp = fio->fp;
     int             i, m, res = 0, *iptr, ix;
-    gmx_large_int_t s;
+    gmx_int64_t s;
     double          d, x;
     real           *ptr;
     unsigned char   uc, *ucptr;
@@ -321,10 +321,10 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
             break;
         case eioGMX_LARGE_INT:
             res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN),
-                         gmx_large_int_pfmt, &s);
+                         "%"GMX_PRId64, &s);
             if (item)
             {
-                *((gmx_large_int_t *) item) = s;
+                *((gmx_int64_t *) item) = s;
             }
             break;
         case eioUCHAR:

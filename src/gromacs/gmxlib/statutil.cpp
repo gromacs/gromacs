@@ -195,7 +195,7 @@ int iscan(int argc, char *argv[], int *i)
     return var;
 }
 
-gmx_large_int_t istepscan(int argc, char *argv[], int *i)
+gmx_int64_t istepscan(int argc, char *argv[], int *i)
 {
     const char *const arg = argv[*i];
     if (argc <= (*i)+1)
@@ -204,7 +204,7 @@ gmx_large_int_t istepscan(int argc, char *argv[], int *i)
     }
     const char *const value = argv[++(*i)];
     char             *endptr;
-    gmx_large_int_t   var = str_to_large_int_t(value, &endptr);
+    gmx_int64_t   var = str_to_large_int_t(value, &endptr);
     if (*value == '\0' || *endptr != '\0')
     {
         usage("an integer", arg);

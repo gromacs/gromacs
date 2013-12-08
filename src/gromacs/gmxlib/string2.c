@@ -621,11 +621,11 @@ char **split(char sep, const char *str)
 }
 
 
-gmx_large_int_t
+gmx_int64_t
 str_to_large_int_t(const char *str, char **endptr)
 {
     int              sign = 1;
-    gmx_large_int_t  val  = 0;
+    gmx_int64_t  val  = 0;
     char             ch;
     const char      *p;
 

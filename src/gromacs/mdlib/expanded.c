@@ -261,7 +261,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio)
     return bIfFlat;
 }
 
-static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, gmx_large_int_t step)
+static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, gmx_int64_t step)
 {
 
     int      i, totalsamples;
@@ -363,7 +363,7 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_histor
 }
 
 static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist,
-                              int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_large_int_t step)
+                              int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_int64_t step)
 {
     real     maxdiff = 0.000000001;
     gmx_bool bSufficientSamples;
@@ -1027,7 +1027,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 
 /* print out the weights to the log, along with current state */
 extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                                      int fep_state, int frequency, gmx_large_int_t step)
+                                      int fep_state, int frequency, gmx_int64_t step)
 {
     int         nlim, i, ifep, jfep;
     real        dw, dg, dv, dm, Tprint;
@@ -1209,7 +1209,7 @@ extern void set_mc_state(gmx_rng_t rng, t_state *state)
 
 extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
                                     t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
-                                    gmx_large_int_t step, gmx_rng_t mcrng,
+                                    gmx_int64_t step, gmx_rng_t mcrng,
                                     rvec *v, t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */

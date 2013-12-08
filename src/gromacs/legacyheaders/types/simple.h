@@ -51,6 +51,11 @@
 
 /* Information about integer data type sizes */
 #include <limits.h>
+#include <stdint.h>
+#ifndef _MSC_VER
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,68 +159,17 @@ typedef int             ivec[DIM];
 
 typedef int             imatrix[DIM][DIM];
 
-
-/* For the step count type gmx_large_int_t we aim for 8 bytes (64bit),
- * but we might only be able to get 4 bytes (32bit).
- *
- * We first try to find a type without reyling on any SIZEOF_XXX defines.
- *
- * Avoid using "long int" if we can. This type is really dangerous,
- * since the width frequently depends on compiler options, and they
- * might not be set correctly when (buggy) Cmake is detecting things.
- * Instead, start by looking for "long long", and just go down if we
- * have to (rarely on new systems). /EL 20100810
- */
-#if ( (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT == 8) || (defined LLONG_MAX && LLONG_MAX == 9223372036854775807LL) )
-
-/* Long long int is 64 bit */
-typedef long long int gmx_large_int_t;
-#define gmx_large_int_fmt   "lld"
-#define gmx_large_int_pfmt "%lld"
-#define SIZEOF_GMX_LARGE_INT  8
-#define GMX_LARGE_INT_MAX     9223372036854775807LL
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
-#define GMX_MPI_LARGE_INT MPI_LONG_LONG_INT
-
-#elif ( (defined SIZEOF_LONG_INT && SIZEOF_LONG_INT == 8) || (defined LONG_MAX && LONG_MAX == 9223372036854775807L) )
-
-/* Long int is 64 bit */
-typedef long int gmx_large_int_t;
-#define gmx_large_int_fmt   "ld"
-#define gmx_large_int_pfmt "%ld"
-#define SIZEOF_GMX_LARGE_INT  8
-#define GMX_LARGE_INT_MAX     9223372036854775807LL
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
-#define GMX_MPI_LARGE_INT MPI_LONG_INT
-
-#elif ( (defined SIZEOF_INT && SIZEOF_INT == 8) || (defined INT_MAX && INT_MAX == 9223372036854775807L) )
-
-/* int is 64 bit */
-typedef int gmx_large_int_t;
-#define gmx_large_int_fmt   "d"
-#define gmx_large_int_pfmt  "%d"
-#define SIZEOF_GMX_LARGE_INT  8
-#define GMX_LARGE_INT_MAX     9223372036854775807LL
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
-#define GMX_MPI_LARGE_INT MPI_INT
-
-#elif ( (defined INT_MAX && INT_MAX == 2147483647) || (defined SIZEOF_INT && SIZEOF_INT == 4) )
-
-/* None of the above worked, try a 32 bit integer */
-typedef int gmx_large_int_t;
-#define gmx_large_int_fmt   "d"
-#define gmx_large_int_pfmt "%d"
-#define SIZEOF_GMX_LARGE_INT  4
-#define GMX_LARGE_INT_MAX     2147483647
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1)
-#define GMX_MPI_LARGE_INT MPI_INT
-
+#ifdef _MSC_VER
+typedef __int64 gmx_int64_t;
+#define GMX_PRId64 "I64d"
+#define GMX_INT64_MAX _I64_MAX
+#define GMX_INT64_MIN _I64_MIN
 #else
-
-#error "Cannot find any 32 or 64 bit integer data type. Please extend the gromacs simple.h file!"
-
+typedef int64_t gmx_int64_t;
+#define GMX_PRId64 PRId64
+#define GMX_INT64_MAX INT64_MAX
+#define GMX_INT64_MIN INT64_MIN
 #endif
-
 
 #ifndef gmx_inline
 /* config.h tests for inline definitions and should work on a much wider range
