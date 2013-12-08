@@ -97,8 +97,8 @@ typedef struct
 typedef struct
 {
     int             nr_inputfiles;  /* The number of tpr and mdp input files */
-    gmx_large_int_t orig_sim_steps; /* Number of steps to be done in the real simulation */
-    gmx_large_int_t orig_init_step; /* Init step for the real simulation */
+    gmx_int64_t orig_sim_steps; /* Number of steps to be done in the real simulation */
+    gmx_int64_t orig_init_step; /* Init step for the real simulation */
     real           *rcoulomb;       /* The coulomb radii [0...nr_inputfiles] */
     real           *rvdw;           /* The vdW radii */
     real           *rlist;          /* Neighbourlist cutoff radius */
@@ -188,7 +188,7 @@ enum {
 };
 
 static int parse_logfile(const char *logfile, const char *errfile,
-                         t_perf *perfdata, int test_nr, int presteps, gmx_large_int_t cpt_steps,
+                         t_perf *perfdata, int test_nr, int presteps, gmx_int64_t cpt_steps,
                          int nnodes)
 {
     FILE           *fp;
@@ -203,7 +203,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
     float           dum1, dum2, dum3, dum4;
     int             ndum;
     int             npme;
-    gmx_large_int_t resetsteps     = -1;
+    gmx_int64_t resetsteps     = -1;
     gmx_bool        bFoundResetStr = FALSE;
     gmx_bool        bResetChecked  = FALSE;
 
@@ -243,7 +243,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
         {
             if (strstr(line, matchstrcr) != NULL)
             {
-                sprintf(dumstring, "step %s", gmx_large_int_pfmt);
+                sprintf(dumstring, "step %s", "%"GMX_SCNd64);
                 sscanf(line, dumstring, &resetsteps);
                 bFoundResetStr = TRUE;
                 if (resetsteps == presteps+cpt_steps)
@@ -252,8 +252,8 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 }
                 else
                 {
-                    sprintf(dumstring, gmx_large_int_pfmt, resetsteps);
-                    sprintf(dumstring2, gmx_large_int_pfmt, presteps+cpt_steps);
+                    sprintf(dumstring, "%"GMX_PRId64, resetsteps);
+                    sprintf(dumstring2, "%"GMX_PRId64, presteps+cpt_steps);
                     fprintf(stderr, "WARNING: Time step counters were reset at step %s,\n"
                             "         though they were supposed to be reset at step %s!\n",
                             dumstring, dumstring2);
@@ -773,8 +773,8 @@ static void launch_simulation(
 
 
 static void modify_PMEsettings(
-        gmx_large_int_t simsteps,    /* Set this value as number of time steps */
-        gmx_large_int_t init_step,   /* Set this value as init_step */
+        gmx_int64_t simsteps,    /* Set this value as number of time steps */
+        gmx_int64_t init_step,   /* Set this value as init_step */
         const char     *fn_best_tpr, /* tpr file with the best performance */
         const char     *fn_sim_tpr)  /* name of tpr file to be launched */
 {
@@ -791,7 +791,7 @@ static void modify_PMEsettings(
     ir->init_step = init_step;
 
     /* Write the tpr file which will be launched */
-    sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, gmx_large_int_pfmt);
+    sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, "%"GMX_PRId64);
     fprintf(stdout, buf, ir->nsteps);
     fflush(stdout);
     write_tpx_state(fn_sim_tpr, ir, &state, &mtop);
@@ -807,8 +807,8 @@ static void modify_PMEsettings(
 static void make_benchmark_tprs(
         const char     *fn_sim_tpr,      /* READ : User-provided tpr file                 */
         char           *fn_bench_tprs[], /* WRITE: Names of benchmark tpr files           */
-        gmx_large_int_t benchsteps,      /* Number of time steps for benchmark runs       */
-        gmx_large_int_t statesteps,      /* Step counter in checkpoint file               */
+        gmx_int64_t benchsteps,      /* Number of time steps for benchmark runs       */
+        gmx_int64_t statesteps,      /* Step counter in checkpoint file               */
         real            rmin,            /* Minimal Coulomb radius                        */
         real            rmax,            /* Maximal Coulomb radius                        */
         real            bScaleRvdw,      /* Scale rvdw along with rcoulomb                */
@@ -831,11 +831,11 @@ static void make_benchmark_tprs(
 
 
     sprintf(buf, "Making benchmark tpr file%s with %s time step%s",
-            *ntprs > 1 ? "s" : "", gmx_large_int_pfmt, benchsteps > 1 ? "s" : "");
+            *ntprs > 1 ? "s" : "", "%"GMX_PRId64, benchsteps > 1 ? "s" : "");
     fprintf(stdout, buf, benchsteps);
     if (statesteps > 0)
     {
-        sprintf(buf, " (adding %s steps from checkpoint file)", gmx_large_int_pfmt);
+        sprintf(buf, " (adding %s steps from checkpoint file)", "%"GMX_PRId64);
         fprintf(stdout, buf, statesteps);
         benchsteps += statesteps;
     }
@@ -1033,7 +1033,7 @@ static void make_benchmark_tprs(
         sprintf(buf, "_bench%.2d.tpr", j);
         strcat(fn_bench_tprs[j], buf);
         fprintf(stdout, "Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
-        fprintf(stdout, gmx_large_int_pfmt, ir->nsteps);
+        fprintf(stdout, "%"GMX_PRId64, ir->nsteps);
         if (j > 0)
         {
             fprintf(stdout, ", scaling factor %f\n", fac);
@@ -1362,7 +1362,7 @@ static void do_the_tests(
         const t_filenm *fnm,            /* List of filenames from command line    */
         int             nfile,          /* Number of files specified on the cmdl. */
         int             presteps,       /* DLB equilibration steps, is checked    */
-        gmx_large_int_t cpt_steps)      /* Time step counter in the checkpoint    */
+        gmx_int64_t cpt_steps)      /* Time step counter in the checkpoint    */
 {
     int      i, nr, k, ret, count = 0, totaltests;
     int     *nPMEnodes = NULL;
@@ -1560,7 +1560,7 @@ static void check_input(
         real            maxPMEfraction,
         real            minPMEfraction,
         int             npme_fixed,
-        gmx_large_int_t bench_nsteps,
+        gmx_int64_t bench_nsteps,
         const t_filenm *fnm,
         int             nfile,
         int             sim_part,
@@ -1704,7 +1704,7 @@ static void check_input(
     if (bench_nsteps > 10000 || bench_nsteps < 100)
     {
         fprintf(stderr, "WARNING: steps=");
-        fprintf(stderr, gmx_large_int_pfmt, bench_nsteps);
+        fprintf(stderr, "%"GMX_PRId64, bench_nsteps);
         fprintf(stderr, ". Are you sure you want to perform so %s steps for each benchmark?\n", (bench_nsteps < 100) ? "few" : "many");
     }
 
@@ -2058,9 +2058,9 @@ int gmx_tune_pme(int argc, char *argv[])
     real            rmin           = 0.0, rmax = 0.0; /* min and max value for rcoulomb if scaling is requested */
     real            rcoulomb       = -1.0;            /* Coulomb radius as set in .tpr file */
     gmx_bool        bScaleRvdw     = TRUE;
-    gmx_large_int_t bench_nsteps   = BENCHSTEPS;
-    gmx_large_int_t new_sim_nsteps = -1;  /* -1 indicates: not set by the user */
-    gmx_large_int_t cpt_steps      = 0;   /* Step counter in .cpt input file   */
+    gmx_int64_t bench_nsteps   = BENCHSTEPS;
+    gmx_int64_t new_sim_nsteps = -1;  /* -1 indicates: not set by the user */
+    gmx_int64_t cpt_steps      = 0;   /* Step counter in .cpt input file   */
     int             presteps       = 100; /* Do a full cycle reset after presteps steps */
     gmx_bool        bOverwrite     = FALSE, bKeepTPR;
     gmx_bool        bLaunch        = FALSE;
@@ -2381,13 +2381,13 @@ int gmx_tune_pme(int argc, char *argv[])
     fprintf(fp, "The mdrun  command is   : %s\n", cmd_mdrun);
     fprintf(fp, "mdrun args benchmarks   : %s\n", cmd_args_bench);
     fprintf(fp, "Benchmark steps         : ");
-    fprintf(fp, gmx_large_int_pfmt, bench_nsteps);
+    fprintf(fp, "%"GMX_PRId64, bench_nsteps);
     fprintf(fp, "\n");
     fprintf(fp, "dlb equilibration steps : %d\n", presteps);
     if (sim_part > 1)
     {
         fprintf(fp, "Checkpoint time step    : ");
-        fprintf(fp, gmx_large_int_pfmt, cpt_steps);
+        fprintf(fp, "%"GMX_PRId64, cpt_steps);
         fprintf(fp, "\n");
     }
     fprintf(fp, "mdrun args at launchtime: %s\n", cmd_args_launch);
@@ -2396,10 +2396,10 @@ int gmx_tune_pme(int argc, char *argv[])
     {
         bOverwrite = TRUE;
         fprintf(stderr, "Note: Simulation input file %s will have ", opt2fn("-so", NFILE, fnm));
-        fprintf(stderr, gmx_large_int_pfmt, new_sim_nsteps+cpt_steps);
+        fprintf(stderr, "%"GMX_PRId64, new_sim_nsteps+cpt_steps);
         fprintf(stderr, " steps.\n");
         fprintf(fp, "Simulation steps        : ");
-        fprintf(fp, gmx_large_int_pfmt, new_sim_nsteps);
+        fprintf(fp, "%"GMX_PRId64, new_sim_nsteps);
         fprintf(fp, "\n");
     }
     if (repeats > 1)

@@ -48,6 +48,7 @@ typedef uint16_t flex_uint16_t;
 typedef int32_t flex_int32_t;
 typedef uint32_t flex_uint32_t;
 #else
+#include "types/simple.h" //TODO: what is the best way to avoid redefine of *_MIN/MAX later when simple.h is included?
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
 typedef int flex_int32_t;

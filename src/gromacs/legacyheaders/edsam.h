@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-void do_edsam(t_inputrec *ir, gmx_large_int_t step,
+void do_edsam(t_inputrec *ir, gmx_int64_t step,
               t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam_t ed);
 /* Essential dynamics constraints, called from constrain() */
 
@@ -60,7 +60,7 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
  * Should be called at every domain decomposition. */
 
 void do_flood(t_commrec *cr, t_inputrec *ir, rvec x[], rvec force[], gmx_edsam_t ed,
-              matrix box, gmx_large_int_t step, gmx_bool bNS);
+              matrix box, gmx_int64_t step, gmx_bool bNS);
 /* Flooding - called from do_force() */
 
 #ifdef __cplusplus

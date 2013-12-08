@@ -101,8 +101,8 @@
 #endif
 
 static void reset_all_counters(FILE *fplog, t_commrec *cr,
-                               gmx_large_int_t step,
-                               gmx_large_int_t *step_rel, t_inputrec *ir,
+                               gmx_int64_t step,
+                               gmx_int64_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
                                gmx_walltime_accounting_t walltime_accounting,
                                nbnxn_cuda_ptr_t cu_nbv)
@@ -151,7 +151,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_mdoutf_t   *outf;
-    gmx_large_int_t step, step_rel;
+    gmx_int64_t step, step_rel;
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
@@ -214,7 +214,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
     int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t     iterate;
-    gmx_large_int_t   multisim_nsteps = -1;                        /* number of steps to do  before first multisim
+    gmx_int64_t   multisim_nsteps = -1;                        /* number of steps to do  before first multisim
                                                                       simulation stops. If equal to zero, don't
                                                                       communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
