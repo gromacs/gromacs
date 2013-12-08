@@ -76,8 +76,8 @@ void replace_inp_entry(int ninp, t_inpfile *inp,
 int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
              warninp_t wi);
 
-gmx_large_int_t get_egmx_large_int(int *ninp, t_inpfile **inp,
-                                   const char *name, gmx_large_int_t def,
+gmx_int64_t get_egmx_large_int(int *ninp, t_inpfile **inp,
+                                   const char *name, gmx_int64_t def,
                                    warninp_t);
 
 double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
@@ -121,7 +121,7 @@ typedef struct {
     union {
         void            *v; /* This is a nasty workaround, to be able to use initialized */
         int             *i; /* arrays */
-        gmx_large_int_t *is;
+        gmx_int64_t *is;
         real            *r;
         const char     **c; /* Must be pointer to string (when type == etSTR)         */
         /* or null terminated list of enums (when type == etENUM) */

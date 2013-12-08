@@ -397,19 +397,19 @@ int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
     }
 }
 
-gmx_large_int_t get_egmx_large_int(int *ninp, t_inpfile **inp,
-                                   const char *name, gmx_large_int_t def,
+gmx_int64_t get_egmx_large_int(int *ninp, t_inpfile **inp,
+                                   const char *name, gmx_int64_t def,
                                    warninp_t wi)
 {
     char            buf[32], *ptr, warn_buf[STRLEN];
     int             ii;
-    gmx_large_int_t ret;
+    gmx_int64_t ret;
 
     ii = get_einp(ninp, inp, name);
 
     if (ii == -1)
     {
-        sprintf(buf, gmx_large_int_pfmt, def);
+        sprintf(buf, "%"GMX_PRId64, def);
         (*inp)[(*ninp)-1].value = strdup(buf);
 
         return def;
