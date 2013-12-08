@@ -1,13 +1,11 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2001
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
- * University of Groningen, The Netherlands
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 1991-2001, University of Groningen, The Netherlands.
+ * Copyright (c) 2002,2009,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -35,8 +33,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef	_rewind_bm
-#define	_rewind_bm
+#ifndef GMX_VIEW_REWIND_BM
+#define GMX_VIEW_REWIND_BM
 
 #define rewind_width 40
 #define rewind_height 32
@@ -56,4 +54,4 @@ static unsigned char rewind_bits[] = {
    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
    0x00, 0x00, 0x00, 0x00};
 
-#endif	/* _rewind_bm */
+#endif
