@@ -49,11 +49,11 @@ extern "C" {
 typedef struct {
     int             nener;
     gmx_enxnm_t    *enm;
-    gmx_large_int_t nsteps;
-    gmx_large_int_t nsum;
+    gmx_int64_t     nsteps;
+    gmx_int64_t     nsum;
     t_energy       *e;
-    gmx_large_int_t nsteps_sim;
-    gmx_large_int_t nsum_sim;
+    gmx_int64_t     nsteps_sim;
+    gmx_int64_t     nsum_sim;
     t_energy       *e_sim;
 } t_ebin;
 

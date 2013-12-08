@@ -66,9 +66,9 @@ static int index3(int *ibox, int x, int y, int z)
     return (ibox[2]*(ibox[1]*x+y)+z);
 }
 
-static gmx_large_int_t indexn(int ndim, const int *ibox, const int *nxyz)
+static gmx_int64_t indexn(int ndim, const int *ibox, const int *nxyz)
 {
-    gmx_large_int_t d, dd;
+    gmx_int64_t     d, dd;
     int             k, kk;
 
     /* Compute index in 1-D array */
@@ -201,7 +201,7 @@ static void normalize_p_e(int len, double *P, int *nbin, real *E, real pmin)
 }
 
 typedef struct {
-    gmx_large_int_t index;
+    gmx_int64_t     index;
     real            ener;
 } t_minimum;
 
@@ -228,7 +228,7 @@ static inline
 void print_minimum(FILE *fp, int num, const t_minimum *min)
 {
     fprintf(fp,
-            "Minimum %d at index " gmx_large_int_pfmt " energy %10.3f\n",
+            "Minimum %d at index " "%"GMX_PRId64 " energy %10.3f\n",
             num, min->index, min->ener);
 }
 
@@ -1024,7 +1024,7 @@ int gmx_sham(int argc, char *argv[])
     double         *av, *sig, cum1, cum2, cum3, cum4, db;
     const char     *fn_ge, *fn_ene;
     output_env_t    oenv;
-    gmx_large_int_t num_grid_points;
+    gmx_int64_t     num_grid_points;
 
     t_filenm        fnm[] = {
         { efXVG, "-f",    "graph",    ffREAD   },
@@ -1143,7 +1143,7 @@ int gmx_sham(int argc, char *argv[])
     num_grid_points = ibox[0];
     for (i = 1; i < nset; i++)
     {
-        gmx_large_int_t result;
+        gmx_int64_t result;
         if (!check_int_multiply_for_overflow(num_grid_points, ibox[i], &result))
         {
             gmx_fatal(FARGS,
@@ -1153,7 +1153,7 @@ int gmx_sham(int argc, char *argv[])
         }
         num_grid_points = result;
     }
-    /* The number of grid points fits in a gmx_large_int_t. */
+    /* The number of grid points fits in a gmx_int64_t. */
 
     do_sham(opt2fn("-dist", NFILE, fnm), opt2fn("-bin", NFILE, fnm),
             opt2fn("-lp", NFILE, fnm),

@@ -292,9 +292,9 @@ typedef struct {
 
 typedef struct {
     int             eI;                     /* Integration method                 */
-    gmx_large_int_t nsteps;                 /* number of steps to be taken			*/
+    gmx_int64_t     nsteps;                 /* number of steps to be taken			*/
     int             simulation_part;        /* Used in checkpointing to separate chunks */
-    gmx_large_int_t init_step;              /* start at a stepcount >0 (used w. tpbconv)    */
+    gmx_int64_t     init_step;              /* start at a stepcount >0 (used w. tpbconv)    */
     int             nstcalcenergy;          /* frequency of energy calc. and T/P coupl. upd.	*/
     int             cutoff_scheme;          /* group or verlet cutoffs     */
     int             ns_type;                /* which ns method should we use?               */

@@ -102,7 +102,7 @@ typedef struct {
 /* The array should match the eI array in include/types/enums.h */
 const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
 
-gmx_large_int_t     deform_init_init_step_tpx;
+gmx_int64_t         deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
@@ -130,7 +130,7 @@ struct mdrunner_arglist
     const char     *ddcsz;
     const char     *nbpu_opt;
     int             nstlist_cmdline;
-    gmx_large_int_t nsteps_cmdline;
+    gmx_int64_t     nsteps_cmdline;
     int             nstepout;
     int             resetstep;
     int             nmultisim;
@@ -192,7 +192,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
                                          const char *nbpu_opt, int nstlist_cmdline,
-                                         gmx_large_int_t nsteps_cmdline,
+                                         gmx_int64_t nsteps_cmdline,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                          real pforce, real cpt_period, real max_hours,
@@ -215,40 +215,40 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 
     /* fill the data structure to pass as void pointer to thread start fn */
     /* hw_opt contains pointers, which should all be NULL at this stage */
-    mda->hw_opt         = *hw_opt;
-    mda->fplog          = fplog;
-    mda->cr             = cr;
-    mda->nfile          = nfile;
-    mda->fnm            = fnmn;
-    mda->oenv           = oenv;
-    mda->bVerbose       = bVerbose;
-    mda->bCompact       = bCompact;
-    mda->nstglobalcomm  = nstglobalcomm;
-    mda->ddxyz[XX]      = ddxyz[XX];
-    mda->ddxyz[YY]      = ddxyz[YY];
-    mda->ddxyz[ZZ]      = ddxyz[ZZ];
-    mda->dd_node_order  = dd_node_order;
-    mda->rdd            = rdd;
-    mda->rconstr        = rconstr;
-    mda->dddlb_opt      = dddlb_opt;
-    mda->dlb_scale      = dlb_scale;
-    mda->ddcsx          = ddcsx;
-    mda->ddcsy          = ddcsy;
-    mda->ddcsz          = ddcsz;
-    mda->nbpu_opt       = nbpu_opt;
-    mda->nstlist_cmdline= nstlist_cmdline;
-    mda->nsteps_cmdline = nsteps_cmdline;
-    mda->nstepout       = nstepout;
-    mda->resetstep      = resetstep;
-    mda->nmultisim      = nmultisim;
-    mda->repl_ex_nst    = repl_ex_nst;
-    mda->repl_ex_nex    = repl_ex_nex;
-    mda->repl_ex_seed   = repl_ex_seed;
-    mda->pforce         = pforce;
-    mda->cpt_period     = cpt_period;
-    mda->max_hours      = max_hours;
-    mda->deviceOptions  = deviceOptions;
-    mda->Flags          = Flags;
+    mda->hw_opt          = *hw_opt;
+    mda->fplog           = fplog;
+    mda->cr              = cr;
+    mda->nfile           = nfile;
+    mda->fnm             = fnmn;
+    mda->oenv            = oenv;
+    mda->bVerbose        = bVerbose;
+    mda->bCompact        = bCompact;
+    mda->nstglobalcomm   = nstglobalcomm;
+    mda->ddxyz[XX]       = ddxyz[XX];
+    mda->ddxyz[YY]       = ddxyz[YY];
+    mda->ddxyz[ZZ]       = ddxyz[ZZ];
+    mda->dd_node_order   = dd_node_order;
+    mda->rdd             = rdd;
+    mda->rconstr         = rconstr;
+    mda->dddlb_opt       = dddlb_opt;
+    mda->dlb_scale       = dlb_scale;
+    mda->ddcsx           = ddcsx;
+    mda->ddcsy           = ddcsy;
+    mda->ddcsz           = ddcsz;
+    mda->nbpu_opt        = nbpu_opt;
+    mda->nstlist_cmdline = nstlist_cmdline;
+    mda->nsteps_cmdline  = nsteps_cmdline;
+    mda->nstepout        = nstepout;
+    mda->resetstep       = resetstep;
+    mda->nmultisim       = nmultisim;
+    mda->repl_ex_nst     = repl_ex_nst;
+    mda->repl_ex_nex     = repl_ex_nex;
+    mda->repl_ex_seed    = repl_ex_seed;
+    mda->pforce          = pforce;
+    mda->cpt_period      = cpt_period;
+    mda->max_hours       = max_hours;
+    mda->deviceOptions   = deviceOptions;
+    mda->Flags           = Flags;
 
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
@@ -474,7 +474,7 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
  */
 static const int    nbnxn_reference_nstlist = 10;
 /* The values to try when switching  */
-const int nstlist_try[] = { 20, 25, 40 };
+const int           nstlist_try[] = { 20, 25, 40 };
 #define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
 /* Increase nstlist until the non-bonded cost increases more than listfac_ok,
  * but never more than listfac_max.
@@ -793,7 +793,7 @@ static void convert_to_verlet_scheme(FILE *fplog,
     }
     else
     {
-        ir->verletbuf_tol = -1;
+        ir->verletbuf_tol   = -1;
         ir->rlist           = 1.05*max(ir->rvdw, ir->rcoulomb);
     }
 
@@ -957,7 +957,7 @@ static void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
 
 /* Override the value in inputrec with value passed on the command line (if any) */
 static void override_nsteps_cmdline(FILE            *fplog,
-                                    gmx_large_int_t  nsteps_cmdline,
+                                    gmx_int64_t      nsteps_cmdline,
                                     t_inputrec      *ir,
                                     const t_commrec *cr)
 {
@@ -1038,7 +1038,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,
-             gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
+             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags)
@@ -1068,7 +1068,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       list;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
-    gmx_large_int_t           reset_counters;
+    gmx_int64_t               reset_counters;
     gmx_edsam_t               ed           = NULL;
     t_commrec                *cr_old       = cr;
     int                       nthreads_pme = 1;
