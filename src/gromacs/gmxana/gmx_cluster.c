@@ -1405,7 +1405,7 @@ int gmx_cluster(int argc, char *argv[])
 
     FILE              *fp, *log;
     int                nf, i, i1, i2, j;
-    gmx_large_int_t    nrms = 0;
+    gmx_int64_t    nrms = 0;
 
     matrix             box;
     rvec              *xtps, *usextps, *x1, **xx = NULL;
@@ -1740,7 +1740,7 @@ int gmx_cluster(int argc, char *argv[])
     else   /* !bReadMat */
     {
         rms  = init_mat(nf, method == m_diagonalize);
-        nrms = ((gmx_large_int_t)nf*((gmx_large_int_t)nf-1))/2;
+        nrms = ((gmx_int64_t)nf*((gmx_int64_t)nf-1))/2;
         if (!bRMSdist)
         {
             fprintf(stderr, "Computing %dx%d RMS deviation matrix\n", nf, nf);
@@ -1761,8 +1761,8 @@ int gmx_cluster(int argc, char *argv[])
                     rmsd = rmsdev(isize, mass, xx[i2], x1);
                     set_mat_entry(rms, i1, i2, rmsd);
                 }
-                nrms -= (gmx_large_int_t) (nf-i1-1);
-                fprintf(stderr, "\r# RMSD calculations left: " gmx_large_int_pfmt "   ", nrms);
+                nrms -= (gmx_int64_t) (nf-i1-1);
+                fprintf(stderr, "\r# RMSD calculations left: " "%"GMX_PRId64 "   ", nrms);
             }
             sfree(x1);
         }
@@ -1787,7 +1787,7 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rms_dist(isize, d1, d2));
                 }
                 nrms -= (nf-i1-1);
-                fprintf(stderr, "\r# RMSD calculations left: " gmx_large_int_pfmt "   ", nrms);
+                fprintf(stderr, "\r# RMSD calculations left: " "%"GMX_PRId64 "   ", nrms);
             }
             /* Clean up work arrays */
             for (i = 0; (i < isize); i++)

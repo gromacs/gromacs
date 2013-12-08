@@ -1471,7 +1471,7 @@ static void cconerr(gmx_domdec_t *dd,
 
 gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          t_inputrec *ir,
-                         gmx_large_int_t step,
+                         gmx_int64_t step,
                          struct gmx_lincsdata *lincsd, t_mdatoms *md,
                          t_commrec *cr,
                          rvec *x, rvec *xprime, rvec *min_proj,

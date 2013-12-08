@@ -91,7 +91,7 @@ void init_pull(FILE              *fplog,
 void finish_pull(t_pull *pull);
 
 /* Print the pull output (x and/or f) */
-void pull_print_output(t_pull *pull, gmx_large_int_t step, double time);
+void pull_print_output(t_pull *pull, gmx_int64_t step, double time);
 
 /* In pullutil.c */
 

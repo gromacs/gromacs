@@ -46,9 +46,9 @@ extern "C" {
 
 typedef struct {
     gmx_bool        bGStatEveryStep;
-    gmx_large_int_t step_ns;
-    gmx_large_int_t step_nscheck;
-    gmx_large_int_t nns;
+    gmx_int64_t step_ns;
+    gmx_int64_t step_nscheck;
+    gmx_int64_t nns;
     matrix          scale_tot;
     int             nabnsb;
     double          s1;
@@ -58,14 +58,14 @@ typedef struct {
     double          lt_runav2;
 } gmx_nlheur_t;
 
-void reset_nlistheuristics(gmx_nlheur_t *nlh, gmx_large_int_t step);
+void reset_nlistheuristics(gmx_nlheur_t *nlh, gmx_int64_t step);
 
 void init_nlistheuristics(gmx_nlheur_t *nlh,
-                          gmx_bool bGStatEveryStep, gmx_large_int_t step);
+                          gmx_bool bGStatEveryStep, gmx_int64_t step);
 
-void update_nliststatistics(gmx_nlheur_t *nlh, gmx_large_int_t step);
+void update_nliststatistics(gmx_nlheur_t *nlh, gmx_int64_t step);
 
-void set_nlistheuristics(gmx_nlheur_t *nlh, gmx_bool bReset, gmx_large_int_t step);
+void set_nlistheuristics(gmx_nlheur_t *nlh, gmx_bool bReset, gmx_int64_t step);
 
 #ifdef __cplusplus
 }

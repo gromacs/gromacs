@@ -4546,7 +4546,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
                                    t_nrnb *nrnb, t_inputrec *ir,
-                                   gmx_large_int_t step)
+                                   gmx_int64_t step)
 {
     /* Reset all the counters related to performance over the run */
     wallcycle_stop(wcycle, ewcRUN);
@@ -4622,7 +4622,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     int  count;
     gmx_bool bEnerVir;
     int pme_flags;
-    gmx_large_int_t step, step_rel;
+    gmx_int64_t step, step_rel;
     ivec grid_switch;
 
     /* This data will only use with PME tuning, i.e. switching PME grids */

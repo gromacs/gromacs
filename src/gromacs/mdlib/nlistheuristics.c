@@ -42,7 +42,7 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 
-void reset_nlistheuristics(gmx_nlheur_t *nlh, gmx_large_int_t step)
+void reset_nlistheuristics(gmx_nlheur_t *nlh, gmx_int64_t step)
 {
     nlh->lt_runav     = 0;
     nlh->lt_runav2    = 0;
@@ -50,7 +50,7 @@ void reset_nlistheuristics(gmx_nlheur_t *nlh, gmx_large_int_t step)
 }
 
 void init_nlistheuristics(gmx_nlheur_t *nlh,
-                          gmx_bool bGStatEveryStep, gmx_large_int_t step)
+                          gmx_bool bGStatEveryStep, gmx_int64_t step)
 {
     nlh->bGStatEveryStep = bGStatEveryStep;
     nlh->nns             = 0;
@@ -62,9 +62,9 @@ void init_nlistheuristics(gmx_nlheur_t *nlh,
     reset_nlistheuristics(nlh, step);
 }
 
-void update_nliststatistics(gmx_nlheur_t *nlh, gmx_large_int_t step)
+void update_nliststatistics(gmx_nlheur_t *nlh, gmx_int64_t step)
 {
-    gmx_large_int_t nl_lt;
+    gmx_int64_t nl_lt;
     char            sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
     /* Determine the neighbor list life time */
@@ -112,7 +112,7 @@ void update_nliststatistics(gmx_nlheur_t *nlh, gmx_large_int_t step)
     }
 }
 
-void set_nlistheuristics(gmx_nlheur_t *nlh, gmx_bool bReset, gmx_large_int_t step)
+void set_nlistheuristics(gmx_nlheur_t *nlh, gmx_bool bReset, gmx_int64_t step)
 {
     int d;
 

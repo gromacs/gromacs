@@ -128,7 +128,7 @@ static void pull_print_f(FILE *out, t_pull *pull, double t)
     fprintf(out, "\n");
 }
 
-void pull_print_output(t_pull *pull, gmx_large_int_t step, double time)
+void pull_print_output(t_pull *pull, gmx_int64_t step, double time)
 {
     if ((pull->nstxout != 0) && (step % pull->nstxout == 0))
     {
