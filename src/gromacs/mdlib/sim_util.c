@@ -94,7 +94,7 @@
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
-                gmx_large_int_t           step,
+                gmx_int64_t               step,
                 t_inputrec               *ir,
                 t_commrec gmx_unused     *cr)
 {
@@ -423,7 +423,7 @@ static void pme_receive_force_ener(FILE           *fplog,
 }
 
 static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
-                               gmx_large_int_t step, real pforce, rvec *x, rvec *f)
+                               gmx_int64_t step, real pforce, rvec *x, rvec *f)
 {
     int  i;
     real pf2, fn2;
@@ -444,7 +444,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
 }
 
 static void post_process_forces(t_commrec *cr,
-                                gmx_large_int_t step,
+                                gmx_int64_t step,
                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                 gmx_localtop_t *top,
                                 matrix box, rvec x[],
@@ -638,7 +638,7 @@ static void do_nb_verlet(t_forcerec *fr,
 
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
-                         gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                         gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                          gmx_localtop_t *top,
                          gmx_groups_t gmx_unused *groups,
                          matrix box, rvec x[], history_t *hist,
@@ -1382,7 +1382,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
 void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         t_inputrec *inputrec,
-                        gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                        gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                         gmx_localtop_t *top,
                         gmx_groups_t *groups,
                         matrix box, rvec x[], history_t *hist,
@@ -1903,7 +1903,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
 void do_force(FILE *fplog, t_commrec *cr,
               t_inputrec *inputrec,
-              gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+              gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
               gmx_groups_t *groups,
               matrix box, rvec x[], history_t *hist,
@@ -1969,7 +1969,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                         t_forcerec *fr, gmx_localtop_t *top)
 {
     int             i, m, start, end;
-    gmx_large_int_t step;
+    gmx_int64_t     step;
     real            dt = ir->delta_t;
     real            dvdl_dum;
     rvec           *savex;
@@ -2279,7 +2279,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
-                   gmx_large_int_t step, int natoms,
+                   gmx_int64_t step, int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {

@@ -107,7 +107,7 @@ extern void dd_make_local_rotation_groups(gmx_domdec_t *dd, t_rot *rot);
  *                          local arrays have to be updated (masses, shifts)
  */
 extern void do_rotation(t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
-                        gmx_large_int_t step, gmx_wallcycle_t wcycle, gmx_bool bNS);
+                        gmx_int64_t step, gmx_wallcycle_t wcycle, gmx_bool bNS);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.
@@ -126,7 +126,7 @@ extern void do_rotation(t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], rea
  * \param step              The time step, used for output.
  * \param t                 Time, used for output.
  */
-extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_large_int_t step, real t);
+extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_int64_t step, real t);
 
 
 /*! \brief Close the enforced rotation output files.

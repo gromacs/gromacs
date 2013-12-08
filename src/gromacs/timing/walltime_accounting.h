@@ -96,7 +96,7 @@ walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accountin
  * TODO consider whether this should get done in walltime_accounting_end */
 void
 walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_accounting,
-                                    gmx_large_int_t             nsteps_done);
+                                    gmx_int64_t                 nsteps_done);
 
 /*! \brief Calls system timing routines (e.g. clock_gettime) to get the
  * (fractional) number of seconds elapsed since the epoch.
