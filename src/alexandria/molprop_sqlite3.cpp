@@ -96,11 +96,11 @@ void ReadSqlite3(const char                       *sqlite_file,
     sqlite3_stmt               *stmt = NULL, *stmt2 = NULL;
     char sql_str[1024];
     const char                 *iupac, *cas, *csid, *prop, *unit, *ref, *classification;
-    char     **class_ptr;
-    double     value, error;
-    int        cidx, rc, nbind, nexp_prop;
-    t_synonym *syn  = NULL, key, *keyptr;
-    int        nsyn = 0, maxsyn = 0;
+    char                      **class_ptr;
+    double                      value, error;
+    int                         cidx, rc, nbind, nexp_prop;
+    t_synonym                  *syn  = NULL, key, *keyptr;
+    int                         nsyn = 0, maxsyn = 0;
 
     if (NULL == sqlite_file)
     {
