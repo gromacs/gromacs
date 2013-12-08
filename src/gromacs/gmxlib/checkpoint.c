@@ -273,7 +273,7 @@ static void do_cpt_int_err(XDR *xd, const char *desc, int *i, FILE *list)
     }
 }
 
-static void do_cpt_step_err(XDR *xd, const char *desc, gmx_large_int_t *i, FILE *list)
+static void do_cpt_step_err(XDR *xd, const char *desc, gmx_int64_t *i, FILE *list)
 {
     bool_t res = 0;
     char   buf[STEPSTRSIZE];
@@ -787,7 +787,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
                           int *double_prec,
                           char **fprog, char **ftime,
                           int *eIntegrator, int *simulation_part,
-                          gmx_large_int_t *step, double *t,
+                          gmx_int64_t *step, double *t,
                           int *nnodes, int *dd_nc, int *npme,
                           int *natoms, int *ngtc, int *nnhpres, int *nhchainlength,
                           int *nlambda, int *flags_state,
@@ -995,7 +995,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
 
     if (bRead) /* we need to allocate space for dfhist if we are reading */
     {
-        init_df_history(&state->dfhist,state->dfhist.nlambda);
+        init_df_history(&state->dfhist, state->dfhist.nlambda);
     }
 
     /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */
@@ -1386,7 +1386,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       FILE *fplog, t_commrec *cr,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
-                      gmx_large_int_t step, double t, t_state *state)
+                      gmx_int64_t step, double t, t_state *state)
 {
     t_fileio            *fp;
     int                  file_version;
@@ -1727,7 +1727,7 @@ static void check_match(FILE *fplog,
 
 static void read_checkpoint(const char *fn, FILE **pfplog,
                             t_commrec *cr, gmx_bool bPartDecomp, ivec dd_nc,
-                            int eIntegrator, int *init_fep_state, gmx_large_int_t *step, double *t,
+                            int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadRNG, gmx_bool *bReadEkin,
                             int *simulation_part,
                             gmx_bool bAppendOutputFiles, gmx_bool bForceAppend)
@@ -2165,7 +2165,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
                      gmx_bool *bReadRNG, gmx_bool *bReadEkin,
                      gmx_bool bAppend, gmx_bool bForceAppend)
 {
-    gmx_large_int_t step;
+    gmx_int64_t     step;
     double          t;
 
     if (SIMMASTER(cr))
@@ -2194,7 +2194,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
 }
 
 static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
-                                 gmx_large_int_t *step, double *t, t_state *state,
+                                 gmx_int64_t *step, double *t, t_state *state,
                                  gmx_bool bReadRNG,
                                  int *nfiles, gmx_file_position_t **outputfiles)
 {
@@ -2273,7 +2273,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
 
 void
 read_checkpoint_state(const char *fn, int *simulation_part,
-                      gmx_large_int_t *step, double *t, t_state *state)
+                      gmx_int64_t *step, double *t, t_state *state)
 {
     t_fileio *fp;
 
@@ -2293,7 +2293,7 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
      * this will all go away for 5.0. */
     t_state         state;
     int             simulation_part;
-    gmx_large_int_t step;
+    gmx_int64_t     step;
     double          t;
 
     init_state(&state, 0, 0, 0, 0, 0);
@@ -2303,8 +2303,8 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
     fr->natoms  = state.natoms;
     fr->bTitle  = FALSE;
     fr->bStep   = TRUE;
-    fr->step    = gmx_large_int_to_int(step,
-                                       "conversion of checkpoint to trajectory");
+    fr->step    = gmx_int64_to_int(step,
+                                   "conversion of checkpoint to trajectory");
     fr->bTime      = TRUE;
     fr->time       = t;
     fr->bLambda    = TRUE;
@@ -2339,7 +2339,7 @@ void list_checkpoint(const char *fn, FILE *out)
     char                *version, *btime, *buser, *bhost, *fprog, *ftime;
     int                  double_prec;
     int                  eIntegrator, simulation_part, nppnodes, npme;
-    gmx_large_int_t      step;
+    gmx_int64_t          step;
     double               t;
     ivec                 dd_nc;
     t_state              state;
@@ -2425,13 +2425,13 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         gmx_large_int_t *cpt_step, t_commrec *cr,
+                                         gmx_int64_t *cpt_step, t_commrec *cr,
                                          gmx_bool bAppendReq,
                                          int nfile, const t_filenm fnm[],
                                          const char *part_suffix, gmx_bool *bAddPart)
 {
     t_fileio            *fp;
-    gmx_large_int_t      step = 0;
+    gmx_int64_t          step = 0;
     double               t;
     /* This next line is nasty because the sub-structures of t_state
      * cannot be assumed to be zeroed (or even initialized in ways the

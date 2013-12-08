@@ -90,12 +90,14 @@ are only going to continue to get more complex.
 \gromacs{} can be compiled for any distribution of Linux, Mac OS X,
 Windows (native, Cygwin or MinGW), BlueGene, Cray and many other
 architectures. Technically, it can be compiled on any platform with
-an ANSI C89 compiler, an ISO C++98 compiler, and supporting libraries,
+an ANSI C99 compiler, an ISO C++98 compiler, and supporting libraries,
 such as the GNU C library. However, \gromacs{} also comes with many
 hardware-specific extensions to provide very high performance on those
 platforms, and to enable these we have slightly more specific
 requirements since old compilers do not support new features, or they
-can be buggy.
+can be buggy. Not all of the C99 standard is required and some C89
+compilers (including Microsoft Visual C) will also be able to compile
+Gromacs.
 
 \subsection{Compiler}
 
