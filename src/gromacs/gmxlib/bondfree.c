@@ -4245,7 +4245,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
                 t_fcdata *fcd, int *global_atom_index,
                 t_atomtypes gmx_unused *atype, gmx_genborn_t gmx_unused *born,
                 int force_flags,
-                gmx_bool bPrintSepPot, gmx_large_int_t step)
+                gmx_bool bPrintSepPot, gmx_int64_t step)
 {
     gmx_bool      bCalcEnerVir;
     int           i;

@@ -93,10 +93,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                      gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
-gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
+gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 /* Return reset_counters from wc struct */
 
-void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters);
+void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters);
 /* Set reset_counters */
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);

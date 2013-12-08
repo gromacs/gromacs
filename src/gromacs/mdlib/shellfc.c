@@ -748,7 +748,7 @@ static void decrease_step_size(int nshell, t_shell s[])
     }
 }
 
-static void print_epot(FILE *fp, gmx_large_int_t mdstep, int count, real epot, real df,
+static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real df,
                        int ndir, real sf_dir)
 {
     char buf[22];
@@ -833,7 +833,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
 static void init_adir(FILE *log, gmx_shellfc_t shfc,
                       gmx_constr_t constr, t_idef *idef, t_inputrec *ir,
                       t_commrec *cr, int dd_ac1,
-                      gmx_large_int_t step, t_mdatoms *md, int start, int end,
+                      gmx_int64_t step, t_mdatoms *md, int start, int end,
                       rvec *x_old, rvec *x_init, rvec *x,
                       rvec *f, rvec *acc_dir,
                       gmx_bool bMolPBC, matrix box,
@@ -915,7 +915,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
 }
 
 int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
-                        gmx_large_int_t mdstep, t_inputrec *inputrec,
+                        gmx_int64_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
                         gmx_localtop_t *top,
                         gmx_constr_t constr,

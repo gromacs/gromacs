@@ -889,7 +889,7 @@ test_for_replica_exchange(FILE                 *fplog,
                           struct gmx_repl_ex   *re,
                           gmx_enerdata_t       *enerd,
                           real                  vol,
-                          gmx_large_int_t       step,
+                          gmx_int64_t       step,
                           real                  time)
 {
     int       m, i, j, a, b, ap, bp, i0, i1, tmp;
@@ -903,7 +903,7 @@ test_for_replica_exchange(FILE                 *fplog,
     gmx_bool  bVol     = FALSE;
 
     bMultiEx = (re->nex > 1);  /* multiple exchanges at each state */
-    fprintf(fplog, "Replica exchange at step " gmx_large_int_pfmt " time %g\n", step, time);
+    fprintf(fplog, "Replica exchange at step " "%"GMX_PRId64 " time %g\n", step, time);
 
     if (re->bNPT)
     {
@@ -1294,7 +1294,7 @@ prepare_to_do_exchange(FILE      *fplog,
 
 gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *re,
                           t_state *state, gmx_enerdata_t *enerd,
-                          t_state *state_local, gmx_large_int_t step, real time)
+                          t_state *state_local, gmx_int64_t step, real time)
 {
     int i, j;
     int replica_id = 0;

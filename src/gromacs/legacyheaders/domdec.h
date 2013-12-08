@@ -173,7 +173,7 @@ void dd_atom_sum_real(gmx_domdec_t *dd, real v[]);
 /* Sum the contributions to a real for each atom over the neighboring cells. */
 
 void dd_partition_system(FILE                *fplog,
-                         gmx_large_int_t      step,
+                         gmx_int64_t      step,
                          t_commrec           *cr,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
@@ -272,7 +272,7 @@ void dd_bonded_cg_distance(FILE *fplog, gmx_mtop_t *mtop,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb);
 
-void write_dd_pdb(const char *fn, gmx_large_int_t step, const char *title,
+void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
                   gmx_mtop_t *mtop,
                   t_commrec *cr,
                   int natoms, rvec x[], matrix box);

@@ -143,7 +143,7 @@ void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda)
     fprintf(fplog, "  %-30s V %12.5e  dVdl %12.5e\n", s, v, dvdlambda);
 }
 
-void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
+void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                        t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,

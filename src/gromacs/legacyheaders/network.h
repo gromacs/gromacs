@@ -109,7 +109,7 @@ void gmx_bcast_sim(int nbytes, void *b, const t_commrec *cr);
 void gmx_sumi(int nr, int r[], const t_commrec *cr);
 /* Calculate the global sum of an array of ints */
 
-void gmx_sumli(int nr, gmx_large_int_t r[], const t_commrec *cr);
+void gmx_sumli(int nr, gmx_int64_t r[], const t_commrec *cr);
 /* Calculate the global sum of an array of large ints */
 
 void gmx_sumf(int nr, float r[], const t_commrec *cr);
@@ -127,7 +127,7 @@ void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm);
 void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of ints */
 
-void gmx_sumli_sim(int nr, gmx_large_int_t r[], const gmx_multisim_t *ms);
+void gmx_sumli_sim(int nr, gmx_int64_t r[], const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of large ints */
 
 void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms);

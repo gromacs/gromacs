@@ -103,8 +103,8 @@ int over_alloc_dd(int n);
 /* Over allocation for large data types: complex structs */
 #define over_alloc_large(n) (int)(OVER_ALLOC_FAC*(n) + 1000)
 
-int gmx_large_int_to_int(gmx_large_int_t step, const char *warn);
-/* Convert a gmx_large_int_t value to int.
+int gmx_int64_to_int(gmx_int64_t step, const char *warn);
+/* Convert a gmx_int64_t value to int.
  * If warn!=NULL a warning message will be written
  * to stderr when step does not fit in an int,
  * the first line is:
@@ -113,10 +113,10 @@ int gmx_large_int_to_int(gmx_large_int_t step, const char *warn);
 
 #define STEPSTRSIZE 22
 
-char *gmx_step_str(gmx_large_int_t i, char *buf);
-/* Prints a gmx_large_int_t value in buf and returns the pointer to buf.
+char *gmx_step_str(gmx_int64_t i, char *buf);
+/* Prints a gmx_int64_t value in buf and returns the pointer to buf.
  * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
- * When multiple gmx_large_int_t values are printed in the same printf call,
+ * When multiple gmx_int64_t values are printed in the same printf call,
  * be sure to call gmx_step_str with different buffers.
  */
 
