@@ -93,7 +93,7 @@ extern void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rn
     *mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
     if (!bStateFromCP)
     {
-        init_df_history_weights(dfhist,ir->expandedvals,ir->fepvals->n_lambda);
+        init_df_history_weights(dfhist, ir->expandedvals, ir->fepvals->n_lambda);
     }
 }
 
@@ -261,7 +261,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio)
     return bIfFlat;
 }
 
-static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, gmx_large_int_t step)
+static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, gmx_int64_t step)
 {
 
     int      i, totalsamples;
@@ -363,7 +363,7 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_histor
 }
 
 static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist,
-                              int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_large_int_t step)
+                              int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_int64_t step)
 {
     real     maxdiff = 0.000000001;
     gmx_bool bSufficientSamples;
@@ -376,7 +376,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     real     clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
     real    *lam_weights, *lam_minvar_corr, *lam_variance, *lam_dg;
     double  *p_k;
-    double  pks = 0;
+    double   pks = 0;
     real    *numweighted_lamee, *logfrac;
     int     *nonzero;
     real     chi_m1_0, chi_p1_0, chi_m2_0, chi_p2_0, chi_p1_m1, chi_p2_m1, chi_m1_p1, chi_m2_p1;
@@ -922,7 +922,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
             if (lamnew > maxfep)
             {
                 /* it's possible some rounding is failing */
-                if (gmx_within_tol(remainder[fep_state],0,50*GMX_DOUBLE_EPS))
+                if (gmx_within_tol(remainder[fep_state], 0, 50*GMX_DOUBLE_EPS))
                 {
                     /* numerical rounding error -- no state other than the original has weight */
                     lamnew = fep_state;
@@ -1027,7 +1027,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 
 /* print out the weights to the log, along with current state */
 extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                                      int fep_state, int frequency, gmx_large_int_t step)
+                                      int fep_state, int frequency, gmx_int64_t step)
 {
     int         nlim, i, ifep, jfep;
     real        dw, dg, dv, dm, Tprint;
@@ -1209,7 +1209,7 @@ extern void set_mc_state(gmx_rng_t rng, t_state *state)
 
 extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
                                     t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
-                                    gmx_large_int_t step, gmx_rng_t mcrng,
+                                    gmx_int64_t step, gmx_rng_t mcrng,
                                     rvec *v, t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */

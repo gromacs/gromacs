@@ -119,7 +119,7 @@ typedef struct {
     int             *ibuf; /* for ints */
     int              ibuf_alloc;
 
-    gmx_large_int_t *libuf;
+    gmx_int64_t     *libuf;
     int              libuf_alloc;
 
     float           *fbuf; /* for floats */
@@ -215,7 +215,7 @@ typedef struct {
     gmx_domdec_comm_p_t comm;
 
     /* The partioning count, to keep track of the state */
-    gmx_large_int_t ddp_count;
+    gmx_int64_t ddp_count;
 
 
     /* gmx_pme_recv_f buffer */

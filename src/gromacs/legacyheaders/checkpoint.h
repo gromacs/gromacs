@@ -56,7 +56,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       FILE *fplog, t_commrec *cr,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
-                      gmx_large_int_t step, double t,
+                      gmx_int64_t step, double t,
                       t_state *state);
 
 /* Loads a checkpoint from fn for run continuation.
@@ -80,7 +80,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
  * number of nodes was read.
  */
 void read_checkpoint_state(const char *fn, int *simulation_part,
-                           gmx_large_int_t *step, double *t, t_state *state);
+                           gmx_int64_t *step, double *t, t_state *state);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
 void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr);
@@ -99,7 +99,7 @@ void list_checkpoint(const char *fn, FILE *out);
  * needs to be added to the output file name.
  */
 gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         gmx_large_int_t *step, t_commrec *cr,
+                                         gmx_int64_t *step, t_commrec *cr,
                                          gmx_bool bAppendReq,
                                          int nfile, const t_filenm fnm[],
                                          const char *part_suffix, gmx_bool *bAddPart);

@@ -143,13 +143,13 @@ typedef struct
 
 typedef struct
 {
-    gmx_large_int_t    nsteps;       /* The number of steps in the history            */
-    gmx_large_int_t    nsum;         /* The nr. of steps in the ener_ave and ener_sum */
+    gmx_int64_t        nsteps;       /* The number of steps in the history            */
+    gmx_int64_t        nsum;         /* The nr. of steps in the ener_ave and ener_sum */
     double         *   ener_ave;     /* Energy term history sum to get fluctuations   */
     double         *   ener_sum;     /* Energy term history sum to get fluctuations   */
     int                nener;        /* Number of energy terms in two previous arrays */
-    gmx_large_int_t    nsteps_sim;   /* The number of steps in ener_sum_sim      */
-    gmx_large_int_t    nsum_sim;     /* The number of frames in ener_sum_sim     */
+    gmx_int64_t        nsteps_sim;   /* The number of steps in ener_sum_sim      */
+    gmx_int64_t        nsum_sim;     /* The number of frames in ener_sum_sim     */
     double         *   ener_sum_sim; /* Energy term history sum of the whole sim      */
 
     delta_h_history_t *dht;          /* The BAR energy differences */

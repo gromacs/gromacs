@@ -115,7 +115,7 @@ int iscan(int argc, char *argv[], int *i);
  * argument *i is incremented. You typically would want to pass
  * a loop variable to this routine.
  */
-gmx_large_int_t istepscan(int argc, char *argv[], int *i);
+gmx_int64_t istepscan(int argc, char *argv[], int *i);
 /* Same as above, but for large integer values */
 
 double dscan(int argc, char *argv[], int *i);

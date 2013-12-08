@@ -64,9 +64,9 @@ void set_stochd_state(gmx_update_t sd, t_state *state);
  * as a reference state for simulations with box deformation.
  */
 void set_deform_reference_box(gmx_update_t upd,
-                              gmx_large_int_t step, matrix box);
+                              gmx_int64_t step, matrix box);
 
-void update_tcouple(gmx_large_int_t   step,
+void update_tcouple(gmx_int64_t       step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
@@ -76,7 +76,7 @@ void update_tcouple(gmx_large_int_t   step,
                     );
 
 void update_pcouple(FILE             *fplog,
-                    gmx_large_int_t   step,
+                    gmx_int64_t       step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     matrix            pcoupl_mu,
@@ -84,7 +84,7 @@ void update_pcouple(FILE             *fplog,
                     gmx_bool          bInitStep);
 
 void update_coords(FILE             *fplog,
-                   gmx_large_int_t   step,
+                   gmx_int64_t       step,
                    t_inputrec       *inputrec, /* input record and box stuff	*/
                    t_mdatoms        *md,
                    t_state          *state,
@@ -105,10 +105,10 @@ void update_coords(FILE             *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr);
 
 void update_constraints(FILE             *fplog,
-                        gmx_large_int_t   step,
+                        gmx_int64_t       step,
                         real             *dvdlambda, /* FEP stuff */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
                         gmx_ekindata_t   *ekind,
@@ -131,7 +131,7 @@ void update_constraints(FILE             *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 void update_box(FILE             *fplog,
-                gmx_large_int_t   step,
+                gmx_int64_t       step,
                 t_inputrec       *inputrec, /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
@@ -182,7 +182,7 @@ t_state *init_bufstate(const t_state *template_state);
 
 void destroy_bufstate(t_state *state);
 
-void trotter_update(t_inputrec *ir, gmx_large_int_t step, gmx_ekindata_t *ekind,
+void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
@@ -218,13 +218,13 @@ real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
  * The unit of pressure is bar.
  */
 
-void parrinellorahman_pcoupl(FILE *fplog, gmx_large_int_t step,
+void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                              t_inputrec *ir, real dt, tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu,
                              gmx_bool bFirstStep);
 
-void berendsen_pcoupl(FILE *fplog, gmx_large_int_t step,
+void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
                       t_inputrec *ir, real dt, tensor pres, matrix box,
                       matrix mu);
 

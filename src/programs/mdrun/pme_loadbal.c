@@ -373,7 +373,7 @@ static int pme_loadbal_end(pme_load_balancing_t pme_lb)
 }
 
 static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
-                                  gmx_large_int_t step,
+                                  gmx_int64_t step,
                                   pme_load_balancing_t pme_lb)
 {
     char buf[STRLEN], sbuf[22];
@@ -433,7 +433,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
                           interaction_const_t *ic,
                           nonbonded_verlet_t  *nbv,
                           gmx_pme_t           *pmedata,
-                          gmx_large_int_t      step)
+                          gmx_int64_t          step)
 {
     gmx_bool     OK;
     pme_setup_t *set;

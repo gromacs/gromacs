@@ -170,7 +170,7 @@ static void warn_step(FILE *fp, real ftol, gmx_bool bLastStep, gmx_bool bConstra
 
 
 static void print_converged(FILE *fp, const char *alg, real ftol,
-                            gmx_large_int_t count, gmx_bool bDone, gmx_large_int_t nsteps,
+                            gmx_int64_t count, gmx_bool bDone, gmx_int64_t nsteps,
                             real epot, real fmax, int nfmax, real fnorm)
 {
     char buf[STEPSTRSIZE];
@@ -501,7 +501,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
                           gmx_mdoutf_t *outf,
                           gmx_bool bX, gmx_bool bF, const char *confout,
                           gmx_mtop_t *top_global,
-                          t_inputrec *ir, gmx_large_int_t step,
+                          t_inputrec *ir, gmx_int64_t step,
                           em_state_t *state,
                           t_state *state_global, rvec *f_global)
 {
@@ -546,7 +546,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                        em_state_t *ems1, real a, rvec *f, em_state_t *ems2,
                        gmx_constr_t constr, gmx_localtop_t *top,
                        t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                       gmx_large_int_t count)
+                       gmx_int64_t count)
 
 {
     t_state *s1, *s2;
@@ -690,7 +690,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                             t_graph *graph, t_mdatoms *mdatoms,
                             t_forcerec *fr, rvec mu_tot,
                             gmx_enerdata_t *enerd, tensor vir, tensor pres,
-                            gmx_large_int_t count, gmx_bool bFirst)
+                            gmx_int64_t count, gmx_bool bFirst)
 {
     real     t;
     gmx_bool bNS;
@@ -2610,7 +2610,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     rvec                 mu_tot;
     rvec                *fneg, *dfdx;
     gmx_bool             bSparse; /* use sparse matrix storage format */
-    size_t               sz=0;
+    size_t               sz = 0;
     gmx_sparsematrix_t * sparse_matrix           = NULL;
     real           *     full_matrix             = NULL;
     em_state_t       *   state_work;
