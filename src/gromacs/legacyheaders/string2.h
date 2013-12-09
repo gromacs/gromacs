@@ -212,12 +212,6 @@ char **split(char sep, const char *str);
  *
  * This method works as the standard library function strtol(), except that it
  * does not support different bases.
- *
- * \attention
- * The following differences are present from the standard behavior:
- *  - \p endptr cannot be NULL.
- *  - If an overflow occurs, returns zero and \p *endptr will equal \p str.
- *    errno is still set to ERANGE.
  */
 gmx_int64_t str_to_int64_t(const char *str, char **endptr);
 
