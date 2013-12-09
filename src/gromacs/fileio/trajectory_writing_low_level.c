@@ -193,7 +193,6 @@ void write_traj(FILE *fplog, t_commrec *cr,
             {
                 gmx_file("Cannot write trajectory; maybe you are out of disk space?");
             }
-            gmx_fio_check_file_position(of->fp_trn);
         }
         if (mdof_flags & MDOF_XTC)
         {
@@ -234,7 +233,6 @@ void write_traj(FILE *fplog, t_commrec *cr,
             {
                 gmx_fatal(FARGS, "XTC error - maybe you are out of disk space?");
             }
-            gmx_fio_check_file_position(of->fp_xtc);
         }
     }
 }
