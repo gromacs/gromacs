@@ -38,8 +38,8 @@
 #define _gentop_core_hpp
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "pdbio.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gentop_nm2type.hpp"
 #include "gpp_nextnb.h"
 #include "gpp_atomtype.h"

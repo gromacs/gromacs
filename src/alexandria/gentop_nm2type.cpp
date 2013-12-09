@@ -47,7 +47,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "physics.h"
 #include "names.h"

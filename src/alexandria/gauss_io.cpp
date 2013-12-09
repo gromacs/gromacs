@@ -43,7 +43,7 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "strdb.h" 
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "symtab.h"
 #include "string2.h"
 #include "vec.h"

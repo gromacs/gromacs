@@ -55,9 +55,13 @@
 #include "smalloc.h"
 #include "strdb.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/coulombintegrals.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/init.h"
 #include "physics.h"
-#include "futil.h"
 #include "statutil.h"
 #include "vec.h"
 #include "3dview.h"
@@ -75,10 +79,7 @@
 #include "viewit.h"
 #include "pdb2top.h"
 #include "gmx_random.h"
-#include "gmx_wallcycle.h"
 #include "gmx_statistics.h"
-#include "gromacs/linearalgebra/matrix.h"
-#include "gromacs/coulombintegrals.h"
 #include "convparm.h"
 #include "gpp_atomtype.h"
 #include "grompp.h"
@@ -1693,10 +1694,9 @@ int main(int argc, char *argv[])
     time_t                my_t;
     char                  pukestr[STRLEN];
     opt_mask_t           *omt = NULL;
-    int                   nnodes, myid;
+    gmx::ProgramInfo &info = gmx::init("tune_fc", &argc, &argv);
     
-    myid = gmx_setup(&argc, &argv, &nnodes);
-    cr = init_par();
+    cr = init_commrec();
     if (MASTER(cr)) 
     {
         printf("There are %d threads/processes.\n", cr->nnodes);
@@ -1797,12 +1797,7 @@ int main(int argc, char *argv[])
         ffclose(fp);
     }
 
-#ifdef GMX_MPI
-    if (gmx_mpi_initialized())
-    {
-        gmx_finalize_par();
-    }
-#endif
+    gmx::finalize();
 
     return 0;
 }

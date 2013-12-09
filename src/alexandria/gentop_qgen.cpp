@@ -46,7 +46,7 @@
 #include <smalloc.h>
 #include <strdb.h>
 #include <sysstuff.h>
-#include <confio.h>
+#include "gromacs/fileio/confio.h"
 #include <physics.h>
 #include <statutil.h>
 #include <vec.h>

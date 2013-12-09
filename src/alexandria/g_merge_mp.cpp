@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "maths.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"

@@ -42,7 +42,7 @@
 #include "maths.h"
 #include "typedefs.h"
 #include "string2.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "physics.h"
 #include "vec.h"
 #include "pbc.h"

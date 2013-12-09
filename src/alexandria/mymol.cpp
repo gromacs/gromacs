@@ -42,14 +42,14 @@
 #include <stdio.h>
 #include <assert.h>
 #include "pdb2top.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "toputil.h"
 #include "gmx_fatal.h"
 #include "force.h"
 #include "vec.h"
 #include "smalloc.h"
 #include "convparm.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "macros.h"
 #include "mtop_util.h"
 #include "shellfc.h"

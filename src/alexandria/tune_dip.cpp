@@ -40,12 +40,11 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
-#endif
+#include "gromacs/utility/init.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/coulombintegrals.h"
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -54,9 +53,7 @@
 #include "smalloc.h"
 #include "strdb.h"
 #include "sysstuff.h"
-#include "confio.h"
 #include "physics.h"
-#include "futil.h"
 #include "statutil.h"
 #include "vec.h"
 #include "3dview.h"
@@ -73,13 +70,11 @@
 #include "network.h"
 #include "viewit.h"
 #include "gmx_random.h"
-#include "gmx_wallcycle.h"
 #include "gmx_statistics.h"
 #include "convparm.h"
 #include "gpp_atomtype.h"
 #include "grompp.h"
 #include "gen_ad.h"
-#include "gromacs/coulombintegrals.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"
 #include "molselect.hpp"
@@ -1004,8 +999,9 @@ int main(int argc, char *argv[])
     gmx_molselect_t       gms;
     time_t                my_t;
     char                  pukestr[STRLEN];
-
-    cr = init_par();
+    gmx::ProgramInfo     &info = gmx::init("tune_dip", &argc, &argv);
+    
+    cr = init_commrec();
 
     parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
                       NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
@@ -1073,12 +1069,7 @@ int main(int argc, char *argv[])
         gmx_poldata_write(opt2fn("-o", NFILE, fnm), md._pd, compress);
     }
 
-#ifdef GMX_MPI
-    if (gmx_mpi_initialized())
-    {
-        gmx_finalize_par();
-    }
-#endif
+    gmx::finalize();
 
     return 0;
 }

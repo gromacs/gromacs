@@ -43,9 +43,8 @@
 #include <sqlite3.h>
 #endif
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
-#include "grompp.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "molprop_sqlite3.hpp"

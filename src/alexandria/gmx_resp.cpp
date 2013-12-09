@@ -48,7 +48,9 @@
 #include <smalloc.h>
 #include <strdb.h>
 #include <sysstuff.h>
-#include <confio.h>
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/filenm.h"
 #include <physics.h>
 #include <statutil.h>
 #include <vec.h>
@@ -57,9 +59,7 @@
 #include <txtdump.h>
 #include <readinp.h>
 #include <names.h>
-#include <filenm.h>
 #include <pbc.h>
-#include <pdbio.h>
 #include <xvgr.h>
 #include <vec.h>
 #include <physics.h>

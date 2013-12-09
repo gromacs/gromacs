@@ -41,6 +41,7 @@
 #include <string.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "string2.h"
@@ -48,7 +49,6 @@
 #include "smalloc.h"
 #include "poldata_xml.hpp"
 #include "xml_util.h"
-#include "futil.h"
 
 extern int xmlDoValidityCheckingDefaultValue;
 	

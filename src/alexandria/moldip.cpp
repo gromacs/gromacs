@@ -5,7 +5,7 @@
 #include "smalloc.h"
 #include "statutil.h"
 #include "nrnb.h"
-#include "gmx_wallcycle.h"
+#include "gromacs/timing/wallcycle.h"
 #include "maths.h"
 #include "vec.h"
 #include "mdatoms.h"
