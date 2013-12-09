@@ -95,18 +95,9 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
         endif(NOT FILE64_OK)
 
         if(NOT FILE64_OK)
-            # now check for Windows stuff
-            TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.c")
-            if(FILE64_OK)
-                MESSAGE(STATUS "Checking for 64-bit off_t - present with _fseeki64")
-                set(HAVE__FSEEKI64 1 CACHE INTERNAL "64-bit off_t requires _fseeki64")
-            endif(FILE64_OK)
-        endif(NOT FILE64_OK)
-
-        if(NOT FILE64_OK)
             MESSAGE(STATUS "Checking for 64-bit off_t - not present")
         else(NOT FILE64_OK)
+            # 64-bit off_t found. Now check that ftello/fseeko is available.
 
             # Set the flags we might have determined to be required above
             configure_file("${CMAKE_SOURCE_DIR}/cmake/TestLargeFiles.c.cmakein" 
@@ -128,23 +119,36 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
                 if(FSEEKO_COMPILE_OK)
                     MESSAGE(STATUS "Checking for fseeko/ftello - present with _LARGEFILE_SOURCE")
                     set(_LARGEFILE_SOURCE 1 CACHE INTERNAL "64-bit fseeko requires _LARGEFILE_SOURCE")
+		else(FSEEKO_COMPILE_OK)
+		    set(FILE64_OK 0)
+		    message(STATUS "64-bit off_t present but fseeko/ftello not found!")
                 endif(FSEEKO_COMPILE_OK)
             endif(NOT FSEEKO_COMPILE_OK)
 
         endif(NOT FILE64_OK)
 
+        if(NOT FILE64_OK)
+            # now check for Windows stuff
+            TRY_COMPILE(FILE64_OK "${CMAKE_BINARY_DIR}"
+                        "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.c")
+            if(FILE64_OK)
+                MESSAGE(STATUS "Checking for 64-bit off_t - present with _fseeki64")
+                set(HAVE__FSEEKI64 1 CACHE INTERNAL "64-bit off_t requires _fseeki64")
+            endif(FILE64_OK)
+        endif(NOT FILE64_OK)
+
 	if(FSEEKO_COMPILE_OK)
             SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
             set(HAVE_FSEEKO 1 CACHE INTERNAL "64bit fseeko is available" FORCE)
-        else(FSEEKO_COMPILE_OK)
-	    if (HAVE__FSEEKI64)
-		SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
-		SET(HAVE__FSEEKI64 1 CACHE INTERNAL "Windows 64-bit fseek" FORCE)
-	    else (HAVE__FSEEKI64)
-                MESSAGE(STATUS "Checking for fseeko/ftello - not found")
-                SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
-	    endif (HAVE__FSEEKI64)
-        endif(FSEEKO_COMPILE_OK)
+        elseif(HAVE__FSEEKI64)
+            SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
+            SET(HAVE__FSEEKI64 1 CACHE INTERNAL "Windows 64-bit fseek" FORCE)
+	elseif(SIZEOF_LONG_INT EQUAL 8) #standard fseek is OK for 64bit
+            SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)	    
+	else()
+            SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
+            MESSAGE(FATAL_ERROR "Checking for 64bit file support failed.")
+        endif()
 
     ENDIF(NOT DEFINED ${VARIABLE})
 ENDMACRO(GMX_TEST_LARGE_FILES VARIABLE)

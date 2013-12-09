@@ -401,16 +401,4 @@
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
 
-/* Catch stupid CMake problems on OS X */
-#ifdef __APPLE__
-#  if ((defined(__LP64__) && __LP64__ && defined(SIZEOF_VOIDP) && SIZEOF_VOIDP<8) || ( (!defined(__LP64__) || __LP64__==0) && (defined(SIZEOF_VOIDP) && SIZEOF_VOIDP>4)))
-#    error "Inconsistency between current OS X architecture and the one used to generate original" 
-#    error "CMake configuration. This is probably caused by starting CMake with the default value"
-#    error "for CMAKE_OSX_ARCHITECTURES (blank), and then changing it. In this case all the tests"
-#    error "will have been performed with the original (now incorrect) architecture."
-#    error "To fix this, set CMAKE_OSX_ARCHITECTURES on the _command_line_ before starting CMake,"
-#    error "or create a new such entry with your choice in the GUI _before_ hitting 'configure'."
-#  endif
-#endif
-
 /*! \endcond */
