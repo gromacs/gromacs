@@ -65,11 +65,4 @@ extern gmx_bool do_swapcoords(
         gmx_bool         bVerbose,
         gmx_bool         bRerun);
 
-extern void swapcoords_get_charges(
-        t_commrec        *cr,
-        FILE             *fplog,
-        gmx_large_int_t  step,
-        t_inputrec       *ir,
-        gmx_mtop_t       *mtop);
-
 #endif
