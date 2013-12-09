@@ -189,11 +189,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
     char         **grpname;
     int           *isize, isize_cm = 0, nrdf = 0, max_i, isize0, isize_g;
     atom_id      **index, *index_cm = NULL;
-#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
-    long long int *sum;
-#else
-    double        *sum;
-#endif
+    gmx_int64_t   *sum;
     real           t, rmax2, cut2, r, r2, r2ii, invhbinw, normfac;
     real           segvol, spherevol, prev_spherevol, **rdf;
     rvec          *x, dx, *x0 = NULL, *x_i1, xi;
