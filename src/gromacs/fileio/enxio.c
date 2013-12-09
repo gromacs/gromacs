@@ -181,7 +181,7 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
                 sb->ival_alloc = sb->nr;
             }
             break;
-        case xdr_datatype_large_int:
+        case xdr_datatype_int64:
             if (sb->nr > sb->lval_alloc)
             {
                 srenew(sb->lval, sb->nr);
@@ -504,7 +504,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
         {
             *bOK = FALSE;
         }
-        if (!gmx_fio_do_gmx_large_int(ef->fio, fr->step))
+        if (!gmx_fio_do_gmx_int64(ef->fio, fr->step))
         {
             *bOK = FALSE;
         }
@@ -527,7 +527,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
         }
         if (*file_version >= 3)
         {
-            if (!gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps))
+            if (!gmx_fio_do_gmx_int64(ef->fio, fr->nsteps))
             {
                 *bOK = FALSE;
             }
@@ -1059,8 +1059,8 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
                 case xdr_datatype_int:
                     bOK1 = gmx_fio_ndo_int(ef->fio, sub->ival, sub->nr);
                     break;
-                case xdr_datatype_large_int:
-                    bOK1 = gmx_fio_ndo_gmx_large_int(ef->fio, sub->lval, sub->nr);
+                case xdr_datatype_int64:
+                    bOK1 = gmx_fio_ndo_int64(ef->fio, sub->lval, sub->nr);
                     break;
                 case xdr_datatype_char:
                     bOK1 = gmx_fio_ndo_uchar(ef->fio, sub->cval, sub->nr);
