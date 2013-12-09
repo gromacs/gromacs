@@ -1543,13 +1543,13 @@ int gmx_trjconv(int argc, char *argv[])
                     {
                         if (!bRound)
                         {
-                            bDoIt = bRmod(fr.time, tzero, delta_t);
+                            bDoIt = bRealModulo(fr.time, tzero, delta_t);
                         }
                         else
                         {
                             /* round() is not C89 compatible, so we do this:  */
-                            bDoIt = bRmod(floor(fr.time+0.5), floor(tzero+0.5),
-                                          floor(delta_t+0.5));
+                            bDoIt = bRealModulo(floor(fr.time+0.5), floor(tzero+0.5),
+                                                floor(delta_t+0.5));
                         }
                     }
 
@@ -1674,14 +1674,14 @@ int gmx_trjconv(int argc, char *argv[])
 
                         if (!bRound)
                         {
-                            bSplitHere = bSplit && bRmod(fr.time, tzero, split_t);
+                            bSplitHere = bSplit && bRealModulo(fr.time, tzero, split_t);
                         }
                         else
                         {
                             /* round() is not C89 compatible, so we do this: */
-                            bSplitHere = bSplit && bRmod(floor(fr.time+0.5),
-                                                         floor(tzero+0.5),
-                                                         floor(split_t+0.5));
+                            bSplitHere = bSplit && bRealModulo(floor(fr.time+0.5),
+                                                               floor(tzero+0.5),
+                                                               floor(split_t+0.5));
                         }
                         if (bSeparate || bSplitHere)
                         {
