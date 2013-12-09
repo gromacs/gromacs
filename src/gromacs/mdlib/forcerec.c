@@ -947,11 +947,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
     const t_atoms  *atoms, *atoms_tpi;
     const t_blocka *excl;
     int             mb, nmol, nmolc, i, j, tpi, tpj, j1, j2, k, n, nexcl, q;
-#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
-    long long int   npair, npair_ij, tmpi, tmpj;
-#else
-    double          npair, npair_ij, tmpi, tmpj;
-#endif
+    gmx_int64_t     npair, npair_ij, tmpi, tmpj;
     double          csix, ctwelve;
     int             ntp, *typecount;
     gmx_bool        bBHAM;

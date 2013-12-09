@@ -64,8 +64,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         set(_outputopt --xml)
     endif()
     set(_common_flags
-        --enable=style
-        -DSIZEOF_LONG_LONG_INT=8 -DSIZEOF_INT=4 -DLINUX
+        --enable=style -DLINUX
         -I src/gromacs/legacyheaders -I src
         -I ${CMAKE_BINARY_DIR}/src -I ${CMAKE_BINARY_DIR}/src/gromacs/utility
         --quiet
