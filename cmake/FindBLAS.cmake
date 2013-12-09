@@ -42,6 +42,7 @@
 
 include(CheckFunctionExists)
 include(CheckFortranFunctionExists)
+include(CheckTypeSize)
 
 set(_blas_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
@@ -295,6 +296,7 @@ if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
    list(GET _ACML_GPU_ROOT 0 _ACML_GPU_ROOT)
    if( _ACML_ROOT )
     get_filename_component( _ACML_ROOT ${_ACML_ROOT} PATH )
+    check_type_size("int" SIZEOF_INTEGER)
     if( SIZEOF_INTEGER EQUAL 8 )
      set( _ACML_PATH_SUFFIX "_int64" )
     else()

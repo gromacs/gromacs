@@ -243,11 +243,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
     int            i, s;
     double         min, max;
     int            nbin;
-#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
-    long long int *histo;
-#else
-    double        *histo;
-#endif
+    gmx_int64_t   *histo;
 
     min = val[0][0];
     max = val[0][0];
