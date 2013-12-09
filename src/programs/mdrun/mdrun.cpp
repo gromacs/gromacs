@@ -536,7 +536,7 @@ int gmx_mdrun(int argc, char *argv[])
           "Keep and number checkpoint files" },
         { "-append",  FALSE, etBOOL, {&bAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-        { "-nsteps",  FALSE, etGMX_LARGE_INT, {&nsteps},
+        { "-nsteps",  FALSE, etGMX_INT64, {&nsteps},
           "Run this number of steps, overrides .mdp file option" },
         { "-maxh",   FALSE, etREAL, {&max_hours},
           "Terminate after 0.99 times this time (hours)" },

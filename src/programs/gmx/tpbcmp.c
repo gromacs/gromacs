@@ -72,7 +72,7 @@ static void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
     }
 }
 
-static void cmp_gmx_large_int(FILE *fp, const char *s, gmx_int64_t i1, gmx_int64_t i2)
+static void cmp_int64(FILE *fp, const char *s, gmx_int64_t i1, gmx_int64_t i2)
 {
     if (i1 != i2)
     {
@@ -746,8 +746,8 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
      * #define CIR(s) cmp_real(fp,"inputrec->"#s,0,ir1->##s,ir2->##s,ftol)
      */
     cmp_int(fp, "inputrec->eI", -1, ir1->eI, ir2->eI);
-    cmp_gmx_large_int(fp, "inputrec->nsteps", ir1->nsteps, ir2->nsteps);
-    cmp_gmx_large_int(fp, "inputrec->init_step", ir1->init_step, ir2->init_step);
+    cmp_int64(fp, "inputrec->nsteps", ir1->nsteps, ir2->nsteps);
+    cmp_int64(fp, "inputrec->init_step", ir1->init_step, ir2->init_step);
     cmp_int(fp, "inputrec->simulation_part", -1, ir1->simulation_part, ir2->simulation_part);
     cmp_int(fp, "inputrec->ePBC", -1, ir1->ePBC, ir2->ePBC);
     cmp_int(fp, "inputrec->bPeriodicMols", -1, ir1->bPeriodicMols, ir2->bPeriodicMols);
@@ -1312,7 +1312,7 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
                     s2 = &(b2->sub[i]);
 
                     cmp_int(stdout, buf, -1, (int)s1->type, (int)s2->type);
-                    cmp_gmx_large_int(stdout, buf, s1->nr, s2->nr);
+                    cmp_int64(stdout, buf, s1->nr, s2->nr);
 
                     if ((s1->type == s2->type) && (s1->nr == s2->nr))
                     {
@@ -1341,10 +1341,10 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
                                             s1->ival[k], s2->ival[k]);
                                 }
                                 break;
-                            case xdr_datatype_large_int:
+                            case xdr_datatype_int64:
                                 for (k = 0; k < s1->nr; k++)
                                 {
-                                    cmp_gmx_large_int(stdout, buf,
+                                    cmp_int64(stdout, buf,
                                                       s1->lval[k], s2->lval[k]);
                                 }
                                 break;

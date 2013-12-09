@@ -94,7 +94,7 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 #endif
 }
 
-int xdr_gmx_large_int(XDR *xdrs, gmx_int64_t *i)
+int xdr_int64(XDR *xdrs, gmx_int64_t *i)
 {
     /* This routine stores values compatible with xdr_int64_t */
 

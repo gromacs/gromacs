@@ -111,7 +111,7 @@ int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs);
 
 /* This structure is used for parsing arguments off the comand line */
 enum {
-    etINT, etGMX_LARGE_INT, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
+    etINT, etGMX_INT64, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
 };
 
 typedef struct {

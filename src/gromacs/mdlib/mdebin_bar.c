@@ -345,7 +345,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
         dh->subblock_meta_l[k++] = dh->derivative;
 
         blk->sub[1].nr   = nhist_written+3;
-        blk->sub[1].type = xdr_datatype_large_int;
+        blk->sub[1].type = xdr_datatype_int64;
         blk->sub[1].lval = dh->subblock_meta_l;
 
         /* subblock 3 + 4 : the histogram data */

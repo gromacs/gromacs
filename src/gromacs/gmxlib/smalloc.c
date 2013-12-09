@@ -105,13 +105,6 @@ static void log_action(int bMal, const char *what, const char *file, int line,
 }
 #endif
 
-static char *gmx_large_int_str(gmx_int64_t i, char *buf)
-{
-    sprintf(buf, "%"GMX_PRId64, i);
-
-    return buf;
-}
-
 void *save_malloc(const char *name, const char *file, int line, size_t size)
 {
     void *p;
@@ -125,12 +118,10 @@ void *save_malloc(const char *name, const char *file, int line, size_t size)
     {
         if ((p = malloc(size)) == NULL)
         {
-            char cbuf[22];
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to malloc %s bytes for %s\n"
+                      "Not enough memory. Failed to malloc %"GMX_PRId64" bytes for %s\n"
                       "(called from file %s, line %d)",
-                      gmx_large_int_str((gmx_int64_t)size, cbuf),
-                      name, file, line);
+                      size, name, file, line);
         }
         (void) memset(p, 0, size);
     }
@@ -227,12 +218,10 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
         }
         if (p == NULL)
         {
-            char cbuf[22];
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to realloc %s bytes for %s, %s=%x\n"
+                      "Not enough memory. Failed to realloc %"GMX_PRId64" bytes for %s, %s=%x\n"
                       "(called from file %s, line %d)",
-                      gmx_large_int_str((gmx_int64_t)size, cbuf),
-                      name, name, ptr, file, line);
+                      size, name, name, ptr, file, line);
         }
 #ifdef DEBUG
         log_action(1, name, file, line, 1, size, p);
