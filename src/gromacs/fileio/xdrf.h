@@ -71,7 +71,7 @@ int xdr_real(XDR *xdrs, real *r);
 int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision);
 
 
-int xdr_gmx_large_int(XDR *xdrs, gmx_int64_t *i);
+int xdr_int64(XDR *xdrs, gmx_int64_t *i);
 /* Read or write a gmx_int64_t value.
  * When warn!=NULL a warning will be written to stderr
  * when a value does not fit,

@@ -165,8 +165,8 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     check_multi_int(fplog, ms, state->natoms, "the number of atoms", FALSE);
     check_multi_int(fplog, ms, ir->eI, "the integrator", FALSE);
-    check_multi_large_int(fplog, ms, ir->init_step+ir->nsteps, "init_step+nsteps", FALSE);
-    check_multi_large_int(fplog, ms, (ir->init_step+nst-1)/nst,
+    check_multi_int64(fplog, ms, ir->init_step+ir->nsteps, "init_step+nsteps", FALSE);
+    check_multi_int64(fplog, ms, (ir->init_step+nst-1)/nst,
                           "first exchange step: init_step/-replex", FALSE);
     check_multi_int(fplog, ms, ir->etc, "the temperature coupling", FALSE);
     check_multi_int(fplog, ms, ir->opts.ngtc,

@@ -2189,11 +2189,11 @@ int gmx_tune_pme(int argc, char *argv[])
         { "-ntpr",     FALSE, etINT,  {&ntprs},
           "Number of [TT].tpr[tt] files to benchmark. Create this many files with different rcoulomb scaling factors depending on -rmin and -rmax. "
           "If < 1, automatically choose the number of [TT].tpr[tt] files to test" },
-        { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
+        { "-steps",    FALSE, etGMX_INT64, {&bench_nsteps},
           "Take timings for this many steps in the benchmark runs" },
         { "-resetstep", FALSE, etINT,  {&presteps},
           "Let dlb equilibrate this many steps before timings are taken (reset cycle counters after this many steps)" },
-        { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
+        { "-simsteps", FALSE, etGMX_INT64, {&new_sim_nsteps},
           "If non-negative, perform this many steps in the real run (overwrites nsteps from [TT].tpr[tt], add [TT].cpt[tt] steps)" },
         { "-launch",   FALSE, etBOOL, {&bLaunch},
           "Launch the real simulation after optimization" },
