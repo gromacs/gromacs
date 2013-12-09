@@ -164,9 +164,9 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
     sfree(ibuf);
 }
 
-void check_multi_large_int(FILE *log, const gmx_multisim_t *ms,
-                           gmx_int64_t val, const char *name,
-                           gmx_bool bQuiet)
+void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
+                       gmx_int64_t val, const char *name,
+                       gmx_bool bQuiet)
 {
     gmx_int64_t      *ibuf;
     int               p;

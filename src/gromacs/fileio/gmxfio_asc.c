@@ -170,7 +170,7 @@ static gmx_bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio,
                                                                           desc,
                                                                           buf));
             break;
-        case eioGMX_LARGE_INT:
+        case eioINT64:
             sprintf(strbuf, "%s%s%s", "%", GMX_PRId64, "\n");
             res = fprintf(fp, strbuf, *((gmx_int64_t *) item),
                           gmx_fio_dbgstr(fio, desc, buf));
@@ -319,7 +319,7 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
                 *((int *) item) = i;
             }
             break;
-        case eioGMX_LARGE_INT:
+        case eioINT64:
             res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN),
                          "%"GMX_SCNd64, &s);
             if (item)

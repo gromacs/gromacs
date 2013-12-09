@@ -49,7 +49,7 @@ extern "C"
 /* This structure is used for parsing arguments off the comand line */
 enum
 {
-    etINT, etGMX_LARGE_INT, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
+    etINT, etINT64, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
 };
 
 typedef struct

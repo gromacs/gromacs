@@ -147,12 +147,12 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 *(int *) item = idum;
             }
             break;
-        case eioGMX_LARGE_INT:
+        case eioINT64:
             if (item && !fio->bRead)
             {
                 sdum = *(gmx_int64_t *) item;
             }
-            res = xdr_gmx_large_int(fio->xdr, &sdum);
+            res = xdr_int64(fio->xdr, &sdum);
             if (item)
             {
                 *(gmx_int64_t *) item = sdum;

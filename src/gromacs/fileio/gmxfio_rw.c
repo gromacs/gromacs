@@ -104,12 +104,12 @@ gmx_bool gmx_fio_reade_int(t_fileio *fio, int *item,
     return ret;
 }
 
-gmx_bool gmx_fio_reade_gmx_large_int(t_fileio *fio, gmx_int64_t *item,
-                                     const char *desc, const char *srcfile, int line)
+gmx_bool gmx_fio_reade_int64(t_fileio *fio, gmx_int64_t *item,
+                             const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    ret = fio->iotp->nread(fio, item, 1, eioGMX_LARGE_INT, desc, srcfile, line);
+    ret = fio->iotp->nread(fio, item, 1, eioINT64, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -209,12 +209,12 @@ gmx_bool gmx_fio_writee_int(t_fileio *fio, int item,
     return ret;
 }
 
-gmx_bool gmx_fio_writee_gmx_large_int(t_fileio *fio, gmx_int64_t item,
-                                      const char *desc, const char *srcfile, int line)
+gmx_bool gmx_fio_writee_int64(t_fileio *fio, gmx_int64_t item,
+                              const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    ret = fio->iotp->nwrite(fio, &item, 1, eioGMX_LARGE_INT, desc, srcfile, line);
+    ret = fio->iotp->nwrite(fio, &item, 1, eioINT64, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -364,18 +364,18 @@ gmx_bool gmx_fio_doe_int(t_fileio *fio, int *item,
     return ret;
 }
 
-gmx_bool gmx_fio_doe_gmx_large_int(t_fileio *fio, gmx_int64_t *item,
-                                   const char *desc, const char *srcfile, int line)
+gmx_bool gmx_fio_doe_int64(t_fileio *fio, gmx_int64_t *item,
+                           const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
     if (fio->bRead)
     {
-        ret = fio->iotp->nread(fio, item, 1, eioGMX_LARGE_INT, desc, srcfile, line);
+        ret = fio->iotp->nread(fio, item, 1, eioINT64, desc, srcfile, line);
     }
     else
     {
-        ret = fio->iotp->nwrite(fio, item, 1, eioGMX_LARGE_INT, desc, srcfile, line);
+        ret = fio->iotp->nwrite(fio, item, 1, eioINT64, desc, srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -533,15 +533,15 @@ gmx_bool gmx_fio_nreade_int(t_fileio *fio, int *item, int n,
     return ret;
 }
 
-gmx_bool gmx_fio_nreade_gmx_large_int(t_fileio *fio, gmx_int64_t *item, int n,
-                                      const char *desc, const char *srcfile, int line)
+gmx_bool gmx_fio_nreade_int64(t_fileio *fio, gmx_int64_t *item, int n,
+                              const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret = TRUE;
     int      i;
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioGMX_LARGE_INT, desc,
+        ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioINT64, desc,
                                       srcfile, line);
     }
     gmx_fio_unlock(fio);
@@ -677,16 +677,16 @@ gmx_bool gmx_fio_nwritee_int(t_fileio *fio, const int *item, int n,
     return ret;
 }
 
-gmx_bool gmx_fio_nwritee_gmx_large_int(t_fileio *fio,
-                                       const gmx_int64_t *item, int n,
-                                       const char *desc, const char *srcfile, int line)
+gmx_bool gmx_fio_nwritee_int64(t_fileio *fio,
+                               const gmx_int64_t *item, int n,
+                               const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret = TRUE;
     int      i;
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioGMX_LARGE_INT,
+        ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioINT64,
                                        desc, srcfile, line);
     }
     gmx_fio_unlock(fio);
@@ -890,8 +890,8 @@ gmx_bool gmx_fio_ndoe_int(t_fileio *fio, int *item, int n,
 
 
 
-gmx_bool gmx_fio_ndoe_gmx_large_int(t_fileio *fio, gmx_int64_t *item, int n,
-                                    const char *desc, const char *srcfile, int line)
+gmx_bool gmx_fio_ndoe_int64(t_fileio *fio, gmx_int64_t *item, int n,
+                            const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret = TRUE;
     int      i;
@@ -900,12 +900,12 @@ gmx_bool gmx_fio_ndoe_gmx_large_int(t_fileio *fio, gmx_int64_t *item, int n,
     {
         if (fio->bRead)
         {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioGMX_LARGE_INT, desc,
+            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioINT64, desc,
                                           srcfile, line);
         }
         else
         {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioGMX_LARGE_INT, desc,
+            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioINT64, desc,
                                            srcfile, line);
         }
     }

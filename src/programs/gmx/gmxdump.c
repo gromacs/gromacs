@@ -445,7 +445,7 @@ void list_ene(const char *fn)
                                 printf("%14d %10d\n", j, sb->ival[j]);
                             }
                             break;
-                        case xdr_datatype_large_int:
+                        case xdr_datatype_int64:
                             for (j = 0; j < sb->nr; j++)
                             {
                                 printf("%14d %s\n",

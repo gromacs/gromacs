@@ -742,7 +742,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->eI);
     if (file_version >= 62)
     {
-        gmx_fio_do_gmx_large_int(fio, ir->nsteps);
+        gmx_fio_do_int64(fio, ir->nsteps);
     }
     else
     {
@@ -753,7 +753,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         if (file_version >= 62)
         {
-            gmx_fio_do_gmx_large_int(fio, ir->init_step);
+            gmx_fio_do_int64(fio, ir->init_step);
         }
         else
         {
