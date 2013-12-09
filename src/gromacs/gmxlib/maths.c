@@ -41,7 +41,7 @@
 #include <limits.h>
 #include "maths.h"
 #ifdef HAVE__FINITE
-#include "float.h"
+#include <float.h>
 #endif
 
 int gmx_nint(real a)

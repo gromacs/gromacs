@@ -47,7 +47,7 @@
 #include "smalloc.h"
 #include "main.h"
 #ifdef WITH_DMALLOC
-#include "dmalloc.h"
+#include <dmalloc.h>
 #endif
 
 #ifdef DEBUG

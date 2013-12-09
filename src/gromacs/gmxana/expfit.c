@@ -37,10 +37,9 @@
 #include <config.h>
 #endif
 
-
-#include <sysstuff.h>
-#include <string.h>
 #include <math.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "xvgr.h"

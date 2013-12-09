@@ -37,8 +37,8 @@
 #include <config.h>
 #endif
 
-#include <sysstuff.h>
 #include <string.h>
+
 #include "smalloc.h"
 #include "statutil.h"
 #include "string2.h"

@@ -146,10 +146,10 @@
 #include <math.h>
 #include <string.h>
 
-#include <smalloc.h>
-#include <vec.h>
+#include "smalloc.h"
+#include "vec.h"
 
-#include <histogram.h>
+#include "histogram.h"
 
 /*! \internal \brief
  * Stores data for a histogram.

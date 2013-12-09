@@ -35,11 +35,12 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <typedefs.h>
 
+#include <math.h>
+
+#include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
-#include <math.h>
 #include "xvgr.h"
 #include "statutil.h"
 #include "string2.h"
@@ -47,13 +48,13 @@
 #include "index.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "pbc.h"
 #include "do_fit.h"
 #include "gmx_ana.h"
-#include "gromacs/fileio/trxio.h"
 
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/trxio.h"
 
 int gmx_helixorient(int argc, char *argv[])
 {

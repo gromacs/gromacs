@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#include <gmx_random.h>
+#include "gmx_random.h"
 
 #include <stdio.h>
 #include <stdlib.h>

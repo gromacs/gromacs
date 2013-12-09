@@ -37,12 +37,11 @@
 #include <config.h>
 #endif
 
-#include <sysstuff.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
-#include "gromacs/fileio/futil.h"
+
 #include "statutil.h"
 #include "main.h"
 #include "network.h"
@@ -51,8 +50,9 @@
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "gromacs/fileio/gmxfio.h"
 
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "gromacs/legacyheaders/thread_mpi/threads.h"

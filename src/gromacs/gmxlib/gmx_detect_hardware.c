@@ -59,8 +59,8 @@
 
 #include "thread_mpi/threads.h"
 
-#if ((defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !(defined (__CYGWIN__) || defined (__CYGWIN32__)))
-#include "windows.h"
+#ifdef GMX_NATIVE_WINDOWS
+#include <windows.h>
 #endif
 
 #ifdef GMX_GPU

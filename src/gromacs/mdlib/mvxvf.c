@@ -37,8 +37,8 @@
 #include <config.h>
 #endif
 
-#include <sysstuff.h>
 #include <string.h>
+
 #include "typedefs.h"
 #include "main.h"
 #include "mvdata.h"
