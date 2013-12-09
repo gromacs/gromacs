@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef WITH_DMALLOC
-#include "dmalloc.h"
+#include <dmalloc.h>
 #endif
 
 

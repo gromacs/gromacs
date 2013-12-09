@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,11 +37,12 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <typedefs.h>
 
+#include <math.h>
+
+#include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
-#include <math.h>
 #include "xvgr.h"
 #include "gromacs/commandline/pargs.h"
 #include "string2.h"
@@ -49,13 +50,13 @@
 #include "index.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "pbc.h"
 #include "do_fit.h"
 #include "gmx_ana.h"
-#include "gromacs/fileio/trxio.h"
 
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/trxio.h"
 
 int gmx_helixorient(int argc, char *argv[])
 {

@@ -1,6 +1,6 @@
 #include <ctype.h>
 #include <math.h>
-#include <types/simple.h>
+#include "types/simple.h"
 
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
