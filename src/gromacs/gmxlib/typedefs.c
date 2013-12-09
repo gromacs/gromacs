@@ -52,7 +52,7 @@
 
 
 
-static gmx_bool            bOverAllocDD = FALSE;
+static gmx_bool            bOverAllocDD     = FALSE;
 static tMPI_Thread_mutex_t over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 
@@ -464,12 +464,12 @@ void done_inputrec(t_inputrec *ir)
 
 static void zero_history(history_t *hist)
 {
-    hist->disre_initf = 0;
-    hist->ndisrepairs = 0;
+    hist->disre_initf  = 0;
+    hist->ndisrepairs  = 0;
     hist->disre_rm3tav = NULL;
-    hist->orire_initf = 0;
-    hist->norire_Dtav = 0;
-    hist->orire_Dtav = NULL;
+    hist->orire_initf  = 0;
+    hist->norire_Dtav  = 0;
+    hist->orire_Dtav   = NULL;
 }
 
 static void zero_ekinstate(ekinstate_t *eks)
@@ -617,7 +617,7 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     zero_history(&state->hist);
     zero_ekinstate(&state->ekinstate);
     init_energyhistory(&state->enerhist);
-    init_df_history(&state->dfhist,nlambda);
+    init_df_history(&state->dfhist, nlambda);
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;
     state->cg_gl           = NULL;
@@ -964,8 +964,8 @@ extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
 
     /* Currently, there should not be any difference in nlambda between the two,
        but this is included for completeness for potential later functionality */
-    df_dest->nlambda = df_source->nlambda;
-    df_dest->bEquil  = df_source->bEquil;
+    df_dest->nlambda  = df_source->nlambda;
+    df_dest->bEquil   = df_source->bEquil;
     df_dest->wl_delta = df_source->wl_delta;
 
     for (i = 0; i < df_dest->nlambda; i++)
@@ -982,10 +982,10 @@ extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
     {
         for (j = 0; j < df_dest->nlambda; j++)
         {
-            df_dest->accum_p[i][j]      = df_source->accum_p[i][j];
-            df_dest->accum_m[i][j]      = df_source->accum_m[i][j];
-            df_dest->accum_p2[i][j]     = df_source->accum_p2[i][j];
-            df_dest->accum_m2[i][j]     = df_source->accum_m2[i][j];
+            df_dest->accum_p[i][j]        = df_source->accum_p[i][j];
+            df_dest->accum_m[i][j]        = df_source->accum_m[i][j];
+            df_dest->accum_p2[i][j]       = df_source->accum_p2[i][j];
+            df_dest->accum_m2[i][j]       = df_source->accum_m2[i][j];
             df_dest->Tij[i][j]            = df_source->Tij[i][j];
             df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
         }
@@ -1005,7 +1005,7 @@ void done_df_history(df_history_t *dfhist)
         sfree(dfhist->sum_minvar);
         sfree(dfhist->sum_variance);
 
-        for (i=0;i<dfhist->nlambda;i++)
+        for (i = 0; i < dfhist->nlambda; i++)
         {
             sfree(dfhist->Tij[i]);
             sfree(dfhist->Tij_empirical[i]);

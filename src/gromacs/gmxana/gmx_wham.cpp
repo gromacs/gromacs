@@ -111,14 +111,14 @@ typedef struct
      * \name Using umbrella pull code since gromacs 4.x
      */
     /*!\{*/
-    int   npullcrds;     //!< nr of pull coordinates in tpr file
-    int   pull_geometry; //!< such as distance, direction
-    ivec  pull_dim;      //!< pull dimension with geometry distance
-    int   pull_ndim;     //!< nr of pull_dim != 0
-    gmx_bool bPrintRef;  //!< Coordinates of reference groups written to pullx.xvg ?
-    real *k;             //!< force constants in tpr file
-    real *init_dist;     //!< reference displacements
-    real *umbInitDist;   //!< reference displacement in umbrella direction
+    int      npullcrds;     //!< nr of pull coordinates in tpr file
+    int      pull_geometry; //!< such as distance, direction
+    ivec     pull_dim;      //!< pull dimension with geometry distance
+    int      pull_ndim;     //!< nr of pull_dim != 0
+    gmx_bool bPrintRef;     //!< Coordinates of reference groups written to pullx.xvg ?
+    real    *k;             //!< force constants in tpr file
+    real    *init_dist;     //!< reference displacements
+    real    *umbInitDist;   //!< reference displacement in umbrella direction
     /*!\}*/
     /*!
      * \name Using PDO files common until gromacs 3.x

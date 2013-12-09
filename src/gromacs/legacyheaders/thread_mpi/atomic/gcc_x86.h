@@ -113,7 +113,7 @@ typedef struct tMPI_Spinlock
 #define tMPI_Atomic_memory_barrier() __asm__ __volatile__("sfence;" : : : "memory")
 #else
 /* MIC is in-order and does not need nor support sfense */
-#define tMPI_Atomic_memory_barrier() __asm__ __volatile__("":::"memory")
+#define tMPI_Atomic_memory_barrier() __asm__ __volatile__("" ::: "memory")
 #endif
 
 #define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD

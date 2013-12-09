@@ -107,46 +107,46 @@ typedef struct {
 
 /* A pair-search grid struct for one domain decomposition zone */
 typedef struct {
-    rvec     c0;               /* The lower corner of the (local) grid        */
-    rvec     c1;               /* The upper corner of the (local) grid        */
-    real     atom_density;     /* The atom number density for the local grid  */
+    rvec        c0;               /* The lower corner of the (local) grid        */
+    rvec        c1;               /* The upper corner of the (local) grid        */
+    real        atom_density;     /* The atom number density for the local grid  */
 
-    gmx_bool bSimple;          /* Is this grid simple or super/sub            */
-    int      na_c;             /* Number of atoms per cluster                 */
-    int      na_cj;            /* Number of atoms for list j-clusters         */
-    int      na_sc;            /* Number of atoms per super-cluster           */
-    int      na_c_2log;        /* 2log of na_c                                */
+    gmx_bool    bSimple;          /* Is this grid simple or super/sub            */
+    int         na_c;             /* Number of atoms per cluster                 */
+    int         na_cj;            /* Number of atoms for list j-clusters         */
+    int         na_sc;            /* Number of atoms per super-cluster           */
+    int         na_c_2log;        /* 2log of na_c                                */
 
-    int      ncx;              /* Number of (super-)cells along x             */
-    int      ncy;              /* Number of (super-)cells along y             */
-    int      nc;               /* Total number of (super-)cells               */
+    int         ncx;              /* Number of (super-)cells along x             */
+    int         ncy;              /* Number of (super-)cells along y             */
+    int         nc;               /* Total number of (super-)cells               */
 
-    real     sx;               /* x-size of a (super-)cell                    */
-    real     sy;               /* y-size of a (super-)cell                    */
-    real     inv_sx;           /* 1/sx                                        */
-    real     inv_sy;           /* 1/sy                                        */
+    real        sx;               /* x-size of a (super-)cell                    */
+    real        sy;               /* y-size of a (super-)cell                    */
+    real        inv_sx;           /* 1/sx                                        */
+    real        inv_sy;           /* 1/sy                                        */
 
-    int      cell0;            /* Index in nbs->cell corresponding to cell 0  */
+    int         cell0;            /* Index in nbs->cell corresponding to cell 0  */
 
-    int     *cxy_na;           /* The number of atoms for each column in x,y  */
-    int     *cxy_ind;          /* Grid (super)cell index, offset from cell0   */
-    int      cxy_nalloc;       /* Allocation size for cxy_na and cxy_ind      */
+    int        *cxy_na;           /* The number of atoms for each column in x,y  */
+    int        *cxy_ind;          /* Grid (super)cell index, offset from cell0   */
+    int         cxy_nalloc;       /* Allocation size for cxy_na and cxy_ind      */
 
-    int        *nsubc;         /* The number of sub cells for each super cell */
-    float      *bbcz;          /* Bounding boxes in z for the super cells     */
-    nbnxn_bb_t *bb;            /* 3D bounding boxes for the sub cells         */
-    nbnxn_bb_t *bbj;           /* 3D j-bounding boxes for the case where      *
-                                * the i- and j-cluster sizes are different    */
-    float      *pbb;           /* 3D b. boxes in xxxx format per super cell   */
-    int        *flags;         /* Flag for the super cells                    */
-    int         nc_nalloc;     /* Allocation size for the pointers above      */
+    int        *nsubc;            /* The number of sub cells for each super cell */
+    float      *bbcz;             /* Bounding boxes in z for the super cells     */
+    nbnxn_bb_t *bb;               /* 3D bounding boxes for the sub cells         */
+    nbnxn_bb_t *bbj;              /* 3D j-bounding boxes for the case where      *
+                                   * the i- and j-cluster sizes are different    */
+    float      *pbb;              /* 3D b. boxes in xxxx format per super cell   */
+    int        *flags;            /* Flag for the super cells                    */
+    int         nc_nalloc;        /* Allocation size for the pointers above      */
 
-    float      *bbcz_simple;   /* bbcz for simple grid converted from super   */
-    nbnxn_bb_t *bb_simple;     /* bb for simple grid converted from super     */
-    int        *flags_simple;  /* flags for simple grid converted from super  */
+    float      *bbcz_simple;      /* bbcz for simple grid converted from super   */
+    nbnxn_bb_t *bb_simple;        /* bb for simple grid converted from super     */
+    int        *flags_simple;     /* flags for simple grid converted from super  */
     int         nc_nalloc_simple; /* Allocation size for the pointers above   */
 
-    int      nsubc_tot;        /* Total number of subcell, used for printing  */
+    int         nsubc_tot;        /* Total number of subcell, used for printing  */
 } nbnxn_grid_t;
 
 #ifdef GMX_NBNXN_SIMD

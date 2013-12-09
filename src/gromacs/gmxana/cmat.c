@@ -70,19 +70,19 @@ void copy_t_mat(t_mat *dst, t_mat *src)
 
     if (dst->nn != src->nn)
     {
-        fprintf(stderr, "t_mat structures not identical in size dst %d src %d\n",dst->nn,src->nn);
+        fprintf(stderr, "t_mat structures not identical in size dst %d src %d\n", dst->nn, src->nn);
         return;
     }
     dst->maxrms = src->maxrms;
     dst->minrms = src->minrms;
     dst->sumrms = src->sumrms;
-    for(i = 0; (i < src->nn); i++)
+    for (i = 0; (i < src->nn); i++)
     {
-        for(j = 0; (j < src->nn); j++)
+        for (j = 0; (j < src->nn); j++)
         {
             dst->mat[i][j] = src->mat[i][j];
         }
-        dst->erow[i] = src->erow[i];
+        dst->erow[i]  = src->erow[i];
         dst->m_ind[i] = src->m_ind[i];
     }
 }

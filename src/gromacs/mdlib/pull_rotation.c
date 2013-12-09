@@ -1963,13 +1963,13 @@ static real do_flex2_lowlevel(
 
             /* Subtract the slab center from xj */
             rvec_sub(xj, xcn, tmpvec2);           /* tmpvec2 = xj - xcn       */
-            
+
             /* In rare cases, when an atom position coincides with a slab center
-             * (tmpvec2 == 0) we cannot compute the vector product for sjn. 
-             * However, since the atom is located directly on the pivot, this 
-             * slab's contribution to the force on that atom will be zero 
+             * (tmpvec2 == 0) we cannot compute the vector product for sjn.
+             * However, since the atom is located directly on the pivot, this
+             * slab's contribution to the force on that atom will be zero
              * anyway. Therefore, we directly move on to the next slab.       */
-            if ( 0 == norm(tmpvec2) )
+            if (0 == norm(tmpvec2) )
             {
                 continue;
             }
@@ -2204,11 +2204,11 @@ static real do_flex_lowlevel(
             rvec_sub(xj, xcn, xj_xcn);           /* xj_xcn = xj - xcn         */
 
             /* In rare cases, when an atom position coincides with a slab center
-             * (xj_xcn == 0) we cannot compute the vector product for qjn. 
-             * However, since the atom is located directly on the pivot, this 
-             * slab's contribution to the force on that atom will be zero 
+             * (xj_xcn == 0) we cannot compute the vector product for qjn.
+             * However, since the atom is located directly on the pivot, this
+             * slab's contribution to the force on that atom will be zero
              * anyway. Therefore, we directly move on to the next slab.       */
-            if ( 0 == norm(xj_xcn) )
+            if (0 == norm(xj_xcn) )
             {
                 continue;
             }
@@ -3531,10 +3531,10 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
         }
 #endif
     }
-    
+
     if (bColl)
     {
-        /* Save the original (whole) set of positions in xc_old such that at later 
+        /* Save the original (whole) set of positions in xc_old such that at later
          * steps the rotation group can always be made whole again. If the simulation is
          * restarted, we compute the starting reference positions (given the time)
          * and assume that the correct PBC image of each position is the one nearest
@@ -3550,7 +3550,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
             {
                 ii = rotg->ind[i];
 
-                /* Subtract pivot, rotate, and add pivot again. This will yield the 
+                /* Subtract pivot, rotate, and add pivot again. This will yield the
                  * reference position for time t */
                 rvec_sub(rotg->x_ref[i], erg->xc_ref_center, coord);
                 mvmul(erg->rotmat, coord, xref);

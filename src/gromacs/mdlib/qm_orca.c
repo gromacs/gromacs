@@ -106,10 +106,10 @@ void init_orca(t_QMrec *qm)
 
 void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
-    int i;
+    int        i;
     t_QMMMrec *QMMMrec;
-    FILE *out, *pcFile, *addInputFile, *LJCoeff;
-    char *buf, *orcaInput, *addInputFilename, *LJCoeffFilename, *pcFilename, *exclInName, *exclOutName;
+    FILE      *out, *pcFile, *addInputFile, *LJCoeff;
+    char      *buf, *orcaInput, *addInputFilename, *LJCoeffFilename, *pcFilename, *exclInName, *exclOutName;
 
     QMMMrec = fr->qr;
 

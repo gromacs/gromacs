@@ -757,10 +757,10 @@ static gmx_inline gmx_mm_pr gmx_always_inline gmx_atan2_pr(gmx_mm_pr a, gmx_mm_p
 
 static gmx_inline gmx_mm_pr gmx_always_inline gmx_erfc_pr(gmx_mm_pr a)
 {
-  /* The BG/Q qpxmath.h vector math library intended for use with
-     bgclang does not have erfc, so we need to use a function from
-     mass_simd.h. If this changes, then the #include <mass_simd.h> can
-     become conditional. */ 
+    /* The BG/Q qpxmath.h vector math library intended for use with
+       bgclang does not have erfc, so we need to use a function from
+       mass_simd.h. If this changes, then the #include <mass_simd.h> can
+       become conditional. */
 #ifndef GMX_DOUBLE
     return erfcf4(a);
 #else

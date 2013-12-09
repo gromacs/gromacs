@@ -428,4 +428,3 @@ int do_per_step(gmx_large_int_t step, gmx_large_int_t nstep)
         return 0;
     }
 }
-

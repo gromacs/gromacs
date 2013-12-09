@@ -4189,10 +4189,10 @@ static real calc_one_bond(FILE *fplog, int thread,
             pdihs_noener_simd
 #endif
                 (nbn, idef->il[ftype].iatoms+nb0,
-                 idef->iparams,
-                 (const rvec*)x, f,
-                 pbc, g, lambda[efptFTYPE], md, fcd,
-                 global_atom_index);
+                idef->iparams,
+                (const rvec*)x, f,
+                pbc, g, lambda[efptFTYPE], md, fcd,
+                global_atom_index);
             v = 0;
         }
         else
@@ -4214,7 +4214,7 @@ static real calc_one_bond(FILE *fplog, int thread,
     {
         v = do_nonbonded_listed(ftype, nbn, iatoms+nb0, idef->iparams, (const rvec*)x, f, fshift,
                                 pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
-        
+
         if (bPrintSepPot)
         {
             fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
@@ -4391,7 +4391,7 @@ void calc_bonds_lambda(FILE *fplog,
     real          dvdl_dum[efptNR];
     rvec         *f, *fshift;
     const  t_pbc *pbc_null;
-    t_idef       idef_fe;
+    t_idef        idef_fe;
 
     if (fr->bMolPBC)
     {

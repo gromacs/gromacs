@@ -107,7 +107,7 @@ static void pull_print_x(FILE *out, t_pull *pull, double t)
             }
             else
             {
-                pull_print_group_x(out, pull->dim, &pull->group[pcrd->group[0]]);  
+                pull_print_group_x(out, pull->dim, &pull->group[pcrd->group[0]]);
             }
         }
         pull_print_coord_dr(out, pull->dim, pcrd);
@@ -374,8 +374,8 @@ void get_pull_coord_distance(const t_pull *pull,
                              const t_pbc *pbc, double t,
                              dvec dr, double *dev)
 {
-    static gmx_bool bWarned = FALSE; /* TODO: this should be fixed for thread-safety,
-                                        but is fairly benign */
+    static gmx_bool     bWarned = FALSE; /* TODO: this should be fixed for thread-safety,
+                                            but is fairly benign */
     const t_pull_coord *pcrd;
     int                 m;
     double              ref, drs, inpr;
@@ -445,19 +445,19 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
                           double dt, double t)
 {
 
-    dvec      *r_ij;   /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
-    dvec       unc_ij; /* xp[i] com of i this step, before constr.   -> unc_ij  */
-    dvec      *rnew;  /* current 'new' positions of the groups */
-    double    *dr_tot; /* the total update of the coords */
-    double     ref;
-    dvec       vec;
-    double     d0, inpr;
-    double     lambda, rm, mass, invdt = 0;
-    gmx_bool   bConverged_all, bConverged = FALSE;
-    int        niter = 0, g, c, ii, j, m, max_iter = 100;
-    double     a;
-    dvec       f;          /* the pull force */
-    dvec       tmp, tmp3;
+    dvec         *r_ij;   /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
+    dvec          unc_ij; /* xp[i] com of i this step, before constr.   -> unc_ij  */
+    dvec         *rnew;   /* current 'new' positions of the groups */
+    double       *dr_tot; /* the total update of the coords */
+    double        ref;
+    dvec          vec;
+    double        d0, inpr;
+    double        lambda, rm, mass, invdt = 0;
+    gmx_bool      bConverged_all, bConverged = FALSE;
+    int           niter = 0, g, c, ii, j, m, max_iter = 100;
+    double        a;
+    dvec          f;       /* the pull force */
+    dvec          tmp, tmp3;
     t_pull_group *pdyna, *pgrp0, *pgrp1;
     t_pull_coord *pcrd;
 
@@ -1142,7 +1142,7 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
                 bAbs = TRUE;
             }
         }
-        
+
         fprintf(fplog, "\nWill apply %s COM pulling in geometry '%s'\n",
                 EPULLTYPE(ir->ePull), EPULLGEOM(pull->eGeom));
         fprintf(fplog, "with %d pull coordinate%s and %d group%s\n",
