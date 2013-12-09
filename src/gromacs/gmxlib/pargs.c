@@ -105,7 +105,7 @@ void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[], gmx_bool bKeepA
                     case etINT:
                         *pa[j].u.i = iscan(*argc, argv, &i);
                         break;
-                    case etGMX_LARGE_INT:
+                    case etGMX_INT64:
                         *pa[j].u.is = istepscan(*argc, argv, &i);
                         break;
                     case etTIME:

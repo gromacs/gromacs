@@ -49,7 +49,7 @@ typedef enum
     xdr_datatype_int,
     xdr_datatype_float,
     xdr_datatype_double,
-    xdr_datatype_large_int,
+    xdr_datatype_int64,
     xdr_datatype_char,
     xdr_datatype_string
 } xdr_datatype;

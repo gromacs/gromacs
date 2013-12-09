@@ -3033,7 +3033,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     /* check the block types etc. */
     if ( (blk->nsub < 2) ||
          (blk->sub[0].type != xdr_datatype_double) ||
-         (blk->sub[1].type != xdr_datatype_large_int) ||
+         (blk->sub[1].type != xdr_datatype_int64) ||
          (blk->sub[0].nr < 2)  ||
          (blk->sub[1].nr < 2) )
     {

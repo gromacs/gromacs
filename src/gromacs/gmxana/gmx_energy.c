@@ -1709,7 +1709,7 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
                 /* check the block types etc. */
                 if ( (blk->nsub < 2) ||
                      (blk->sub[0].type != xdr_datatype_double) ||
-                     (blk->sub[1].type != xdr_datatype_large_int) ||
+                     (blk->sub[1].type != xdr_datatype_int64) ||
                      (blk->sub[0].nr < 2)  ||
                      (blk->sub[1].nr < 2) )
                 {

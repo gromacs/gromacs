@@ -278,7 +278,7 @@ static void do_cpt_step_err(XDR *xd, const char *desc, gmx_int64_t *i, FILE *lis
     bool_t res = 0;
     char   buf[STEPSTRSIZE];
 
-    res = xdr_gmx_large_int(xd, i);
+    res = xdr_int64(xd, i);
     if (res == 0)
     {
         cp_error();

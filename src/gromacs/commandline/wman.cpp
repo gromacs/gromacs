@@ -204,7 +204,7 @@ static char *pa_val(t_pargs *pa, char buf[], int sz)
         case etINT:
             sprintf(buf, "%-d", *(pa->u.i));
             break;
-        case etGMX_LARGE_INT:
+        case etGMX_INT64:
             sprintf(buf, "%" GMX_PRId64, *(pa->u.is));
             break;
         case etTIME:
