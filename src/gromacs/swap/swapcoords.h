@@ -34,34 +34,91 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \defgroup module_swap "Computational Electrophysiology" position swapping (swap)
+ * \ingroup group_mdrun
+ * \brief
+ * Implements the "Computational Electrophysiology" protocol.
+ *
+ * \author Carsten Kutzner <ckutzne@gwdg.de>
+ */
+/*! \file
+ * \brief
+ * The "Computational Electrophysiology" protocol for ion/water position swapping.
+ *
+ * \ingroup group_mdrun
+ */
+
 #ifndef _swapcoords_h
 #define _swapcoords_h
 
 #include "typedefs.h"
 #include "types/commrec.h"
 
+
+/*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
+ *
+ * This routine does the memory allocation for various helper arrays, opens
+ * the output file, sets up swap data checkpoint writing, etc.
+ *
+ * \param[in] fplog         General output file, normally md.log.
+ * \param[in] bVerbose      Should we be quiet or verbose?
+ * \param[in] ir            Structure containing MD input parameters, among those
+ *                          also the structure needed for position swapping.
+ * \param[in] fn            Output file name for swap data.
+ * \param[in] mtop          Molecular topology.
+ * \param[in] x             The initial positions of all particles.
+ * \param[in] box           The simulation box.
+ * \param[in] swapstate     Swap-related data that is read from or written to checkpoint.
+ * \param[in] cr            Pointer to MPI communication data.
+ * \param[in] oenv          Needed to open the swap output XVGR file.
+ * \param[in] Flags         Flags passed over from main, used to determine
+ *                          whether we are doing a rerun, appending, etc.
+ */
 extern void init_swapcoords(
-        FILE             *fplog,    /* general output file md.log */
+        FILE             *fplog,
         gmx_bool         bVerbose,
         t_inputrec       *ir,
-        const char       *fn,       /* output file name for swap data */
+        const char       *fn,
         gmx_mtop_t       *mtop,
-        rvec             x[],       /* the initial positions */
+        rvec             x[],
         matrix           box,
         swapstate_t      *swapstate,
         t_commrec        *cr,
         const output_env_t oenv,
         unsigned long    Flags);
 
+
+/*! \brief Make a selection of the home atoms for the swap groups. These are
+ * the ions, the water, and the channels. This routine should be called at every 
+ * domain decomposition.
+ *
+ * \param[in] dd            Structure containing domain decomposition data.
+ * \param[in] si_pub        Pointer to the swap data structure.
+ */
 extern void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *si_pub);
 
 
+/*! \brief "Computational Electrophysiology" main routine within MD loop.
+ *
+ * \param[in] cr            Pointer to MPI communication data.
+ * \param[in] step          The number of the MD time step.
+ * \param[in] t             The time.
+ * \param[in] ir            Structure containing MD input parameters, among those
+ *                          also the structure needed for position swapping.
+ * \param[in] x             Positions of home particles this node owns.
+ * \param[in] box           The simulation box.
+ * \param[in] mtop          Molecular topology.
+ * \param[in] bVerbose      Should we be quiet or verbose?
+ * \param[in] bRerun        Are we doing a rerun?
+ * 
+ * \returns   Whether at least one pair of molecules was swapped.
+ */
 extern gmx_bool do_swapcoords(
         t_commrec        *cr,
         gmx_large_int_t  step,
         real             t,
         t_inputrec       *ir,
-        rvec             x[],            /* positions of home particles */
+        rvec             x[],
         matrix           box,
         gmx_mtop_t       *mtop,
         gmx_bool         bVerbose,
