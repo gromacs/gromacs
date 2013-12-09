@@ -405,7 +405,7 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
         for (x = 0; (x < ntx); x++)
         {
             xx = xx00 + (x + offset_x)*psr->xboxsize;
-            if ( ( bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major) ||
+            if ( ( bRealModulo(mat[i].axis_x[x], psr->X.offset, psr->X.major) ||
                    (psr->X.first && (x == 0))) &&
                  ( (i == 0) || box_do_all_x_maj_ticks(psr) ) )
             {
@@ -419,13 +419,13 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
                              xtick[x], eXCenter);
                 }
             }
-            else if (bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.minor) &&
+            else if (bRealModulo(mat[i].axis_x[x], psr->X.offset, psr->X.minor) &&
                      ( (i == 0) || box_do_all_x_min_ticks(psr) ) )
             {
                 /* Shorter tick marks */
                 ps_line(ps, xx, yy00, xx, yy00-psr->X.minorticklen);
             }
-            else if (bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major) )
+            else if (bRealModulo(mat[i].axis_x[x], psr->X.offset, psr->X.major) )
             {
                 /* Even shorter marks, only each X.major */
                 ps_line(ps, xx, yy00, xx, yy00-(psr->boxspacing/2));
@@ -442,7 +442,7 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
         for (y = 0; (y < nty); y++)
         {
             yy = yy00 + (y + offset_y)*psr->yboxsize;
-            if (bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.major) ||
+            if (bRealModulo(mat[i].axis_y[y], psr->Y.offset, psr->Y.major) ||
                 (psr->Y.first && (y == 0)))
             {
                 /* Major ticks */
@@ -451,7 +451,7 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
                 ps_ctext(ps, xx00-psr->Y.majorticklen-DDD,
                          yy-psr->Y.tickfontsize/3.0, ytick[y], eXRight);
             }
-            else if (bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.minor) )
+            else if (bRealModulo(mat[i].axis_y[y], psr->Y.offset, psr->Y.minor) )
             {
                 /* Minor ticks */
                 ps_line(ps, xx00, yy, xx00-psr->Y.minorticklen, yy);
@@ -748,7 +748,7 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
             i = 0;
             for (j = 0; j < n; j++)
             {
-                if (bRmod(axis[j], offset, space) )
+                if (bRealModulo(axis[j], offset, space) )
                 {
                     i++;
                 }
