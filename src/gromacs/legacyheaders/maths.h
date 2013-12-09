@@ -176,8 +176,8 @@ static int gmx_greatest_common_divisor(int p, int q)
     while (q != 0)
     {
         tmp = q;
-        q = p % q;
-        p = tmp;
+        q   = p % q;
+        p   = tmp;
     }
     return p;
 }

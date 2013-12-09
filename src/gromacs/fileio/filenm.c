@@ -205,7 +205,7 @@ static const t_deffile
     { eftASC, "", "rundir", NULL, "Run directory" }
 };
 
-static char *default_file_name = NULL;
+static char               *default_file_name = NULL;
 
 static tMPI_Thread_mutex_t filenm_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 

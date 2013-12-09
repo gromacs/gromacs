@@ -995,7 +995,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
 
     if (bRead) /* we need to allocate space for dfhist if we are reading */
     {
-        init_df_history(&state->dfhist,state->dfhist.nlambda);
+        init_df_history(&state->dfhist, state->dfhist.nlambda);
     }
 
     /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */

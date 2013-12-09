@@ -61,7 +61,7 @@ gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
 {
     gmx_large_int_t steps_out;
 
-    if MASTER(cr)
+    if (MASTER(cr))
     {
         gmx_large_int_t *buf;
         int              s;
@@ -518,7 +518,7 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
     {
         if (rerun_fr->bLambda)
         {
-            if (fepvals->delta_lambda==0)
+            if (fepvals->delta_lambda == 0)
             {
                 state_global->lambda[efptFEP] = rerun_fr->lambda;
                 for (i = 0; i < efptNR; i++)
@@ -581,7 +581,8 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
         }
         else
         {
-            if (state->fep_state > 0) {
+            if (state->fep_state > 0)
+            {
                 state_global->fep_state = state->fep_state; /* state->fep is the one updated by bExpanded */
                 for (i = 0; i < efptNR; i++)
                 {

@@ -93,7 +93,7 @@ extern void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rn
     *mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
     if (!bStateFromCP)
     {
-        init_df_history_weights(dfhist,ir->expandedvals,ir->fepvals->n_lambda);
+        init_df_history_weights(dfhist, ir->expandedvals, ir->fepvals->n_lambda);
     }
 }
 
@@ -376,7 +376,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     real     clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
     real    *lam_weights, *lam_minvar_corr, *lam_variance, *lam_dg;
     double  *p_k;
-    double  pks = 0;
+    double   pks = 0;
     real    *numweighted_lamee, *logfrac;
     int     *nonzero;
     real     chi_m1_0, chi_p1_0, chi_m2_0, chi_p2_0, chi_p1_m1, chi_p2_m1, chi_m1_p1, chi_m2_p1;
@@ -922,7 +922,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
             if (lamnew > maxfep)
             {
                 /* it's possible some rounding is failing */
-                if (gmx_within_tol(remainder[fep_state],0,50*GMX_DOUBLE_EPS))
+                if (gmx_within_tol(remainder[fep_state], 0, 50*GMX_DOUBLE_EPS))
                 {
                     /* numerical rounding error -- no state other than the original has weight */
                     lamnew = fep_state;
