@@ -95,20 +95,6 @@ real sign(real x, real y)
  * ====================================================
  */
 
-#if ( (defined SIZEOF_INT && SIZEOF_INT == 4) || (SIZEOF_INT_MAX == 2147483647) )
-typedef int erf_int32_t;
-typedef unsigned int erf_u_int32_t;
-#elif (LONG_MAX == 2147483647L)
-typedef long erf_int32_t;
-typedef unsigned long erf_u_int32_t;
-#elif (SHRT_MAX == 2147483647)
-typedef short erf_int32_t;
-typedef unsigned short erf_u_int32_t;
-#else
-#  error ERROR: No 32 bit wide integer type found!
-#endif
-
-
 static const double
     tiny        = 1e-300,
     half        =  5.00000000000000000000e-01, /* 0x3FE00000, 0x00000000 */
@@ -186,8 +172,7 @@ static const double
 
 double gmx_erfd(double x)
 {
-
-    erf_int32_t hx, ix, i;
+    gmx_int32_t hx, ix, i;
     double      R, S, P, Q, s, y, z, r;
 
     union
@@ -211,7 +196,7 @@ double gmx_erfd(double x)
     if (ix >= 0x7ff00000)
     {
         /* erf(nan)=nan */
-        i = ((erf_u_int32_t)hx>>31)<<1;
+        i = ((gmx_uint32_t)hx>>31)<<1;
         return (double)(1-i)+one/x; /* erf(+-inf)=+-1 */
     }
 
@@ -301,7 +286,7 @@ double gmx_erfd(double x)
 
 double gmx_erfcd(double x)
 {
-    erf_int32_t hx, ix;
+    gmx_int32_t hx, ix;
     double      R, S, P, Q, s, y, z, r;
 
     union
@@ -326,7 +311,7 @@ double gmx_erfcd(double x)
     {
         /* erfc(nan)=nan */
         /* erfc(+-inf)=0,2 */
-        return (double)(((erf_u_int32_t)hx>>31)<<1)+one/x;
+        return (double)(((gmx_uint32_t)hx>>31)<<1)+one/x;
     }
 
     if (ix < 0x3feb0000)
@@ -507,7 +492,7 @@ static const float
 typedef union
 {
     float         value;
-    erf_u_int32_t word;
+    gmx_uint32_t  word;
 } ieee_float_shape_type;
 
 #define GET_FLOAT_WORD(i, d)                 \
@@ -528,7 +513,7 @@ typedef union
 
 float gmx_erff(float x)
 {
-    erf_int32_t hx, ix, i;
+    gmx_int32_t hx, ix, i;
     float       R, S, P, Q, s, y, z, r;
 
     union
@@ -545,7 +530,7 @@ float gmx_erff(float x)
     if (ix >= 0x7f800000)
     {
         /* erf(nan)=nan */
-        i = ((erf_u_int32_t)hx>>31)<<1;
+        i = ((gmx_uint32_t)hx>>31)<<1;
         return (float)(1-i)+onef/x; /* erf(+-inf)=+-1 */
     }
 
@@ -626,7 +611,7 @@ float gmx_erff(float x)
 
 float gmx_erfcf(float x)
 {
-    erf_int32_t hx, ix;
+    gmx_int32_t hx, ix;
     float       R, S, P, Q, s, y, z, r;
 
     union
@@ -644,7 +629,7 @@ float gmx_erfcf(float x)
     {
         /* erfc(nan)=nan */
         /* erfc(+-inf)=0,2 */
-        return (float)(((erf_u_int32_t)hx>>31)<<1)+onef/x;
+        return (float)(((gmx_uint32_t)hx>>31)<<1)+onef/x;
     }
 
     if (ix < 0x3f580000)

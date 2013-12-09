@@ -336,15 +336,6 @@ include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 
-
-include(CheckTypeSize)
-
-check_type_size("int"           SIZEOF_INT)
-check_type_size("long int"      SIZEOF_LONG_INT)
-check_type_size("long long int" SIZEOF_LONG_LONG_INT)
-check_type_size("off_t"         SIZEOF_OFF_T)
-check_type_size("void *"        SIZEOF_VOIDP)
-
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
