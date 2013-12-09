@@ -126,87 +126,6 @@ void _where(const char *file, int line)
     }
 }
 
-static void bputc(char *msg, int *len, char ch)
-{
-    msg[(*len)++] = ch;
-}
-
-static void bputs(char *msg, int *len, const char *s, int fld)
-{
-    for (fld -= (int)strlen(s); fld > 0; fld--)
-    {
-        bputc(msg, len, ' ');
-    }
-    while (*s)
-    {
-        bputc(msg, len, *(s++));
-    }
-}
-
-static void bputd(char *msg, int *len, int d)
-{
-    if (d < 10)
-    {
-        bputc(msg, len, d+'0');
-    }
-    else
-    {
-        bputc(msg, len, d-10+'a');
-    }
-}
-
-static void bputi(char *msg, int *len, int val, int radix, int fld, gmx_bool bNeg)
-{
-    int fmax = 0;
-
-    if (bNeg)
-    {
-        fmax = 1;
-    }
-
-    if (val < radix)
-    {
-        for (fld--; fld > fmax; fld--)
-        {
-            bputc(msg, len, ' ');
-        }
-        if (bNeg)
-        {
-            bputc(msg, len, '-');
-        }
-        bputd(msg, len, val);
-    }
-    else
-    {
-        if (bNeg)
-        {
-            bputc(msg, len, '-');
-        }
-        bputi(msg, len, val/radix, radix, fld-1, FALSE);
-        bputd(msg, len, val%radix);
-    }
-}
-
-static int getfld(const char **p)
-{
-    int fld;
-
-    fld = 0;
-    while (isdigit(**p))
-    {
-        fld = (fld*10)+((*((*p)++))-'0');
-    }
-    return fld;
-}
-
-/*static void _halt(char *file,int line,char *reason)
-   {
-   fprintf(stderr,"\nHALT in file %s line %d because:\n\t%s\n",
-      file,line,reason);
-   exit(1);
-   }
- */
-
 static int fatal_errno = 0;
 
 static void quit_gmx(const char *msg)
@@ -357,108 +276,15 @@ static void clean_fatal_tmp_file()
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 }
 
-static void parse_printf_args(const char *fmt, va_list *ap, char *msg)
-{
-    int     len;
-    const char *p;
-    char    cval, *sval;
-    char    ibuf[64], ifmt[64];
-    int     index, ival, fld;
-    double  dval;
-
-    len = 0;
-    for (p = fmt; *p; p++)
-    {
-        if (*p != '%')
-        {
-            bputc(msg, &len, *p);
-        }
-        else
-        {
-            p++;
-            fld = getfld(&p);
-            switch (*p)
-            {
-                case 'x':
-                    ival = va_arg(*ap, int);
-                    sprintf(ifmt, "0x%%%dx", fld);
-                    sprintf(ibuf, ifmt, (unsigned int)ival);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'd':
-                    ival = va_arg(*ap, int);
-                    sprintf(ifmt, "%%%dd", fld);
-                    sprintf(ibuf, ifmt, ival);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'u':
-                    ival = va_arg(*ap, unsigned);
-                    sprintf(ifmt, "%%%du", fld);
-                    sprintf(ibuf, ifmt, ival);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'f':
-                    dval = va_arg(*ap, double);
-                    sprintf(ifmt, "%%%df", fld);
-                    sprintf(ibuf, ifmt, dval);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'g':
-                    dval = va_arg(*ap, double);
-                    sprintf(ifmt, "%%%dg", fld);
-                    sprintf(ibuf, ifmt, dval);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'c':
-                    cval = (char) va_arg(*ap, int); /* char is promoted to int */
-                    bputc(msg, &len, cval);
-                    break;
-                case 's':
-                    sval = va_arg(*ap, char *);
-                    if (sval == NULL)
-                    {
-                        sval = strdup("(null)");
-                    }
-                    bputs(msg, &len, sval, fld);
-                    break;
-                case '%':
-                    bputc(msg, &len, *p);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    bputc(msg, &len, '\0');
-}
-
 void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
 {
     va_list ap;
     char    msg[STRLEN];
 
-    va_start(ap, fmt);
-
     clean_fatal_tmp_file();
 
-    parse_printf_args(fmt, &ap, msg);
-
+    va_start(ap, fmt);
+    vsprintf(msg, fmt, ap);
     va_end(ap);
 
     tMPI_Thread_mutex_lock(&debug_mutex);
@@ -498,12 +324,10 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
     if ((cr != NULL && MASTER(cr)  ) ||
         (dd != NULL && DDMASTER(dd)))
     {
-        va_start(ap, fmt);
-
         clean_fatal_tmp_file();
 
-        parse_printf_args(fmt, &ap, msg);
-
+        va_start(ap, fmt);
+        vsprintf(msg, fmt, ap);
         va_end(ap);
 
         tMPI_Thread_mutex_lock(&debug_mutex);
@@ -743,9 +567,7 @@ void gmx_warning(const char *fmt, ...)
     char msg[STRLEN];
 
     va_start(ap, fmt);
-
-    parse_printf_args(fmt, &ap, msg);
-
+    vsprintf(msg, fmt, ap);
     va_end(ap);
 
     fprintf(stderr, "\nWARNING: %s\n\n", msg);

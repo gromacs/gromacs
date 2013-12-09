@@ -622,57 +622,14 @@ char **split(char sep, const char *str)
     return ptr;
 }
 
-
 gmx_int64_t
 str_to_int64_t(const char *str, char **endptr)
 {
-    int              sign = 1;
-    gmx_int64_t      val  = 0;
-    char             ch;
-    const char      *p;
-
-    p = str;
-    if (p == NULL)
-    {
-        *endptr = NULL;
-        return 0;
-    }
-
-    /* Strip off initial white space */
-    while (isspace(*p))
-    {
-        p++;
-    }
-    /* Conform to ISO C99 - return original pointer if string does not contain a number */
-    if (*str == '\0')
-    {
-        *endptr = (char *)str;
-    }
-
-    if (*p == '-')
-    {
-        p++;
-        sign *= -1;
-    }
-
-    while ( ((ch = *p) != '\0') && isdigit(ch) )
-    {
-        /* Important to add sign here, so we dont overflow in final multiplication */
-        ch  = (ch-'0')*sign;
-        val = val*10 + ch;
-        if (ch != val%10)
-        {
-            /* Some sort of overflow has occured, set endptr to original string */
-            *endptr = (char *)str;
-            errno   = ERANGE;
-            return(0);
-        }
-        p++;
-    }
-
-    *endptr = (char *)p;
-
-    return val;
+#ifndef _MSC_VER
+    return strtoll(str, endptr, 10);
+#else
+    return _strtoi64(str, endptr, 10);
+#endif
 }
 
 char *gmx_strsep(char **stringp, const char *delim)
