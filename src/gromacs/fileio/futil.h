@@ -76,13 +76,14 @@ extern "C" {
 
 #ifdef HAVE_FSEEKO
 typedef off_t              gmx_off_t;
-#  define SIZEOF_GMX_OFF_T   SIZEOF_OFF_T
 #elif defined HAVE__FSEEKI64
 typedef __int64            gmx_off_t;
-#  define SIZEOF_GMX_OFF_T   8
 #else
-typedef gmx_int64_t    gmx_off_t;
-#  define SIZEOF_GMX_OFF_T   8
+/* cmake checked that if fseeko and fseeki64 aren't avaiable that long is 64bit */
+#if GMX_INT64_MAX != LONG_MAX
+#error "Configuration error. fseeko or fseeki64 or 64bit long should be available."
+#endif
+typedef long               gmx_off_t;
 #endif
 
 

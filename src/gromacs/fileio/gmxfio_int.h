@@ -84,8 +84,6 @@ struct t_fileio
                     bDouble,           /* write doubles instead of floats */
                     bDebug,            /* the file ops should come with debug info */
                     bStdio,            /* the file is actually stdin or stdout */
-                    bLargerThan_off_t, /* if the file position is largen than off_t
-                                          could hold */
                     bReadWrite;        /* the file is open for reading and writing */
     char       *fn;                    /* the file name */
     XDR        *xdr;                   /* the xdr data pointer */
