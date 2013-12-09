@@ -110,26 +110,19 @@ t_trxstatus *open_trx(const char *outfile, const char *filemode);
 t_fileio *trx_get_fileio(t_trxstatus *status);
 
 
-gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
-/* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
- * larger than the float/double precision.
+gmx_bool bRealModulo(double a, double b, double c);
+/* Returns TRUE when (a - b) MOD c == 0, using a margin which is twice
+ * as large as GMX_DOUBLE_EPS.
  */
 
-#ifdef GMX_DOUBLE
-#define bRmod(a, b, c) bRmod_fd(a, b, c, TRUE)
-#else
-#define bRmod(a, b, c) bRmod_fd(a, b, c, FALSE)
-#endif
-
-int check_times2(real t, real t0, gmx_bool bDouble);
+int check_times2(real t, real t0);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
  *          0 if tbegin <= t <=tend+margin,
  *          1 if t>tend
  * where margin is 0.1*min(t-tp,tp-tpp), if this positive, 0 otherwise.
  * tp and tpp should be the time of the previous frame and the one before.
- * The mod is done with single or double precision accuracy depending
- * on the value of bDouble.
+ * The mod is done with double precision accuracy.
  */
 
 int check_times(real t);

@@ -715,7 +715,7 @@ int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
 
 
         /* check whether we've reached a restart point */
-        if (bRmod(t, curr->t0, dt))
+        if (bRealModulo(t, curr->t0, dt))
         {
             curr->nrestart++;
 
