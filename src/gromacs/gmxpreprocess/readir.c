@@ -3558,11 +3558,6 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
     int           ntypes, tpi, tpj, thisLBdiff, thisgeomdiff;
     int          *typecount;
     real          tol;
-#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
-    long long int npair, npair_ij;
-#else
-    double        npair, npair_ij;
-#endif
     double        geometricdiff, LBdiff;
     double        c6i, c6j, c12i, c12j;
     double        c6, c6_geometric, c6_LB;
@@ -3587,7 +3582,6 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
     *bC6ParametersWorkWithGeometricRules  = TRUE;
     bCanDoLBRules                         = TRUE;
     bCanDoGeometricRules                  = TRUE;
-    npair                                 = 0;
     ntypes                                = mtop->ffparams.atnr;
     snew(typecount, ntypes);
     gmx_mtop_count_atomtypes(mtop, state, typecount);
