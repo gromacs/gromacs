@@ -341,21 +341,6 @@
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
 
-/* The size of int, as computed by sizeof. */
-#cmakedefine SIZEOF_INT @SIZEOF_INT@
-
-/* The size of long int, as computed by sizeof. */
-#cmakedefine SIZEOF_LONG_INT @SIZEOF_LONG_INT@
-
-/* The size of long long int, as computed by sizeof. */
-#cmakedefine SIZEOF_LONG_LONG_INT @SIZEOF_LONG_LONG_INT@
-
-/* The size of off_t, as computed by sizeof. */
-#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
-
-/* The size of void*, as computed by sizeof. */
-#cmakedefine SIZEOF_VOIDP @SIZEOF_VOIDP@
-
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 #cmakedefine _LARGEFILE_SOURCE
 

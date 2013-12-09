@@ -45,6 +45,8 @@
 #  However, it is YOUR job to make sure these defines are set in a cmakedefine so they
 #  end up in a config.h file that is included in your source if necessary!
 
+include(CheckTypeSize)
+
 MACRO(GMX_TEST_LARGE_FILES VARIABLE)
     IF(NOT DEFINED ${VARIABLE})
 
@@ -142,11 +144,14 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
         elseif(HAVE__FSEEKI64)
             SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
             SET(HAVE__FSEEKI64 1 CACHE INTERNAL "Windows 64-bit fseek" FORCE)
-        elseif(SIZEOF_LONG_INT EQUAL 8) #standard fseek is OK for 64bit
-            SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
         else()
-            SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
-            MESSAGE(FATAL_ERROR "Checking for 64bit file support failed.")
+	    check_type_size("long int"      SIZEOF_LONG_INT)
+	    if(SIZEOF_LONG_INT EQUAL 8) #standard fseek is OK for 64bit
+	        SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)	    
+            else()
+                SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
+                MESSAGE(FATAL_ERROR "Checking for 64bit file support failed.")
+            endif()
         endif()
 
     ENDIF(NOT DEFINED ${VARIABLE})
