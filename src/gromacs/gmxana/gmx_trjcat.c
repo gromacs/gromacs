@@ -382,7 +382,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
             }
             bSet[j] = TRUE;
 
-            if (dt == 0 || bRmod(trx[i].time, first_time, dt))
+            if (dt == 0 || bRealModulo(trx[i].time, first_time, dt))
             {
                 if (index)
                 {
@@ -856,7 +856,7 @@ int gmx_trjcat(int argc, char *argv[])
                         first_time = frout.time;
                     }
                     lasttime = frout.time;
-                    if (dt == 0 || bRmod(frout.time, first_time, dt))
+                    if (dt == 0 || bRealModulo(frout.time, first_time, dt))
                     {
                         frame_out++;
                         last_ok_t = frout.time;

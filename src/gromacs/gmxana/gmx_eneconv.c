@@ -699,7 +699,7 @@ int gmx_eneconv(int argc, char *argv[])
             }
 
             /* determine if we should write it */
-            if (bWrite && (delta_t == 0 || bRmod(fro->t, toffset, delta_t)))
+            if (bWrite && (delta_t == 0 || bRealModulo(fro->t, toffset, delta_t)))
             {
                 laststep = fro->step;
                 last_t   = fro->t;

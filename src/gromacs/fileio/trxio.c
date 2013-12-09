@@ -89,12 +89,12 @@ struct t_trxstatus
 
 /* utility functions */
 
-gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
+gmx_bool bRealModulo(double a, double b, double c)
 {
     int    iq;
     double tol;
 
-    tol = 2*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
+    tol = 2 * GMX_DOUBLE_EPS;
 
     iq = (int)((a - b + tol*a)/c);
 
@@ -110,20 +110,15 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 
 
 
-int check_times2(real t, real t0, gmx_bool bDouble)
+int check_times2(real t, real t0)
 {
     int  r;
-
-#ifndef GMX_DOUBLE
-    /* since t is float, we can not use double precision for bRmod */
-    bDouble = FALSE;
-#endif
 
     r = -1;
     if ((!bTimeSet(TBEGIN) || (t >= rTimeValue(TBEGIN)))  &&
         (!bTimeSet(TEND)   || (t <= rTimeValue(TEND))))
     {
-        if (bTimeSet(TDELTA) && !bRmod_fd(t, t0, rTimeValue(TDELTA), bDouble))
+        if (bTimeSet(TDELTA) && !bRealModulo(t, t0, rTimeValue(TDELTA)))
         {
             r = -1;
         }
@@ -146,7 +141,7 @@ int check_times2(real t, real t0, gmx_bool bDouble)
 
 int check_times(real t)
 {
-    return check_times2(t, t, FALSE);
+    return check_times2(t, t);
 }
 
 static void initcount(t_trxstatus *status)
@@ -955,7 +950,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
             bSkip = FALSE;
             if (!bMissingData)
             {
-                ct = check_times2(fr->time, fr->t0, fr->bDouble);
+                ct = check_times2(fr->time, fr->t0);
                 if (ct == 0 || ((fr->flags & TRX_DONT_SKIP) && ct < 0))
                 {
                     printcount(status, oenv, fr->time, FALSE);
