@@ -555,7 +555,6 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     fio->bDouble           = (sizeof(real) == sizeof(double));
     fio->bDebug            = FALSE;
     fio->bOpen             = TRUE;
-    fio->bLargerThan_off_t = FALSE;
 
     /* set the reader/writer functions */
     gmx_fio_set_iotype(fio);
@@ -799,29 +798,6 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
     return 0;
 }
 
-int gmx_fio_check_file_position(t_fileio gmx_unused *fio)
-{
-    /* If gmx_off_t is 4 bytes we can not store file offset > 2 GB.
-     * If we do not have ftello, we will play it safe.
-     */
-#if (SIZEOF_GMX_OFF_T == 4 || !defined HAVE_FSEEKO)
-    gmx_off_t offset;
-
-    gmx_fio_lock(fio);
-    gmx_fio_int_get_file_position(fio, &offset);
-    /* We have a 4 byte offset,
-     * make sure that we will detect out of range for all possible cases.
-     */
-    if (offset < 0 || offset > 2147483647)
-    {
-        fio->bLargerThan_off_t = TRUE;
-    }
-    gmx_fio_unlock(fio);
-#endif
-
-    return 0;
-}
-
 int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
                                       int                  *p_nfiles)
 {
@@ -861,23 +837,13 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             strncpy(outputfiles[nfiles].filename, cur->fn, STRLEN - 1);
 
             /* Get the file position */
-            if (cur->bLargerThan_off_t)
-            {
-                /* -1 signals out of range */
-                outputfiles[nfiles].offset      = -1;
-                outputfiles[nfiles].chksum_size = -1;
-            }
-            else
-            {
-                gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
+            gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
 #ifndef GMX_FAHCORE
-                outputfiles[nfiles].chksum_size
-                    = gmx_fio_int_get_file_md5(cur,
-                                               outputfiles[nfiles].offset,
-                                               outputfiles[nfiles].chksum);
+            outputfiles[nfiles].chksum_size
+                = gmx_fio_int_get_file_md5(cur,
+                                           outputfiles[nfiles].offset,
+                                           outputfiles[nfiles].chksum);
 #endif
-            }
-
             nfiles++;
         }
 

@@ -1436,7 +1436,6 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
                 /* do the actual I/O */
                 do_enx(fp_ene, &fr);
-                gmx_fio_check_file_position(enx_file_pointer(fp_ene));
                 if (fr.nre)
                 {
                     /* We have stored the sums, so reset the sum history */
