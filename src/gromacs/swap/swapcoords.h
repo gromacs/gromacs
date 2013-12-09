@@ -38,10 +38,6 @@
 #include "typedefs.h"
 #include "types/commrec.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void init_swapcoords(
         FILE             *fplog,    /* general output file md.log */
         gmx_bool         bVerbose,
@@ -75,10 +71,5 @@ extern void swapcoords_get_charges(
         gmx_large_int_t  step,
         t_inputrec       *ir,
         gmx_mtop_t       *mtop);
-
-#ifdef __cplusplus
-}
-#endif
-
 
 #endif

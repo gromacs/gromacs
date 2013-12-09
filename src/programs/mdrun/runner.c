@@ -80,7 +80,6 @@
 #include "membed.h"
 #include "macros.h"
 #include "gmx_thread_affinity.h"
-#include "swapcoords.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdlib/nbnxn_search.h"
@@ -88,6 +87,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/swap/swapcoords.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

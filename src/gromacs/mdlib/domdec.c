@@ -71,13 +71,13 @@
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
 #include "gpu_utils.h"
-#include "gromacs/legacyheaders/swapcoords.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/swap/swapcoords.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)

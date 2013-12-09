@@ -86,7 +86,6 @@
 #include "types/nlistheuristics.h"
 #include "types/iteratedconstraints.h"
 #include "nbnxn_cuda_data_mgmt.h"
-#include "gromacs/legacyheaders/swapcoords.h"
 
 
 #include "gromacs/utility/gmxmpi.h"
@@ -97,6 +96,7 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/swap/swapcoords.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
