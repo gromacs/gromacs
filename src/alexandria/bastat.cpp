@@ -479,7 +479,6 @@ int main(int argc, char *argv[])
     static int            compress = 0;
     static gmx_bool       bHisto   = FALSE;
     static real           Dm       = 400, kt = 400, kp = 5, beta = 20;
-    static real           th_toler = 170, ph_toler = 5;
     static char          *lot      = (char *)"B3LYP/aug-cc-pVTZ";
     static char          *qgen[]   = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     t_pargs               pa[]     = {
@@ -501,7 +500,6 @@ int main(int argc, char *argv[])
     //alexandria::MolDip    md;
     FILE                 *fp;
     ChargeGenerationModel iModel;
-    t_commrec            *cr;
     gmx_molselect_t       gms;
     time_t                my_t;
     char                  pukestr[STRLEN];
@@ -520,10 +518,8 @@ int main(int argc, char *argv[])
     gmx_atomprop_t        aps;
     int                   nfiles;
     char                **fns;
-    //gmx::ProgramInfo      ProgramInfo = gmx::init("bastat", &argc, &argv);
+    gmx::ProgramInfo     &info = gmx::init("bastat", &argc, &argv);
     
-    cr = init_commrec();
-
     parse_common_args(&argc, argv, PCA_CAN_VIEW,
                       NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
 
@@ -558,8 +554,7 @@ int main(int argc, char *argv[])
     /* read Molprops */
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
     std::vector<alexandria::MolProp> mp;
-    merge_xml(nfiles, fns, mp, NULL, NULL, NULL, aps, pd,
-              TRUE, TRUE, th_toler, ph_toler);
+    merge_xml(nfiles, fns, mp, NULL, NULL, NULL, aps, pd, TRUE);
     ftb = gmx_poldata_get_bond_ftype(pd);
     fta = gmx_poldata_get_angle_ftype(pd);
     ftd = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);

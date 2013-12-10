@@ -46,15 +46,14 @@
 extern void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap);
 
 alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,
-                                    gmx_atomprop_t ap,gmx_poldata_t pd);
+                                    gmx_atomprop_t ap);
 
 /* Return number of atoms, 0 means failure */
 extern bool molprop_2_topology2(alexandria::MolProp mp,gmx_atomprop_t ap,
-                               gmx_poldata_t pd,
-                               t_symtab *tab,const char *lot,
-                               t_topology **top,const char *q_algorithm,
-                               rvec **x,t_params plist[F_NRE],
-                               int nexcl,t_excls **excls);
+                                t_symtab *tab,const char *lot,
+                                t_topology **top,const char *q_algorithm,
+                                rvec **x,t_params plist[F_NRE],
+                                int nexcl,t_excls **excls);
 
 extern void merge_doubles(std::vector<alexandria::MolProp> &mp,
                           char *doubles,bool bForceMerge);
@@ -63,8 +62,7 @@ extern void merge_xml(int nfile,char **infiles,
                       std::vector<alexandria::MolProp> &mp,
                       char *outf,char *sorted,char *doubles,
                       gmx_atomprop_t ap,gmx_poldata_t pd,
-                      bool bForceMerge,bool bForceGenComp,
-                      double th_toler,double ph_toler);
+                      bool bForceMerge);
 
 typedef struct {
     int  n;

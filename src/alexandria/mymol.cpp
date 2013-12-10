@@ -445,7 +445,6 @@ static void detect_rings(t_params *bonds, int natom, gmx_bool bRing[])
 void MyMol::MakeAngles()
 {
     t_nextnb nnb;
-    int      nbonds;
     t_restp  rtp;
 
     /* Make Angles and Dihedrals */
@@ -453,7 +452,7 @@ void MyMol::MakeAngles()
     init_nnb(&nnb, topology_->atoms.nr, nexcl_+2);
     gen_nnb(&nnb, plist_);
     //detect_rings(&plist_[F_BONDS],topology_->atoms.nr,bRing);
-    nbonds = plist_[F_BONDS].nr;
+    
     print_nnb(&nnb, "NNB");
     rtp.bKeepAllGeneratedDihedrals    = TRUE;
     rtp.bRemoveDihedralIfWithImproper = TRUE;
@@ -842,9 +841,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t        ap,
                                ChargeGenerationModel iModel)
 {
     int                 myunit;
-    double              q, xx, yy, zz;
+    double              xx, yy, zz;
     int                 natom;
-    gmx_bool            bDone = FALSE;
     immStatus           imm   = immOK;
 
     CalculationIterator ci = GetLot(lot);
@@ -872,7 +870,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t        ap,
             x_[natom][YY] = convert2gmx(yy, myunit);
             x_[natom][ZZ] = convert2gmx(zz, myunit);
 
-            q = 0;
+            double q = 0;
             for (AtomicChargeIterator qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
                 ChargeGenerationModel qtp = name2eemtype(qi->GetType().c_str());
@@ -883,21 +881,23 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t        ap,
                     break;
                 }
             }
-
+            topology_->atoms.atom[natom].q      =
+                topology_->atoms.atom[natom].qB = q;
+            
             t_atoms_set_resinfo(&(topology_->atoms), natom, symtab_, GetMolname().c_str(), 1, ' ', 1, ' ');
             topology_->atoms.atomname[natom]        = put_symtab(symtab_, cai->GetName().c_str());
             topology_->atoms.atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->GetName().c_str());
 
-            real mass;
-            if (gmx_atomprop_query(ap, epropMass, "???", cai->GetName().c_str(), &mass))
+            real mass = 0;
+            if (!gmx_atomprop_query(ap, epropMass, "???", cai->GetName().c_str(), &mass))
             {
-                topology_->atoms.atom[natom].m  = mass;
-                topology_->atoms.atom[natom].mB = mass;
+                fprintf(stderr, "Could not find mass for %s\n", cai->GetName().c_str());
             }
+            topology_->atoms.atom[natom].m  = 
+                topology_->atoms.atom[natom].mB = mass;
+            
             strcpy(topology_->atoms.atom[natom].elem, gmx_atomprop_element(ap, topology_->atoms.atom[natom].atomnumber));
 
-            topology_->atoms.atom[natom].q      =
-                topology_->atoms.atom[natom].qB = topology_->atoms.atom[natom].q;
             topology_->atoms.atom[natom].resind = 0;
             // First set the atomtype
             topology_->atoms.atomtype[natom]      =
@@ -923,7 +923,6 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t        ap,
         }
         topology_->atoms.nr   = natom;
         topology_->atoms.nres = 1;
-        bDone                 = ((natom == NAtom()) && (natom > 0));
     }
     else
     {
@@ -947,7 +946,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
 {
     alexandria::BondIterator bi;
     immStatus                imm = immOK;
-    int natom                    = 0, nalloc, ftb;
+    int                      ftb;
     t_param                  b;
 
     if (NULL != debug)
@@ -975,26 +974,16 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
     bts[ebtsCMAP]  = F_CMAP;
     bts[ebtsEXCLS] = 0;
 
+    if (bPol)
+    {
+        printf("I forgot to implement generating polarizabilities.\n");
+    }
     ftb    = bts[ebtsBONDS];
     nexcl_ = nexcl;
     GenerateComposition(pd);
     if (NAtom() <= 0)
     {
         imm = immAtomTypes;
-    }
-    else
-    {
-        if (bPol)
-        {
-            nalloc = NAtom()*2+2;
-        }
-        else
-        {
-            nalloc = NAtom();
-        }
-
-        //if ((GetCharge() != 0) && !bCharged)
-        //   imm = immCharged;
     }
     if (immOK == imm)
     {
@@ -1014,7 +1003,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
             b.a[1] = bi->GetAj() - 1;
             add_param_to_list(&(plist_[ftb]), &b);
         }
-        natom = topology_->atoms.nr;
         if (NBond() == 0)
         {
             imm = immGenBonds;
@@ -1189,8 +1177,8 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                     gmx_fatal(FARGS, "Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n", GetMolname().c_str());
                 }
                 eQGEN = generate_charges(NULL,
-                                         qgen_, gr_, GetMolname().c_str(), pd, &topology_->atoms, x_, 0.0001,
-                                         10000, 1, ap, hfac);
+                                         qgen_, gr_, GetMolname().c_str(), pd, &topology_->atoms, 0.0001,
+                                         10000, 1, ap);
                 qgen_message(qgen_, sizeof(qgen_msg), qgen_msg, gr_);
                 if (eQGEN_OK != eQGEN)
                 {

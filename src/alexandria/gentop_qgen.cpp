@@ -869,9 +869,9 @@ static void qgen_update_pd(t_atoms *atoms, gmx_poldata_t pd, gentop_qgen_t qgen)
 
 int generate_charges_sm(FILE *fp,
                         gentop_qgen *qgen, gmx_poldata_t pd,
-                        t_atoms *atoms, rvec x[],
+                        t_atoms *atoms, 
                         real tol, int maxiter, gmx_atomprop_t aps,
-                        real hfac, real *chieq)
+                        real *chieq)
 {
     real       *qq = NULL;
     int         i, j, iter;
@@ -954,7 +954,6 @@ int generate_charges_sm(FILE *fp,
 static int generate_charges_bultinck(FILE *fp,
                                      gentop_qgen_t qgen,
                                      gmx_poldata_t pd, t_atoms *atoms,
-                                     rvec x[], real tol, int maxiter,
                                      gmx_atomprop_t aps)
 {
     qgen_check_support(qgen, pd, aps);
@@ -976,9 +975,9 @@ static int generate_charges_bultinck(FILE *fp,
 int generate_charges(FILE *fp,
                      gentop_qgen_t qgen, gmx_resp_t gr,
                      const char *molname, gmx_poldata_t pd,
-                     t_atoms *atoms, rvec x[],
+                     t_atoms *atoms, 
                      real tol, int maxiter, int maxcycle,
-                     gmx_atomprop_t aps, real hfac)
+                     gmx_atomprop_t aps)
 {
     int  cc, eQGEN_min = eQGEN_NOTCONVERGED;
     real chieq, chi2, chi2min = GMX_REAL_MAX;
@@ -1027,13 +1026,11 @@ int generate_charges(FILE *fp,
         }
         if (qgen->iModel == eqgBultinck)
         {
-            (void) generate_charges_bultinck(fp, qgen, pd, atoms, x, tol,
-                                             maxiter, aps);
+            (void) generate_charges_bultinck(fp, qgen, pd, atoms, aps);
         }
         else
         {
-            (void) generate_charges_sm(fp, qgen, pd, atoms, x, tol, maxiter, aps,
-                                       hfac, &chieq);
+            (void) generate_charges_sm(fp, qgen, pd, atoms, tol, maxiter, aps, &chieq);
         }
         gentop_qgen_save_params(qgen, gr);
     }

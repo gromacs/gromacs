@@ -178,8 +178,7 @@ static void stats_header(FILE *fp,MolPropObservable mpo,
 
 void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
                              std::vector<alexandria::MolProp> mp,
-                             int ntot,
-                             t_qmcount *qmc,int iQM,char *lot,char *exp_type,
+                             t_qmcount *qmc,char *exp_type,
                              double outlier,gmx_molselect_t gms,iMolSelect ims)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
@@ -488,7 +487,7 @@ static void add_cats(int *ncs,t_cat_stat **cs,const char *iupac,const char *myca
     (*cs)[j].molec[nmol-1] = strdup(iupac);
 }
 
-static void category_header(FILE *fp,int start,iMolSelect ims)
+static void category_header(FILE *fp,int start)
 {
     fprintf(fp,"\\newpage\n");
     if (start == 0)
@@ -535,7 +534,7 @@ void gmx_molprop_category_table(FILE *fp,
     if (ncs > 0) 
     {
         qsort(cs,ncs,sizeof(cs[0]),comp_cats);
-        category_header(fp,1,ims);  
+        category_header(fp,1);  
         iline = 0;
         for(i=0; (i<ncs); i++) 
         {
@@ -550,7 +549,7 @@ void gmx_molprop_category_table(FILE *fp,
                     {
                         fprintf(fp,"\\\\\n");
                         category_footer(fp);
-                        category_header(fp,0,ims);
+                        category_header(fp,0);
                         fprintf(fp,"%s & (ctd) &",cs[i].cat);
                         iline = 0;
                     }
@@ -594,7 +593,7 @@ typedef struct {
 static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[],
                                              gmx_poldata_t pd_aver,
                                              std::vector<alexandria::MolProp> mp,
-                                             int iQM,char *lot,char *exp_type,
+                                             char *lot,char *exp_type,
                                              output_env_t oenv,const char *histo)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
@@ -862,11 +861,11 @@ void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
                                 int npd,gmx_poldata_t pd[],
                                 gmx_poldata_t pd_aver,
                                 std::vector<alexandria::MolProp> mp,
-                                int iQM,char *lot,char *exp_type,
+                                char *lot,char *exp_type,
                                 output_env_t oenv,const char *histo)
 {
     if (bPolar)
-        gmx_molprop_atomtype_polar_table(fp,npd,pd,pd_aver,mp,iQM,
+        gmx_molprop_atomtype_polar_table(fp,npd,pd,pd_aver,mp,
                                          lot,exp_type,oenv,histo);
     else
         gmx_molprop_atomtype_dip_table(fp,pd[0]);
@@ -992,7 +991,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
     double dvec[DIM];
     tensor quadrupole;
     real   ds_fac=1;
-    bool bSideways,bPrintConf,bOutlier;
+    bool   bSideways, bPrintConf;
   
     bSideways = (qmc->n > 1);
     
@@ -1125,7 +1124,6 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                         sprintf(mylbuf,"& - ");
                         strncat(myline,mylbuf,BLEN-strlen(myline));
                     }
-                    bOutlier = false;
                     for(j=0; (j<qmc->n); j++) 
                     { 
                         if (cd[j].found_ > 0) 
@@ -1145,18 +1143,18 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                                 switch(oo) {
                                 case 2:
                                     sprintf(mylbuf,"& \\textcolor{Red}{\\bf %s} ",vbuf);
-                                    bOutlier = true;
                                     break;
                                 case 1:
                                     sprintf(mylbuf,"& {\\bf %s} ",vbuf);
-                                    bOutlier = true;
                                     break;
                                 default:
                                     sprintf(mylbuf,"& %s ",vbuf);
                                 }
                             }
                             else
+                            {
                                 sprintf(mylbuf,"& %s ",vbuf);
+                            }
                             strncat(myline,mylbuf,BLEN-strlen(myline));
                         }
                         else
@@ -1167,11 +1165,8 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                     }
                     sprintf(mylbuf,"\\\\\n");
                     strncat(myline,mylbuf,BLEN-strlen(myline));
-                    /*if ((toler > 0) && bOutlier)
-                      {*/
-                        fprintf(fp,"%s",myline);
-                        iline++;/*=(1+strlen(molname)/25);*/
-                        /*}*/
+                    fprintf(fp,"%s",myline);
+                    iline++;
                 }
                 if ((iline >= (maxline-7*caption)*ds_fac)) 
                 {

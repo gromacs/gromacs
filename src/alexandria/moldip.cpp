@@ -469,10 +469,8 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                   int minimum_data,
                   gmx_bool bZero,
                   char *opt_elem, char *const_elem,
-                  char *lot, gmx_bool bCharged,
+                  char *lot, 
                   output_env_t oenv, gmx_molselect_t gms,
-                  real th_toler, real ph_toler, real dip_toler,
-                  gmx_bool bH14, gmx_bool bAllDihedrals, gmx_bool bRemoveDoubleDihedrals,
                   real watoms, gmx_bool bCheckSupport,
                   unsigned int seed)
 {
@@ -760,7 +758,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
 static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
 {
-    int                     k, tp, ai, aj;
+    int                     k, ai, aj;
     real                    q, Z;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom, *atom_i, *atom_j;
@@ -771,7 +769,7 @@ static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
 
     for (k = 0; (k < idef->il[F_POLARIZATION].nr); )
     {
-        tp = idef->il[F_POLARIZATION].iatoms[k++];
+        k++; // Skip over the type.
         ai = idef->il[F_POLARIZATION].iatoms[k++];
         aj = idef->il[F_POLARIZATION].iatoms[k++];
 
@@ -815,7 +813,7 @@ static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
 
 void MolDip::CalcDeviation()
 {
-    int                     j, count, atomnr;
+    int                     j, atomnr;
     double                  qq, qtot;
     real                    etot[ermsNR];
     real                    t      = 0;
@@ -874,8 +872,7 @@ void MolDip::CalcDeviation()
                fprintf(stderr,"Ready for %s\n",mymol->molname);*/
             eQ = generate_charges_sm(debug, mymol->qgen_,
                                      _pd, &(mymol->topology_->atoms),
-                                     mymol->x_, 1e-4, 100, _atomprop,
-                                     _hfac,
+                                     1e-4, 100, _atomprop,
                                      &(mymol->chieq));
             if (eQ != eQGEN_OK)
             {
@@ -901,7 +898,7 @@ void MolDip::CalcDeviation()
                 split_shell_charges(mymol->mtop_, &mymol->ltop_->idef);
                 atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
                          mymol->mtop_->natoms, mymol->md_);
-                count =
+                (void)
                     relax_shell_flexcon(debug, _cr, FALSE, 0,
                                         mymol->inputrec_, TRUE,
                                         GMX_FORCE_ALLFORCES,

@@ -58,10 +58,8 @@ public:
               int minimum_data,
               gmx_bool bZero,
               char *opt_elem,char *const_elem,
-              char *lot,gmx_bool bCharged,
+              char *lot,
               output_env_t oenv,gmx_molselect_t gms,
-              real th_toler,real ph_toler,real dip_toler,
-              gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
               real watoms,gmx_bool bCheckSupport, unsigned int seed);
               
     void CalcDeviation();

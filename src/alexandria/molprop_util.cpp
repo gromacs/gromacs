@@ -165,7 +165,7 @@ void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap)
 }
   
 alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,
-                                    gmx_atomprop_t ap,gmx_poldata_t pd)
+                                    gmx_atomprop_t ap)
 {
     alexandria::MolProp mp;
     alexandria::MolecularComposition mci("spoel");
@@ -247,11 +247,10 @@ static bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
 }
 
 bool molprop_2_topology2(alexandria::MolProp mp,gmx_atomprop_t ap,
-                        gmx_poldata_t pd,
-                        t_symtab *tab,const char *lot,
-                        t_topology **mytop,const char *q_algorithm,
-                        rvec **x,t_params plist[F_NRE],
-                        int nexcl,t_excls **excls)
+                         t_symtab *tab,const char *lot,
+                         t_topology **mytop,const char *q_algorithm,
+                         rvec **x,t_params plist[F_NRE],
+                         int nexcl,t_excls **excls)
 {
     alexandria::BondIterator bi;
     
@@ -394,8 +393,7 @@ void merge_xml(int nfile,char **filens,
                std::vector<alexandria::MolProp> &mpout, 
                char *outf,char *sorted,char *doubles,
                gmx_atomprop_t ap,gmx_poldata_t pd,
-               bool bForceMerge,bool bForceGenComp,
-               double th_toler,double ph_toler)
+               bool bForceMerge)
 {
     std::vector<alexandria::MolProp> mp;
     alexandria::MolPropIterator mpi;
@@ -522,10 +520,17 @@ static bool comp_mp_index(alexandria::MolProp ma,
 }
 
 alexandria::MolPropIterator SearchMolProp(std::vector<alexandria::MolProp> &mp,
-                                          MolPropSortAlgorithm mpsa,
                                           const char *name)
 {
-    return mp.end();
+    alexandria::MolPropIterator mpi;
+    for(mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    {
+        if (strcmp(mpi->GetMolname().c_str(), name) == 0)
+        {
+            break;
+        }
+    }
+    return mpi;
 }
 
 void MolPropSort(std::vector<alexandria::MolProp> &mp,

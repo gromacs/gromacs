@@ -432,9 +432,7 @@ class OptParam : public MolDip
                       int maxiter, //real tol,
                       int nrun, real stepsize, int seed,
                       bool bRandom, output_env_t oenv,
-                      bool bOpt[ebtsNR],
-                      real D0, real beta0, real D0_min, real beta_min,
-                      opt_mask_t *omt, real factor, int nprint,
+                      int nprint,
                       const char *xvgconv, const char *xvgepot,
                       real temperature);
         void Bayes(FILE *fplog, const char *xvgconv, const char *xvgepot,
@@ -1026,7 +1024,7 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
 
 double OptParam::CalcDeviation()
 {
-    int             j, count;
+    int             j;
     int             flags;
     double          ener;
     real            t         = 0;
@@ -1091,7 +1089,7 @@ double OptParam::CalcDeviation()
             debug  = NULL;
             if (mymol->shell_)
             {
-                count =
+                (void)
                     relax_shell_flexcon(debug, _cr, FALSE, 0,
                                         mymol->inputrec_, TRUE, flags,
                                         mymol->ltop_, NULL, &(mymol->enerd_),
@@ -1367,9 +1365,7 @@ void OptParam::Optimize(FILE *fp, FILE *fplog,
                         int maxiter,
                         int nrun, real stepsize, int seed,
                         bool bRandom, output_env_t oenv,
-                        bool bOpt[ebtsNR],
-                        real D0, real beta0, real D0_min, real beta_min,
-                        opt_mask_t *omt, real factor, int nprint,
+                        int nprint,
                         const char *xvgconv, const char *xvgepot,
                         real temperature)
 {
@@ -1448,11 +1444,6 @@ void OptParam::Optimize(FILE *fp, FILE *fplog,
         while (!_bDone);
     }
     CalcDeviation();
-}
-
-static real quality_of_fit(real chi2, int N)
-{
-    return -1;
 }
 
 static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
@@ -1604,12 +1595,11 @@ int main(int argc, char *argv[])
     static int            nrun         = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data = 3, compress = 0;
     static real           tol          = 1e-3, stol = 1e-6, watoms = 1;
-    static gmx_bool       bRandom      = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
+    static gmx_bool       bRandom      = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
     static real           J0_0         = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
     static real           J0_1         = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
     static real           fc_mu        = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
     static real           factor       = 0.8;
-    static real           th_toler     = 170, ph_toler = 5, dip_toler = 0.5;
     static char          *opt_elem     = NULL, *const_elem = NULL, *fixchi = (char *)"H";
     static char          *lot          = (char *)"B3LYP/aug-cc-pVTZ";
     static const char    *cqgen[]      = {
@@ -1679,10 +1669,6 @@ int main(int argc, char *argv[])
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-weight", FALSE, etBOOL, {&bWeighted},
           "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },
-        { "-th_toler", FALSE, etREAL, {&th_toler},
-          "Minimum angle to be considered a linear A-B-C bond" },
-        { "-ph_toler", FALSE, etREAL, {&ph_toler},
-          "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
@@ -1756,8 +1742,7 @@ int main(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              minimum_data, bZero,
              opt_elem, const_elem,
-             lot, bCharged, oenv, gms, th_toler, ph_toler, dip_toler,
-             TRUE, TRUE, TRUE, watoms, FALSE, seed);
+             lot, oenv, gms, watoms, FALSE, seed);
 
     check_support(fp, opt._mymol, opt._pd, opt._cr, bOpt);
 
@@ -1777,8 +1762,7 @@ int main(int argc, char *argv[])
     }
     opt.Optimize(MASTER(cr) ? stderr : NULL, fp,
                  maxiter, nrun, step, seed,
-                 bRandom, oenv, bOpt, D0, beta0, D0_min, beta_min,
-                 omt, factor, nprint,
+                 bRandom, oenv, nprint,
                  opt2fn("-conv", NFILE, fnm),
                  opt2fn("-epot", NFILE, fnm),
                  temperature);

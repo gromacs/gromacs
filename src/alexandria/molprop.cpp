@@ -30,6 +30,7 @@ const char *cs_name(CommunicationStatus cs)
     default:
         gmx_fatal(FARGS, "Unknown communication status %d", (int) cs);
     }
+    return NULL;
 };
 
 #define GMX_SEND_DATA 19823

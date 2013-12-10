@@ -210,15 +210,10 @@ int main(int argc, char *argv[])
     int                              NFILE    = (sizeof(fnm)/sizeof(fnm[0]));
     static const char               *sort[]   = { NULL, "molname", "formula", "composition", NULL };
     static int                       compress = 1;
-    static real                      th_toler = 170, ph_toler = 5;
     t_pargs                          pa[]     =
     {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
-        { "-th_toler", FALSE, etREAL, {&th_toler},
-          "If bond angles are larger than this value the group will be treated as a linear one and a virtual site will be created to keep the group linear" },
-        { "-ph_toler", FALSE, etREAL, {&ph_toler},
-          "If dihedral angles are less than this (in absolute value) the atoms will be treated as a planar group with an improper dihedral being added to keep the group planar" },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML files" }
     };
@@ -240,8 +235,7 @@ int main(int argc, char *argv[])
         gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
     }
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    merge_xml(nfiles, fns, mp, NULL, NULL, NULL, ap, pd,
-              TRUE, TRUE, th_toler, ph_toler);
+    merge_xml(nfiles, fns, mp, NULL, NULL, NULL, ap, pd, TRUE);
 
     ReadSqlite3(opt2fn_null("-db", NFILE, fnm), mp);
 

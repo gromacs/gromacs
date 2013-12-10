@@ -960,9 +960,9 @@ double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2
 int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
                              double distance,double toler)
 {
-    char *ba1,*ba2;
-    double dev,dev_best = 100000;
-    int j,i,i_best=-1;
+    char  *ba1, *ba2;
+    double dev, dev_best = 100000;
+    int    j, i;
   
     if ((NULL == elem1) || (NULL == elem2))
         return 0;
@@ -984,7 +984,6 @@ int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
             dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
             if (dev < dev_best) {
                 dev_best = dev;
-                i_best = i;
             }
         }
     }
@@ -2041,11 +2040,6 @@ void gmx_poldata_comm_force_parameters(gmx_poldata_t pd,t_commrec *cr)
             fprintf(debug,"\n");
         }
     }
-}
-
-void gmx_poldata_check_consistency(FILE *fp,gmx_poldata pd)
-{
-    
 }
 
 typedef struct {

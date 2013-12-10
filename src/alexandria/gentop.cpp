@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <ctype.h>
 #include "maths.h"
 #include "macros.h"
@@ -164,14 +165,13 @@ int main(int argc, char *argv[])
     output_env_t                     oenv;
     gmx_atomprop_t                   aps;
     gmx_poldata_t                    pd;
-    int                              ePBC;
     gmx_bool                         bRTP, bTOP;
     char                             forcefield[STRLEN], ffdir[STRLEN];
     char                             ffname[STRLEN], gentopdat[STRLEN];
     std::vector<alexandria::MolProp> mps;
     alexandria::MolPropIterator      mpi;
     alexandria::MyMol                mymol;
-    immStatus       imm;
+    immStatus                        imm;
 
     t_filenm        fnm[] = {
         { efSTX, "-f",    "conf", ffOPTRD },
@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
     choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
               forcefield, sizeof(forcefield),
               ffdir, sizeof(ffdir));
-
+    
     if (strlen(forcefield) > 0)
     {
         strcpy(ffname, forcefield);
@@ -419,8 +419,6 @@ int main(int argc, char *argv[])
         printf("Reading force field information. There are %d atomtypes.\n",
                gmx_poldata_get_natypes(pd));
     }
-
-    ePBC = epbcNONE;
 
     if (strlen(dbname) > 0)
     {

@@ -197,7 +197,7 @@ static void process_children(xmlNodePtr tree,char *xbuf[])
     }
 }
 
-static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
+static void mp_process_tree(FILE *fp,xmlNodePtr tree,
                             int indent,
                             std::vector<alexandria::MolProp>& molprops,
                             gmx_bool *bExperiment)
@@ -464,7 +464,7 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
             if (tree->children) {
                 if ((elem = find_elem((char *)tree->name,exmlNR,exml_names)) != -1)
                 {
-                    mp_process_tree(fp,tree->children,elem,indent+2,
+                    mp_process_tree(fp,tree->children,indent+2,
                                     molprops,bExperiment);
                 }
             }
@@ -495,7 +495,7 @@ void MolPropRead(const char *fn,std::vector<alexandria::MolProp>& mpt)
         exit(1);
     }
 
-    mp_process_tree(NULL,doc->children,0,0,
+    mp_process_tree(NULL,doc->children,0,
                     mpt,&bExperiment);
 
     xmlFreeDoc(doc);

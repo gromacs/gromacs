@@ -65,7 +65,7 @@ int main(int argc,char*argv[])
         
         merge_xml(1,&argv[1],mpt,(char *)"g_mptest_out.dat",
                   NULL,(char *)"double_dip.dat",
-                  ap,pd,TRUE,TRUE,170,15);
+                  ap,pd,TRUE);
     }
     printf("Read %d molecules from %s\n",(int)mpt.size(),argv[1]);
     MolPropWrite(argv[2],mpt,1);

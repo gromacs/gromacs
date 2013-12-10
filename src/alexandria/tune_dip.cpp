@@ -834,11 +834,6 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
     }
 }
 
-static real quality_of_fit(real chi2, int N)
-{
-    return -1;
-}
-
 int main(int argc, char *argv[])
 {
     static const char    *desc[] = {
@@ -1050,8 +1045,7 @@ int main(int argc, char *argv[])
             opt2fn_null("-d", NFILE, fnm),
             minimum_data, bZero,
             opt_elem, const_elem,
-            lot, bCharged, oenv, gms, th_toler, ph_toler, dip_toler,
-            TRUE, TRUE, TRUE, watoms, TRUE, seed);
+            lot, oenv, gms, watoms, TRUE, seed);
 
     optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),
                     &md, maxiter, tol, nrun, step, seed,
