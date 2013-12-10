@@ -132,16 +132,8 @@ MdrunTestFixture::useTopAndGroFromDatabase(const char *name)
 }
 
 int
-MdrunTestFixture::callGrompp()
+MdrunTestFixture::callGromppOnThisRank()
 {
-#ifdef GMX_LIB_MPI
-    // When compiled with external MPI, only call one instance of the grompp function
-    if (0 != gmx_node_rank())
-    {
-        return 0;
-    }
-#endif
-
     CommandLine caller;
     caller.append("grompp");
     caller.addOption("-f", mdpInputFileName);
@@ -152,6 +144,20 @@ MdrunTestFixture::callGrompp()
     caller.addOption("-o", tprFileName);
 
     return gmx_grompp(caller.argc(), caller.argv());
+}
+
+int
+MdrunTestFixture::callGrompp()
+{
+#ifdef GMX_LIB_MPI
+    // When compiled with external MPI, only call one instance of the
+    // grompp function
+    if (0 != gmx_node_rank())
+    {
+        return 0;
+    }
+#endif
+    return callGromppOnThisRank();
 }
 
 int
