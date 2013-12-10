@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,6 +119,17 @@ class TestFileManager
          * same test.
          */
         std::string getTemporaryFilePath(const char *suffix);
+
+        /*! \brief
+         * Creates a file name root for use within a single unit test.
+         *
+         * This method should only be called from within a Google Test
+         * test. Uses the Google Test test fixture and test case name
+         * to construct a string that is unique over all
+         * tests. Intended to produce distinct names for files that
+         * may be stored in the same directory for multiple tests.
+         */
+        static std::string getTestSpecificFileNameRoot();
 
         /*! \brief
          * Creates a file name for use within a single unit test.
