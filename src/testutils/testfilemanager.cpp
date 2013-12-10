@@ -164,18 +164,24 @@ std::string TestFileManager::getTemporaryFilePath(const char *suffix)
     return filename;
 }
 
-std::string TestFileManager::getTestSpecificFileName(const char *suffix)
+std::string TestFileManager::getTestSpecificFileNameRoot()
 {
     const ::testing::TestInfo *test_info =
             ::testing::UnitTest::GetInstance()->current_test_info();
-    std::string                filename = std::string(test_info->test_case_name())
+    std::string                filenameRoot = std::string(test_info->test_case_name())
         + "_" + test_info->name();
+    std::replace(filenameRoot.begin(), filenameRoot.end(), '/', '_');
+    return filenameRoot;
+}
+
+std::string TestFileManager::getTestSpecificFileName(const char *suffix)
+{
+    std::string filename = getTestSpecificFileNameRoot();
     if (suffix[0] != '.')
     {
         filename.append("_");
     }
     filename.append(suffix);
-    std::replace(filename.begin(), filename.end(), '/', '_');
     return filename;
 }
 
