@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,7 +103,7 @@ class TestFileManager::Impl
         const char *outputTempDirectory;
 };
 
-const char *TestFileManager::Impl::s_inputDirectory      = NULL;
+const char *TestFileManager::Impl::s_inputDirectory            = NULL;
 const char *TestFileManager::Impl::s_globalOutputTempDirectory = NULL;
 /** Controls whether TestFileManager should delete temporary files
     after the test finishes. */
@@ -158,18 +158,24 @@ std::string TestFileManager::getTemporaryFilePath(const char *suffix)
     return filename;
 }
 
-std::string TestFileManager::getTestSpecificFileName(const char *suffix)
+std::string TestFileManager::getTestSpecificFileNameRoot()
 {
     const ::testing::TestInfo *test_info =
             ::testing::UnitTest::GetInstance()->current_test_info();
-    std::string                filename = std::string(test_info->test_case_name())
+    std::string                filenameRoot = std::string(test_info->test_case_name())
         + "_" + test_info->name();
+    std::replace(filenameRoot.begin(), filenameRoot.end(), '/', '_');
+    return filenameRoot;
+}
+
+std::string TestFileManager::getTestSpecificFileName(const char *suffix)
+{
+    std::string filename = getTestSpecificFileNameRoot();
     if (suffix[0] != '.')
     {
         filename.append("_");
     }
     filename.append(suffix);
-    std::replace(filename.begin(), filename.end(), '/', '_');
     return filename;
 }
 

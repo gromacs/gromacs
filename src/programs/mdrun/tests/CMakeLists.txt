@@ -42,6 +42,7 @@ gmx_build_unit_test(
     ${exename}
     # files with code for tests
     rerun.cpp
+    replicaexchange.cpp
     trajectory_writing.cpp
     compressed_x_output.cpp
     # files with code for test fixtures
