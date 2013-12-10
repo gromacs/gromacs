@@ -89,11 +89,13 @@ class MdrunTestFixture : public IntegrationTestFixture
 
         //! Use an empty .mdp file as input to grompp
         void useEmptyMdpFile();
-        //! Use an empty .mdp file as input to grompp
+        //! Use a given string as input to grompp
         void useStringAsMdpFile(const char *mdpString);
+        //! Use a given string as input to grompp
+        void useStringAsMdpFile(const std::string &mdpString);
         //! Use a standard .top and .gro file as input to grompp
         void useTopAndGroFromDatabase(const char *name);
-        //! Calls grompp to prepare for the mdrun test
+        //! Calls grompp (on rank 0) to prepare for the mdrun test
         int callGrompp();
         //! Calls grompp (on this rank) to prepare for the mdrun test
         int callGromppOnThisRank();
@@ -124,6 +126,12 @@ class MdrunTestFixture : public IntegrationTestFixture
         std::string logFileName;
         std::string edrFileName;
         //@}
+};
+
+/*! \brief Parameterized test fixture for mdrun integration tests */
+class ParameterizedMdrunTestFixture : public gmx::test::MdrunTestFixture,
+                                      public ::testing::WithParamInterface<const char *>
+{
 };
 
 } // namespace test
