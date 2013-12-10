@@ -122,6 +122,17 @@ class TestFileManager
         std::string getTemporaryFilePath(const char *suffix);
 
         /*! \brief
+         * Creates a file name root for use within a single unit test.
+         *
+         * This method should only be called from within a Google Test
+         * test. Uses the Google Test test fixture and test case name
+         * to construct a string that is unique over all
+         * tests. Intended to produce distinct names for files that
+         * may be stored in the same directory for multiple tests.
+         */
+        static std::string getTestSpecificFileNameRoot();
+
+        /*! \brief
          * Creates a file name for use within a single unit test.
          *
          * \param[in] suffix  Suffix to add to the file name (should contain an
