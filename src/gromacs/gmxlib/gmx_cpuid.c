@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,6 +142,7 @@ gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS] =
     "SSE4.1",
     "AVX_128_FMA",
     "AVX_256",
+    "AVX2_256",
     "Sparc64 HPC-ACE",
     "IBM_QPX"
 };
@@ -1057,7 +1058,11 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
 
     if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_INTEL)
     {
-        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX))
+        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX2))
+        {
+            tmpacc = GMX_CPUID_ACCELERATION_X86_AVX2_256;
+        }
+        else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX))
         {
             tmpacc = GMX_CPUID_ACCELERATION_X86_AVX_256;
         }

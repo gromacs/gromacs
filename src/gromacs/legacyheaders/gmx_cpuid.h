@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -128,6 +128,7 @@ enum gmx_cpuid_acceleration
     GMX_CPUID_ACCELERATION_X86_SSE4_1,
     GMX_CPUID_ACCELERATION_X86_AVX_128_FMA,
     GMX_CPUID_ACCELERATION_X86_AVX_256,
+    GMX_CPUID_ACCELERATION_X86_AVX2_256,
     GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE,
     GMX_CPUID_ACCELERATION_IBM_QPX,
     GMX_CPUID_NACCELERATIONS
