@@ -14,6 +14,7 @@ set(ALEXANDRIA_SOURCES
 	molprop_util.cpp
 	molprop_xml.cpp
         molprop_sqlite3.cpp
+        molprop_tables.cpp
         mymol.cpp
         moldip.cpp
         gauss_io.cpp
@@ -30,6 +31,7 @@ set(ALEXANDRIA_SOURCES
         molprop_test.cpp
         gen_ff.cpp
         gen_table.cpp
+        alex_modules.cpp
 	)
 	
 add_library(alexandria ${ALEXANDRIA_SOURCES})	
