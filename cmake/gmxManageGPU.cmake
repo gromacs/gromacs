@@ -89,35 +89,27 @@ if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
 
     # assemble warning/error message
     if (GMX_DETECT_GPU_AVAILABLE)
-        set(_msg "
-    ${GMX_DETECT_GPU_COUNT} NVIDIA GPU(s) found in the system")
+        set(_msg "${GMX_DETECT_GPU_COUNT} NVIDIA GPU(s) found in the system")
 
         # append GPU names
         if (NOT GMX_DETECT_GPU_INFO STREQUAL "")
             set(_msg "${_msg}:")
             foreach(gpu ${GMX_DETECT_GPU_INFO})
                 set(_msg "${_msg}
-                ${gpu}")
+${gpu}")
             endforeach()
         endif()
 
         # TODO remove the second part of the message when we'll have compute
         # capability information from the detection.
         set(_msg "${_msg}
-    Compute capability information not available, consult the NVIDIA website:
-    https://developer.nvidia.com/cuda-gpus
-            ")
+Compute capability information not available, consult the NVIDIA website:
+https://developer.nvidia.com/cuda-gpus")
     endif()
 
-        set(CUDA_NOTFOUND_MESSAGE "
-    mdrun supports native GPU acceleration on NVIDIA hardware with compute
-    capability >=2.0 (Fermi or later). This requires the NVIDIA CUDA toolkit,
-    which was not found. Its location can be hinted by setting the
-    CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable).
-    The typical location would be /usr/local/cuda[-version].
-    Note that CPU or GPU acceleration can be selected at runtime!
+        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >=2.0 (Fermi or later). This requires the NVIDIA CUDA toolkit, which was not found. Its location can be hinted by setting the CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable). The typical location would be /usr/local/cuda[-version]. Note that CPU or GPU acceleration can be selected at runtime.
 
-    ${_msg}")
+${_msg}")
         unset(_msg)
 
     if (NOT CUDA_FOUND)
@@ -193,11 +185,6 @@ macro(gmx_gpu_setup)
 
     # no OpenMP is no good!
     if(NOT GMX_OPENMP)
-        message(WARNING "
-    To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading.
-    Without OpenMP a single CPU core can be used with a GPU which is not optimal.
-    Note that with MPI multiple processes can be forced to use a single GPU, but this
-    typically inefficient. Note that you need to set both C and C++ compilers that
-    support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
+        message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. Without OpenMP a single CPU core can be used with a GPU which is not optimal. Note that with MPI multiple processes can be forced to use a single GPU, but this is typically inefficient. You need to set both C and C++ compilers that support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
     endif()
 endmacro()
