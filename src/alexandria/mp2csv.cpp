@@ -160,7 +160,7 @@ static void gmx_molprop_csv(const char *fn,
     fclose(fp);
 }
 
-int main(int argc, char*argv[])
+int alex_mp2csv(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "mp2csv converts a molprop database into a spreadsheet"

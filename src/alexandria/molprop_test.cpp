@@ -36,15 +36,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gmx_fatal.h>
+#include "molprop.hpp"
+#include "molprop_xml.hpp"
+#include "molprop_util.hpp"
 #include "atomprop.h"
 #include "poldata_xml.hpp"
 
-#include <vector>
-#include "molprop.hpp"
-#include "molprop_xml.hpp"
-
-int main(int argc,char*argv[])
+int alex_molprop_test(int argc,char*argv[])
 {
+    gmx_atomprop_t ap;
+    gmx_poldata_t  pd;
     std::vector<alexandria::MolProp> mpt;
     
     if (argc < 3) 
@@ -52,10 +53,22 @@ int main(int argc,char*argv[])
         fprintf(stderr,"Usage: %s infile outfile\n",argv[0]);
         exit(1);
     }
-    MolPropRead(argv[1],mpt);
-    printf("Read %lu molecules from %s\n",mpt.size(),argv[1]);
-    MolPropWrite(argv[2],mpt,FALSE);
+    if (1) 
+    {
+        MolPropRead(argv[1],mpt);
+    }
+    else 
+    {
+        ap = gmx_atomprop_init();
+        if ((pd = gmx_poldata_read("tune_pol.dat",ap)) == NULL)
+            gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
+        
+        merge_xml(1,&argv[1],mpt,(char *)"g_mptest_out.dat",
+                  NULL,(char *)"double_dip.dat",
+                  ap,pd,TRUE);
+    }
+    printf("Read %d molecules from %s\n",(int)mpt.size(),argv[1]);
+    MolPropWrite(argv[2],mpt,1);
     
     return 0;
 }
-

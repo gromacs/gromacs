@@ -134,7 +134,7 @@ void copy_atom(t_symtab *tab, t_atoms *a1, int i1, t_atoms *a2, int i2,
     copy_rvec(vin[i1], vout[i2]);
 }
 
-int main(int argc, char *argv[])
+int alex_mkyaw(int argc, char *argv[])
 {
     t_symtab           tab;
     static const char *desc[] = {

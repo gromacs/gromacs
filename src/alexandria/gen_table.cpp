@@ -1225,7 +1225,7 @@ static void do_maaren(FILE *fp, int eel, int pts_nm, int npow)
     }
 }
 
-int main(int argc, char *argv[])
+int alex_gen_table(int argc, char *argv[])
 {
     static const char    *desc[] = {
         "gen_table generates tables for mdrun for use with the USER defined",

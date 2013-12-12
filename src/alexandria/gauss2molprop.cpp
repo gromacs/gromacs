@@ -71,7 +71,7 @@
 #include "molprop_xml.hpp"
 #include "gauss_io.hpp"
 
-int main(int argc, char *argv[])
+int alex_gauss2molprop(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "gauss2molprop reads a series of Gaussian output files, and collects",

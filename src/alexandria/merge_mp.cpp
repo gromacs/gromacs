@@ -190,7 +190,7 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp)
     }
 }
 
-int main(int argc, char *argv[])
+int alex_merge_mp(int argc, char *argv[])
 {
     static const char               *desc[] =
     {

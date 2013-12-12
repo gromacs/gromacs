@@ -414,7 +414,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
 }
 
 
-int main(int argc, char *argv[])
+int alex_analyze_mp(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "analyze_mp reads force field information and a molecule database",

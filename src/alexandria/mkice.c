@@ -43,7 +43,7 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "gmx_fatal.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -51,11 +51,11 @@
 #include "physics.h"
 #include "names.h"
 #include "txtdump.h"
-#include "trnio.h"
+#include "gromacs/fileio/trnio.h"
 #include "symtab.h"
 #include "strdb.h"
 #include "atomprop.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 
 #define TET   109.47
 #define DCONS 0.117265878
@@ -486,7 +486,7 @@ void virial(FILE *fp,gmx_bool bFull,int nmol,rvec x[],matrix box,real rcut,
 
 
 
-int main(int argc,char *argv[])
+int alex_mkice(int argc,char *argv[])
 {
   static char *desc[] = {
     "mkice generates an ice crystal in the Ih crystal form which is the",

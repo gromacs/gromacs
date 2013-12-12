@@ -1542,7 +1542,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
 }
 }
 
-int main(int argc, char *argv[])
+int alex_tune_fc(int argc, char *argv[])
 {
     static const char    *desc[] = {
         "tune_fc read a series of molecules and corresponding experimental",
@@ -1680,7 +1680,6 @@ int main(int argc, char *argv[])
     time_t                my_t;
     char                  pukestr[STRLEN];
     opt_mask_t           *omt = NULL;
-    gmx::ProgramInfo &info = gmx::init("tune_fc", &argc, &argv);
     
     cr = init_commrec();
     if (MASTER(cr)) 
@@ -1780,8 +1779,6 @@ int main(int argc, char *argv[])
 
         ffclose(fp);
     }
-
-    gmx::finalize();
 
     return 0;
 }

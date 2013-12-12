@@ -38,7 +38,7 @@
 #include "poldata_xml.hpp"
 #include "atomprop.h"
 
-int main(int argc,char*argv[])
+int alex_poldata_test(int argc,char*argv[])
 {
   gmx_poldata_t pd;
   gmx_atomprop_t aps;

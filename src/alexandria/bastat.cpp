@@ -460,7 +460,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
     }
 }
 
-int main(int argc, char *argv[])
+int alex_bastat(int argc, char *argv[])
 {
     static const char    *desc[] = {
         "bastat read a series of molecules and extracts average geometries from",
@@ -518,7 +518,6 @@ int main(int argc, char *argv[])
     gmx_atomprop_t        aps;
     int                   nfiles;
     char                **fns;
-    gmx::ProgramInfo     &info = gmx::init("bastat", &argc, &argv);
     
     parse_common_args(&argc, argv, PCA_CAN_VIEW,
                       NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);

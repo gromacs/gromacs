@@ -250,7 +250,7 @@ static void do_bad(FILE *fp, FILE *tp, gmx_poldata_t pd)
   end_table(tp);
 }
 
-int main(int argc,char *argv[]) 
+int alex_gen_ff(int argc,char *argv[]) 
 {
   gmx_poldata_t pd;
   gmx_atomprop_t aps;

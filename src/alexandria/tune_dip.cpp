@@ -834,7 +834,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
     }
 }
 
-int main(int argc, char *argv[])
+int alex_tune_dip(int argc, char *argv[])
 {
     static const char    *desc[] = {
         "tune_dip read a series of molecules and corresponding experimental",
@@ -994,7 +994,6 @@ int main(int argc, char *argv[])
     gmx_molselect_t       gms;
     time_t                my_t;
     char                  pukestr[STRLEN];
-    gmx::ProgramInfo     &info = gmx::init("tune_dip", &argc, &argv);
     
     cr = init_commrec();
 
@@ -1062,8 +1061,6 @@ int main(int argc, char *argv[])
 
         gmx_poldata_write(opt2fn("-o", NFILE, fnm), md._pd, compress);
     }
-
-    gmx::finalize();
 
     return 0;
 }
