@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -108,7 +108,10 @@ void SelectionOptionStorage::addSelections(
         {
             GMX_THROW(InvalidInputError("Dynamic selections not supported"));
         }
-        addValue(*i);
+        // Create a copy to allow modifications.
+        Selection sel(*i);
+        sel.data().setFlags(selectionFlags_);
+        addValue(sel);
     }
     if (bFullValue)
     {
@@ -136,11 +139,6 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
     else if (values->size() < static_cast<size_t>(minValueCount()))
     {
         GMX_THROW(InvalidInputError("Too few (valid) values provided"));
-    }
-    ValueList::iterator i;
-    for (i = values->begin(); i != values->end(); ++i)
-    {
-        i->data().setFlags(selectionFlags_);
     }
 }
 

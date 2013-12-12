@@ -1,12 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS Development Team
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -37,6 +35,8 @@
 #ifndef _nbnxn_kernel_simd_utils_h_
 #define _nbnxn_kernel_simd_utils_h_
 
+#include "gromacs/legacyheaders/types/simple.h"
+
 /*! \brief Provides hardware-specific utility routines for the SIMD kernels.
  *
  * Defines all functions, typedefs, constants and macros that have
@@ -56,6 +56,13 @@
 
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
 
+/* Align a stack-based thread-local working array. */
+static gmx_inline int *
+prepare_table_load_buffer(const int *array)
+{
+    return NULL;
+}
+
 #include "nbnxn_kernel_simd_utils_ref.h"
 
 #else /* GMX_SIMD_REFERENCE_PLAIN_C */
@@ -64,10 +71,9 @@
 /* Include x86 SSE2 compatible SIMD functions */
 
 /* Set the stride for the lookup of the two LJ parameters from their
-   (padded) array. Only strides of 2 and 4 are currently supported. */
-#if defined GMX_NBNXN_SIMD_2XNN
-static const int nbfp_stride = 4;
-#elif defined GMX_DOUBLE
+ * (padded) array. We use the minimum supported SIMD memory alignment.
+ */
+#if defined GMX_DOUBLE
 static const int nbfp_stride = 2;
 #else
 static const int nbfp_stride = 4;
@@ -77,7 +83,7 @@ static const int nbfp_stride = 4;
  * full-width AVX_256 use the array, but other implementations do
  * not. */
 static gmx_inline int *
-prepare_table_load_buffer(const int *array)
+prepare_table_load_buffer(const int gmx_unused *array)
 {
 #if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
     return gmx_simd_align_int(array);
@@ -92,17 +98,6 @@ prepare_table_load_buffer(const int *array)
 #if GMX_SIMD_WIDTH_HERE == 8
 #define TAB_FDV0
 #endif
-
-/*
-Berk, 2xnn.c had the following code, but I think it is safe to remove now, given the code immediately above.
-
-#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
-/ * AVX-256 single precision 2x(4+4) kernel,
- * we can do half SIMD-width aligned FDV0 table loads.
- * /
-#define TAB_FDV0
-#endif
-*/
 
 #ifdef GMX_DOUBLE
 #include "nbnxn_kernel_simd_utils_x86_256d.h"
@@ -133,9 +128,73 @@ static const int nbfp_stride = 4;
 static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
 #endif
 
+/* We use the FDV0 table layout when we can use aligned table loads */
+#if GMX_SIMD_WIDTH_HERE == 4
+#define TAB_FDV0
+#endif
+
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+#include "nbnxn_kernel_simd_utils_ibm_qpx.h"
+#endif /* GMX_CPU_ACCELERATION_IBM_QPX */
+
 #endif /* GMX_X86_SSE2 */
 #endif /* GMX_SIMD_REFERENCE_PLAIN_C */
 
+#if GMX_SIMD_WIDTH_HERE == 4 && !defined GMX_SIMD_REFERENCE_PLAIN_C
+#define gmx_mm_pr4    gmx_mm_pr
+#define gmx_load_pr4  gmx_load_pr
+#define gmx_store_pr4 gmx_store_pr
+#define gmx_add_pr4   gmx_add_pr
+#endif
+
+#ifndef HAVE_GMX_SUM_SIMD /* should be defined for arch with hardware reduce */
+static gmx_inline real
+gmx_sum_simd2(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1];
+}
+
+#if GMX_SIMD_WIDTH_HERE>=4
+static gmx_inline real
+gmx_sum_simd4(gmx_mm_pr4 x, real* b)
+{
+    gmx_store_pr4(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+#endif
+
+#if GMX_SIMD_WIDTH_HERE == 2
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1];
+}
+#elif GMX_SIMD_WIDTH_HERE == 4
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+#elif GMX_SIMD_WIDTH_HERE == 8
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7];
+}
+#elif GMX_SIMD_WIDTH_HERE == 16
+/* This is getting ridiculous, SIMD horizontal adds would help,
+ * but this is not performance critical (only used to reduce energies)
+ */
+static gmx_inline real gmx_sum_simd(gmx_mm_pr x, real* b)
+{
+    gmx_store_pr(b, x);
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]+b[9]+b[10]+b[11]+b[12]+b[13]+b[14]+b[15];
+}
+#else
+#error "unsupported kernel configuration"
+#endif
+#endif //HAVE_GMX_SUM_SIMD
 
 #ifdef UNROLLJ
 /* Add energy register to possibly multiple terms in the energy array */

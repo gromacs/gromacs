@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -225,7 +225,7 @@
 #include <boost/exception_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 
@@ -569,20 +569,10 @@ set_refpos_type(gmx::PositionCalculationCollection *pcc,
     }
 }
 
-/*!
- * \param[in]  left    Selection element for the left hand side.
- * \param[in]  right   Selection element for the right hand side.
- * \param[in]  op      String representation of the operator.
- * \param[in]  scanner Scanner data structure.
- * \returns    The created selection element.
- *
- * This function handles the creation of a gmx::SelectionTreeElement object for
- * arithmetic expressions.
- */
-SelectionTreeElementPointer
-_gmx_sel_init_arithmetic(const SelectionTreeElementPointer &left,
-                         const SelectionTreeElementPointer &right,
-                         char op, yyscan_t scanner)
+gmx::SelectionTreeElementPointer
+_gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
+                         const gmx::SelectionTreeElementPointer &right,
+                         char op, yyscan_t /* scanner */)
 {
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_ARITHMETIC));
     sel->v.type        = REAL_VALUE;

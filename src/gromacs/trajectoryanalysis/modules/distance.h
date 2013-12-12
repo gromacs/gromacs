@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -42,13 +42,7 @@
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_DISTANCE_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_DISTANCE_H
 
-#include <string>
-
 #include "../analysismodule.h"
-#include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/analysisdata/modules/histogram.h"
-#include "gromacs/selection/selection.h"
 
 namespace gmx
 {
@@ -56,45 +50,12 @@ namespace gmx
 namespace analysismodules
 {
 
-class Distance : public TrajectoryAnalysisModule
+class DistanceInfo
 {
     public:
         static const char name[];
         static const char shortDescription[];
-
-        Distance();
-        virtual ~Distance();
-
-        virtual void initOptions(Options                    *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
-
-    private:
-        SelectionList                            sel_;
-        std::string                              fnAverage_;
-        std::string                              fnAll_;
-        std::string                              fnXYZ_;
-        std::string                              fnHistogram_;
-        std::string                              fnAllStats_;
-        double                                   meanLength_;
-        double                                   lengthDev_;
-        double                                   binWidth_;
-
-        AnalysisData                             distances_;
-        AnalysisData                             xyz_;
-        AnalysisDataAverageModulePointer         summaryStatsModule_;
-        AnalysisDataAverageModulePointer         allStatsModule_;
-        AnalysisDataFrameAverageModulePointer    averageModule_;
-        AnalysisDataSimpleHistogramModulePointer histogramModule_;
-
-        // Copy and assign disallowed by base.
+        static TrajectoryAnalysisModulePointer create();
 };
 
 } // namespace analysismodules

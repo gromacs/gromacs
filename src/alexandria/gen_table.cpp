@@ -44,6 +44,7 @@
 #include "xvgr.h"
 #include "smalloc.h"
 #include "coulomb.h"
+#include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/coulombintegrals.h"
 #include "atomprop.h"
 #include "poldata.hpp"
@@ -108,7 +109,7 @@ static void do_hard(FILE *fp, int pts_nm, double efac, double delta)
 
 }
 
-static void do_AB1(FILE *fp, int eel, int pts_nm, int ndisp, int nrep)
+static void do_AB1(FILE *fp, int pts_nm, int ndisp, int nrep)
 {
     int    i, k, imax;
     double myfac[3] = { 1, -1, 1 };
@@ -174,7 +175,7 @@ static void lo_do_ljc_pme(double r,
     double isp = 0.564189583547756;
     double ewc;
 
-    ewc  = calc_ewaldcoeff(rcoulomb, ewald_rtol);
+    ewc  = calc_ewaldcoeff_q(rcoulomb, ewald_rtol);
 
     r2   = r*r;
     r_6  = 1.0/(r2*r2*r2);
@@ -331,7 +332,7 @@ static void lo_do_DEC(double r, double xi, double xir,
    r /(4 xi )                     r
    E           Sqrt[Pi] r xi
  */
-void lo_do_DEC_qd_qd(double r, double xi, double xir,
+void lo_do_DEC_qd_qd(double r, double xi, 
                      double *vc, double *fc,
                      double *vd, double *fd,
                      double *vr, double *fr)
@@ -362,7 +363,7 @@ void lo_do_DEC_qd_qd(double r, double xi, double xir,
    r /(2 xi )               r
    E           r xi
  */
-void lo_do_DEC_q_qd(double r, double xi, double xir,
+void lo_do_DEC_q_qd(double r, double xi, 
                     double *vc, double *fc,
                     double *vd, double *fd,
                     double *vr, double *fr)
@@ -411,16 +412,15 @@ void lo_do_DEC_q_qd(double r, double xi, double xir,
 
 
  */
-void lo_do_DEC_q_q(double r, double xi, double xir,
+void lo_do_DEC_q_q(double r, double xir,
                    double *vc, double *fc,
                    double *vd, double *fd,
                    double *vr, double *fr)
 {
     double sqpi   = sqrt(M_PI);
-    double r2, xi2;
+    double r2;
 
     r2  = r*r;
-    xi2 = xi*xi;
 
     *vc  = 1.0/r;
     *fc  = 1.0/(r*r);
@@ -434,7 +434,7 @@ void lo_do_DEC_q_q(double r, double xi, double xir,
     *fr  = -(-2.*exp(-r2/(4*xir*xir)) / (sqrt(M_PI)*r)  - 2*xir*erfc(r/(2*xir))/r2  );
 }
 
-static void do_guillot(FILE *fp, int eel, int pts_nm, double rc, double rtol, double xi, double xir)
+static void do_guillot(FILE *fp, int eel, int pts_nm, double xi, double xir)
 {
     int    i, imax;
     double r, vc, fc, vd, fd, vr, fr;
@@ -466,7 +466,7 @@ static void do_guillot(FILE *fp, int eel, int pts_nm, double rc, double rtol, do
 /* TODO:
    PvM: Everything is hardcoded, we should fix that. How?
  */
-static void do_guillot2001a(const char *file, int eel, int pts_nm, double rc, double rtol, double xi, double xir)
+static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
 {
     FILE       *fp = NULL;
     char        buf[256];
@@ -508,7 +508,7 @@ static void do_guillot2001a(const char *file, int eel, int pts_nm, double rc, do
                     }
                     else if (eel == eelCUT)
                     {
-                        lo_do_DEC_q_q(r, xi, xir, &vc, &fc, &vd, &fd, &vr, &fr);
+                        lo_do_DEC_q_q(r, xir, &vc, &fc, &vd, &fd, &vr, &fr);
                     }
                     fprintf(fp, "%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
                             r, vc, fc, vd, fd, vr, fr);
@@ -543,7 +543,7 @@ static void do_guillot2001a(const char *file, int eel, int pts_nm, double rc, do
                     }
                     else if (eel == eelCUT)
                     {
-                        lo_do_DEC_q_qd(r, xi, xir, &vc, &fc, &vd, &fd, &vr, &fr);
+                        lo_do_DEC_q_qd(r, xi, &vc, &fc, &vd, &fd, &vr, &fr);
                     }
                     fprintf(fp, "%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
                             r, vc, fc, vd, fd, vr, fr);
@@ -577,7 +577,7 @@ static void do_guillot2001a(const char *file, int eel, int pts_nm, double rc, do
                     }
                     else if (eel == eelCUT)
                     {
-                        lo_do_DEC_qd_qd(r, xi, xir, &vc, &fc, &vd, &fd, &vr, &fr);
+                        lo_do_DEC_qd_qd(r, xi, &vc, &fc, &vd, &fd, &vr, &fr);
                     }
                     fprintf(fp, "%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
                             r, vc, fc, vd, fd, vr, fr);
@@ -646,7 +646,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                     }
                     else if (eel == eelCUT)
                     {
-                        lo_do_DEC_q_q(r, xi, xir, &vc, &fc, &vd, &fd, &vr, &fr);
+                        lo_do_DEC_q_q(r, xir, &vc, &fc, &vd, &fd, &vr, &fr);
                     }
                     fprintf(fp, "%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
                             r, vc, fc, vd, fd, vr, fr);
@@ -682,7 +682,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                     }
                     else if (eel == eelCUT)
                     {
-                        lo_do_DEC_q_qd(r, xi, xir, &vc, &fc, &vd, &fd, &vr, &fr);
+                        lo_do_DEC_q_qd(r, xi, &vc, &fc, &vd, &fd, &vr, &fr);
                     }
                     fprintf(fp, "%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
                             r, vc, fc, vd, fd, vr, fr);
@@ -717,7 +717,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                     }
                     else if (eel == eelCUT)
                     {
-                        lo_do_DEC_qd_qd(r, xi, xir, &vc, &fc, &vd, &fd, &vr, &fr);
+                        lo_do_DEC_qd_qd(r, xi, &vc, &fc, &vd, &fd, &vr, &fr);
                     }
                     fprintf(fp, "%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
                             r, vc, fc, vd, fd, vr, fr);
@@ -737,8 +737,8 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
 }
 
 
-static void do_Slater(const char *file, int eel, int pts_nm,
-                      double rc, double rtol, int nrow1, int nrow2,
+static void do_Slater(int pts_nm,
+                      int nrow1, int nrow2,
                       double w1, double w2)
 {
     FILE  *fp = NULL;
@@ -816,7 +816,7 @@ static void do_ljc(FILE *fp, int eel, int pts_nm, real rc, real rtol)
     }
 }
 
-static void do_guillot_maple(FILE *fp, int eel, int pts_nm, double rc, double rtol, double xi, double xir)
+static void do_guillot_maple(FILE *fp, int eel, int pts_nm, double xi, double xir)
 {
     int    i, imax;
     /*  double xi     = 0.15;*/
@@ -845,7 +845,7 @@ static void do_guillot_maple(FILE *fp, int eel, int pts_nm, double rc, double rt
     }
 }
 
-static void do_DEC(FILE *fp, int eel, int pts_nm, double rc, double rtol, double xi, double xir)
+static void do_DEC(FILE *fp, int eel, int pts_nm, double xi, double xir)
 {
     int    i, imax;
     double r, vc, vc2, vd, vd2, vr, vr2;
@@ -873,7 +873,7 @@ static void do_DEC(FILE *fp, int eel, int pts_nm, double rc, double rtol, double
     }
 }
 
-static void do_DEC_q_q(FILE *fp, int eel, int pts_nm, double rc, double rtol, double xi, double xir)
+static void do_DEC_q_q(FILE *fp, int eel, int pts_nm, double xir)
 {
     int    i, imax;
     double r, vc, vc2, vd, vd2, vr, vr2;
@@ -894,14 +894,14 @@ static void do_DEC_q_q(FILE *fp, int eel, int pts_nm, double rc, double rtol, do
         }
         else if (eel == eelCUT)
         {
-            lo_do_DEC_q_q(r, xi, xir, &vc, &vc2, &vd, &vd2, &vr, &vr2);
+            lo_do_DEC_q_q(r, xir, &vc, &vc2, &vd, &vd2, &vr, &vr2);
         }
         fprintf(fp, "%15.10e  %15.10e  %15.10e   %15.10e  %15.10e  %15.10e  %15.10e\n",
                 r, vc, vc2, vd, vd2, vr, vr2);
     }
 }
 
-static void do_DEC_q_qd(FILE *fp, int eel, int pts_nm, double rc, double rtol, double xi, double xir)
+static void do_DEC_q_qd(FILE *fp, int eel, int pts_nm, double xi)
 {
     int    i, imax;
     /*  double xi     = 0.15;*/
@@ -923,7 +923,7 @@ static void do_DEC_q_qd(FILE *fp, int eel, int pts_nm, double rc, double rtol, d
         }
         else if (eel == eelCUT)
         {
-            lo_do_DEC_q_qd(r, xi, xir, &vc, &vc2, &vd, &vd2, &vr, &vr2);
+            lo_do_DEC_q_qd(r, xi, &vc, &vc2, &vd, &vd2, &vr, &vr2);
         }
         fprintf(fp, "%15.10e  %15.10e  %15.10e   %15.10e  %15.10e  %15.10e  %15.10e\n",
                 r, vc, vc2, vd, vd2, vr, vr2);
@@ -978,7 +978,7 @@ static void gen_alexandria_rho(gmx_poldata_t pd, const char *fn, ChargeGeneratio
 
             sprintf(buf, "%s_%s", name, fn);
 
-            fp = ffopen(buf, "w");
+            fp = xvgropen(buf, "Rho", "r (nm)", "rho(r)", oenv);
             for (n = 0; (n <= nmax); n++)
             {
                 rr  = n*spacing;
@@ -1169,7 +1169,7 @@ static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeGenera
     }
 }
 
-static void do_DEC_qd_qd(FILE *fp, int eel, int pts_nm, double rc, double rtol, double xi, double xir)
+static void do_DEC_qd_qd(FILE *fp, int eel, int pts_nm, double xi)
 {
     int    i, imax;
     /*  double xi     = 0.15;*/
@@ -1191,7 +1191,7 @@ static void do_DEC_qd_qd(FILE *fp, int eel, int pts_nm, double rc, double rtol, 
         }
         else if (eel == eelCUT)
         {
-            lo_do_DEC_qd_qd(r, xi, xir, &vc, &vc2, &vd, &vd2, &vr, &vr2);
+            lo_do_DEC_qd_qd(r, xi, &vc, &vc2, &vd, &vd2, &vr, &vr2);
         }
         fprintf(fp, "%15.10e  %15.10e  %15.10e   %15.10e  %15.10e  %15.10e  %15.10e\n",
                 r, vc, vc2, vd, vd2, vr, vr2);
@@ -1225,7 +1225,7 @@ static void do_maaren(FILE *fp, int eel, int pts_nm, int npow)
     }
 }
 
-int main(int argc, char *argv[])
+int alex_gen_table(int argc, char *argv[])
 {
     static const char    *desc[] = {
         "gen_table generates tables for mdrun for use with the USER defined",
@@ -1390,22 +1390,22 @@ int main(int argc, char *argv[])
         switch (m)
         {
             case mGuillot2001a:
-                do_guillot2001a(fn, eel, pts_nm, rc, rtol, xi, xir);
+                do_guillot2001a(eel, pts_nm, xi, xir);
                 break;
             case mSlater:
-                do_Slater(fn, eel, pts_nm, rc, rtol, nrow1, nrow2, w1, w2);
+                do_Slater(pts_nm, nrow1, nrow2, w1, w2);
                 break;
             case mGuillot_Maple:
                 fprintf(fp, "#\n# Table Guillot_Maple: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n", rc, rtol, xi, xir);
-                do_guillot_maple(fp, eel, pts_nm, rc, rtol, xi, xir);
+                do_guillot_maple(fp, eel, pts_nm, xi, xir);
                 break;
             case mDEC_q_q:
                 fprintf(fp, "#\n# Table DEC_q_q: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n", rc, rtol, xi, xir);
-                do_DEC_q_q(fp, eel, pts_nm, rc, rtol, xi, xir);
+                do_DEC_q_q(fp, eel, pts_nm, xir);
                 break;
             case mDEC:
                 fprintf(fp, "#\n# Table DEC: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n", rc, rtol, xi, xir);
-                do_DEC(fp, eel, pts_nm, rc, rtol, xi, xir);
+                do_DEC(fp, eel, pts_nm, xi, xir);
                 break;
             case mDEC_pair:
                 do_DEC_pair(fn, eel, pts_nm, rc, rtol, xi, xir);
@@ -1413,19 +1413,19 @@ int main(int argc, char *argv[])
             case mDEC_qd_q:
                 fprintf(stdout, "case mDEC_qd_q");
                 fprintf(fp, "#\n# Table DEC_qd_q: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n", rc, rtol, xi, xir);
-                do_DEC_q_qd(fp, eel, pts_nm, rc, rtol, xi, xir);
+                do_DEC_q_qd(fp, eel, pts_nm, xi);
                 break;
             case mDEC_qd_qd:
                 fprintf(stdout, "case mDEC_qd_qd");
                 fprintf(fp, "#\n# Table DEC_qd_qd: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n", rc, rtol, xi, xir);
-                do_DEC_qd_qd(fp, eel, pts_nm, rc, rtol, xi, xir);
+                do_DEC_qd_qd(fp, eel, pts_nm, xi);
                 break;
             case mMaaren:
                 do_maaren(fp, eel, pts_nm, nrep);
                 break;
             case mAB1:
                 fprintf(fp, "#\n# Table AB1: ndisp=%d nrep=%d\n#\n", ndisp, nrep);
-                do_AB1(fp, eel, pts_nm, ndisp, nrep);
+                do_AB1(fp, pts_nm, ndisp, nrep);
                 break;
             case mLjc:
                 fprintf(fp, "#\n# Table LJC(12-6-1): rc=%g, rtol=%g\n#\n", rc, rtol);

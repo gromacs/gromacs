@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gyas ROwers Mature At Cryogenic Speed
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -47,10 +49,10 @@
 #include "string2.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "confio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/tpxio.h"
 
-#ifdef HAVE_X11
+#ifdef GMX_X11
 
 #include "Xstuff.h"
 #include "gromacs.bm"
@@ -59,10 +61,6 @@
 #include "writeps.h"
 #include "molps.h"
 #include "nmol.h"
-
-/* Forward declarations: I Don't want all that init shit here */
-void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
-              const output_env_t oenv);
 
 static void dump_it(t_manager *man)
 {
@@ -231,7 +229,7 @@ static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
     return false;
 }
 
-static bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool MainCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
     t_gmx    *gmx;
     int       nsel, width, height;
@@ -262,65 +260,7 @@ static bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
     }
     return result;
 }
-//! HAVE_X11
-#endif
 
-int gmx_view(int argc, char *argv[])
-{
-    const char  *desc[] = {
-        "[TT]view[tt] is the GROMACS trajectory viewer. This program reads a",
-        "trajectory file, a run input file and an index file and plots a",
-        "3D structure of your molecule on your standard X Window",
-        "screen. No need for a high end graphics workstation, it even",
-        "works on Monochrome screens.[PAR]",
-        "The following features have been implemented:",
-        "3D view, rotation, translation and scaling of your molecule(s),",
-        "labels on atoms, animation of trajectories,",
-        "hardcopy in PostScript format, user defined atom-filters",
-        "runs on MIT-X (real X), open windows and motif,",
-        "user friendly menus, option to remove periodicity, option to",
-        "show computational box.[PAR]",
-        "Some of the more common X command line options can be used: ",
-        "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
-    };
-    const char  *bugs[] = {
-        "Balls option does not work",
-        "Some times dumps core without a good reason"
-    };
-
-    output_env_t oenv;
-    t_filenm     fnm[] = {
-        { efTRX, "-f", NULL, ffREAD },
-        { efTPX, NULL, NULL, ffREAD },
-        { efNDX, NULL, NULL, ffOPTRD }
-    };
-#define NFILE asize(fnm)
-
-    if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
-                          0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
-    {
-#ifndef HAVE_X11
-        fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
-#else
-        t_x11 *x11;
-
-        if ((x11 = GetX11(&argc, argv)) == NULL)
-        {
-            fprintf(stderr, "Can't connect to X Server.\n"
-                    "Check your DISPLAY environment variable\n");
-        }
-        else
-        {
-            init_gmx(x11, argv[0], NFILE, fnm, oenv);
-            x11->MainLoop(x11);
-            x11->CleanUp(x11);
-        }
-#endif
-    }
-    return 0;
-}
-
-#ifdef HAVE_X11
 static t_mentry  FileMenu[] = {
     { 0,  IDEXPORT,   false,  "Export..." },
     { 0,  IDDUMPWIN,  false,  "Print"     },
@@ -352,8 +292,8 @@ static const char *MenuTitle[MSIZE] = {
     "File", "Display", "Help"
 };
 
-void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
-              const output_env_t oenv)
+static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
+                     const output_env_t oenv)
 {
     Pixmap                pm;
     t_gmx                *gmx;
@@ -430,6 +370,59 @@ void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
     ShowDlg(gmx->dlgs[edFilter]);
 }
-
-//! HAVE_X11
 #endif
+
+int gmx_view(int argc, char *argv[])
+{
+    const char  *desc[] = {
+        "[THISMODULE] is the GROMACS trajectory viewer. This program reads a",
+        "trajectory file, a run input file and an index file and plots a",
+        "3D structure of your molecule on your standard X Window",
+        "screen. No need for a high end graphics workstation, it even",
+        "works on Monochrome screens.[PAR]",
+        "The following features have been implemented:",
+        "3D view, rotation, translation and scaling of your molecule(s),",
+        "labels on atoms, animation of trajectories,",
+        "hardcopy in PostScript format, user defined atom-filters",
+        "runs on MIT-X (real X), open windows and motif,",
+        "user friendly menus, option to remove periodicity, option to",
+        "show computational box.[PAR]",
+        "Some of the more common X command line options can be used: ",
+        "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
+    };
+    const char  *bugs[] = {
+        "Balls option does not work",
+        "Some times dumps core without a good reason"
+    };
+
+    output_env_t oenv;
+    t_filenm     fnm[] = {
+        { efTRX, "-f", NULL, ffREAD },
+        { efTPX, NULL, NULL, ffREAD },
+        { efNDX, NULL, NULL, ffOPTRD }
+    };
+#define NFILE asize(fnm)
+
+    if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
+                          0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+#ifndef GMX_X11
+        fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
+#else
+        t_x11 *x11;
+
+        if ((x11 = GetX11(&argc, argv)) == NULL)
+        {
+            fprintf(stderr, "Can't connect to X Server.\n"
+                    "Check your DISPLAY environment variable\n");
+        }
+        else
+        {
+            init_gmx(x11, argv[0], NFILE, fnm, oenv);
+            x11->MainLoop(x11);
+            x11->CleanUp(x11);
+        }
+#endif
+    }
+    return 0;
+}

@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -153,6 +154,42 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
         }
     }
 
+    return nbfp;
+}
+
+static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
+{
+    real *nbfp;
+    int   i, j, k, atnr;
+    real  c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real  c6, c12;
+
+    atnr = idef->atnr;
+    snew(nbfp, 2*atnr*atnr);
+    for (i = 0; i < atnr; ++i)
+    {
+        for (j = 0; j < atnr; ++j)
+        {
+            c6i  = idef->iparams[i*(atnr+1)].lj.c6;
+            c12i = idef->iparams[i*(atnr+1)].lj.c12;
+            c6j  = idef->iparams[j*(atnr+1)].lj.c6;
+            c12j = idef->iparams[j*(atnr+1)].lj.c12;
+            c6   = sqrt(c6i  * c6j);
+            c12  = sqrt(c12i * c12j);
+            if (comb_rule == eCOMB_ARITHMETIC
+                && !gmx_numzero(c6) && !gmx_numzero(c12))
+            {
+                sigmai = pow(c12i / c6i, 1.0/6.0);
+                sigmaj = pow(c12j / c6j, 1.0/6.0);
+                epsi   = c6i * c6i / c12i;
+                epsj   = c6j * c6j / c12j;
+                c6     = epsi * epsj * pow(0.5*(sigmai+sigmaj), 6);
+                c12    = epsi * epsj * pow(0.5*(sigmai+sigmaj), 12);
+            }
+            C6(nbfp, atnr, i, j)   = c6*6.0;
+            C12(nbfp, atnr, i, j)  = c12*12.0;
+        }
+    }
     return nbfp;
 }
 
@@ -827,47 +864,60 @@ static int *cginfo_expand(int nmb, cginfo_mb_t *cgi_mb)
 
 static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
 {
-    double         qsum, q2sum, q;
+    /*This now calculates sum for q and c6*/
+    double         qsum, q2sum, q, c6sum, c6, sqrc6;
     int            mb, nmol, i;
     const t_atoms *atoms;
 
-    qsum  = 0;
-    q2sum = 0;
+    qsum   = 0;
+    q2sum  = 0;
+    c6sum  = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         nmol  = mtop->molblock[mb].nmol;
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
         for (i = 0; i < atoms->nr; i++)
         {
-            q      = atoms->atom[i].q;
-            qsum  += nmol*q;
-            q2sum += nmol*q*q;
+            q       = atoms->atom[i].q;
+            qsum   += nmol*q;
+            q2sum  += nmol*q*q;
+            c6      = mtop->ffparams.iparams[atoms->atom[i].type*(mtop->ffparams.atnr+1)].lj.c6;
+            sqrc6   = sqrt(c6);
+            c6sum  += nmol*sqrc6*sqrc6;
         }
     }
-    fr->qsum[0]  = qsum;
-    fr->q2sum[0] = q2sum;
+    fr->qsum[0]   = qsum;
+    fr->q2sum[0]  = q2sum;
+    fr->c6sum[0]  = c6sum/12;
+
     if (fr->efep != efepNO)
     {
-        qsum  = 0;
-        q2sum = 0;
+        qsum   = 0;
+        q2sum  = 0;
+        c6sum  = 0;
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
             nmol  = mtop->molblock[mb].nmol;
             atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
             for (i = 0; i < atoms->nr; i++)
             {
-                q      = atoms->atom[i].qB;
-                qsum  += nmol*q;
-                q2sum += nmol*q*q;
+                q       = atoms->atom[i].qB;
+                qsum   += nmol*q;
+                q2sum  += nmol*q*q;
+                c6      = mtop->ffparams.iparams[atoms->atom[i].typeB*(mtop->ffparams.atnr+1)].lj.c6;
+                sqrc6   = sqrt(c6);
+                c6sum  += nmol*sqrc6*sqrc6;
             }
-            fr->qsum[1]  = qsum;
-            fr->q2sum[1] = q2sum;
+            fr->qsum[1]   = qsum;
+            fr->q2sum[1]  = q2sum;
+            fr->c6sum[1]  = c6sum/12;
         }
     }
     else
     {
-        fr->qsum[1]  = fr->qsum[0];
-        fr->q2sum[1] = fr->q2sum[0];
+        fr->qsum[1]   = fr->qsum[0];
+        fr->q2sum[1]  = fr->q2sum[0];
+        fr->c6sum[1]  = fr->c6sum[0];
     }
     if (log)
     {
@@ -907,11 +957,31 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
     int             ntp, *typecount;
     gmx_bool        bBHAM;
     real           *nbfp;
+    real           *nbfp_comb = NULL;
 
     ntp   = fr->ntype;
     bBHAM = fr->bBHAM;
     nbfp  = fr->nbfp;
 
+    /* For LJ-PME, we want to correct for the difference between the
+     * actual C6 values and the C6 values used by the LJ-PME based on
+     * combination rules. */
+
+    if (EVDW_PME(fr->vdwtype))
+    {
+        nbfp_comb = mk_nbfp_combination_rule(&mtop->ffparams,
+                                             (fr->ljpme_combination_rule == eljpmeLB) ? eCOMB_ARITHMETIC : eCOMB_GEOMETRIC);
+        for (tpi = 0; tpi < ntp; ++tpi)
+        {
+            for (tpj = 0; tpj < ntp; ++tpj)
+            {
+                C6(nbfp_comb, ntp, tpi, tpj) =
+                    C6(nbfp, ntp, tpi, tpj) - C6(nbfp_comb, ntp, tpi, tpj);
+                C12(nbfp_comb, ntp, tpi, tpj) = C12(nbfp, ntp, tpi, tpj);
+            }
+        }
+        nbfp = nbfp_comb;
+    }
     for (q = 0; q < (fr->efep == efepNO ? 1 : 2); q++)
     {
         csix    = 0;
@@ -922,23 +992,8 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         {
             /* Count the types so we avoid natoms^2 operations */
             snew(typecount, ntp);
-            for (mb = 0; mb < mtop->nmolblock; mb++)
-            {
-                nmol  = mtop->molblock[mb].nmol;
-                atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-                for (i = 0; i < atoms->nr; i++)
-                {
-                    if (q == 0)
-                    {
-                        tpi = atoms->atom[i].type;
-                    }
-                    else
-                    {
-                        tpi = atoms->atom[i].typeB;
-                    }
-                    typecount[tpi] += nmol;
-                }
-            }
+            gmx_mtop_count_atomtypes(mtop, q, typecount);
+
             for (tpi = 0; tpi < ntp; tpi++)
             {
                 for (tpj = tpi; tpj < ntp; tpj++)
@@ -1103,6 +1158,12 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         fr->avcsix[q]    = csix;
         fr->avctwelve[q] = ctwelve;
     }
+
+    if (EVDW_PME(fr->vdwtype))
+    {
+        sfree(nbfp_comb);
+    }
+
     if (fplog != NULL)
     {
         if (fr->eDispCorr == edispcAllEner ||
@@ -1517,11 +1578,12 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
 #endif
         }
 
-        /* Analytical Ewald exclusion correction is only an option in the
-         * x86 SIMD kernel. This is faster in single precision
-         * on Bulldozer and slightly faster on Sandy Bridge.
+        /* Analytical Ewald exclusion correction is only an option in
+         * the SIMD kernel. On BlueGene/Q, this is faster regardless
+         * of precision. In single precision, this is faster on
+         * Bulldozer, and slightly faster on Sandy Bridge.
          */
-#if (defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE
+#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1534,7 +1596,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         }
 
     }
-#endif /* GMX_X86_SSE2 */
+#endif /* GMX_NBNXN_SIMD */
 }
 
 
@@ -1578,11 +1640,11 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 #endif
 #endif
 #endif
-#else /* GMX_X86_SSE2 */
+#else   /* GMX_X86_SSE2 */
             /* not GMX_X86_SSE2, but other SIMD */
             returnvalue  = "SIMD";
 #endif /* GMX_X86_SSE2 */
-#else /* GMX_NBNXN_SIMD */
+#else  /* GMX_NBNXN_SIMD */
             returnvalue = "not available";
 #endif /* GMX_NBNXN_SIMD */
             break;
@@ -1652,7 +1714,8 @@ static void pick_nbnxn_resources(const t_commrec     *cr,
                                  const gmx_hw_info_t *hwinfo,
                                  gmx_bool             bDoNonbonded,
                                  gmx_bool            *bUseGPU,
-                                 gmx_bool            *bEmulateGPU)
+                                 gmx_bool            *bEmulateGPU,
+                                 const gmx_gpu_opt_t *gpu_opt)
 {
     gmx_bool bEmulateGPUEnvVarSet;
     char     gpu_err_str[STRLEN];
@@ -1673,21 +1736,24 @@ static void pick_nbnxn_resources(const t_commrec     *cr,
      * Note that you should freezing the system as otherwise it will explode.
      */
     *bEmulateGPU = (bEmulateGPUEnvVarSet ||
-                    (!bDoNonbonded && hwinfo->bCanUseGPU));
+                    (!bDoNonbonded &&
+                     gpu_opt->ncuda_dev_use > 0));
 
     /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
      */
-    if (hwinfo->bCanUseGPU && !(*bEmulateGPU))
+    if (gpu_opt->ncuda_dev_use > 0 && !(*bEmulateGPU))
     {
         /* Each PP node will use the intra-node id-th device from the
          * list of detected/selected GPUs. */
-        if (!init_gpu(cr->rank_pp_intranode, gpu_err_str, &hwinfo->gpu_info))
+        if (!init_gpu(cr->rank_pp_intranode, gpu_err_str,
+                      &hwinfo->gpu_info, gpu_opt))
         {
             /* At this point the init should never fail as we made sure that
              * we have all the GPUs we need. If it still does, we'll bail. */
             gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, cr->rank_pp_intranode),
+                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
+                                        cr->rank_pp_intranode),
                       gpu_err_str);
         }
 
@@ -1730,7 +1796,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
         /* With a spacing of 0.0005 we are at the force summation accuracy
          * for the SSE kernels for "normal" atomistic simulations.
          */
-        ic->tabq_scale = ewald_spline3_table_scale(ic->ewaldcoeff,
+        ic->tabq_scale = ewald_spline3_table_scale(ic->ewaldcoeff_q,
                                                    ic->rcoulomb);
 
         maxr           = (rtab > ic->rcoulomb) ? rtab : ic->rcoulomb;
@@ -1752,7 +1818,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
     snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
     snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
     table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff);
+                                ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q);
 }
 
 void init_interaction_const_tables(FILE                *fp,
@@ -1774,10 +1840,11 @@ void init_interaction_const_tables(FILE                *fp,
     }
 }
 
-void init_interaction_const(FILE                 *fp,
-                            interaction_const_t **interaction_const,
-                            const t_forcerec     *fr,
-                            real                  rtab)
+static void init_interaction_const(FILE                       *fp,
+                                   const t_commrec gmx_unused *cr,
+                                   interaction_const_t       **interaction_const,
+                                   const t_forcerec           *fr,
+                                   real                        rtab)
 {
     interaction_const_t *ic;
     gmx_bool             bUsesSimpleTables = TRUE;
@@ -1810,10 +1877,12 @@ void init_interaction_const(FILE                 *fp,
     ic->epsfac      = fr->epsfac;
 
     /* Ewald */
-    ic->ewaldcoeff  = fr->ewaldcoeff;
+    ic->ewaldcoeff_q   = fr->ewaldcoeff_q;
+    ic->ewaldcoeff_lj  = fr->ewaldcoeff_lj;
+
     if (fr->coulomb_modifier == eintmodPOTSHIFT)
     {
-        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff*ic->rcoulomb);
+        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
     }
     else
     {
@@ -1862,6 +1931,25 @@ void init_interaction_const(FILE                 *fp,
     if (fr->nbv != NULL && fr->nbv->bUseGPU)
     {
         nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv->grp);
+
+        /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
+         * also sharing texture references. To keep the code simple, we don't
+         * treat texture references as shared resources, but this means that
+         * the coulomb_tab and nbfp texture refs will get updated by multiple threads.
+         * Hence, to ensure that the non-bonded kernels don't start before all
+         * texture binding operations are finished, we need to wait for all ranks
+         * to arrive here before continuing.
+         *
+         * Note that we could omit this barrier if GPUs are not shared (or
+         * texture objects are used), but as this is initialization code, there
+         * is not point in complicating things.
+         */
+#ifdef GMX_THREAD_MPI
+        if (PAR(cr))
+        {
+            gmx_barrier(cr);
+        }
+#endif  /* GMX_THREAD_MPI */
     }
 
     bUsesSimpleTables = uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1);
@@ -1888,7 +1976,8 @@ static void init_nb_verlet(FILE                *fp,
     pick_nbnxn_resources(cr, fr->hwinfo,
                          fr->bNonbonded,
                          &nbv->bUseGPU,
-                         &bEmulateGPU);
+                         &bEmulateGPU,
+                         fr->gpu_opt);
 
     nbv->nbs = NULL;
 
@@ -1934,7 +2023,8 @@ static void init_nb_verlet(FILE                *fp,
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
         nbnxn_cuda_init(fp, &nbv->cu_nbv,
-                        &fr->hwinfo->gpu_info, cr->rank_pp_intranode,
+                        &fr->hwinfo->gpu_info, fr->gpu_opt,
+                        cr->rank_pp_intranode,
                         (nbv->ngrp > 1) && !bHybridGPURun);
 
         if ((env = getenv("GMX_NB_MIN_CI")) != NULL)
@@ -2034,7 +2124,6 @@ void init_forcerec(FILE              *fp,
     real           rtab;
     char          *env;
     double         dbl;
-    rvec           box_size;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
     gmx_bool       bTab, bSep14tab, bNormalnblists;
@@ -2047,7 +2136,7 @@ void init_forcerec(FILE              *fp,
          * In mdrun, hwinfo has already been set before calling init_forcerec.
          * Here we ignore GPUs, as tools will not use them anyhow.
          */
-        fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE, FALSE, NULL);
+        fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE);
     }
 
     /* By default we turn acceleration on, but it might be turned off further down... */
@@ -2274,10 +2363,11 @@ void init_forcerec(FILE              *fp,
     fr->rc_scaling = ir->refcoord_scaling;
     copy_rvec(ir->posres_com, fr->posres_com);
     copy_rvec(ir->posres_comB, fr->posres_comB);
-    fr->rlist      = cutoff_inf(ir->rlist);
-    fr->rlistlong  = cutoff_inf(ir->rlistlong);
-    fr->eeltype    = ir->coulombtype;
-    fr->vdwtype    = ir->vdwtype;
+    fr->rlist                    = cutoff_inf(ir->rlist);
+    fr->rlistlong                = cutoff_inf(ir->rlistlong);
+    fr->eeltype                  = ir->coulombtype;
+    fr->vdwtype                  = ir->vdwtype;
+    fr->ljpme_combination_rule   = ir->ljpme_combination_rule;
 
     fr->coulomb_modifier = ir->coulomb_modifier;
     fr->vdw_modifier     = ir->vdw_modifier;
@@ -2324,6 +2414,7 @@ void init_forcerec(FILE              *fp,
     switch (fr->vdwtype)
     {
         case evdwCUT:
+        case evdwPME:
             if (fr->bBHAM)
             {
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
@@ -2428,7 +2519,7 @@ void init_forcerec(FILE              *fp,
         {
             if (fp)
             {
-                fprintf(fp, "Will do PME sum in reciprocal space.\n");
+                fprintf(fp, "Will do PME sum in reciprocal space for electrostatic interactions.\n");
             }
             if (ir->coulombtype == eelP3M_AD)
             {
@@ -2449,12 +2540,27 @@ void init_forcerec(FILE              *fp,
                 please_cite(fp, "In-Chul99a");
             }
         }
-        fr->ewaldcoeff = calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+        fr->ewaldcoeff_q = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
         init_ewald_tab(&(fr->ewald_table), ir, fp);
         if (fp)
         {
             fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for Ewald\n",
-                    1/fr->ewaldcoeff);
+                    1/fr->ewaldcoeff_q);
+        }
+    }
+
+    if (EVDW_PME(ir->vdwtype))
+    {
+        if (fp)
+        {
+            fprintf(fp, "Will do PME sum in reciprocal space for LJ dispersion interactions.\n");
+        }
+        please_cite(fp, "Essman95a");
+        fr->ewaldcoeff_lj = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
+        if (fp)
+        {
+            fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for LJ Ewald\n",
+                    1/fr->ewaldcoeff_lj);
         }
     }
 
@@ -2473,20 +2579,8 @@ void init_forcerec(FILE              *fp,
     {
         init_generalized_rf(fp, mtop, ir, fr);
     }
-    else if (fr->eeltype == eelSHIFT)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            box_size[m] = box[m][m];
-        }
 
-        if ((fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
-        {
-            set_shift_consts(fr->rcoulomb_switch, fr->rcoulomb, box_size);
-        }
-    }
-
-    fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
+    fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
                        IR_ELEC_FIELD(*ir) ||
@@ -2535,6 +2629,11 @@ void init_forcerec(FILE              *fp,
                     (fr->eeltype == eelSWITCH) ? "switched" : "shifted",
                     fr->rvdw_switch, fr->rvdw);
         }
+    }
+
+    if (fr->bBHAM && EVDW_PME(fr->vdwtype))
+    {
+        gmx_fatal(FARGS, "LJ PME not supported with Buckingham");
     }
 
     if (fr->bBHAM && (fr->vdwtype == evdwSHIFT || fr->vdwtype == evdwSWITCH))
@@ -2634,6 +2733,7 @@ void init_forcerec(FILE              *fp,
                    &fr->kappa, &fr->k_rf, &fr->c_rf);
     }
 
+    /*This now calculates sum for q and c6*/
     set_chargesum(fp, fr, mtop);
 
     /* if we are using LR electrostatics, and they are tabulated,
@@ -2888,7 +2988,8 @@ void init_forcerec(FILE              *fp,
     }
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
-    init_interaction_const(fp, &fr->ic, fr, rtab);
+    init_interaction_const(fp, cr, &fr->ic, fr, rtab);
+
     if (ir->eDispCorr != edispcNO)
     {
         calc_enervirdiff(fp, ir->eDispCorr, fr);

@@ -114,9 +114,6 @@ enum {
     etINT, etGMX_LARGE_INT, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
 };
 
-/* name to print in help info for command line arguments (defined in enum above) */
-const char *get_arg_desc(int type);
-
 typedef struct {
     const char *option;
     gmx_bool    bSet;
@@ -145,11 +142,6 @@ void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[],
 gmx_bool is_hidden(t_pargs *pa);
 /* Return TRUE when the option is a secret one */
 
-char *pa_val(t_pargs *pa, char *buf, int sz);
-/* Return the value of pa in the provided buffer buf, of size sz.
- * The return value is also a pointer to buf.
- */
-
 int opt2parg_int(const char *option, int nparg, t_pargs pa[]);
 
 gmx_bool opt2parg_gmx_bool(const char *option, int nparg, t_pargs pa[]);
@@ -161,10 +153,6 @@ const char *opt2parg_str(const char *option, int nparg, t_pargs pa[]);
 const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[]);
 
 gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
-
-void print_pargs(FILE *fp, int npargs, t_pargs pa[]);
-
-void pr_enums(FILE *fp, int npargs, t_pargs pa[], int shell);
 
 #ifdef __cplusplus
 }

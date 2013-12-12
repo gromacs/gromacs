@@ -56,7 +56,6 @@ extern char *itoa(int f);
  * \param[out] fp   File pointer to write to
  * \param[in] eprop The property of choice
  * \param[in] mp    Array of molecules
- * \param[in] ntot  
  * \param[in] qmc
  * \param[in] iQM
  * \param[in] lot   Level of theory in 'A/B' form
@@ -69,8 +68,7 @@ extern char *itoa(int f);
  */
 extern void gmx_molprop_stats_table(FILE *fp,MolPropObservable eprop,
                                     std::vector<alexandria::MolProp> mp,
-                                    int ntot,
-                                    t_qmcount *qmc,int iQM,char *lot,char *exp_type,
+                                    t_qmcount *qmc,char *exp_type,
                                     double outlier,gmx_molselect_t gms,iMolSelect ims);
 
 /*! \brief
@@ -151,7 +149,7 @@ extern void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
                                        int npd,gmx_poldata_t pd[],
                                        gmx_poldata_t pd_aver, /* Output! */
                                        std::vector<alexandria::MolProp> mp,
-                                       int iQM,char *lot,char *exp_type,
+                                       char *lot,char *exp_type,
                                        output_env_t oenv,
                                        const char *histo);
 

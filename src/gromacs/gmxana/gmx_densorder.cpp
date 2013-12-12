@@ -48,12 +48,13 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "physics.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "dens_filter.h"
 #include "binsearch.h"
 #include "powerspect.h"
@@ -655,12 +656,12 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
 int gmx_densorder(int argc, char *argv[])
 {
     static const char *desc[] = {
-        "A small program to reduce a two-phase density distribution",
-        "along an axis, computed over a MD trajectory",
+        "[THISMODULE] reduces a two-phase density distribution",
+        "along an axis, computed over a MD trajectory,",
         "to 2D surfaces fluctuating in time, by a fit to",
-        "a functional profile for interfacial densities",
+        "a functional profile for interfacial densities.",
         "A time-averaged spatial representation of the",
-        "interfaces can be output with the option -tavg"
+        "interfaces can be output with the option [TT]-tavg[tt]."
     };
 
     /* Extra arguments - but note how you always get the begin/end

@@ -42,7 +42,7 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "macros.h"
@@ -51,12 +51,13 @@
 #include "gstat.h"
 #include "vec.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 int gmx_rotacf(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_rotacf[tt] calculates the rotational correlation function",
+        "[THISMODULE] calculates the rotational correlation function",
         "for molecules. Atom triplets (i,j,k) must be given in the index",
         "file, defining two vectors ij and jk. The rotational ACF",
         "is calculated as the autocorrelation function of the vector",
@@ -67,7 +68,7 @@ int gmx_rotacf(int argc, char *argv[])
         "by specifying atom pairs (i,j) in the index file.",
         "[PAR]",
         "EXAMPLES[PAR]",
-        "[TT]g_rotacf -P 1 -nparm 2 -fft -n index -o rotacf-x-P1",
+        "[TT]gmx rotacf -P 1 -nparm 2 -fft -n index -o rotacf-x-P1",
         "-fa expfit-x-P1 -beginfit 2.5 -endfit 20.0[tt][PAR]",
         "This will calculate the rotational correlation function using a first",
         "order Legendre polynomial of the angle of a vector defined by the index",

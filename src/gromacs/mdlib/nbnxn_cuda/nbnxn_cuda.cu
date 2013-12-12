@@ -58,12 +58,15 @@
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
+#if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
+#define USE_TEXOBJ
+#endif
 
 /*! Texture reference for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
-texture<float, 1, cudaReadModeElementType> tex_nbfp;
+texture<float, 1, cudaReadModeElementType> nbfp_texref;
 
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
-texture<float, 1, cudaReadModeElementType> tex_coulomb_tab;
+texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
 /* Convenience defines */
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
@@ -166,74 +169,35 @@ nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
       { k_nbnxn_ewald_twin_ener,            k_nbnxn_ewald_twin_ener_prune } },
 };
 
-/*! Pointers to the legacy kernels organized in a 3 dim array by:
- *  electrostatics type, energy calculation on/off, and pruning on/off.
- *
- *  Note that the order of electrostatics (1st dimension) has to match the
- *  order of corresponding enumerated types defined in nbnxn_cuda_types.h.
- */
-static const nbnxn_cu_kfunc_ptr_t
-nb_legacy_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
-{
-    { { k_nbnxn_cutoff_legacy,              k_nbnxn_cutoff_prune_legacy },
-      { k_nbnxn_cutoff_ener_legacy,         k_nbnxn_cutoff_ener_prune_legacy } },
-    { { k_nbnxn_rf_legacy,                  k_nbnxn_rf_prune_legacy },
-      { k_nbnxn_rf_ener_legacy,             k_nbnxn_rf_ener_prune_legacy } },
-    { { k_nbnxn_ewald_tab_legacy,           k_nbnxn_ewald_tab_prune_legacy },
-      { k_nbnxn_ewald_tab_ener_legacy,      k_nbnxn_ewald_tab_ener_prune_legacy } },
-    { { k_nbnxn_ewald_tab_twin_legacy,      k_nbnxn_ewald_tab_twin_prune_legacy },
-      { k_nbnxn_ewald_tab_twin_ener_legacy, k_nbnxn_ewald_tab_twin_ener_prune_legacy } },
-};
-
 /*! Return a pointer to the kernel version to be executed at the current step. */
-static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int kver, int eeltype,
-                                                       bool bDoEne, bool bDoPrune)
+static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
+                                                       bool bDoEne,
+                                                       bool bDoPrune)
 {
-    assert(kver < eNbnxnCuKNR);
     assert(eeltype < eelCuNR);
 
-    if (NBNXN_KVER_LEGACY(kver))
-    {
-        /* no analytical Ewald with legacy kernels */
-        assert(eeltype <= eelCuEWALD_TAB_TWIN);
-
-        return nb_legacy_kfunc_ptr[eeltype][bDoEne][bDoPrune];
-    }
-    else
-    {
-        return nb_default_kfunc_ptr[eeltype][bDoEne][bDoPrune];
-    }
+    return nb_default_kfunc_ptr[eeltype][bDoEne][bDoPrune];
 }
 
-/*! Calculates the amount of shared memory required for kernel version in use. */
-static inline int calc_shmem_required(int kver)
+/*! Calculates the amount of shared memory required by the CUDA kernel in use. */
+static inline int calc_shmem_required()
 {
     int shmem;
 
     /* size of shmem (force-buffers/xq/atom type preloading) */
-    if (NBNXN_KVER_LEGACY(kver))
-    {
-        /* i-atom x+q in shared memory */
-        shmem =  NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
-        /* force reduction buffers in shared memory */
-        shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
-    }
-    else
-    {
-        /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
-        /* i-atom x+q in shared memory */
-        shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
-        /* cj in shared memory, for both warps separately */
-        shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
+    /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
+    /* i-atom x+q in shared memory */
+    shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
+    /* cj in shared memory, for both warps separately */
+    shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
 #ifdef IATYPE_SHMEM
-        /* i-atom types in shared memory */
-        shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
+    /* i-atom types in shared memory */
+    shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
 #endif
 #if __CUDA_ARCH__ < 300
-        /* force reduction buffers in shared memory */
-        shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
+    /* force reduction buffers in shared memory */
+    shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
 #endif
-    }
 
     return shmem;
 }
@@ -338,14 +302,14 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* get the pointer to the kernel flavor we need to use */
-    nb_kernel = select_nbnxn_kernel(cu_nb->kernel_ver, nbp->eeltype, bCalcEner,
+    nb_kernel = select_nbnxn_kernel(nbp->eeltype, bCalcEner,
                                     plist->bDoPrune || always_prune);
 
     /* kernel launch config */
     nblock    = calc_nb_kernel_nblock(plist->nsci, cu_nb->dev_info);
     dim_block = dim3(CL_SIZE, CL_SIZE, 1);
     dim_grid  = dim3(nblock, 1, 1);
-    shmem     = calc_shmem_required(cu_nb->kernel_ver);
+    shmem     = calc_shmem_required();
 
     if (debug)
     {
@@ -659,13 +623,13 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 /*! Return the reference to the nbfp texture. */
 const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref()
 {
-    return tex_nbfp;
+    return nbfp_texref;
 }
 
 /*! Return the reference to the coulomb_tab. */
 const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref()
 {
-    return tex_coulomb_tab;
+    return coulomb_tab_texref;
 }
 
 /*! Set up the cache configuration for the non-bonded kernels,
@@ -680,15 +644,6 @@ void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo)
         {
             for (int k = 0; k < nPruneKernelTypes; k++)
             {
-                /* Legacy kernel 16/48 kB Shared/L1
-                 * No analytical Ewald!
-                 */
-                if (i != eelCuEWALD_ANA && i != eelCuEWALD_ANA_TWIN)
-                {
-                    stat = cudaFuncSetCacheConfig(nb_legacy_kfunc_ptr[i][j][k], cudaFuncCachePreferL1);
-                    CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
-                }
-
                 if (devinfo->prop.major >= 3)
                 {
                     /* Default kernel on sm 3.x 48/16 kB Shared/L1 */

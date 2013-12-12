@@ -46,11 +46,12 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "pdbio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "txtdump.h"
 #include "physics.h"
 #include "random.h"
@@ -62,7 +63,7 @@ int gmx_nmtraj(int argc, char *argv[])
 {
     const char *desc[] =
     {
-        "[TT]g_nmtraj[tt] generates an virtual trajectory from an eigenvector, ",
+        "[THISMODULE] generates an virtual trajectory from an eigenvector, ",
         "corresponding to a harmonic Cartesian oscillation around the average ",
         "structure. The eigenvectors should normally be mass-weighted, but you can ",
         "use non-weighted eigenvectors to generate orthogonal motions. ",

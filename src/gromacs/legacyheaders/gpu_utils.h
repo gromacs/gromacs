@@ -1,36 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2010, The GROMACS development team.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifndef _GPU_UTILS_H_
@@ -66,17 +68,21 @@ FUNC_QUALIFIER
 int detect_cuda_gpus(gmx_gpu_info_t gmx_unused *gpu_info, char gmx_unused *err_str) FUNC_TERM_INT
 
 FUNC_QUALIFIER
-void pick_compatible_gpus(gmx_gpu_info_t gmx_unused *gpu_info) FUNC_TERM_VOID
+void pick_compatible_gpus(const gmx_gpu_info_t gmx_unused *gpu_info,
+                          gmx_gpu_opt_t gmx_unused        *gpu_opt) FUNC_TERM_VOID
 
 FUNC_QUALIFIER
-gmx_bool check_select_cuda_gpus(int gmx_unused *checkres, gmx_gpu_info_t gmx_unused *gpu_info,
-                                const int gmx_unused *requested_devs, int gmx_unused count) FUNC_TERM_INT
+gmx_bool check_selected_cuda_gpus(int gmx_unused                  *checkres,
+                                  const gmx_gpu_info_t gmx_unused *gpu_info,
+                                  gmx_gpu_opt_t gmx_unused        *gpu_opt) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info) FUNC_TERM_VOID
 
 FUNC_QUALIFIER
-gmx_bool init_gpu(int gmx_unused mygpu, char gmx_unused *result_str, const gmx_gpu_info_t gmx_unused *gpu_info) FUNC_TERM_INT
+gmx_bool init_gpu(int gmx_unused mygpu, char gmx_unused *result_str,
+                  const gmx_gpu_info_t gmx_unused *gpu_info,
+                  const gmx_gpu_opt_t gmx_unused *gpu_opt) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 gmx_bool free_gpu(char gmx_unused *result_str) FUNC_TERM_INT
@@ -86,10 +92,15 @@ FUNC_QUALIFIER
 int get_current_gpu_device_id(void) FUNC_TERM_INT
 
 FUNC_QUALIFIER
-int get_gpu_device_id(const gmx_gpu_info_t gmx_unused *gpu_info, int gmx_unused index) FUNC_TERM_INT
+int get_gpu_device_id(const gmx_gpu_info_t gmx_unused *gpu_info,
+                      const gmx_gpu_opt_t gmx_unused  *gpu_opt,
+                      int gmx_unused                   index) FUNC_TERM_INT
 
 FUNC_QUALIFIER
 void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unused *gpu_info, int gmx_unused index) FUNC_TERM_VOID
+
+FUNC_QUALIFIER
+size_t sizeof_cuda_dev_info(void) FUNC_TERM_INT
 
 #ifdef __cplusplus
 }

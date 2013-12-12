@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -49,11 +49,13 @@ namespace gmx
 namespace
 {
 
-/*! \internal \brief
+/*! \brief
  * Stores the global context set with GlobalCommandLineHelpContext.
  *
  * This is not protected by a mutex, since it is only used in command-line
  * start-up (i.e., single-threaded context), and is inherently not thread-safe.
+ *
+ * \ingroup module_commandline
  */
 const CommandLineHelpContext *g_globalContext = NULL;
 
@@ -68,8 +70,8 @@ class CommandLineHelpContext::Impl
 {
     public:
         //! Creates the implementation class and the low-level context.
-        Impl(File *file, HelpOutputFormat format)
-            : writerContext_(file, format), moduleDisplayName_("gmx"),
+        Impl(File *file, HelpOutputFormat format, const HelpLinks *links)
+            : writerContext_(file, format, links), moduleDisplayName_("gmx"),
               bHidden_(false)
         {
         }
@@ -83,8 +85,14 @@ class CommandLineHelpContext::Impl
 };
 
 CommandLineHelpContext::CommandLineHelpContext(
-        File *file, HelpOutputFormat format)
-    : impl_(new Impl(file, format))
+        File *file, HelpOutputFormat format, const HelpLinks *links)
+    : impl_(new Impl(file, format, links))
+{
+}
+
+CommandLineHelpContext::CommandLineHelpContext(
+        const CommandLineHelpContext &other)
+    : impl_(new Impl(*other.impl_))
 {
 }
 
@@ -94,9 +102,9 @@ CommandLineHelpContext::~CommandLineHelpContext()
 
 void CommandLineHelpContext::setModuleDisplayName(const std::string &name)
 {
+    impl_->writerContext_.setReplacement("[THISMODULE]", "[TT]" + name + "[tt]");
     impl_->moduleDisplayName_ = name;
 }
-
 
 void CommandLineHelpContext::setShowHidden(bool bHidden)
 {

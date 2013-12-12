@@ -45,7 +45,7 @@
 #include <fcntl.h>
 #include "sysstuff.h"
 #include "string2.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "network.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
@@ -53,10 +53,6 @@
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
 #endif
 
 #include "fflibutil.h"
@@ -176,9 +172,9 @@ static int low_fflib_search_file_end(const char *ffdir,
             env_is_set = TRUE;
             strncat(libpath, lib, GMX_PATH_MAX);
         }
-        else if (!get_libdir(libpath+strlen(libpath)))
+        else
         {
-            strncat(libpath, GMXLIBDIR, GMX_PATH_MAX);
+            get_libdir(libpath + strlen(libpath));
         }
     }
     s         = libpath;

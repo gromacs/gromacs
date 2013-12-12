@@ -37,6 +37,7 @@
 #define _viewit_h
 
 #include "typedefs.h"
+#include "../fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C" {

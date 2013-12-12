@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \libinternal \file
  * \brief
  * Include file for configuration macros from the build system.
@@ -22,9 +56,6 @@
 #pragma warning (disable : 4090)
 #endif
 
-/* Name of package (translate from cmake to autoconf macro name) */
-#define PACKAGE  "@PROJECT_NAME@"
-
 /* Version number of package (translate from cmake to autoconf macro name) */
 #define VERSION  "@PROJECT_VERSION@"
 
@@ -32,7 +63,10 @@
 #cmakedefine GMX_GIT_VERSION_INFO
 
 /* Default location of data files */
-#define GMXLIBDIR "@GMXLIBDIR@"
+#define GMXLIB_SEARCH_DIR "@GMXLIB_SEARCH_DIR@"
+
+/* Default location of data files */
+#define GMXLIB_FALLBACK "@GMXLIB_FALLBACK@"
 
 /* Binary suffix for the created binaries */
 #define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
@@ -57,14 +91,8 @@
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
 
-/* Enable special hacks for Cray XT3 */
-#cmakedefine GMX_CRAY_XT3
-
 /* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
 #cmakedefine GMX_DISABLE_FFTW_MEASURE
-
-/* Compile in double precision */
-#cmakedefine GMX_DOUBLE
 
 /* Use Built-in FFTPACK FFT library */
 #cmakedefine GMX_FFT_FFTPACK
@@ -75,8 +103,11 @@
 /* Use Intel MKL FFT library */
 #cmakedefine GMX_FFT_MKL
 
-/* Use AMD core math library */
-#cmakedefine GMX_FFT_ACML
+/* Target platform is x86 or x86_64 */
+#cmakedefine GMX_TARGET_X86
+
+/* Target platform is BlueGene/Q */
+#cmakedefine GMX_TARGET_BGQ
 
 /* SSE2 instructions available */
 #cmakedefine GMX_X86_SSE2
@@ -115,7 +146,7 @@
 #define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
 
 /* Integer byte order is big endian. */
-#cmakedefine GMX_INTEGER_BIG_ENDIAN 
+#cmakedefine GMX_INTEGER_BIG_ENDIAN
 
 /* Use our own instead of system XDR libraries */
 #cmakedefine GMX_INTERNAL_XDR
@@ -126,7 +157,7 @@
 /* MPI_IN_PLACE exists for collective operations */
 #cmakedefine MPI_IN_PLACE_EXISTS
 
-/* Make a parallel version of GROMACS using message passing 
+/* Make a parallel version of GROMACS using message passing
    (MPI or thread_mpi) */
 #cmakedefine GMX_MPI
 
@@ -190,14 +221,8 @@
 /* Define for Linux pthread_setaffinity_np */
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
-/* Define for Windows NUMA-aware allocator functions*/
-#cmakedefine TMPI_WINDOWS_NUMA_API
-
-/* Define for GetSystemInfo() */
-#cmakedefine HAVE_SYSTEM_INFO
-
 /* Define for X-Windows */
-#cmakedefine HAVE_X11
+#cmakedefine GMX_X11
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
@@ -241,8 +266,14 @@
 /* Define to 1 if you have the MSVC _aligned_malloc() function. */
 #cmakedefine HAVE__ALIGNED_MALLOC
 
+/* Define to 1 if you have the clock_gettime() function. */
+#cmakedefine HAVE_CLOCK_GETTIME
+
 /* Define to 1 if you have the gettimeofday() function. */
 #cmakedefine HAVE_GETTIMEOFDAY
+
+/* Define to 1 if you have the rdtscp instruction. */
+#cmakedefine HAVE_RDTSCP
 
 /* Define to 1 if you have the isfinite() function. */
 #cmakedefine HAVE_ISFINITE

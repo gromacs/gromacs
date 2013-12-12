@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -49,11 +49,13 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/futil.h"
+#include <sys/stat.h>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "gmx_header_config.h"
 
 namespace gmx
 {
@@ -69,7 +71,7 @@ class File::Impl
         /*! \brief
          * Initialize a file object with the given handle.
          *
-         * \param[in]  fp     File handle to use (may be NULL).
+         * \param[in]  fp     %File handle to use (may be NULL).
          * \param[in]  bClose Whether this object should close its file handle.
          */
         Impl(FILE *fp, bool bClose);
@@ -190,6 +192,20 @@ void File::readBytes(void *buffer, size_t bytes)
 
 bool File::readLine(std::string *line)
 {
+    if (!readLineWithTrailingSpace(line))
+    {
+        return false;
+    }
+    size_t endPos = line->find_last_not_of(" \t\r\n");
+    if (endPos != std::string::npos)
+    {
+        line->resize(endPos + 1);
+    }
+    return true;
+}
+
+bool File::readLineWithTrailingSpace(std::string *line)
+{
     line->clear();
     const size_t bufsize = 256;
     std::string  result;
@@ -242,7 +258,30 @@ void File::writeLine()
 // static
 bool File::exists(const char *filename)
 {
-    return gmx_fexist(filename);
+    if (filename == NULL)
+    {
+        return false;
+    }
+    FILE *test = fopen(filename, "r");
+    if (test == NULL)
+    {
+        return false;
+    }
+    else
+    {
+        fclose(test);
+        // Windows doesn't allow fopen of directory, so we don't need to check
+        // this separately.
+#ifndef GMX_NATIVE_WINDOWS
+        struct stat st_buf;
+        int         status = stat(filename, &st_buf);
+        if (status != 0 || !S_ISREG(st_buf.st_mode))
+        {
+            return false;
+        }
+#endif
+        return true;
+    }
 }
 
 // static

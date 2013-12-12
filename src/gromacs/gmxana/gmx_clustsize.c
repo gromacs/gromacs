@@ -48,9 +48,10 @@
 #include "rmpbc.h"
 #include "statutil.h"
 #include "xvgr.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "index.h"
 #include "smalloc.h"
 #include "calcgrid.h"
@@ -59,7 +60,7 @@
 #include "coulomb.h"
 #include "pme.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "mtop_util.h"
 #include "gmx_ana.h"
 
@@ -439,7 +440,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
 int gmx_clustsize(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "This program computes the size distributions of molecular/atomic clusters in",
+        "[THISMODULE] computes the size distributions of molecular/atomic clusters in",
         "the gas phase. The output is given in the form of an [TT].xpm[tt] file.",
         "The total number of clusters is written to an [TT].xvg[tt] file.[PAR]",
         "When the [TT]-mol[tt] option is given clusters will be made out of",

@@ -45,12 +45,12 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "txtdump.h"
 #include "physics.h"
 #include "macros.h"
@@ -918,7 +918,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
 
                         case d_vsitesn:
-                            push_vsitesn(d, plist, &(mi0->atoms), pline, wi);
+                            push_vsitesn(d, mi0->plist, &(mi0->atoms), pline, wi);
                             break;
                         case d_exclusions:
                             assert(block2);

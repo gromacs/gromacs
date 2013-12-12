@@ -44,7 +44,8 @@
 #include "xvgr.h"
 #include "pbc.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "physics.h"
 #include "gmx_ana.h"
 
@@ -164,7 +165,7 @@ int gmx_spol(int argc, char *argv[])
 
 
     const char     *desc[] = {
-        "[TT]g_spol[tt] analyzes dipoles around a solute; it is especially useful",
+        "[THISMODULE] analyzes dipoles around a solute; it is especially useful",
         "for polarizable water. A group of reference atoms, or a center",
         "of mass reference (option [TT]-com[tt]) and a group of solvent",
         "atoms is required. The program splits the group of solvent atoms",

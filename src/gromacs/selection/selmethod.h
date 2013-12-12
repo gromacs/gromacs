@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -32,7 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \page page_module_selection_custom Custom selection methods
+/*! \internal
+ * \page page_module_selection_custom Custom selection methods
  *
  * Custom selection methods are defined by creating a new instance of
  * \c gmx_ana_selmethod_t and filling it with the necessary data for handling
@@ -276,7 +277,7 @@
  * In both cases, gmx_ana_selmethod_register() does several checks on the
  * structure and reports any errors or inconsistencies it finds.
  */
-/*! \file
+/*! \internal \file
  * \brief API for handling selection methods.
  *
  * There should be no need to use the data structures or call the
@@ -605,7 +606,8 @@ typedef struct gmx_ana_selmethod_help_t
     const char        **help;
 } gmx_ana_selmethod_help_t;
 
-/*! \brief
+/*! \internal
+ * \brief
  * Describes a selection method.
  *
  * Any of the function pointers except the update call can be NULL if the

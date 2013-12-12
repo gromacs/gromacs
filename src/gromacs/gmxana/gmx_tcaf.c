@@ -38,9 +38,9 @@
 #include <stdio.h>
 
 #include <math.h>
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -57,6 +57,7 @@
 #include "xvgr.h"
 #include "pbc.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 #define NK  24
@@ -253,7 +254,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 int gmx_tcaf(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_tcaf[tt] computes tranverse current autocorrelations.",
+        "[THISMODULE] computes tranverse current autocorrelations.",
         "These are used to estimate the shear viscosity, [GRK]eta[grk].",
         "For details see: Palmer, Phys. Rev. E 49 (1994) pp 359-366.[PAR]",
         "Transverse currents are calculated using the",

@@ -5,7 +5,7 @@
 #include "smalloc.h"
 #include "statutil.h"
 #include "nrnb.h"
-#include "gmx_wallcycle.h"
+#include "gromacs/timing/wallcycle.h"
 #include "maths.h"
 #include "vec.h"
 #include "mdatoms.h"
@@ -469,10 +469,8 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                   int minimum_data,
                   gmx_bool bZero,
                   char *opt_elem, char *const_elem,
-                  char *lot, gmx_bool bCharged,
+                  char *lot, 
                   output_env_t oenv, gmx_molselect_t gms,
-                  real th_toler, real ph_toler, real dip_toler,
-                  gmx_bool bH14, gmx_bool bAllDihedrals, gmx_bool bRemoveDoubleDihedrals,
                   real watoms, gmx_bool bCheckSupport,
                   unsigned int seed)
 {
@@ -588,14 +586,31 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                     {
                         mpnew.eSupp = eSupportRemote;
                         /* Send another molecule */
+                        if (NULL != debug)
+                        {
+                            fprintf(debug, "Going to send %s to cpu %d\n", 
+                                    mpi->GetMolname().c_str(), dest);
+                        }
                         gmx_send_int(_cr, dest, 1);
-                        mpi->Send(_cr, dest);
-                        imm = (immStatus) gmx_recv_int(_cr, dest);
+                        CommunicationStatus cs = mpi->Send(_cr, dest);
+                        if (CS_OK != cs)
+                        {
+                            imm = immCommProblem;
+                        }
+                        else 
+                        {
+                            imm = (immStatus)gmx_recv_int(_cr, dest);
+                        }
                         if (imm != immOK)
                         {
                             fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
                                     mpnew.GetMolname().c_str(), dest, alexandria::immsg(imm));
                         }
+                        else if (NULL != debug) 
+                        {
+                            fprintf(debug, "Succesfully beamed over %s\n", mpi->GetMolname().c_str());
+                        }
+                        
                     }
                     else
                     {
@@ -605,6 +620,11 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                     {
                         _mymol.push_back(mpnew);
                         n++;
+                        if (NULL != debug)
+                        {
+                            fprintf(debug, "Added %s, n = %d\n",
+                                    mpnew.GetMolname().c_str(), n);
+                        }
                     }
                 }
                 if ((immOK != imm) && (NULL != debug))
@@ -627,13 +647,31 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
     }
     else
     {
+        /***********************************************
+         *
+         *           S L A V E   N O D E S
+         *
+         ***********************************************/
         n = 0;
         while (gmx_recv_int(_cr, 0) == 1)
         {
             /* Receive another molecule */
             alexandria::MyMol mpnew;
 
-            mpnew.Receive(_cr, 0);
+            if (NULL != debug) 
+            {
+                fprintf(debug, "Going to retrieve new molecule\n");
+            }
+            CommunicationStatus cs = mpnew.Receive(_cr, 0);
+            if (CS_OK != cs)
+            {
+                imm = immCommProblem;
+            }
+            else if (NULL != debug) 
+            {
+                fprintf(debug, "Succesfully retrieved %s\n", mpnew.GetMolname().c_str());
+                fflush(debug);
+            }
 
             imm = mpnew.GenerateTopology(_atomprop, _pd, lot, _iModel, _bPol, nexcl);
 
@@ -673,6 +711,10 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             if (immOK == imm)
             {
                 _mymol.push_back(mpnew);
+                if (NULL != debug)
+                {
+                    fprintf(debug, "Added molecule %s\n", mpnew.GetMolname().c_str());
+                }
             }
             gmx_send_int(_cr, 0, imm);
         }
@@ -740,7 +782,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
 static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
 {
-    int                     k, tp, ai, aj;
+    int                     k, ai, aj;
     real                    q, Z;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom, *atom_i, *atom_j;
@@ -751,7 +793,7 @@ static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
 
     for (k = 0; (k < idef->il[F_POLARIZATION].nr); )
     {
-        tp = idef->il[F_POLARIZATION].iatoms[k++];
+        k++; // Skip over the type.
         ai = idef->il[F_POLARIZATION].iatoms[k++];
         aj = idef->il[F_POLARIZATION].iatoms[k++];
 
@@ -795,7 +837,7 @@ static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
 
 void MolDip::CalcDeviation()
 {
-    int                     j, count, atomnr;
+    int                     j, atomnr;
     double                  qq, qtot;
     real                    etot[ermsNR];
     real                    t      = 0;
@@ -854,8 +896,7 @@ void MolDip::CalcDeviation()
                fprintf(stderr,"Ready for %s\n",mymol->molname);*/
             eQ = generate_charges_sm(debug, mymol->qgen_,
                                      _pd, &(mymol->topology_->atoms),
-                                     mymol->x_, 1e-4, 100, _atomprop,
-                                     _hfac,
+                                     1e-4, 100, _atomprop,
                                      &(mymol->chieq));
             if (eQ != eQGEN_OK)
             {
@@ -881,7 +922,7 @@ void MolDip::CalcDeviation()
                 split_shell_charges(mymol->mtop_, &mymol->ltop_->idef);
                 atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
                          mymol->mtop_->natoms, mymol->md_);
-                count =
+                (void)
                     relax_shell_flexcon(debug, _cr, FALSE, 0,
                                         mymol->inputrec_, TRUE,
                                         GMX_FORCE_ALLFORCES,

@@ -36,22 +36,22 @@
 #include <config.h>
 #endif
 
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "smalloc.h"
 #include "macros.h"
 #include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "string2.h"
 #include "vec.h"
 #include "index.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "futil.h"
-#include "confio.h"
-#include "pdbio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "txtdump.h"
 #include "do_fit.h"
 #include "viewit.h"
@@ -484,7 +484,7 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
 int gmx_confrms(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_confrms[tt] computes the root mean square deviation (RMSD) of two",
+        "[THISMODULE] computes the root mean square deviation (RMSD) of two",
         "structures after least-squares fitting the second structure on the first one.",
         "The two structures do NOT need to have the same number of atoms,",
         "only the two index groups used for the fit need to be identical.",

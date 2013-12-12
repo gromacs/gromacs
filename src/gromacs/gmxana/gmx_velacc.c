@@ -38,9 +38,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -57,6 +57,7 @@
 #include "xvgr.h"
 #include "gmx_ana.h"
 #include "gromacs/fft/fft.h"
+#include "gromacs/fileio/trxio.h"
 
 static void index_atom2mol(int *n, atom_id *index, t_block *mols)
 {
@@ -176,7 +177,7 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
 int gmx_velacc(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_velacc[tt] computes the velocity autocorrelation function.",
+        "[THISMODULE] computes the velocity autocorrelation function.",
         "When the [TT]-m[tt] option is used, the momentum autocorrelation",
         "function is calculated.[PAR]",
         "With option [TT]-mol[tt] the velocity autocorrelation function of",

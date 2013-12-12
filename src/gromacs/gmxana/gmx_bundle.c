@@ -44,12 +44,13 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "xvgr.h"
 #include "rmpbc.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "physics.h"
 #include "gmx_ana.h"
 
@@ -187,7 +188,7 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
 int gmx_bundle(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_bundle[tt] analyzes bundles of axes. The axes can be for instance",
+        "[THISMODULE] analyzes bundles of axes. The axes can be for instance",
         "helix axes. The program reads two index groups and divides both",
         "of them in [TT]-na[tt] parts. The centers of mass of these parts",
         "define the tops and bottoms of the axes.",

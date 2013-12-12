@@ -46,7 +46,8 @@
 #include "vec.h"
 #include "statutil.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "princ.h"
 #include "do_fit.h"
 #include "rmpbc.h"
@@ -56,7 +57,7 @@
 int gmx_filter(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_filter[tt] performs frequency filtering on a trajectory.",
+        "[THISMODULE] performs frequency filtering on a trajectory.",
         "The filter shape is cos([GRK]pi[grk] t/A) + 1 from -A to +A, where A is given",
         "by the option [TT]-nf[tt] times the time step in the input trajectory.",
         "This filter reduces fluctuations with period A by 85%, with period",

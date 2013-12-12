@@ -41,7 +41,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "statutil.h"
 #include "vec.h"
 #include "random.h"
@@ -51,6 +51,7 @@
 #include "names.h"
 #include "sortwater.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
                      int *seed, rvec max_rot)
@@ -123,7 +124,7 @@ static void move_x(int natoms, rvec x[], matrix box)
 int gmx_genconf(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]genconf[tt] multiplies a given coordinate file by simply stacking them",
+        "[THISMODULE] multiplies a given coordinate file by simply stacking them",
         "on top of each other, like a small child playing with wooden blocks.",
         "The program makes a grid of [IT]user-defined[it]",
         "proportions ([TT]-nbox[tt]), ",

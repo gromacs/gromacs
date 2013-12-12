@@ -46,7 +46,7 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "readinp.h"
 #include "statutil.h"
 #include "txtdump.h"
@@ -835,7 +835,7 @@ static void dump_remd_parameters(FILE *gp, t_remd_data *d, const char *fn,
 int gmx_kinetics(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_kinetics[tt] reads two [TT].xvg[tt] files, each one containing data for N replicas.",
+        "[THISMODULE] reads two [TT].xvg[tt] files, each one containing data for N replicas.",
         "The first file contains the temperature of each replica at each timestep,",
         "and the second contains real values that can be interpreted as",
         "an indicator for folding. If the value in the file is larger than",
@@ -855,7 +855,7 @@ int gmx_kinetics(int argc, char *argv[])
         "[TT]-nodiscrete[tt]). In this case kinetics of other processes can be",
         "studied. This is very much a work in progress and hence the manual",
         "(this information) is lagging behind somewhat.[PAR]",
-        "In order to compile this program you need access to the GNU",
+        "In order to run [THISMODULE], GROMACS must be compiled with the GNU",
         "scientific library."
     };
     static int      nreplica  = 1;

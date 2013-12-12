@@ -40,12 +40,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
-#ifdef GMX_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
-#endif
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/coulombintegrals.h"
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -54,9 +52,7 @@
 #include "smalloc.h"
 #include "strdb.h"
 #include "sysstuff.h"
-#include "confio.h"
 #include "physics.h"
-#include "futil.h"
 #include "statutil.h"
 #include "vec.h"
 #include "3dview.h"
@@ -73,13 +69,11 @@
 #include "network.h"
 #include "viewit.h"
 #include "gmx_random.h"
-#include "gmx_wallcycle.h"
 #include "gmx_statistics.h"
 #include "convparm.h"
 #include "gpp_atomtype.h"
 #include "grompp.h"
 #include "gen_ad.h"
-#include "gromacs/coulombintegrals.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"
 #include "molselect.hpp"
@@ -839,12 +833,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
     }
 }
 
-static real quality_of_fit(real chi2, int N)
-{
-    return -1;
-}
-
-int main(int argc, char *argv[])
+int alex_tune_dip(int argc, char *argv[])
 {
     static const char    *desc[] = {
         "tune_dip read a series of molecules and corresponding experimental",
@@ -1004,8 +993,8 @@ int main(int argc, char *argv[])
     gmx_molselect_t       gms;
     time_t                my_t;
     char                  pukestr[STRLEN];
-
-    cr = init_par();
+    
+    cr = init_commrec();
 
     parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
                       NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
@@ -1054,8 +1043,7 @@ int main(int argc, char *argv[])
             opt2fn_null("-d", NFILE, fnm),
             minimum_data, bZero,
             opt_elem, const_elem,
-            lot, bCharged, oenv, gms, th_toler, ph_toler, dip_toler,
-            TRUE, TRUE, TRUE, watoms, TRUE, seed);
+            lot, oenv, gms, watoms, TRUE, seed);
 
     optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),
                     &md, maxiter, tol, nrun, step, seed,
@@ -1072,13 +1060,6 @@ int main(int argc, char *argv[])
 
         gmx_poldata_write(opt2fn("-o", NFILE, fnm), md._pd, compress);
     }
-
-#ifdef GMX_MPI
-    if (gmx_mpi_initialized())
-    {
-        gmx_finalize_par();
-    }
-#endif
 
     return 0;
 }

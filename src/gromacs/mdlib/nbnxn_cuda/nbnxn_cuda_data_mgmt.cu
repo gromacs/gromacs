@@ -107,7 +107,8 @@ static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
     and the table GPU array. If called with an already allocated table,
     it just re-uploads the table.
  */
-static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
+static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
+                                           const cuda_dev_info_t *dev_info)
 {
     float       *ftmp, *coul_tab;
     int         tabsize;
@@ -134,10 +135,32 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
 
         nbp->coulomb_tab = coul_tab;
 
-        cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
-        stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
-                               coul_tab, &cd, tabsize*sizeof(*coul_tab));
-        CU_RET_ERR(stat, "cudaBindTexture on coul_tab failed");
+#ifdef TEXOBJ_SUPPORTED
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (dev_info->prop.major >= 3)
+        {
+            cudaResourceDesc rd;
+            memset(&rd, 0, sizeof(rd));
+            rd.resType                  = cudaResourceTypeLinear;
+            rd.res.linear.devPtr        = nbp->coulomb_tab;
+            rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+            rd.res.linear.desc.x        = 32;
+            rd.res.linear.sizeInBytes   = tabsize*sizeof(*coul_tab);
+
+            cudaTextureDesc td;
+            memset(&td, 0, sizeof(td));
+            td.readMode                 = cudaReadModeElementType;
+            stat = cudaCreateTextureObject(&nbp->coulomb_tab_texobj, &rd, &td, NULL);
+            CU_RET_ERR(stat, "cudaCreateTextureObject on coulomb_tab_texobj failed");
+        }
+        else
+#endif
+        {
+            cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
+            stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
+                                   coul_tab, &cd, tabsize*sizeof(*coul_tab));
+            CU_RET_ERR(stat, "cudaBindTexture on coulomb_tab_texref failed");
+        }
     }
 
     cu_copy_H2D(coul_tab, ftmp, tabsize*sizeof(*coul_tab));
@@ -243,7 +266,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
 
     ntypes  = nbat->ntype;
 
-    nbp->ewald_beta = ic->ewaldcoeff;
+    nbp->ewald_beta = ic->ewaldcoeff_q;
     nbp->sh_ewald   = ic->sh_ewald;
     nbp->epsfac     = ic->epsfac;
     nbp->two_k_rf   = 2.0 * ic->k_rf;
@@ -276,7 +299,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
     nbp->coulomb_tab = NULL;
     if (nbp->eeltype == eelCuEWALD_TAB || nbp->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        init_ewald_coulomb_force_table(nbp);
+        init_ewald_coulomb_force_table(nbp, dev_info);
     }
 
     nnbfp = 2*ntypes*ntypes;
@@ -284,10 +307,32 @@ static void init_nbparam(cu_nbparam_t *nbp,
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp");
     cu_copy_H2D(nbp->nbfp, nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
 
-    cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
-    stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
-                           nbp->nbfp, &cd, nnbfp*sizeof(*nbp->nbfp));
-    CU_RET_ERR(stat, "cudaBindTexture on nbfp failed");
+#ifdef TEXOBJ_SUPPORTED
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (dev_info->prop.major >= 3)
+        {
+            cudaResourceDesc rd;
+            memset(&rd, 0, sizeof(rd));
+            rd.resType                  = cudaResourceTypeLinear;
+            rd.res.linear.devPtr        = nbp->nbfp;
+            rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+            rd.res.linear.desc.x        = 32;
+            rd.res.linear.sizeInBytes   = nnbfp*sizeof(*nbp->nbfp);
+
+            cudaTextureDesc td;
+            memset(&td, 0, sizeof(td));
+            td.readMode                 = cudaReadModeElementType;
+            stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, NULL);
+            CU_RET_ERR(stat, "cudaCreateTextureObject on nbfp_texobj failed");
+        }
+        else
+#endif
+        {
+            cudaChannelFormatDesc cd = cudaCreateChannelDesc<float>();
+            stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
+                                   nbp->nbfp, &cd, nnbfp*sizeof(*nbp->nbfp));
+            CU_RET_ERR(stat, "cudaBindTexture on nbfp_texref failed");
+        }
 }
 
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
@@ -299,12 +344,12 @@ void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
 
     nbp->rlist_sq       = ic->rlist * ic->rlist;
     nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
-    nbp->ewald_beta     = ic->ewaldcoeff;
+    nbp->ewald_beta     = ic->ewaldcoeff_q;
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  cu_nb->dev_info);
 
-    init_ewald_coulomb_force_table(cu_nb->nbparam);
+    init_ewald_coulomb_force_table(cu_nb->nbparam, cu_nb->dev_info);
 }
 
 /*! Initializes the pair list data structure. */
@@ -384,80 +429,11 @@ static void init_timings(wallclock_gpu_t *t)
     }
 }
 
-/* Decide which kernel version to use (default or legacy) based on:
- *  - CUDA version used for compilation
- *  - non-bonded kernel selector environment variables
- *  - GPU architecture version
- */
-static int pick_nbnxn_kernel_version(FILE            *fplog,
-                                     cuda_dev_info_t *devinfo)
-{
-    bool bForceLegacyKernel, bForceDefaultKernel, bCUDA40, bCUDA32;
-    char sbuf[STRLEN];
-    int  kver;
-
-    /* Legacy kernel (former k2), kept for backward compatibility as it is
-       faster than the default with CUDA 3.2/4.0 on Fermi (not on Kepler). */
-    bForceLegacyKernel  = (getenv("GMX_CUDA_NB_LEGACY") != NULL);
-    /* default kernel (former k3). */
-    bForceDefaultKernel = (getenv("GMX_CUDA_NB_DEFAULT") != NULL);
-
-    if ((unsigned)(bForceLegacyKernel + bForceDefaultKernel) > 1)
-    {
-        gmx_fatal(FARGS, "Multiple CUDA non-bonded kernels requested; to manually pick a kernel set only one \n"
-                  "of the following environment variables: \n"
-                  "GMX_CUDA_NB_DEFAULT, GMX_CUDA_NB_LEGACY");
-    }
-
-    bCUDA32 = bCUDA40 = false;
-#if CUDA_VERSION == 3200
-    bCUDA32 = true;
-    sprintf(sbuf, "3.2");
-#elif CUDA_VERSION == 4000
-    bCUDA40 = true;
-    sprintf(sbuf, "4.0");
-#endif
-
-    /* default is default ;) */
-    kver = eNbnxnCuKDefault;
-
-    /* Consider switching to legacy kernels only on Fermi */
-    if (devinfo->prop.major < 3 && (bCUDA32 || bCUDA40))
-    {
-        /* use legacy kernel unless something else is forced by an env. var */
-        if (bForceDefaultKernel)
-        {
-            md_print_warn(fplog,
-                          "NOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
-                          "      non-bonded kernels perform best. However, the default kernels were\n"
-                          "      selected by the GMX_CUDA_NB_DEFAULT environment variable.\n"
-                          "      For best performance upgrade your CUDA toolkit.\n",
-                          sbuf);
-        }
-        else
-        {
-            kver = eNbnxnCuKLegacy;
-        }
-    }
-    else
-    {
-        /* issue note if the non-default kernel is forced by an env. var */
-        if (bForceLegacyKernel)
-        {
-            md_print_warn(fplog,
-                    "NOTE: Legacy non-bonded CUDA kernels selected by the GMX_CUDA_NB_LEGACY\n"
-                    "      env. var. Consider using using the default kernels which should be faster!\n");
-
-            kver = eNbnxnCuKLegacy;
-        }
-    }
-
-    return kver;
-}
-
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
-                     const gmx_gpu_info_t *gpu_info, int my_gpu_index,
+                     const gmx_gpu_info_t *gpu_info,
+                     const gmx_gpu_opt_t *gpu_opt,
+                     int my_gpu_index,
                      gmx_bool bLocalAndNonlocal)
 {
     cudaError_t stat;
@@ -491,14 +467,36 @@ void nbnxn_cuda_init(FILE *fplog,
 
     init_plist(nb->plist[eintLocal]);
 
+    /* set device info, just point it to the right GPU among the detected ones */
+    nb->dev_info = &gpu_info->cuda_dev[get_gpu_device_id(gpu_info, gpu_opt, my_gpu_index)];
+
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);
     CU_RET_ERR(stat, "cudaStreamCreate on stream[eintLocal] failed");
     if (nb->bUseTwoStreams)
     {
         init_plist(nb->plist[eintNonlocal]);
+
+        /* CUDA stream priority available in the CUDA RT 5.5 API.
+         * Note that the device we're running on does not have to support
+         * priorities, because we are querying the priority range which in this
+         * case will be a single value.
+         */
+#if CUDA_VERSION >= 5500
+        {
+            int highest_priority;
+            stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);
+            CU_RET_ERR(stat, "cudaDeviceGetStreamPriorityRange failed");
+
+            stat = cudaStreamCreateWithPriority(&nb->stream[eintNonlocal],
+                                                cudaStreamDefault,
+                                                highest_priority);
+            CU_RET_ERR(stat, "cudaStreamCreateWithPriority on stream[eintNonlocal] failed");
+        }
+#else
         stat = cudaStreamCreate(&nb->stream[eintNonlocal]);
         CU_RET_ERR(stat, "cudaStreamCreate on stream[eintNonlocal] failed");
+#endif
     }
 
     /* init events for sychronization (timing disabled for performance reasons!) */
@@ -506,9 +504,6 @@ void nbnxn_cuda_init(FILE *fplog,
     CU_RET_ERR(stat, "cudaEventCreate on nonlocal_done failed");
     stat = cudaEventCreateWithFlags(&nb->misc_ops_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_one failed");
-
-    /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = &gpu_info->cuda_dev[get_gpu_device_id(gpu_info, my_gpu_index)];
 
     /* On GPUs with ECC enabled, cudaStreamSynchronize shows a large overhead
      * (which increases with shorter time/step) caused by a known CUDA driver bug.
@@ -534,7 +529,7 @@ void nbnxn_cuda_init(FILE *fplog,
     bTMPIAtomics = false;
 #endif
 
-#if defined(i386) || defined(__x86_64__)
+#ifdef GMX_TARGET_X86
     bX86 = true;
 #else
     bX86 = false;
@@ -559,7 +554,7 @@ void nbnxn_cuda_init(FILE *fplog,
          *   - GPUs are not being shared.
          */
         bool bShouldUsePollSync = (bX86 && bTMPIAtomics &&
-                                   (gmx_count_gpu_dev_shared(gpu_info) < 1));
+                                   (gmx_count_gpu_dev_shared(gpu_opt) < 1));
 
         if (bStreamSync)
         {
@@ -631,7 +626,6 @@ void nbnxn_cuda_init(FILE *fplog,
     }
 
     /* set the kernel type for the current GPU */
-    nb->kernel_ver = pick_nbnxn_kernel_version(fplog, nb->dev_info);
     /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig(nb->dev_info);
 
@@ -845,9 +839,21 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
 
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
-      stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
-      CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab failed");
-      cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
+
+#ifdef TEXOBJ_SUPPORTED
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (cu_nb->dev_info->prop.major >= 3)
+        {
+            stat = cudaDestroyTextureObject(nbparam->coulomb_tab_texobj);
+            CU_RET_ERR(stat, "cudaDestroyTextureObject on coulomb_tab_texobj failed");
+        }
+        else
+#endif
+        {
+            stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
+            CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab_texref failed");
+        }
+        cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
     }
 
     stat = cudaEventDestroy(cu_nb->nonlocal_done);
@@ -890,8 +896,19 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
         }
     }
 
-    stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_texref());
-    CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab failed");
+#ifdef TEXOBJ_SUPPORTED
+    /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+    if (cu_nb->dev_info->prop.major >= 3)
+    {
+        stat = cudaDestroyTextureObject(nbparam->nbfp_texobj);
+        CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_texobj failed");
+    }
+    else
+#endif
+    {
+        stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_texref());
+        CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_texref failed");
+    }
     cu_free_buffered(nbparam->nbfp);
 
     stat = cudaFree(atdat->shift_vec);

@@ -44,7 +44,8 @@
 #include "xvgr.h"
 #include "pbc.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gmx_ana.h"
 
 
@@ -140,7 +141,7 @@ int gmx_sorient(int argc, char *argv[])
     };
 
     const char     *desc[] = {
-        "[TT]g_sorient[tt] analyzes solvent orientation around solutes.",
+        "[THISMODULE] analyzes solvent orientation around solutes.",
         "It calculates two angles between the vector from one or more",
         "reference positions to the first atom of each solvent molecule:[PAR]",
         "[GRK]theta[grk][SUB]1[sub]: the angle with the vector from the first atom of the solvent",

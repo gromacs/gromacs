@@ -42,23 +42,24 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "gmxfio.h"
-#include "tpxio.h"
-#include "trnio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/trnio.h"
 #include "statutil.h"
-#include "futil.h"
-#include "pdbio.h"
-#include "confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "index.h"
 #include "vec.h"
-#include "xtcio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "do_fit.h"
 #include "rmpbc.h"
-#include "wgms.h"
+#include "gromacs/fileio/g87io.h"
 #include "pbc.h"
 #include "xvgr.h"
-#include "xdrf.h"
+#include "gromacs/fileio/xdrf.h"
 #include "gmx_ana.h"
 
 #define TIME_EXPLICIT 0
@@ -411,14 +412,13 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
 
 int gmx_trjcat(int argc, char *argv[])
 {
-    const char
-                   *desc[] =
+    const char     *desc[] =
     {
-        "[TT]trjcat[tt] concatenates several input trajectory files in sorted order. ",
+        "[THISMODULE] concatenates several input trajectory files in sorted order. ",
         "In case of double time frames the one in the later file is used. ",
         "By specifying [TT]-settime[tt] you will be asked for the start time ",
         "of each file. The input files are taken from the command line, ",
-        "such that a command like [TT]trjcat -f *.trr -o fixed.trr[tt] should do ",
+        "such that a command like [TT]gmx trjcat -f *.trr -o fixed.trr[tt] should do ",
         "the trick. Using [TT]-cat[tt], you can simply paste several files ",
         "together without removal of frames with identical time stamps.[PAR]",
         "One important option is inferred when the output file is amongst the",

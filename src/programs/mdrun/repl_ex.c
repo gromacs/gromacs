@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -100,7 +101,7 @@ typedef struct gmx_repl_ex
 
 } t_gmx_repl_ex;
 
-static gmx_bool repl_quantity(FILE *fplog, const gmx_multisim_t *ms,
+static gmx_bool repl_quantity(const gmx_multisim_t *ms,
                               struct gmx_repl_ex *re, int ere, real q)
 {
     real    *qall;
@@ -185,10 +186,10 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     }
 
     re->type = -1;
-    bTemp    = repl_quantity(fplog, ms, re, ereTEMP, re->temp);
+    bTemp    = repl_quantity(ms, re, ereTEMP, re->temp);
     if (ir->efep != efepNO)
     {
-        bLambda = repl_quantity(fplog, ms, re, ereLAMBDA, (real)ir->fepvals->init_fep_state);
+        bLambda = repl_quantity(ms, re, ereLAMBDA, (real)ir->fepvals->init_fep_state);
     }
     if (re->type == -1)  /* nothing was assigned */
     {
@@ -395,7 +396,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     return re;
 }
 
-static void exchange_reals(const gmx_multisim_t *ms, int b, real *v, int n)
+static void exchange_reals(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, real *v, int n)
 {
     real *buf;
     int   i;
@@ -428,7 +429,7 @@ static void exchange_reals(const gmx_multisim_t *ms, int b, real *v, int n)
 }
 
 
-static void exchange_ints(const gmx_multisim_t *ms, int b, int *v, int n)
+static void exchange_ints(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, int *v, int n)
 {
     int *buf;
     int  i;
@@ -460,7 +461,7 @@ static void exchange_ints(const gmx_multisim_t *ms, int b, int *v, int n)
     }
 }
 
-static void exchange_doubles(const gmx_multisim_t *ms, int b, double *v, int n)
+static void exchange_doubles(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, double *v, int n)
 {
     double *buf;
     int     i;
@@ -492,7 +493,7 @@ static void exchange_doubles(const gmx_multisim_t *ms, int b, double *v, int n)
     }
 }
 
-static void exchange_rvecs(const gmx_multisim_t *ms, int b, rvec *v, int n)
+static void exchange_rvecs(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, rvec *v, int n)
 {
     rvec *buf;
     int   i;
@@ -664,7 +665,7 @@ static void pd_collect_state(const t_commrec *cr, t_state *state)
     }
 }
 
-static void print_transition_matrix(FILE *fplog, const char *leg, int n, int **nmoves, int *nattempt)
+static void print_transition_matrix(FILE *fplog, int n, int **nmoves, int *nattempt)
 {
     int   i, j, ntot;
     float Tprint;
@@ -713,7 +714,7 @@ static void print_ind(FILE *fplog, const char *leg, int n, int *ind, gmx_bool *b
     fprintf(fplog, "\n");
 }
 
-static void print_allswitchind(FILE *fplog, int n, int *ind, int *pind, int *allswaps, int *tmpswap)
+static void print_allswitchind(FILE *fplog, int n, int *pind, int *allswaps, int *tmpswap)
 {
     int i;
 
@@ -1039,7 +1040,7 @@ test_for_replica_exchange(FILE                 *fplog,
             }
         }
         re->nattempt[0]++;  /* keep track of total permutation trials here */
-        print_allswitchind(fplog, re->nrepl, re->ind, pind, re->allswaps, re->tmpswap);
+        print_allswitchind(fplog, re->nrepl, pind, re->allswaps, re->tmpswap);
     }
     else
     {
@@ -1120,8 +1121,7 @@ static void write_debug_x(t_state *state)
 }
 
 static void
-cyclic_decomposition(FILE      *fplog,
-                     const int *destinations,
+cyclic_decomposition(const int *destinations,
                      int      **cyclic,
                      gmx_bool  *incycle,
                      const int  nrepl,
@@ -1274,7 +1274,7 @@ prepare_to_do_exchange(FILE      *fplog,
 
         /* Identify the cyclic decomposition of the permutation (very
          * fast if neighbor replica exchange). */
-        cyclic_decomposition(fplog, destinations, cyclic, incycle, nrepl, maxswap);
+        cyclic_decomposition(destinations, cyclic, incycle, nrepl, maxswap);
 
         /* Now translate the decomposition into a replica exchange
          * order at each step. */
@@ -1340,6 +1340,10 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
             {
                 pd_collect_state(cr, state);
             }
+        }
+        else
+        {
+            copy_state_nonatomdata(state_local, state);
         }
 
         if (MASTER(cr))
@@ -1435,5 +1439,5 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
         fprintf(fplog, "\n");
     }
     /* print the transition matrix */
-    print_transition_matrix(fplog, "", re->nrepl, re->nmoves, re->nattempt);
+    print_transition_matrix(fplog, re->nrepl, re->nmoves, re->nattempt);
 }

@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -32,9 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ * \brief
+ * Wraps <mpi.h> usage in Gromacs.
+ *
+ * This header wraps the MPI header <mpi.h>, and should be included instead of
+ * that one.  It abstracts away the case that depending on compilation
+ * settings, MPI routines may be provided by <mpi.h> or by thread-MPI.
+ * In the absence of MPI, this header still declares some types for
+ * convenience.  It also disables MPI C++ bindings that can cause compilation
+ * issues.
+ *
+ * \todo
+ * This header is installed because commrec.h depends on it; it would be good
+ * to encapsulate this dependency within the library, making the public
+ * interface less dependent on the compilation options.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
 #ifndef GMX_UTILITY_GMXMPI_H
 #define GMX_UTILITY_GMXMPI_H
 
+/*! \cond */
 #ifdef GMX_LIB_MPI
 /* MPI C++ binding is deprecated and can cause name conflicts (e.g. stdio/mpi seek) */
 #define MPICH_SKIP_MPICXX 1
@@ -42,8 +62,8 @@
 #include <mpi.h>
 #else
 #ifdef GMX_THREAD_MPI
-#include "thread_mpi/tmpi.h"
-#include "thread_mpi/mpi_bindings.h"
+#include "../legacyheaders/thread_mpi/tmpi.h"
+#include "../legacyheaders/thread_mpi/mpi_bindings.h"
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;
@@ -51,5 +71,6 @@ typedef void* MPI_Group;
 #define MPI_COMM_NULL NULL
 #endif
 #endif
+//! \endcond
 
 #endif

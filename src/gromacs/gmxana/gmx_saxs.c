@@ -47,9 +47,9 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
@@ -57,7 +57,7 @@
 #include "nrnb.h"
 #include "coulomb.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "names.h"
 #include "sfactor.h"
@@ -65,7 +65,8 @@
 int gmx_saxs(int argc, char *argv[])
 {
     const char  *desc[] = {
-        "g_saxs calculates SAXS structure factors for given index groups based on Cromer's method.",
+        "[THISMODULE] calculates SAXS structure factors for given index",
+        "groups based on Cromer's method.",
         "Both topology and trajectory files are required."
     };
 

@@ -43,7 +43,7 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "strdb.h" 
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "symtab.h"
 #include "string2.h"
 #include "vec.h"
@@ -224,9 +224,8 @@ void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
 
 static void gmx_molprop_read_babel(const char *g98,
                                    alexandria::MolProp& mpt,
-                                   gmx_atomprop_t aps,gmx_poldata_t pd,
                                    char *molnm,char *iupac,char *conformation,
-                                   char *basisset,int maxpot,gmx_bool bVerbose,
+                                   char *basisset,int maxpot,
                                    const char *forcefield)
 {
     /* Read a gaussian log file */
@@ -605,7 +604,7 @@ int alexandria::GaussAtomProp::GetValue(const char *element,
 
 static int gmx_molprop_add_dhform(alexandria::MolProp& mpt,
                                   alexandria::GaussAtomProp& gap,
-                                  const char *method,double temp,
+                                  const char *method,
                                   double eg34,double ezpe,double etherm,
                                   gmx_bool bVerbose)
 {
@@ -1177,7 +1176,7 @@ static void gmx_molprop_read_log(const char *fn,
                 printf("myener %f\n",myener);
             if (bEtherm && bEzpe && bTemp)
             {
-                if (0 == gmx_molprop_add_dhform(mpt,gap,mymeth,temp,myener,ezpe,etherm,bVerbose))
+                if (0 == gmx_molprop_add_dhform(mpt,gap,mymeth,myener,ezpe,etherm,bVerbose))
                 {
                     fprintf(stderr,"No support for atomic energies in %s, method %s\n",
                             mpt.GetMolname().c_str(),mymeth);
@@ -1223,8 +1222,8 @@ void ReadGauss(const char *g98,
 {
 #ifdef HAVE_LIBOPENBABEL2
     if (bBabel)
-        gmx_molprop_read_babel(g98,mp,aps,pd,molnm,iupac,conf,basis,
-                               maxpot,bVerbose,forcefield);
+        gmx_molprop_read_babel(g98,mp,molnm,iupac,conf,basis,
+                               maxpot,forcefield);
     else
         gmx_molprop_read_log(g98,mp,gap,aps,pd,molnm,iupac,conf,basis,
                              maxpot,bVerbose);

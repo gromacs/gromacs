@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -53,12 +53,12 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "pdbio.h"
-#include "confio.h"
-#include "tpxio.h"
-#include "matio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/matio.h"
 #include "mshift.h"
 #include "xvgr.h"
 #include "do_fit.h"
@@ -575,9 +575,9 @@ int gmx_make_edi(int argc, char *argv[])
 {
 
     static const char *desc[] = {
-        "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with [TT]mdrun[tt]",
-        "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a",
-        "normal modes analysis ([TT]g_nmeig[tt]).",
+        "[THISMODULE] generates an essential dynamics (ED) sampling input file to be used with [TT]mdrun[tt]",
+        "based on eigenvectors of a covariance matrix ([gmx-covar]) or from a",
+        "normal modes analysis ([gmx-nmeig]).",
         "ED sampling can be used to manipulate the position along collective coordinates",
         "(eigenvectors) of (biological) macromolecules during a simulation. Particularly,",
         "it may be used to enhance the sampling efficiency of MD simulations by stimulating",

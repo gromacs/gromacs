@@ -47,7 +47,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "physics.h"
 #include "names.h"
@@ -110,7 +110,7 @@ static gmx_bool is_linear(rvec xi,rvec xj,rvec xk,t_pbc *pbc,
 }
 
 static void calc_bondorder(FILE *fp,
-                           gmx_poldata_t pd,int natoms,t_atsel ats[],t_params *bonds,
+                           gmx_poldata_t pd,t_atsel ats[],t_params *bonds,
                            double bondorder[])
 {
     int    ai,aj,j,lu;
@@ -363,7 +363,8 @@ static void get_bondorders(FILE *fp,const char *molname,rvec x[],
     }
     if (NULL != fp)
     {
-        fprintf(fp,"There are %d out of %d bonds for which the bondorder is known\n",nbB,nbtot);
+        fprintf(fp,"There are %d out of %d bonds for which the bondorder is known in %s\n",
+                nbB, nbtot, molname);
     }
     /* Loop over white atoms and bonds */
     fW = fG = 0;
@@ -486,7 +487,7 @@ static double minimize_valence(FILE *fp,
                     ats[i].nbo = 0;
                 }
                 /* Compute the bond orders */
-                calc_bondorder(fp,pd,natoms,ats,bonds,bondorder);
+                calc_bondorder(fp,pd,ats,bonds,bondorder);
                 
                 /* Compute the valences based on bond order */
                 for(i=0; (i<bonds->nr); i++)

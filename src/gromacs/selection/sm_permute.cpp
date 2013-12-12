@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -63,20 +63,56 @@ typedef struct
     int             *rperm;
 } t_methoddata_permute;
 
-/** Allocates data for the \p permute selection modifier. */
+/*! \brief
+ * Allocates data for the \p permute selection modifier.
+ *
+ * \param[in]     npar  Not used (should be 2).
+ * \param[in,out] param Method parameters (should point to a copy of
+ *   \ref smparams_permute).
+ * \returns Pointer to the allocated data (\p t_methoddata_permute).
+ *
+ * Allocates memory for a \p t_methoddata_permute structure.
+ */
 static void *
 init_data_permute(int npar, gmx_ana_selparam_t *param);
-/** Initializes data for the \p permute selection modifier. */
+/*! \brief
+ * Initializes data for the \p permute selection modifier.
+ *
+ * \param[in] top   Not used.
+ * \param[in] npar  Not used (should be 2).
+ * \param[in] param Method parameters (should point to \ref smparams_permute).
+ * \param[in] data  Should point to a \p t_methoddata_permute.
+ * \returns   0 if the input permutation is valid, -1 on error.
+ */
 static void
 init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/** Initializes output for the \p permute selection modifier. */
+/*! \brief
+ * Initializes output for the \p permute selection modifier.
+ *
+ * \param[in]     top   Topology data structure.
+ * \param[in,out] out   Pointer to output data structure.
+ * \param[in,out] data  Should point to \c t_methoddata_permute.
+ */
 static void
 init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the \p permute selection modifier. */
 static void
 free_data_permute(void *data);
-/** Evaluates the \p permute selection modifier. */
 static void
+/*! \brief
+ * Evaluates the \p permute selection modifier.
+ *
+ * \param[in]  top   Not used.
+ * \param[in]  fr    Not used.
+ * \param[in]  pbc   Not used.
+ * \param[in]  p     Positions to permute (should point to \p data->p).
+ * \param[out] out   Output data structure (\p out->u.p is used).
+ * \param[in]  data  Should point to a \p t_methoddata_permute.
+ * \returns    0 if \p p could be permuted, -1 on error.
+ *
+ * Returns -1 if the size of \p p is not divisible by the number of
+ * elements in the permutation.
+ */
 evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
@@ -120,16 +156,8 @@ gmx_ana_selmethod_t sm_permute = {
     {"permute P1 ... PN", asize(help_permute), help_permute},
 };
 
-/*!
- * \param[in]     npar  Not used (should be 2).
- * \param[in,out] param Method parameters (should point to a copy of
- *   \ref smparams_permute).
- * \returns Pointer to the allocated data (\p t_methoddata_permute).
- *
- * Allocates memory for a \p t_methoddata_permute structure.
- */
 static void *
-init_data_permute(int npar, gmx_ana_selparam_t *param)
+init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_permute *data = new t_methoddata_permute();
     data->n          = 0;
@@ -139,15 +167,8 @@ init_data_permute(int npar, gmx_ana_selparam_t *param)
     return data;
 }
 
-/*!
- * \param[in] top   Not used.
- * \param[in] npar  Not used (should be 2).
- * \param[in] param Method parameters (should point to \ref smparams_permute).
- * \param[in] data  Should point to a \p t_methoddata_permute.
- * \returns   0 if the input permutation is valid, -1 on error.
- */
 static void
-init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_permute(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i;
@@ -179,13 +200,8 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     }
 }
 
-/*!
- * \param[in]     top   Topology data structure.
- * \param[in,out] out   Pointer to output data structure.
- * \param[in,out] data  Should point to \c t_methoddata_permute.
- */
 static void
-init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_permute(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i, j, b;
@@ -218,20 +234,8 @@ free_data_permute(void *data)
     delete d;
 }
 
-/*!
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
- * \param[in]  p     Positions to permute (should point to \p data->p).
- * \param[out] out   Output data structure (\p out->u.p is used).
- * \param[in]  data  Should point to a \p t_methoddata_permute.
- * \returns    0 if \p p could be permuted, -1 on error.
- *
- * Returns -1 if the size of \p p is not divisible by the number of
- * elements in the permutation.
- */
 static void
-evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_permute(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;

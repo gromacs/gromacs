@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -41,6 +41,7 @@
  */
 #include "gromacs/trajectoryanalysis/modules.h"
 
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #include "modules/angle.h"
@@ -58,19 +59,22 @@ namespace
  * Convenience method for registering a command-line module for trajectory
  * analysis.
  *
- * \tparam ModuleType  Trajectory analysis module to wrap.
+ * \tparam ModuleInfo  Info about trajectory analysis module to wrap.
  *
- * \p ModuleType should be default-constructible, derive from
- * TrajectoryAnalysisModule, and have static public members
- * \c "const char name[]" and \c "const char shortDescription[]".
+ * \p ModuleInfo should have static public members
+ * `const char name[]`, `const char shortDescription[]`, and
+ * `gmx::TrajectoryAnalysisModulePointer create()`.
  *
  * \ingroup module_trajectoryanalysis
  */
-template <class ModuleType>
-void registerModule(CommandLineModuleManager *manager)
+template <class ModuleInfo>
+void registerModule(CommandLineModuleManager *manager,
+                    CommandLineModuleGroup    group)
 {
-    TrajectoryAnalysisCommandLineRunner::registerModule<ModuleType>(
-            manager, ModuleType::name, ModuleType::shortDescription);
+    TrajectoryAnalysisCommandLineRunner::registerModule(
+            manager, ModuleInfo::name, ModuleInfo::shortDescription,
+            &ModuleInfo::create);
+    group.addModule(ModuleInfo::name);
 }
 
 }   // namespace
@@ -78,10 +82,11 @@ void registerModule(CommandLineModuleManager *manager)
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
     using namespace gmx::analysismodules;
-    registerModule<Angle>(manager);
-    registerModule<Distance>(manager);
-    registerModule<FreeVolume>(manager);
-    registerModule<Select>(manager);
+    CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
+    registerModule<AngleInfo>(manager, group);
+    registerModule<DistanceInfo>(manager, group);
+    registerModule<FreeVolumeInfo>(manager, group);
+    registerModule<SelectInfo>(manager, group);
 }
 
 } // namespace gmx

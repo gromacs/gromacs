@@ -1,0 +1,100 @@
+#!/bin/bash
+
+if [[ ! -d $1 ]]; then
+  echo "Error: provide the GROMACS html directory as first argument."
+  exit
+fi
+
+GMXHTMLDIR=$1
+
+dir=${PWD}
+
+TEXDIR=.
+MANDIR=online
+HTML=$GMXHTMLDIR
+HTMLOL=$HTML/$MANDIR
+HTMLMDPOPT=$HTMLOL/mdp_opt.html
+TEXMDPOPT=$TEXDIR/mdp_opt.tex
+
+echo "Will convert $HTMLMDPOPT (html format)"
+echo "to $TEXMDPOPT (latex format)"
+
+echo -n "parsing."
+sed \
+-e 's/<[aA] [^>]*>//g' \
+-e 's/<\/[aA]>//g' \
+-e 's/<[iI][mM][gG] [^>]*>//g' \
+-e 's/<[pP]>//g' \
+-e 's/<\/[pP]>//g' \
+-e 's/&[nN][bB][sS][pP];/~/g' \
+-e 's/<[hH][rR]>//g' \
+$HTMLMDPOPT > temp1
+
+echo -n "."
+awk '{
+  if (NF) {
+    if ( ($1 == "<P>") || ($1 == "<p>") || ($1 == "<BR>") || ($1 == "<br>") )
+      print ""
+    else
+      print $0
+    }
+  }' temp1 > temp2
+echo -n "."
+sed \
+-e 's/&gt;=/$\\geq$/g;s/&ge;/$\\geq$/g' \
+-e 's/&gt;/$\>$/g' \
+-e 's/&lt;=/$\\leq$/g;s/&le;/$\\leq$/g' \
+-e 's/&lt;/$\<$/g' \
+-e 's/_/_/g' \
+-e 's/%/\\%/g' \
+-e 's/&/\\&/g' \
+-e 's/<sup>\([^<]*\)<\/sup>/$^{\1}$/g' \
+-e 's/<sub>\([^<]*\)<\/sub>/$_{\1}$/g' \
+-e 's/<[tT][tT]>\([^<]*\)<\/[tT][tT]>/{\\tt \1}/g' \
+-e 's/<[pP][rR][eE]>\([^<]*\)<\/[pP][rR][eE]>/\\\\{\\tt\1}\\\\/g' \
+-e 's/<\!--Idx-->\([^>]*\)<\!--EIdx-->/\\normindex{\1}/g' \
+-e 's/<\!--QuietIdx-->\([^>]*\)<\!--EQuietIdx-->/\\index{\1}/g' \
+-e 's/<[hH]1>\([^<]*\)<\/[hH]1>/\\section{\1}/g' \
+-e 's/<[hH]3>\([^<]*\)<\/[hH]3>/\\subsection{\1}/g' \
+temp2 > temp3
+
+echo -n "."
+sed \
+-e 's/<[uU][lL]>/\\begin{itemize}/g' \
+-e 's/<\/[uU][lL]>/\\end{itemize}/g' \
+-e 's/<[lL][iI]>/\\item /g' \
+-e 's/<[dD][lL] [cC][oO][^>]*>/\\vspace{-2ex}\\begin{description}[font=\\ttfamily]/g' \
+-e 's/<[dD][lL][^>]*>/\\begin{description}[font=\\ttfamily]/g' \
+-e 's/<\/[dD][lL]>/\\end{description}/g' \
+-e 's/<[dD][tT]><[bB]>\(.*\)<\/[bB]>\(.*\)<\/[dD][tT]>/\\item[\1] \2\\hfill\\\\/g' \
+-e 's/<[dD][tT]>\([^<]*\)<\/[dD][tT]>/\\item[\1]\\hfill\\\\/g' \
+-e 's/<[bB]>\([^<]*\)<\/[bB]>/{\\tt \1}/g' \
+-e 's/<[iI]>\([^<]*\)<\/[iI]>/{\\em \1}/g' \
+-e 's/<[dD][dD]>//g' \
+-e 's/<\/[dD][dD]>//g' \
+-e 's/<\/[dD][tT]>//g' \
+-e 's/ \(\[[^]]*\]\)\]/ {\1}\]/g' \
+-e 's/\$lt\$/$<$/g' \
+-e 's/\$gt\$/$>$/g' \
+-e 's/e\.g\./{\\eg}/g' \
+-e 's/i\.e\./{\\ie}/g' \
+temp3 > temp4
+
+echo -n "."
+awk 'BEGIN { printf("\\label{sec:mdpopt}\n"); }\
+{\
+  if ( index($0,"subsection") ) {\
+    if ( index($0,"General") ) {\
+      output=1;\
+    } else if ( index($0,"Index") )\
+      output=0;\
+  }\
+  if (output) print;\
+}' temp4 > $TEXMDPOPT
+
+echo "."
+
+rm temp1 temp2 temp3 temp4
+
+#last line
+exit

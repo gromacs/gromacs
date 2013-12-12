@@ -42,8 +42,8 @@
 #include <string.h>
 #include "smalloc.h"
 #include "typedefs.h"
-#include "confio.h"
-#include "futil.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "vec.h"
 #include "index.h"
@@ -53,7 +53,7 @@
 int gmx_genpr(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]genrestr[tt] produces an include file for a topology containing",
+        "[THISMODULE] produces an include file for a topology containing",
         "a list of atom numbers and three force constants for the",
         "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-direction. A single isotropic force constant may",
         "be given on the command line instead of three components.[PAR]",
@@ -62,7 +62,7 @@ int gmx_genpr(int argc, char *argv[])
         "they should be included within the correct [TT][ moleculetype ][tt]",
         "block in the topology. Since the atom numbers in every moleculetype",
         "in the topology start at 1 and the numbers in the input file for",
-        "[TT]genrestr[tt] number consecutively from 1, [TT]genrestr[tt] will only",
+        "[THISMODULE] number consecutively from 1, [THISMODULE] will only",
         "produce a useful file for the first molecule.[PAR]",
         "The [TT]-of[tt] option produces an index file that can be used for",
         "freezing atoms. In this case, the input file must be a [TT].pdb[tt] file.[PAR]",

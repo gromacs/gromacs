@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "maths.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"
@@ -61,7 +61,7 @@
 #include "molprop_xml.hpp"
 #include "molprop_tables.hpp"
 
-static void calc_frag_miller(int bTrain, gmx_poldata_t pd,
+static void calc_frag_miller(gmx_poldata_t pd,
                              std::vector<alexandria::MolProp> &mp,
                              gmx_molselect_t gms)
 {
@@ -174,7 +174,7 @@ static void calc_frag_miller(int bTrain, gmx_poldata_t pd,
 static void write_corr_xvg(const char *fn,
                            std::vector<alexandria::MolProp> mp,
                            MolPropObservable mpo, t_qmcount *qmc,
-                           int iQM, char *lot, real rtoler, real atoler,
+                           real rtoler, real atoler,
                            output_env_t oenv, gmx_molselect_t gms,
                            char *exp_type)
 {
@@ -279,7 +279,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                 int npd, gmx_poldata_t *pd, gmx_poldata_t pdref,
                                 gmx_bool bCalcPol,
                                 MolPropObservable prop, char *exp_type,
-                                gmx_atomprop_t ap, int iQM, char *lot,
+                                char *lot,
                                 real rtoler, real atoler, real outlier,
                                 char *fc_str, gmx_bool bPrintAll,
                                 gmx_bool bStatsTable,
@@ -312,7 +312,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     {
         fp = fopen(atype, "w");
         gmx_molprop_atomtype_table(fp, (prop == MPO_POLARIZABILITY),
-                                   npd, pd, pdref, mp, iQM, lot, exp_type,
+                                   npd, pd, pdref, mp, lot, exp_type,
                                    oenv, histo);
         fclose(fp);
         do_view(oenv, histo, NULL);
@@ -320,7 +320,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
 
     if (bCalcPol)
     {
-        calc_frag_miller(FALSE, pdref ? pdref : pd[0], mp, gms);
+        calc_frag_miller(pdref ? pdref : pd[0], mp, gms);
     }
 
     qmc = find_calculations(mp, prop, fc_str);
@@ -367,8 +367,8 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     fp = ffopen(texfn, "w");
     if (bStatsTable)
     {
-        gmx_molprop_stats_table(fp, prop, mp, ntot, qmc, iQM, lot, exp_type, outlier, gms, imsTrain);
-        gmx_molprop_stats_table(fp, prop, mp, ntot, qmc, iQM, lot, exp_type, outlier, gms, imsTest);
+        gmx_molprop_stats_table(fp, prop, mp, qmc, exp_type, outlier, gms, imsTrain);
+        gmx_molprop_stats_table(fp, prop, mp, qmc, exp_type, outlier, gms, imsTest);
     }
     if (bPropTable)
     {
@@ -409,12 +409,12 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     }
     if (NULL != xvgfn)
     {
-        write_corr_xvg(xvgfn, mp, prop, qmc, FALSE, lot, rtoler, atoler, oenv, gms, exp_type);
+        write_corr_xvg(xvgfn, mp, prop, qmc, rtoler, atoler, oenv, gms, exp_type);
     }
 }
 
 
-int main(int argc, char *argv[])
+int alex_analyze_mp(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "analyze_mp reads force field information and a molecule database",
@@ -567,19 +567,18 @@ int main(int argc, char *argv[])
     }
     if (bMerge)
     {
-        merge_xml(nmpfile, mpname, mp, NULL, NULL, NULL, ap, pd[0],
-                  TRUE, TRUE, th_toler, ph_toler);
+        merge_xml(nmpfile, mpname, mp, NULL, NULL, NULL, ap, pd[0], TRUE);
     }
     else
     {
-        MolPropRead(mpname[0], mp);
+        MolPropRead((const char *)mpname[0], mp);
     }
     if (mpsa != MPSA_NR)
     {
         MolPropSort(mp, mpsa, ap, gms);
     }
     gmx_molprop_analyze(mp, npdfile, pd, pdref, bCalcPol,
-                        mpo, exp_type, ap, 0, lot, rtoler, atoler, outlier, fc_str, bAll,
+                        mpo, exp_type, lot, rtoler, atoler, outlier, fc_str, bAll,
                         bStatsTable,
                         opt2fn_null("-cat", NFILE, fnm),
                         bPropTable, bCompositionTable,

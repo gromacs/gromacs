@@ -54,11 +54,10 @@
 #include <stdarg.h>
 #include <string.h>
 
-
 #include "impl.h"
 #include "p2p.h"
+#include "unused.h"
 
-/* free envelopes: */
 /* free envelopes: */
 static struct envelope *tMPI_Free_env_list_fetch_recv(struct free_envelope_list
                                                       *evl);
@@ -186,15 +185,6 @@ static void tMPI_Free_env_list_return_recv(struct free_envelope_list *evl,
     rev->next      = evl->head_recv;
     evl->head_recv = rev;
 }
-
-
-
-
-
-
-
-
-
 
 /* tmpi_send_envelope_list functions */
 
@@ -390,9 +380,9 @@ static void tMPI_Send_env_list_remove_old(struct envelope *sev)
 }
 
 
-static void tMPI_Send_env_list_add_new(struct tmpi_thread        *cur,
-                                       struct send_envelope_list *evl,
-                                       struct envelope           *sev)
+static void tMPI_Send_env_list_add_new(struct tmpi_thread        tmpi_unused *cur,
+                                       struct send_envelope_list             *evl,
+                                       struct envelope                       *sev)
 {
 #ifdef TMPI_LOCK_FREE_LISTS
     struct envelope *evl_head_new_orig;
@@ -459,13 +449,6 @@ static void tMPI_Send_env_list_move_to_old(struct envelope *sev)
     sev->prev->next = sev;
 }
 
-
-
-
-
-
-
-
 /* tmpi_recv_envelope_list functions */
 
 int tMPI_Recv_env_list_init(struct recv_envelope_list *evl)
@@ -508,13 +491,6 @@ static void tMPI_Recv_env_list_remove(struct envelope *rev)
     rev->next  = NULL;
     rev->rlist = NULL;
 }
-
-
-
-
-
-
-
 
 /* tmpi_req functions */
 
@@ -586,8 +562,6 @@ void tMPI_Return_req(struct req_list *rl, struct tmpi_req_ *req)
     rl->head  = req;
 }
 
-
-
 void tMPI_Req_init(struct tmpi_req_ *rq, struct envelope *ev)
 {
     rq->ev       = ev;
@@ -603,15 +577,7 @@ void tMPI_Req_init(struct tmpi_req_ *rq, struct envelope *ev)
     rq->cancelled   = FALSE;
 }
 
-
-
-
-
-
 /* Point-to-point communication protocol functions */
-
-
-
 void tMPI_Set_req(struct envelope *ev, struct tmpi_req_ *req)
 {
     req->source = ev->src;
@@ -654,7 +620,6 @@ void tMPI_Set_status(struct tmpi_req_ *req, tMPI_Status *st)
     }
 }
 
-
 tmpi_bool tMPI_Envelope_matches(const struct envelope *sev,
                                 const struct envelope *rev)
 {
@@ -689,9 +654,6 @@ tmpi_bool tMPI_Envelope_matches(const struct envelope *sev,
     return FALSE;
 }
 
-
-
-
 struct envelope* tMPI_Send_env_list_search_old(struct send_envelope_list *evl,
                                                struct envelope           *rev)
 {
@@ -711,7 +673,6 @@ struct envelope* tMPI_Send_env_list_search_old(struct send_envelope_list *evl,
     return NULL;
 }
 
-
 struct envelope* tMPI_Recv_env_list_search_new(struct recv_envelope_list *evl,
                                                struct envelope           *sev)
 {
@@ -728,7 +689,6 @@ struct envelope* tMPI_Recv_env_list_search_new(struct recv_envelope_list *evl,
     }
     return NULL;
 }
-
 
 #ifdef USE_SEND_RECV_COPY_BUFFER
 void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
@@ -792,7 +752,6 @@ void tMPI_Send_copy_buffer(struct envelope *sev, struct tmpi_req_ *req)
     tMPI_Send_env_list_return(sev);
 }
 #endif
-
 
 struct envelope* tMPI_Prep_send_envelope(struct send_envelope_list *evl,
                                          tMPI_Comm comm,
@@ -887,14 +846,7 @@ struct envelope* tMPI_Prep_recv_envelope(struct tmpi_thread *cur,
     return ev;
 }
 
-
-
-
-
-
-
-
-static void tMPI_Xfer(struct tmpi_thread *cur, struct envelope *sev,
+static void tMPI_Xfer(struct tmpi_thread tmpi_unused *cur, struct envelope *sev,
                       struct envelope *rev)
 {
 #ifdef USE_SEND_RECV_COPY_BUFFER
@@ -993,11 +945,6 @@ static void tMPI_Xfer(struct tmpi_thread *cur, struct envelope *sev,
     return;
 }
 
-
-
-
-
-
 struct envelope* tMPI_Post_match_recv(struct tmpi_thread *cur,
                                       tMPI_Comm comm,
                                       struct tmpi_thread *src,
@@ -1070,9 +1017,6 @@ struct envelope* tMPI_Post_match_recv(struct tmpi_thread *cur,
     return rev;
 }
 
-
-
-
 struct envelope *tMPI_Post_send(struct tmpi_thread *cur,
                                 tMPI_Comm comm,
                                 struct tmpi_thread *dest,
@@ -1105,9 +1049,6 @@ struct envelope *tMPI_Post_send(struct tmpi_thread *cur,
 
     return sev;
 }
-
-
-
 
 void tMPI_Wait_process_incoming(struct tmpi_thread *cur)
 {

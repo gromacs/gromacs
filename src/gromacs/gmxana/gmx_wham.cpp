@@ -53,7 +53,7 @@
 #include "vec.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "names.h"
 #include "gmx_random.h"
 #include "gmx_ana.h"
@@ -111,12 +111,13 @@ typedef struct
      * \name Using umbrella pull code since gromacs 4.x
      */
     /*!\{*/
-    int   npullgrps;     //!< nr of pull groups in tpr file
-    int   pull_geometry; //!< such as distance, position
+    int   npullcrds;     //!< nr of pull coordinates in tpr file
+    int   pull_geometry; //!< such as distance, direction
     ivec  pull_dim;      //!< pull dimension with geometry distance
     int   pull_ndim;     //!< nr of pull_dim != 0
+    gmx_bool bPrintRef;  //!< Coordinates of reference groups written to pullx.xvg ?
     real *k;             //!< force constants in tpr file
-    rvec *init_dist;     //!< reference displacements
+    real *init_dist;     //!< reference displacements
     real *umbInitDist;   //!< reference displacement in umbrella direction
     /*!\}*/
     /*!
@@ -1982,7 +1983,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions *opt)
 {
     t_inputrec  ir;
-    int         i, ngrp, d;
+    int         i, ncrd;
     t_state     state;
     static int  first = 1;
 
@@ -1996,26 +1997,20 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     }
 
     /* nr of pull groups */
-    ngrp = ir.pull->ngrp;
-    if (ngrp < 1)
+    ncrd = ir.pull->ncoord;
+    if (ncrd < 1)
     {
-        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d pull groups\n", ngrp);
+        gmx_fatal(FARGS, "This is not a tpr of umbrella simulation. Found only %d pull coordinates\n", ncrd);
     }
 
-    header->npullgrps     = ir.pull->ngrp;
+    header->npullcrds     = ir.pull->ncoord;
     header->pull_geometry = ir.pull->eGeom;
+    header->bPrintRef     = ir.pull->bPrintRef;
     copy_ivec(ir.pull->dim, header->pull_dim);
     header->pull_ndim = header->pull_dim[0]+header->pull_dim[1]+header->pull_dim[2];
-    if (header->pull_geometry == epullgPOS && header->pull_ndim > 1)
-    {
-        gmx_fatal(FARGS, "Found pull geometry 'position' and more than 1 pull dimension (%d).\n"
-                  "Hence, the pull potential does not correspond to a one-dimensional umbrella potential.\n"
-                  "If you have some special umbrella setup you may want to write your own pdo files\n"
-                  "and feed them into g_wham. Check g_wham -h !\n", header->pull_ndim);
-    }
-    snew(header->k, ngrp);
-    snew(header->init_dist, ngrp);
-    snew(header->umbInitDist, ngrp);
+    snew(header->k, ncrd);
+    snew(header->init_dist, ncrd);
+    snew(header->umbInitDist, ncrd);
 
     /* only z-direction with epullgCYL? */
     if (header->pull_geometry == epullgCYL)
@@ -2029,35 +2024,26 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
         }
     }
 
-    for (i = 0; i < ngrp; i++)
+    for (i = 0; i < ncrd; i++)
     {
-        header->k[i] = ir.pull->grp[i+1].k;
+        header->k[i] = ir.pull->coord[i].k;
         if (header->k[i] == 0.0)
         {
-            gmx_fatal(FARGS, "Pull group %d has force constant of of 0.0 in %s.\n"
+            gmx_fatal(FARGS, "Pull coordinate %d has force constant of of 0.0 in %s.\n"
                       "That doesn't seem to be an Umbrella tpr.\n",
                       i, fn);
         }
-        copy_rvec(ir.pull->grp[i+1].init, header->init_dist[i]);
+        header->init_dist[i] =  ir.pull->coord[i].init;
 
         /* initial distance to reference */
         switch (header->pull_geometry)
         {
-            case epullgPOS:
-                for (d = 0; d < DIM; d++)
-                {
-                    if (header->pull_dim[d])
-                    {
-                        header->umbInitDist[i] = header->init_dist[i][d];
-                    }
-                }
-                break;
             case epullgCYL:
-            /* umbrella distance stored in init_dist[i][0] for geometry cylinder (not in ...[i][ZZ]) */
+            /* umbrella distance stored in init_dist[i] for geometry cylinder (not in ...[i][ZZ]) */
             case epullgDIST:
             case epullgDIR:
             case epullgDIRPBC:
-                header->umbInitDist[i] = header->init_dist[i][0];
+                header->umbInitDist[i] = header->init_dist[i];
                 break;
             default:
                 gmx_fatal(FARGS, "Pull geometry %s not supported\n", epullg_names[header->pull_geometry]);
@@ -2066,18 +2052,19 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
 
     if (opt->verbose || first)
     {
-        printf("File %s, %d groups, geometry \"%s\", dimensions [%s %s %s], (%d dimensions)\n",
-               fn, header->npullgrps, epullg_names[header->pull_geometry],
+        printf("File %s, %d coordinates, geometry \"%s\", dimensions [%s %s %s], (%d dimensions)\n"
+               "\tPull group coordinates%s expected in pullx files.\n",
+               fn, header->npullcrds, epullg_names[header->pull_geometry],
                int2YN(header->pull_dim[0]), int2YN(header->pull_dim[1]), int2YN(header->pull_dim[2]),
-               header->pull_ndim);
-        for (i = 0; i < ngrp; i++)
+               header->pull_ndim, (header->bPrintRef ? "" : " not"));
+        for (i = 0; i < ncrd; i++)
         {
-            printf("\tgrp %d) k = %-5g  position = %g\n", i, header->k[i], header->umbInitDist[i]);
+            printf("\tcrd %d) k = %-5g  position = %g\n", i, header->k[i], header->umbInitDist[i]);
         }
     }
     if (!opt->verbose && first)
     {
-        printf("\tUse option -v to see this output for all input tpr files\n");
+        printf("\tUse option -v to see this output for all input tpr files\n\n");
     }
 
     first = 0;
@@ -2103,7 +2090,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                   t_groupselection *groupsel)
 {
     double        **y = 0, pos = 0., t, force, time0 = 0., dt;
-    int             ny, nt, bins, ibin, i, g, gUsed, dstep = 1, nColPerGrp, nColRefOnce, nColRefEachGrp, nColExpect, ntot;
+    int             ny, nt, bins, ibin, i, g, gUsed, dstep = 1, nColPerCrd, nColRefEachCrd, nColExpect, ntot, column;
     real            min, max, minfound = 1e20, maxfound = -1e20;
     gmx_bool        dt_ok, timeok, bHaveForce;
     const char     *quantity;
@@ -2112,44 +2099,33 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
     static gmx_bool bFirst   = TRUE;
 
     /*
-       in force    output pullf.xvg:
-       No   reference, one  column  per pull group
-       in position output pullx.xvg (not cylinder)
-       ndim reference, ndim columns per pull group
-       in position output pullx.xvg (in geometry cylinder):
-       ndim*2 columns per pull group (ndim for ref, ndim for group)
+     * Data columns in pull output:
+     *  - in force output pullf.xvg:
+     *    No reference columns, one column per pull coordinate
+     *
+     *  - in position output pullx.xvg
+     *    bPrintRef == TRUE:  for each pull coordinate: ndim reference columns, and ndim dx columns
+     *    bPrintRef == FALSE: for each pull coordinate: no   reference columns, but ndim dx columns
      */
 
-    nColPerGrp = opt->bPullx ? header->pull_ndim : 1;
+    nColPerCrd = opt->bPullx ? header->pull_ndim : 1;
     quantity   = opt->bPullx ? "position" : "force";
 
-    if (opt->bPullx)
+    if (opt->bPullx && header->bPrintRef)
     {
-        if (header->pull_geometry == epullgCYL)
-        {
-            /* Geometry cylinder -> reference group before each pull group */
-            nColRefEachGrp = header->pull_ndim;
-            nColRefOnce    = 0;
-        }
-        else
-        {
-            /* Geometry NOT cylinder -> reference group only once after time column */
-            nColRefEachGrp = 0;
-            nColRefOnce    = header->pull_ndim;
-        }
+        nColRefEachCrd = header->pull_ndim;
     }
-    else /* read forces, no reference groups */
+    else
     {
-        nColRefEachGrp = 0;
-        nColRefOnce    = 0;
+        nColRefEachCrd = 0;
     }
 
-    nColExpect = 1 + nColRefOnce + header->npullgrps*(nColRefEachGrp+nColPerGrp);
+    nColExpect = 1 + header->npullcrds*(nColRefEachCrd+nColPerCrd);
     bHaveForce = opt->bPullf;
 
     /* With geometry "distance" or "distance_periodic", only force reading is supported so far.
-       That avoids the somewhat tedious extraction of the right columns from the pullx files
-       to compute the distances projection on the vector. Sorry for the laziness. */
+       That avoids the somewhat tedious extraction of the reaction coordinate from the pullx files.
+       Sorry for the laziness, this is a To-do. */
     if  ( (header->pull_geometry == epullgDIR || header->pull_geometry == epullgDIRPBC)
           && opt->bPullx)
     {
@@ -2173,22 +2149,21 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                bHaveForce ? "force" : "position", epullg_names[header->pull_geometry],
                header->pull_ndim);
         printf("Expecting these columns in pull file:\n"
-               "\t%d reference columns for all pull groups together\n"
-               "\t%d reference columns for each individual pull group\n"
-               "\t%d data columns for each pull group\n", nColRefOnce, nColRefEachGrp, nColPerGrp);
-        printf("With %d pull groups, expect %d columns (including the time column)\n", header->npullgrps, nColExpect);
+               "\t%d reference columns for each individual pull coordinate\n"
+               "\t%d data columns for each pull coordinate\n", nColRefEachCrd, nColPerCrd);
+        printf("With %d pull groups, expect %d columns (including the time column)\n", header->npullcrds, nColExpect);
         bFirst = FALSE;
     }
     if (ny != nColExpect)
     {
-        gmx_fatal(FARGS, "Found %d pull groups in %s,\n but %d data columns in %s (expected %d)\n"
+        gmx_fatal(FARGS, "Found %d pull coodinates in %s,\n but %d data columns in %s (expected %d)\n"
                   "\nMaybe you confused options -ix and -if ?\n",
-                  header->npullgrps, fntpr, ny-1, fn, nColExpect-1);
+                  header->npullcrds, fntpr, ny-1, fn, nColExpect-1);
     }
 
     if (opt->verbose)
     {
-        printf("Found %d times and %d %s sets %s\n", nt, (ny-1)/nColPerGrp, quantity, fn);
+        printf("Found %d times and %d %s sets %s\n", nt, (ny-1)/nColPerCrd, quantity, fn);
     }
 
     if (!bGetMinMax)
@@ -2210,16 +2185,16 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         if (groupsel)
         {
             /* Use only groups selected with option -is file */
-            if (header->npullgrps != groupsel->n)
+            if (header->npullcrds != groupsel->n)
             {
                 gmx_fatal(FARGS, "tpr file contains %d pull groups, but expected %d from group selection file\n",
-                          header->npullgrps, groupsel->n);
+                          header->npullcrds, groupsel->n);
             }
             window->nPull = groupsel->nUse;
         }
         else
         {
-            window->nPull = header->npullgrps;
+            window->nPull = header->npullcrds;
         }
 
         window->nBin = bins;
@@ -2259,7 +2234,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
 
         /* Copying umbrella center and force const is more involved since not
            all pull groups from header (tpr file) may be used in window variable */
-        for (g = 0, gUsed = 0; g < header->npullgrps; ++g)
+        for (g = 0, gUsed = 0; g < header->npullcrds; ++g)
         {
             if (groupsel && (groupsel->bUse[g] == FALSE))
             {
@@ -2310,7 +2285,6 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         /*if (opt->verbose)
            printf(" time = %f, (tmin,tmax)=(%e,%e), dt_ok=%d timeok=%d\n",
            t,opt->tmin, opt->tmax, dt_ok,timeok); */
-
         if (timeok)
         {
             /* Note: if groupsel == NULL:
@@ -2319,7 +2293,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
              *          only groups with groupsel.bUse[g]==TRUE are stored. gUsed is not always equal g
              */
             gUsed = -1;
-            for (g = 0; g < header->npullgrps; ++g)
+            for (g = 0; g < header->npullcrds; ++g)
             {
                 /* was this group selected for application in WHAM? */
                 if (groupsel && (groupsel->bUse[g] == FALSE))
@@ -2331,41 +2305,30 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
 
                 if (bHaveForce)
                 {
-                    /* y has 1 time column y[0] and one column per force y[1],...,y[nGrps] */
+                    /* y has 1 time column y[0] and one column per force y[1],...,y[nCrds] */
                     force = y[g+1][i];
                     pos   = -force/header->k[g] + header->umbInitDist[g];
                 }
                 else
                 {
+                    /* pick the right column from:
+                     * time ref1[ndim] coord1[ndim] ref2[ndim] coord2[ndim] ...
+                     */
+                    column = 1 +  nColRefEachCrd + g*(nColRefEachCrd+nColPerCrd);
                     switch (header->pull_geometry)
                     {
                         case epullgDIST:
-                            /* y has 1 time column y[0] and nColPerGrps columns per pull group;
-                               Distance to reference:                                           */
-                            /* pos=dist_ndim(y+1+nColRef+g*nColPerGrp,header->pull_ndim,i); gmx 4.0 */
-                            pos = dist_ndim(y + 1 + nColRefOnce + g*nColPerGrp, header->pull_ndim, i);
+                            pos = dist_ndim(y + column, header->pull_ndim, i);
                             break;
-                        case epullgPOS:
-                        /* Columns
-                           Time ref[ndim] group1[ndim] group2[ndim] ... */
                         case epullgCYL:
-                            /* Columns
-                               Time ref1[ndim] group1[ndim] ref2[ndim] group2[ndim] ... */
-
-                            /* * with geometry==position, we have the reference once (nColRefOnce==ndim), but
-                               no extra reference group columns before each group (nColRefEachGrp==0)
-
-                             * with geometry==cylinder, we have no initial ref group column (nColRefOnce==0),
-                               but ndim ref group colums before every group (nColRefEachGrp==ndim)
-                               Distance to reference: */
-                            pos = y[1 + nColRefOnce + nColRefEachGrp + g*(nColRefEachGrp+nColPerGrp)][i];
+                            pos = y[column][i];
                             break;
                         default:
                             gmx_fatal(FARGS, "Bad error, this error should have been catched before. Ups.\n");
                     }
                 }
 
-                /* printf("grp %d dpos %f poseq %f pos %f \n",g,dpos,poseq,pos); */
+                /* printf("crd %d dpos %f poseq %f pos %f \n",g,dpos,poseq,pos); */
                 if (bGetMinMax)
                 {
                     if (pos < minfound)
@@ -3144,7 +3107,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 int gmx_wham(int argc, char *argv[])
 {
     const char              *desc[] = {
-        "This is an analysis program that implements the Weighted",
+        "[THISMODULE] is an analysis program that implements the Weighted",
         "Histogram Analysis Method (WHAM). It is intended to analyze",
         "output files generated by umbrella sampling simulations to ",
         "compute a potential of mean force (PMF). [PAR] ",
@@ -3162,7 +3125,7 @@ int gmx_wham(int argc, char *argv[])
         "[TT]*[tt] With option [TT]-ip[tt], the user provides file names of (gzipped) [TT].pdo[tt] files, i.e.",
         " the GROMACS 3.3 umbrella output files. If you have some unusual"
         " reaction coordinate you may also generate your own [TT].pdo[tt] files and",
-        " feed them with the [TT]-ip[tt] option into to [TT]g_wham[tt]. The [TT].pdo[tt] file header",
+        " feed them with the [TT]-ip[tt] option into to [THISMODULE]. The [TT].pdo[tt] file header",
         " must be similar to the following:[PAR]",
         "[TT]# UMBRELLA      3.0[BR]",
         "# Component selection: 0 0 1[BR]",
@@ -3210,13 +3173,14 @@ int gmx_wham(int argc, char *argv[])
         "If you want the free energy at a different ",
         "position to be zero, set [TT]-zprof0[tt] (useful with bootstrapping, see below).[PAR]",
         "For cyclic or periodic reaction coordinates (dihedral angle, channel PMF",
-        "without osmotic gradient), the option [TT]-cycl[tt] is useful. [TT]g_wham[tt] will make use of the ",
+        "without osmotic gradient), the option [TT]-cycl[tt] is useful.",
+        "[THISMODULE] will make use of the",
         "periodicity of the system and generate a periodic PMF. The first and the last bin of the",
         "reaction coordinate will assumed be be neighbors.[PAR]",
         "Option [TT]-sym[tt] symmetrizes the profile around z=0 before output, ",
         "which may be useful for, e.g. membranes.[PAR]",
         "AUTOCORRELATIONS[BR]----------------[BR]",
-        "With [TT]-ac[tt], [TT]g_wham[tt] estimates the integrated autocorrelation ",
+        "With [TT]-ac[tt], [THISMODULE] estimates the integrated autocorrelation ",
         "time (IACT) [GRK]tau[grk] for each umbrella window and weights the respective ",
         "window with 1/[1+2*[GRK]tau[grk]/dt]. The IACTs are written ",
         "to the file defined with [TT]-oiact[tt]. In verbose mode, all ",
@@ -3228,7 +3192,7 @@ int gmx_wham(int argc, char *argv[])
         "integration of the ACFs while the ACFs are larger 0.05.",
         "If you prefer to compute the IACTs by a more sophisticated (but possibly ",
         "less robust) method such as fitting to a double exponential, you can ",
-        "compute the IACTs with [TT]g_analyze[tt] and provide them to [TT]g_wham[tt] with the file ",
+        "compute the IACTs with [gmx-analyze] and provide them to [THISMODULE] with the file ",
         "[TT]iact-in.dat[tt] (option [TT]-iiact[tt]), which should contain one line per ",
         "input file ([TT].pdo[tt] or pullx/f file) and one column per pull group in the respective file.[PAR]",
         "ERROR ANALYSIS[BR]--------------[BR]",

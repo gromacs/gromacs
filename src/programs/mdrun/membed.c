@@ -1,36 +1,36 @@
 /*
- * $Id: mdrun.c,v 1.139.2.9 2009/05/04 16:13:29 hess Exp $
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -45,13 +45,13 @@
 #include "statutil.h"
 #include "macros.h"
 #include "main.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "edsam.h"
 #include "index.h"
 #include "physics.h"
 #include "names.h"
 #include "mtop_util.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "string2.h"
 #include "membed.h"
 #include "pbc.h"
@@ -534,7 +534,7 @@ static void resize(rvec *r_ins, rvec *r, pos_ins_t *pos_ins, rvec fac)
 /* generate the list of membrane molecules that overlap with the molecule to be embedded. *
  * The molecule to be embedded is already reduced in size. */
 static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc, gmx_mtop_t *mtop,
-                       rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad,
+                       rvec *r, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad,
                        int low_up_rm, gmx_bool bALLOW_ASYMMETRY)
 {
     int      i, j, k, l, at, at2, mol_id;
@@ -690,7 +690,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
 }
 
 /*remove all lipids and waters overlapping and update all important structures (e.g. state and mtop)*/
-static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
+static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
                      t_block *ins_at, pos_ins_t *pos_ins)
 {
     int             i, j, k, n, rm, mol_id, at, block;
@@ -888,7 +888,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 }
 
 /* Write a topology where the number of molecules is correct for the system after embedding */
-static void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
+static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
 {
 #define TEMP_FILENM "temp.top"
     int        bMolecules = 0;
@@ -1241,7 +1241,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         set_pbc(pbc, inputrec->ePBC, state->box);
 
         snew(rm_p, 1);
-        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, state->x, r_ins, mem_p, pos_ins,
+        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, state->x, mem_p, pos_ins,
                              probe_rad, low_up_rm, bALLOW_ASYMMETRY);
         lip_rm -= low_up_rm;
 
@@ -1275,7 +1275,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         }
 
         /*remove all lipids and waters overlapping and update all important structures*/
-        rm_group(inputrec, groups, mtop, rm_p, state, ins_at, pos_ins);
+        rm_group(groups, mtop, rm_p, state, ins_at, pos_ins);
 
         rm_bonded_at = rm_bonded(ins_at, mtop);
         if (rm_bonded_at != ins_at->nr)
@@ -1293,7 +1293,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
 
         if (ftp2bSet(efTOP, nfile, fnm))
         {
-            top_update(opt2fn("-mp", nfile, fnm), ins, rm_p, mtop);
+            top_update(opt2fn("-mp", nfile, fnm), rm_p, mtop);
         }
 
         sfree(pbc);

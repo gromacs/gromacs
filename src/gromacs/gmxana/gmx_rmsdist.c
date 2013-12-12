@@ -44,7 +44,8 @@
 #include "typedefs.h"
 #include "names.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "string2.h"
 #include "strdb.h"
 #include "vec.h"
@@ -52,8 +53,8 @@
 #include "index.h"
 #include "pbc.h"
 #include "xvgr.h"
-#include "futil.h"
-#include "matio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
 
@@ -624,17 +625,17 @@ real rms_diff(int natom, real **d, real **d_r)
     return sqrt(r2);
 }
 
-int gmx_rmsdist (int argc, char *argv[])
+int gmx_rmsdist(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_rmsdist[tt] computes the root mean square deviation of atom distances,",
+        "[THISMODULE] computes the root mean square deviation of atom distances,",
         "which has the advantage that no fit is needed like in standard RMS",
-        "deviation as computed by [TT]g_rms[tt].",
+        "deviation as computed by [gmx-rms].",
         "The reference structure is taken from the structure file.",
         "The RMSD at time t is calculated as the RMS",
         "of the differences in distance between atom-pairs in the reference",
         "structure and the structure at time t.[PAR]",
-        "[TT]g_rmsdist[tt] can also produce matrices of the rms distances, rms distances",
+        "[THISMODULE] can also produce matrices of the rms distances, rms distances",
         "scaled with the mean distance and the mean distances and matrices with",
         "NMR averaged distances (1/r^3 and 1/r^6 averaging). Finally, lists",
         "of atom pairs with 1/r^3 and 1/r^6 averaged distance below the",

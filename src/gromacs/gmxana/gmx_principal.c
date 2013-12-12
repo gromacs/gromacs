@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "mshift.h"
@@ -54,7 +54,8 @@
 #include "princ.h"
 #include "rmpbc.h"
 #include "txtdump.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gstat.h"
 #include "gmx_ana.h"
 
@@ -76,7 +77,7 @@ calc_principal_axes(t_topology *   top,
 int gmx_principal(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_principal[tt] calculates the three principal axes of inertia for a group",
+        "[THISMODULE] calculates the three principal axes of inertia for a group",
         "of atoms.",
     };
     static gmx_bool foo = FALSE;

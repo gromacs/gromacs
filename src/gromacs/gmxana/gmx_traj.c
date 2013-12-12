@@ -46,16 +46,17 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "mshift.h"
 #include "xvgr.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "rmpbc.h"
 #include "physics.h"
 #include "nrjac.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
 
@@ -591,7 +592,7 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
 int gmx_traj(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_traj[tt] plots coordinates, velocities, forces and/or the box.",
+        "[THISMODULE] plots coordinates, velocities, forces and/or the box.",
         "With [TT]-com[tt] the coordinates, velocities and forces are",
         "calculated for the center of mass of each group.",
         "When [TT]-mol[tt] is set, the numbers in the index file are",

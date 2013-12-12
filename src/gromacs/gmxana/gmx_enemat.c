@@ -43,16 +43,17 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "smalloc.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "statutil.h"
 #include "names.h"
 #include "macros.h"
 #include "xvgr.h"
 #include "gstat.h"
 #include "physics.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "strdb.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 static int search_str2(int nstr, char **str, char *key)
@@ -79,7 +80,7 @@ static int search_str2(int nstr, char **str, char *key)
 int gmx_enemat(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_enemat[tt] extracts an energy matrix from the energy file ([TT]-f[tt]).",
+        "[THISMODULE] extracts an energy matrix from the energy file ([TT]-f[tt]).",
         "With [TT]-groups[tt] a file must be supplied with on each",
         "line a group of atoms to be used. For these groups matrix of",
         "interaction energies will be extracted from the energy file",
@@ -90,7 +91,7 @@ int gmx_enemat(int argc, char *argv[])
         "[TT]SOL[tt][BR]",
         "then energy groups with names like 'Coul-SR:Protein-SOL' and ",
         "'LJ:Protein-SOL' are expected in the energy file (although",
-        "[TT]g_enemat[tt] is most useful if many groups are analyzed",
+        "[THISMODULE] is most useful if many groups are analyzed",
         "simultaneously). Matrices for different energy types are written",
         "out separately, as controlled by the",
         "[TT]-[no]coul[tt], [TT]-[no]coulr[tt], [TT]-[no]coul14[tt], ",

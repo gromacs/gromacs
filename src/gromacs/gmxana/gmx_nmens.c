@@ -46,11 +46,12 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "pdbio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "txtdump.h"
 #include "physics.h"
 #include "random.h"
@@ -61,7 +62,7 @@
 int gmx_nmens(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[TT]g_nmens[tt] generates an ensemble around an average structure",
+        "[THISMODULE] generates an ensemble around an average structure",
         "in a subspace that is defined by a set of normal modes (eigenvectors).",
         "The eigenvectors are assumed to be mass-weighted.",
         "The position along each eigenvector is randomly taken from a Gaussian",

@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <ctype.h>
 #include "maths.h"
 #include "macros.h"
@@ -47,7 +48,10 @@
 #include "smalloc.h"
 #include "strdb.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/utility/init.h"
 #include "physics.h"
 #include "statutil.h"
 #include "vec.h"
@@ -56,9 +60,7 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-#include "filenm.h"
 #include "pbc.h"
-#include "pdbio.h"
 #include "vec.h"
 #include "gmx_random.h"
 #include "gromacs/coulombintegrals.h"
@@ -127,7 +129,7 @@ static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
     }
 }
 
-int main(int argc, char *argv[])
+int alex_gentop(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "gentop generates a topology from molecular coordinates",
@@ -164,14 +166,13 @@ int main(int argc, char *argv[])
     output_env_t                     oenv;
     gmx_atomprop_t                   aps;
     gmx_poldata_t                    pd;
-    int                              ePBC;
     gmx_bool                         bRTP, bTOP;
     char                             forcefield[STRLEN], ffdir[STRLEN];
     char                             ffname[STRLEN], gentopdat[STRLEN];
     std::vector<alexandria::MolProp> mps;
     alexandria::MolPropIterator      mpi;
     alexandria::MyMol                mymol;
-    immStatus       imm;
+    immStatus                        imm;
 
     t_filenm        fnm[] = {
         { efSTX, "-f",    "conf", ffOPTRD },
@@ -212,7 +213,7 @@ int main(int argc, char *argv[])
     static gmx_bool    bRemoveDih    = FALSE, bQsym = TRUE, bZatype = TRUE, bFitCube = FALSE;
     static gmx_bool    bParam        = FALSE, bH14 = TRUE, bRound = TRUE, bITP, bAddShells = FALSE;
     static gmx_bool    bPairs        = TRUE, bPBC = TRUE;
-    static gmx_bool    bUsePDBcharge = FALSE, bVerbose = FALSE, bAXpRESP = FALSE;
+    static gmx_bool    bUsePDBcharge = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
     static gmx_bool    bCONECT       = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = TRUE, bEntropy = FALSE;
     static gmx_bool    bGenVSites    = FALSE, bSkipVSites = TRUE;
     static char       *molnm         = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
@@ -348,15 +349,16 @@ int main(int argc, char *argv[])
         { "-kp",    FALSE, etREAL, {&kp},
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" }
     };
-
+    
     parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                       asize(desc), desc, asize(bugs), bugs, &oenv);
+    printf("argc = %d\n", argc);
 
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
               forcefield, sizeof(forcefield),
               ffdir, sizeof(ffdir));
-
+    
     if (strlen(forcefield) > 0)
     {
         strcpy(ffname, forcefield);
@@ -420,8 +422,6 @@ int main(int argc, char *argv[])
                gmx_poldata_get_natypes(pd));
     }
 
-    ePBC = epbcNONE;
-
     if (strlen(dbname) > 0)
     {
         if (bVerbose)
@@ -456,7 +456,10 @@ int main(int argc, char *argv[])
         {
             fn = opt2fn("-f", NFILE, fnm);
         }
-
+        if (bVerbose)
+        {
+            printf("Will read (gaussian) file %s\n", fn);
+        }
         ReadGauss(fn, mp, gap, bBabel, aps, pd, molnm, iupac, conf, basis,
                   maxpot, bVerbose, gmx_poldata_get_force_field(pd));
         mps.push_back(mp);
@@ -469,13 +472,13 @@ int main(int argc, char *argv[])
     mymol.SetForceField(forcefield);
 
     imm = mymol.GenerateTopology(aps, pd, lot, iModel, bAddShells, nexcl);
-    if (0 == seed)
-    {
-        seed = gmx_rng_make_seed();
-    }
     
     if (immOK == imm)
     {
+        if (0 == seed)
+        {
+            seed = gmx_rng_make_seed();
+        }
         mymol.gr_ = gmx_resp_init(iModel, bAXpRESP, qweight, bhyper, mymol.GetCharge(),
                                   zmin, zmax, delta_z,
                                   bZatype, watoms, rDecrZeta, bRandZeta, bRandQ,
@@ -538,7 +541,8 @@ int main(int argc, char *argv[])
     }
     else
     {
-        printf("\nWARNING: %s ended prematurely due to \"%s\"\n", ShortProgram(), alexandria::immsg(imm));
+        printf("\nWARNING: %s ended prematurely due to \"%s\"\n", 
+               ShortProgram(), alexandria::immsg(imm));
     }
 
     return 0;

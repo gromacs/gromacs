@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
@@ -43,14 +45,15 @@
 #include "main.h"
 #include "macros.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
 #include "names.h"
-#include "tpxio.h"
-#include "enxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "mtop_util.h"
 #include "string2.h"
 
@@ -650,7 +653,7 @@ static void cmp_adress(FILE *fp, t_adress *ad1, t_adress *ad2,
     cmp_real(fp, "ir->adress->ex_forcecap", -1, ad1->ex_forcecap, ad2->ex_forcecap, ftol, abstol);
 }
 
-static void cmp_pull(FILE *fp, t_pull *pull1, t_pull *pull2, real ftol, real abstol)
+static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
 }
@@ -790,7 +793,7 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_int(fp, "refcoord_scaling", -1, ir1->refcoord_scaling, ir2->refcoord_scaling);
     cmp_rvec(fp, "inputrec->posres_com", -1, ir1->posres_com, ir2->posres_com, ftol, abstol);
     cmp_rvec(fp, "inputrec->posres_comB", -1, ir1->posres_comB, ir2->posres_comB, ftol, abstol);
-    cmp_real(fp, "inputrec->verletbuf_drift", -1, ir1->verletbuf_drift, ir2->verletbuf_drift, ftol, abstol);
+    cmp_real(fp, "inputrec->verletbuf_tol", -1, ir1->verletbuf_tol, ir2->verletbuf_tol, ftol, abstol);
     cmp_real(fp, "inputrec->rlist", -1, ir1->rlist, ir2->rlist, ftol, abstol);
     cmp_real(fp, "inputrec->rlistlong", -1, ir1->rlistlong, ir2->rlistlong, ftol, abstol);
     cmp_int(fp, "inputrec->nstcalclr", -1, ir1->nstcalclr, ir2->nstcalclr);
@@ -843,7 +846,7 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_int(fp, "inputrec->ePull", -1, ir1->ePull, ir2->ePull);
     if (ir1->ePull == ir2->ePull && ir1->ePull != epullNO)
     {
-        cmp_pull(fp, ir1->pull, ir2->pull, ftol, abstol);
+        cmp_pull(fp);
     }
 
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
@@ -897,10 +900,10 @@ static void comp_pull_AB(FILE *fp, t_pull *pull, real ftol, real abstol)
 {
     int i;
 
-    for (i = 0; i < pull->ngrp+1; i++)
+    for (i = 0; i < pull->ncoord; i++)
     {
-        fprintf(fp, "comparing pull group %d\n", i);
-        cmp_real(fp, "pullgrp->k", -1, pull->grp[i].k, pull->grp[i].kB, ftol, abstol);
+        fprintf(fp, "comparing pull coord %d\n", i);
+        cmp_real(fp, "pull-coord->k", -1, pull->coord[i].k, pull->coord[i].kB, ftol, abstol);
     }
 }
 
@@ -1189,7 +1192,7 @@ static gmx_bool enernm_equal(const char *nm1, const char *nm2)
 
 static void cmp_energies(FILE *fp, int step1, int step2,
                          t_energy e1[], t_energy e2[],
-                         gmx_enxnm_t *enm1, gmx_enxnm_t *enm2,
+                         gmx_enxnm_t *enm1,
                          real ftol, real abstol,
                          int nre, int *ind1, int *ind2, int maxener)
 {
@@ -1470,7 +1473,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
             if ((fr1->nre >= nre) && (fr2->nre >= nre))
             {
                 cmp_energies(stdout, fr1->step, fr1->step, fr1->ener, fr2->ener,
-                             enm1, enm2, ftol, abstol, nre, ind1, ind2, maxener);
+                             enm1, ftol, abstol, nre, ind1, ind2, maxener);
             }
             /*cmp_disres(fr1,fr2,ftol,abstol);*/
             cmp_eblocks(fr1, fr2, ftol, abstol);

@@ -41,6 +41,7 @@
 #include <string.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "string2.h"
@@ -48,7 +49,6 @@
 #include "smalloc.h"
 #include "poldata_xml.hpp"
 #include "xml_util.h"
-#include "futil.h"
 
 extern int xmlDoValidityCheckingDefaultValue;
 	
@@ -366,7 +366,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
 
 }
 
-static void process_tree(FILE *fp,xmlNodePtr tree,int parent,int indent,
+static void process_tree(FILE *fp,xmlNodePtr tree,int indent,
                          gmx_poldata_t pd,gmx_atomprop_t aps)
 {
     int elem;
@@ -397,7 +397,7 @@ static void process_tree(FILE *fp,xmlNodePtr tree,int parent,int indent,
                     process_attr(fp,tree->properties,elem,indent+2,pd);
                 
                 if (tree->children)
-                    process_tree(fp,tree->children,elem,indent+2,pd,aps);
+                    process_tree(fp,tree->children,indent+2,pd,aps);
             }
         }
         tree = tree->next;
@@ -427,7 +427,7 @@ gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps)
     }
     pd = gmx_poldata_init();
     gmx_poldata_set_filename(pd,fn2);
-    process_tree(debug,doc->children,0,0,pd,aps);
+    process_tree(debug,doc->children,0,pd,aps);
 
     xmlFreeDoc(doc);
   

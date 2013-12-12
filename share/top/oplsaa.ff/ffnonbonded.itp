@@ -821,7 +821,7 @@
  MNH2       MNH2    0	0.00000     0.000       A    0.00000e+00  0.00000e+00
  MCH3A      MCH3A   0	0.00000     0.000       A    0.00000e+00  0.00000e+00
  MCH3B      MCH3B   0	0.00000     0.000       A    0.00000e+00  0.00000e+00
- MW         MW      0	0.00000     0.000       A    0.00000e+00  0.00000e+00
+ MW         MW      0	0.00000     0.000       D    0.00000e+00  0.00000e+00
 ; These ion atomtypes are NOT part of OPLS, but since they are
 ; needed for some proteins.
  Cu2+       Cu2+   29	63.54600     2.000       A    2.08470e-01  4.76976e+00

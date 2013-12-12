@@ -23,7 +23,7 @@
    fun:malloc
    fun:ompi_proc_all
    ...
-   fun:gmx_finalize_par
+   fun:_ZN3gmx8finalizeEv
 }
 {
    MPI_Init/Addr4
@@ -150,6 +150,13 @@
    Memcheck:Leak
    ...
    fun:__svfscanf_l
+}
+
+{
+    localtime
+    Memcheck:Leak
+    ...
+    fun:localtime
 }
 
 {

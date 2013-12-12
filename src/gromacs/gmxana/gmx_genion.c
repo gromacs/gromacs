@@ -40,16 +40,16 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "statutil.h"
 #include "pbc.h"
 #include "force.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "maths.h"
 #include "macros.h"
 #include "vec.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "mdrun.h"
 #include "main.h"
 #include "random.h"
@@ -345,7 +345,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
 int gmx_genion(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]genion[tt] randomly replaces solvent molecules with monoatomic ions.",
+        "[THISMODULE] randomly replaces solvent molecules with monoatomic ions.",
         "The group of solvent molecules should be continuous and all molecules",
         "should have the same number of atoms.",
         "The user should add the ion molecules to the topology file or use",
@@ -357,7 +357,7 @@ int gmx_genion(int argc, char *argv[])
         "either by hand or with [TT]-p[tt]. Do not use an atom name instead!",
         "[PAR]Ions which can have multiple charge states get the multiplicity",
         "added, without sign, for the uncommon states only.[PAR]",
-        "For larger ions, e.g. sulfate we recommended using [TT]genbox[tt]."
+        "For larger ions, e.g. sulfate we recommended using [gmx-genbox]."
     };
     const char        *bugs[] = {
         "If you specify a salt concentration existing ions are not taken into "

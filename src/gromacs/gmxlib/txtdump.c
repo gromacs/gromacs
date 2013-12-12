@@ -1,47 +1,44 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 /* This file is completely threadsafe - please keep it that way! */
-#ifdef GMX_THREAD_MPI
-#include <thread_mpi.h>
-#endif
-
 
 #include <stdio.h>
 #include "smalloc.h"
@@ -548,19 +545,28 @@ static void pr_cosine(FILE *fp, int indent, const char *title, t_cosines *cos,
 #define PR(t, s) pr_real(fp, indent, t, s)
 #define PD(t, s) pr_double(fp, indent, t, s)
 
-static void pr_pullgrp(FILE *fp, int indent, int g, t_pullgrp *pg)
+static void pr_pull_group(FILE *fp, int indent, int g, t_pull_group *pgrp)
 {
     pr_indent(fp, indent);
     fprintf(fp, "pull-group %d:\n", g);
     indent += 2;
-    pr_ivec_block(fp, indent, "atom", pg->ind, pg->nat, TRUE);
-    pr_rvec(fp, indent, "weight", pg->weight, pg->nweight, TRUE);
-    PI("pbcatom", pg->pbcatom);
-    pr_rvec(fp, indent, "vec", pg->vec, DIM, TRUE);
-    pr_rvec(fp, indent, "init", pg->init, DIM, TRUE);
-    PR("rate", pg->rate);
-    PR("k", pg->k);
-    PR("kB", pg->kB);
+    pr_ivec_block(fp, indent, "atom", pgrp->ind, pgrp->nat, TRUE);
+    pr_rvec(fp, indent, "weight", pgrp->weight, pgrp->nweight, TRUE);
+    PI("pbcatom", pgrp->pbcatom);
+}
+
+static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
+{
+    pr_indent(fp, indent);
+    fprintf(fp, "pull-coord %d:\n", c);
+    PI("group[0]", pcrd->group[0]);
+    PI("group[1]", pcrd->group[1]);
+    pr_rvec(fp, indent, "origin", pcrd->origin, DIM, TRUE);
+    pr_rvec(fp, indent, "vec", pcrd->vec, DIM, TRUE);
+    PR("init", pcrd->init);
+    PR("rate", pcrd->rate);
+    PR("k", pcrd->k);
+    PR("kB", pcrd->kB);
 }
 
 static void pr_simtempvals(FILE *fp, int indent, t_simtemp *simtemp, int n_lambda)
@@ -681,12 +687,18 @@ static void pr_pull(FILE *fp, int indent, t_pull *pull)
     PR("pull-r1", pull->cyl_r1);
     PR("pull-r0", pull->cyl_r0);
     PR("pull-constr-tol", pull->constr_tol);
+    PS("pull-bPrintRef", EBOOL(pull->bPrintRef));
     PI("pull-nstxout", pull->nstxout);
     PI("pull-nstfout", pull->nstfout);
-    PI("pull-ngrp", pull->ngrp);
-    for (g = 0; g < pull->ngrp+1; g++)
+    PI("pull-ngroup", pull->ngroup);
+    for (g = 0; g < pull->ngroup; g++)
     {
-        pr_pullgrp(fp, indent, g, &pull->grp[g]);
+        pr_pull_group(fp, indent, g, &pull->group[g]);
+    }
+    PI("pull-ncoord", pull->ncoord);
+    for (g = 0; g < pull->ncoord; g++)
+    {
+        pr_pull_coord(fp, indent, g, &pull->coord[g]);
     }
 }
 
@@ -762,9 +774,11 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PI("nkz", ir->nkz);
         PI("pme-order", ir->pme_order);
         PR("ewald-rtol", ir->ewald_rtol);
+        PR("ewald-rtol-lj", ir->ewald_rtol_lj);
         PR("ewald-geometry", ir->ewald_geometry);
         PR("epsilon-surface", ir->epsilon_surface);
         PS("optimize-fft", EBOOL(ir->bOptFFT));
+        PS("lj-pme-comb-rule", ELJPMECOMBNAMES(ir->ljpme_combination_rule));
         PS("ePBC", EPBC(ir->ePBC));
         PS("bPeriodicMols", EBOOL(ir->bPeriodicMols));
         PS("bContinuation", EBOOL(ir->bContinuation));
@@ -797,7 +811,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         {
             pr_rvec(fp, indent, "posres-comB", ir->posres_comB, DIM, TRUE);
         }
-        PR("verlet-buffer-drift", ir->verletbuf_drift);
+        PR("verlet-buffer-tolerance", ir->verletbuf_tol);
         PR("rlist", ir->rlist);
         PR("rlistlong", ir->rlistlong);
         PR("nstcalclr", ir->nstcalclr);

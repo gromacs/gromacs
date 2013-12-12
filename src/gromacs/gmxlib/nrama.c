@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "random.h"
 #include "bondf.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "nrama.h"
 #include "rmpbc.h"

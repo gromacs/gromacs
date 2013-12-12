@@ -40,8 +40,8 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-#include "pdbio.h"
-#include "confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -55,7 +55,8 @@
 #include "strdb.h"
 #include "physics.h"
 #include "atomprop.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "pbc.h"
 #include "princ.h"
 #include "txtdump.h"
@@ -523,10 +524,9 @@ static void renum_resnr(t_atoms *atoms, int isize, const int *index,
 
 int gmx_editconf(int argc, char *argv[])
 {
-    const char
-                   *desc[] =
+    const char     *desc[] =
     {
-        "[TT]editconf[tt] converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
+        "[THISMODULE] converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
         "or [TT].pdb[tt].",
         "[PAR]",
         "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
@@ -609,13 +609,13 @@ int gmx_editconf(int argc, char *argv[])
         "[PAR]",
         "To convert a truncated octrahedron file produced by a package which uses",
         "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
-        "[TT]editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
+        "[TT]gmx editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
         "where [TT]veclen[tt] is the size of the cubic box times [SQRT]3[sqrt]/2."
     };
     const char     *bugs[] =
     {
         "For complex molecules, the periodicity removal routine may break down, "
-        "in that case you can use [TT]trjconv[tt]."
+        "in that case you can use [gmx-trjconv]."
     };
     static real     dist    = 0.0, rbox = 0.0, to_diam = 0.0;
     static gmx_bool bNDEF   = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =

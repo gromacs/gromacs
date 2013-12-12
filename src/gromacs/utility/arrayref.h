@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -70,6 +70,11 @@ namespace gmx
  *  - Copying objects of this type is cheap, and the copies behave identically
  *    to the original object: the copy references the same set of values.
  *
+ * This class is useful for writing wrappers that expose a different view of
+ * the internal data stored as a single vector/array.
+ *
+ * Methods in this class do not throw, except where indicated.
+ *
  * \inpublicapi
  * \ingroup module_utility
  */
@@ -118,10 +123,10 @@ class ConstArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a particular rangein a std::vector.
+         * Constructs a reference to a particular range in a std::vector.
          *
-         * \param[in] begin  Pointer to the beginning of a range.
-         * \param[in] end    Pointer to the end of a range.
+         * \param[in] begin  Iterator to the beginning of a range.
+         * \param[in] end    Iterator to the end of a range.
          *
          * The referenced vector must remain valid and not be reallocated for
          * the lifetime of this object.
@@ -203,6 +208,8 @@ class ConstArrayRef
  * Simple swap method for ConstArrayRef objects.
  *
  * \see ConstArrayRef::swap()
+ *
+ * \ingroup module_utility
  */
 template <typename T>
 void swap(ConstArrayRef<T> &a, ConstArrayRef<T> &b)

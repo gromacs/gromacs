@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GRoups of Organic Molecules in ACtion for Science
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 
@@ -98,6 +100,7 @@ enum {
     F_COUL_LR,
     F_RF_EXCL,
     F_COUL_RECIP,
+    F_LJ_RECIP,
     F_DPD,
     F_POLARIZATION,
     F_WATER_POL,
@@ -351,6 +354,9 @@ typedef struct
 
     t_ilist     il[F_NRE];
     int         ilsort;
+    int         nthreads;
+    int        *il_thread_division;
+    int         il_thread_division_nalloc;
 } t_idef;
 
 /*
@@ -383,6 +389,17 @@ typedef struct
  *   t_ilist il[F_NRE]
  *      The list of interactions for each type. Note that some,
  *      such as LJ and COUL will have 0 entries.
+ *   int ilsort
+ *      The state of the sorting of il, values are provided above.
+ *   int nthreads
+ *      The number of threads used to set il_thread_division.
+ *   int *il_thread_division
+ *      The division of the normal bonded interactions of threads.
+ *      il_thread_division[ftype*(nthreads+1)+t] contains an index
+ *      into il[ftype].iatoms; thread th operates on t=th to t=th+1.
+ *   int il_thread_division_nalloc
+ *      The allocated size of il_thread_division,
+ *      should be at least F_NRE*(nthreads+1).
  */
 
 typedef struct {

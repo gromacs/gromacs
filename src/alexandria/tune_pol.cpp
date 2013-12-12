@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "maths.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"
@@ -119,12 +119,11 @@ int check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
     return nrownew;
 }
 
-static int decompose_frag(FILE *fp, int bTrain,
+static int decompose_frag(FILE *fp,
                           gmx_poldata_t pd,
                           std::vector<alexandria::MolProp> &mp,
                           gmx_bool bQM, char *lot, int mindata, gmx_molselect_t gms,
-                          real sigma, gmx_bool bZero, gmx_bool bForceFit,
-                          char *pol_type)
+                          real sigma, gmx_bool bZero, gmx_bool bForceFit)
 {
     FILE    *csv;
     double  *x, *atx;
@@ -475,7 +474,7 @@ static int decompose_frag(FILE *fp, int bTrain,
     return ntest[cur];
 }
 
-int main(int argc, char *argv[])
+int alex_tune_pol(int argc, char *argv[])
 {
     static const char               *desc[] =
     {
@@ -507,8 +506,6 @@ int main(int argc, char *argv[])
     static gmx_bool                  bQM      = FALSE;
     static int                       mindata  = 1;
     static char                     *lot      = (char *)"B3LYP/aug-cc-pVTZ";
-    static char                     *pol_type = (char *)"electronic";
-    static real                      th_toler = 170, ph_toler = 5;
     static real                      sigma    = 0;
     static gmx_bool                  bZero    = FALSE, bForceFit = FALSE, bCompress = TRUE;
     t_pargs                          pa[]     =
@@ -519,8 +516,6 @@ int main(int argc, char *argv[])
           "Use QM data for optimizing the empirical polarizabilities as well." },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory" },
-        { "-pol_type",    FALSE, etSTR,  {&pol_type},
-          "Use this polarization type for reference" },
         { "-mindata", FALSE, etINT, {&mindata},
           "Minimum number of data points to optimize a polarizability value" },
         { "-sigma",  FALSE, etREAL, {&sigma},
@@ -529,10 +524,6 @@ int main(int argc, char *argv[])
           "Use a zero term (like in Bosque and Sales)" },
         { "-force",   FALSE, etBOOL, {&bForceFit},
           "Reset all polarizablities to zero in order to re-optimize based on a gentop.dat file with previous values" },
-        { "-th_toler", FALSE, etREAL, {&th_toler},
-          "If bond angles are larger than this value the group will be treated as a linear one and a virtual site will be created to keep the group linear" },
-        { "-ph_toler", FALSE, etREAL, {&ph_toler},
-          "If dihedral angles are less than this (in absolute value) the atoms will be treated as a planar group with an improper dihedral being added to keep the group planar" },
         { "-compress", FALSE, etBOOL, {&bCompress},
           "Compress output XML files" }
     };
@@ -558,16 +549,16 @@ int main(int argc, char *argv[])
         gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
     }
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    merge_xml(nfiles, fns, mp, NULL, NULL, (char *)"double_dip.dat", ap, pd,
-              TRUE, TRUE, th_toler, ph_toler);
+    merge_xml(nfiles, fns, mp, NULL, NULL, (char *)"double_dip.dat", ap, pd, TRUE);
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         mpi->CheckConsistency();
     }
     gms                = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
-    nalexandria_atypes = decompose_frag(debug, 0, pd, mp, bQM, lot, mindata,
-                                        gms, sigma, bZero, bForceFit, pol_type);
-
+    nalexandria_atypes = decompose_frag(debug, pd, mp, bQM, lot, mindata,
+                                        gms, sigma, bZero, bForceFit);
+    printf("There are %d alexandria atom types\n", nalexandria_atypes);
+    
     mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort", npa, pa))
     {
@@ -585,6 +576,7 @@ int main(int argc, char *argv[])
         MolPropSort(mp, mpsa, ap, NULL);
     }
     gmx_poldata_write(opt2fn("-do", NFILE, fnm), pd, bCompress);
+    
     MolPropWrite(opt2fn("-o", NFILE, fnm), mp, bCompress);
 
     return 0;

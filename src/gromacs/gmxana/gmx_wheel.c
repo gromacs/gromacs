@@ -48,7 +48,7 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "strdb.h"
 #include "statutil.h"
 #include "pbc.h"
@@ -220,7 +220,7 @@ void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
 int gmx_wheel(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_wheel[tt] plots a helical wheel representation of your sequence.",
+        "[THISMODULE] plots a helical wheel representation of your sequence.",
         "The input sequence is in the [TT].dat[tt] file where the first line contains",
         "the number of residues and each consecutive line contains a residue "
         "name."

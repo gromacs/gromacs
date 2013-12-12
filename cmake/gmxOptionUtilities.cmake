@@ -2,9 +2,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2013, by the GROMACS development team, led by
-# David van der Spoel, Berk Hess, Erik Lindahl, and including many
-# others, as listed in the AUTHORS file in the top-level source
-# directory and at http://www.gromacs.org.
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -32,7 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-#
 # Helper functions for managing more complex options
 #
 
@@ -87,4 +86,91 @@ endfunction()
 # Convenience function for reporting a fatal error for an invalid input value
 function(GMX_INVALID_OPTION_VALUE NAME)
     message(FATAL_ERROR "Invalid value for ${NAME}: ${${NAME}}")
+endfunction()
+
+# Hides or shows a cache value based on conditions
+#
+# Usage:
+#   gmx_add_cache_dependency(VAR TYPE CONDITIONS VALUE)
+# where
+#   VAR        is a name of a cached variable
+#   TYPE       is the type of VAR
+#   CONDITIONS is a list of conditional expressions (see below)
+#   VALUE      is a value that is set to VAR if CONDITIONS is not satisfied
+#
+# Evaluates each condition in CONDITIONS, and if any of them is false,
+# VAR is marked internal (hiding it from the user) and its value is set to
+# VALUE.  The previous user-set value of VAR is still remembered in the cache,
+# and used when CONDITIONS become true again.
+#
+# The conditions is a semicolon-separated list of conditions as specified for
+# CMake if() statements, such as "GMX_FFT_LIBRARY STREQUAL FFTW3",
+# "NOT GMX_MPI" or "GMX_MPI;NOT GMX_DOUBLE".  Note that quotes within the
+# expressions don't work for some reason (even if escaped).
+#
+# The logic is adapted from cmake_dependent_option().
+#
+function(GMX_ADD_CACHE_DEPENDENCY NAME TYPE CONDITIONS FORCED_VALUE)
+    set(_available TRUE)
+    foreach(_cond ${CONDITIONS})
+        string(REGEX REPLACE " +" ";" _cond_as_list ${_cond})
+        if (${_cond_as_list})
+        else()
+            set(_available FALSE)
+        endif()
+    endforeach()
+    if (_available)
+        set_property(CACHE ${NAME} PROPERTY TYPE ${TYPE})
+    else()
+        set(${NAME} "${FORCED_VALUE}" PARENT_SCOPE)
+        set_property(CACHE ${NAME} PROPERTY TYPE INTERNAL)
+    endif()
+endfunction()
+
+# Works like cmake_dependent_option(), but allows for an arbitrary cache value
+# instead of only an ON/OFF option
+#
+# Usage:
+#   gmx_dependent_cache_variable(VAR "Description" TYPE DEFAULT CONDITIONS)
+#
+# Creates a cache variable VAR with the given description, type and default
+# value.  If any of the conditions listed in CONDITIONS is not true, then
+# the cache variable is marked internal (hiding it from the user) and the
+# value of VAR is set to DEFAULT.  The previous user-set value of VAR is still
+# remembered in the cache, and used when CONDITIONS become true again.
+# Any further changes to the variable can be done with simple set()
+# (or set_property(CACHE VAR PROPERTY VALUE ...) if the cache needs to be
+# modified).
+#
+# See gmx_add_cache_dependency() on how to specify the conditions.
+#
+macro(GMX_DEPENDENT_CACHE_VARIABLE NAME DESCRIPTION TYPE DEFAULT CONDITIONS)
+    set(${NAME} "${DEFAULT}" CACHE ${TYPE} "${DESCRIPTION}")
+    gmx_add_cache_dependency(${NAME} ${TYPE} "${CONDITIONS}" "${DEFAULT}")
+endmacro()
+
+# Works like cmake_dependent_option(), but reuses the code from
+# gmx_dependent_cache_variable() to make sure both behave the same way.
+macro(GMX_DEPENDENT_OPTION NAME DESCRIPTION DEFAULT CONDITIONS)
+    gmx_dependent_cache_variable(${NAME} "${DESCRIPTION}" BOOL "${DEFAULT}" "${CONDITIONS}")
+endmacro()
+
+# Checks if one or more cache variables have changed
+#
+# Usage:
+#   gmx_check_if_changed(RESULT VAR1 VAR2 ... VARN)
+#
+# Sets RESULT to true if any of the given cache variables VAR1 ... VARN has
+# changes since the last call to this function for that variable.
+# Changes are tracked also across CMake runs.
+function(GMX_CHECK_IF_CHANGED RESULT)
+    set(_result FALSE)
+    foreach (_var ${ARGN})
+        if (NOT "${_var}" STREQUAL "${_var}_PREVIOUS_VALUE")
+            set(_result TRUE)
+        endif()
+        set(${_var}_PREVIOUS_VALUE "${${_var}}" CACHE INTERNAL
+            "Previous value of ${_var} for change tracking")
+    endforeach()
+    set(${RESULT} ${_result} PARENT_SCOPE)
 endfunction()

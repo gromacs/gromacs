@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -238,7 +239,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_error(wi, "rvdw should be >= 0");
     }
     if (ir->rlist < 0 &&
-        !(ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0))
+        !(ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0))
     {
         warning_error(wi, "rlist should be >= 0");
     }
@@ -324,11 +325,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         rc_max = max(ir->rvdw, ir->rcoulomb);
 
-        if (ir->verletbuf_drift <= 0)
+        if (ir->verletbuf_tol <= 0)
         {
-            if (ir->verletbuf_drift == 0)
+            if (ir->verletbuf_tol == 0)
             {
-                warning_error(wi, "Can not have an energy drift of exactly 0");
+                warning_error(wi, "Can not have Verlet buffer tolerance of exactly 0");
             }
 
             if (ir->rlist < rc_max)
@@ -345,7 +346,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             if (ir->rlist > rc_max)
             {
-                warning_note(wi, "You have set rlist larger than the interaction cut-off, but you also have verlet-buffer-drift > 0. Will set rlist using verlet-buffer-drift.");
+                warning_note(wi, "You have set rlist larger than the interaction cut-off, but you also have verlet-buffer-tolerance > 0. Will set rlist using verlet-buffer-tolerance.");
             }
 
             if (ir->nstlist == 1)
@@ -359,12 +360,12 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 {
                     if (EI_MD(ir->eI) && ir->etc == etcNO)
                     {
-                        warning_error(wi, "Temperature coupling is required for calculating rlist using the energy drift with verlet-buffer-drift > 0. Either use temperature coupling or set rlist yourself together with verlet-buffer-drift = -1.");
+                        warning_error(wi, "Temperature coupling is required for calculating rlist using the energy tolerance with verlet-buffer-tolerance > 0. Either use temperature coupling or set rlist yourself together with verlet-buffer-tolerance = -1.");
                     }
 
                     if (inputrec2nboundeddim(ir) < 3)
                     {
-                        warning_error(wi, "The box volume is required for calculating rlist from the energy drift with verlet-buffer-drift > 0. You are using at least one unbounded dimension, so no volume can be computed. Either use a finite box, or set rlist yourself together with verlet-buffer-drift = -1.");
+                        warning_error(wi, "The box volume is required for calculating rlist from the energy drift with verlet-buffer-tolerance > 0. You are using at least one unbounded dimension, so no volume can be computed. Either use a finite box, or set rlist yourself together with verlet-buffer-tolerance = -1.");
                     }
                     /* Set rlist temporarily so we can continue processing */
                     ir->rlist = rc_max;
@@ -590,6 +591,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         sprintf(err_buf, "Can't use postive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
+
+        sprintf(err_buf, "Can only use expanded ensemble with md-vv for now; should be supported for other integrators in 5.0");
+        CHECK(!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED));
 
         sprintf(err_buf, "Free-energy not implemented for Ewald");
         CHECK(ir->coulombtype == eelEWALD);
@@ -1123,7 +1127,24 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    if (EEL_PME(ir->coulombtype))
+    if (EVDW_PME(ir->vdwtype))
+    {
+        if (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype))
+        {
+            sprintf(err_buf, "With vdwtype = %s, rvdw must be <= rlist",
+                    evdw_names[ir->vdwtype]);
+            CHECK(ir->rvdw > ir->rlist);
+        }
+        else
+        {
+            sprintf(err_buf,
+                    "With vdwtype = %s, rvdw must be equal to rlist\n",
+                    evdw_names[ir->vdwtype]);
+            CHECK(ir->rvdw != ir->rlist);
+        }
+    }
+
+    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         if (ir->pme_order < 3)
         {
@@ -1520,17 +1541,12 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     parse_n_real(weights, &nweights, &(expand->init_lambda_weights));
     if (nweights == 0)
     {
-        expand->bInit_weights = FALSE;
         snew(expand->init_lambda_weights, fep->n_lambda); /* initialize to zero */
     }
     else if (nweights != fep->n_lambda)
     {
         gmx_fatal(FARGS, "Number of weights (%d) is not equal to number of lambda values (%d)",
                   nweights, fep->n_lambda);
-    }
-    else
-    {
-        expand->bInit_weights = TRUE;
     }
     if ((expand->nstexpanded < 0) && (ir->efep != efepNO))
     {
@@ -1697,6 +1713,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
     REPL_TYPE("foreign-lambda", "fep-lambdas");
+    REPL_TYPE("verlet-buffer-drift", "verlet-buffer-tolerance");
 
     CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
     CTYPE ("Preprocessor information: use cpp syntax.");
@@ -1765,7 +1782,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* Neighbor searching */
     CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
-    CTYPE ("cut-off scheme (group: using charge groups, Verlet: particle based cut-offs)");
+    CTYPE ("cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)");
     EETYPE("cutoff-scheme",     ir->cutoff_scheme,    ecutscheme_names);
     CTYPE ("nblist update frequency");
     ITYPE ("nstlist", ir->nstlist,    10);
@@ -1776,9 +1793,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Periodic boundary conditions: xyz, no, xy");
     EETYPE("pbc",         ir->ePBC,       epbc_names);
     EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
-    CTYPE ("Allowed energy drift due to the Verlet buffer in kJ/mol/ps per atom,");
+    CTYPE ("Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
     CTYPE ("a value of -1 means: use rlist");
-    RTYPE("verlet-buffer-drift", ir->verletbuf_drift,    0.005);
+    RTYPE("verlet-buffer-tolerance", ir->verletbuf_tol,    0.005);
     CTYPE ("nblist cut-off");
     RTYPE ("rlist",   ir->rlist,  1.0);
     CTYPE ("long-range cut-off for switched potentials");
@@ -1817,6 +1834,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("EWALD/PME/PPPM parameters");
     ITYPE ("pme-order",   ir->pme_order,   4);
     RTYPE ("ewald-rtol",  ir->ewald_rtol, 0.00001);
+    RTYPE ("ewald-rtol-lj", ir->ewald_rtol_lj, 0.001);
+    EETYPE("lj-pme-comb-rule", ir->ljpme_combination_rule, eljpme_names);
     EETYPE("ewald-geometry", ir->ewald_geometry, eewg_names);
     RTYPE ("epsilon-surface", ir->epsilon_surface, 0.0);
     EETYPE("optimize-fft", ir->bOptFFT,  yesno_names);
@@ -2288,7 +2307,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     sfree(dumstr[1]);
 }
 
-static int search_QMstring(char *s, int ng, const char *gn[])
+static int search_QMstring(const char *s, int ng, const char *gn[])
 {
     /* same as normal search_string, but this one searches QM strings */
     int i;
@@ -2307,8 +2326,8 @@ static int search_QMstring(char *s, int ng, const char *gn[])
 
 } /* search_QMstring */
 
-
-int search_string(char *s, int ng, char *gn[])
+/* We would like gn to be const as well, but C doesn't allow this */
+int search_string(const char *s, int ng, char *gn[])
 {
     int i;
 
@@ -2478,7 +2497,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     t_grpopts              *opts;
     gmx_groups_t           *groups;
     t_pull                 *pull;
-    int                     natoms, ai, aj, i, j, d, g, imin, jmin, nc;
+    int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     t_iatom                *ia;
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, n_sub = 0;
@@ -2622,42 +2641,33 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
          * to determine the optimal nrdf assignment.
          */
         pull = ir->pull;
-        if (pull->eGeom == epullgPOS)
+
+        for (i = 0; i < pull->ncoord; i++)
         {
-            nc = 0;
-            for (i = 0; i < DIM; i++)
+            imin = 1;
+
+            for (j = 0; j < 2; j++)
             {
-                if (pull->dim[i])
+                const t_pull_group *pgrp;
+
+                pgrp = &pull->group[pull->coord[i].group[j]];
+
+                if (pgrp->nat > 0)
                 {
-                    nc++;
+                    /* Subtract 1/2 dof from each group */
+                    ai = pgrp->ind[0];
+                    nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
+                    nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
+                    if (nrdf_tc[ggrpnr(groups, egcTC, ai)] < 0)
+                    {
+                        gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[ggrpnr(groups, egcTC, ai)]]);
+                    }
                 }
-            }
-        }
-        else
-        {
-            nc = 1;
-        }
-        for (i = 0; i < pull->ngrp; i++)
-        {
-            imin = 2*nc;
-            if (pull->grp[0].nat > 0)
-            {
-                /* Subtract 1/2 dof from the reference group */
-                ai = pull->grp[0].ind[0];
-                if (nrdf_tc[ggrpnr(groups, egcTC, ai)] > 1)
+                else
                 {
-                    nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5;
-                    nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5;
-                    imin--;
+                    /* We need to subtract the whole DOF from group j=1 */
+                    imin += 1;
                 }
-            }
-            /* Subtract 1/2 dof from the pulled group */
-            ai = pull->grp[1+i].ind[0];
-            nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
-            nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
-            if (nrdf_tc[ggrpnr(groups, egcTC, ai)] < 0)
-            {
-                gmx_fatal(FARGS, "Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative", gnames[groups->grps[egcTC].nm_ind[ggrpnr(groups, egcTC, ai)]]);
             }
         }
     }
@@ -3155,6 +3165,8 @@ void do_index(const char* mdparin, const char *ndx,
     if (ir->ePull != epullNO)
     {
         make_pull_groups(ir->pull, pull_grp, grps, gnames);
+
+        make_pull_coords(ir->pull);
     }
 
     if (ir->bRot)
@@ -3537,11 +3549,151 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
     return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
 }
 
+static void
+check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
+                                   gmx_bool *bC6ParametersWorkWithGeometricRules,
+                                   gmx_bool *bC6ParametersWorkWithLBRules,
+                                   gmx_bool *bLBRulesPossible)
+{
+    int           ntypes, tpi, tpj, thisLBdiff, thisgeomdiff;
+    int          *typecount;
+    real          tol;
+#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
+    long long int npair, npair_ij;
+#else
+    double        npair, npair_ij;
+#endif
+    double        geometricdiff, LBdiff;
+    double        c6i, c6j, c12i, c12j;
+    double        c6, c6_geometric, c6_LB;
+    double        sigmai, sigmaj, epsi, epsj;
+    gmx_bool      bCanDoLBRules, bCanDoGeometricRules;
+    const char   *ptr;
+
+    /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
+     * force-field floating point parameters.
+     */
+    tol = 1e-5;
+    ptr = getenv("GMX_LJCOMB_TOL");
+    if (ptr != NULL)
+    {
+        double dbl;
+
+        sscanf(ptr, "%lf", &dbl);
+        tol = dbl;
+    }
+
+    *bC6ParametersWorkWithLBRules         = TRUE;
+    *bC6ParametersWorkWithGeometricRules  = TRUE;
+    bCanDoLBRules                         = TRUE;
+    bCanDoGeometricRules                  = TRUE;
+    npair                                 = 0;
+    ntypes                                = mtop->ffparams.atnr;
+    snew(typecount, ntypes);
+    gmx_mtop_count_atomtypes(mtop, state, typecount);
+    geometricdiff           = LBdiff = 0.0;
+    *bLBRulesPossible       = TRUE;
+    for (tpi = 0; tpi < ntypes; ++tpi)
+    {
+        c6i  = mtop->ffparams.iparams[(ntypes + 1) * tpi].lj.c6;
+        c12i = mtop->ffparams.iparams[(ntypes + 1) * tpi].lj.c12;
+        for (tpj = tpi; tpj < ntypes; ++tpj)
+        {
+            c6j          = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c6;
+            c12j         = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c12;
+            c6           = mtop->ffparams.iparams[ntypes * tpi + tpj].lj.c6;
+            c6_geometric = sqrt(c6i * c6j);
+            if (!gmx_numzero(c6_geometric))
+            {
+                if (!gmx_numzero(c12i) && !gmx_numzero(c12j))
+                {
+                    sigmai   = pow(c12i / c6i, 1.0/6.0);
+                    sigmaj   = pow(c12j / c6j, 1.0/6.0);
+                    epsi     = c6i * c6i /(4.0 * c12i);
+                    epsj     = c6j * c6j /(4.0 * c12j);
+                    c6_LB    = 4.0 * pow(epsi * epsj, 1.0/2.0) * pow(0.5 * (sigmai + sigmaj), 6);
+                }
+                else
+                {
+                    *bLBRulesPossible = FALSE;
+                    c6_LB             = c6_geometric;
+                }
+                bCanDoLBRules = gmx_within_tol(c6_LB, c6, tol);
+            }
+
+            if (FALSE == bCanDoLBRules)
+            {
+                *bC6ParametersWorkWithLBRules = FALSE;
+            }
+
+            bCanDoGeometricRules = gmx_within_tol(c6_geometric, c6, tol);
+
+            if (FALSE == bCanDoGeometricRules)
+            {
+                *bC6ParametersWorkWithGeometricRules = FALSE;
+            }
+        }
+    }
+    sfree(typecount);
+}
+
+static void
+check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
+                        warninp_t wi)
+{
+    char     err_buf[256];
+    gmx_bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
+
+    check_combination_rule_differences(mtop, 0,
+                                       &bC6ParametersWorkWithGeometricRules,
+                                       &bC6ParametersWorkWithLBRules,
+                                       &bLBRulesPossible);
+    if (ir->ljpme_combination_rule == eljpmeLB)
+    {
+        if (FALSE == bC6ParametersWorkWithLBRules || FALSE == bLBRulesPossible)
+        {
+            warning(wi, "You are using arithmetic-geometric combination rules "
+                    "in LJ-PME, but your non-bonded C6 parameters do not "
+                    "follow these rules.");
+        }
+    }
+    else
+    {
+        if (FALSE == bC6ParametersWorkWithGeometricRules)
+        {
+            if (ir->eDispCorr != edispcNO)
+            {
+                warning_note(wi, "You are using geometric combination rules in "
+                             "LJ-PME, but your non-bonded C6 parameters do "
+                             "not follow these rules. "
+                             "If your force field uses Lorentz-Berthelot combination rules this "
+                             "will introduce small errors in the forces and energies in "
+                             "your simulations. Dispersion correction will correct total "
+                             "energy and/or pressure, but not forces or surface tensions. "
+                             "Please check the LJ-PME section in the manual "
+                             "before proceeding further.");
+            }
+            else
+            {
+                warning_note(wi, "You are using geometric combination rules in "
+                             "LJ-PME, but your non-bonded C6 parameters do "
+                             "not follow these rules. "
+                             "If your force field uses Lorentz-Berthelot combination rules this "
+                             "will introduce small errors in the forces and energies in "
+                             "your simulations. Consider using dispersion correction "
+                             "for the total energy and pressure. "
+                             "Please check the LJ-PME section in the manual "
+                             "before proceeding further.");
+            }
+        }
+    }
+}
+
 void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
     char                      err_buf[256];
-    int                       i, m, g, nmol, npct;
+    int                       i, m, c, nmol, npct;
     gmx_bool                  bCharge, bAcc;
     real                      gdt_max, *mgrp, mt;
     rvec                      acc;
@@ -3607,6 +3759,12 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                     EELTYPE(eelPME));
             warning_note(wi, err_buf);
         }
+    }
+
+    /* Check if combination rules used in LJ-PME are the same as in the force field */
+    if (EVDW_PME(ir->vdwtype))
+    {
+        check_combination_rules(ir, sys, wi);
     }
 
     /* Generalized reaction field */
@@ -3690,7 +3848,16 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 
     if (ir->ePull != epullNO)
     {
-        if (ir->pull->grp[0].nat == 0)
+        gmx_bool bPullAbsoluteRef;
+
+        bPullAbsoluteRef = FALSE;
+        for (i = 0; i < ir->pull->ncoord; i++)
+        {
+            bPullAbsoluteRef = bPullAbsoluteRef ||
+                ir->pull->coord[i].group[0] == 0 ||
+                ir->pull->coord[i].group[1] == 0;
+        }
+        if (bPullAbsoluteRef)
         {
             absolute_reference(ir, sys, FALSE, AbsRef);
             for (m = 0; m < DIM; m++)
@@ -3712,9 +3879,9 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                     if ((ir->epc != epcNO && ir->compress[i][m] != 0) ||
                         ir->deform[i][m] != 0)
                     {
-                        for (g = 1; g < ir->pull->ngrp; g++)
+                        for (c = 0; c < ir->pull->ncoord; c++)
                         {
-                            if (ir->pull->grp[g].vec[m] != 0)
+                            if (ir->pull->coord[c].vec[m] != 0)
                             {
                                 gmx_fatal(FARGS, "Can not have dynamic box while using pull geometry '%s' (dim %c)", EPULLGEOM(ir->pull->eGeom), 'x'+m);
                             }

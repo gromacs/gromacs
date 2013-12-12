@@ -377,7 +377,7 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
     }
 }
 
-void gentop_vsite_merge_linear(gentop_vsite_t gvt,int natom,gmx_bool bGenVsites)
+void gentop_vsite_merge_linear(gentop_vsite_t gvt, gmx_bool bGenVsites)
 {
     int i,j,k,l,ai,aj,ndbl;
     
@@ -469,7 +469,7 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
     fta = gmx_poldata_get_angle_ftype(pd);
     ftp = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
     fti = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
-    gentop_vsite_merge_linear(gvt,atoms->nr,bGenVsites);
+    gentop_vsite_merge_linear(gvt, bGenVsites);
     nlin_at = 0;
     for(i=0; (i<gvt->nlinear); i++) 
         nlin_at += gvt->lin[i].nline;

@@ -43,12 +43,12 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "physics.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "txtdump.h"
 #include <math.h>
 #include "macros.h"
 #include "random.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "atomprop.h"
 #include "names.h"
 #include "vec.h"
@@ -57,7 +57,7 @@
 #include "vec.h"
 #include "gbutil.h"
 #include "addconf.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "pbc.h"
 #include "gmx_ana.h"
 #include "xvgr.h"
@@ -804,7 +804,7 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
 int gmx_genbox(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[TT]genbox[tt] can do one of 4 things:[PAR]",
+        "[THISMODULE] can do one of 4 things:[PAR]",
 
         "1) Generate a box of solvent. Specify [TT]-cs[tt] and [TT]-box[tt]. Or specify [TT]-cs[tt] and",
         "[TT]-cp[tt] with a structure file with a box, but without atoms.[PAR]",
@@ -849,7 +849,7 @@ int gmx_genbox(int argc, char *argv[])
         "[PAR]",
 
         "If you need to do more than one of the above operations, it can be",
-        "best to call [TT]genbox[tt] separately for each operation, so that",
+        "best to call [THISMODULE] separately for each operation, so that",
         "you are sure of the order in which the operations occur.[PAR]",
 
         "The default solvent is Simple Point Charge water (SPC), with coordinates ",
@@ -881,10 +881,10 @@ int gmx_genbox(int argc, char *argv[])
 
         "Setting [TT]-shell[tt] larger than zero will place a layer of water of",
         "the specified thickness (nm) around the solute. Hint: it is a good",
-        "idea to put the protein in the center of a box first (using [TT]editconf[tt]).",
+        "idea to put the protein in the center of a box first (using [gmx-editconf]).",
         "[PAR]",
 
-        "Finally, [TT]genbox[tt] will optionally remove lines from your topology file in ",
+        "Finally, [THISMODULE] will optionally remove lines from your topology file in ",
         "which a number of solvent molecules is already added, and adds a ",
         "line with the total number of solvent molecules in your coordinate file."
     };

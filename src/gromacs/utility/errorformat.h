@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -51,7 +51,7 @@ namespace gmx
 namespace internal
 {
 
-/*! \internal \brief
+/*! \brief
  * Formats a common header for fatal error messages.
  *
  * Does not throw.
@@ -60,7 +60,7 @@ namespace internal
  */
 void printFatalErrorHeader(FILE *fp, const char *title,
                            const char *func, const char *file, int line);
-/*! \internal \brief
+/*! \brief
  * Formats a line of fatal error message text.
  *
  * Does not throw.
@@ -68,7 +68,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
  * \ingroup module_utility
  */
 void printFatalErrorMessageLine(FILE *fp, const char *text, int indent);
-/*! \internal \brief
+/*! \brief
  * Formats a common footer for fatal error messages.
  *
  * Does not throw.

@@ -46,10 +46,10 @@
 #include "nrnb.h"
 #include "gmx_fatal.h"
 #include "macros.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "names.h"
 #include "domdec.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 #define header "Neighborlist:"
 

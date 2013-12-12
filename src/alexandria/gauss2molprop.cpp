@@ -50,7 +50,9 @@
 #include "smalloc.h"
 #include "strdb.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
 #include "physics.h"
 #include "statutil.h"
 #include "vec.h"
@@ -59,9 +61,7 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-#include "filenm.h"
 #include "pbc.h"
-#include "pdbio.h"
 #include "gpp_atomtype.h"
 #include "atomprop.h"
 #include "poldata.hpp"
@@ -71,7 +71,7 @@
 #include "molprop_xml.hpp"
 #include "gauss_io.hpp"
 
-int main(int argc, char *argv[])
+int alex_gauss2molprop(int argc, char *argv[])
 {
     static const char               *desc[] = {
         "gauss2molprop reads a series of Gaussian output files, and collects",

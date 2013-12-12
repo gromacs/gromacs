@@ -489,9 +489,12 @@ int do_timed_memtest(int dev_id, int time_constr)
  * \param[out] result_str   the message related to the error that occurred
  *                          during the initialization (if there was any).
  * \param[in] gpu_info      GPU info of all detected devices in the system.
+ * \param[in] gpu_opt       options for using the GPUs in gpu_info
  * \returns                 true if no error occurs during initialization.
  */
-gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info)
+gmx_bool init_gpu(int mygpu, char *result_str,
+                  const gmx_gpu_info_t *gpu_info,
+                  const gmx_gpu_opt_t *gpu_opt)
 {
     cudaError_t stat;
     char sbuf[STRLEN];
@@ -500,15 +503,15 @@ gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info)
     assert(gpu_info);
     assert(result_str);
 
-    if (mygpu < 0 || mygpu >= gpu_info->ncuda_dev_use)
+    if (mygpu < 0 || mygpu >= gpu_opt->ncuda_dev_use)
     {
         sprintf(sbuf, "Trying to initialize an inexistent GPU: "
                 "there are %d %s-selected GPU(s), but #%d was requested.",
-                 gpu_info->ncuda_dev_use, gpu_info->bUserSet ? "user" : "auto", mygpu);
+                 gpu_opt->ncuda_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
         gmx_incons(sbuf);
     }
 
-    gpuid = gpu_info->cuda_dev[gpu_info->cuda_dev_use[mygpu]].id;
+    gpuid = gpu_info->cuda_dev[gpu_opt->cuda_dev_use[mygpu]].id;
 
     stat = cudaSetDevice(gpuid);
     strncpy(result_str, cudaGetErrorString(stat), STRLEN);
@@ -648,6 +651,8 @@ int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
     assert(gpu_info);
     assert(err_str);
 
+    gpu_info->ncuda_dev_compatible = 0;
+
     ndev    = 0;
     devs    = NULL;
 
@@ -674,6 +679,11 @@ int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
             devs[i].id   = i;
             devs[i].prop = prop;
             devs[i].stat = checkres;
+
+            if (checkres == egpuCompatible)
+            {
+                gpu_info->ncuda_dev_compatible++;
+            }
         }
         retval = 0;
     }
@@ -689,15 +699,16 @@ int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
  * This function selects the compatible gpus and initializes
  * gpu_info->cuda_dev_use and gpu_info->ncuda_dev_use.
  *
- * Given the list of GPUs available in the system the it checks each gpu in
- * gpu_info->cuda_dev and puts the the indices (into gpu_info->cuda_dev) of
- * the compatible ones into cuda_dev_use with this marking the respective
- * GPUs as "available for use."
+ * Given the list of GPUs available in the system check each device in
+ * gpu_info->cuda_dev and place the indices of the compatible GPUs into
+ * cuda_dev_use with this marking the respective GPUs as "available for use."
  * Note that \detect_cuda_gpus must have been called before.
  *
- * \param[in]    gpu_info    pointer to structure holding GPU information
+ * \param[in]     gpu_info    pointer to structure holding GPU information
+ * \param[in,out] gpu_opt     pointer to structure holding GPU options
  */
-void pick_compatible_gpus(gmx_gpu_info_t *gpu_info)
+void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
+                          gmx_gpu_opt_t *gpu_opt)
 {
     int i, ncompat;
     int *compat;
@@ -717,53 +728,52 @@ void pick_compatible_gpus(gmx_gpu_info_t *gpu_info)
         }
     }
 
-    gpu_info->ncuda_dev_use = ncompat;
-    snew(gpu_info->cuda_dev_use, ncompat);
-    memcpy(gpu_info->cuda_dev_use, compat, ncompat*sizeof(*compat));
+    gpu_opt->ncuda_dev_use = ncompat;
+    snew(gpu_opt->cuda_dev_use, ncompat);
+    memcpy(gpu_opt->cuda_dev_use, compat, ncompat*sizeof(*compat));
     sfree(compat);
 }
 
 /*! \brief Check the existence/compatibility of a set of GPUs specified by their device IDs.
  *
- * Given the a list of GPU devide IDs in \requested_devs, check for the
- * existence and compatibility of the respective GPUs and fill in \gpu_info
- * with the collected information. Also provide the caller with an array with
+ * Given the a list of gpu->ncuda_dev_use GPU device IDs stored in
+ * gpu_opt->cuda_dev_use check the existence and compatibility
+ * of the respective GPUs. Also provide the caller with an array containing
  * the result of checks in \checkres.
  *
  * \param[out]  checkres    check result for each ID passed in \requested_devs
  * \param[in]   gpu_info    pointer to structure holding GPU information
- * \param[in]   requested_devs array of requested device IDs
- * \param[in]   count       number of IDs in \requested_devs
- * \returns                 TRUE if every requested GPU is compatible
+ * \param[out]  gpu_opt     pointer to structure holding GPU options
+ * \returns                 TRUE if every the requested GPUs are compatible
  */
-gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
-                                const int *requested_devs, int count)
+gmx_bool check_selected_cuda_gpus(int *checkres,
+                                  const gmx_gpu_info_t *gpu_info,
+                                  gmx_gpu_opt_t *gpu_opt)
 {
     int i, id;
     bool bAllOk;
 
     assert(checkres);
     assert(gpu_info);
-    assert(requested_devs);
-    assert(count >= 0);
+    assert(gpu_opt->ncuda_dev_use >= 0);
 
-    if (count == 0)
+    if (gpu_opt->ncuda_dev_use == 0)
     {
         return TRUE;
     }
 
+    assert(gpu_opt->cuda_dev_use);
+
     /* we will assume that all GPUs requested are valid IDs,
        otherwise we'll bail anyways */
-    gpu_info->ncuda_dev_use = count;
-    snew(gpu_info->cuda_dev_use, count);
 
     bAllOk = true;
-    for (i = 0; i < count; i++)
+    for (i = 0; i < gpu_opt->ncuda_dev_use; i++)
     {
-        id = requested_devs[i];
+        id = gpu_opt->cuda_dev_use[i];
 
         /* devices are stored in increasing order of IDs in cuda_dev */
-        gpu_info->cuda_dev_use[i] = id;
+        gpu_opt->cuda_dev_use[i] = id;
 
         checkres[i] = (id >= gpu_info->ncuda_dev) ?
             egpuNonexistent : gpu_info->cuda_dev[id].stat;
@@ -785,7 +795,6 @@ void free_gpu_info(const gmx_gpu_info_t *gpu_info)
         return;
     }
 
-    sfree(gpu_info->cuda_dev_use);
     sfree(gpu_info->cuda_dev);
 }
 
@@ -838,18 +847,19 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int ind
  * respective CUDA GPU.
  *
  * \param[in]    gpu_info   pointer to structure holding GPU information
+ * \param[in]    gpu_opt    pointer to structure holding GPU options
  * \param[in]    idx        index into the array of used GPUs
  * \returns                 device ID of the requested GPU
  */
-int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int idx)
+int get_gpu_device_id(const gmx_gpu_info_t *gpu_info,
+                      const gmx_gpu_opt_t *gpu_opt,
+                      int idx)
 {
     assert(gpu_info);
-    if (idx < 0 && idx >= gpu_info->ncuda_dev_use)
-    {
-        return -1;
-    }
+    assert(gpu_opt);
+    assert(idx >= 0 && idx < gpu_opt->ncuda_dev_use);
 
-    return gpu_info->cuda_dev[gpu_info->cuda_dev_use[idx]].id;
+    return gpu_info->cuda_dev[gpu_opt->cuda_dev_use[idx]].id;
 }
 
 /*! \brief Returns the device ID of the GPU currently in use.
@@ -865,4 +875,15 @@ int get_current_gpu_device_id(void)
     CU_RET_ERR(cudaGetDevice(&gpuid), "cudaGetDevice failed");
 
     return gpuid;
+}
+
+/*! \brief Returns the size of the cuda_dev_info struct.
+ *
+ * The size of cuda_dev_info can be used for allocation and communication.
+ *
+ * \returns                 size in bytes of cuda_dev_info
+ */
+size_t sizeof_cuda_dev_info(void)
+{
+    return sizeof(cuda_dev_info);
 }

@@ -1,37 +1,38 @@
-/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "mdrun_main.h"
 
@@ -43,7 +44,7 @@
 
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
@@ -56,7 +57,7 @@
 int gmx_mdrun(int argc, char *argv[])
 {
     const char   *desc[] = {
-        "The [TT]mdrun[tt] program is the main computational chemistry engine",
+        "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
         "but it can also perform Stochastic Dynamics, Energy Minimization,",
         "test particle insertion or (re)calculation of energies.",
@@ -64,7 +65,7 @@ int gmx_mdrun(int argc, char *argv[])
         "builds a Hessian matrix from single conformation.",
         "For usual Normal Modes-like calculations, make sure that",
         "the structure provided is properly energy-minimized.",
-        "The generated matrix can be diagonalized by [TT]g_nmeig[tt].[PAR]",
+        "The generated matrix can be diagonalized by [gmx-nmeig].[PAR]",
         "The [TT]mdrun[tt] program reads the run input file ([TT]-s[tt])",
         "and distributes the topology over nodes if needed.",
         "[TT]mdrun[tt] produces at least four output files.",
@@ -85,7 +86,7 @@ int gmx_mdrun(int argc, char *argv[])
         "The MPI parallelization uses multiple processes when [TT]mdrun[tt] is",
         "compiled with a normal MPI library or threads when [TT]mdrun[tt] is",
         "compiled with the GROMACS built-in thread-MPI library. OpenMP threads",
-        "are supported when mdrun is compiled with OpenMP. Full OpenMP support",
+        "are supported when [TT]mdrun[tt] is compiled with OpenMP. Full OpenMP support",
         "is only available with the Verlet cut-off scheme, with the (older)",
         "group scheme only PME-only processes can use OpenMP parallelization.",
         "In all cases [TT]mdrun[tt] will by default try to use all the available",
@@ -116,15 +117,30 @@ int gmx_mdrun(int argc, char *argv[])
         "[PAR]",
         "With GPUs (only supported with the Verlet cut-off scheme), the number",
         "of GPUs should match the number of MPI processes or MPI threads,",
-        "excluding PME-only processes/threads. With thread-MPI the number",
+        "excluding PME-only processes/threads. With thread-MPI, unless set on the command line, the number",
         "of MPI threads will automatically be set to the number of GPUs detected.",
-        "When you want to use a subset of the available GPUs, you can use",
-        "the [TT]-gpu_id[tt] option, where GPU id's are passed as a string,",
-        "e.g. 02 for using GPUs 0 and 2. When you want different GPU id's",
-        "on different nodes of a compute cluster, use the GMX_GPU_ID environment",
-        "variable instead. The format for GMX_GPU_ID is identical to ",
-        "[TT]-gpu_id[tt], but an environment variable can have different values",
-        "on different nodes of a cluster.",
+        "To use a subset of the available GPUs, or to manually provide a mapping of",
+        "GPUs to PP ranks, you can use the [TT]-gpu_id[tt] option. The argument of [TT]-gpu_id[tt] is",
+        "a string of digits (without delimiter) representing device id-s of the GPUs to be used.",
+        "For example, \"[TT]02[tt]\" specifies using GPUs 0 and 2 in the first and second PP ranks per compute node",
+        "respectively. To select different sets of GPU-s",
+        "on different nodes of a compute cluster, use the [TT]GMX_GPU_ID[tt] environment",
+        "variable instead. The format for [TT]GMX_GPU_ID[tt] is identical to ",
+        "[TT]-gpu_id[tt], with the difference that an environment variable can have",
+        "different values on different compute nodes. Multiple MPI ranks on each node",
+        "can share GPUs. This is accomplished by specifying the id(s) of the GPU(s)",
+        "multiple times, e.g. \"[TT]0011[tt]\" for four ranks sharing two GPUs in this node.",
+        "This works within a single simulation, or a multi-simulation, with any form of MPI.",
+        "[PAR]",
+        "With the Verlet cut-off scheme and verlet-buffer-tolerance set,",
+        "the pair-list update interval nstlist can be chosen freely with",
+        "the option [TT]-nstlist[tt]. [TT]mdrun[tt] will then adjust",
+        "the pair-list cut-off to maintain accuracy.",
+        "By default [TT]mdrun[tt] will try to increase nstlist to improve",
+        "the performance. For CPU runs nstlist might increase to 20, for GPU",
+        "runs up till 40. But for medium to high parallelization or with",
+        "fast GPUs, a (user supplied) larger nstlist value can give much",
+        "better performance.",
         "[PAR]",
         "When using PME with separate PME nodes or with a GPU, the two major",
         "compute tasks, the non-bonded force calculation and the PME calculation",
@@ -154,9 +170,9 @@ int gmx_mdrun(int argc, char *argv[])
         "With Intel Hyper-Threading 2 is best when using half or less of the",
         "logical cores, 1 otherwise. The default value of 0 do exactly that:",
         "it minimizes the threads per logical core, to optimize performance.",
-        "If you want to run multiple mdrun jobs on the same physical node,"
+        "If you want to run multiple [TT]mdrun[tt] jobs on the same physical node,"
         "you should set [TT]-pinstride[tt] to 1 when using all logical cores.",
-        "When running multiple mdrun (or other) simulations on the same physical",
+        "When running multiple [TT]mdrun[tt] (or other) simulations on the same physical",
         "node, some simulations need to start pinning from a non-zero core",
         "to avoid overloading cores; with [TT]-pinoffset[tt] you can specify",
         "the offset in logical cores for pinning.",
@@ -295,7 +311,7 @@ int gmx_mdrun(int argc, char *argv[])
         "is performed after every exchange.[PAR]",
         "Finally some experimental algorithms can be tested when the",
         "appropriate options have been given. Currently under",
-        "investigation are: polarizability and X-ray bombardments.",
+        "investigation are: polarizability.",
         "[PAR]",
         "The option [TT]-membed[tt] does what used to be g_membed, i.e. embed",
         "a protein into a membrane. The data file should contain the options",
@@ -382,9 +398,6 @@ int gmx_mdrun(int argc, char *argv[])
         { efXVG, "-tpid",   "tpidist",  ffOPTWR },
         { efEDI, "-ei",     "sam",      ffOPTRD },
         { efXVG, "-eo",     "edsam",    ffOPTWR },
-        { efGCT, "-j",      "wham",     ffOPTRD },
-        { efGCT, "-jo",     "bam",      ffOPTWR },
-        { efXVG, "-ffout",  "gct",      ffOPTWR },
         { efXVG, "-devout", "deviatie", ffOPTWR },
         { efXVG, "-runav",  "runaver",  ffOPTWR },
         { efXVG, "-px",     "pullx",    ffOPTWR },
@@ -412,11 +425,11 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bCompact      = TRUE;
     gmx_bool        bSepPot       = FALSE;
     gmx_bool        bRerunVSite   = FALSE;
-    gmx_bool        bIonize       = FALSE;
     gmx_bool        bConfout      = TRUE;
     gmx_bool        bReproducible = FALSE;
 
     int             npme          = -1;
+    int             nstlist       = 0;
     int             nmultisim     = 0;
     int             nstglobalcomm = -1;
     int             repl_ex_nst   = 0;
@@ -444,7 +457,14 @@ int gmx_mdrun(int argc, char *argv[])
     output_env_t    oenv                  = NULL;
     const char     *deviceOptions         = "";
 
-    gmx_hw_opt_t    hw_opt = {0, 0, 0, 0, threadaffSEL, 0, 0, NULL};
+    /* Non transparent initialization of a complex gmx_hw_opt_t struct.
+     * But unfortunately we are not allowed to call a function here,
+     * since declarations follow below.
+     */
+    gmx_hw_opt_t    hw_opt = {
+        0, 0, 0, 0, threadaffSEL, 0, 0,
+        { NULL, FALSE, 0, NULL }
+    };
 
     t_pargs         pa[] = {
 
@@ -470,8 +490,8 @@ int gmx_mdrun(int argc, char *argv[])
           "The starting logical core number for pinning to cores; used to avoid pinning threads from different mdrun instances to the same core" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_id},
-          "List of GPU id's to use" },
+        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_opt.gpu_id},
+          "List of GPU device id-s to use, specifies the per-node PP rank to GPU mapping" },
         { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
           "Check for all bonded interactions with DD" },
         { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
@@ -494,6 +514,8 @@ int gmx_mdrun(int argc, char *argv[])
           "Global communication frequency" },
         { "-nb",      FALSE, etENUM, {&nbpu_opt},
           "Calculate non-bonded interactions on" },
+        { "-nstlist", FALSE, etINT, {&nstlist},
+          "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
         { "-tunepme", FALSE, etBOOL, {&bTunePME},
           "Optimize PME load between PP/PME nodes or GPU/CPU" },
         { "-testverlet", FALSE, etBOOL, {&bTestVerlet},
@@ -528,12 +550,10 @@ int gmx_mdrun(int argc, char *argv[])
           "Seed for replica exchange, -1 is generate a seed" },
         { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
-        { "-ionize",  FALSE, etBOOL, {&bIonize},
-          "Do a simulation including the effect of an X-Ray bombardment on your system" },
         { "-confout", FALSE, etBOOL, {&bConfout},
           "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
         { "-stepout", FALSE, etINT, {&nstepout},
-          "HIDDENFrequency of writing the remaining runtime" },
+          "HIDDENFrequency of writing the remaining wall clock time for the run" },
         { "-resetstep", FALSE, etINT, {&resetstep},
           "HIDDENReset cycle counters after these many time steps" },
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
@@ -551,7 +571,7 @@ int gmx_mdrun(int argc, char *argv[])
     char          **multidir = NULL;
 
 
-    cr = init_par();
+    cr = init_commrec();
 
     PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
 
@@ -610,7 +630,8 @@ int gmx_mdrun(int argc, char *argv[])
         gmx_bool bParFn = (multidir == NULL);
         init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
 #else
-        gmx_fatal(FARGS, "mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
+        gmx_fatal(FARGS, "mdrun -multi is not supported with the thread library. "
+                  "Please compile GROMACS with MPI support");
 #endif
     }
 
@@ -681,7 +702,6 @@ int gmx_mdrun(int argc, char *argv[])
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
     Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
-    Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
     Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
@@ -725,7 +745,7 @@ int gmx_mdrun(int argc, char *argv[])
     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
                   nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
                   dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                  nbpu_opt[0],
+                  nbpu_opt[0], nstlist,
                   nsteps, nstepout, resetstep,
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                   pforce, cpt_period, max_hours, deviceOptions, Flags);

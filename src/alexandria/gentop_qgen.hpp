@@ -58,18 +58,18 @@ gentop_qgen_done(gentop_qgen_t qgen);
 
 extern int 
 generate_charges_sm(FILE *fp,gentop_qgen_t qgen,
-		    gmx_poldata_t pd,t_atoms *atoms,rvec x[],
-		    real tol,int maxiter,gmx_atomprop_t aps,
-		    real hfac,real *chieq);
+                    gmx_poldata_t pd,t_atoms *atoms,
+                    real tol,int maxiter,gmx_atomprop_t aps,
+                    real *chieq);
 
 extern int 
 generate_charges(FILE *fp,
-		 gentop_qgen_t qgen,
-		 gmx_resp_t gr,const char *molname,
-		 gmx_poldata_t pd,
-		 t_atoms *atoms,rvec x[],
-		 real tol,int maxiter,int maxcycle,
-		 gmx_atomprop_t aps,real hfac);
+                 gentop_qgen_t qgen,
+                 gmx_resp_t gr,const char *molname,
+                 gmx_poldata_t pd,
+                 t_atoms *atoms,
+                 real tol,int maxiter,int maxcycle,
+                 gmx_atomprop_t aps);
 
 extern void 
 qgen_message(gentop_qgen_t qgen,int len,char buf[],gmx_resp_t gr);

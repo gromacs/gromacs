@@ -39,12 +39,13 @@
 #include "statutil.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "xvgr.h"
 #include "index.h"
 #include "do_fit.h"
 #include "gmx_ana.h"
 #include "gmx_fatal.h"
+#include "gromacs/fileio/trxio.h"
 
 
 static real dointerp(int n, rvec x1[], rvec x2[], rvec xx[],
@@ -70,7 +71,7 @@ static real dointerp(int n, rvec x1[], rvec x2[], rvec xx[],
 int gmx_morph(int argc, char *argv[])
 {
     const char      *desc[] = {
-        "[TT]g_morph[tt] does a linear interpolation of conformations in order to",
+        "[THISMODULE] does a linear interpolation of conformations in order to",
         "create intermediates. Of course these are completely unphysical, but",
         "that you may try to justify yourself. Output is in the form of a ",
         "generic trajectory. The number of intermediates can be controlled with",

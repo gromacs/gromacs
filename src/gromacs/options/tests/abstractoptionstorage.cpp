@@ -2,9 +2,9 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -72,7 +72,7 @@ class MockOptionInfo : public gmx::OptionInfo
         MockOptionStorage &option();
 };
 
-/*! \internal \brief
+/*! \brief
  * Mock implementation of an option storage class for unit testing.
  *
  * Provides facilities for checking that correct methods are called, and for
@@ -101,14 +101,17 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         // using MyBase::addValue;
         // using MyBase::commitValues;
         // "using" is correct but MSVC gives error C2248. Workaround:
+        //! \copydoc gmx::OptionStorageTemplate::markAsSet()
         void markAsSet()
         {
             MyBase::markAsSet();
         }
+        //! \copydoc gmx::OptionStorageTemplate::addValue()
         void addValue(const std::string &value)
         {
             MyBase::addValue(value);
         }
+        //! \copydoc gmx::OptionStorageTemplate::commitValues()
         void commitValues()
         {
             MyBase::commitValues();

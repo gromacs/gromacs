@@ -87,7 +87,7 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   end_table(tp);
 }
 
-static void do_brule(FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
+static void do_brule(FILE *tp, gmx_poldata_t pd)
 {
   int nline,npage,numbonds,nr,bAromatic;
   char hbuf[1024],colinfo[1024],pbuf[1024];
@@ -120,7 +120,7 @@ static void do_brule(FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   end_table(tp);
 }
   
-static void do_bad(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
+static void do_bad(FILE *fp, FILE *tp, gmx_poldata_t pd)
 {
   int bts[ebtsNR];
   int nline,npage,nr,ntrain;
@@ -250,7 +250,7 @@ static void do_bad(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   end_table(tp);
 }
 
-int main(int argc,char *argv[]) 
+int alex_gen_ff(int argc,char *argv[]) 
 {
   gmx_poldata_t pd;
   gmx_atomprop_t aps;
@@ -268,9 +268,9 @@ int main(int argc,char *argv[])
   fprintf(fp,"; This is the force field file for the Alexandria FF\n");
   fprintf(fp,"; Paul J. van Maaren and David van der Spoel\n\n");
   
-  do_atypes(fp,tp,pd,aps);  
-  do_brule(tp,pd,aps);  
-  do_bad(fp,tp,pd,aps);  
+  do_atypes(fp, tp, pd, aps);  
+  do_brule(tp, pd);  
+  do_bad(fp, tp, pd);  
   
   fclose(fp);
   fclose(tp);  

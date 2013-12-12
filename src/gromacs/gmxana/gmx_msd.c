@@ -45,16 +45,17 @@
 #include "macros.h"
 #include "statutil.h"
 #include "maths.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "index.h"
 #include "typedefs.h"
 #include "xvgr.h"
 #include "gstat.h"
 #include "gmx_statistics.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "pbc.h"
 #include "vec.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
 
@@ -1027,7 +1028,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 int gmx_msd(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[TT]g_msd[tt] computes the mean square displacement (MSD) of atoms from",
+        "[THISMODULE] computes the mean square displacement (MSD) of atoms from",
         "a set of initial positions. This provides an easy way to compute",
         "the diffusion constant using the Einstein relation.",
         "The time between the reference points for the MSD calculation",
@@ -1042,7 +1043,7 @@ int gmx_msd(int argc, char *argv[])
         "types of mean square displacement: [TT]-type[tt], [TT]-lateral[tt]",
         "and [TT]-ten[tt]. Option [TT]-ten[tt] writes the full MSD tensor for",
         "each group, the order in the output is: trace xx yy zz yx zx zy.[PAR]",
-        "If [TT]-mol[tt] is set, [TT]g_msd[tt] plots the MSD for individual molecules",
+        "If [TT]-mol[tt] is set, [THISMODULE] plots the MSD for individual molecules",
         "(including making molecules whole across periodic boundaries): ",
         "for each individual molecule a diffusion constant is computed for ",
         "its center of mass. The chosen index group will be split into ",
@@ -1052,7 +1053,7 @@ int gmx_msd(int argc, char *argv[])
         "With the option [TT]-rmcomm[tt], the center of mass motion of a ",
         "specific group can be removed. For trajectories produced with ",
         "GROMACS this is usually not necessary, ",
-        "as [TT]mdrun[tt] usually already removes the center of mass motion.",
+        "as [gmx-mdrun] usually already removes the center of mass motion.",
         "When you use this option be sure that the whole system is stored",
         "in the trajectory file.[PAR]",
         "The diffusion coefficient is determined by linear regression of the MSD,",

@@ -1,3 +1,37 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2013, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
 # Helper macro for the function below. We treat BLAS and LAPACK the same
 # way, so there's no reason to duplicate the logic for them
 #
@@ -10,15 +44,6 @@
 #     function_in_library  the name of a function to use in a linking test of that library
 macro(manage_linear_algebra_library name function_in_library)
     set(_library_was_found 0)
-    set(_find_quietly FALSE)
-    set(_user_var_changed FALSE)
-    if(NOT DEFINED GMX_EXTERNAL_${name} OR
-       (GMX_EXTERNAL_${name} AND NOT "${GMX_${name}_USER}" STREQUAL "${GMX_${name}_USER_PREV}"))
-        set(_user_var_changed TRUE)
-    endif()
-    if(DEFINED GMX_EXTERNAL_${name} AND NOT _user_var_changed)
-        set(_find_quietly TRUE)
-    endif()
 
     # We could consider printing status messages at the beginning and
     # end, which would require caching whether the previous provider
@@ -27,8 +52,14 @@ macro(manage_linear_algebra_library name function_in_library)
     # low, so let's solve that one in master branch when we have
     # better CMake gear to support it.
     if(GMX_EXTERNAL_${name} OR NOT DEFINED GMX_EXTERNAL_${name})
-        set(GMX_${name}_USER_PREV ${GMX_${name}_USER} CACHE INTERNAL
-            "Previous value of GMX_${name}_USER (to detect changes)" FORCE)
+        set(_find_quietly FALSE)
+        gmx_check_if_changed(_user_var_changed GMX_${name}_USER)
+        if (NOT DEFINED GMX_EXTERNAL_${name})
+            set(_user_var_changed TRUE)
+        endif()
+        if(DEFINED GMX_EXTERNAL_${name} AND NOT _user_var_changed)
+            set(_find_quietly TRUE)
+        endif()
         set(_message_text)
         # Check for user-specified libraries if external libraries have
         # been specified (which is the default).
@@ -76,7 +107,7 @@ macro(manage_linear_algebra_library name function_in_library)
         # detection succeeded, try to detect ${name} in the CMake
         # detection paths, etc.
         if (NOT _library_was_found)
-            set(${name}_FIND_QUIETLY _find_quietly)
+            set(${name}_FIND_QUIETLY ${_find_quietly})
             # Note that this finds all kinds of system libraries,
             # including Apple's Accelerate Framework (and perhaps MKL for
             # icc < 11).
@@ -99,7 +130,10 @@ macro(manage_linear_algebra_library name function_in_library)
     # Default behaviour is to use a library found on the system or in
     # GROMACS. The user must actively set GMX_${name}_USER if they
     # want to specify a library.
-    set(GMX_${name}_USER "" CACHE BOOL "Use a ${name} library found on the system (OFF), or a ${name} library supplied by the user (any other value, which is a full path to that ${name} library)")
+    gmx_dependent_cache_variable(
+        GMX_${name}_USER
+        "Use a ${name} library found on the system (OFF), or a ${name} library supplied by the user (any other value, which is a full path to that ${name} library)"
+        FILEPATH "" GMX_EXTERNAL_${name})
     mark_as_advanced(GMX_${name}_USER)
 
     if(GMX_EXTERNAL_${name})

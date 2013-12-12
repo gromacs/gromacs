@@ -21,7 +21,7 @@ enum immStatus {
     immAtomTypes, immAtomNumber, immMolpropConv, immBondOrder, immRespInit,
     immChargeGeneration, immLOT,
     immQMInconsistency, immTest, immNoData, 
-    immGenShells, immGenBonds, immNR 
+    immGenShells, immGenBonds, immCommProblem, immNR 
 };
 
 enum eDih { edihNo, edihOne, edihAll, edihNR };
