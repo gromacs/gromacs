@@ -275,42 +275,12 @@ endif()
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
-# First exclude compilers known to not work with OpenMP although claim to support it:
-# gcc 4.2.1 and gcc-llvm 4.2.1 (also claims to be 4.2.1) on Mac OS X
-# This fixes redmine 900 and needs to run before OpenMP flags are set below.
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND
-    (CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.3))
-    message(STATUS "OpenMP multithreading not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled")
-    set(GMX_OPENMP OFF CACHE BOOL
-        "OpenMP multithreading not not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled!" FORCE)
-endif()
+######################################################################
+# Detect OpenMP
+#####################################################################
+# The OpenMP detection must come before tests for other CFLAGS.
+include(gmxManageOpenMP)
 
-# OpenMP check must come before other CFLAGS!
-if(GMX_OPENMP)
-    find_package(OpenMP)
-    if(OPENMP_FOUND)
-        # CMake on Windows doesn't support linker flags passed to target_link_libraries
-        # (i.e. it treats /openmp as \openmp library file). Also, no OpenMP linker flags are needed.
-        if(NOT (WIN32 AND NOT CYGWIN))
-            if(CMAKE_COMPILER_IS_GNUCC AND GMX_PREFER_STATIC_OPENMP AND NOT APPLE)
-                set(OpenMP_LINKER_FLAGS "-Wl,-static -lgomp -lrt -Wl,-Bdynamic -lpthread")
-                set(OpenMP_SHARED_LINKER_FLAGS "")
-            else()
-                # Only set a linker flag if the user didn't set them manually
-                if(NOT DEFINED OpenMP_LINKER_FLAGS)
-                    set(OpenMP_LINKER_FLAGS "${OpenMP_C_FLAGS}")
-                endif()
-                if(NOT DEFINED OpenMP_SHARED_LINKER_FLAGS)
-                    set(OpenMP_SHARED_LINKER_FLAGS "${OpenMP_C_FLAGS}")
-                endif()
-            endif()
-        endif()
-    else(OPENMP_FOUND)
-        message(WARNING
-                "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
-        set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
-    endif(OPENMP_FOUND)
-endif()
 
 
 include(gmxCFlags)
@@ -323,7 +293,8 @@ set(EXTRA_CXX_FLAGS "")
 
 # gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
 # Detect here whether applying a workaround is needed and will apply it later
-# on the affected files.
+# on the affected files. This test must come after gmx_c_flags(), since we 
+# only want to enable the workaround when using the -O3 flag.
 include(gmxGCC44O3BugWorkaround)
 gmx_check_gcc44_bug_workaround_needed(GMX_USE_GCC44_BUG_WORKAROUND)
 
