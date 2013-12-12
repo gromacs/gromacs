@@ -40,5 +40,5 @@ set(SWAP_PUBLIC_HEADERS
 gmx_install_headers(timing ${SWAP_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
-#    add_subdirectory(tests)
+    add_subdirectory(tests)
 endif (BUILD_TESTING)
