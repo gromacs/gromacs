@@ -719,12 +719,35 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             gmx_send_int(_cr, 0, imm);
         }
     }
+    int nnn = nmol_cpu;
+    int *nmolpar;
+    
+    if (PAR(_cr)) 
+    {
+        snew(nmolpar, _cr->nnodes);
+        nmolpar[_cr->nodeid] = nnn;
+        gmx_sumi(_cr->nnodes, nmolpar, _cr);
+    }
 
     if (fp)
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
+        int nmoltot = 0;
+        if (PAR(_cr))
+        {
+            for(i = 0; (i<_cr->nnodes); i++)
+            {
+                fprintf(fp, "node %d has %d molecules\n", i, nmolpar[i]); 
+                nmoltot += nmolpar[i];
+            }
+        }
+        else
+        {
+            nmoltot = mp.size();
+        }
         fprintf(fp, "Made topologies for %d out of %d molecules.\n", n,
-                (MASTER(_cr)) ? (int)mp.size() : nmol_cpu);
+                (MASTER(_cr)) ? nmoltot : nmol_cpu);
+        
         for (i = 0; (i < immNR); i++)
         {
             if (imm_count[i] > 0)
@@ -737,6 +760,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             fprintf(fp, "Check %s.debug for more information.\nYou may have to use the -debug 1 flag.\n\n", ShortProgram());
         }
     }
+    sfree(nmolpar);
     snew(_ic, 1);
     if (bCheckSupport)
     {

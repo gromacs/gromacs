@@ -41,12 +41,6 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
-#endif
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -1532,13 +1526,16 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         xvgrclose(xfp);
         do_view(oenv, xvg, NULL);
     }
-    {
-        real a, b, da, db, chi2, Rfit;
-        gmx_stats_get_ab(gst, 1, &a, &b, &da, &db, &chi2, &Rfit);
-        fprintf(fp, "Regression analysis fit to y = ax + b:\n");
-        fprintf(fp, "a = %.3f  b = %3f  R2 = %.1f%%  chi2 = %.1f\n", a, b, Rfit*100, chi2);
-    }                
+    //! Do statistics
+    real a, b, da, db, chi2, Rfit;
+    int N;
+    gmx_stats_get_ab(gst, 1, &a, &b, &da, &db, &chi2, &Rfit);
+    gmx_stats_get_npoints(gst, &N);
+    fprintf(fp, "Regression analysis fit to y = ax + b:\n");
+    fprintf(fp, "a = %.3f  b = %3f  R2 = %.1f%%  chi2 = %.1f N = %d\n",
+            a, b, Rfit*100, chi2, N);
     gmx_stats_done(gst);
+    fflush(fp);
 }
 }
 

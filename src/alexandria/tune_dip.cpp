@@ -40,7 +40,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
-#include "gromacs/utility/init.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/timing/wallcycle.h"

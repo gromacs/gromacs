@@ -40,6 +40,7 @@ set_target_properties(alexandria PROPERTIES OUTPUT_NAME "alexandria${GMX_LIBS_SU
 
 list(APPEND GMX_EXTRA_LIBRARIES alexandria libgromacs)
 
+
 add_executable(alex alex.cpp)
 target_link_libraries(alex ${GMX_EXTRA_LIBRARIES})
 set_target_properties(alex PROPERTIES OUTPUT_NAME "alex${GMX_BINARY_SUFFIX}")
