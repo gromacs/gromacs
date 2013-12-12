@@ -157,7 +157,7 @@ SwapTestFixture::callMdrunAppend()
     caller.addOption("-c", groOutputFileName);
     caller.addOption("-cpo", cptFileName);
     caller.addOption("-cpi", cptFileName);
-    caller.addOption("-nsteps", "20");
+    caller.addOption("-nsteps", "15");
     caller.append("-append");
 
 #ifdef GMX_THREAD_MPI

@@ -754,9 +754,9 @@ static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
     PR("threshold", swap->threshold);
     for (j = 0; j < 2; j++)
     {
-        sprintf(str, "nanions%d", j);
+        sprintf(str, "nanions%c", j+'A');
         PI(str, swap->nanions[j]);
-        sprintf(str, "ncations%d", j);
+        sprintf(str, "ncations%c", j+'A');
         PI(str, swap->ncations[j]);
         sprintf(str, "splitgroup%d_massw", j);
         PS(str, EBOOL(swap->massw_split[j]));

@@ -52,7 +52,8 @@ namespace
 // i.e. double membrane sandwich with ion/water exchange protocol
 typedef gmx::test::SwapTestFixture CompelTest;
 
-/* This test ensures that the compel protocol can be run */
+/* This test ensures that the compel protocol can be run, and that all of
+ * the swapcoords parameters from the .mdp file are understood */
 TEST_F(CompelTest, SwapCanRun)
 {
     std::string name = "OctaneSandwich";

@@ -2119,10 +2119,10 @@ void get_ir(const char *mdparin, const char *mdparout,
         ITYPE("coupl_steps", ir->swap->csteps, 10);
         CTYPE("Requested number of anions and cations for each of the two compartments");
         CTYPE("-1 means fix the numbers as found in time step 0");
-        ITYPE("anions0" , ir->swap->nanions[0] , -1);
-        ITYPE("cations0", ir->swap->ncations[0], -1);
-        ITYPE("anions1" , ir->swap->nanions[1] , -1);
-        ITYPE("cations1", ir->swap->ncations[1], -1);
+        ITYPE("anionsA" , ir->swap->nanions[0] , -1);
+        ITYPE("cationsA", ir->swap->ncations[0], -1);
+        ITYPE("anionsB" , ir->swap->nanions[1] , -1);
+        ITYPE("cationsB", ir->swap->ncations[1], -1);
         CTYPE("Start to swap ions if threshold difference to requested count is reached");
         RTYPE("threshold", ir->swap->threshold, 1.0);
     }
