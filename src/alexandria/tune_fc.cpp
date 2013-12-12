@@ -41,12 +41,6 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
-#ifdef GMX_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
-#endif
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"
