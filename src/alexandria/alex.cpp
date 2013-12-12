@@ -51,7 +51,7 @@ namespace gmx {
 class AlexHelpTopicInterface : HelpTopicInterface
 {
     public:
-        ~HelpTopicInterface() {}
+        ~AlexHelpTopicInterface() {}
 
         /*! \brief
          * Returns the name of the topic.
@@ -90,7 +90,7 @@ class AlexHelpTopicInterface : HelpTopicInterface
         void writeHelp(const HelpWriterContext &context);
 };
 
-AlexHelpTopicInterface::writeHelp(const HelpWriterContext &context)
+void AlexHelpTopicInterface::writeHelp(const HelpWriterContext &context)
 {
     printf("BOE\n");
 }
