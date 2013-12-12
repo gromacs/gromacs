@@ -63,7 +63,6 @@ int alex_mkice(int argc, char *argv[]);
 int alex_mkyaw(int argc, char *argv[]);
 }
 */
-}
 
 /*! \brief
  * Convenience function for creating and registering a module.
@@ -79,8 +78,6 @@ void registerModule(gmx::CommandLineModuleManager                *manager,
 {
     manager->addModuleCMain(name, shortDescription, mainFunction);
 }
-
-} // namespace
 
 void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
 {
@@ -111,11 +108,12 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Utility to merge a number of molecular property files and a SQLite database");
     registerModule(manager, &alex_gen_ff, "gen_ff",
                    "Generate a force field file");
+/*
     registerModule(manager, &alex_mkice, "mkice",
                    "Generate an ice structure file");
     registerModule(manager, &alex_mkyaw, "mkyaw",
                    "Manipulate water files");
-
+*/
 
     {
         gmx::CommandLineModuleGroup group =
@@ -145,7 +143,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Testing stuff and funky utilities");
         group.addModule("poldata_test");
         group.addModule("molprop_test");
-        group.addModule("mkice");
-        group.addModule("mkyaw");
+      /*  group.addModule("mkice");
+        group.addModule("mkyaw"); */
     }
 }

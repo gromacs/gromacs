@@ -14,6 +14,7 @@ set(ALEXANDRIA_SOURCES
 	molprop_util.cpp
 	molprop_xml.cpp
         molprop_sqlite3.cpp
+        molprop_tables.cpp
         mymol.cpp
         moldip.cpp
         gauss_io.cpp
@@ -30,6 +31,7 @@ set(ALEXANDRIA_SOURCES
         molprop_test.cpp
         gen_ff.cpp
         gen_table.cpp
+        alex_modules.cpp
 	)
 	
 add_library(alexandria ${ALEXANDRIA_SOURCES})	
@@ -42,7 +44,6 @@ add_executable(alex alex.cpp)
 target_link_libraries(alex ${GMX_EXTRA_LIBRARIES})
 set_target_properties(alex PROPERTIES OUTPUT_NAME "alex${GMX_BINARY_SUFFIX}")
 
-install(TARGETS alexandria DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 install(TARGETS 
         alex
         COMPONENT runtime

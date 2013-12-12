@@ -683,7 +683,5 @@ int alex_bastat(int argc, char *argv[])
 
     ffclose(fp);
 
-    gmx::finalize();
-
     return 0;
 }
