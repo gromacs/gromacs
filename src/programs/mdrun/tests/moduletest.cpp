@@ -155,13 +155,14 @@ MdrunTestFixture::callGrompp()
 }
 
 int
-MdrunTestFixture::callMdrun()
+MdrunTestFixture::callMdrun(const CommandLine &callerRef)
 {
-    CommandLine caller;
-    caller.append("mdrun");
-
+    /* Conforming to style guide by not passing a non-const reference
+       to this function. Passing a non-const reference might make it
+       easier to write code that incorrectly re-uses callerRef after
+       the call to this function. */
+    CommandLine caller(callerRef);
     caller.addOption("-s", tprFileName);
-    caller.addOption("-rerun", rerunFileName);
 
     caller.addOption("-g", logFileName);
     caller.addOption("-e", edrFileName);
@@ -176,6 +177,14 @@ MdrunTestFixture::callMdrun()
 #endif
 
     return gmx_mdrun(caller.argc(), caller.argv());
+}
+
+int
+MdrunTestFixture::callMdrun()
+{
+    CommandLine caller;
+    caller.append("mdrun");
+    return callMdrun(caller);
 }
 
 } // namespace test
