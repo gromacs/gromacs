@@ -76,10 +76,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          ix, iy, iz, fix, fiy, fiz;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
-    real          c6, c12, cexp1, cexp2, br;
+    real          c6, c12, c6grid, cexp1, cexp2, br;
     real *        charge;
     real *        shiftvec;
-    real *        vdwparam;
+    real *        vdwparam, *vdwgridparam;
     int *         shift;
     int *         type;
     real *        fshift;
@@ -97,6 +97,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          rswitch_elec, rswitch_vdw, d, d2, sw, dsw, rinvcorr;
     real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
     real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
+    real          ewclj, ewclj2, ewclj6, ewcljrsq, poly, exponent;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
 
     x                   = xx[0];
@@ -120,6 +121,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     rvdw2               = rvdw*rvdw;
     sh_dispersion       = fr->ic->dispersion_shift.cpot;
     sh_repulsion        = fr->ic->repulsion_shift.cpot;
+
+    ewclj               = fr->ewaldcoeff_lj;
+    ewclj2              = ewclj*ewclj;
+    ewclj6              = ewclj2*ewclj2*ewclj2;
 
     if (fr->coulomb_modifier == eintmodPOTSWITCH)
     {
@@ -172,7 +177,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     eps                 = 0.0;
     eps2                = 0.0;
 
-    /* 3 VdW parameters for buckingham, otherwise 2 */
+    /* 3 VdW parameters for Buckingham, otherwise 2 */
     nvdwparam           = (ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM) ? 3 : 2;
     table_nelements     = 12;
 
@@ -182,6 +187,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     shiftvec            = fr->shift_vec[0];
     vdwparam            = fr->nbfp;
     ntype               = fr->ntype;
+    vdwgridparam        = fr->ljpme_c6grid;
 
     for (n = 0; (n < nlist->nri); n++)
     {
@@ -389,6 +395,29 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         fijR             = c12*FF;
                         fvdw             = -(fijD+fijR)*tabscale*rinv;
                         vvdw             = vvdw_disp + vvdw_rep;
+                        break;
+
+
+                    case GMX_NBKERNEL_VDW_LJEWALD:
+                        /* LJ-PME */
+                        rinvsix          = rinvsq*rinvsq*rinvsq;
+                        ewcljrsq         = ewclj2*rsq;
+                        exponent         = exp(-ewcljrsq);
+                        poly             = exponent*(1.0 + ewcljrsq + ewcljrsq*ewcljrsq*0.5);
+                        c6               = vdwparam[tj];
+                        c12              = vdwparam[tj+1];
+                        c6grid           = vdwgridparam[tj];
+                        vvdw_disp        = (c6-c6grid*(1.0-poly))*rinvsix;
+                        vvdw_rep         = c12*rinvsix*rinvsix;
+                        fvdw             = (vvdw_rep - vvdw_disp - c6grid*(1.0/6.0)*exponent*ewclj6)*rinvsq;
+                        if (fr->vdw_modifier == eintmodPOTSHIFT)
+                        {
+                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion)/6.0;
+                        }
+                        else
+                        {
+                            vvdw             = vvdw_rep/12.0-vvdw_disp/6.0;
+                        }
                         break;
 
                     default:
