@@ -122,12 +122,16 @@ class MdrunTestFixture : public IntegrationTestFixture
         std::string groFileName;
         std::string fullPrecisionTrajectoryFileName;
         std::string reducedPrecisionTrajectoryFileName;
+        std::string groOutputFileName;
         std::string ndxFileName;
         std::string mdpInputFileName;
         std::string mdpOutputFileName;
         std::string tprFileName;
         std::string logFileName;
         std::string edrFileName;
+        std::string cptFileName;
+        std::string swapFileName;
+        int         nsteps;
         //@}
 };
 

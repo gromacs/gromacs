@@ -84,6 +84,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/swap/swapcoords.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
@@ -1725,6 +1726,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, state->x, box, mtop, oenv,
                      bVerbose, Flags);
+        }
+
+        if (inputrec->eSwapCoords != eswapNO)
+        {
+            /* Initialize ion swapping code */
+            init_swapcoords(fplog, bVerbose, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
+                            mtop, state->x, state->box, &state->swapstate, cr, oenv, Flags);
         }
 
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
