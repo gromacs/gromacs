@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,16 +33,20 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""Generate include dependency graphs for Gromacs.
+"""Check and generate include dependency graphs for Gromacs.
 
-This script can generate two types of include dependency graphs: per-file or
-per-module (where module is equivalent to a subdirectory).
+This script can do a few things related to include file dependencies:
+ - Check that there are no broken dependencies between installed headers.
+ - Check that documentated usage of a header matches its installation status
+   and usage from other modules.
+ - Generate two types of include dependency graphs: per-file or per-module
+   (where module is equivalent to a subdirectory).
 It is intended to be run on a subset of files under the src/ directory.
-Output format is suitable for processing with 'dot'.
+Output format for the graphs is suitable for processing with 'dot'.
 
 FILE GRAPHS
 
-The legend for per-file graph nodex:
+The legend for per-file graph nodes:
     gray:          source files
     light blue:    public headers
     dark blue:     library headers
@@ -52,15 +56,18 @@ MODULE GRAPHS
 
 Module graph will contain one node for each top-level subdirectory under src/,
 except that the src/gromacs/ directory will be expanded one level further.
+Legacy modules have gray background.
 
 The legend for per-module graph links (a link with a certain color indicates
 that types above it in the list are not present):
-    red:          invalid dependency (e.g., undocumented file)
-    dark blue:    library header depends on the other module
-    light blue:   public header depends on the other module
-    dashed black: source file depends on a library header in the other module
-    solid black:  source file depends on a public header in the other module
-    dotted grey:  test files depend on the other module
+    red:          invalid dependency
+    grey:         legacy dependency (dependency on undocumented file, or to
+                  legacy directories)
+    solid black:  public header depends on the other module
+    solid blue:   library header depends on the other module
+    dashed blue:  source file depends on a library header in the other module
+    dashed black: source file depends on a public header in the other module
+    dashed green: test file depends on the other module
 """
 
 import os.path
@@ -79,90 +86,54 @@ class ErrorReporter(object):
 class Link(object):
 
     """Link between two node objects.
-    
+
     Signifies an include dependency between the two nodes, and manages types
     associated with the dependencies.
     """
 
-    priorities = {
+    _priorities = {
             'undocumented': 1,
-            'intramodule': 2,
-            'library': 3,
+            'legacy': 2,
+            'intramodule': 3,
             'public': 4,
-            'libimpl': 5,
-            'pubimpl': 6,
-            'test': 7}
+            'library': 5,
+            'libimpl': 6,
+            'pubimpl': 7,
+            'test': 8}
 
-    def __init__(self, fromnode, tonode, link_type=None):
+    def __init__(self, fromnode, tonode, link_type):
         self.fromnode = fromnode
         self.tonode = tonode
         self.link_type = link_type
-        if not link_type:
-            self.refresh_type()
-
-    def refresh_type(self):
-        """Initialize type of a link between two file nodes.
-
-        Both endpoints of the link must be file objects when this method is
-        called.
-        """
-        fromfile = self.fromnode.obj
-        tofile = self.tonode.obj
-        intramodule = \
-                (fromfile.module.get_top_level_module() == \
-                 tofile.module.get_top_level_module())
-        if tofile.type != 'publicheader' and tofile.type != 'libheader':
-            if intramodule:
-                link_type = 'intramodule'
-            else:
-                link_type = 'undocumented'
-        elif fromfile.type == 'test':
-            link_type = 'test'
-        elif fromfile.type in ('source', 'header', 'implheader'):
-            if tofile.type == 'publicheader':
-                link_type = 'pubimpl'
-            elif tofile.type == 'libheader':
-                link_type = 'libimpl'
-            else:
-                raise ValueError('Unknown link type between {0} and {1}'
-                        .format(fromfile.path, tofile.path))
-        elif fromfile.type == 'libheader':
-            link_type = 'library'
-        elif fromfile.type == 'publicheader':
-            if tofile.type == 'publicheader' or tofile.doctype == 'public':
-                link_type = 'public'
-            else:
-                link_type = 'undocumented'
-        else:
-            raise ValueError('Unknown link type between {0} and {1}'
-                    .format(fromfile.path, tofile.path))
-        self.link_type = link_type
+        if link_type not in Link._priorities:
+            raise ValueError('Unknown link type {0}'.format(link_type))
 
     def merge_link(self, other):
         """Merge another link into this one and choose an appropriate type.
 
         Updates the type of this link based on the types of the merged links.
         """
-        if Link.priorities[other.link_type] < Link.priorities[self.link_type]:
+        if Link._priorities[other.link_type] < Link._priorities[self.link_type]:
             self.link_type = other.link_type
 
     def format(self):
         """Format this link for 'dot'."""
-        if isinstance(self.fromnode.obj, File) and \
-                isinstance(self.tonode.obj, File):
+        if self.fromnode.is_file_node() and self.tonode.is_file_node():
             properties = ''
         elif self.link_type == 'intramodule':
             properties = ''
         elif self.link_type == 'test':
-            properties = 'color=grey75, style=dotted'
+            properties = 'color=".33 .8 .8", style=dashed'
         elif self.link_type == 'libimpl':
-            properties = 'color=".66 .5 1"'
+            properties = 'color=".66 .8 .8", style=dashed'
         elif self.link_type == 'pubimpl':
-            properties = 'color=".66 .2 1"'
-        elif self.link_type == 'library':
             properties = 'color=black, style=dashed'
+        elif self.link_type == 'library':
+            properties = 'color=".66 .8 .8"'
         elif self.link_type == 'public':
             properties = 'color=black'
+        elif self.link_type == 'legacy':
+            properties = 'color=grey75'
         else: # undocumented
             properties = 'color=red'
         return '{0} -> {1} [{2}]'.format(self.fromnode.nodename,
@@ -170,10 +141,11 @@ class Link(object):
                                          properties)
 
 class Node(object):
-    def __init__(self, obj, nodename, label):
+    def __init__(self, nodename, label, properties, is_file):
         self.nodename = nodename
         self.label = label
-        self.obj = obj
+        self._properties = properties
+        self._is_file = is_file
         self.children = []
         self.root = False
 
@@ -183,8 +155,14 @@ class Node(object):
     def add_child(self, child):
         self.children.append(child)
 
+    def remove_child(self, child):
+        self.children.remove(child)
+
     def clear_children(self):
         self.children = []
+
+    def is_file_node(self):
+        return self._is_file
 
     def get_children(self, recursive=False):
         if recursive:
@@ -208,8 +186,10 @@ class Node(object):
             if not self.root:
                 result += '    }\n'
         else:
-            result += '    {0} [{1}]\n'.format(
-                    self.nodename, self.obj.node_properties())
+            properties = 'label="{0}"'.format(self.label)
+            if self._properties:
+                properties += ', ' + self._properties
+            result += '    {0} [{1}]\n'.format(self.nodename, properties)
         return result
 
 
@@ -308,9 +288,9 @@ class File(object):
         self.path = path
         self.name = os.path.basename(path)
         self.module = module
-        if module.name == 'tests':
+        if module.name == 'tests' or module.name == 'legacytests':
             self.type = 'test'
-        elif re.search(r'\.c(pp)?$', self.name) != None:
+        elif re.search(r'\.c(pp|u)?$', self.name) != None:
             self.type = 'source'
         else:
             self.type = 'header'
@@ -323,6 +303,9 @@ class File(object):
     def is_documented(self):
         return self.doctype != 'none'
 
+    def is_installed(self):
+        return self.installed
+
     def set_installed(self, reporter):
         if self.type != 'header':
             reporter.input_warning(self.path,
@@ -332,27 +315,6 @@ class File(object):
 
     def get_included_files(self):
         return self._included
-
-    def node_properties(self):
-        properties = []
-        style = []
-        properties.append('label="{0}"'.format(self.name))
-        properties.append('URL="\\ref {0}"'.format(self.name))
-        if not self.module:
-            style.append('bold')
-            properties.append('color=red')
-        if self.type == 'source':
-            style.append('filled')
-            properties.append('fillcolor=grey75')
-        elif self.type == 'publicheader':
-            style.append('filled')
-            properties.append('fillcolor=".66 .2 1"')
-        elif self.type == 'libheader':
-            style.append('filled')
-            properties.append('fillcolor=".66 .5 1"')
-        if style:
-            properties.append('style="{0}"'.format(','.join(style)))
-        return ', '.join(properties)
 
     def scan_include_file(self, line, allfiles, selfdir, includedirs,
             ignorelist, reporter):
@@ -375,7 +337,7 @@ class File(object):
             match = re.match(r'#include *"([^"]*)"', line)
             if match:
                 includedpath = match.group(1)
-                fullpath = os.path.join(selfdir, includedpath)
+                fullpath = os.path.abspath(os.path.join(selfdir, includedpath))
                 #if os.path.abspath(fullpath) in ignorelist:
                 #    return
                 if os.path.exists(fullpath):
@@ -383,9 +345,10 @@ class File(object):
                 else:
                     fullpath = find_include_file(includedpath, includedirs)
                     if not fullpath:
-                        reporter.input_warning(self.path,
-                                'included file "{0}" not found'
-                                    .format(includedpath))
+                        if not includedpath in ('corewrap.h', 'tmpi_config.h'):
+                            reporter.input_warning(self.path,
+                                    'included file "{0}" not found'
+                                        .format(includedpath))
         if not includedpath:
             reporter.input_warning(self.path, 'line "{0}" could not be parsed'
                     .format(line))
@@ -460,6 +423,9 @@ class Module(object):
         self.children = dict()
         self.is_top_level = (not parent or parent.name in ('', 'gromacs'))
 
+    def get_parent(self):
+        return self.parent
+
     def is_child(self, module):
         parent = module.parent
         while parent:
@@ -485,11 +451,6 @@ class Module(object):
                 module = self.children[modules[0]]
             newfile = module.add_nested_file(modules[1:], path)
         return newfile
-
-    def node_properties(self):
-        properties = 'label="{0}", shape=ellipse'.format(self.name)
-        properties += ', URL="\\ref module_{0}"'.format(self.name)
-        return properties
 
 
 class Dependencies(object):
@@ -536,6 +497,14 @@ class Dependencies(object):
         return result
 
 
+def _is_legacy_module(module):
+    if module.name in ('legacyheaders', 'gmxlib', 'mdlib', 'gmxana', 'gmxpreprocess'):
+        return True
+    if module.get_parent():
+        return _is_legacy_module(module.get_parent())
+    return False
+
+
 class IncludeFileChecker(object):
     def __init__(self, deps, options):
         self._deps = deps
@@ -546,7 +515,10 @@ class IncludeFileChecker(object):
             return
         if not checkfile.is_documented():
             if self._options.warn_undoc:
-                reporter.error(checkfile.path, 'file not documented')
+                is_legacy = _is_legacy_module(checkfile.module)
+                is_external = checkfile.module.name in ('gmx_lapack', 'gmx_blas', 'thread_mpi')
+                if not is_legacy and not is_external:
+                    reporter.error(checkfile.path, 'file not documented')
         elif checkfile.doctype == 'implementation' and \
                 checkfile.type in ('publicheader', 'libheader'):
             reporter.error(checkfile.path,
@@ -564,7 +536,8 @@ class IncludeFileChecker(object):
         docmodule = checkfile.docmodule
         if docmodule and \
                 not selfmodfullname.startswith('module_' + docmodule) and \
-                not selfmodfullname.startswith('module_gromacs_' + docmodule):
+                not selfmodfullname.startswith('module_gromacs_' + docmodule) and \
+                not checkfile.name == docmodule + '.h':
             reporter.error(checkfile.path,
                     'file documented in incorrect module "{0}"'
                         .format(docmodule))
@@ -572,15 +545,19 @@ class IncludeFileChecker(object):
     def _check_included_file(self, checkfile, includedfile, reporter):
         otherfile = includedfile._included_file
         if includedfile._is_system:
+            # TODO: This doesn't report errors with files not listed in
+            # the input files, although those could be included.
+            # That would produce a massive amount of errors for <config.h>.
             if otherfile:
                 reporter.error(checkfile.path,
                         'local file included as <{0}>'
                             .format(includedfile._included_path))
         elif not includedfile._is_relative and checkfile.installed:
-            reporter.error(checkfile.path,
-                    'installed header includes "{0}", '
-                    'which is not found using relative path'
-                        .format(includedfile._included_path))
+            if not includedfile._included_path == 'gmx_header_config_gen.h':
+                reporter.error(checkfile.path,
+                        'installed header includes "{0}", '
+                        'which is not found using relative path'
+                            .format(includedfile._included_path))
         if not otherfile:
             return
         if checkfile.installed and not otherfile.installed:
@@ -596,7 +573,7 @@ class IncludeFileChecker(object):
                 (checkfile.module.get_top_level_module() == \
                  otherfile.module.get_top_level_module())
         if otherfile.type not in ('publicheader', 'libheader'):
-            if not intramodule:
+            if not intramodule and not _is_legacy_module(otherfile.module):
                 reporter.error(checkfile.path,
                         'included file "{0}" is missing API definition'
                             .format(otherfile.path))
@@ -607,7 +584,7 @@ class IncludeFileChecker(object):
                             .format(otherfile.path))
 
     def check_all(self, reporter):
-        for checkfile in self._deps.files.itervalues():
+        for checkfile in sorted(self._deps.files.values()):
             self._check_file(checkfile, reporter)
             for includedfile in checkfile.get_included_files():
                 self._check_included_file(checkfile, includedfile, reporter)
@@ -617,26 +594,88 @@ class GraphBuilder(object):
     def __init__(self, deps):
         self._deps = deps
 
-    def create_file_node(self, fileobj, filenodes):
+    def _create_file_node(self, fileobj, filenodes):
         nodename = re.subn(r'[-./]', '_', fileobj.path)[0]
-        node = Node(fileobj, nodename, fileobj.name)
+        properties = []
+        style = []
+        properties.append('URL="\\ref {0}"'.format(fileobj.name))
+        if not fileobj.module:
+            style.append('bold')
+            properties.append('color=red')
+        if fileobj.type == 'source':
+            style.append('filled')
+            properties.append('fillcolor=grey75')
+        elif fileobj.type == 'publicheader':
+            style.append('filled')
+            properties.append('fillcolor=".66 .2 1"')
+        elif fileobj.type == 'libheader':
+            style.append('filled')
+            properties.append('fillcolor=".66 .5 1"')
+        if style:
+            properties.append('style="{0}"'.format(','.join(style)))
+        node = Node(nodename, fileobj.name, ', '.join(properties), is_file=True)
         filenodes[fileobj] = node
         return node
 
-    def create_file_edges(self, fileobj, filenodes):
+    def _create_file_edge(self, fromfile, tofile, filenodes):
+        intramodule = \
+                (fromfile.module.get_top_level_module() == \
+                 tofile.module.get_top_level_module())
+        is_legacy = _is_legacy_module(tofile.module)
+        if tofile.type not in ('publicheader', 'libheader', 'header'):
+            if intramodule:
+                link_type = 'intramodule'
+            elif is_legacy:
+                link_type = 'legacy'
+            else:
+                link_type = 'undocumented'
+        elif fromfile.type == 'test':
+            link_type = 'test'
+        elif fromfile.type in ('source', 'header', 'implheader') and \
+                not fromfile.is_installed():
+            if intramodule:
+                link_type = 'intramodule'
+            elif tofile.type == 'publicheader':
+                link_type = 'pubimpl'
+            elif tofile.type == 'libheader':
+                link_type = 'libimpl'
+            elif is_legacy:
+                link_type = 'legacy'
+            elif not tofile.is_documented():
+                link_type = 'legacy'
+            else:
+                raise ValueError('Unknown link type between {0} and {1}'
+                        .format(fromfile.path, tofile.path))
+        elif fromfile.type == 'libheader':
+            link_type = 'library'
+        elif fromfile.type == 'publicheader' or fromfile.is_installed():
+            if tofile.type == 'publicheader' or tofile.doctype == 'public' or \
+                    (tofile.is_installed() and not tofile.is_documented()):
+                link_type = 'public'
+            else:
+                link_type = 'undocumented'
+        else:
+            raise ValueError('Unknown link type between {0} and {1}'
+                    .format(fromfile.path, tofile.path))
+        return Link(filenodes[fromfile], filenodes[tofile], link_type)
+
+    def _create_file_edges(self, fileobj, filenodes):
         links = []
         if fileobj in filenodes:
             for includedfile in fileobj.get_included_files():
                 otherfile = includedfile._included_file
                 if otherfile and otherfile in filenodes:
-                    link = Link(filenodes[fileobj], filenodes[otherfile])
+                    link = self._create_file_edge(fileobj, otherfile, filenodes)
                     links.append(link)
         return links
 
     def create_module_node(self, module, filenodes):
-        node = Node(module, module.fullname, module.name)
+        properties = 'shape=ellipse, URL="\\ref module_{0}"'.format(module.name)
+        if _is_legacy_module(module):
+            properties += 'style=filled, fillcolor=grey75'
+        node = Node(module.fullname, module.name, properties, is_file=False)
         for childfile in module.files:
-            node.add_child(self.create_file_node(childfile, filenodes))
+            node.add_child(self._create_file_node(childfile, filenodes))
         for childmodule in module.children.itervalues():
             node.add_child(self.create_module_node(childmodule, filenodes))
         return node
@@ -647,7 +686,7 @@ class GraphBuilder(object):
         rootnode.set_root()
         links = []
         for scanfile in self._deps.files.itervalues():
-            links.extend(self.create_file_edges(scanfile, filenodes))
+            links.extend(self._create_file_edges(scanfile, filenodes))
         graph = Graph([rootnode], links)
         return graph
 
@@ -657,15 +696,28 @@ class GraphBuilder(object):
         rootnode.set_root()
         links = []
         for scanfile in self._deps.files.itervalues():
-            links.extend(self.create_file_edges(scanfile, filenodes))
+            links.extend(self._create_file_edges(scanfile, filenodes))
         graph = Graph([rootnode], links)
         for node in rootnode.get_children():
             if node.label == 'gromacs':
+                module_nodes = []
+                header_nodes = []
                 for child in node.get_children():
-                    graph.collapse_node(child)
+                    if child.is_file_node():
+                        header_nodes.append(child)
+                    else:
+                        graph.collapse_node(child)
+                        module_nodes.append(child)
+                for header in header_nodes:
+                    for module in module_nodes:
+                        if header.nodename.startswith(module.nodename[7:]):
+                            # graph.merge_nodes([header], module)
+                            node.remove_child(header)
+                            break
             else:
                 graph.collapse_node(node)
         graph.set_options(concentrate=False)
+        graph.prune_links()
         return graph
 
     def create_module_file_graph(self, module):
@@ -674,7 +726,7 @@ class GraphBuilder(object):
         rootnode.set_root()
         links = []
         for scanfile in self._deps.files.itervalues():
-            links.extend(self.create_file_edges(scanfile, filenodes))
+            links.extend(self._create_file_edges(scanfile, filenodes))
         graph = Graph([rootnode], links)
         graph.prune_links()
         return graph
@@ -802,8 +854,10 @@ def main():
     if options.module_file_graphs:
         options.left_to_right = True
         for module in deps.get_toplevel_modules():
-            filename = 'module_{0}-deps.dot'.format(module.name)
-            with open(os.path.join(options.outdir, filename), 'w') as outfile:
-                print_module_file_graph(outfile, graphbuilder, module, options)
+            if not _is_legacy_module(module):
+                filename = 'module_{0}-deps.dot'.format(module.name)
+                filename = os.path.join(options.outdir, filename)
+                with open(filename, 'w') as outfile:
+                    print_module_file_graph(outfile, graphbuilder, module, options)
 
 main()
