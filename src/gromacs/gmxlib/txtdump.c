@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -808,6 +808,41 @@ static void pr_rot(FILE *fp, int indent, t_rot *rot)
     }
 }
 
+
+static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
+{
+    int  i, j;
+    char str[STRLEN];
+
+
+    PI("frequency", swap->nstswap);
+    for (j = 0; j < 2; j++)
+    {
+        sprintf(str, "nanions%c", j+'A');
+        PI(str, swap->nanions[j]);
+        sprintf(str, "ncations%c", j+'A');
+        PI(str, swap->ncations[j]);
+    }
+    PI("coupling_steps", swap->nAverage);
+    PR("threshold", swap->threshold);
+    for (j = 0; j < 2; j++)
+    {
+        sprintf(str, "splitgroup%d_massw", j);
+        PS(str, EBOOL(swap->massw_split[j]));
+        sprintf(str, "split atoms group %d", j);
+        pr_ivec_block(fp, indent, str, swap->ind_split[j], swap->nat_split[j], TRUE);
+    }
+    pr_ivec_block(fp, indent, "swap atoms", swap->ind, swap->nat, TRUE);
+    pr_ivec_block(fp, indent, "solvent atoms", swap->ind_sol, swap->nat_sol, TRUE);
+    PR("cyl0_radius", swap->cyl0r);
+    PR("cyl0_upper", swap->cyl0u);
+    PR("cyl0_lower", swap->cyl0l);
+    PR("cyl1_radius", swap->cyl1r);
+    PR("cyl1_upper", swap->cyl1u);
+    PR("cyl1_lower", swap->cyl1l);
+}
+
+
 void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
                  gmx_bool bMDPformat)
 {
@@ -1019,6 +1054,11 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         pr_cosine(fp, indent, "efield-yt", &(ir->et[YY]), bMDPformat);
         pr_cosine(fp, indent, "efield-z", &(ir->ex[ZZ]), bMDPformat);
         pr_cosine(fp, indent, "efield-zt", &(ir->et[ZZ]), bMDPformat);
+        PS("eSwapCoords", ESWAPTYPE(ir->eSwapCoords));
+        if (ir->eSwapCoords != eswapNO)
+        {
+            pr_swap(fp, indent, ir->swap);
+        }
         PS("bQMMM", EBOOL(ir->bQMMM));
         PI("QMconstraints", ir->QMconstraints);
         PI("QMMMscheme", ir->QMMMscheme);
