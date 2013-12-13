@@ -46,6 +46,7 @@ gmx_build_unit_test(
     compressed_x_output.cpp
     # files with code for test fixtures
     moduletest.cpp
+    swapcoords.cpp
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )

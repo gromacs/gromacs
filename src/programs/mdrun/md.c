@@ -93,6 +93,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/swap/swapcoords.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -189,7 +190,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int               count, nconverged = 0;
     real              timestep   = 0;
     double            tcount     = 0;
-    gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
+    gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged, bNeedRepartition;
     gmx_bool          bAppend;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
@@ -750,6 +751,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     bLastStep        = FALSE;
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
+    bNeedRepartition = FALSE;
 
     init_global_signals(&gs, cr, ir, repl_ex_nst);
 
@@ -887,12 +889,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* Determine whether or not to do Neighbour Searching and LR */
             bNStList = (ir->nstlist > 0  && step % ir->nstlist == 0);
 
-            bNS = (bFirstStep || bExchanged || bNStList || bDoFEP ||
+            bNS = (bFirstStep || bExchanged || bNeedRepartition || bNStList || bDoFEP ||
                    (ir->nstlist == -1 && nlh.nabnsb > 0));
 
             if (bNS && ir->nstlist == -1)
             {
-                set_nlistheuristics(&nlh, bFirstStep || bExchanged || bDoFEP, step);
+                set_nlistheuristics(&nlh, bFirstStep || bExchanged || bNeedRepartition || bDoFEP, step);
             }
         }
 
@@ -1792,6 +1794,24 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             print_time(stderr, walltime_accounting, step, ir, cr);
         }
 
+        /* Ion/water position swapping.
+         * Not done in last step since trajectory writing happens before this call
+         * in the MD loop and exchanges would be lost anyway. */
+        bNeedRepartition = FALSE;
+        if ((ir->eSwapCoords != eswapNO) && (step > 0) && !bLastStep &&
+            do_per_step(step, ir->swap->nstswap))
+        {
+            bNeedRepartition = do_swapcoords(cr, step, t, ir, wcycle,
+                                             bRerunMD ? rerun_fr.x   : state->x,
+                                             bRerunMD ? rerun_fr.box : state->box,
+                                             top_global, MASTER(cr) && bVerbose, bRerunMD);
+
+            if (bNeedRepartition && DOMAINDECOMP(cr))
+            {
+                dd_collect_state(cr->dd, state, state_global);
+            }
+        }
+
         /* Replica exchange */
         bExchanged = FALSE;
         if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
@@ -1800,15 +1820,15 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bExchanged = replica_exchange(fplog, cr, repl_ex,
                                           state_global, enerd,
                                           state, step, t);
+        }
 
-            if (bExchanged && DOMAINDECOMP(cr))
-            {
-                dd_partition_system(fplog, step, cr, TRUE, 1,
-                                    state_global, top_global, ir,
-                                    state, &f, mdatoms, top, fr,
-                                    vsite, shellfc, constr,
-                                    nrnb, wcycle, FALSE);
-            }
+        if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
+        {
+            dd_partition_system(fplog, step, cr, TRUE, 1,
+                                state_global, top_global, ir,
+                                state, &f, mdatoms, top, fr,
+                                vsite, shellfc, constr,
+                                nrnb, wcycle, FALSE);
         }
 
         bFirstStep       = FALSE;
