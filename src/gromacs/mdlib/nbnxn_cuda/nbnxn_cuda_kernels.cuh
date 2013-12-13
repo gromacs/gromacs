@@ -33,7 +33,7 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-/*! \file
+/*! \internal \file
  *  This header has the sole purpose of generating kernels for the supported
  *  electrostatics types: cut-off, reaction-field, Ewald, and tabulated Ewald.
  *
