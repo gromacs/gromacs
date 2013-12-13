@@ -351,6 +351,7 @@ typedef struct {
     real            epsilon_surface;         /* Epsilon for PME dipole correction            */
     gmx_bool        bOptFFT;                 /* optimize the fft plan at start               */
     int             ljpme_combination_rule;  /* Type of combination rule in LJ-PME          */
+    gmx_bool        ljpme_grid_correction;   /* Correct for the grid approximation in LJ-PME */
     int             ePBC;                    /* Type of periodic boundary conditions		*/
     int             bPeriodicMols;           /* Periodic molecules                           */
     gmx_bool        bContinuation;           /* Continuation run: starting state is correct	*/

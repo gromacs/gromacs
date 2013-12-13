@@ -889,6 +889,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PR("epsilon-surface", ir->epsilon_surface);
         PS("optimize-fft", EBOOL(ir->bOptFFT));
         PS("lj-pme-comb-rule", ELJPMECOMBNAMES(ir->ljpme_combination_rule));
+        PS("lj-pme-grid-correction", EBOOL(ir->ljpme_grid_correction));
         PS("ePBC", EPBC(ir->ePBC));
         PS("bPeriodicMols", EBOOL(ir->bPeriodicMols));
         PS("bContinuation", EBOOL(ir->bContinuation));

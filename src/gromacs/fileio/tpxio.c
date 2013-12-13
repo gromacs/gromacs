@@ -101,7 +101,6 @@ enum tpxv {
  * file format, change tpx_tag instead. */
 static const int tpx_version = tpxv_Use64BitRandomSeed;
 
-
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
  * This way we can maintain forward compatibility too for all analysis tools
@@ -1168,6 +1167,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         gmx_fio_do_int(fio, ir->ljpme_combination_rule);
     }
+    if (file_version >= 98)
+    {
+        gmx_fio_do_gmx_bool(fio, ir->ljpme_grid_correction);
+    }
+
     gmx_fio_do_gmx_bool(fio, ir->bContinuation);
     gmx_fio_do_int(fio, ir->etc);
     /* before version 18, ir->etc was a gmx_bool (ir->btc),

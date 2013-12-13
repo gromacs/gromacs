@@ -356,6 +356,7 @@ typedef struct {
     /* Long-range forces and virial for PPPM/PME/Ewald */
     gmx_pme_t pmedata;
     int       ljpme_combination_rule;
+    gmx_bool  ljpme_grid_correction;
     tensor    vir_el_recip;
     tensor    vir_lj_recip;
 
@@ -489,6 +490,10 @@ typedef struct {
  */
 #define C6(nbfp, ntp, ai, aj)     (nbfp)[2*((ntp)*(ai)+(aj))]
 #define C12(nbfp, ntp, ai, aj)    (nbfp)[2*((ntp)*(ai)+(aj))+1]
+#define PME_C6(nbfp, ntp, ai, aj)  (nbfp)[4*((ntp)*(ai)+(aj))]
+#define PME_C12(nbfp, ntp, ai, aj) (nbfp)[4*((ntp)*(ai)+(aj))+1]
+#define PME_GRID(nbfp, ntp, ai, aj)   (nbfp)[4*((ntp)*(ai)+(aj))+2]
+#define PME_DUMMY(nbfp, ntp, ai, aj)   (nbfp)[4*((ntp)*(ai)+(aj))+3]
 #define BHAMC(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))]
 #define BHAMA(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+1]
 #define BHAMB(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+2]

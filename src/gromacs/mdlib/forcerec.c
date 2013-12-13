@@ -120,13 +120,13 @@ static void pr_nbfp(FILE *fp, real *nbfp, gmx_bool bBHAM, int atnr)
 }
 #endif
 
-static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
+static real *mk_nbfp(const gmx_ffparams_t *idef, t_forcerec *fr)
 {
-    real *nbfp;
+    real *nbfp, c6i, c6j, c12i, c12j, c6, c12, epsi, epsj, sigmai, sigmaj;
     int   i, j, k, atnr;
 
     atnr = idef->atnr;
-    if (bBHAM)
+    if (fr->bBHAM)
     {
         snew(nbfp, 3*atnr*atnr);
         for (i = k = 0; (i < atnr); i++)
@@ -137,6 +137,41 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
                 BHAMB(nbfp, atnr, i, j) = idef->iparams[k].bham.b;
                 /* nbfp now includes the 6.0 derivative prefactor */
                 BHAMC(nbfp, atnr, i, j) = idef->iparams[k].bham.c*6.0;
+            }
+        }
+    }
+    else if (EVDW_PME(fr->vdwtype))
+    {
+        snew_aligned(nbfp, 4*atnr*atnr, 32);
+        for (i = k = 0; (i < atnr); i++)
+        {
+            for (j = 0; (j < atnr); j++, k++)
+            {
+                /* nbfp now includes the 6.0/12.0 derivative prefactors */
+                PME_C6(nbfp, atnr, i, j)  = idef->iparams[k].lj.c6*6.0;
+                PME_C12(nbfp, atnr, i, j) = idef->iparams[k].lj.c12*12.0;
+                /* For the non-bonded kernels in LJ-PME we also need to store
+                 * the specific C6-parameters that are used on the grid
+                 * in reciprocal spce
+                 */
+                c6i  = idef->iparams[i*(atnr+1)].lj.c6;
+                c12i = idef->iparams[i*(atnr+1)].lj.c12;
+                c6j  = idef->iparams[j*(atnr+1)].lj.c6;
+                c12j = idef->iparams[j*(atnr+1)].lj.c12;
+                c6   = sqrt(c6i  * c6j);
+                if (fr->ljpme_combination_rule == eljpmeLB && fr->ljpme_grid_correction == FALSE
+                    && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
+                {
+                    sigmai = pow(c12i / c6i, 1.0/6.0);
+                    sigmaj = pow(c12j / c6j, 1.0/6.0);
+                    epsi   = c6i * c6i / c12i;
+                    epsj   = c6j * c6j / c12j;
+                    c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+                }
+                PME_GRID(nbfp, atnr, i, j) = c6*6.0;
+
+                /* Add a dummy value for SIMD */
+                PME_DUMMY(nbfp, atnr, i, j) = 0;
             }
         }
     }
@@ -165,7 +200,7 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
     real  c6, c12;
 
     atnr = idef->atnr;
-    snew(nbfp, 2*atnr*atnr);
+    snew_aligned(nbfp, 4*atnr*atnr, 32);
     for (i = 0; i < atnr; ++i)
     {
         for (j = 0; j < atnr; ++j)
@@ -186,8 +221,8 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
                 c6     = epsi * epsj * pow(0.5*(sigmai+sigmaj), 6);
                 c12    = epsi * epsj * pow(0.5*(sigmai+sigmaj), 12);
             }
-            C6(nbfp, atnr, i, j)   = c6*6.0;
-            C12(nbfp, atnr, i, j)  = c12*12.0;
+            PME_C6(nbfp, atnr, i, j)   = c6*6.0;
+            PME_C12(nbfp, atnr, i, j)  = c12*12.0;
         }
     }
     return nbfp;
@@ -397,6 +432,12 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                               (BHAMA(fr->nbfp, fr->ntype, tjA, k) != 0.0) ||
                               (BHAMB(fr->nbfp, fr->ntype, tjA, k) != 0.0) ||
                               (BHAMC(fr->nbfp, fr->ntype, tjA, k) != 0.0));
+            }
+            else if (EVDW_PME(fr->vdwtype))
+            {
+                has_vdw[j] = (has_vdw[j] ||
+                              (PME_C6(fr->nbfp, fr->ntype, tjA, k)  != 0.0) ||
+                              (PME_C12(fr->nbfp, fr->ntype, tjA, k) != 0.0));
             }
             else
             {
@@ -620,7 +661,9 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
             type_VDW[ai] = type_VDW[ai] ||
                 fr->bBHAM ||
                 C6(fr->nbfp, fr->ntype, ai, j) != 0 ||
-                C12(fr->nbfp, fr->ntype, ai, j) != 0;
+                C12(fr->nbfp, fr->ntype, ai, j) != 0 ||
+                PME_C6(fr->nbfp, fr->ntype, ai, j) != 0 ||
+                PME_C12(fr->nbfp, fr->ntype, ai, j) != 0;
         }
     }
 
@@ -979,9 +1022,9 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         {
             for (tpj = 0; tpj < ntp; ++tpj)
             {
-                C6(nbfp_comb, ntp, tpi, tpj) =
-                    C6(nbfp, ntp, tpi, tpj) - C6(nbfp_comb, ntp, tpi, tpj);
-                C12(nbfp_comb, ntp, tpi, tpj) = C12(nbfp, ntp, tpi, tpj);
+                PME_C6(nbfp_comb, ntp, tpi, tpj) =
+                    PME_C6(nbfp, ntp, tpi, tpj) - PME_C6(nbfp_comb, ntp, tpi, tpj);
+                PME_C12(nbfp_comb, ntp, tpi, tpj) = PME_C12(nbfp, ntp, tpi, tpj);
             }
         }
         nbfp = nbfp_comb;
@@ -1016,6 +1059,12 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                     {
                         /* nbfp now includes the 6.0 derivative prefactor */
                         csix    += npair_ij*BHAMC(nbfp, ntp, tpi, tpj)/6.0;
+                    }
+                    else if (EVDW_PME(fr->vdwtype))
+                    {
+                        /* nbfp now includes the 6.0/12.0 derivative prefactors */
+                        csix    += npair_ij*PME_C6(nbfp, ntp, tpi, tpj)/6.0;
+                        ctwelve += npair_ij*PME_C12(nbfp, ntp, tpi, tpj)/12.0;
                     }
                     else
                     {
@@ -1067,6 +1116,11 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                             {
                                 /* nbfp now includes the 6.0 derivative prefactor */
                                 csix -= nmol*BHAMC(nbfp, ntp, tpi, tpj)/6.0;
+                            }
+                            else if (EVDW_PME(fr->vdwtype))
+                            {
+                                csix    -= nmol*PME_C6(nbfp, ntp, tpi, tpj)/6.0;
+                                ctwelve -= nmol*PME_C12(nbfp, ntp, tpi, tpj)/12.0;
                             }
                             else
                             {
@@ -1130,6 +1184,12 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                         {
                             /* nbfp now includes the 6.0 derivative prefactor */
                             csix    += nmolc*BHAMC(nbfp, ntp, tpi, tpj)/6.0;
+                        }
+                        else if (EVDW_PME(fr->vdwtype))
+                        {
+                            /* nbfp now includes the 6.0/12.0 derivative prefactors */
+                            csix    += nmolc*PME_C6(nbfp, ntp, tpi, tpj)/6.0;
+                            ctwelve += nmolc*PME_C12(nbfp, ntp, tpi, tpj)/12.0;
                         }
                         else
                         {
@@ -2535,6 +2595,7 @@ void init_forcerec(FILE              *fp,
     fr->eeltype                  = ir->coulombtype;
     fr->vdwtype                  = ir->vdwtype;
     fr->ljpme_combination_rule   = ir->ljpme_combination_rule;
+    fr->ljpme_grid_correction    = ir->ljpme_grid_correction;
 
     fr->coulomb_modifier = ir->coulomb_modifier;
     fr->vdw_modifier     = ir->vdw_modifier;
@@ -2581,7 +2642,6 @@ void init_forcerec(FILE              *fp,
     switch (fr->vdwtype)
     {
         case evdwCUT:
-        case evdwPME:
             if (fr->bBHAM)
             {
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
@@ -2591,7 +2651,9 @@ void init_forcerec(FILE              *fp,
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LENNARDJONES;
             }
             break;
-
+        case evdwPME:
+            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LJEWALD;
+            break;
         case evdwSWITCH:
         case evdwSHIFT:
         case evdwUSER:
@@ -2657,7 +2719,7 @@ void init_forcerec(FILE              *fp,
             fprintf(fp, "Table routines are used for vdw:     %s\n", bool_names[fr->bvdwtab ]);
         }
 
-        if (fr->bvdwtab == TRUE)
+        if (fr->bvdwtab == TRUE && fr->vdwtype != evdwPME)
         {
             fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
             fr->nbkernel_vdw_modifier    = eintmodNONE;
@@ -2774,7 +2836,7 @@ void init_forcerec(FILE              *fp,
     if (fr->nbfp == NULL)
     {
         fr->ntype = mtop->ffparams.atnr;
-        fr->nbfp  = mk_nbfp(&mtop->ffparams, fr->bBHAM);
+        fr->nbfp  = mk_nbfp(&mtop->ffparams, fr);
     }
 
     /* Copy the energy group exclusions */

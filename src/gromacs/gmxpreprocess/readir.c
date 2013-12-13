@@ -1890,6 +1890,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     RTYPE ("ewald-rtol",  ir->ewald_rtol, 0.00001);
     RTYPE ("ewald-rtol-lj", ir->ewald_rtol_lj, 0.001);
     EETYPE("lj-pme-comb-rule", ir->ljpme_combination_rule, eljpme_names);
+    EETYPE("lj-pme-grid-correction", ir->ljpme_grid_correction, yesno_names);
     EETYPE("ewald-geometry", ir->ewald_geometry, eewg_names);
     RTYPE ("epsilon-surface", ir->epsilon_surface, 0.0);
     EETYPE("optimize-fft", ir->bOptFFT,  yesno_names);
