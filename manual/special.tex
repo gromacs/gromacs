@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -999,6 +999,154 @@ perpendicular to $\ve{r}_i(t)$ and $\hat{\ve{v}}$. For flexible axis
 rotation, torques $\ve{\tau}_{\!n}$ are calculated for each slab using the
 local rotation axis of the slab and the Gaussian-weighted positions.
 
+
+\section{\normindex{Computational Electrophysiology}}
+\label{sec:compel}
+
+The Computational Electrophysiology (CompEL) protocol \cite{Kutzner2011b} allows the simulation of
+ion flux through membrane channels, driven by transmembrane potentials or ion
+concentration gradients. Just as in real cells, CompEL establishes transmembrane
+potentials by sustaining a small imbalance of charges $\Delta q$ across the membrane,
+which gives rise to a potential difference $\Delta U$ according to the membrane capacitance:
+\beq
+\Delta U = \Delta q / C_{membrane}
+\eeq
+The transmembrane electric field and concentration gradients are controlled by
+{\tt .mdp} options, which allow the user to set reference counts for the ions on either side
+of the membrane. If a difference between the actual and the reference numbers persists
+over a certain time span, specified by the user, a number of ion/water pairs are
+exchanged between the compartments until the reference numbers are restored.
+Alongside the calculation of channel conductance and ion selectivity, CompEL simulations also
+enable determination of the channel reversal potential, an important
+characteristic obtained in electrophysiology experiments.
+
+In a CompEL setup, the simulation system is divided into two compartments {\bf A} and {\bf B}
+with independent ion concentrations. This is best achieved by using double bilayer systems with
+a copy (or copies) of the channel/pore of interest in each bilayer (\figref{compelsetup} A, B).
+If the channel axes point in the same direction, channel flux is observed
+simultaneously at positive and negative potentials in this way, which is for instance
+important for studying channel rectification.
+
+\begin{figure}
+\centerline{\includegraphics[width=13.5cm]{plots/compelsetup.pdf}}
+\caption{Typical double-membrane setup for CompEL simulations (A, B). Plot (C) shows
+the potential difference $\Delta U$ resulting
+from the selected charge imbalance $\Delta q_{ref}$ between the compartments.}
+\label{fig:compelsetup}
+\end{figure}
+
+The potential difference $\Delta U$ across the membrane is easily calculated with the
+{\tt gmx potential} utility. By this, the potential drop along $z$ or the
+pore axis is exactly known in each time interval of the simulation (\figref{compelsetup} C).
+Type and number of ions $n_i$ of charge $q_i$, traversing the channel in the simulation,
+are written to the {\tt swapions.xvg} output file, from which the average channel
+conductance $G$ in each interval $\Delta t$ is determined by:
+\beq
+G = \frac{\sum_{i} n_{i}q_{i}}{\Delta t \, \Delta U} \, .
+\eeq
+The ion selectivity is calculated as the number flux ratio of different species.
+Best results are obtained by averaging these values over several overlapping time intervals.
+
+The calculation of reversal potentials is best achieved using a small set of simulations in which a given
+transmembrane concentration gradient is complemented with small ion imbalances of varying magnitude. For
+example, if one compartment contains 1\,M salt and the other 0.1\,M, and given charge neutrality otherwise,
+a set of simulations with $\Delta q = 0\,e$, $\Delta q = 2\,e$, $\Delta q = 4\,e$ could
+be used. Fitting a straight line through the current-voltage relationship of all obtained
+$I$-$U$ pairs near zero current will then yield $U_{rev}$.
+
+\subsection{Usage}
+The following {\tt .mdp} options control the CompEL protocol:
+{\small
+\begin{verbatim}
+swapcoords     = Z            ; Swap positions: no, X, Y, Z
+swap_frequency = 100          ; Swap attempt frequency
+\end{verbatim}}
+Choose {\tt Z} if your membrane is in the $xy$-plane (\figref{compelsetup} A, B).
+Ions will be exchanged between compartments depending on their $z$-positions alone.
+{\tt swap_frequency} determines how often a swap attempt will be made.
+This step requires that the positions of the ions, solvent, and swap groups are
+communicated between the parallel processes, so if chosen too small it can decrease the simulation
+performance.
+{\small
+\begin{verbatim}
+split_group0   = channel0     ; Defines compartment boundary 
+split_group1   = channel1     ; Defines other compartment boundary 
+massw_split0   = no           ; use mass-weighted center?
+massw_split1   = no
+\end{verbatim}}
+{\tt split_group0} and {\tt split_group1} are two index groups that define the boundaries
+between the two compartments, which are usually the centers of the channels.
+If {\tt massw_split0} or {\tt massw_split1} are set to {\tt yes}, the center of mass
+of each index group is used as boundary, here in $z$-direction. Otherwise, the
+geometrical centers will be used ($\times$ in \figref{compelsetup} A). If, such as here, a membrane
+channel is selected as split group, the center of the channel will define the dividing
+plane between the compartments (dashed horizontal line in the figure). All index groups
+must be defined in the index file.
+{\small
+\begin{verbatim}
+swap_group     = NA+_CL-      ; Ions to be included in exchange
+solvent_group  = SOL          ; Group name of solvent molecules
+cyl0_r         = 5.0          ; Split cylinder 0: pore radius (nm)
+cyl0_up        = 0.75         ; Split cylinder 0 upper extension (nm)
+cyl0_down      = 0.75         ; Split cylinder 0 lower extension (nm)
+cyl1_r         = 5.0          ; same for other channel
+cyl1_up        = 0.75
+cyl1_down      = 0.75
+coupl_steps    = 10           ; Average over these many swap steps
+threshold      = 1            ; Do not swap if < threshold
+\end{verbatim}}
+{\tt swap_group} identifies the index group of ions that 
+should be involved in the flux and exchange cycles, {\tt solvent_group} defines the solvent
+group with which they are swapped. The cylinder options only influence the counting of
+ions, i.e., ions will be counted as having traveled through either channel 0 or channel 1
+according to the definition of (channel) cylinder radius, upper and lower extension,
+relative to the location of the respective split group. This will not affect the actual
+flux or exchange, but will provide you with the ion permeation numbers across
+each of the channels. Note that an ion can only be counted as passing through a particular
+channel if it is detected \emph{within} the defined split cylinder in a swap step.
+If {\tt swap_frequency} is chosen too high, a particular ion may be detected in compartment {\bf A}
+in one swap step, and in compartment {\bf B} in the following swap step, so it will be unclear
+through which of the channels it has passed.
+
+{\tt coupl_steps} sets the number of swap attempt steps. A discrepancy between
+actual and reference ion numbers in each compartment must persist over this many attempts
+before an actual exchange takes place. If {\tt coupl_steps} is set to 1, then the momentary ion distribution determines
+whether ions are exchanged. {\tt coupl_steps} \textgreater\ 1 will use the time-average
+of ion distributions over the selected number of attempt steps instead. This can be useful, for example,
+when ions diffuse near compartment boundaries, which would lead to numerous unproductive
+ion exchanges. A {\tt threshold} of 1 means that a swap is performed if the average ion
+count in a compartment differs by at least 1 from the requested values. Higher thresholds
+will lead to toleration of larger differences. Ions are exchanged until the requested
+number $\pm$ the threshold is reached.
+
+{\small
+\begin{verbatim}
+anionsA  = -1                 ; Reference count of anions in A
+cationsA = -1                 ; ... of cations in A
+anionsB  = -1                 ; ... of anions in B
+cationsB = -1                 ; ... of cations in B
+\end{verbatim}}
+These options set the requested number of anions and cations for each of the two compartments.
+A number of {\tt -1} means fix the numbers found in time step 0. Note that these numbers
+need to add up to the total number of ions in the swap group.
+
+Note that a double-layered system for CompEL simulations can be easily prepared by
+duplicating an existing membrane/channel MD system in the direction of the membrane
+normal (typically $z$) with {\tt gmx editconf -translate 0 0 <l_z>}, where {\tt l_z}
+is the box length in that direction. If you have already defined index groups for
+the channel for the single-layered system, {\tt gmx make_ndx -n index.ndx -twin} will
+provide you with the groups for the double-layered system.
+
+\subsection*{Multimeric channels}
+If a split group consists of more than one molecule, the correct PBC image of all molecules
+with respect to each other has to be chosen such that the channel center can be correctly
+determined. \gromacs\ assumes that the starting structure in the {\tt .tpr}
+file has the correct PBC representation. Set the following environment variable
+to check whether that is the case:
+\begin{itemize}
+\item   {\tt GMX_COMPELDUMP}: output the starting structure after it has been made whole to
+        {\tt .pdb} file.
+\end{itemize}
 
 
 \section{Calculating a PMF using the free-energy code}
