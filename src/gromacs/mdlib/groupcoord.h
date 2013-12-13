@@ -37,7 +37,7 @@
 
 /*! \file groupcoord.h
  *
- *  @brief Assemble atom positions for comparison with a reference set.
+ *  @brief Assemble atomic positions of a (small) subset of atoms and distribute to all nodes.
  *
  *  This file contains functions to assemble the positions of a subset of the
  *  atoms and to do operations on it like determining the center of mass, or
@@ -88,19 +88,28 @@ extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
  * retrieved from anrs_loc[0..nr_loc]. If you call the routine for the serial case,
  * provide an array coll_ind[i] = i for i in 1..nr.
  *
+ * If shifts != NULL, the PBC representation of each atom is chosen such that a
+ * continuous trajectory results. Therefore, if the group is whole at the start
+ * of the simulation, it will always stay whole.
+ * If shifts = NULL, the group positions are not made whole again, but assembled
+ * and distributed to all nodes. The variables marked "optional" are not used in
+ * that case.
+ *
  * \param[in]     cr           Pointer to MPI communication data.
- * \param[out]    xcoll        Collective array of positions, idential on all nodes
+ * \param[out]    xcoll        Collective array of positions, identical on all nodes
  *                             after this routine has been called.
  * \param[in,out] shifts       Collective array of shifts for xcoll, needed to make
  *                             the group whole. This array remembers the shifts
  *                             since the start of the simulation (where the group
  *                             is whole) and must therefore not be changed outside
- *                             of this routine!
+ *                             of this routine! If NULL, the group will not be made
+ *                             whole and the optional variables are ignored.
  * \param[out]    extra_shifts Extra shifts since last time step, only needed as
- *                             buffer variable [0..nr].
- * \param[in]     bNS          Neighborsearching/domain redecomposition has been
+ *                             buffer variable [0..nr] (optional).
+ * \param[in]     bNS          Neighbor searching / domain re-decomposition has been
  *                             performed at the begin of this time step such that
- *                             the shifts have changed and need to be updated.
+ *                             the shifts have changed and need to be updated
+ *                             (optional).
  * \param[in]     x_loc        Pointer to the local atom positions this node has.
  * \param[in]     nr           Total number of atoms in the group.
  * \param[in]     nr_loc       Number of group atoms on the local node.
@@ -110,16 +119,15 @@ extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
  *                             contributions can be gmx_summed. It is provided by
  *                             dd_make_local_group_indices.
  * \param[in,out] xcoll_old    Positions from the last time step, used to make the
- *                             group whole.
+ *                             group whole (optional).
  * \param[in]     box          Simulation box matrix, needed to shift xcoll such that
- *                             the group becomes whole.
+ *                             the group becomes whole (optional).
  */
 extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts,
                                         ivec *extra_shifts, const gmx_bool bNS,
                                         rvec *x_loc, const int nr, const int nr_loc,
                                         int *anrs_loc, int *coll_ind, rvec *xcoll_old,
                                         matrix box);
-
 
 /*! \brief Calculates the center of the positions x locally.
  *

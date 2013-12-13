@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -192,7 +192,10 @@ you should consult your local documentation for details.
 \item   {\tt LOGO}: set display color for logo in {\tt \normindex{ngmx}}.
 \item   {\tt LONGFORMAT}: use long float format when printing
         decimal values.
-
+\item   {\tt GMX_COMPELDUMP}: Applies for computational electrophysiology setups
+        only (see section \ref{sec:compel}). The initial structure gets dumped to 
+        {\tt .pdb} file, which allows to check whether multimeric channels have 
+        the correct PBC representation. 
 \end{enumerate}
 
 
