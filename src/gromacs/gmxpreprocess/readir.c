@@ -1225,6 +1225,18 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->vdwtype == evdwPME)
+    {
+        if (!(ir->vdw_modifier == eintmodNONE || ir->vdw_modifier == eintmodPOTSHIFT))
+        {
+            sprintf(err_buf, "With vdwtype = %s, the only supported modifiers are %s a\
+nd %s",
+                    evdw_names[ir->vdwtype],
+                    eintmod_names[eintmodPOTSHIFT],
+                    eintmod_names[eintmodNONE]);
+        }
+    }
+
     if (ir->cutoff_scheme == ecutsGROUP)
     {
         if (((ir->coulomb_modifier != eintmodNONE && ir->rcoulomb == ir->rlist) ||

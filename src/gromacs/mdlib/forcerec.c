@@ -158,6 +158,46 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
     return nbfp;
 }
 
+static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
+{
+    int   i, j, k, atnr;
+    real  c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real *grid;
+
+    /* For LJ-PME simulations, we correct the energies with the reciprocal space
+     * inside of the cut-off. To do this the non-bonded kernels needs to have
+     * access to the C6-values used on the reciprocal grid in pme.c
+     */
+
+    atnr = idef->atnr;
+    snew(grid, 2*atnr*atnr);
+    for (i = k = 0; (i < atnr); i++)
+    {
+        for (j = 0; (j < atnr); j++, k++)
+        {
+            c6i  = idef->iparams[i*(atnr+1)].lj.c6;
+            c12i = idef->iparams[i*(atnr+1)].lj.c12;
+            c6j  = idef->iparams[j*(atnr+1)].lj.c6;
+            c12j = idef->iparams[j*(atnr+1)].lj.c12;
+            c6   = sqrt(c6i * c6j);
+            if (fr->ljpme_combination_rule == eljpmeLB
+                && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
+            {
+                sigmai = pow(c12i / c6i, 1.0/6.0);
+                sigmaj = pow(c12j / c6j, 1.0/6.0);
+                epsi   = c6i * c6i / c12i;
+                epsj   = c6j * c6j / c12j;
+                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+            }
+            /* Store the elements at the same relative positions as C6 in nbfp in order
+             * to simplify access in the kernels
+             */
+            grid[2*(atnr*i+j)] = c6*6.0;
+        }
+    }
+    return grid;
+}
+
 static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
 {
     real *nbfp;
@@ -1955,10 +1995,6 @@ init_interaction_const(FILE                       *fp,
             {
                 real crc2;
 
-                if (fr->cutoff_scheme == ecutsGROUP)
-                {
-                    gmx_fatal(FARGS, "Potential-shift is not (yet) implemented for LJ-PME with cutoff-scheme=group");
-                }
                 crc2            = sqr(ic->ewaldcoeff_lj*ic->rvdw);
                 ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
             }
@@ -2582,7 +2618,6 @@ void init_forcerec(FILE              *fp,
     switch (fr->vdwtype)
     {
         case evdwCUT:
-        case evdwPME:
             if (fr->bBHAM)
             {
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
@@ -2591,6 +2626,9 @@ void init_forcerec(FILE              *fp,
             {
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LENNARDJONES;
             }
+            break;
+        case evdwPME:
+            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LJEWALD;
             break;
 
         case evdwSWITCH:
@@ -2616,8 +2654,8 @@ void init_forcerec(FILE              *fp,
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
-                          !gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS));
+        fr->bvdwtab    = ((fr->vdwtype != evdwCUT || !gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS))
+                          && !EVDW_PME(fr->vdwtype));
         /* We have special kernels for standard Ewald and PME, but the pme-switch ones are tabulated above */
         fr->bcoultab   = !(fr->eeltype == eelCUT ||
                            fr->eeltype == eelEWALD ||
@@ -2776,6 +2814,10 @@ void init_forcerec(FILE              *fp,
     {
         fr->ntype = mtop->ffparams.atnr;
         fr->nbfp  = mk_nbfp(&mtop->ffparams, fr->bBHAM);
+        if (EVDW_PME(fr->vdwtype))
+        {
+            fr->ljpme_c6grid  = make_ljpme_c6grid(&mtop->ffparams, fr);
+        }
     }
 
     /* Copy the energy group exclusions */
