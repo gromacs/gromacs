@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -318,6 +318,32 @@ enum {
 
 enum {
     erotgFitRMSD, erotgFitNORM, erotgFitPOT, erotgFitNR
+};
+
+/* Direction along which ion/water swaps happen in "Computational
+ * Electrophysiology" (CompEL) setups */
+enum eSwaptype {
+    eswapNO, eswapX, eswapY, eswapZ, eSwapTypesNR
+};
+/* The following three enums are mainly used for indexing arrays and when
+ * looping over the available ions, channels, or compartments. This hopefully
+ * adds to the code's readability because it makes clear which object is dealt
+ * with in a block of code.
+ *
+ * The two compartments for CompEL setups */
+enum eCompartment {
+    eCompA, eCompB, eCompNR
+};
+/* The positive and negative ions CompEL setups, future versions of the
+ * protocol might consider more than two types of ions */
+enum eIontype {
+    eIonNEG, eIonPOS, eIonNR
+};
+/* The chanels that define with their COM the compartment boundaries in
+ * CompEL setups. In principle one could also use modified setups with
+ * more than two channels. */
+enum eChannel {
+    eChan0, eChan1, eChanNR
 };
 
 /* QMMM */
