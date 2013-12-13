@@ -449,6 +449,7 @@ enum gmx_nbkernel_vdw
     GMX_NBKERNEL_VDW_LENNARDJONES,
     GMX_NBKERNEL_VDW_BUCKINGHAM,
     GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
+    GMX_NBKERNEL_VDW_LJEWALD,
     GMX_NBKERNEL_VDW_NR
 };
 /* Types of interactions inside the neighborlist
