@@ -43,6 +43,7 @@
  * and omp.h should never be directly included.  Instead, this header should be
  * used whenever OpenMP API functions are needed.
  *
+ * \inlibraryapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_OMP_H

@@ -32,17 +32,17 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
-/*! \file groupcoord.h
+/*! \libinternal \file groupcoord.h
+ * \brief
+ * Assemble atom positions for comparison with a reference set.
  *
- *  @brief Assemble atom positions for comparison with a reference set.
+ * This file contains functions to assemble the positions of a subset of the
+ * atoms and to do operations on it like determining the center of mass, or
+ * doing translations and rotations. These functions are useful when
+ * a subset of the positions needs to be compared to some set of reference
+ * positions, as e.g. done for essential dynamics.
  *
- *  This file contains functions to assemble the positions of a subset of the
- *  atoms and to do operations on it like determining the center of mass, or
- *  doing translations and rotations. These functions are useful when
- *  a subset of the positions needs to be compared to some set of reference
- *  positions, as e.g. done for essential dynamics.
- *
+ * \inlibraryapi
  */
 
 #ifdef HAVE_CONFIG_H
