@@ -63,7 +63,6 @@
 #include "pbc.h"
 #include "vec.h"
 #include "gmx_random.h"
-#include "gromacs/coulombintegrals.h"
 #include "gpp_atomtype.h"
 #include "atomprop.h"
 #include "poldata.hpp"
@@ -473,7 +472,7 @@ int alex_gentop(int argc, char *argv[])
 
     imm = mymol.GenerateTopology(aps, pd, lot, iModel, bAddShells, nexcl);
     
-    if (immOK == imm)
+    if ((immOK == imm)  && (eqgRESP == iModel))
     {
         if (0 == seed)
         {

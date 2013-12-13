@@ -45,7 +45,7 @@
 #include "smalloc.h"
 #include "coulomb.h"
 #include "gromacs/legacyheaders/coulomb.h"
-#include "gromacs/coulombintegrals.h"
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "atomprop.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"
