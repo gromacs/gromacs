@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,10 @@
 
 #include "../nb_kernel.h"
 
+nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_sse2_single;
+nb_kernel_t nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sse2_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_sse2_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_sse2_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_sse2_single;
@@ -48,6 +52,16 @@ nb_kernel_t nb_kernel_ElecNone_VdwLJSw_GeomP1P1_VF_sse2_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_sse2_single;
 nb_kernel_t nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_sse2_single;
 nb_kernel_t nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3P1_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW4P1_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW4P1_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_sse2_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJ_GeomP1P1_VF_sse2_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJ_GeomP1P1_F_sse2_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJ_GeomW3P1_VF_sse2_single;
@@ -78,6 +92,16 @@ nb_kernel_t nb_kernel_ElecEw_VdwCSTab_GeomW4P1_VF_sse2_single;
 nb_kernel_t nb_kernel_ElecEw_VdwCSTab_GeomW4P1_F_sse2_single;
 nb_kernel_t nb_kernel_ElecEw_VdwCSTab_GeomW4W4_VF_sse2_single;
 nb_kernel_t nb_kernel_ElecEw_VdwCSTab_GeomW4W4_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomP1P1_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomP1P1_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3P1_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3P1_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3W3_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3W3_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4W4_VF_sse2_single;
+nb_kernel_t nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4W4_F_sse2_single;
 nb_kernel_t nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_sse2_single;
 nb_kernel_t nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_F_sse2_single;
 nb_kernel_t nb_kernel_ElecEwSh_VdwLJSh_GeomW3P1_VF_sse2_single;
@@ -259,6 +283,10 @@ nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_sse2_single;
 nb_kernel_info_t
     kernellist_sse2_single[] =
 {
+    { nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_sse2_single, "nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_sse2_single", "sse2_single", "None", "None", "LJEwald", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_sse2_single, "nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_sse2_single", "sse2_single", "None", "None", "LJEwald", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sse2_single, "nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sse2_single", "sse2_single", "None", "None", "LJEwald", "PotentialShift", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sse2_single, "nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sse2_single", "sse2_single", "None", "None", "LJEwald", "PotentialShift", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_sse2_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_sse2_single", "sse2_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_sse2_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_sse2_single", "sse2_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_sse2_single, "nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_sse2_single", "sse2_single", "None", "None", "LennardJones", "PotentialShift", "ParticleParticle", "", "PotentialAndForce" },
@@ -267,6 +295,16 @@ nb_kernel_info_t
     { nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_sse2_single, "nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_sse2_single", "sse2_single", "None", "None", "LennardJones", "PotentialSwitch", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_sse2_single, "nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_sse2_single", "sse2_single", "None", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_sse2_single, "nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_sse2_single", "sse2_single", "None", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW3P1_F_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3P1_F_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW4P1_VF_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomW4P1_VF_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW4P1_F_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomW4P1_F_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_sse2_single, "nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_sse2_single", "sse2_single", "Ewald", "None", "LJEwald", "None", "Water4Water4", "", "Force" },
     { nb_kernel_ElecEw_VdwLJ_GeomP1P1_VF_sse2_single, "nb_kernel_ElecEw_VdwLJ_GeomP1P1_VF_sse2_single", "sse2_single", "Ewald", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecEw_VdwLJ_GeomP1P1_F_sse2_single, "nb_kernel_ElecEw_VdwLJ_GeomP1P1_F_sse2_single", "sse2_single", "Ewald", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecEw_VdwLJ_GeomW3P1_VF_sse2_single, "nb_kernel_ElecEw_VdwLJ_GeomW3P1_VF_sse2_single", "sse2_single", "Ewald", "None", "LennardJones", "None", "Water3Particle", "", "PotentialAndForce" },
@@ -297,6 +335,16 @@ nb_kernel_info_t
     { nb_kernel_ElecEw_VdwCSTab_GeomW4P1_F_sse2_single, "nb_kernel_ElecEw_VdwCSTab_GeomW4P1_F_sse2_single", "sse2_single", "Ewald", "None", "CubicSplineTable", "None", "Water4Particle", "", "Force" },
     { nb_kernel_ElecEw_VdwCSTab_GeomW4W4_VF_sse2_single, "nb_kernel_ElecEw_VdwCSTab_GeomW4W4_VF_sse2_single", "sse2_single", "Ewald", "None", "CubicSplineTable", "None", "Water4Water4", "", "PotentialAndForce" },
     { nb_kernel_ElecEw_VdwCSTab_GeomW4W4_F_sse2_single, "nb_kernel_ElecEw_VdwCSTab_GeomW4W4_F_sse2_single", "sse2_single", "Ewald", "None", "CubicSplineTable", "None", "Water4Water4", "", "Force" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomP1P1_VF_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomP1P1_VF_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomP1P1_F_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomP1P1_F_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3P1_VF_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3P1_VF_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3P1_F_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3P1_F_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3W3_VF_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3W3_VF_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3W3_F_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomW3W3_F_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4W4_VF_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4W4_VF_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4W4_F_sse2_single, "nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4W4_F_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LJEwald", "PotentialShift", "Water4Water4", "", "Force" },
     { nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_sse2_single, "nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_VF_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LennardJones", "PotentialShift", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_F_sse2_single, "nb_kernel_ElecEwSh_VdwLJSh_GeomP1P1_F_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LennardJones", "PotentialShift", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecEwSh_VdwLJSh_GeomW3P1_VF_sse2_single, "nb_kernel_ElecEwSh_VdwLJSh_GeomW3P1_VF_sse2_single", "sse2_single", "Ewald", "PotentialShift", "LennardJones", "PotentialShift", "Water3Particle", "", "PotentialAndForce" },
