@@ -46,6 +46,7 @@
  *  We also provide our own multi-dimensional transform setups even when
  *  the underlying library does not support it directly.
  *
+ * \inpublicapi
  * \ingroup module_fft
  */
 #ifndef GMX_FFT_FFT_H

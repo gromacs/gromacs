@@ -32,11 +32,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
  * Declares test fixture for integration tests
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
  * \ingroup module_testutils
  */
 #ifndef GMX_INTEGRATION_TESTS_MODULETEST_H
@@ -57,6 +58,7 @@ namespace test
  *
  * Any method in this class may throw std::bad_alloc if out of memory.
  *
+ * \inlibraryapi
  * \ingroup module_testutils
  */
 class IntegrationTestFixture : public ::testing::Test

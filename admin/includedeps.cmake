@@ -33,29 +33,18 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 function (generate_module_file_list SRCDIR OUTFILE MODE)
-    set(_module_list
-        analysisdata commandline fft fileio linearalgebra onlinehelp options
-        selection timing trajectoryanalysis utility)
-    if (MODE STREQUAL "CHECK")
-        list(APPEND _module_list gmxana gmxlib gmxpreprocess legacyheaders mdlib)
-    endif()
-    set(PATH_LIST)
-    foreach (MODULE ${_module_list})
-        list(APPEND PATH_LIST "${SRCDIR}/src/gromacs/${MODULE}/*.cpp")
-        if (MODE STREQUAL "GRAPHS")
-            list(APPEND PATH_LIST "${SRCDIR}/src/gromacs/${MODULE}/*.c")
-        endif()
-        list(APPEND PATH_LIST "${SRCDIR}/src/gromacs/${MODULE}/*.h")
-    endforeach ()
-    list(APPEND PATH_LIST "${SRCDIR}/src/testutils/*.cpp")
-    list(APPEND PATH_LIST "${SRCDIR}/src/testutils/*.h")
-    set(FILE_LIST)
-    foreach (PATH_EXPR ${PATH_LIST})
-        file(GLOB_RECURSE FOUND_FILES ${PATH_EXPR})
-        list(APPEND FILE_LIST ${FOUND_FILES})
-    endforeach ()
-    string(REPLACE ";" "\n" FILE_LIST "${FILE_LIST}")
-    file(WRITE ${OUTFILE} "${FILE_LIST}")
+    set(_file_list)
+    file(GLOB_RECURSE _file_list
+        ${SRCDIR}/src/gromacs/*.cpp
+        ${SRCDIR}/src/gromacs/*.c
+        ${SRCDIR}/src/gromacs/*.cu
+        ${SRCDIR}/src/gromacs/*.h
+        ${SRCDIR}/src/gromacs/*.cuh
+        ${SRCDIR}/src/testutils/*.cpp
+        ${SRCDIR}/src/testutils/*.h
+        )
+    string(REPLACE ";" "\n" _file_list "${_file_list}")
+    file(WRITE ${OUTFILE} "${_file_list}")
 endfunction ()
 
 function (generate_installed_file_list SRCDIR BUILDDIR OUTFILE)
@@ -88,7 +77,8 @@ endif ()
 if (MODE STREQUAL "CHECK")
     set(GRAPHOPTIONS --check)
 elseif (MODE STREQUAL "CHECKDOC")
-    set(GRAPHOPTIONS --check --check-doc --warn-undoc)
+    # TODO: Add --warn-undoc after most code has at least rudimentary comments.
+    set(GRAPHOPTIONS --check --check-doc)
 elseif (MODE STREQUAL "GRAPHS")
     set(GRAPHOPTIONS
         --module-graph module-deps.dot --module-file-graphs

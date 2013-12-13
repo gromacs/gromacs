@@ -79,6 +79,7 @@ void registerModule(CommandLineModuleManager *manager,
 
 }   // namespace
 
+//! \cond libapi
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
     using namespace gmx::analysismodules;
@@ -88,5 +89,6 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<FreeVolumeInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
 }
+//! \endcond
 
 } // namespace gmx

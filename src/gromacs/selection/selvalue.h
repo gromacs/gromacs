@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
  * Declares ::gmx_ana_selvalue_t.
  *
@@ -59,7 +59,8 @@ typedef enum
     GROUP_VALUE         /**< One group of atoms. */
 } e_selvalue_t;
 
-/*! \brief
+/*! \internal
+ * \brief
  * Describes a value of a selection expression or of a selection method
  * parameter.
  *
