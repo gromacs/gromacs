@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,13 +116,19 @@ class MdrunTestFixture : public IntegrationTestFixture
          */
         std::string topFileName;
         std::string groFileName;
+        std::string groOutputFileName;
         std::string trrFileName;
+        std::string ndxFileName;
         std::string xtcFileName;
         std::string mdpInputFileName;
         std::string mdpOutputFileName;
         std::string tprFileName;
         std::string logFileName;
         std::string edrFileName;
+        std::string cptInputFileName;
+        std::string cptOutputFileName;
+        std::string swapFileName;
+        int         nsteps;
         //@}
 };
 

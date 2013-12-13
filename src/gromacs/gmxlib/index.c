@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ t_blocka *new_blocka(void)
     return block;
 }
 
-void write_index(const char *outf, t_blocka *b, char **gnames)
+void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms)
 {
     FILE *out;
     int   i, j, k;
@@ -120,6 +120,26 @@ void write_index(const char *outf, t_blocka *b, char **gnames)
         }
         fprintf(out, "\n");
     }
+
+    /* Duplicate copy, useful for computational electrophysiology double-layer setups */
+    if (bDuplicate)
+    {
+        fprintf(stderr, "Duplicating the whole system with an atom offset of %d atoms.\n", natoms);
+        for (i = 0; (i < b->nr); i++)
+        {
+            fprintf(out, "[ %s_copy ]\n", gnames[i]);
+            for (k = 0, j = b->index[i]; j < b->index[i+1]; j++, k++)
+            {
+                fprintf(out, "%4d ", b->a[j]+1 + natoms );
+                if ((k % 15) == 14)
+                {
+                    fprintf(out, "\n");
+                }
+            }
+            fprintf(out, "\n");
+        }
+    }
+
     gmx_fio_fclose(out);
 }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -229,6 +229,10 @@ const char *erotg_names[erotgNR+1] = {
 
 const char *erotg_fitnames[erotgFitNR+1] = {
     "rmsd", "norm", "potential", NULL
+};
+
+const char *eSwapTypes_names[eSwapTypesNR+1] = {
+    "no", "X", "Y", "Z", NULL
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {
