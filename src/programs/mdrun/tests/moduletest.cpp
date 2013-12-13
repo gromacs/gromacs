@@ -97,7 +97,8 @@ MdrunTestFixture::MdrunTestFixture() :
     mdpOutputFileName(fileManager_.getTemporaryFilePath("output.mdp")),
     tprFileName(fileManager_.getTemporaryFilePath(".tpr")),
     logFileName(fileManager_.getTemporaryFilePath(".log")),
-    edrFileName(fileManager_.getTemporaryFilePath(".edr"))
+    edrFileName(fileManager_.getTemporaryFilePath(".edr")),
+    nsteps(-2)
 {
 #ifdef GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
@@ -147,9 +148,13 @@ MdrunTestFixture::callGrompp()
     caller.addOption("-f", mdpInputFileName);
     caller.addOption("-p", topFileName);
     caller.addOption("-c", groFileName);
-
     caller.addOption("-po", mdpOutputFileName);
     caller.addOption("-o", tprFileName);
+
+    if (!ndxFileName.empty())
+    {
+        caller.addOption("-n", ndxFileName);
+    }
 
     return gmx_grompp(caller.argc(), caller.argv());
 }
@@ -161,12 +166,40 @@ MdrunTestFixture::callMdrun()
     caller.append("mdrun");
 
     caller.addOption("-s", tprFileName);
-    caller.addOption("-rerun", rerunFileName);
-
     caller.addOption("-g", logFileName);
     caller.addOption("-e", edrFileName);
     caller.addOption("-o", trrFileName);
     caller.addOption("-x", xtcFileName);
+
+    if (!rerunFileName.empty())
+    {
+        caller.addOption("-rerun", rerunFileName);
+    }
+
+    if (!cptOutputFileName.empty())
+    {
+        caller.addOption("-cpo", cptOutputFileName);
+    }
+
+    if (!cptInputFileName.empty())
+    {
+        caller.addOption("-cpi", cptInputFileName);
+    }
+
+    if (!groOutputFileName.empty())
+    {
+        caller.addOption("-c", groOutputFileName);
+    }
+
+    if (!swapFileName.empty())
+    {
+        caller.addOption("-swap", swapFileName);
+    }
+
+    if (nsteps > -2)
+    {
+        caller.addOption("-nsteps", nsteps);
+    }
 
 #ifdef GMX_THREAD_MPI
     caller.addOption("-nt", numThreads);
