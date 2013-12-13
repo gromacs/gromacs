@@ -279,5 +279,5 @@ const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1] =
 
 const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1] =
 {
-    "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", NULL
+    "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", "LJEwald", NULL
 };
