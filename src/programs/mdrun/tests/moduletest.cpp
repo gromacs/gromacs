@@ -155,13 +155,9 @@ MdrunTestFixture::callGrompp()
 }
 
 int
-MdrunTestFixture::callMdrun()
+MdrunTestFixture::callMdrun(CommandLine &caller)
 {
-    CommandLine caller;
-    caller.append("mdrun");
-
     caller.addOption("-s", tprFileName);
-    caller.addOption("-rerun", rerunFileName);
 
     caller.addOption("-g", logFileName);
     caller.addOption("-e", edrFileName);
@@ -176,6 +172,14 @@ MdrunTestFixture::callMdrun()
 #endif
 
     return gmx_mdrun(caller.argc(), caller.argv());
+}
+
+int
+MdrunTestFixture::callMdrun()
+{
+    CommandLine caller;
+    caller.append("mdrun");
+    return callMdrun(caller);
 }
 
 } // namespace test
