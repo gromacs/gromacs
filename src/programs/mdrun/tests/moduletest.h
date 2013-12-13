@@ -110,7 +110,9 @@ class MdrunTestFixture : public IntegrationTestFixture
          */
         std::string topFileName;
         std::string groFileName;
+        std::string groOutputFileName;
         std::string trrFileName;
+        std::string ndxFileName;
         std::string xtcFileName;
         std::string rerunFileName;
         std::string mdpInputFileName;
@@ -118,6 +120,10 @@ class MdrunTestFixture : public IntegrationTestFixture
         std::string tprFileName;
         std::string logFileName;
         std::string edrFileName;
+        std::string cptInputFileName;
+        std::string cptOutputFileName;
+        std::string swapFileName;
+        int         nsteps;
         //@}
 };
 

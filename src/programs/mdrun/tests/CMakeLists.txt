@@ -44,6 +44,7 @@ gmx_build_unit_test(
     rerun.cpp
     # files with code for test fixtures
     moduletest.cpp
+    swapcoords.cpp
     # pseudo libraries for code for grompp and mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     $<TARGET_OBJECTS:gmx_objlib>
