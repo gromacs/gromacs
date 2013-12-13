@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,6 +87,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/swap/swapcoords.h"
 #include "gromacs/essentialdynamics/edsam.h"
 
 #ifdef GMX_FAHCORE
@@ -1726,6 +1727,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, state->x, box, mtop, oenv,
                      bVerbose, Flags);
+        }
+
+        if (inputrec->eSwapCoords != eswapNO)
+        {
+            /* Initialize ion swapping code */
+            init_swapcoords(fplog, bVerbose, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
+                            mtop, state->x, state->box, &state->swapstate, cr, oenv, Flags);
         }
 
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);

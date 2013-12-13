@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,6 +94,7 @@ extern const char *epullg_names[epullgNR+1];
 extern const char *erotg_names[erotgNR+1];
 extern const char *erotg_originnames[erotgNR+1];
 extern const char *erotg_fitnames[erotgFitNR+1];
+extern const char *eSwapTypes_names[eSwapTypesNR+1];
 extern const char *eQMmethod_names[eQMmethodNR+1];
 extern const char *eQMbasis_names[eQMbasisNR+1];
 extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
@@ -145,6 +146,7 @@ extern const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1];
 #define EROTGEOM(e)    ENUM_NAME(e, erotgNR, erotg_names)
 #define EROTORIGIN(e)  ENUM_NAME(e, erotgOriginNR, erotg_originnames)
 #define EROTFIT(e)     ENUM_NAME(e, erotgFitNR, erotg_fitnames)
+#define ESWAPTYPE(e)   ENUM_NAME(e, eSwapTypesNR, eSwapTypes_names)
 #define EQMMETHOD(e)   ENUM_NAME(e, eQMmethodNR, eQMmethod_names)
 #define EQMBASIS(e)    ENUM_NAME(e, eQMbasisNR, eQMbasis_names)
 #define EQMMMSCHEME(e) ENUM_NAME(e, eQMMMschemeNR, eQMMMscheme_names)
