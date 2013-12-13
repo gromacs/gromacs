@@ -98,7 +98,8 @@ MdrunTestFixture::MdrunTestFixture() :
     mdpOutputFileName(fileManager_.getTemporaryFilePath("output.mdp")),
     tprFileName(fileManager_.getTemporaryFilePath(".tpr")),
     logFileName(fileManager_.getTemporaryFilePath(".log")),
-    edrFileName(fileManager_.getTemporaryFilePath(".edr"))
+    edrFileName(fileManager_.getTemporaryFilePath(".edr")),
+    nsteps(-2)
 {
 #ifdef GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
@@ -185,6 +186,11 @@ MdrunTestFixture::callMdrun(const CommandLine &callerRef)
     caller.addOption("-x", reducedPrecisionTrajectoryFileName);
 
     caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
+
+    if (nsteps > -2)
+    {
+        caller.addOption("-nsteps", nsteps);
+    }
 
 #ifdef GMX_THREAD_MPI
     caller.addOption("-nt", numThreads);

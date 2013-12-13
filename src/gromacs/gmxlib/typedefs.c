@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -486,6 +486,41 @@ static void zero_ekinstate(ekinstate_t *eks)
     eks->mvcos          = 0;
 }
 
+static void init_swapstate(swapstate_t *swapstate)
+{
+    int ii, ic;
+
+    swapstate->eSwapCoords = 0;
+    swapstate->nAverage    = 0;
+
+    /* Ion/water position swapping */
+    for (ic = 0; ic < eCompNR; ic++)
+    {
+        for (ii = 0; ii < eIonNR; ii++)
+        {
+            swapstate->nat_req[ic][ii]        = 0;
+            swapstate->nat_req_p[ic][ii]      = NULL;
+            swapstate->inflow_netto[ic][ii]   = 0;
+            swapstate->inflow_netto_p[ic][ii] = NULL;
+            swapstate->nat_past[ic][ii]       = NULL;
+            swapstate->nat_past_p[ic][ii]     = NULL;
+            swapstate->fluxfromAtoB[ic][ii]   = 0;
+            swapstate->fluxfromAtoB_p[ic][ii] = NULL;
+        }
+    }
+    swapstate->fluxleak               = NULL;
+    swapstate->nions                  = 0;
+    swapstate->comp_from              = NULL;
+    swapstate->channel_label          = NULL;
+    swapstate->bFromCpt               = 0;
+    swapstate->nat[eChan0]            = 0;
+    swapstate->nat[eChan1]            = 0;
+    swapstate->xc_old_whole[eChan0]   = NULL;
+    swapstate->xc_old_whole[eChan1]   = NULL;
+    swapstate->xc_old_whole_p[eChan0] = NULL;
+    swapstate->xc_old_whole_p[eChan1] = NULL;
+}
+
 void init_energyhistory(energyhistory_t * enerhist)
 {
     enerhist->nener = 0;
@@ -619,6 +654,7 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     zero_ekinstate(&state->ekinstate);
     init_energyhistory(&state->enerhist);
     init_df_history(&state->dfhist, nlambda);
+    init_swapstate(&state->swapstate);
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;
     state->cg_gl           = NULL;

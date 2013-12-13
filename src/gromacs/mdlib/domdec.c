@@ -73,6 +73,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/swap/swapcoords.h"
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
@@ -9820,6 +9821,11 @@ void dd_partition_system(FILE                *fplog,
         dd_make_local_rotation_groups(dd, ir->rot);
     }
 
+    if (ir->eSwapCoords != eswapNO)
+    {
+        /* Update the local groups needed for ion swapping */
+        dd_make_local_swap_groups(dd, ir->swap);
+    }
 
     add_dd_statistics(dd);
 
