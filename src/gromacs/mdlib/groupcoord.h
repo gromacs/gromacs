@@ -87,7 +87,7 @@ extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
  * provide an array coll_ind[i] = i for i in 1..nr.
  *
  * \param[in]     cr           Pointer to MPI communication data.
- * \param[out]    xcoll        Collective array of positions, idential on all nodes
+ * \param[out]    xcoll        Collective array of positions, identical on all nodes
  *                             after this routine has been called.
  * \param[in,out] shifts       Collective array of shifts for xcoll, needed to make
  *                             the group whole. This array remembers the shifts
@@ -118,6 +118,24 @@ extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts
                                         int *anrs_loc, int *coll_ind, rvec *xcoll_old,
                                         matrix box);
 
+/*! \brief Same as above, but without making the group whole. 
+ * 
+ * \param[in]     cr           Pointer to MPI communication data.
+ * \param[out]    xcoll        Collective array of positions, identical on all nodes
+ *                             after this routine has been called.
+ * \param[in]     x_loc        Pointer to the local atom positions this node has.
+ * \param[in]     nr           Total number of atoms in the group.
+ * \param[in]     nr_loc       Number of group atoms on the local node.
+ * \param[in]     anrs_loc     Array of the local atom indices.
+ * \param[in]     coll_ind     This array of size nr stores for each local atom where
+ *                             it belongs in the collective array so that the local
+ *                             contributions can be gmx_summed. It is provided by
+ *                             dd_make_local_group_indices.
+ */
+extern void communicate_group_positions_noshift(t_commrec  *cr, rvec *xcoll,
+                                                rvec *x_loc, const int nr,
+                                                const int  nr_loc, int *anrs_loc,
+                                                int *coll_ind);
 
 /*! \brief Calculates the center of the positions x locally.
  *
