@@ -37,7 +37,6 @@
  * Tests for gmx traj
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_integration_tests
  */
 
 #include "gromacs/gmxana/gmx_ana.h"
