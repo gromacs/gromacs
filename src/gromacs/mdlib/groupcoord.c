@@ -196,18 +196,19 @@ static void shift_positions_group(
  * The atom indices are retrieved from anrs_loc[0..nr_loc]
  * Note that coll_ind[i] = i is needed in the serial case */
 extern void communicate_group_positions(
-        t_commrec     *cr,
-        rvec          *xcoll,        /* OUT: Collective array of positions */
-        ivec          *shifts,       /* IN+OUT: Collective array of shifts for xcoll */
-        ivec          *extra_shifts, /* BUF: Extra shifts since last time step */
-        const gmx_bool bNS,          /* IN:  NS step, the shifts have changed */
-        rvec          *x_loc,        /* IN:  Local positions on this node */
-        const int      nr,           /* IN:  Total number of atoms in the group */
-        const int      nr_loc,       /* IN:  Local number of atoms in the group */
-        int           *anrs_loc,     /* IN:  Local atom numbers */
-        int           *coll_ind,     /* IN:  Collective index */
-        rvec          *xcoll_old,    /* IN+OUT: Positions from the last time step, used to make group whole */
-        matrix         box)
+        t_commrec     *cr,           /* Pointer to MPI communication data */
+        rvec          *xcoll,        /* Collective array of positions */
+        ivec          *shifts,       /* Collective array of shifts for xcoll (can be NULL) */
+        ivec          *extra_shifts, /* (optional) Extra shifts since last time step */
+        const gmx_bool bNS,          /* (optional) NS step, the shifts have changed */
+        rvec          *x_loc,        /* Local positions on this node */
+        const int      nr,           /* Total number of atoms in the group */
+        const int      nr_loc,       /* Local number of atoms in the group */
+        int           *anrs_loc,     /* Local atom numbers */
+        int           *coll_ind,     /* Collective index */
+        rvec          *xcoll_old,    /* (optional) Positions from the last time step, 
+                                        used to make group whole */
+        matrix         box)          /* (optional) The box */
 {
     int i;
 
@@ -227,34 +228,43 @@ extern void communicate_group_positions(
         /* Add the arrays from all nodes together */
         gmx_sum(nr*3, xcoll[0], cr);
     }
-    /* To make the group whole, start with a whole group and each
-     * step move the assembled positions at closest distance to the positions
-     * from the last step. First shift the positions with the saved shift
-     * vectors (these are 0 when this routine is called for the first time!) */
-    shift_positions_group(box, xcoll, shifts, nr);
-
-    /* Now check if some shifts changed since the last step.
-     * This only needs to be done when the shifts are expected to have changed,
-     * i.e. after neighboursearching */
-    if (bNS)
+    /* Now we have all the positions of the group in the xcoll array present on all 
+     * nodes. 
+     * 
+     * The rest of the code is for making the group whole again in case atoms changed
+     * their PBC representation / crossed a box boundary. We only do that if the
+     * shifts array is allocated. */
+    if (NULL != shifts)
     {
-        get_shifts_group(3, box, xcoll, nr, xcoll_old, extra_shifts);
+        /* To make the group whole, start with a whole group and each
+         * step move the assembled positions at closest distance to the positions
+         * from the last step. First shift the positions with the saved shift
+         * vectors (these are 0 when this routine is called for the first time!) */
+        shift_positions_group(box, xcoll, shifts, nr);
 
-        /* Shift with the additional shifts such that we get a whole group now */
-        shift_positions_group(box, xcoll, extra_shifts, nr);
-
-        /* Add the shift vectors together for the next time step */
-        for (i = 0; i < nr; i++)
+        /* Now check if some shifts changed since the last step.
+         * This only needs to be done when the shifts are expected to have changed,
+         * i.e. after neighbor searching */
+        if (bNS)
         {
-            shifts[i][XX] += extra_shifts[i][XX];
-            shifts[i][YY] += extra_shifts[i][YY];
-            shifts[i][ZZ] += extra_shifts[i][ZZ];
-        }
+            get_shifts_group(3, box, xcoll, nr, xcoll_old, extra_shifts);
 
-        /* Store current correctly-shifted positions for comparison in the next NS time step */
-        for (i = 0; i < nr; i++)
-        {
-            copy_rvec(xcoll[i], xcoll_old[i]);
+            /* Shift with the additional shifts such that we get a whole group now */
+            shift_positions_group(box, xcoll, extra_shifts, nr);
+
+            /* Add the shift vectors together for the next time step */
+            for (i = 0; i < nr; i++)
+            {
+                shifts[i][XX] += extra_shifts[i][XX];
+                shifts[i][YY] += extra_shifts[i][YY];
+                shifts[i][ZZ] += extra_shifts[i][ZZ];
+            }
+
+            /* Store current correctly-shifted positions for comparison in the next NS time step */
+            for (i = 0; i < nr; i++)
+            {
+                copy_rvec(xcoll[i], xcoll_old[i]);
+            }
         }
     }
 }

@@ -76,6 +76,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/swap/swapcoords.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
@@ -9820,6 +9821,11 @@ void dd_partition_system(FILE                *fplog,
         dd_make_local_rotation_groups(dd, ir->rot);
     }
 
+    if (ir->eSwapCoords != eswapNO)
+    {
+        /* Update the local groups needed for ion swapping */
+        dd_make_local_swap_groups(dd, ir->swap);
+    }
 
     add_dd_statistics(dd);
 
