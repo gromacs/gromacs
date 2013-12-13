@@ -120,6 +120,7 @@ VdwList = {
     'LennardJones'            : ['rinvsq'],
 #    'Buckingham'              : ['rinv','rinvsq','r'], # Disabled for sse2 to reduce number of kernels and simply the template 
     'CubicSplineTable'        : ['rinv','r','table'],
+    'LJEwald'                 : ['rinv','rinvsq','r'],
 }
 
 
@@ -193,6 +194,7 @@ Abbreviation = {
     'CubicSplineTable'        : 'CSTab',
     'LennardJones'            : 'LJ',
     'Buckingham'              : 'Bham',
+    'LJEwald'                 : 'LJEw',
     'PotentialShift'          : 'Sh',
     'PotentialSwitch'         : 'Sw',
     'ExactCutoff'             : 'Cut',
@@ -301,6 +303,10 @@ def KeepKernel(KernelElec,KernelElecMod,KernelVdw,KernelVdwMod,KernelGeom,Kernel
             return 0
         elif(KernelElec!='ReactionField'):
             return 0
+
+    #Only do LJ-PME if we are also doing PME for electrostatics, or no electrostatics at all.
+    if(KernelVdw=='LJEwald' and KernelElec not in ['Ewald','None']):
+        return 0
 
     return 1
 
