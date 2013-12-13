@@ -320,6 +320,25 @@ enum {
     erotgFitRMSD, erotgFitNORM, erotgFitPOT, erotgFitNR
 };
 
+/* Direction along which ion/water swaps happen in "Computational
+ * Electrophysiology" (CompEL) setups */
+enum eSwaptype {
+    eswapNO, eswapX, eswapY, eswapZ, eSwapTypesNR
+};
+/* The two compartments for CompEL setups */
+enum eCompartment {
+    eCompA, eCompB, eCompNr
+};
+/* The positive and negative ions CompEL setups */
+enum eIontype {
+    eIonNEG, eIonPOS, eIonNr
+};
+/* The chanels that define with their COM the compartment boundaries in
+ * CompEL setups. */
+enum eChannel {
+    eChan0, eChan1, eChanNr
+};
+
 /* QMMM */
 enum {
     eQMmethodAM1, eQMmethodPM3, eQMmethodRHF,

@@ -178,6 +178,41 @@ typedef struct
 }
 edsamstate_t;
 
+
+typedef struct
+{
+    int        eSwapCoords;                         /* Swapping along x, y, or z-direction?      */
+    int        nat_req[eCompNr][eIonNr];            /* Requested ion numbers per type an comp.   */
+    int       *nat_req_p[eCompNr][eIonNr];          /* Pointer to this data (for .cpt writing)   */
+    int        inflow_netto[eCompNr][eIonNr];       /* Flux determined from the # of swaps       */
+    int       *inflow_netto_p[eCompNr][eIonNr];     /* Pointer to this data                      */
+    int        csteps;                              /* Averaging (coupling) steps                */
+    int       *nat_past[eCompNr][eIonNr];           /* Array with csteps entries for past counts */
+    int       *nat_past_p[eCompNr][eIonNr];         /* Pointer points to the first entry only    */
+
+    /* Channel flux detection, this is counting only and has no influence on whether swaps
+     * are performed or not: */
+    int            fluxfromAtoB[eCompNr][eIonNr];   /* Flux determined from the split cylinders  */
+    int           *fluxfromAtoB_p[eCompNr][eIonNr]; /* Pointer to this data                      */
+    int           *fluxleak;                        /* Flux not going through any channel        */
+    int            nions;                           /* Size of the following arrays              */
+    unsigned char *dom_from;                        /* Ion came from which compartment?          */
+    unsigned char *chan_pass;                       /* Through which channel did this ion pass?  */
+
+    /* To also make multimeric channel proteins whole, we save the last whole configuration of
+     * the channels in the checkpoint file. If we have no checkpoint file, we assume that the
+     * starting configuration hast the correct PBC representation after making the individual
+     * molecules whole */
+    gmx_bool    bFromCpt;                           /* Did we started from a checkpoint file?    */
+    int         nat[eChanNr];                       /* Size of xc_old_whole, i.e. the number of
+                                                       atoms in each channel                     */
+    rvec       *xc_old_whole[eChanNr];              /* Last known whole positions of the two
+                                                       channels (important for multimeric ch.!)  */
+    rvec      **xc_old_whole_p[eChanNr];            /* Pointer to these positions                */
+}
+swapstate_t;
+
+
 typedef struct
 {
     int              natoms;
@@ -220,6 +255,7 @@ typedef struct
     ekinstate_t      ekinstate;       /* The state of the kinetic energy data      */
 
     energyhistory_t  enerhist;        /* Energy history for statistics           */
+    swapstate_t      swapstate;       /* Position swapping                       */
     df_history_t     dfhist;          /*Free energy history for free energy analysis  */
     edsamstate_t     edsamstate;      /* Essential dynamics / flooding history */
 
