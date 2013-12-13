@@ -320,6 +320,23 @@ enum {
     erotgFitRMSD, erotgFitNORM, erotgFitPOT, erotgFitNR
 };
 
+/* "Computational Electrophysiology" ion/water position swapping */
+enum eSwaptype {
+    eswapNO, eswapX, eswapY, eswapZ, eSwapTypesNR
+};
+/* The two compartments */
+enum eCompartment {
+    eCompA, eCompB, eCompNr
+};
+/* Positive and negative ions */
+enum eIontype {
+    eIonNEG, eIonPOS, eIonNr
+};
+/* Currently at most two channels are supported. */
+enum eChannel {
+    eChan0, eChan1, eChanNr
+};
+
 /* QMMM */
 enum {
     eQMmethodAM1, eQMmethodPM3, eQMmethodRHF,
