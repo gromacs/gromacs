@@ -43,6 +43,7 @@
 #include "testutils/integrationtests.h"
 
 #include <gtest/gtest.h>
+#include "testutils/cmdlinetest.h"
 
 namespace gmx
 {
@@ -94,7 +95,12 @@ class MdrunTestFixture : public IntegrationTestFixture
         void useTopAndGroFromDatabase(const char *name);
         //! Calls grompp to prepare for the mdrun test
         int callGrompp();
-        //! Calls mdrun for testing
+        //! Calls grompp (on this rank) to prepare for the mdrun test
+        int callGromppOnThisRank();
+        //! Calls mdrun for testing with a customized command line
+        int callMdrun(const CommandLine &callerRef);
+        /*! Convenience wrapper for calling mdrun for testing with
+         * default command line */
         int callMdrun();
 
         //@{
@@ -112,7 +118,6 @@ class MdrunTestFixture : public IntegrationTestFixture
         std::string groFileName;
         std::string trrFileName;
         std::string xtcFileName;
-        std::string rerunFileName;
         std::string mdpInputFileName;
         std::string mdpOutputFileName;
         std::string tprFileName;

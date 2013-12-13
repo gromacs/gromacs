@@ -43,6 +43,7 @@
 #include <gtest/gtest.h>
 #include "moduletest.h"
 #include "gromacs/options/filenameoption.h"
+#include "testutils/cmdlinetest.h"
 
 namespace
 {
@@ -57,8 +58,12 @@ TEST_F(RerunTest, RerunExitsNormally)
     useTopAndGroFromDatabase("spc2");
     EXPECT_EQ(0, callGrompp());
 
-    rerunFileName = fileManager_.getInputFilePath("spc2.trr");
-    ASSERT_EQ(0, callMdrun());
+    std::string rerunFileName = fileManager_.getInputFilePath("spc2.trr");
+
+    ::gmx::test::CommandLine rerunCaller;
+    rerunCaller.append("mdrun");
+    rerunCaller.addOption("-rerun", rerunFileName);
+    ASSERT_EQ(0, callMdrun(rerunCaller));
 }
 
 /*! \todo Add other tests for mdrun -rerun, e.g.
