@@ -374,6 +374,7 @@ typedef struct {
     int      ntype; /* Number of atom types */
     gmx_bool bBHAM;
     real    *nbfp;
+    real    *ljpme_c6grid; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
     int *egp_flags;
