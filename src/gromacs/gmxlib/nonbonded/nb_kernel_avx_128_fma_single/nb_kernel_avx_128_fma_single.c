@@ -40,6 +40,8 @@
 
 #include "../nb_kernel.h"
 
+nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_avx_128_fma_single;
@@ -48,6 +50,16 @@ nb_kernel_t nb_kernel_ElecNone_VdwLJSw_GeomP1P1_VF_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3P1_F_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW4P1_VF_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW4P1_F_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_avx_128_fma_single;
+nb_kernel_t nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJ_GeomP1P1_VF_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJ_GeomP1P1_F_avx_128_fma_single;
 nb_kernel_t nb_kernel_ElecEw_VdwLJ_GeomW3P1_VF_avx_128_fma_single;
@@ -259,6 +271,8 @@ nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_avx_128_fma_single;
 nb_kernel_info_t
     kernellist_avx_128_fma_single[] =
 {
+    { nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_avx_128_fma_single, "nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_avx_128_fma_single", "avx_128_fma_single", "None", "None", "LJEwald", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_avx_128_fma_single, "nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_avx_128_fma_single", "avx_128_fma_single", "None", "None", "LJEwald", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single", "avx_128_fma_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_128_fma_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_128_fma_single", "avx_128_fma_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_avx_128_fma_single, "nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_avx_128_fma_single", "avx_128_fma_single", "None", "None", "LennardJones", "PotentialShift", "ParticleParticle", "", "PotentialAndForce" },
@@ -267,6 +281,16 @@ nb_kernel_info_t
     { nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_avx_128_fma_single, "nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_avx_128_fma_single", "avx_128_fma_single", "None", "None", "LennardJones", "PotentialSwitch", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_avx_128_fma_single, "nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_avx_128_fma_single", "avx_128_fma_single", "None", "None", "CubicSplineTable", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_avx_128_fma_single, "nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_avx_128_fma_single", "avx_128_fma_single", "None", "None", "CubicSplineTable", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "ParticleParticle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "ParticleParticle", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3P1_VF_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "Water3Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW3P1_F_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3P1_F_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "Water3Particle", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "Water3Water3", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "Water3Water3", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW4P1_VF_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomW4P1_VF_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "Water4Particle", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW4P1_F_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomW4P1_F_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "Water4Particle", "", "Force" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomW4W4_VF_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "Water4Water4", "", "PotentialAndForce" },
+    { nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJEw_GeomW4W4_F_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LJEwald", "None", "Water4Water4", "", "Force" },
     { nb_kernel_ElecEw_VdwLJ_GeomP1P1_VF_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJ_GeomP1P1_VF_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecEw_VdwLJ_GeomP1P1_F_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJ_GeomP1P1_F_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
     { nb_kernel_ElecEw_VdwLJ_GeomW3P1_VF_avx_128_fma_single, "nb_kernel_ElecEw_VdwLJ_GeomW3P1_VF_avx_128_fma_single", "avx_128_fma_single", "Ewald", "None", "LennardJones", "None", "Water3Particle", "", "PotentialAndForce" },
