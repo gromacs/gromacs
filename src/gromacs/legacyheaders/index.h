@@ -140,7 +140,7 @@ gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
 t_blocka *new_blocka(void);
 /* allocate new block */
 
-void write_index(const char *outf, t_blocka *b, char **gnames);
+void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms);
 /* Writes index blocks to outf (writes an indexfile) */
 
 void add_grp(t_blocka *b, char ***gnames, int nra, atom_id a[], const char *name);
