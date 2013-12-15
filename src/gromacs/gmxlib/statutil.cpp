@@ -50,6 +50,7 @@
 #include "network.h"
 
 #include "gromacs/commandline/wman.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
