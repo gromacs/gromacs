@@ -38,6 +38,7 @@
 #include <config.h>
 #endif
 
+#include "copyrite.h"
 #include "maths.h"
 #include "macros.h"
 #include "bondf.h"

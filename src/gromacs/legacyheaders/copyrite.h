@@ -41,8 +41,12 @@
 extern "C" {
 #endif
 
-/* Has to be a function, so we can get version number from autoconf */
+/* Has to be a function, so we can get version number from the build system */
 const char *GromacsVersion(void);
+
+const char *Program(void);
+
+const char *ShortProgram(void);
 
 /* For both bromacs() and cool_quote() you have to provide a pointer to
  * a string of reasonable length (say 256) and the string length. This

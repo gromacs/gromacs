@@ -59,6 +59,7 @@
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
@@ -564,6 +565,26 @@ const char *GromacsVersion()
 {
     return _gmx_ver_string;
 }
+
+const char *ShortProgram(void)
+{
+    try
+    {
+        // TODO: Use the display name once it doesn't break anything.
+        return gmx::ProgramInfo::getInstance().programName().c_str();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+}
+
+const char *Program(void)
+{
+    try
+    {
+        return gmx::ProgramInfo::getInstance().fullBinaryPath().c_str();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+}
+
 
 extern void gmx_print_version_info_gpu(FILE *fp);
 

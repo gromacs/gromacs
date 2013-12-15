@@ -38,6 +38,8 @@
 
 #include <string.h>
 #include <math.h>
+
+#include "copyrite.h"
 #include "macros.h"
 #include "sysstuff.h"
 #include "smalloc.h"

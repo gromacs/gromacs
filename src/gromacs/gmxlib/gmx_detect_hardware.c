@@ -52,7 +52,7 @@
 #include "gmx_fatal_collective.h"
 #include "smalloc.h"
 #include "gpu_utils.h"
-#include "statutil.h"
+#include "copyrite.h"
 #include "gmx_detect_hardware.h"
 #include "main.h"
 #include "md_logging.h"
