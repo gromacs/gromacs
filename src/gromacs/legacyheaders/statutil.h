@@ -47,22 +47,6 @@ extern "C" {
 }
 #endif
 
-/* LEGACY FUNCTIONS
-
-   The program names, command lines, etc. are now also set in the output_env
-   structure. That is now the preferred location, but the functions here
-   are still available as legacy functions. Because they all act on inherently
-   global informaion, their existence in a multi-threaded environment is not
-   a real problem. */
-
-/* set the program name to the provided string, but note
- * that it must be a real file - we determine the library
- * directory from its location!
- */
-const char *Program(void);
-/* Id. without leading directory */
-const char *ShortProgram(void);
-
 /*****************************************************
  *         Some command line parsing routines
  *****************************************************/

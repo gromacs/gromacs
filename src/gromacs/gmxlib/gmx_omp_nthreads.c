@@ -46,7 +46,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "network.h"
-#include "statutil.h"
+#include "copyrite.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
 

@@ -48,7 +48,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "statutil.h"
+#include "copyrite.h"
 #include "force.h"
 #include "mdrun.h"
 #include "md_logging.h"

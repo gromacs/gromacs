@@ -41,10 +41,10 @@
 #include <sys/locking.h>
 #endif
 
+#include "copyrite.h"
 #include "names.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "statutil.h"
 #include "txtdump.h"
 #include "vec.h"
 #include "network.h"
