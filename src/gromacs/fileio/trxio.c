@@ -34,7 +34,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #include "trxio.h"
 
 #ifdef HAVE_CONFIG_H
@@ -42,6 +41,8 @@
 #endif
 
 #include <ctype.h>
+#include <math.h>
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "vmdio.h"
@@ -51,7 +52,6 @@
 #include "statutil.h"
 #include "gmxfio.h"
 #include "trxio.h"
-#include "gromacs/legacyheaders/statutil.h"
 #include "tpxio.h"
 #include "trnio.h"
 #include "names.h"
@@ -62,7 +62,8 @@
 #include "confio.h"
 #include "checkpoint.h"
 #include "g87io.h"
-#include <math.h>
+
+#include "gromacs/fileio/timecontrol.h"
 
 /* defines for frame counter output */
 #define SKIP1   10

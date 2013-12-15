@@ -32,14 +32,14 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/fileio/timecontrol.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "gmx_fatal.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
 
 #include "gromacs/legacyheaders/thread_mpi/threads.h"
 

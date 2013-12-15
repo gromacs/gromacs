@@ -47,23 +47,6 @@ extern "C" {
 }
 #endif
 
-
-/* The code below is to facilitate controlled begin and end of
-   trajectory reading. Corresponding routines in
-   src/gmxlib/tcontrol.c
- */
-enum {
-    TBEGIN, TEND, TDELTA, TNR
-};
-
-gmx_bool bTimeSet(int tcontrol);
-
-real rTimeValue(int tcontrol);
-
-void setTimeValue(int tcontrol, real value);
-
-/* End trajectory time control */
-
 /* LEGACY FUNCTIONS
 
    The program names, command lines, etc. are now also set in the output_env
