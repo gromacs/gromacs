@@ -37,7 +37,8 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE
 
 set(COMMANDLINE_PUBLIC_HEADERS
     cmdlinehelpwriter.h
-    cmdlineparser.h)
+    cmdlineparser.h
+    pargs.h)
 gmx_install_headers(commandline ${COMMANDLINE_PUBLIC_HEADERS})
 
 # mdrun build does not include the selection machinery, which is used in the
