@@ -36,19 +36,19 @@ set(COULOMBINTEGRALS_SOURCES
      coulombintegrals/DSlater_1S_1S.cpp
      coulombintegrals/DSlater_1S_2S.cpp
      coulombintegrals/DSlater_1S_3S.cpp
-     #coulombintegrals/DSlater_1S_4S.cpp
+     coulombintegrals/DSlater_1S_4S.cpp
      #coulombintegrals/DSlater_1S_5S.cpp
      #coulombintegrals/DSlater_1S_6S.cpp
      coulombintegrals/DSlater_2S_2S.cpp
      coulombintegrals/DSlater_2S_3S.cpp
-     #coulombintegrals/DSlater_2S_4S.cpp
+     coulombintegrals/DSlater_2S_4S.cpp
      #coulombintegrals/DSlater_2S_5S.cpp
      #coulombintegrals/DSlater_2S_6S.cpp
      coulombintegrals/DSlater_3S_3S.cpp
-     #coulombintegrals/DSlater_3S_4S.cpp
+     coulombintegrals/DSlater_3S_4S.cpp
      #coulombintegrals/DSlater_3S_5S.cpp
      #coulombintegrals/DSlater_3S_6S.cpp
-     #coulombintegrals/DSlater_4S_4S.cpp
+     coulombintegrals/DSlater_4S_4S.cpp
      #coulombintegrals/DSlater_4S_5S.cpp
      #coulombintegrals/DSlater_4S_6S.cpp
      #coulombintegrals/DSlater_5S_5S.cpp
@@ -57,19 +57,19 @@ set(COULOMBINTEGRALS_SOURCES
      coulombintegrals/Slater_1S_1S.cpp
      coulombintegrals/Slater_1S_2S.cpp
      coulombintegrals/Slater_1S_3S.cpp
-     #coulombintegrals/Slater_1S_4S.cpp
+     coulombintegrals/Slater_1S_4S.cpp
      #coulombintegrals/Slater_1S_5S.cpp
      #coulombintegrals/Slater_1S_6S.cpp
      coulombintegrals/Slater_2S_2S.cpp
      coulombintegrals/Slater_2S_3S.cpp
-     #coulombintegrals/Slater_2S_4S.cpp
+     coulombintegrals/Slater_2S_4S.cpp
      #coulombintegrals/Slater_2S_5S.cpp
      #coulombintegrals/Slater_2S_6S.cpp
      coulombintegrals/Slater_3S_3S.cpp
-     #coulombintegrals/Slater_3S_4S.cpp
+     coulombintegrals/Slater_3S_4S.cpp
      #coulombintegrals/Slater_3S_5S.cpp
      #coulombintegrals/Slater_3S_6S.cpp
-     #coulombintegrals/Slater_4S_4S.cpp
+     coulombintegrals/Slater_4S_4S.cpp
      #coulombintegrals/Slater_4S_5S.cpp
      #coulombintegrals/Slater_4S_6S.cpp
      #coulombintegrals/Slater_5S_5S.cpp

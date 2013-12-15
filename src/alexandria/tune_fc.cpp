@@ -52,7 +52,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/linearalgebra/matrix.h"
-#include "gromacs/coulombintegrals.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/init.h"
 #include "physics.h"
