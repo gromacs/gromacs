@@ -48,10 +48,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "statutil.h"
 
 // Shell types, for completion stuff
 enum {

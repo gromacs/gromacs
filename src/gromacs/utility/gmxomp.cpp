@@ -48,9 +48,9 @@
 
 #include <stdio.h>
 
+#include "copyrite.h"
 #include "md_logging.h"
 #include "gmx_fatal.h"
-#include "statutil.h"
 #include "string2.h"
 
 #include "common.h"

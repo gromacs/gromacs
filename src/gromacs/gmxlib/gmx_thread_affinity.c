@@ -44,13 +44,14 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdio.h>
+
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "types/hw_info.h"
+#include "copyrite.h"
 #include "gmx_cpuid.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
-#include "statutil.h"
 #include "gmx_thread_affinity.h"
 
 #include "thread_mpi/threads.h"

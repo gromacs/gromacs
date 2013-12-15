@@ -40,7 +40,7 @@
 #include <sysstuff.h>
 #include <string.h>
 #include "smalloc.h"
-#include "statutil.h"
+#include "copyrite.h"
 #include "string2.h"
 #include "gmx_fatal.h"
 #include "warninp.h"

@@ -38,10 +38,8 @@
 #endif
 
 #include <cctype>
-#include <cmath>
 #include <cstdlib>
 
-#include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -53,7 +51,6 @@
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
 
 #include "thread_mpi/threads.h"
 
@@ -69,42 +66,6 @@
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
-
-/******************************************************************
- *
- *             T R A J E C T O R Y   S T U F F
- *
- ******************************************************************/
-
-/****************************************************************
- *
- *            E X P O R T E D   F U N C T I O N S
- *
- ****************************************************************/
-
-
-/* progam names, etc. */
-
-const char *ShortProgram(void)
-{
-    try
-    {
-        // TODO: Use the display name once it doesn't break anything.
-        return gmx::ProgramInfo::getInstance().programName().c_str();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-const char *Program(void)
-{
-    try
-    {
-        return gmx::ProgramInfo::getInstance().fullBinaryPath().c_str();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-/* utility functions */
 
 static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
 {
@@ -137,7 +98,6 @@ static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
     time_list[0] = time_list[i];
 }
 
-
 static void set_default_xvg_format(const char *xvg_list[])
 {
     int         i;
@@ -166,12 +126,6 @@ static void set_default_xvg_format(const char *xvg_list[])
         }
     }
 }
-
-/*************************************************************
- *
- *           P A R S I N G   S T U F F
- *
- *************************************************************/
 
 static int add_parg(int npargs, t_pargs *pa, t_pargs *pa_add)
 {
