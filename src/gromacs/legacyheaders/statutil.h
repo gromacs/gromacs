@@ -106,35 +106,6 @@ const char *ShortProgram(void);
 #define PCA_NOT_READ_NODE  (1<<16)
 /* Is this node not reading: for parallel all nodes but the master */
 
-int iscan(int argc, char *argv[], int *i);
-/* Scan an int from the argument at *i. If the argument length
- * is > 2, the int is assumed to be in the remainder of the arg,
- * eg: -p32, else the int is assumed to be in the next argument
- * eg: -p 32. If neither is the case the routine exits with an error,
- * otherwise it returns the value found. If the value is in the next
- * argument *i is incremented. You typically would want to pass
- * a loop variable to this routine.
- */
-gmx_large_int_t istepscan(int argc, char *argv[], int *i);
-/* Same as above, but for large integer values */
-
-double dscan(int argc, char *argv[], int *i);
-/* Routine similar to the above, but working on doubles. */
-
-char *sscan(int argc, char *argv[], int *i);
-/* Routine similar to the above, but working on strings. The pointer
- * returned is a pointer to the argv field.
- */
-
-void vscan(int argc, char *argv[], int *i, rvec *vec);
-/* Routine similar to the above, but working on rvecs. */
-
-int nenum(const char *const enumc[]);
-/* returns ordinal number of selected enum from args
- * depends on enumc[0] pointing to one of the other elements
- * array must be terminated by a NULL pointer
- */
-
 gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
                            int ndesc, const char **desc,
