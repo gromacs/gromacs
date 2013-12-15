@@ -37,9 +37,11 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <string.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "gmx_fatal.h"
 #include "statutil.h"
@@ -50,13 +52,116 @@
 #include "vec.h"
 #include "macros.h"
 
+#include "gromacs/utility/gmxassert.h"
+
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
+
+static void usage(const char *type, const char *arg)
+{
+    GMX_ASSERT(arg != NULL, "NULL command-line argument should not occur");
+    gmx_fatal(FARGS, "Expected %s argument for option %s\n", type, arg);
+}
+
+/* Scan an int for argument argv[*i] from argument at argv[*i + 1].
+ * eg: -p 32.  argv[*i] is only used for error reporting.
+ * If there is no value, or the conversion is not successful, the
+ * routine exits with an error, otherwise it returns the value found.
+ * *i is incremented once.
+ */
+static int iscan(int argc, char *argv[], int *i)
+{
+    const char *const arg = argv[*i];
+    if (argc <= (*i)+1)
+    {
+        usage("an integer", arg);
+    }
+    const char *const value = argv[++(*i)];
+    char             *endptr;
+    int               var = std::strtol(value, &endptr, 10);
+    if (*value == '\0' || *endptr != '\0')
+    {
+        usage("an integer", arg);
+    }
+    return var;
+}
+
+/* Same as above, but for large integer values */
+static gmx_large_int_t istepscan(int argc, char *argv[], int *i)
+{
+    const char *const arg = argv[*i];
+    if (argc <= (*i)+1)
+    {
+        usage("an integer", arg);
+    }
+    const char *const value = argv[++(*i)];
+    char             *endptr;
+    gmx_large_int_t   var = str_to_large_int_t(value, &endptr);
+    if (*value == '\0' || *endptr != '\0')
+    {
+        usage("an integer", arg);
+    }
+    return var;
+}
+
+/* Routine similar to the above, but working on doubles. */
+static double dscan(int argc, char *argv[], int *i)
+{
+    const char *const arg = argv[*i];
+    if (argc <= (*i)+1)
+    {
+        usage("a real", arg);
+    }
+    const char *const value = argv[++(*i)];
+    char             *endptr;
+    double            var = std::strtod(value, &endptr);
+    if (*value == '\0' || *endptr != '\0')
+    {
+        usage("a real", arg);
+    }
+    return var;
+}
+
+/* Routine similar to the above, but working on strings. The pointer
+ * returned is a pointer to the argv field.
+ */
+static char *sscan(int argc, char *argv[], int *i)
+{
+    if (argc > (*i)+1)
+    {
+        if ( (argv[(*i)+1][0] == '-') && (argc > (*i)+2) &&
+             (argv[(*i)+2][0] != '-') )
+        {
+            fprintf(stderr, "Possible missing string argument for option %s\n\n",
+                    argv[*i]);
+        }
+    }
+    else
+    {
+        usage("a string", argv[*i]);
+    }
+
+    return argv[++(*i)];
+}
 
 gmx_bool is_hidden(t_pargs *pa)
 {
     return ((strstr(pa->desc, "HIDDEN") != NULL) ||
             (strstr(pa->desc, "[hidden]") != NULL));
+}
+
+int nenum(const char *const enumc[])
+{
+    int i;
+
+    i = 1;
+    /* we *can* compare pointers directly here! */
+    while (enumc[i] && enumc[0] != enumc[i])
+    {
+        i++;
+    }
+
+    return i;
 }
 
 void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[], gmx_bool bKeepArgs)
