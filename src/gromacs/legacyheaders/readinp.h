@@ -39,7 +39,6 @@
 #include "typedefs.h"
 #include "warninp.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,8 +55,6 @@ typedef struct {
 /* entry in input files (like .mdp files).
    Initally read in with read_inpfile, then filled in with missing values
    through get_eint, get_ereal, etc. */
-
-
 
 t_inpfile *read_inpfile(const char *fn, int *ninp,
                         warninp_t wi);
@@ -108,57 +105,6 @@ int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs);
 #define CCTYPE(s) STYPENC("\n; " s, NULL)
 #define CTYPE(s)  STYPENC("; " s, NULL)
 /* This last one prints a comment line where you can add some explanation */
-
-/* This structure is used for parsing arguments off the comand line */
-enum {
-    etINT, etGMX_LARGE_INT, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
-};
-
-typedef struct {
-    const char *option;
-    gmx_bool    bSet;
-    int         type;
-    union {
-        void            *v; /* This is a nasty workaround, to be able to use initialized */
-        int             *i; /* arrays */
-        gmx_large_int_t *is;
-        real            *r;
-        const char     **c; /* Must be pointer to string (when type == etSTR)         */
-        /* or null terminated list of enums (when type == etENUM) */
-        gmx_bool        *b;
-        rvec            *rv;
-    } u;
-    const char *desc;
-} t_pargs;
-
-void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[],
-               gmx_bool bKeepArgs);
-/* Read a number of arguments from the command line.
- * For etINT, etREAL and etCHAR an extra argument is read (when present)
- * for etBOOL the gmx_boolean option is changed to the negate value
- * If !bKeepArgs, the command line arguments are removed from the command line
- */
-
-gmx_bool is_hidden(t_pargs *pa);
-/* Return TRUE when the option is a secret one */
-
-int nenum(const char *const enumc[]);
-/* returns ordinal number of selected enum from args
- * depends on enumc[0] pointing to one of the other elements
- * array must be terminated by a NULL pointer
- */
-
-int opt2parg_int(const char *option, int nparg, t_pargs pa[]);
-
-gmx_bool opt2parg_gmx_bool(const char *option, int nparg, t_pargs pa[]);
-
-real opt2parg_real(const char *option, int nparg, t_pargs pa[]);
-
-const char *opt2parg_str(const char *option, int nparg, t_pargs pa[]);
-
-const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[]);
-
-gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 
 #ifdef __cplusplus
 }

@@ -33,24 +33,20 @@
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
 /* This file is completely threadsafe - keep it that way! */
+#include "gromacs/commandline/pargs.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-#include "typedefs.h"
-#include "gmx_fatal.h"
-#include "statutil.h"
-#include "readinp.h"
-#include "smalloc.h"
-#include "names.h"
-#include "string2.h"
-#include "vec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/utility/gmxassert.h"
 
@@ -223,7 +219,7 @@ void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[], gmx_bool bKeepA
                         *(pa[j].u.c) = sscan(*argc, argv, &i);
                         break;
                     case etENUM:
-                        match = NOTSET;
+                        match = -1;
                         ptr   = sscan(*argc, argv, &i);
                         for (k = 1; (pa[j].u.c[k] != NULL); k++)
                         {
@@ -231,7 +227,7 @@ void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[], gmx_bool bKeepA
                                pa[j].u.c[k] */
                             if (gmx_strncasecmp(ptr, pa[j].u.c[k], strlen(ptr)) == 0)
                             {
-                                if ( ( match == NOTSET ) ||
+                                if ( ( match == -1 ) ||
                                      ( strlen(pa[j].u.c[k]) <
                                        strlen(pa[j].u.c[match]) ) )
                                 {
@@ -239,7 +235,7 @@ void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[], gmx_bool bKeepA
                                 }
                             }
                         }
-                        if (match != NOTSET)
+                        if (match != -1)
                         {
                             pa[j].u.c[0] = pa[j].u.c[match];
                         }
@@ -327,7 +323,7 @@ gmx_bool opt2parg_gmx_bool(const char *option, int nparg, t_pargs pa[])
         }
     }
 
-    gmx_fatal(FARGS, "No gmx_boolean option %s in pargs", option);
+    gmx_fatal(FARGS, "No boolean option %s in pargs", option);
 
     return FALSE;
 }

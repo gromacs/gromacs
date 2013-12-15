@@ -36,8 +36,8 @@
 #ifndef _statutil_h
 #define _statutil_h
 
+#include "../commandline/pargs.h"
 #include "../fileio/filenm.h"
-#include "readinp.h"
 #include "oenv.h"
 
 #ifdef __cplusplus
