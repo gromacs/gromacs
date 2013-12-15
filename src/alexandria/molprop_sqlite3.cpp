@@ -94,7 +94,7 @@ void ReadSqlite3(const char                       *sqlite_file,
     sqlite3                    *db   = NULL;
     sqlite3_stmt               *stmt = NULL, *stmt2 = NULL;
     char sql_str[1024];
-    const char                 *iupac, *cas, *csid, *prop, *unit, *ref, *classification;
+    const char                 *iupac, *cas, *csid, *prop, *unit, *ref, *classification, *source;
     char                      **class_ptr;
     double                      value, error;
     int                         cidx, rc, nbind, nexp_prop;
@@ -158,7 +158,7 @@ void ReadSqlite3(const char                       *sqlite_file,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit,gp.value,gp.error,ref.ref FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (upper(?) = upper(mol.iupac)));");
+    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit,gp.value,gp.error,ref.ref,ds.source FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref,datasource as ds WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, NULL));
 
@@ -225,22 +225,42 @@ void ReadSqlite3(const char                       *sqlite_file,
                         value          = sqlite3_column_double(stmt, cidx++);
                         error          = sqlite3_column_double(stmt, cidx++);
                         ref            = (char *)sqlite3_column_text(stmt, cidx++);
+                        source         = (char *)sqlite3_column_text(stmt, cidx++);
                         nexp_prop++;
 
-                        alexandria::Experiment myexp(ref, "minimum");
+                        bool bExp = (0 == gmx_strcasecmp(source, "Experiment"));
+                        
+                        alexandria::Experiment *eptr;
+                        if (bExp)
+                        {
+                            eptr = new alexandria::Experiment(ref, "minimum");
+                        }
+                        else
+                        {
+                            eptr = new alexandria::Calculation("gentop", source,
+                                                               "", ref, "minimum",
+                                                               "unknown" );
+                        }
                         if (strcasecmp(prop, "Polarizability") == 0)
                         {
-                            myexp.AddPolar(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                            eptr->AddPolar(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
                         }
                         else if (strcasecmp(prop, "dipole") == 0)
                         {
-                            myexp.AddDipole(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                            eptr->AddDipole(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
                         }
                         else if (strcasecmp(prop, "DHf(298.15K)") == 0)
                         {
-                            myexp.AddEnergy(alexandria::MolecularEnergy(prop, unit, value, error));
+                            eptr->AddEnergy(alexandria::MolecularEnergy(prop, unit, value, error));
                         }
-                        mpi->AddExperiment(myexp);
+                        if (bExp)
+                        {
+                            mpi->AddExperiment(*eptr);
+                        }
+                        else
+                        {
+                            mpi->AddCalculation(*(alexandria::Calculation *)eptr);
+                        }
                         //mpi->Stats();
 
                         if (0 && (strlen(classification) > 0))
@@ -299,7 +319,7 @@ void ReadSqlite3(const char                       *sqlite_file,
 
     check_sqlite3(NULL, "Shutting down sqlite. Sqlite3 code %d.",
                   sqlite3_shutdown());
-    printf("Extracted %d experimental data points from sql database\n", nexp_prop);
+    printf("Extracted %d data points from sql database\n", nexp_prop);
 #else
     fprintf(stderr, "No support for sqlite3 database in this executable.\n");
     fprintf(stderr, "Please rebuild gromacs with cmake flag -DGMX_SQLITE3=ON set.\n");
