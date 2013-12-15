@@ -1,413 +1,51 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes forcefield="GAFF" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="0.8333" fudgeLJ="0.5">
-    <atomtype elem="N" description="ne" atype="ne" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="n2" atype="n2" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="S" description="s6" atype="s6" ptype="s" btype="s" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="hn" atype="hn" ptype="ha" btype="hp" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="h5" atype="h5" ptype="ha" btype="ha" vdwparams="0.3 0.5"/>
-    <atomtype elem="O" description="on" atype="on" ptype="o" btype="o" vdwparams="0.3 0.5"/>
-    <atomtype elem="S" description="sy" atype="sy" ptype="s" btype="s" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="nb" atype="nb" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="n4" atype="n4" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="cx" atype="cx" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="nc" atype="nc" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="hs" atype="hs" ptype="hp" btype="hp" vdwparams="0.3 0.5"/>
-    <atomtype elem="Br" description="br" atype="br" ptype="br" btype="br" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="cy" atype="cy" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="h4" atype="h4" ptype="ha" btype="ha" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="pc" atype="pc" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="n1" atype="n1" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="O" description="oh" atype="oh" ptype="o" btype="o" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="cu" atype="cu" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="hx" atype="hx" ptype="ha" btype="hp" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="hp" atype="hp" ptype="hp" btype="hp" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="ca" atype="ca" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="pb" atype="pb" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="p2" atype="p2" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="p3" atype="p3" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="n3" atype="n3" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="h3" atype="h3" ptype="ha" btype="ha" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="pe" atype="pe" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="c1" atype="c1" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="na" atype="na" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="c2" atype="c2" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="no" atype="no" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="nh" atype="nh" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="ho" atype="ho" ptype="hp" btype="hp" vdwparams="0.3 0.5"/>
-    <atomtype elem="O" description="os" atype="os" ptype="o" btype="o" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="cc" atype="cc" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="S" description="ss" atype="ss" ptype="s" btype="s" vdwparams="0.3 0.5"/>
-    <atomtype elem="S" description="sh" atype="sh" ptype="s" btype="s" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="h1" atype="h1" ptype="ha" btype="ha" vdwparams="0.3 0.5"/>
-    <atomtype elem="S" description="s4" atype="s4" ptype="s" btype="s" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="p4" atype="p4" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="cz" atype="cz" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="S" description="s" atype="s" ptype="s" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="hc" atype="hc" ptype="ha" btype="ha" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="c" atype="c" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="px" atype="px" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="py" atype="py" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="cv" atype="cv" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="c3" atype="c3" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="cg" atype="cg" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="hw" atype="hw" ptype="hp" btype="hp" vdwparams="0.3 0.5"/>
-    <atomtype elem="Cl" description="cl" atype="cl" ptype="cl" btype="cl" vdwparams="0.3 0.5"/>
-    <atomtype elem="P" description="p5" atype="p5" ptype="p" btype="p" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="ha" atype="ha" ptype="ha" btype="ha" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="ce" atype="ce" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="S" description="s2" atype="s2" ptype="s" btype="s" vdwparams="0.3 0.5"/>
-    <atomtype elem="S" description="sx" atype="sx" ptype="s" btype="s" vdwparams="0.3 0.5"/>
-    <atomtype elem="F" description="f" atype="f" ptype="f" btype="f" vdwparams="0.3 0.5"/>
-    <atomtype elem="I" description="i" atype="i" ptype="i" btype="i" vdwparams="0.3 0.5"/>
-    <atomtype elem="N" description="n" atype="n" ptype="n" btype="n" vdwparams="0.3 0.5"/>
-    <atomtype elem="C" description="cp" atype="cp" ptype="c" btype="c" vdwparams="0.3 0.5"/>
-    <atomtype elem="H" description="h2" atype="h2" ptype="ha" btype="ha" vdwparams="0.3 0.5"/>
-    <atomtype elem="O" description="o" atype="o" ptype="o" btype="o" vdwparams="0.3 0.5"/>
-    <atomtype elem="Mg" description="mg" atype="mg" ptype="mg" btype="mg" vdwparams="0.3 0.5"/>
+  <atomtypes forcefield="GAFF" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="1" fudgeLJ="1">
+    <atomtype elem="C" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="c" btype="c2" vdwparams="0.25 0.1"/>
+    <atomtype elem="C" description="other sp3 C" atype="c3" ptype="c" btype="c3" vdwparams="0.25 0.1"/>
+    <atomtype elem="C" description="sp C of conjugated system" atype="cg" ptype="c" btype="ca" vdwparams="0.25 0.1"/>
+    <atomtype elem="H" description="hydrogen on water" atype="hw" ptype="hp" btype="hp" vdwparams="0.2 0.1"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="ha" ptype="ha" btype="ha" vdwparams="0.2 0.1"/>
+    <atomtype elem="H" description="hydrogen on nitrogen" atype="hn" ptype="ha" btype="hp" vdwparams="0.2 0.1"/>
+    <atomtype elem="C" description="other sp2 C" atype="c2" ptype="c" btype="c2" vdwparams="0.25 0.1"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h5" ptype="ha" btype="ha" vdwparams="0.2 0.1"/>
+    <atomtype elem="H" description="hydrogen on oxygen" atype="ho" ptype="hp" btype="hp" vdwparams="0.2 0.1"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="c" btype="c2" vdwparams="0.25 0.1"/>
+    <atomtype elem="C" description="3-membered ring atom" atype="cx" ptype="c" btype="c3" vdwparams="0.25 0.1"/>
+    <atomtype elem="C" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="c" btype="c2" vdwparams="0.25 0.1"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="c" btype="ca" vdwparams="0.25 0.1"/>
+    <atomtype elem="H" description="hydrogen on X" atype="hx" ptype="ha" btype="hp" vdwparams="0.2 0.1"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h1" ptype="ha" btype="ha" vdwparams="0.2 0.1"/>
+    <atomtype elem="H" description="hydrogen on sulphur" atype="hs" ptype="hp" btype="hp" vdwparams="0.2 0.1"/>
+    <atomtype elem="H" description="hydrogen on phosphor" atype="hp" ptype="hp" btype="hp" vdwparams="0.2 0.1"/>
+    <atomtype elem="C" description="4-membered ring atom" atype="cy" ptype="c" btype="c3" vdwparams="0.25 0.1"/>
+    <atomtype elem="C" description="pure aromatic atom" atype="ca" ptype="c" btype="ca" vdwparams="0.25 0.1"/>
+    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cp" ptype="c" btype="ca" vdwparams="0.25 0.1"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h4" ptype="ha" btype="ha" vdwparams="0.2 0.1"/>
+    <atomtype elem="C" description="guanidine carbon" atype="cz" ptype="c" btype="cz" vdwparams="0.25 0.1"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h2" ptype="ha" btype="ha" vdwparams="0.2 0.1"/>
+    <atomtype elem="H" description="hydrogen on aliphatic C" atype="hc" ptype="ha" btype="ha" vdwparams="0.2 0.1"/>
+    <atomtype elem="C" description="C=O or C=S" atype="c" ptype="c" btype="c" vdwparams="0.25 0.1"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h3" ptype="ha" btype="ha" vdwparams="0.2 0.1"/>
+    <atomtype elem="C" description="other sp C" atype="c1" ptype="c" btype="c1" vdwparams="0.25 0.1"/>
   </atomtypes>
   <poltypes polarizability_unit="A3" reference="Maaren2013a">
-    <poltype ptype="n" miller="NTE" bosque="N" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="cl" miller="Cl" bosque="Cl" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="br" miller="Br" bosque="Br" polarizability="0" sigma_pol="0"/>
+    <poltype ptype="c" miller="CTE" bosque="C" polarizability="0" sigma_pol="0"/>
     <poltype ptype="hp" miller="H" bosque="H" polarizability="0" sigma_pol="0"/>
     <poltype ptype="ha" miller="H" bosque="H" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="s" miller="STE" bosque="S" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="c" miller="CTE" bosque="C" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="p" miller="PTE" bosque="P" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="f" miller="F" bosque="F" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="mg" miller="mg" bosque="Mg" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="i" miller="I" bosque="I" polarizability="0" sigma_pol="0"/>
-    <poltype ptype="o" miller="OTE" bosque="O" polarizability="0" sigma_pol="0"/>
   </poltypes>
-  <bonding_rules/>
-  <gt_bonds length_unit="Pm" function="morse">
-    <gt_bond atom1="br" atom2="br" length="231.62" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="br" atom2="c" length="195.591" sigma="4.45404" ntrain="67" bondorder="1" params="400  20"/>
-    <gt_bond atom1="br" atom2="cl" length="217" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="br" atom2="f" length="177.5" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="br" atom2="ha" length="142.45" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="br" atom2="n" length="215.69" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="br" atom2="o" length="172.65" sigma="0.250153" ntrain="2" bondorder="1" params="400  20"/>
-    <gt_bond atom1="c" atom2="c" length="147.832" sigma="10.2087" ntrain="6364" bondorder="1" params="400  20"/>
-    <gt_bond atom1="c" atom2="cl" length="178.237" sigma="3.63517" ntrain="230" bondorder="1" params="400  20"/>
-    <gt_bond atom1="c" atom2="f" length="134.588" sigma="2.31736" ntrain="334" bondorder="1" params="400  20"/>
-    <gt_bond atom1="c" atom2="ha" length="109.233" sigma="8.70832" ntrain="12830" bondorder="1" params="400  20"/>
-    <gt_bond atom1="c" atom2="n" length="138.682" sigma="9.66476" ntrain="734" bondorder="1" params="400  20"/>
-    <gt_bond atom1="c" atom2="o" length="134.901" sigma="9.62387" ntrain="1074" bondorder="1" params="400  20"/>
-    <gt_bond atom1="c" atom2="p" length="177.901" sigma="11.178" ntrain="36" bondorder="1" params="400  20"/>
-    <gt_bond atom1="c" atom2="s" length="181.974" sigma="6.16037" ntrain="108" bondorder="1" params="400  20"/>
-    <gt_bond atom1="cl" atom2="cl" length="202.41" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="cl" atom2="f" length="164.9" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="cl" atom2="ha" length="128.4" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="cl" atom2="n" length="184.682" sigma="7.97534" ntrain="6" bondorder="1" params="400  20"/>
-    <gt_bond atom1="cl" atom2="o" length="155.26" sigma="10.7208" ntrain="4" bondorder="1" params="400  20"/>
-    <gt_bond atom1="cl" atom2="p" length="207.14" sigma="4.80594" ntrain="16" bondorder="1" params="400  20"/>
-    <gt_bond atom1="cl" atom2="s" length="208.25" sigma="3.37676" ntrain="6" bondorder="1" params="400  20"/>
-    <gt_bond atom1="f" atom2="f" length="139.71" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="f" atom2="ha" length="92.4" sigma="0" ntrain="1" bondorder="1" params="400  20"/>
-    <gt_bond atom1="f" atom2="n" length="141.334" sigma="3.8224" ntrain="23" bondorder="1" params="400  20"/>
-    <gt_bond atom1="f" atom2="o" length="144.835" sigma="6.35788" ntrain="10" bondorder="1" params="400  20"/>
-    <gt_bond atom1="f" atom2="p" length="159.812" sigma="3.13944" ntrain="24" bondorder="1" params="400  20"/>
-    <gt_bond atom1="f" atom2="s" length="163.641" sigma="6.30458" ntrain="25" bondorder="1" params="400  20"/>
-    <gt_bond atom1="ha" atom2="n" length="100.268" sigma="1.10469" ntrain="20" bondorder="1" params="400  20"/>
-    <gt_bond atom1="hp" atom2="n" length="101.071" sigma="0.886721" ntrain="263" bondorder="1" params="400  20"/>
-    <gt_bond atom1="hp" atom2="o" length="96.5744" sigma="0.733373" ntrain="252" bondorder="1" params="400  20"/>
-    <gt_bond atom1="hp" atom2="p" length="141.899" sigma="1.63502" ntrain="20" bondorder="1" params="400  20"/>
-    <gt_bond atom1="hp" atom2="s" length="134.573" sigma="0.326455" ntrain="38" bondorder="1" params="400  20"/>
-    <gt_bond atom1="n" atom2="n" length="131.214" sigma="14.3608" ntrain="33" bondorder="1" params="400  20"/>
-    <gt_bond atom1="n" atom2="o" length="123.511" sigma="7.7494" ntrain="82" bondorder="1" params="400  20"/>
-    <gt_bond atom1="n" atom2="p" length="165.904" sigma="6.04203" ntrain="14" bondorder="1" params="400  20"/>
-    <gt_bond atom1="n" atom2="s" length="155.543" sigma="8.48089" ntrain="9" bondorder="1" params="400  20"/>
-    <gt_bond atom1="o" atom2="o" length="135.537" sigma="11.1622" ntrain="11" bondorder="1" params="400  20"/>
-    <gt_bond atom1="o" atom2="p" length="157.359" sigma="7.16429" ntrain="120" bondorder="1" params="400  20"/>
-    <gt_bond atom1="o" atom2="s" length="150.588" sigma="9.28736" ntrain="72" bondorder="1" params="400  20"/>
-    <gt_bond atom1="p" atom2="s" length="191.506" sigma="2.61012" ntrain="5" bondorder="1" params="400  20"/>
-    <gt_bond atom1="s" atom2="s" length="201.316" sigma="9.02901" ntrain="5" bondorder="1" params="400  20"/>
+  <bonding_rules>
+  </bonding_rules>
+  <gt_bonds length_unit="pm" function="morse">
   </gt_bonds>
   <gt_angles angle_unit="degree" function="angles">
-    <gt_angle atom1="br" atom2="c" atom3="br" angle="111.871" sigma="1.17073" ntrain="8" params="400"/>
-    <gt_angle atom1="br" atom2="c" atom3="c" angle="115.797" sigma="11.484" ntrain="76" params="400"/>
-    <gt_angle atom1="br" atom2="c" atom3="cl" angle="110.716" sigma="1.74095" ntrain="5" params="400"/>
-    <gt_angle atom1="br" atom2="c" atom3="f" angle="109.541" sigma="0.504437" ntrain="8" params="400"/>
-    <gt_angle atom1="br" atom2="c" atom3="ha" angle="105.59" sigma="2.35011" ntrain="70" params="400"/>
-    <gt_angle atom1="br" atom2="c" atom3="n" angle="116.82" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="br" atom2="c" atom3="o" angle="116.784" sigma="6.15691" ntrain="3" params="400"/>
-    <gt_angle atom1="br" atom2="n" atom3="o" angle="115.17" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="c" atom2="c" atom3="c" angle="115.469" sigma="12.5798" ntrain="6205" params="400"/>
-    <gt_angle atom1="c" atom2="c" atom3="cl" angle="114.887" sigma="6.51435" ntrain="264" params="400"/>
-    <gt_angle atom1="c" atom2="c" atom3="f" angle="113.363" sigma="6.9485" ntrain="433" params="400"/>
-    <gt_angle atom1="c" atom2="c" atom3="ha" angle="112.3" sigma="6.42118" ntrain="17509" params="400"/>
-    <gt_angle atom1="c" atom2="c" atom3="n" angle="119.485" sigma="18.4939" ntrain="597" params="400"/>
-    <gt_angle atom1="c" atom2="c" atom3="o" angle="114.505" sigma="10.2541" ntrain="1063" params="400"/>
-    <gt_angle atom1="c" atom2="c" atom3="p" angle="121.125" sigma="15.0813" ntrain="19" params="400"/>
-    <gt_angle atom1="c" atom2="c" atom3="s" angle="110.88" sigma="7.01634" ntrain="108" params="400"/>
-    <gt_angle atom1="c" atom2="ha" atom3="c" angle="48.9435" sigma="19.0919" ntrain="10" params="400"/>
-    <gt_angle atom1="c" atom2="n" atom3="c" angle="116.888" sigma="10.6805" ntrain="407" params="400"/>
-    <gt_angle atom1="c" atom2="n" atom3="f" angle="104.48" sigma="0.000208321" ntrain="2" params="400"/>
-    <gt_angle atom1="c" atom2="n" atom3="ha" angle="123.155" sigma="4.95919" ntrain="33" params="400"/>
-    <gt_angle atom1="c" atom2="n" atom3="hp" angle="114.25" sigma="5.97435" ntrain="277" params="400"/>
-    <gt_angle atom1="c" atom2="n" atom3="n" angle="113.073" sigma="13.4575" ntrain="30" params="400"/>
-    <gt_angle atom1="c" atom2="n" atom3="o" angle="119.754" sigma="12.6873" ntrain="41" params="400"/>
-    <gt_angle atom1="c" atom2="n" atom3="p" angle="119.783" sigma="2.4414" ntrain="22" params="400"/>
-    <gt_angle atom1="c" atom2="n" atom3="s" angle="116.138" sigma="1.1928" ntrain="4" params="400"/>
-    <gt_angle atom1="c" atom2="o" atom3="c" angle="113.666" sigma="9.17115" ntrain="238" params="400"/>
-    <gt_angle atom1="c" atom2="o" atom3="hp" angle="108.838" sigma="2.10101" ntrain="208" params="400"/>
-    <gt_angle atom1="c" atom2="o" atom3="n" angle="111.865" sigma="2.54102" ntrain="5" params="400"/>
-    <gt_angle atom1="c" atom2="o" atom3="o" angle="106.492" sigma="0.861558" ntrain="7" params="400"/>
-    <gt_angle atom1="c" atom2="o" atom3="p" angle="120.218" sigma="4.12236" ntrain="55" params="400"/>
-    <gt_angle atom1="c" atom2="o" atom3="s" angle="118.495" sigma="11.5609" ntrain="13" params="400"/>
-    <gt_angle atom1="c" atom2="p" atom3="c" angle="104.136" sigma="4.52243" ntrain="15" params="400"/>
-    <gt_angle atom1="c" atom2="p" atom3="cl" angle="100.678" sigma="0.263447" ntrain="4" params="400"/>
-    <gt_angle atom1="c" atom2="p" atom3="f" angle="100.972" sigma="2.74247" ntrain="4" params="400"/>
-    <gt_angle atom1="c" atom2="p" atom3="hp" angle="97.2304" sigma="0.441464" ntrain="6" params="400"/>
-    <gt_angle atom1="c" atom2="p" atom3="n" angle="106.31" sigma="3.4246" ntrain="4" params="400"/>
-    <gt_angle atom1="c" atom2="p" atom3="o" angle="108.683" sigma="6.06945" ntrain="18" params="400"/>
-    <gt_angle atom1="c" atom2="s" atom3="c" angle="97.6227" sigma="8.02628" ntrain="30" params="400"/>
-    <gt_angle atom1="c" atom2="s" atom3="hp" angle="97.0702" sigma="0.479775" ntrain="35" params="400"/>
-    <gt_angle atom1="c" atom2="s" atom3="n" angle="102.81" sigma="0.00987987" ntrain="2" params="400"/>
-    <gt_angle atom1="c" atom2="s" atom3="o" angle="107.802" sigma="3.08367" ntrain="25" params="400"/>
-    <gt_angle atom1="c" atom2="s" atom3="s" angle="103.695" sigma="4.65406" ntrain="6" params="400"/>
-    <gt_angle atom1="cl" atom2="c" atom3="cl" angle="110.553" sigma="2.24557" ntrain="65" params="400"/>
-    <gt_angle atom1="cl" atom2="c" atom3="f" angle="109.42" sigma="1.23052" ntrain="36" params="400"/>
-    <gt_angle atom1="cl" atom2="c" atom3="ha" angle="106.809" sigma="2.25214" ntrain="160" params="400"/>
-    <gt_angle atom1="cl" atom2="c" atom3="n" angle="148.415" sigma="31.585" ntrain="2" params="400"/>
-    <gt_angle atom1="cl" atom2="c" atom3="o" angle="120.268" sigma="4.67735" ntrain="8" params="400"/>
-    <gt_angle atom1="cl" atom2="c" atom3="p" angle="124.582" sigma="0.000908416" ntrain="2" params="400"/>
-    <gt_angle atom1="cl" atom2="n" atom3="cl" angle="107.774" sigma="0.0201223" ntrain="3" params="400"/>
-    <gt_angle atom1="cl" atom2="n" atom3="o" angle="113.81" sigma="0.233399" ntrain="3" params="400"/>
-    <gt_angle atom1="cl" atom2="n" atom3="p" angle="117.119" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="cl" atom2="o" atom3="hp" angle="103.24" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="cl" atom2="p" atom3="cl" angle="102.003" sigma="1.49298" ntrain="8" params="400"/>
-    <gt_angle atom1="cl" atom2="p" atom3="hp" angle="95.6105" sigma="0.989763" ntrain="4" params="400"/>
-    <gt_angle atom1="cl" atom2="p" atom3="o" angle="107.189" sigma="5.22695" ntrain="13" params="400"/>
-    <gt_angle atom1="cl" atom2="p" atom3="s" angle="114.162" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="cl" atom2="s" atom3="cl" angle="100.751" sigma="2.36899" ntrain="3" params="400"/>
-    <gt_angle atom1="cl" atom2="s" atom3="o" angle="107.777" sigma="0.0609664" ntrain="6" params="400"/>
-    <gt_angle atom1="f" atom2="c" atom3="f" angle="108.22" sigma="1.1962" ntrain="160" params="400"/>
-    <gt_angle atom1="f" atom2="c" atom3="ha" angle="108.339" sigma="2.00254" ntrain="71" params="400"/>
-    <gt_angle atom1="f" atom2="c" atom3="n" angle="119.331" sigma="17.7903" ntrain="14" params="400"/>
-    <gt_angle atom1="f" atom2="c" atom3="o" angle="121.067" sigma="6.32079" ntrain="6" params="400"/>
-    <gt_angle atom1="f" atom2="c" atom3="s" angle="110.86" sigma="1.04032" ntrain="6" params="400"/>
-    <gt_angle atom1="f" atom2="n" atom3="f" angle="101.87" sigma="1.07281" ntrain="10" params="400"/>
-    <gt_angle atom1="f" atom2="n" atom3="hp" angle="100.751" sigma="0.720784" ntrain="4" params="400"/>
-    <gt_angle atom1="f" atom2="n" atom3="n" angle="107.235" sigma="4.78603" ntrain="9" params="400"/>
-    <gt_angle atom1="f" atom2="n" atom3="o" angle="114.38" sigma="3.083" ntrain="6" params="400"/>
-    <gt_angle atom1="f" atom2="n" atom3="s" angle="111.94" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="f" atom2="o" atom3="f" angle="103.96" sigma="0" ntrain="2" params="400"/>
-    <gt_angle atom1="f" atom2="o" atom3="hp" angle="98.6798" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="f" atom2="o" atom3="o" angle="109.26" sigma="0" ntrain="4" params="400"/>
-    <gt_angle atom1="f" atom2="p" atom3="f" angle="103.981" sigma="27.2187" ntrain="27" params="400"/>
-    <gt_angle atom1="f" atom2="p" atom3="hp" angle="96.443" sigma="1.10504" ntrain="4" params="400"/>
-    <gt_angle atom1="f" atom2="p" atom3="n" angle="102.41" sigma="3.53999" ntrain="2" params="400"/>
-    <gt_angle atom1="f" atom2="p" atom3="o" angle="111.405" sigma="7.24007" ntrain="8" params="400"/>
-    <gt_angle atom1="f" atom2="p" atom3="s" angle="118.434" sigma="0.00284138" ntrain="3" params="400"/>
-    <gt_angle atom1="f" atom2="s" atom3="f" angle="108.291" sigma="33.3837" ntrain="28" params="400"/>
-    <gt_angle atom1="f" atom2="s" atom3="n" angle="121.19" sigma="2.99044" ntrain="4" params="400"/>
-    <gt_angle atom1="f" atom2="s" atom3="o" angle="104.35" sigma="5.2893" ntrain="6" params="400"/>
-    <gt_angle atom1="f" atom2="s" atom3="s" angle="101.97" sigma="6.02016" ntrain="4" params="400"/>
-    <gt_angle atom1="ha" atom2="c" atom3="ha" angle="108.118" sigma="2.61806" ntrain="8157" params="400"/>
-    <gt_angle atom1="ha" atom2="c" atom3="n" angle="111.776" sigma="5.78644" ntrain="897" params="400"/>
-    <gt_angle atom1="ha" atom2="c" atom3="o" angle="109.996" sigma="3.22654" ntrain="1120" params="400"/>
-    <gt_angle atom1="ha" atom2="c" atom3="p" angle="111.432" sigma="9.21816" ntrain="64" params="400"/>
-    <gt_angle atom1="ha" atom2="c" atom3="s" angle="108.713" sigma="2.307" ntrain="173" params="400"/>
-    <gt_angle atom1="ha" atom2="n" atom3="n" angle="122.042" sigma="2.04701" ntrain="7" params="400"/>
-    <gt_angle atom1="hp" atom2="n" atom3="hp" angle="110.555" sigma="4.77991" ntrain="109" params="400"/>
-    <gt_angle atom1="hp" atom2="n" atom3="n" angle="111.137" sigma="5.53835" ntrain="15" params="400"/>
-    <gt_angle atom1="hp" atom2="n" atom3="o" angle="109.134" sigma="5.01971" ntrain="6" params="400"/>
-    <gt_angle atom1="hp" atom2="n" atom3="p" angle="114.785" sigma="2.02485" ntrain="2" params="400"/>
-    <gt_angle atom1="hp" atom2="n" atom3="s" angle="107.71" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="hp" atom2="o" atom3="hp" angle="105.061" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="hp" atom2="o" atom3="n" angle="104.498" sigma="1.87507" ntrain="7" params="400"/>
-    <gt_angle atom1="hp" atom2="o" atom3="o" angle="100.228" sigma="0.910852" ntrain="5" params="400"/>
-    <gt_angle atom1="hp" atom2="o" atom3="p" angle="112.415" sigma="4.16166" ntrain="20" params="400"/>
-    <gt_angle atom1="hp" atom2="o" atom3="s" angle="107.738" sigma="1.7311" ntrain="5" params="400"/>
-    <gt_angle atom1="hp" atom2="p" atom3="hp" angle="101.229" sigma="8.25546" ntrain="12" params="400"/>
-    <gt_angle atom1="hp" atom2="p" atom3="o" angle="102.544" sigma="6.88498" ntrain="6" params="400"/>
-    <gt_angle atom1="hp" atom2="s" atom3="hp" angle="92.5897" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="n" atom2="c" atom3="n" angle="122.06" sigma="18.8355" ntrain="66" params="400"/>
-    <gt_angle atom1="n" atom2="c" atom3="o" angle="126.008" sigma="13.6651" ntrain="60" params="400"/>
-    <gt_angle atom1="n" atom2="c" atom3="p" angle="151.586" sigma="25.5446" ntrain="4" params="400"/>
-    <gt_angle atom1="n" atom2="c" atom3="s" angle="175.898" sigma="1.49573" ntrain="3" params="400"/>
-    <gt_angle atom1="n" atom2="n" atom3="n" angle="133.192" sigma="30.48" ntrain="8" params="400"/>
-    <gt_angle atom1="n" atom2="n" atom3="o" angle="124.671" sigma="25.0177" ntrain="6" params="400"/>
-    <gt_angle atom1="n" atom2="p" atom3="n" angle="104.482" sigma="4.61048" ntrain="9" params="400"/>
-    <gt_angle atom1="n" atom2="p" atom3="o" angle="114.664" sigma="4.1422" ntrain="9" params="400"/>
-    <gt_angle atom1="n" atom2="p" atom3="s" angle="113.772" sigma="2.32582" ntrain="3" params="400"/>
-    <gt_angle atom1="n" atom2="s" atom3="n" angle="100.534" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="n" atom2="s" atom3="o" angle="111.206" sigma="3.97556" ntrain="9" params="400"/>
-    <gt_angle atom1="o" atom2="c" atom3="o" angle="121.82" sigma="6.61619" ntrain="203" params="400"/>
-    <gt_angle atom1="o" atom2="c" atom3="p" angle="115.688" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="o" atom2="c" atom3="s" angle="180" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="o" atom2="n" atom3="o" angle="123.229" sigma="6.49915" ntrain="40" params="400"/>
-    <gt_angle atom1="o" atom2="o" atom3="o" angle="118.24" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="o" atom2="p" atom3="o" angle="108.272" sigma="7.71754" ntrain="131" params="400"/>
-    <gt_angle atom1="o" atom2="p" atom3="s" angle="116.508" sigma="1.13745" ntrain="5" params="400"/>
-    <gt_angle atom1="o" atom2="s" atom3="o" angle="110.998" sigma="10.506" ntrain="72" params="400"/>
-    <gt_angle atom1="o" atom2="s" atom3="p" angle="117.39" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="p" atom2="o" atom3="p" angle="134.889" sigma="0" ntrain="1" params="400"/>
-    <gt_angle atom1="s" atom2="c" atom3="s" angle="134.753" sigma="32.0474" ntrain="3" params="400"/>
-    <gt_angle atom1="s" atom2="n" atom3="s" angle="125.9" sigma="0" ntrain="1" params="400"/>
   </gt_angles>
   <gt_dihedrals angle_unit="degree" function="pdihs">
-    <gt_dihedral atom1="br" atom2="c" atom3="c" atom4="br" angle="143.837" sigma="94.9116" ntrain="7" params="5"/>
-    <gt_dihedral atom1="br" atom2="c" atom3="c" atom4="c" angle="174.723" sigma="70.6122" ntrain="54" params="5"/>
-    <gt_dihedral atom1="br" atom2="c" atom3="c" atom4="cl" angle="107.612" sigma="76.553" ntrain="4" params="5"/>
-    <gt_dihedral atom1="br" atom2="c" atom3="c" atom4="f" angle="179.905" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="br" atom2="c" atom3="c" atom4="ha" angle="151.237" sigma="116.842" ntrain="121" params="5"/>
-    <gt_dihedral atom1="br" atom2="c" atom3="c" atom4="n" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="br" atom2="c" atom3="n" atom4="c" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="br" atom2="c" atom3="o" atom4="hp" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="c" atom4="c" angle="160.073" sigma="125.872" ntrain="5444" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="c" atom4="cl" angle="175.711" sigma="73.2867" ntrain="155" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="c" atom4="f" angle="175.338" sigma="83.7801" ntrain="374" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="c" atom4="ha" angle="178.785" sigma="98.171" ntrain="18760" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="c" atom4="n" angle="142.229" sigma="109.492" ntrain="447" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="c" atom4="o" angle="170.114" sigma="101.378" ntrain="729" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="c" atom4="p" angle="181.088" sigma="4.73609" ntrain="14" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="c" atom4="s" angle="176.739" sigma="89.654" ntrain="65" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="n" atom4="c" angle="142.867" sigma="120.362" ntrain="512" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="n" atom4="ha" angle="149.119" sigma="67.7724" ntrain="23" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="n" atom4="hp" angle="172.769" sigma="101.313" ntrain="341" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="n" atom4="n" angle="103.595" sigma="134.964" ntrain="23" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="n" atom4="o" angle="144.944" sigma="112.121" ntrain="61" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="n" atom4="s" angle="202.126" sigma="56.5042" ntrain="4" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="o" atom4="c" angle="171.802" sigma="88.8356" ntrain="411" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="o" atom4="hp" angle="194.301" sigma="104.105" ntrain="268" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="o" atom4="n" angle="241.015" sigma="76.6185" ntrain="4" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="o" atom4="o" angle="162.048" sigma="114.063" ntrain="6" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="o" atom4="p" angle="172.143" sigma="97.4724" ntrain="48" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="o" atom4="s" angle="196.112" sigma="96.7926" ntrain="8" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="p" atom4="c" angle="175.214" sigma="81.0563" ntrain="14" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="p" atom4="cl" angle="180.003" sigma="102.32" ntrain="8" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="p" atom4="hp" angle="146.262" sigma="95.3269" ntrain="4" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="p" atom4="o" angle="210.734" sigma="102.135" ntrain="9" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="s" atom4="hp" angle="170.274" sigma="77.9791" ntrain="47" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="s" atom4="o" angle="179.987" sigma="96.5171" ntrain="16" params="5"/>
-    <gt_dihedral atom1="c" atom2="c" atom3="s" atom4="s" angle="172.959" sigma="83.5748" ntrain="8" params="5"/>
-    <gt_dihedral atom1="c" atom2="ha" atom3="c" atom4="c" angle="178.049" sigma="121.524" ntrain="49" params="5"/>
-    <gt_dihedral atom1="c" atom2="ha" atom3="c" atom4="ha" angle="200.797" sigma="114.101" ntrain="46" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="c" atom4="cl" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="c" atom4="f" angle="157.5" sigma="66.657" ntrain="8" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="c" atom4="ha" angle="173.745" sigma="100.038" ntrain="1309" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="c" atom4="n" angle="136.474" sigma="124.583" ntrain="146" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="c" atom4="o" angle="164.387" sigma="110.644" ntrain="72" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="c" atom4="p" angle="108.202" sigma="88.2039" ntrain="5" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="n" atom4="c" angle="54.003" sigma="82.4844" ntrain="10" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="n" atom4="ha" angle="180.012" sigma="0.0240519" ntrain="5" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="n" atom4="hp" angle="182.656" sigma="77.8981" ntrain="11" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="n" atom4="n" angle="25.7229" sigma="62.9834" ntrain="7" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="o" atom4="c" angle="7.7895" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="o" atom4="hp" angle="137.58" sigma="59.991" ntrain="3" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="p" atom4="c" angle="223.116" sigma="76.9896" ntrain="6" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="p" atom4="f" angle="228.633" sigma="91.2756" ntrain="4" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="p" atom4="n" angle="171.97" sigma="92.2853" ntrain="34" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="p" atom4="o" angle="185.897" sigma="115.655" ntrain="16" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="p" atom4="s" angle="180.243" sigma="110.388" ntrain="6" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="s" atom4="n" angle="219.117" sigma="72.0219" ntrain="4" params="5"/>
-    <gt_dihedral atom1="c" atom2="n" atom3="s" atom4="o" angle="127.105" sigma="95.1767" ntrain="8" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="c" atom4="ha" angle="177.148" sigma="103.694" ntrain="700" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="c" atom4="n" angle="238.45" sigma="82.6608" ntrain="3" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="c" atom4="o" angle="150.414" sigma="140.355" ntrain="157" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="n" atom4="o" angle="238.864" sigma="84.3713" ntrain="6" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="o" atom4="c" angle="181.771" sigma="102.151" ntrain="2" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="o" atom4="hp" angle="138.94" sigma="29.0338" ntrain="3" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="p" atom4="c" angle="174.184" sigma="66.67" ntrain="10" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="p" atom4="cl" angle="221.609" sigma="86.8839" ntrain="8" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="p" atom4="hp" angle="55.8511" sigma="11.0432" ntrain="2" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="p" atom4="o" angle="176.184" sigma="102.75" ntrain="128" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="p" atom4="s" angle="152.918" sigma="52.345" ntrain="5" params="5"/>
-    <gt_dihedral atom1="c" atom2="o" atom3="s" atom4="o" angle="184.024" sigma="105.293" ntrain="33" params="5"/>
-    <gt_dihedral atom1="c" atom2="p" atom3="c" atom4="ha" angle="183.127" sigma="100.83" ntrain="74" params="5"/>
-    <gt_dihedral atom1="c" atom2="p" atom3="n" atom4="hp" angle="50.9899" sigma="12.56" ntrain="2" params="5"/>
-    <gt_dihedral atom1="c" atom2="s" atom3="c" atom4="c" angle="170.602" sigma="114.825" ntrain="53" params="5"/>
-    <gt_dihedral atom1="c" atom2="s" atom3="c" atom4="ha" angle="185.452" sigma="92.9221" ntrain="106" params="5"/>
-    <gt_dihedral atom1="c" atom2="s" atom3="c" atom4="n" angle="180" sigma="1.90735e-06" ntrain="3" params="5"/>
-    <gt_dihedral atom1="c" atom2="s" atom3="c" atom4="s" angle="178.229" sigma="147.343" ntrain="4" params="5"/>
-    <gt_dihedral atom1="c" atom2="s" atom3="n" atom4="s" angle="92.8602" sigma="0.0399122" ntrain="2" params="5"/>
-    <gt_dihedral atom1="c" atom2="s" atom3="o" atom4="hp" angle="245.58" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="c" atom2="s" atom3="s" atom4="c" angle="186.043" sigma="68.1279" ntrain="3" params="5"/>
-    <gt_dihedral atom1="cl" atom2="c" atom3="c" atom4="cl" angle="142.918" sigma="110.053" ntrain="45" params="5"/>
-    <gt_dihedral atom1="cl" atom2="c" atom3="c" atom4="f" angle="156.959" sigma="98.5723" ntrain="41" params="5"/>
-    <gt_dihedral atom1="cl" atom2="c" atom3="c" atom4="ha" angle="164.069" sigma="122.364" ntrain="299" params="5"/>
-    <gt_dihedral atom1="cl" atom2="c" atom3="c" atom4="n" angle="169.798" sigma="129.74" ntrain="10" params="5"/>
-    <gt_dihedral atom1="cl" atom2="c" atom3="c" atom4="o" angle="161.192" sigma="97.8897" ntrain="42" params="5"/>
-    <gt_dihedral atom1="cl" atom2="c" atom3="o" atom4="hp" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="c" atom4="f" angle="160.534" sigma="112.107" ntrain="233" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="c" atom4="ha" angle="149.365" sigma="124.615" ntrain="198" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="c" atom4="n" angle="174.024" sigma="69.5336" ntrain="6" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="c" atom4="o" angle="172.375" sigma="104.868" ntrain="29" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="n" atom4="hp" angle="90" sigma="90" ntrain="2" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="n" atom4="o" angle="209.994" sigma="102.545" ntrain="6" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="o" atom4="hp" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="s" atom4="n" angle="178.163" sigma="97.4921" ntrain="6" params="5"/>
-    <gt_dihedral atom1="f" atom2="c" atom3="s" atom4="o" angle="183.33" sigma="98.2525" ntrain="12" params="5"/>
-    <gt_dihedral atom1="f" atom2="n" atom3="c" atom4="ha" angle="179.985" sigma="97.6782" ntrain="6" params="5"/>
-    <gt_dihedral atom1="f" atom2="n" atom3="n" atom4="f" angle="135.555" sigma="104.28" ntrain="6" params="5"/>
-    <gt_dihedral atom1="f" atom2="n" atom3="n" atom4="n" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="f" atom2="o" atom3="o" atom4="f" angle="88.1293" sigma="0" ntrain="2" params="5"/>
-    <gt_dihedral atom1="f" atom2="p" atom3="c" atom4="ha" angle="180.002" sigma="104.01" ntrain="12" params="5"/>
-    <gt_dihedral atom1="f" atom2="p" atom3="o" atom4="hp" angle="180.049" sigma="82.8702" ntrain="2" params="5"/>
-    <gt_dihedral atom1="f" atom2="s" atom3="s" atom4="f" angle="87.8692" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="c" atom4="ha" angle="175.656" sigma="107.06" ntrain="12351" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="c" atom4="n" angle="170.419" sigma="104.532" ntrain="836" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="c" atom4="o" angle="174.336" sigma="106.973" ntrain="1882" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="c" atom4="p" angle="170.39" sigma="128.591" ntrain="36" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="c" atom4="s" angle="183.197" sigma="108.861" ntrain="223" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="n" atom4="ha" angle="99.5988" sigma="160.6" ntrain="18" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="n" atom4="hp" angle="183.184" sigma="104.991" ntrain="298" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="n" atom4="n" angle="174.129" sigma="78.1892" ntrain="38" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="n" atom4="o" angle="172.904" sigma="106.049" ntrain="27" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="n" atom4="p" angle="181.148" sigma="102.092" ntrain="66" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="n" atom4="s" angle="201.473" sigma="119.328" ntrain="8" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="o" atom4="hp" angle="164.461" sigma="107.767" ntrain="207" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="o" atom4="n" angle="164.758" sigma="99.9296" ntrain="11" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="o" atom4="o" angle="181.476" sigma="85.1778" ntrain="14" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="o" atom4="p" angle="176.91" sigma="105.843" ntrain="111" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="o" atom4="s" angle="175.219" sigma="100.335" ntrain="31" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="p" atom4="hp" angle="188.281" sigma="96.6828" ntrain="14" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="p" atom4="n" angle="181.49" sigma="97.6572" ntrain="12" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="p" atom4="o" angle="179.35" sigma="98.5838" ntrain="36" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="s" atom4="hp" angle="186.63" sigma="113.201" ntrain="54" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="s" atom4="o" angle="180.542" sigma="105.247" ntrain="43" params="5"/>
-    <gt_dihedral atom1="ha" atom2="c" atom3="s" atom4="s" angle="182.165" sigma="107.151" ntrain="10" params="5"/>
-    <gt_dihedral atom1="ha" atom2="n" atom3="c" atom4="n" angle="147.977" sigma="68.5065" ntrain="17" params="5"/>
-    <gt_dihedral atom1="ha" atom2="n" atom3="c" atom4="o" angle="0" sigma="0" ntrain="8" params="5"/>
-    <gt_dihedral atom1="ha" atom2="n" atom3="n" atom4="n" angle="180" sigma="0" ntrain="2" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="c" atom4="n" angle="119.634" sigma="102.744" ntrain="46" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="c" atom4="o" angle="180.176" sigma="133.748" ntrain="32" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="c" atom4="p" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="n" atom4="hp" angle="174.718" sigma="106.949" ntrain="6" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="n" atom4="n" angle="180" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="n" atom4="o" angle="179.91" sigma="127.18" ntrain="4" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="p" atom4="n" angle="234.485" sigma="82.092" ntrain="2" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="p" atom4="o" angle="231.427" sigma="42.6292" ntrain="2" params="5"/>
-    <gt_dihedral atom1="hp" atom2="n" atom3="s" atom4="o" angle="179.98" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="hp" atom2="o" atom3="c" atom4="n" angle="180.13" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="hp" atom2="o" atom3="c" atom4="o" angle="159.814" sigma="108.214" ntrain="63" params="5"/>
-    <gt_dihedral atom1="hp" atom2="o" atom3="n" atom4="hp" angle="217.718" sigma="69.9704" ntrain="3" params="5"/>
-    <gt_dihedral atom1="hp" atom2="o" atom3="n" atom4="o" angle="90" sigma="90" ntrain="4" params="5"/>
-    <gt_dihedral atom1="hp" atom2="o" atom3="o" atom4="hp" angle="113.28" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="hp" atom2="o" atom3="p" atom4="hp" angle="179.999" sigma="21.9613" ntrain="2" params="5"/>
-    <gt_dihedral atom1="hp" atom2="o" atom3="p" atom4="o" angle="174.525" sigma="93.6821" ntrain="45" params="5"/>
-    <gt_dihedral atom1="hp" atom2="o" atom3="s" atom4="o" angle="162.676" sigma="104.92" ntrain="14" params="5"/>
-    <gt_dihedral atom1="n" atom2="c" atom3="c" atom4="n" angle="80.3587" sigma="118.898" ntrain="40" params="5"/>
-    <gt_dihedral atom1="n" atom2="c" atom3="c" atom4="o" angle="153.184" sigma="106.34" ntrain="78" params="5"/>
-    <gt_dihedral atom1="n" atom2="c" atom3="c" atom4="s" angle="195.38" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="n" atom2="c" atom3="n" atom4="n" angle="0" sigma="0" ntrain="6" params="5"/>
-    <gt_dihedral atom1="n" atom2="n" atom3="n" atom4="n" angle="0" sigma="0" ntrain="2" params="5"/>
-    <gt_dihedral atom1="o" atom2="c" atom3="c" atom4="o" angle="155.181" sigma="102.597" ntrain="84" params="5"/>
-    <gt_dihedral atom1="o" atom2="c" atom3="c" atom4="s" angle="123.551" sigma="56.4494" ntrain="4" params="5"/>
-    <gt_dihedral atom1="o" atom2="c" atom3="o" atom4="o" angle="310.83" sigma="0" ntrain="1" params="5"/>
-    <gt_dihedral atom1="o" atom2="c" atom3="p" atom4="o" angle="166.345" sigma="96.6768" ntrain="3" params="5"/>
-    <gt_dihedral atom1="o" atom2="n" atom3="n" atom4="o" angle="90" sigma="90" ntrain="2" params="5"/>
-    <gt_dihedral atom1="o" atom2="p" atom3="o" atom4="p" angle="90" sigma="90" ntrain="4" params="5"/>
-    <gt_dihedral atom1="o" atom2="s" atom3="n" atom4="s" angle="270.286" sigma="68.9221" ntrain="4" params="5"/>
-    <gt_dihedral atom1="s" atom2="c" atom3="c" atom4="s" angle="98.8079" sigma="58.0746" ntrain="3" params="5"/>
   </gt_dihedrals>
-  <gt_impropers angle_unit="degree" function="idihs"/>
-  <bsatoms polarizability_unit="A3">
+  <gt_impropers angle_unit="degree" function="idihs">
+  </gt_impropers>
+  <bsatoms polarizability_unit="A3" reference="Bosque2002a">
     <bsatom elem="H" polarizability="0.17"/>
     <bsatom elem="C" polarizability="1.51"/>
     <bsatom elem="N" polarizability="1.05"/>
@@ -420,7 +58,7 @@
     <bsatom elem="I" polarizability="5.45"/>
     <bsatom elem="0" polarizability="0.32"/>
   </bsatoms>
-  <milatoms tau_ahc_unit="A3/2" alpha_ahp_unit="A3">
+  <milatoms tau_ahc_unit="A3/2" alpha_ahp_unit="A3" reference="Miller1990a">
     <milatom milname="H" atomnumber="1" tau_ahc="0.313" alpha_ahp="0.387"/>
     <milatom milname="F" atomnumber="9" tau_ahc="1.089" alpha_ahp="0.296"/>
     <milatom milname="Cl" atomnumber="17" tau_ahc="3.165" alpha_ahp="2.315"/>
@@ -428,18 +66,18 @@
     <milatom milname="I" atomnumber="53" tau_ahc="8.593" alpha_ahp="5.415"/>
     <milatom milname="CTE" atomnumber="6" tau_ahc="1.294" alpha_ahp="1.061"/>
     <milatom milname="CTR" atomnumber="6" tau_ahc="1.433" alpha_ahp="1.352"/>
-    <milatom milname="CRB" atomnumber="6" tau_ahc="1.707" alpha_ahp="1.896"/>
+    <milatom milname="CRB" atomnumber="6" tau_ahc="1.707" alpha_ahp="1.896" alexandria_equiv="C2"/>
     <milatom milname="CDI" atomnumber="6" tau_ahc="1.393" alpha_ahp="1.283"/>
     <milatom milname="NTE" atomnumber="7" tau_ahc="1.373" alpha_ahp="0.964"/>
     <milatom milname="NTR3" atomnumber="7" tau_ahc="1.262" alpha_ahp="1.03"/>
-    <milatom milname="NPI2" atomnumber="7" tau_ahc="1.22" alpha_ahp="1.09"/>
+    <milatom milname="NPI2" atomnumber="7" tau_ahc="1.22" alpha_ahp="1.09" alexandria_equiv="N2"/>
     <milatom milname="NDI" atomnumber="7" tau_ahc="1.304" alpha_ahp="0.956"/>
     <milatom milname="OTE" atomnumber="8" tau_ahc="1.249" alpha_ahp="0.637"/>
     <milatom milname="OTR4" atomnumber="8" tau_ahc="1.216" alpha_ahp="0.569"/>
-    <milatom milname="OPI2" atomnumber="8" tau_ahc="1.083" alpha_ahp="0.274"/>
+    <milatom milname="OPI2" atomnumber="8" tau_ahc="1.083" alpha_ahp="0.274" alexandria_equiv="O2"/>
     <milatom milname="STE" atomnumber="16" tau_ahc="3.496" alpha_ahp="3"/>
     <milatom milname="STR4" atomnumber="16" tau_ahc="3.827" alpha_ahp="3.729"/>
-    <milatom milname="SPI2" atomnumber="16" tau_ahc="2.982" alpha_ahp="2.7"/>
+    <milatom milname="SPI2" atomnumber="16" tau_ahc="2.982" alpha_ahp="2.7" alexandria_equiv="S2"/>
     <milatom milname="PTE" atomnumber="15" tau_ahc="2.485" alpha_ahp="1.538"/>
     <milatom milname="Si" atomnumber="14" tau_ahc="2.7" alpha_ahp="1.97"/>
   </milatoms>
@@ -456,197 +94,126 @@
     <sym_charge central="Si" attached="H" numattach="3"/>
   </symmetric_charges>
   <eemprops>
-    <eemprop model="AXp" name="ne" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="n2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="s6" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="hn" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="h5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="on" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="sy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="nb" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="n4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="cx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="nc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="hs" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="br" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="cy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="h4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="pc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="n1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="oh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="cu" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="hx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="hp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="ca" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="pb" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="p2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="p3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="n3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="h3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="pe" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="c1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="na" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="c2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="no" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="nh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="ho" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="os" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="cc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="ss" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="sh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="h1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="s4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="p4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="cz" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="s" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="hc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="c" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="px" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="py" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXp" name="cv" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXp" name="c3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXp" name="cg" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXp" name="hw" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="cl" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="p5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXp" name="ha" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="hn" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="c2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="h5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="ho" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXp" name="ce" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="s2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="sx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="f" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="i" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="n" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="cx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="cu" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="cc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="hx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="h1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="hs" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="hp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="cy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="ca" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXp" name="cp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="h4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="cz" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXp" name="h2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="o" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXp" name="mg" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="ne" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="n2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="s6" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="hn" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="h5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="on" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="sy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="nb" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="n4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="cx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="nc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="hs" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="br" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="cy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="h4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="pc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="n1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="oh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="cu" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="hx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="hp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="ca" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="pb" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="p2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="p3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="n3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="h3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="pe" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="c1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="na" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="c2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="no" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="nh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="ho" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="os" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="cc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="ss" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="sh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="h1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="s4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="p4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="cz" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="s" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="hc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="c" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="px" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="py" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="hc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="c" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="h3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXp" name="c1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXg" name="cv" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXg" name="c3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXg" name="cg" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXg" name="hw" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="cl" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="p5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXg" name="ha" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="hn" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="c2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="h5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="ho" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXg" name="ce" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="s2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="sx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="f" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="i" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="n" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="cx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="cu" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="cc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="hx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="h1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="hs" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="hp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="cy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="ca" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXg" name="cp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="h4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="cz" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXg" name="h2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="o" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXg" name="mg" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="ne" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="n2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="s6" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="hn" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="h5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="on" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="sy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="nb" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="n4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="cx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="nc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="hs" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="br" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="cy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="h4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="pc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="n1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="oh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="cu" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="hx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="hp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="ca" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="pb" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="p2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="p3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="n3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="h3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="pe" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="c1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="na" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="c2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="no" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="nh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="ho" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="os" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="cc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="ss" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="sh" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="h1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="s4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="p4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="cz" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="s" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="hc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="c" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="px" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="py" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="hc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="c" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="h3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXg" name="c1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXs" name="cv" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXs" name="c3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXs" name="cg" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXs" name="hw" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="cl" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="p5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXs" name="ha" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="hn" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="c2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="h5" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="ho" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXs" name="ce" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="s2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="sx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="f" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="i" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="n" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="cx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="cu" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="cc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="hx" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="h1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="hs" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="hp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="cy" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="ca" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXs" name="cp" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="h4" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="cz" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
     <eemprop model="AXs" name="h2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="o" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
-    <eemprop model="AXs" name="mg" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="hc" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="c" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="h3" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="AXs" name="c1" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="2 -2 0" row="1 1 1"/>
+    <eemprop model="Yang" name="H" jaa="13.8904" chi="4.498" zeta="19.8639" charge="0" row="1"/>
+    <eemprop model="Yang" name="LI" jaa="4.772" chi="3.006" zeta="7.88857" charge="0" row="2"/>
+    <eemprop model="Yang" name="C" jaa="10.126" chi="5.723" zeta="16.1825" charge="0" row="2"/>
+    <eemprop model="Yang" name="N" jaa="11.76" chi="8.599" zeta="17.1783" charge="0" row="2"/>
+    <eemprop model="Yang" name="O" jaa="13.364" chi="8.961" zeta="18.3595" charge="0" row="2"/>
+    <eemprop model="Yang" name="F" jaa="14.498" chi="6.374" zeta="17.3973" charge="0" row="2"/>
+    <eemprop model="Yang" name="NA" jaa="4.592" chi="2.843" zeta="8.24724" charge="0" row="3"/>
+    <eemprop model="Yang" name="SI" jaa="6.974" chi="4.168" zeta="14.622" charge="0" row="3"/>
+    <eemprop model="Yang" name="P" jaa="8" chi="5.463" zeta="15.6039" charge="0" row="3"/>
+    <eemprop model="Yang" name="S" jaa="8.972" chi="6.268" zeta="18.1579" charge="0" row="3"/>
+    <eemprop model="Yang" name="CL" jaa="9.892" chi="5.464" zeta="17.2993" charge="0" row="3"/>
+    <eemprop model="Yang" name="K" jaa="3.84" chi="2.421" zeta="8.5493" charge="0" row="4"/>
+    <eemprop model="Yang" name="BR" jaa="8.85" chi="5.79" zeta="19.3764" charge="0" row="4"/>
+    <eemprop model="Yang" name="RB" jaa="3.692" chi="2.331" zeta="9.75505" charge="0" row="5"/>
+    <eemprop model="Yang" name="I" jaa="7.524" chi="5.622" zeta="20.2712" charge="0" row="5"/>
+    <eemprop model="Yang" name="CS" jaa="3.422" chi="2.183" zeta="10.7019" charge="0" row="6"/>
+    <eemprop model="Bultinck" name="H" jaa="17.95" chi="1" zeta="0" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="C" jaa="9" chi="5.25" zeta="0" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="N" jaa="9.39" chi="8.8" zeta="0" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="O" jaa="14.34" chi="14.72" zeta="0" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="F" jaa="19.77" chi="15" zeta="0" charge="0" row="1"/>
+    <eemprop model="Rappe" name="H" jaa="13.8904" chi="4.528" zeta="20.2163" charge="0" row="1"/>
+    <eemprop model="Rappe" name="LI" jaa="4.772" chi="3.006" zeta="7.88772" charge="0" row="2"/>
+    <eemprop model="Rappe" name="C" jaa="10.126" chi="5.343" zeta="16.1817" charge="0" row="2"/>
+    <eemprop model="Rappe" name="N" jaa="11.76" chi="6.899" zeta="17.1757" charge="0" row="2"/>
+    <eemprop model="Rappe" name="O" jaa="13.364" chi="8.741" zeta="18.3587" charge="0" row="2"/>
+    <eemprop model="Rappe" name="F" jaa="14.948" chi="10.874" zeta="17.3968" charge="0" row="2"/>
+    <eemprop model="Rappe" name="NA" jaa="4.592" chi="2.843" zeta="8.24677" charge="0" row="3"/>
+    <eemprop model="Rappe" name="SI" jaa="6.974" chi="4.168" zeta="14.6208" charge="0" row="3"/>
+    <eemprop model="Rappe" name="P" jaa="8" chi="5.463" zeta="15.6035" charge="0" row="3"/>
+    <eemprop model="Rappe" name="S" jaa="8.972" chi="6.928" zeta="16.4217" charge="0" row="3"/>
+    <eemprop model="Rappe" name="CL" jaa="9.892" chi="8.564" zeta="17.2986" charge="0" row="3"/>
+    <eemprop model="Rappe" name="K" jaa="3.84" chi="2.421" zeta="8.54912" charge="0" row="4"/>
+    <eemprop model="Rappe" name="BR" jaa="8.85" chi="7.79" zeta="19.3754" charge="0" row="4"/>
+    <eemprop model="Rappe" name="RB" jaa="3.692" chi="2.331" zeta="9.75477" charge="0" row="5"/>
+    <eemprop model="Rappe" name="I" jaa="7.524" chi="6.822" zeta="20.2692" charge="0" row="5"/>
+    <eemprop model="Rappe" name="CS" jaa="3.422" chi="2.183" zeta="10.7015" charge="0" row="6"/>
+    <eemprop_ref model="Yang" epref="Yang2006b"/>
+    <eemprop_ref model="Bultinck" epref="Bultinck2002a"/>
+    <eemprop_ref model="Rappe" epref="Rappe1991a"/>
   </eemprops>
 </gentop>

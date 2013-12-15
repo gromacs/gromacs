@@ -43,7 +43,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/coulombintegrals.h"
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"

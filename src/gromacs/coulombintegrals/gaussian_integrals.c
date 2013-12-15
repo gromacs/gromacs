@@ -39,7 +39,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gromacs/coulombintegrals.h"
+#include "coulombintegrals.h"
 
 static double sqr(double x)
 {
