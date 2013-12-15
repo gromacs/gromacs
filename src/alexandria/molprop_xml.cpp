@@ -452,7 +452,9 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,
                         *bExperiment = TRUE;
                     }
                     else
+                    {
                         gmx_fatal(FARGS,"Experimental data without reference");
+                    }
                     break;
                 default:
                     break;
@@ -501,16 +503,15 @@ void MolPropRead(const char *fn,std::vector<alexandria::MolProp>& mpt)
     xmlFreeDoc(doc);
 }
 
-static void add_exper_properties(xmlNodePtr exp,alexandria::ExperimentIterator e_it)
+static void add_exper_properties(xmlNodePtr exp,
+                                 alexandria::Experiment &exper)
 {
     xmlNodePtr child;
     char *ptr;
     double value,error,x,y,z,xx,yy,zz,xy,xz,yz;
-    alexandria::MolecularEnergyIterator me_it;
-    alexandria::MolecularDipPolarIterator mdp_it;
-    alexandria::MolecularQuadrupoleIterator mq_it;
-
-    for(me_it = e_it->BeginEnergy(); (me_it < e_it->EndEnergy()); me_it++) {
+    
+    for(alexandria::MolecularEnergyIterator me_it = exper.BeginEnergy(); 
+        (me_it < exper.EndEnergy()); me_it++) {
         me_it->Get(&value,&error);
       
         ptr = gmx_ftoa(value);
@@ -520,7 +521,8 @@ static void add_exper_properties(xmlNodePtr exp,alexandria::ExperimentIterator e
         sfree(ptr);
     }
     
-    for(mdp_it = e_it->BeginDipole(); (mdp_it < e_it->EndDipole()); mdp_it++) 
+    for(alexandria::MolecularDipPolarIterator mdp_it = exper.BeginDipole();
+         (mdp_it < exper.EndDipole()); mdp_it++) 
     {
         mdp_it->Get(&x,&y,&z,&value,&error);
 
@@ -546,8 +548,8 @@ static void add_exper_properties(xmlNodePtr exp,alexandria::ExperimentIterator e
             sfree(ptr);
         }   
     }
-
-    for(mdp_it = e_it->BeginPolar(); (mdp_it < e_it->EndPolar()); mdp_it++) {
+    
+    for(alexandria::MolecularDipPolarIterator mdp_it = exper.BeginPolar(); (mdp_it < exper.EndPolar()); mdp_it++) {
         mdp_it->Get(&x,&y,&z,&value,&error);
 
         child = add_xml_child(exp,exml_names[exmlPOLARIZABILITY]);
@@ -573,7 +575,8 @@ static void add_exper_properties(xmlNodePtr exp,alexandria::ExperimentIterator e
         }   
     }
     
-    for(mq_it = e_it->BeginQuadrupole(); (mq_it < e_it->EndQuadrupole()); mq_it++) {
+    for(alexandria::MolecularQuadrupoleIterator mq_it = exper.BeginQuadrupole(); 
+        (mq_it < exper.EndQuadrupole()); mq_it++) {
         mq_it->Get(&xx,&yy,&zz,&xy,&xz,&yz);
     
         child = add_xml_child(exp,exml_names[exmlQUADRUPOLE]);
@@ -598,27 +601,27 @@ static void add_exper_properties(xmlNodePtr exp,alexandria::ExperimentIterator e
         add_xml_child_val(child,exml_names[exmlYZ],ptr);
         sfree(ptr);
     }
-    
 }
 
-static void add_calc_properties(xmlNodePtr exp,alexandria::CalculationIterator c_it)
+static void add_calc_properties(xmlNodePtr exp,
+                                alexandria::Calculation &calc)
 {
-    xmlNodePtr child;
-    alexandria::ElectrostaticPotentialIterator ep_it;
-    char *x_unit,*v_unit,*ptr;
-    double x,y,z,V;
-    int espid;
+    for(alexandria::ElectrostaticPotentialIterator ep_it = calc.BeginPotential();
+        (ep_it < calc.EndPotential()); ep_it++) 
+    {
+        char *x_unit,*v_unit;
+        double x,y,z,V;
+        int espid;
     
-    for(ep_it = c_it->BeginPotential(); (ep_it < c_it->EndPotential()); ep_it++) {
         ep_it->Get(&x_unit,&v_unit,&espid,&x,&y,&z,&V);
         
-        child = add_xml_child(exp,exml_names[exmlPOTENTIAL]);
+        xmlNodePtr child = add_xml_child(exp,exml_names[exmlPOTENTIAL]);
         add_xml_char(child,exml_names[exmlX_UNIT],x_unit);
         add_xml_char(child,exml_names[exmlV_UNIT],v_unit);
         add_xml_int(child,exml_names[exmlESPID],espid);
         if ((x != 0) || (y != 0) || (z != 0) || (V != 0)) 
         {
-            ptr = gmx_ftoa(x);
+            char *ptr = gmx_ftoa(x);
             add_xml_child_val(child,exml_names[exmlX],ptr);
             sfree(ptr);
             ptr = gmx_ftoa(y);
@@ -639,51 +642,42 @@ static void add_calc_properties(xmlNodePtr exp,alexandria::CalculationIterator c
 static void add_xml_molprop(xmlNodePtr parent,
                             std::vector<alexandria::MolProp>::iterator mp_it)
 {
-    xmlNodePtr ptr,child,grandchild,atomptr,baby;
-    char *p;
-    double x,y,z;
-    alexandria::BondIterator b_it;
-    alexandria::ExperimentIterator e_it;
-    alexandria::CalculationIterator c_it;
-    alexandria::CalcAtomIterator ca_it;
-    alexandria::AtomicChargeIterator q_it;
-    std::vector<std::string>::iterator s_it;
-    alexandria::MolecularCompositionIterator mc_it;
-    alexandria::AtomNumIterator an_it;
-    
-    ptr = add_xml_child(parent,exml_names[exmlMOLECULE]);
+    xmlNodePtr ptr = add_xml_child(parent,exml_names[exmlMOLECULE]);
     add_xml_string(ptr,exml_names[exmlMOLNAME],mp_it->GetMolname());
     add_xml_string(ptr,exml_names[exmlFORMULA],mp_it->GetFormula());
     add_xml_double(ptr,exml_names[exmlMASS],mp_it->GetMass());
     add_xml_double(ptr,exml_names[exmlCHARGE],mp_it->GetCharge());
     add_xml_double(ptr,exml_names[exmlMULTIPLICITY],mp_it->GetMultiplicity());
   
-    child = add_xml_child(ptr,exml_names[exmlMOLINFO]);
+    xmlNodePtr child = add_xml_child(ptr,exml_names[exmlMOLINFO]);
     add_xml_string(child,exml_names[exmlIUPAC],mp_it->GetIupac());
     add_xml_string(child,exml_names[exmlCAS],mp_it->GetCas());
     add_xml_string(child,exml_names[exmlCID],mp_it->GetCid());
     add_xml_string(child,exml_names[exmlINCHI],mp_it->GetInchi());
     
-    for(b_it=mp_it->BeginBond(); (b_it<mp_it->EndBond()); b_it++) 
+    for(alexandria::BondIterator b_it=mp_it->BeginBond(); 
+        (b_it<mp_it->EndBond()); b_it++) 
     {
-        child = add_xml_child(ptr,exml_names[exmlBOND]);
+        xmlNodePtr child = add_xml_child(ptr,exml_names[exmlBOND]);
         add_xml_int(child,exml_names[exmlAI],b_it->GetAi());
         add_xml_int(child,exml_names[exmlAJ],b_it->GetAj());
         add_xml_int(child,exml_names[exmlBONDORDER],b_it->GetBondOrder());
     }
       
-    for(e_it=mp_it->BeginExperiment(); (e_it<mp_it->EndExperiment()); e_it++) 
+    for(alexandria::ExperimentIterator e_it=mp_it->BeginExperiment(); 
+        (e_it<mp_it->EndExperiment()); e_it++) 
     {
-        child = add_xml_child(ptr,exml_names[exmlEXPERIMENT]);
+        xmlNodePtr child = add_xml_child(ptr,exml_names[exmlEXPERIMENT]);
         add_xml_string(child,exml_names[exmlREFERENCE],e_it->GetReference());
         add_xml_string(child,exml_names[exmlCONFORMATION],e_it->GetConformation());
         
-        add_exper_properties(child,e_it);
+        add_exper_properties(child,*e_it);
     }
 
-    for(c_it=mp_it->BeginCalculation(); (c_it<mp_it->EndCalculation()); c_it++) 
+    for(alexandria::CalculationIterator c_it=mp_it->BeginCalculation(); 
+        (c_it<mp_it->EndCalculation()); c_it++) 
     {
-        child = add_xml_child(ptr,exml_names[exmlCALCULATION]);
+        xmlNodePtr child = add_xml_child(ptr,exml_names[exmlCALCULATION]);
         add_xml_string(child,exml_names[exmlPROGRAM],c_it->GetProgram());
         add_xml_string(child,exml_names[exmlMETHOD],c_it->GetMethod());
         add_xml_string(child,exml_names[exmlBASISSET],c_it->GetBasisset());
@@ -691,19 +685,22 @@ static void add_xml_molprop(xmlNodePtr parent,
         add_xml_string(child,exml_names[exmlCONFORMATION],c_it->GetConformation());
         add_xml_string(child,exml_names[exmlDATAFILE],c_it->GetDatafile());
         
-        add_exper_properties(child,*((alexandria::ExperimentIterator *)&c_it));
-        add_calc_properties(child,c_it);
+        add_exper_properties(child,*c_it);
+        add_calc_properties(child,*c_it);
         
-        for(ca_it=c_it->BeginAtom(); (ca_it<c_it->EndAtom()); ca_it++) 
+        for(alexandria::CalcAtomIterator ca_it=c_it->BeginAtom(); 
+            (ca_it<c_it->EndAtom()); ca_it++) 
         {
-            grandchild = add_xml_child(child,exml_names[exmlATOM]);
+            xmlNodePtr grandchild = add_xml_child(child,exml_names[exmlATOM]);
             add_xml_string(grandchild,exml_names[exmlNAME],ca_it->GetName());
             add_xml_string(grandchild,exml_names[exmlOBTYPE],ca_it->GetObtype());
             add_xml_int(grandchild,exml_names[exmlATOMID],ca_it->GetAtomid());
             
+            double x,y,z;
             ca_it->GetCoords(&x,&y,&z);
-            p = gmx_ftoa(x);
-            baby = add_xml_child_val(grandchild,exml_names[exmlX],p);
+            
+            char *p = gmx_ftoa(x);
+            xmlNodePtr baby = add_xml_child_val(grandchild,exml_names[exmlX],p);
             sfree(p);
             add_xml_string(baby,exml_names[exmlUNIT],ca_it->GetUnit());
             p = gmx_ftoa(y);
@@ -715,29 +712,33 @@ static void add_xml_molprop(xmlNodePtr parent,
             sfree(p);
             add_xml_string(baby,exml_names[exmlUNIT],ca_it->GetUnit());
             
-            for(q_it=ca_it->BeginQ(); (q_it<ca_it->EndQ()); q_it++)
+            for(alexandria::AtomicChargeIterator q_it=ca_it->BeginQ(); 
+                (q_it<ca_it->EndQ()); q_it++)
             {
                 p = gmx_ftoa(q_it->GetQ());
-                atomptr = add_xml_child_val(grandchild,exml_names[exmlQ],p);
+                xmlNodePtr atomptr = add_xml_child_val(grandchild,exml_names[exmlQ],p);
                 sfree(p);
                 add_xml_string(atomptr,exml_names[exmlTYPE],q_it->GetType());
                 add_xml_string(atomptr,exml_names[exmlUNIT],q_it->GetUnit());
             }
         }
     }
-    for(s_it=mp_it->BeginCategory(); (s_it<mp_it->EndCategory()); s_it++) 
+    for(std::vector<std::string>::iterator s_it=mp_it->BeginCategory(); 
+        (s_it<mp_it->EndCategory()); s_it++) 
     {
-        child = add_xml_child(ptr,exml_names[exmlCATEGORY]);
+        xmlNodePtr child = add_xml_child(ptr,exml_names[exmlCATEGORY]);
         add_xml_string(child,exml_names[exmlCATNAME],*s_it);
     }
     
-    for(mc_it=mp_it->BeginMolecularComposition(); (mc_it<mp_it->EndMolecularComposition()); mc_it++) 
+    for(alexandria::MolecularCompositionIterator mc_it=mp_it->BeginMolecularComposition();
+        (mc_it<mp_it->EndMolecularComposition()); mc_it++) 
     {
-        child = add_xml_child(ptr,exml_names[exmlCOMPOSITION]);
+        xmlNodePtr child = add_xml_child(ptr,exml_names[exmlCOMPOSITION]);
         add_xml_string(child,exml_names[exmlCOMPNAME],mc_it->GetCompName());
-        for(an_it=mc_it->BeginAtomNum(); (an_it<mc_it->EndAtomNum()); an_it++) 
+        for(alexandria::AtomNumIterator an_it=mc_it->BeginAtomNum(); 
+            (an_it<mc_it->EndAtomNum()); an_it++) 
         {
-            grandchild = add_xml_child(child,exml_names[exmlCATOM]);
+            xmlNodePtr grandchild = add_xml_child(child,exml_names[exmlCATOM]);
             add_xml_string(grandchild,exml_names[exmlC_NAME],an_it->GetAtom());
             add_xml_int(grandchild,exml_names[exmlC_NUMBER],an_it->GetNumber());
         }
@@ -771,8 +772,10 @@ void MolPropWrite(const char *fn,std::vector<alexandria::MolProp> mpt,gmx_bool b
     for(mp_it=mpt.begin(); (mp_it<mpt.end()); mp_it++)
     {
         if (NULL != debug)
+        {
             fprintf(debug,"Adding %d/%d %s\n",(int)(mp_it - mpt.begin()),
                     (int)mpt.size(),mp_it->GetMolname().c_str());
+        }
         //mp_it->Stats();
         add_xml_molprop(myroot,mp_it);
     }

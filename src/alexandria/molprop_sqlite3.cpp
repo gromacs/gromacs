@@ -158,7 +158,7 @@ void ReadSqlite3(const char                       *sqlite_file,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit,gp.value,gp.error,ref.ref,ds.source FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref,datasource as ds WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (upper(?) = upper(mol.iupac)));");
+    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit,gp.value,gp.error,ref.ref,ds.source FROM molecules as mol,gasproperty as gp,proptypes as pt,reference as ref,datasource as ds WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.refid = ref.refid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, NULL));
 
@@ -229,37 +229,43 @@ void ReadSqlite3(const char                       *sqlite_file,
                         nexp_prop++;
 
                         bool bExp = (0 == gmx_strcasecmp(source, "Experiment"));
-                        
-                        alexandria::Experiment *eptr;
+                        //printf("source = %s prop = %s value = %10g bExp = %d\n",
+                        //      source, prop, value, (int) bExp);
                         if (bExp)
                         {
-                            eptr = new alexandria::Experiment(ref, "minimum");
+                            alexandria::Experiment exper(ref, "minimum");
+                            if (strcasecmp(prop, "Polarizability") == 0)
+                            {
+                                exper.AddPolar(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                            }
+                            else if (strcasecmp(prop, "dipole") == 0)
+                            {
+                                exper.AddDipole(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                            }
+                            else if (strcasecmp(prop, "DHf(298.15K)") == 0)
+                            {
+                                exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, value, error));
+                            }
+                            mpi->AddExperiment(exper);
                         }
                         else
                         {
-                            eptr = new alexandria::Calculation("gentop", source,
-                                                               "", ref, "minimum",
-                                                               "unknown" );
-                        }
-                        if (strcasecmp(prop, "Polarizability") == 0)
-                        {
-                            eptr->AddPolar(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
-                        }
-                        else if (strcasecmp(prop, "dipole") == 0)
-                        {
-                            eptr->AddDipole(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
-                        }
-                        else if (strcasecmp(prop, "DHf(298.15K)") == 0)
-                        {
-                            eptr->AddEnergy(alexandria::MolecularEnergy(prop, unit, value, error));
-                        }
-                        if (bExp)
-                        {
-                            mpi->AddExperiment(*eptr);
-                        }
-                        else
-                        {
-                            mpi->AddCalculation(*(alexandria::Calculation *)eptr);
+                            alexandria::Calculation calc("gentop", source,
+                                                         "", ref, "minimum",
+                                                         "unknown" );
+                            if (strcasecmp(prop, "Polarizability") == 0)
+                            {
+                                calc.AddPolar(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                            }
+                            else if (strcasecmp(prop, "dipole") == 0)
+                            {
+                                calc.AddDipole(alexandria::MolecularDipPolar(prop, unit, 0, 0, 0, value, error));
+                            }
+                            else if (strcasecmp(prop, "DHf(298.15K)") == 0)
+                            {
+                                calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, value, error));
+                            }
+                            mpi->AddCalculation(calc);
                         }
                         //mpi->Stats();
 
