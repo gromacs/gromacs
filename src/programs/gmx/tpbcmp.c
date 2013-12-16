@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"

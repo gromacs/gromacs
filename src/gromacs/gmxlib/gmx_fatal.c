@@ -43,7 +43,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "main.h"
 #include "network.h"
 #include "gmx_fatal.h"

@@ -37,7 +37,7 @@
 #define _nrama_h
 
 #include "typedefs.h"
-#include "statutil.h"
+#include "oenv.h"
 #include "mshift.h"
 #include "../fileio/trxio.h"
 

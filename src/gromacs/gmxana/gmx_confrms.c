@@ -42,7 +42,7 @@
 #include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "string2.h"
 #include "vec.h"

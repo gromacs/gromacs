@@ -72,7 +72,6 @@
 #include "nbnxn_search.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_consts.h"
-#include "statutil.h"
 #include "gmx_omp_nthreads.h"
 #include "gmx_detect_hardware.h"
 

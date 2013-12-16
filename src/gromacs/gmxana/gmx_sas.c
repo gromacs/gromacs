@@ -48,7 +48,7 @@
 #include "pbc.h"
 #include "copyrite.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "nsc.h"
 #include "gromacs/fileio/pdbio.h"

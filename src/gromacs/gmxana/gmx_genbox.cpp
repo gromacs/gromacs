@@ -53,7 +53,7 @@
 #include "names.h"
 #include "vec.h"
 #include "gmx_fatal.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "gbutil.h"
 #include "addconf.h"

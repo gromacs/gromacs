@@ -53,7 +53,6 @@
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/random.h"
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/strdb.h"
 #include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/vec.h"

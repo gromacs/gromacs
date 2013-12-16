@@ -38,7 +38,8 @@
 #endif
 
 #include <string.h>
-#include "statutil.h"
+
+#include "oenv.h"
 #include "viewit.h"
 #include "string2.h"
 #include "gromacs/fileio/filenm.h"

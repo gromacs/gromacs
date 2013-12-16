@@ -33,7 +33,7 @@
 #include "macros.h"
 #include "pbc.h"
 #include "smalloc.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "xvgr.h"
 #include "gromacs/fileio/trxio.h"

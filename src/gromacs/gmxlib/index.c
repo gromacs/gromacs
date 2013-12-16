@@ -45,7 +45,6 @@
 #include "macros.h"
 #include "names.h"
 #include "string2.h"
-#include "statutil.h"
 #include "gromacs/fileio/confio.h"
 #include "main.h"
 #include "typedefs.h"

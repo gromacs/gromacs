@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "symtab.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "gmx_fatal.h"
 #include "pdb2top.h"
 #include "gpp_nextnb.h"

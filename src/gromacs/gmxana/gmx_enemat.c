@@ -44,7 +44,7 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "gromacs/fileio/enxio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "names.h"
 #include "macros.h"
 #include "xvgr.h"

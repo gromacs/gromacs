@@ -47,12 +47,11 @@
 #include <stdlib.h>
 #include <sstream>
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
 #include "copyrite.h"
-#include "statutil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "names.h"
 #include "gmx_random.h"

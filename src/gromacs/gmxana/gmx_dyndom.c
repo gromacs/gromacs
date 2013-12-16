@@ -37,7 +37,7 @@
 #endif
 
 #include "3dview.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "smalloc.h"
 #include "index.h"
 #include "gromacs/fileio/confio.h"

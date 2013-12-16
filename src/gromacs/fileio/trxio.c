@@ -49,7 +49,6 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
-#include "statutil.h"
 #include "gmxfio.h"
 #include "trxio.h"
 #include "tpxio.h"

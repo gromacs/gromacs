@@ -42,7 +42,6 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "statutil.h"
 #include "gmx_fatal.h"
 #include "random.h"
 #include "gromacs/fileio/pdbio.h"

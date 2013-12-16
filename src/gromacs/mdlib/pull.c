@@ -43,7 +43,6 @@
 #include <stdlib.h>
 #include "gromacs/fileio/futil.h"
 #include "index.h"
-#include "statutil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "vec.h"
 #include "typedefs.h"

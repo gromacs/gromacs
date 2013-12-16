@@ -42,7 +42,7 @@
 #include "main.h"
 #include "macros.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "sysstuff.h"
 #include "txtdump.h"

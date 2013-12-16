@@ -50,7 +50,7 @@
 #include "pbc.h"
 #include "gromacs/fileio/futil.h"
 #include "strdb.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "pbc.h"
 #include "index.h"
 #include "gstat.h"

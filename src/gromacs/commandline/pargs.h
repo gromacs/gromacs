@@ -38,6 +38,8 @@
 #define GMX_COMMANDLINE_PARGS_H
 
 #include "../legacyheaders/types/simple.h"
+#include "../legacyheaders/oenv.h"
+#include "../fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -69,14 +71,6 @@ typedef struct
     const char *desc;
 } t_pargs;
 
-void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[],
-               gmx_bool bKeepArgs);
-/* Read a number of arguments from the command line.
- * For etINT, etREAL and etCHAR an extra argument is read (when present)
- * for etBOOL the gmx_boolean option is changed to the negate value
- * If !bKeepArgs, the command line arguments are removed from the command line
- */
-
 gmx_bool is_hidden(t_pargs *pa);
 /* Return TRUE when the option is a secret one */
 
@@ -97,6 +91,42 @@ const char *opt2parg_str(const char *option, int nparg, t_pargs pa[]);
 const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[]);
 
 gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
+
+
+#define PCA_CAN_VIEW       (1<<5)
+/* add option -w to view output files (must be implemented in program) */
+#define PCA_CAN_BEGIN      (1<<6)
+#define PCA_CAN_END        (1<<7)
+#define PCA_CAN_DT         (1<<14)
+#define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_DT)
+/* adds options -b and -e for begin and end time for reading trajectories */
+#define PCA_TIME_UNIT      (1<<15)
+/* set time unit for output */
+#define PCA_KEEP_ARGS      (1<<8)
+/* keep parsed args in argv (doesn't make sense without NOEXIT_ON_ARGS) */
+#define PCA_CAN_SET_DEFFNM (1<<10)
+/* does something for non-master mdrun nodes */
+#define PCA_NOEXIT_ON_ARGS (1<<11)
+/* no fatal_error when invalid options are encountered */
+#define PCA_QUIET          (1<<12)
+/* does something for non-master mdrun nodes */
+#define PCA_BE_NICE        (1<<13)
+/* Default to low priority, unless configured with --disable-nice */
+#define PCA_NOT_READ_NODE  (1<<16)
+/* Is this node not reading: for parallel all nodes but the master */
+
+gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
+                           int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
+                           int ndesc, const char **desc,
+                           int nbugs, const char **bugs,
+                           output_env_t *oenv);
+/* Get arguments from the arg-list. The arguments extracted
+ * are removed from the list. If manual is NULL a default message is displayed
+ * when errors are encountered. The Flags argument, when non-0 enables
+ * some input checks. Using this routine also means that the arguments
+ * -b and -e will be used for begin and end time, whether this is
+ * appropriate or not!
+ */
 
 #ifdef __cplusplus
 }

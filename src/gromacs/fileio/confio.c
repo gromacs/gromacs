@@ -57,7 +57,6 @@
 #include "trxio.h"
 #include "gmx_fatal.h"
 #include "copyrite.h"
-#include "statutil.h"
 #include "pbc.h"
 #include "mtop_util.h"
 #include "gmxfio.h"

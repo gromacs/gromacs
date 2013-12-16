@@ -49,7 +49,6 @@
 #include "network.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
-#include "statutil.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

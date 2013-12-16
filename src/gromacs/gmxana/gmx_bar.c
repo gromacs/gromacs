@@ -47,7 +47,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "macros.h"
 #include "gromacs/fileio/enxio.h"
 #include "physics.h"

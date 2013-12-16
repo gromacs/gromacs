@@ -42,7 +42,7 @@
 #include "string2.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "writeps.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"

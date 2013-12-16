@@ -37,7 +37,8 @@
 #define _gstat_h
 
 #include "typedefs.h"
-#include "statutil.h"
+#include "../commandline/pargs.h"
+#include "oenv.h"
 #include "mshift.h"
 #include "rmpbc.h"
 #include "index.h"

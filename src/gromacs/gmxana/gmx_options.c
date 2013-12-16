@@ -38,7 +38,7 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 
 /*
  * This program is needed to create the files:

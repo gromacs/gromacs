@@ -47,7 +47,6 @@
 
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/rmpbc.h"
-#include "gromacs/legacyheaders/statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"

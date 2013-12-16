@@ -45,7 +45,7 @@
 #include "string2.h"
 #include "gromacs/fileio/confio.h"
 #include "vec.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/pdbio.h"
 #include "strdb.h"

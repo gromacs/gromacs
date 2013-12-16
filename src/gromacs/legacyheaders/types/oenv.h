@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-/* output options opaque type, for functions in statutil.h and oenv.h */
+/* output options opaque type, for functions in oenv.h */
 typedef struct output_env *output_env_t;
 
 #ifdef __cplusplus

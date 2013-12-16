@@ -42,7 +42,6 @@
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "vec.h"
-#include "statutil.h"
 #include "macros.h"
 #include "main.h"
 #include "gromacs/fileio/futil.h"
