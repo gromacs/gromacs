@@ -929,30 +929,11 @@ class CMainCommandLineModule : public CommandLineModuleInterface
         }
         virtual void writeHelp(const CommandLineHelpContext &context) const
         {
-            const HelpOutputFormat format = context.writerContext().outputFormat();
-            const char            *type;
-            switch (format)
-            {
-                case eHelpOutputFormat_Console:
-                    type = "help";
-                    break;
-                case eHelpOutputFormat_Man:
-                    type = "nroff";
-                    break;
-                case eHelpOutputFormat_Html:
-                    type = "html";
-                    break;
-                default:
-                    GMX_THROW(NotImplementedError(
-                                      "Command-line help is not implemented for this output format"));
-            }
-            char *argv[4];
-            int   argc = 3;
+            char *argv[2];
+            int   argc = 1;
             // TODO: The constness should not be cast away.
             argv[0] = const_cast<char *>(name_);
-            argv[1] = const_cast<char *>("-man");
-            argv[2] = const_cast<char *>(type);
-            argv[3] = NULL;
+            argv[1] = NULL;
             GlobalCommandLineHelpContext global(context);
             mainFunction_(argc, argv);
         }

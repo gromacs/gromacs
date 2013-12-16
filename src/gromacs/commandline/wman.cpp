@@ -43,24 +43,14 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "string2.h"
 #include "smalloc.h"
-
-// Shell types, for completion stuff
-enum {
-    eshellCSH, eshellBASH, eshellZSH
-};
-
-// TODO: Don't duplicate this from filenm.c/futil.c.
-#define NZEXT 2
-static const char *z_ext[NZEXT] = { ".gz", ".Z" };
 
 /* The source code in this file should be thread-safe.
  * Please keep it that way. */
@@ -577,301 +567,17 @@ static void write_htmlman(FILE *out,
     }
 }
 
-static void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell)
-{
-    switch (shell)
-    {
-        case eshellCSH:
-            for (int i = 0; i < nf; i++)
-            {
-                fprintf(fp, " \"n/%s/f:*.", tfn[i].opt);
-                const int ftp          = tfn[i].ftp;
-                const int genericCount = ftp2generic_count(ftp);
-                if (genericCount > 0)
-                {
-                    fprintf(fp, "{");
-                    const int *const genericTypes = ftp2generic_list(ftp);
-                    for (int j = 0; j < genericCount; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, ",");
-                        }
-                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
-                    }
-                    fprintf(fp, "}");
-                }
-                else
-                {
-                    fprintf(fp, "%s", ftp2ext(ftp));
-                }
-                fprintf(fp, "{");
-                for (int j = 0; j < NZEXT; j++)
-                {
-                    fprintf(fp, ",%s", z_ext[j]);
-                }
-                fprintf(fp, "}/\"");
-            }
-            break;
-        case eshellBASH:
-            for (int i = 0; i < nf; i++)
-            {
-                fprintf(fp, "%s) COMPREPLY=( $(compgen -X '!*.", tfn[i].opt);
-                const int ftp          = tfn[i].ftp;
-                const int genericCount = ftp2generic_count(ftp);
-                if (genericCount > 0)
-                {
-                    fprintf(fp, "+(");
-                    const int *const genericTypes = ftp2generic_list(ftp);
-                    for (int j = 0; j < genericCount; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, "|");
-                        }
-                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
-                    }
-                    fprintf(fp, ")");
-                }
-                else
-                {
-                    fprintf(fp, "%s", ftp2ext(ftp));
-                }
-                fprintf(fp, "*(");
-                for (int j = 0; j < NZEXT; j++)
-                {
-                    if (j > 0)
-                    {
-                        fprintf(fp, "|");
-                    }
-                    fprintf(fp, "%s", z_ext[j]);
-                }
-                fprintf(fp, ")' -f $c ; compgen -S '/' -X '.*' -d $c ));;\n");
-            }
-            break;
-        case eshellZSH:
-            for (int i = 0; i < nf; i++)
-            {
-                fprintf(fp, "- 'c[-1,%s]' -g '*.", tfn[i].opt);
-                const int ftp          = tfn[i].ftp;
-                const int genericCount = ftp2generic_count(ftp);
-                if (genericCount > 0)
-                {
-                    fprintf(fp, "(");
-                    const int *const genericTypes = ftp2generic_list(ftp);
-                    for (int j = 0; j < genericCount; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, "|");
-                        }
-                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
-                    }
-                    fprintf(fp, ")");
-                }
-                else
-                {
-                    fprintf(fp, "%s", ftp2ext(ftp));
-                }
-                fprintf(fp, "(");
-                for (int j = 0; j < NZEXT; j++)
-                {
-                    fprintf(fp, "|%s", z_ext[j]);
-                }
-                fprintf(fp, ") *(/)' ");
-            }
-            break;
-    }
-}
-
-static void pr_opts(FILE *fp,
-                    int nfile,  t_filenm *fnm,
-                    int npargs, t_pargs pa[], int shell)
-{
-    int i;
-
-    switch (shell)
-    {
-        case eshellCSH:
-            fprintf(fp, " \"c/-/(");
-            for (i = 0; i < nfile; i++)
-            {
-                fprintf(fp, " %s", fnm[i].opt+1);
-            }
-            for (i = 0; i < npargs; i++)
-            {
-                if ( (pa[i].type == etBOOL) && *(pa[i].u.b) )
-                {
-                    fprintf(fp, " no%s", pa[i].option+1);
-                }
-                else
-                {
-                    fprintf(fp, " %s", pa[i].option+1);
-                }
-            }
-            fprintf(fp, ")/\"");
-            break;
-        case eshellBASH:
-            fprintf(fp, "if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W '");
-            for (i = 0; i < nfile; i++)
-            {
-                fprintf(fp, " -%s", fnm[i].opt+1);
-            }
-            for (i = 0; i < npargs; i++)
-            {
-                if ( (pa[i].type == etBOOL) && *(pa[i].u.b) )
-                {
-                    fprintf(fp, " -no%s", pa[i].option+1);
-                }
-                else
-                {
-                    fprintf(fp, " -%s", pa[i].option+1);
-                }
-            }
-            fprintf(fp, "' -- $c)); return 0; fi\n");
-            break;
-        case eshellZSH:
-            fprintf(fp, " -x 's[-]' -s \"");
-            for (i = 0; i < nfile; i++)
-            {
-                fprintf(fp, " %s", fnm[i].opt+1);
-            }
-            for (i = 0; i < npargs; i++)
-            {
-                if ( (pa[i].type == etBOOL) && *(pa[i].u.b) )
-                {
-                    fprintf(fp, " no%s", pa[i].option+1);
-                }
-                else
-                {
-                    fprintf(fp, " %s", pa[i].option+1);
-                }
-            }
-            fprintf(fp, "\" ");
-            break;
-    }
-}
-
-static void pr_enums(FILE *fp, int npargs, t_pargs pa[], int shell)
-{
-    int i, j;
-
-    switch (shell)
-    {
-        case eshellCSH:
-            for (i = 0; i < npargs; i++)
-            {
-                if (pa[i].type == etENUM)
-                {
-                    fprintf(fp, " \"n/%s/(", pa[i].option);
-                    for (j = 1; pa[i].u.c[j]; j++)
-                    {
-                        fprintf(fp, " %s", pa[i].u.c[j]);
-                    }
-                    fprintf(fp, ")/\"");
-                }
-            }
-            break;
-        case eshellBASH:
-            for (i = 0; i < npargs; i++)
-            {
-                if (pa[i].type == etENUM)
-                {
-                    fprintf(fp, "%s) COMPREPLY=( $(compgen -W '", pa[i].option);
-                    for (j = 1; pa[i].u.c[j]; j++)
-                    {
-                        fprintf(fp, " %s", pa[i].u.c[j]);
-                    }
-                    fprintf(fp, " ' -- $c ));;\n");
-                }
-            }
-            break;
-        case eshellZSH:
-            for (i = 0; i < npargs; i++)
-            {
-                if (pa[i].type == etENUM)
-                {
-                    fprintf(fp, "- 'c[-1,%s]' -s \"", pa[i].option);
-                    for (j = 1; pa[i].u.c[j]; j++)
-                    {
-                        fprintf(fp, " %s", pa[i].u.c[j]);
-                    }
-                    fprintf(fp, "\" ");
-                }
-            }
-            break;
-    }
-}
-
-static void write_cshcompl(FILE *out,
-                           int nfile,  t_filenm *fnm,
-                           int npargs, t_pargs *pa)
-{
-    fprintf(out, "complete %s", ShortProgram());
-    pr_enums(out, npargs, pa, eshellCSH);
-    pr_fopts(out, nfile, fnm, eshellCSH);
-    pr_opts(out, nfile, fnm, npargs, pa, eshellCSH);
-    fprintf(out, "\n");
-}
-
-static void write_zshcompl(FILE *out,
-                           int nfile,  t_filenm *fnm,
-                           int npargs, t_pargs *pa)
-{
-    fprintf(out, "compctl ");
-
-    /* start with options, since they are always present */
-    pr_opts(out, nfile, fnm, npargs, pa, eshellZSH);
-    pr_enums(out, npargs, pa, eshellZSH);
-    pr_fopts(out, nfile, fnm, eshellZSH);
-    fprintf(out, "-- %s\n", ShortProgram());
-}
-
-static void write_bashcompl(FILE *out,
-                            int nfile,  t_filenm *fnm,
-                            int npargs, t_pargs *pa)
-{
-    /* Advanced bash completions are handled by shell functions.
-     * p and c hold the previous and current word on the command line.
-     * We need to use extended globbing, so write it in each completion file */
-    fprintf(out, "shopt -s extglob\n");
-    fprintf(out, "_%s_compl() {\nlocal p c\n", ShortProgram());
-    fprintf(out, "COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}\n");
-    pr_opts(out, nfile, fnm, npargs, pa, eshellBASH);
-    fprintf(out, "case \"$p\" in\n");
-
-    pr_enums(out, npargs, pa, eshellBASH);
-    pr_fopts(out, nfile, fnm, eshellBASH);
-    fprintf(out, "esac }\ncomplete -F _%s_compl %s\n", ShortProgram(), ShortProgram());
-}
-
-void write_man(const char *mantp,
-               const char *program,
+void write_man(const gmx::CommandLineHelpContext &context,
                int nldesc, const char **desc,
                int nfile, t_filenm *fnm,
                int npargs, t_pargs *pa,
                int nbug, const char **bugs)
 {
-    bool        bHidden = false;
+    FILE       *out     = context.writerContext().outputFile().handle();
+    const bool  bHidden = context.showHidden();
+
     int         npar;
     t_pargs    *par;
-
-    const gmx::CommandLineHelpContext *context
-        = gmx::GlobalCommandLineHelpContext::get();
-    bool  bFileOpened = false;
-    FILE *out;
-    if (context != NULL)
-    {
-        out     = context->writerContext().outputFile().handle();
-        bHidden = context->showHidden();
-    }
-    else
-    {
-        char buf[256];
-        sprintf(buf, "%s.%s", program, mantp);
-        out         = gmx_fio_fopen(buf, "w");
-        bFileOpened = true;
-    }
 
     if (bHidden)
     {
@@ -892,43 +598,22 @@ void write_man(const char *mantp,
         }
     }
 
-    if (strcmp(mantp, "nroff") == 0)
+    switch (context.writerContext().outputFormat())
     {
-        GMX_RELEASE_ASSERT(context != NULL,
-                           "Man page export only implemented with the new context");
-        write_nroffman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
-                       *context);
-    }
-    if (strcmp(mantp, "help") == 0)
-    {
-        GMX_RELEASE_ASSERT(context != NULL,
-                           "Help export only implemented with the new context");
-        write_ttyman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
-                     context->writerContext());
-    }
-    if (strcmp(mantp, "html") == 0)
-    {
-        GMX_RELEASE_ASSERT(context != NULL,
-                           "HTML export only implemented with the new context");
-        write_htmlman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
-                      context->writerContext());
-    }
-    if (strcmp(mantp, "completion-zsh") == 0)
-    {
-        write_zshcompl(out, nfile, fnm, npar, par);
-    }
-    if (strcmp(mantp, "completion-bash") == 0)
-    {
-        write_bashcompl(out, nfile, fnm, npar, par);
-    }
-    if (strcmp(mantp, "completion-csh") == 0)
-    {
-        write_cshcompl(out, nfile, fnm, npar, par);
-    }
-
-    if (bFileOpened)
-    {
-        gmx_fio_fclose(out);
+        case gmx::eHelpOutputFormat_Man:
+            write_nroffman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
+                           context);
+            break;
+        case gmx::eHelpOutputFormat_Console:
+            write_ttyman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
+                         context.writerContext());
+            break;
+        case gmx::eHelpOutputFormat_Html:
+            write_htmlman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
+                          context.writerContext());
+            break;
+        default:
+            GMX_THROW(gmx::NotImplementedError("Help format not implemented"));
     }
 
     if (!bHidden)

@@ -34,21 +34,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_COMMANDLINE_WMAN_H
-#define GMX_COMMANDLINE_WMAN_H
+#ifndef GMX_COMMANDLINE_SHELLCOMPLETIONS_H
+#define GMX_COMMANDLINE_SHELLCOMPLETIONS_H
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
 
-namespace gmx
-{
-class CommandLineHelpContext;
-} // namespace gmx
-
-void write_man(const gmx::CommandLineHelpContext &context,
-               int nldesc, const char **desc,
-               int nfile, t_filenm *fnm,
-               int npargs, t_pargs *pa,
-               int nbug, const char **bugs);
+void write_completions(const char *type, const char *program,
+                       int nfile,  t_filenm *fnm,
+                       int npargs, t_pargs *pa);
 
 #endif
