@@ -47,7 +47,6 @@
 #include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "vec.h"
-#include "statutil.h"
 #include "index.h"
 
 const int   nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 4, 3};

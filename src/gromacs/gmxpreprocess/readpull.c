@@ -41,7 +41,6 @@
 #include "sysstuff.h"
 #include "princ.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "vec.h"
 #include "smalloc.h"
 #include "typedefs.h"

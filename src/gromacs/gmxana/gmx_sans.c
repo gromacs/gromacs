@@ -46,7 +46,7 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "gstat.h"
 #include "gmx_ana.h"

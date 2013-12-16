@@ -49,7 +49,6 @@
 #include "index.h"
 #include "strdb.h"
 #include "copyrite.h"
-#include "statutil.h"
 
 typedef struct {
     gmx_bool    bSet;

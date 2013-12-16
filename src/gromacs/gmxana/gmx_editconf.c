@@ -45,7 +45,7 @@
 #include "symtab.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "string2.h"
 #include "strdb.h"
 #include "index.h"

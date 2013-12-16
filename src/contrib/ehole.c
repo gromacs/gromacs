@@ -43,7 +43,7 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "copyrite.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gmx_fatal.h"
 #include "random.h"
 #include "gromacs/fileio/pdbio.h"

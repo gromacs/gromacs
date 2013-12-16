@@ -50,7 +50,6 @@
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "matio.h"
-#include "statutil.h"
 #include "gmxfio.h"
 #include "maths.h"
 #include "copyrite.h"

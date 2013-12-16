@@ -42,7 +42,6 @@
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "vec.h"
-#include "statutil.h"
 #include "vcm.h"
 #include "mdebin.h"
 #include "nrnb.h"

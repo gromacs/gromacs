@@ -51,7 +51,7 @@
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/enxio.h"
 #include "readir.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
 #include "vec.h"
 #include "mtop_util.h"

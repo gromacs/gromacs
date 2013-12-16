@@ -40,7 +40,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "vec.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "coulomb.h"
 
 enum { mGuillot2001a, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };

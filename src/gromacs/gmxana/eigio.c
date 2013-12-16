@@ -41,7 +41,6 @@
 #include "eigio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "statutil.h"
 #include "gromacs/fileio/futil.h"
 
 void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,

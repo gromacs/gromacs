@@ -41,7 +41,7 @@
 #include <algorithm>
 
 #include "macros.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "vec.h"

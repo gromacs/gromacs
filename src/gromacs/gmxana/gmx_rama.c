@@ -47,7 +47,7 @@
 #include "physics.h"
 #include "pbc.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "nrama.h"
 #include "gmx_ana.h"

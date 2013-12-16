@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "vec.h"
 #include "index.h"

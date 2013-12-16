@@ -39,7 +39,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -47,7 +47,6 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "index.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"

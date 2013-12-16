@@ -38,6 +38,7 @@
 
 #include "vec.h"
 #include "typedefs.h"
+#include "../fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -60,7 +60,6 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
-#include "statutil.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "constr.h"

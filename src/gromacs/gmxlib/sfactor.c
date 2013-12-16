@@ -50,7 +50,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "typedefs.h"
-#include "statutil.h"
 #include "oenv.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "xvgr.h"

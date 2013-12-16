@@ -45,7 +45,7 @@
 #include "macros.h"
 #include <math.h>
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"

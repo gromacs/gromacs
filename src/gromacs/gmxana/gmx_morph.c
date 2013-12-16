@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "gromacs/fileio/confio.h"

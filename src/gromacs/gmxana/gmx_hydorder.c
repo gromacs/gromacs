@@ -44,7 +44,7 @@
 #include "sysstuff.h"
 #include <string.h>
 #include "typedefs.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "gstat.h"
@@ -52,7 +52,6 @@
 #include "xvgr.h"
 #include "pbc.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

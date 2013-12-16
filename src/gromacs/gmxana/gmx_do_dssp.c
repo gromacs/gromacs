@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "mshift.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"

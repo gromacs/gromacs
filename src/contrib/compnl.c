@@ -41,7 +41,7 @@
 #include "wnblist.h"
 #include "gromacs/fileio/futil.h"
 #include "macros.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
 #include "pbc.h"

@@ -58,7 +58,6 @@
 #include "random.h"
 #include "constr.h"
 #include "vec.h"
-#include "statutil.h"
 #include "tgroup.h"
 #include "mdebin.h"
 #include "vsite.h"

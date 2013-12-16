@@ -45,7 +45,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "readinp.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -54,7 +54,6 @@
 #include "vec.h"
 #include "pbc.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"

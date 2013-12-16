@@ -41,7 +41,7 @@
 #include "names.h"
 #include "smalloc.h"
 #include "gromacs/fileio/tpxio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "writeps.h"
 #include "copyrite.h"
 #include "xvgr.h"

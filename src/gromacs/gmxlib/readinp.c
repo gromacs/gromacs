@@ -44,7 +44,6 @@
 #include "smalloc.h"
 #include "readinp.h"
 #include "macros.h"
-#include "statutil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "names.h"
 #include "warninp.h"
