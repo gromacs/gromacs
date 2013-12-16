@@ -111,69 +111,82 @@ static void decrease_table_number(FILE *fp)
 
 static void stats_footer(FILE *fp,bool bSideways)
 {
-    fprintf(fp,"\\hline\n\\end{tabular}\n\\end{%stable}\n",
-            (bSideways) ? "sideways" : "");
+    fprintf(fp,"\\end{longtable}\n");
+    if (bSideways)
+    {
+        fprintf(fp, "\\end{landscape}\n");
+    }
 }
 
 static void stats_header(FILE *fp,MolPropObservable mpo,
-                         int caption,bool bSideways,
+                         bool bLandscape,
                          t_qmcount *qmc,iMolSelect ims)
 {
     char unit[32];
     int  i;
     
-    if (!caption)
-        decrease_table_number(fp);
-    
-    fprintf(fp,"\\begin{%stable}[H]\n\\centering\n",bSideways ? "sideways" : "");
-    if (caption) 
+    if (bLandscape)
     {
-        switch (mpo) 
-        {
-        case MPO_POLARIZABILITY:
-            sprintf(unit,"\\AA$^3$");
-            break;
-        case MPO_DIPOLE:
-            sprintf(unit,"D");
-            break;
-        case MPO_QUADRUPOLE:
-            sprintf(unit,"B");
-            break;
-        case MPO_ENERGY:
-            sprintf(unit,"kJ/mol");
-            break;
-        default:
-            gmx_fatal(FARGS,"Unknown property %s",mpo_name[mpo]);
-        }
-        fprintf(fp,"\\caption{Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$.}\n\\label{%s_rmsd}\n",
-                mpo_name[mpo],unit,ims_names[ims],mpo_name[mpo]);
-    }
-    else 
-    {
-        fprintf(fp,"\\caption{Continued.}\n");
-    }
-    fprintf(fp,"\\begin{tabular}{l");
+        fprintf(fp, "\\begin{landscape}\n");
+    }    
+    fprintf(fp,"\\begin{longtable}{l");
     for(i=0; (i<qmc->n); i++)
     {
         fprintf(fp,"c");
     }
     fprintf(fp,"}\n\\hline\n");
-    
-    fprintf(fp,"Method ");
-
-    for(i=0; (i<qmc->n); i++) 
+    for(int k=0; (k<2); k++)
     {
-        fprintf(fp," & %s",qmc->method[i]);
+        if (0 ==k) 
+        {
+            switch (mpo) 
+            {
+            case MPO_POLARIZABILITY:
+                sprintf(unit,"\\AA$^3$");
+                break;
+            case MPO_DIPOLE:
+                sprintf(unit,"D");
+                break;
+            case MPO_QUADRUPOLE:
+                sprintf(unit,"B");
+                break;
+            case MPO_ENERGY:
+                sprintf(unit,"kJ/mol");
+                break;
+            default:
+                gmx_fatal(FARGS,"Unknown property %s",mpo_name[mpo]);
+            }
+            fprintf(fp,"\\caption{Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$.}\n\\label{%s_rmsd}\\\\\n",
+                    mpo_name[mpo],unit,ims_names[ims],mpo_name[mpo]);
+        }
+        else 
+        {
+            fprintf(fp, "\\hline\n");
+        }
+        
+        fprintf(fp,"Method ");
+        for(i=0; (i<qmc->n); i++) 
+        {
+            fprintf(fp," & %s",qmc->method[i]);
+        }
+        fprintf(fp,"\\\\\n");
+        
+        for(i=0; (i<qmc->n); i++) 
+            fprintf(fp,"& %s ",qmc->basis[i]);
+        fprintf(fp,"\\\\\n");
+        
+        for(i=0; (i<qmc->n); i++) 
+            fprintf(fp,"& %s ",qmc->type[i]);
+        fprintf(fp,"\\\\\n\\hline\n");
+        if (0 == k)
+        {
+            fprintf(fp, "\\endfirsthead\n");
+        }
+        else
+        {
+            fprintf(fp, "\\endhead\n\\hline\n\\endfoot\n");
+        }
     }
-    fprintf(fp,"\\\\\n");
-  
-    for(i=0; (i<qmc->n); i++) 
-        fprintf(fp,"& %s ",qmc->basis[i]);
-    fprintf(fp,"\\\\\n");
-  
-    for(i=0; (i<qmc->n); i++) 
-        fprintf(fp,"& %s ",qmc->type[i]);
-    fprintf(fp,"\\\\\n\\hline\n");
 }
 
 void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
@@ -211,7 +224,7 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
         return;
     }
     
-    stats_header(fp,mpo,1,bSideways,qmc,ims);
+    stats_header(fp,mpo,bSideways,qmc,ims);
     
     qsort(cats->catli,cats->ncat,sizeof(cats->catli[0]),comp_catli);
     line = 0;
@@ -272,12 +285,6 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
             strncat(catbuf,"\\\\\n",STRLEN-1);
             fprintf(fp,"%s",catbuf);
             line++;
-        }
-        if (line == 20)
-        {
-            stats_footer(fp,bSideways);
-            stats_header(fp,mpo,0,bSideways,qmc,ims);
-            line = 0;
         }
     }
     fprintf(fp,"All");
@@ -487,25 +494,35 @@ static void add_cats(int *ncs,t_cat_stat **cs,const char *iupac,const char *myca
     (*cs)[j].molec[nmol-1] = strdup(iupac);
 }
 
-static void category_header(FILE *fp,int start)
+static void category_header(FILE *fp)
 {
-    fprintf(fp,"\\newpage\n");
-    if (start == 0)
-        decrease_table_number(fp);
-    fprintf(fp,"\\begin{table}[H]\n");
-    fprintf(fp,"\\caption{Molecules that are part of each category used for statistics%s.}\n",
-            (start == 1) ? "" : " (continued)");
-    fprintf(fp,"\\begin{tabularx}{16cm}{lcX}\n");
-    fprintf(fp,"\\hline\n");
-    fprintf(fp,"Category & N & Molecule(s)\\\\\n");
-    fprintf(fp,"\\hline\n");
+    fprintf(fp,"\\begin{longtable}{lcc}\n");
+    for(int k = 0; (k<2); k++)
+    {
+        if (0 == k)
+        {
+            fprintf(fp,"\\caption{Molecules that are part of each category used for statistics.}\\label{stats}\\\\\n");
+        }
+        else
+        {
+            fprintf(fp, "\\hline\n");
+        }
+        fprintf(fp,"Category & N & Molecule(s)\\\\\n");
+        fprintf(fp,"\\hline\n");
+        if (0 == k)
+        {
+            fprintf(fp, "\\endfirsthead\n");
+        }
+        else
+        {
+            fprintf(fp, "\\endhead\n\\hline\n\\endfoot\n");
+        }
+    }
 }
 
 static void category_footer(FILE *fp)
 {
-    fprintf(fp,"\\hline\n");
-    fprintf(fp,"\\end{tabularx}\n");
-    fprintf(fp,"\\end{table}\n");
+    fprintf(fp,"\\end{longtable}\n");
 }
 
 void gmx_molprop_category_table(FILE *fp,
@@ -534,7 +551,7 @@ void gmx_molprop_category_table(FILE *fp,
     if (ncs > 0) 
     {
         qsort(cs,ncs,sizeof(cs[0]),comp_cats);
-        category_header(fp,1);  
+        category_header(fp);  
         iline = 0;
         for(i=0; (i<ncs); i++) 
         {
@@ -548,13 +565,13 @@ void gmx_molprop_category_table(FILE *fp,
                     if (iline >= prmax)
                     {
                         fprintf(fp,"\\\\\n");
-                        category_footer(fp);
-                        category_header(fp,0);
                         fprintf(fp,"%s & (ctd) &",cs[i].cat);
                         iline = 0;
                     }
                     else 
+                    {
                         fprintf(fp,",");
+                    }
                 }
             }
             if (iline != 0)
@@ -564,25 +581,39 @@ void gmx_molprop_category_table(FILE *fp,
     }
 }
 
-static void atomtype_tab_header(FILE *fp,int caption)
+static void atomtype_tab_header(FILE *fp)
 {
-    if (!caption)
-        decrease_table_number(fp);
-    fprintf(fp,"\\begin{table}[H]\n\\centering\n");
-    if (caption)
-        fprintf(fp,"\\caption{Definition of atom types. The number of occurences  of atom N$_{Exp}$ and N$_{QM}$ indicate how many of the polarizability values were fitted to experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.}\n\\label{fragments}\n");
-    else
-        fprintf(fp,"\\caption{Continued}");
-    fprintf(fp,"\\begin{tabular}{cccccccc}\n\\hline\n");
-    fprintf(fp,"Name  & N$_{Exp}$ & N$_{QM}$ & \\multicolumn{4}{c}{Polarizability} & Ref.\\\\\n");
-    fprintf(fp,"& & & Ahc & Ahp & BS & AX ($\\sigma_{AX}$) & \\\\\n");
-    fprintf(fp,"\\hline\n");
+    fprintf(fp,"\\begin{longtable}{cccccccc}\n");
+    for(int k = 0; (k < 2); k++)
+    {
+        if (0 == k)
+        {
+            fprintf(fp,"\\caption{Definition of atom types. The number of occurences  of atom N$_{Exp}$ and N$_{QM}$ indicate how many of the polarizability values were fitted to experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.}\n\\label{fragments}\n");
+        }
+        else 
+        {
+            fprintf(fp, "\\hline\n");
+        }
+        fprintf(fp,"\\begin{tabular}\n\\hline\n");
+        fprintf(fp,"Name  & N$_{Exp}$ & N$_{QM}$ & \\multicolumn{4}{c}{Polarizability} & Ref.\\\\\n");
+        fprintf(fp,"& & & Ahc & Ahp & BS & AX ($\\sigma_{AX}$) & \\\\\n");
+        fprintf(fp,"\\hline\n");
+        if (0 == k)
+        {
+            fprintf(fp, "\\endfirsthead\n");
+        }
+        else
+        {
+            fprintf(fp, "\\endhead\n");
+            fprintf(fp, "\\hline\n");
+            fprintf(fp, "\\endfoot\n");
+        }
+    }
 }
 
 static void atomtype_tab_end(FILE *fp)
 {
-    fprintf(fp,"\\hline\n");
-    fprintf(fp,"\\end{tabular}\n\\end{table}\n\n");
+    fprintf(fp,"\\end{longtable}\n\n");
 }
 
 typedef struct {
@@ -627,8 +658,12 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                 (alexandria_pol > 0))
             {
                 for(j=0; (j<nsmlsq); j++)
+                {
                     if (strcasecmp(ptype[cur],smlsq[j].ptype) == 0)
+                    {
                         break;
+                    }
+                }
                 if (j == nsmlsq) 
                 {
                     srenew(smlsq,++nsmlsq);
@@ -638,9 +673,13 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     smlsq[j].nqm = gmx_stats_init();
                 }
                 if ((estats = gmx_stats_get_npoints(smlsq[j].lsq,&N)) != estatsOK)
+                {
                     gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                }
                 if ((estats = gmx_stats_add_point(smlsq[j].lsq,N,alexandria_pol,0,0)) != estatsOK)
+                {
                     gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                }
                 for(mpi=mp.begin(); (mpi<mp.end()); mpi++) 
                 {
                     alexandria::MolecularCompositionIterator mci = mpi->SearchMolecularComposition(SPOEL);
@@ -658,17 +697,25 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                                 {
                                     int N;
                                     if ((estats = gmx_stats_get_npoints(smlsq[j].nexp,&N)) != estatsOK)
+                                    {
                                         gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                                    }
                                     if ((estats = gmx_stats_add_point(smlsq[j].nexp,N,ngt,0,0)) != estatsOK)
+                                    {
                                         gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                                    }
                                 }
                                 else if (mpi->GetProp(mpo,iqmQM,lot,NULL,NULL,&qm_val))
                                 {
                                     int N;
                                     if ((estats = gmx_stats_get_npoints(smlsq[j].nqm,&N)) != estatsOK)
+                                    {
                                         gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                                    }
                                     if ((estats = gmx_stats_add_point(smlsq[j].nqm,N,ngt,0,0)) != estatsOK)
+                                    {
                                         gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                                    }
                                 }
                             }
                         }
@@ -682,20 +729,24 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     {
         nset = 0;
         xvg = xvgropen(histo,"Distribution of polarizabilities","Polarizability","a.u.",oenv);
-        for(j = 0; (j<nsmlsq); j++) {
+        for(j = 0; (j<nsmlsq); j++) 
+        {
             if ((gmx_stats_get_npoints(smlsq[j].lsq,&N) == estatsOK) && (N > 0))
+            {
                 fprintf(xvg,"@ s%d legend \"%s\"\n",nset++,smlsq[j].ptype);
+            }
         }
     }
     else
         xvg = NULL;
         
     /* Now print it! */
-    atomtype_tab_header(fp,1);
+    atomtype_tab_header(fp);
     nset = 0;
     ntab = 0;
     ref = gmx_poldata_get_polar_ref(pd[0]);
-    for(j = 0; (j<nsmlsq); j++) {
+    for(j = 0; (j<nsmlsq); j++) 
+    {
         /* Determine Miller and Bosque polarizabilities for this Spoel element */
         ahc = ahp = bos_pol = 0;
         /* if (1 == gmx_poldata_get_miller_pol(pd[0],smlsq[j].miller,
@@ -713,13 +764,19 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
         /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
         
         if ((estats = gmx_stats_get_npoints(smlsq[j].lsq,&N)) != estatsOK)
+        {
             gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+        }
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].lsq,&alexandria_aver)))
+        {
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
                       gmx_stats_message(estats),smlsq[j].ptype,N);
+        }
         if (estatsOK != (estats = gmx_stats_get_sigma(smlsq[j].lsq,&alexandria_sigma)))
+        {
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
                       gmx_stats_message(estats),smlsq[j].ptype,N);
+        }
         /* Store average values */
         if (NULL != pd_aver) 
         {
@@ -728,21 +785,29 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
         }
         int nfitexp=0;
         if (estatsOK != (estats = gmx_stats_get_npoints(smlsq[j].nexp,&nfitexp)))
+        {
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
                       gmx_stats_message(estats),smlsq[j].ptype,nfitexp);
+        }
         nfitexp /= npd;
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nexp,&nnn)))
+        {
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
                       gmx_stats_message(estats),smlsq[j].ptype,nfitexp);
+        }
         
         int nfitqm=0;
         if (estatsOK != (estats = gmx_stats_get_npoints(smlsq[j].nqm,&nfitqm)))
+        {
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
                       gmx_stats_message(estats),smlsq[j].ptype,nfitqm);
+        }
         nfitqm /= npd;
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nqm,&nnn)))
+        {
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
                       gmx_stats_message(estats),smlsq[j].ptype,nfitqm);
+        }
 
         fprintf(fp,"%s & %s & %s & %s & %s & %s & %s (%s)",
                 smlsq[j].ptype,
@@ -753,18 +818,16 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                 (bos_pol > 0)     ? gmx_ftoa(bos_pol)     : "",
                 (alexandria_aver > 0)  ? gmx_ftoa(alexandria_aver)  : "",
                 (alexandria_sigma > 0) ? gmx_ftoa(alexandria_sigma) : "-");
-        if (strcasecmp(ref,"Maaren2013a") == 0)
+        if (strcasecmp(ref,"Maaren2014a") == 0)
+        {
             fprintf(fp,"& (*)\\\\\n");
+        }
         else
+        {
             fprintf(fp,"& \\cite{%s}\\\\\n",ref);
+        }
         ntab++;
     
-        if (((ntab == nfirst) || (((ntab - nfirst) % nsecond) == 0)) &&
-            (j < nsmlsq-1))
-        {
-            atomtype_tab_end(fp);
-            atomtype_tab_header(fp,0);
-        }
         if ((NULL != xvg) && (gmx_stats_get_npoints(smlsq[j].lsq,&N) == estatsOK) && (N > 0))
         {
             real *x=NULL,*y=NULL;
@@ -777,15 +840,14 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     fprintf(xvg,"%g  %g\n",x[i],y[i]);
                 fprintf(xvg,"&\n");
             }
-            if (NULL != x)
-                sfree(x);
-            if (NULL != y)
-                sfree(y);
+            sfree(x);
+            sfree(y);
         }
     }
     if (NULL != xvg)
+    {
         fclose(xvg);
-        
+    }
     atomtype_tab_end(fp);
     fflush(fp);
 }
@@ -865,36 +927,27 @@ void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
                                 output_env_t oenv,const char *histo)
 {
     if (bPolar)
+    {
         gmx_molprop_atomtype_polar_table(fp,npd,pd,pd_aver,mp,
                                          lot,exp_type,oenv,histo);
+    }
     else
+    {
         gmx_molprop_atomtype_dip_table(fp,pd[0]);
+    }
 }
                                
-
-static void prop_header(FILE *fp,int caption,const char *property,real rel_toler,real abs_toler,
-                        t_qmcount *qmc,bool bSideways,iMolSelect ims,bool bPrintConf,
-                        bool bPrintBasis,bool bPrintMultQ)
+static void prop_header(FILE *fp,const char *property,real rel_toler,real abs_toler,
+                        t_qmcount *qmc,iMolSelect ims,bool bPrintConf,
+                        bool bPrintBasis,bool bPrintMultQ,bool bLandscape)
 {
-    int  i;
+    int  i, k;
     
-    if (!caption)
-        decrease_table_number(fp);
-    fprintf(fp,"\\begin{%stable}[H]\n",bSideways ? "sideways" : "");
-    if (caption) 
+    if (bLandscape)
     {
-        fprintf(fp,"\\caption{Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %.0f%s off the experimental values are printed in bold, more than %.0f%s off in bold red.}\n\\label{%s}\n",
-                property,ims_names[ims],
-                (abs_toler > 0) ? abs_toler   : 100*rel_toler,(abs_toler > 0) ? "" : "\\%",
-                (abs_toler > 0) ? 2*abs_toler : 200*rel_toler,(abs_toler > 0) ? "" : "\\%",
-                ims_names[ims]);
+        fprintf(fp, "\\begin{landscape}\n");
     }
-    else 
-    {
-        fprintf(fp,"\\caption{%s, continued}\n",property);
-    }
-    
-    fprintf(fp,"\\begin{tabularx}{23cm}{Xcc");
+    fprintf(fp,"\\begin{longtable}{lcc");
     if (bPrintMultQ)
         fprintf(fp,"cc");
     if (bPrintConf)
@@ -902,33 +955,63 @@ static void prop_header(FILE *fp,int caption,const char *property,real rel_toler
     for(i=0; (i<qmc->n); i++)
         fprintf(fp,"c");
     fprintf(fp,"}\n\\hline\n");
-    fprintf(fp,"Molecule & Form. %s %s & Exper. ",
-            bPrintMultQ ? "& q & mult" : "",
-            bPrintConf  ? "& Conf." : "");
-    for(i=0; (i<qmc->n); i++)
-        fprintf(fp,"& %s",qmc->method[i]);
-    fprintf(fp,"\\\\\n");
-    if (bPrintBasis) 
+
+    for(k = 0; (k < 2); k++)
     {
-        fprintf(fp," & & %s %s",
+        if (0 == k)
+        {
+            fprintf(fp, "\\caption{Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %.0f%s off the experimental values are printed in bold, more than %.0f%s off in bold red.}\\label{%s}\\\\\n",
+                    property,ims_names[ims],
+                    (abs_toler > 0) ? abs_toler   : 100*rel_toler,(abs_toler > 0) ? "" : "\\%",
+                    (abs_toler > 0) ? 2*abs_toler : 200*rel_toler,(abs_toler > 0) ? "" : "\\%",
+                    ims_names[ims]);
+        }
+        else
+        {
+            fprintf(fp, "\\hline\n");
+        }
+        
+        fprintf(fp,"Molecule & Form. %s %s & Exper. ",
+                bPrintMultQ ? "& q & mult" : "",
+                bPrintConf  ? "& Conf." : "");
+        for(i=0; (i<qmc->n); i++)
+            fprintf(fp,"& %s",qmc->method[i]);
+        fprintf(fp,"\\\\\n");
+        if (bPrintBasis) 
+        {
+            fprintf(fp," & & %s %s",
+                    bPrintMultQ ? "& &" : "",
+                    bPrintConf ? "&" : "");
+            for(i=0; (i<qmc->n); i++)
+                fprintf(fp,"& %s",qmc->basis[i]);
+            fprintf(fp,"\\\\\n");
+        }
+        fprintf(fp,"Type & &%s %s",
                 bPrintMultQ ? "& &" : "",
                 bPrintConf ? "&" : "");
         for(i=0; (i<qmc->n); i++)
-            fprintf(fp,"& %s",qmc->basis[i]);
-        fprintf(fp,"\\\\\n");
+            fprintf(fp,"& %s",qmc->type[i]);
+        fprintf(fp,"\\\\\n\\hline\n");
+        if (0 == k)
+        {
+            fprintf(fp, "\\endfirsthead\n");
+        }
+        else
+        {
+            fprintf(fp, "\\endhead\n");
+            fprintf(fp, "\\hline\n");
+            fprintf(fp, "\\endfoot\n");
+        }
     }
-    fprintf(fp,"Type & &%s %s",
-            bPrintMultQ ? "& &" : "",
-            bPrintConf ? "&" : "");
-    for(i=0; (i<qmc->n); i++)
-        fprintf(fp,"& %s",qmc->type[i]);
-    fprintf(fp,"\\\\\n\\hline\n");
 }
 
-static void prop_end(FILE *fp,bool bSideways)
+static void prop_end(FILE *fp,bool bLandscape)
 {
-    fprintf(fp,"\\hline\n\\end{tabularx}\n\\end{%stable}\n",
-            bSideways ? "sideways" : "");
+    fprintf(fp,"\\end{longtable}\n");
+    if (bLandscape)
+    {
+        fprintf(fp, "\\end{landscape}\n");
+    }
 }
 
 static int outside(real vexp,real vcalc,real rel_toler,real abs_toler)
@@ -983,23 +1066,17 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
     alexandria::MolecularQuadrupoleIterator qi;
     alexandria::MolecularEnergyIterator mei;
     
-    int    j,iprint=0,nexp,max_nexp,iline,caption=1,maxline;
+    int    j,iprint=0,nexp,max_nexp;
 #define BLEN 1024
     char   lbuf[BLEN],myline[BLEN],mylbuf[BLEN],vbuf[BLEN];
     double calc_val,calc_err,vc;
     int    nprint;
     double dvec[DIM];
     tensor quadrupole;
-    real   ds_fac=1;
     bool   bSideways, bPrintConf;
   
     bSideways = (qmc->n > 1);
     
-    if (bSideways)
-        maxline = 20;
-    else
-        maxline = 40;
-
     nprint = 0;
     for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
     {
@@ -1010,12 +1087,12 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
         }
     }
     if (nprint <= 0)
+    {
         return;
-    bPrintConf = (mpo == MPO_DIPOLE);
-    prop_header(fp,caption,mpo_name[mpo],rel_toler,abs_toler,qmc,
-                bSideways,ims,bPrintConf,
-                bPrintBasis,bPrintMultQ);  
-    iline   = 0;
+    }
+    bPrintConf = false; //(mpo == MPO_DIPOLE);
+    prop_header(fp,mpo_name[mpo],rel_toler,abs_toler,qmc,
+                ims,bPrintConf,bPrintBasis,bPrintMultQ,bSideways);  
     for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
     {
         if ((ims == gmx_molselect_status(gms,mpi->GetIupac().c_str())) && 
@@ -1166,15 +1243,6 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                     sprintf(mylbuf,"\\\\\n");
                     strncat(myline,mylbuf,BLEN-strlen(myline));
                     fprintf(fp,"%s",myline);
-                    iline++;
-                }
-                if ((iline >= (maxline-7*caption)*ds_fac)) 
-                {
-                    caption = 0;
-                    prop_end(fp,bSideways);
-                    prop_header(fp,caption,mpo_name[mpo],rel_toler,abs_toler,qmc,
-                                bSideways,ims,bPrintConf,bPrintBasis,bPrintMultQ);
-                    iline   = 0;
                 }
             }
         }

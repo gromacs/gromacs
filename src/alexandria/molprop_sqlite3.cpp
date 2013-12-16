@@ -251,7 +251,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                         else
                         {
                             alexandria::Calculation calc("gentop", source,
-                                                         "", ref, "minimum",
+                                                         "-", ref, "minimum",
                                                          "unknown" );
                             if (strcasecmp(prop, "Polarizability") == 0)
                             {
