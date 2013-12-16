@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trxio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"

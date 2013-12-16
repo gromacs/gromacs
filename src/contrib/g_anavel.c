@@ -39,7 +39,7 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "random.h"
 #include "names.h"
 #include "gromacs/fileio/matio.h"

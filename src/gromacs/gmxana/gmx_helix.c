@@ -53,7 +53,7 @@
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include <string.h>
 #include "sysstuff.h"
 #include "txtdump.h"

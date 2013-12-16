@@ -54,7 +54,7 @@ typedef struct gmxvmdplugin t_gmxvmdplugin;
 typedef struct trxframe
 {
     int      flags;            /* flags for read_first/next_frame  */
-    int      not_ok;           /* integrity flags (see statutil.h  */
+    int      not_ok;           /* integrity flags                  */
     gmx_bool bDouble;          /* Double precision?                */
     int      natoms;           /* number of atoms (atoms, x, v, f) */
     real     t0;               /* time of the first frame, needed  *

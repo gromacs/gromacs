@@ -47,7 +47,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "gromacs/fileio/enxio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "names.h"
 #include "copyrite.h"
 #include "macros.h"

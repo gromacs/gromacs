@@ -44,7 +44,7 @@
 #include <sys/time.h>
 #endif
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -52,7 +52,6 @@
 #include "vec.h"
 #include "pbc.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "index.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trnio.h"

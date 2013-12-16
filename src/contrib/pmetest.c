@@ -44,7 +44,7 @@
 #include "nrnb.h"
 #include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "vec.h"

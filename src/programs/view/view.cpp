@@ -47,7 +47,7 @@
 #include "gmx_fatal.h"
 #include "typedefs.h"
 #include "string2.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"

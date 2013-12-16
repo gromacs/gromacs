@@ -41,7 +41,7 @@
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "gromacs/fileio/confio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "pbc.h"
 #include "force.h"
 #include "gmx_fatal.h"

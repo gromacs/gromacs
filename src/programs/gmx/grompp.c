@@ -59,7 +59,7 @@
 #include "random.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "splitter.h"
 #include "sortwater.h"
 #include "convparm.h"

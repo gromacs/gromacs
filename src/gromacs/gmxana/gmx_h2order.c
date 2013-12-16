@@ -49,7 +49,7 @@
 #include "xvgr.h"
 #include "pbc.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"

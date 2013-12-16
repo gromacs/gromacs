@@ -49,7 +49,6 @@
 #include "txtdump.h"
 #include "mdatoms.h"
 #include "mdrun.h"
-#include "statutil.h"
 #include "names.h"
 #include "calcgrid.h"
 #include "gmx_random.h"

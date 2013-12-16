@@ -43,7 +43,7 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "maths.h"
 #include "gromacs/fileio/futil.h"
 #include "index.h"

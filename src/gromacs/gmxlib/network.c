@@ -42,7 +42,6 @@
 #include "smalloc.h"
 #include "network.h"
 #include "copyrite.h"
-#include "statutil.h"
 #include <ctype.h>
 #include "macros.h"
 #include "string2.h"

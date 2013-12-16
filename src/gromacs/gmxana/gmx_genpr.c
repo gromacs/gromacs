@@ -38,7 +38,7 @@
 
 #include <math.h>
 #include "sysstuff.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include <string.h>
 #include "smalloc.h"
 #include "typedefs.h"

@@ -41,7 +41,7 @@
 #include "macros.h"
 #include <math.h>
 #include "xvgr.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "string2.h"
 #include "vec.h"
 #include "index.h"

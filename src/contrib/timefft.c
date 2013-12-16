@@ -44,7 +44,7 @@
 #include "copyrite.h"
 #include "mdrun.h"
 #include "main.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fft/fft.h"
 
 #ifdef GMX_MPI

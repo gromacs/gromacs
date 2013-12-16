@@ -42,7 +42,7 @@
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "gromacs/fileio/confio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "random.h"
 #include "3dview.h"

@@ -31,7 +31,7 @@
 #include "rmpbc.h"
 #include "copyrite.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "index.h"
 #include "smalloc.h"

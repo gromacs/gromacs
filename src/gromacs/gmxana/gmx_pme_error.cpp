@@ -36,7 +36,7 @@
  */
 #include <algorithm>
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"

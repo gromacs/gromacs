@@ -46,7 +46,7 @@
 #include "string2.h"
 #include "vec.h"
 #include "gmx_statistics.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
 #include "xvgr.h"
 #include "macros.h"

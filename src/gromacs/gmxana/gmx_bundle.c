@@ -38,14 +38,13 @@
 #include <math.h>
 #include <string.h>
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
-#include "statutil.h"
 #include "index.h"
 #include "xvgr.h"
 #include "rmpbc.h"

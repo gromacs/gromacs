@@ -45,7 +45,6 @@
 #include "3dview.h"
 #include "nleg.h"
 #include "buttons.h"
-#include "statutil.h"
 #include "rmpbc.h"
 #include "gromacs/fileio/trxio.h"
 

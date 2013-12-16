@@ -38,7 +38,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -48,7 +48,6 @@
 #include "copyrite.h"
 #include "gromacs/fileio/futil.h"
 #include "readinp.h"
-#include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
 #include "xvgr.h"

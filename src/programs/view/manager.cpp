@@ -56,7 +56,6 @@
 #include "copyrite.h"
 #include "gstat.h"
 #include "vec.h"
-#include "statutil.h"
 #include "string2.h"
 
 static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)

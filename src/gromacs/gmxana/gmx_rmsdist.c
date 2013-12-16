@@ -43,7 +43,7 @@
 #include "smalloc.h"
 #include "typedefs.h"
 #include "names.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "string2.h"

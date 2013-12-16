@@ -38,13 +38,12 @@
 #include <math.h>
 #include <string.h>
 
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "vec.h"
-#include "statutil.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

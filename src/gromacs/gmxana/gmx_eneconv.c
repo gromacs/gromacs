@@ -41,7 +41,7 @@
 #include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "disre.h"
 #include "names.h"
 #include "macros.h"

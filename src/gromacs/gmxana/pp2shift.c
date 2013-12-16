@@ -43,7 +43,6 @@
 #include "macros.h"
 #include "physics.h"
 #include "smalloc.h"
-#include "statutil.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
 #include "copyrite.h"

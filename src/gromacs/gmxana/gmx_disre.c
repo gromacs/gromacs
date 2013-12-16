@@ -48,7 +48,7 @@
 #include "smalloc.h"
 #include "nrnb.h"
 #include "disre.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "force.h"
 #include "gstat.h"
 #include "main.h"
