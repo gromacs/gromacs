@@ -61,6 +61,8 @@
 #include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/thread_mpi/threads.h"
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/commandline/wman.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/utility/exceptions.h"
@@ -578,7 +580,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            output_env_t *oenv)
 {
     const char *manstr[] = {
-        NULL, "no", "help", "html", "nroff", "completion", NULL
+        NULL, "no", "completion", NULL
     };
     /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
@@ -643,7 +645,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
           "HIDDENWrite file with debug information, 1: short, 2: also x and f" },
     };
 #define NPCA_PA asize(pca_pa)
-    gmx_bool bExit, bXvgr;
+    gmx_bool bXvgr;
     int      i, j, k, npall, max_pa;
 
     // Handle the flags argument, which is a bit field
@@ -803,14 +805,33 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         all_pa[i].desc = mk_desc(&(all_pa[i]), output_env_get_time_unit(*oenv));
     }
 
-    // To satisfy clang.
-    GMX_ASSERT(manstr[0] != NULL,
-               "Enum option default assignment should have changed this");
-    bExit = (strcmp(manstr[0], "no") != 0);
-
 #if (defined __sgi && USE_SGI_FPE)
     doexceptions();
 #endif
+
+    bool bExit = false;
+    try
+    {
+        const gmx::CommandLineHelpContext *context =
+            gmx::GlobalCommandLineHelpContext::get();
+        bExit = (context != NULL || strcmp(manstr[0], "no") != 0);
+        if (!(FF(PCA_QUIET)))
+        {
+            if (context != NULL)
+            {
+                write_man(*context, ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+            }
+            else if (!strcmp(manstr[0], "completion"))
+            {
+                const char *program = output_env_get_short_program_name(*oenv);
+                /* one file each for csh, bash and zsh if we do completions */
+                write_completions("completion-zsh", program, nfile, fnm, npall, all_pa);
+                write_completions("completion-bash", program, nfile, fnm, npall, all_pa);
+                write_completions("completion-csh", program, nfile, fnm, npall, all_pa);
+            }
+        }
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     /* Set the nice level */
 #ifdef __sgi
@@ -840,29 +861,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     }
 #endif
 #endif
-
-    if (strcmp(manstr[0], "no") != 0 && !(FF(PCA_QUIET)))
-    {
-        try
-        {
-            if (!strcmp(manstr[0], "completion"))
-            {
-                /* one file each for csh, bash and zsh if we do completions */
-                write_man("completion-zsh", output_env_get_short_program_name(*oenv),
-                          ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-                write_man("completion-bash", output_env_get_short_program_name(*oenv),
-                          ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-                write_man("completion-csh", output_env_get_short_program_name(*oenv),
-                          ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-            }
-            else
-            {
-                write_man(manstr[0], output_env_get_short_program_name(*oenv),
-                          ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-            }
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
 
     /* convert time options, must be done after printing! */
 
