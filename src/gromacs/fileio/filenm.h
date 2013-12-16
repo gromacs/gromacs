@@ -38,7 +38,8 @@
 #ifndef GMX_FILEIO_FILENM_H
 #define GMX_FILEIO_FILENM_H
 
-#include "futil.h"
+#include "../legacyheaders/types/simple.h"
+#include "../legacyheaders/types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,9 +93,6 @@ typedef struct {
 #define ffWRMULT   (ffWRITE  | ffMULT)
 #define ffOPTWRMULT   (ffWRMULT | ffOPT)
 
-void set_default_file_name(const char *name);
-/* Set the default file name for all file types to name */
-
 const char *ftp2ext(int ftp);
 /* Return extension for filetype */
 
@@ -121,7 +119,7 @@ const char *ftp2ftype(int ftp);
 /* Return Binary or ASCII depending on file type */
 
 void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     gmx_bool bKeep, gmx_bool bReadNode);
+                     const char *deffnm, gmx_bool bKeep, gmx_bool bReadNode);
 /* Parse command line for file names. When bKeep is set args are
  * not removed from argv. */
 

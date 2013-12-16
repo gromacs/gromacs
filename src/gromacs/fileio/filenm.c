@@ -40,20 +40,17 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "typedefs.h"
+
+#include "futil.h"
+#include "gmx_fatal.h"
+#include "macros.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "gmx_fatal.h"
-#include "futil.h"
-#include "xdrf.h"
-#include "macros.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
-
-/* NOTE: this was a cesspool of thread-unsafe code, has now been
-   properly proteced by mutexes (hopefully). */
+#include "types/simple.h"
+#include "types/commrec.h"
 
 /* XDR should be available on all platforms now,
  * but we keep the possibility of turning it off...
@@ -205,20 +202,9 @@ static const t_deffile
     { eftASC, "", "rundir", NULL, "Run directory" }
 };
 
-static char *default_file_name = NULL;
-
-static tMPI_Thread_mutex_t filenm_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
 #define NZEXT 2
 static const char *z_ext[NZEXT] =
 { ".gz", ".Z" };
-
-void set_default_file_name(const char *name)
-{
-    tMPI_Thread_mutex_lock(&filenm_mutex);
-    default_file_name = strdup(name);
-    tMPI_Thread_mutex_unlock(&filenm_mutex);
-}
 
 const char *ftp2ext(int ftp)
 {
@@ -332,25 +318,14 @@ const char *ftp2ftype(int ftp)
 
 const char *ftp2defnm(int ftp)
 {
-    const char *buf = NULL;
-
-    tMPI_Thread_mutex_lock(&filenm_mutex);
-
-    if (default_file_name)
+    if ((0 <= ftp) && (ftp < efNR))
     {
-        buf = default_file_name;
+        return deffile[ftp].defnm;
     }
     else
     {
-        if ((0 <= ftp) && (ftp < efNR))
-        {
-            buf = deffile[ftp].defnm;
-        }
+        return NULL;
     }
-
-    tMPI_Thread_mutex_unlock(&filenm_mutex);
-
-    return buf;
 }
 
 static void check_opts(int nf, t_filenm fnm[])
@@ -433,7 +408,7 @@ static void add_filenm(t_filenm *fnm, const char *filenm)
     fnm->nfiles++;
 }
 
-static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride)
+static void set_grpfnm(t_filenm *fnm, const char *name, const char *deffnm)
 {
     char       buf[256], buf2[256];
     int        i, type;
@@ -449,7 +424,7 @@ static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
     }
 
     bValidExt = FALSE;
-    if (name && (bCanNotOverride || (default_file_name == NULL)))
+    if (name && deffnm == NULL)
     {
         strcpy(buf, name);
         /* First check whether we have a valid filename already */
@@ -466,6 +441,10 @@ static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
                 bValidExt = TRUE;
             }
         }
+    }
+    else if (deffnm != NULL)
+    {
+        strcpy(buf, deffnm);
     }
     else
     {
@@ -498,7 +477,7 @@ static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
     add_filenm(fnm, buf);
 }
 
-static void set_filenm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride,
+static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm,
                        gmx_bool bReadNode)
 {
     /* Set the default filename, extension and option for those fields that
@@ -542,14 +521,20 @@ static void set_filenm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
 
     if (deffile[fnm->ftp].ntps)
     {
-        set_grpfnm(fnm, name ? buf : NULL, bCanNotOverride);
+        set_grpfnm(fnm, name ? buf : NULL, deffnm);
     }
     else
     {
-        if ((name == NULL) || !(bCanNotOverride || (default_file_name == NULL)))
+        if (name == NULL || deffnm != NULL)
         {
-            const char *defnm = ftp2defnm(fnm->ftp);
-            strcpy(buf, defnm);
+            if (deffnm != NULL)
+            {
+                strcpy(buf, deffnm);
+            }
+            else
+            {
+                strcpy(buf, ftp2defnm(fnm->ftp));
+            }
         }
         set_extension(buf, fnm->ftp);
 
@@ -557,7 +542,7 @@ static void set_filenm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
     }
 }
 
-static void set_filenms(int nf, t_filenm fnm[], gmx_bool bReadNode)
+static void set_filenms(int nf, t_filenm fnm[], const char *deffnm, gmx_bool bReadNode)
 {
     int i;
 
@@ -565,13 +550,13 @@ static void set_filenms(int nf, t_filenm fnm[], gmx_bool bReadNode)
     {
         if (!IS_SET(fnm[i]))
         {
-            set_filenm(&(fnm[i]), fnm[i].fn, FALSE, bReadNode);
+            set_filenm(&(fnm[i]), fnm[i].fn, deffnm, bReadNode);
         }
     }
 }
 
 void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     gmx_bool bKeep, gmx_bool bReadNode)
+                     const char *deffnm, gmx_bool bKeep, gmx_bool bReadNode)
 {
     int       i, j;
     gmx_bool *bRemove;
@@ -599,12 +584,12 @@ void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
                     /* check if we are out of arguments for this option */
                     if ((i >= *argc) || (argv[i][0] == '-'))
                     {
-                        set_filenm(&fnm[j], fnm[j].fn, FALSE, bReadNode);
+                        set_filenm(&fnm[j], fnm[j].fn, deffnm, bReadNode);
                     }
                     /* sweep up all file arguments for this option */
                     while ((i < *argc) && (argv[i][0] != '-'))
                     {
-                        set_filenm(&fnm[j], argv[i], TRUE, bReadNode);
+                        set_filenm(&fnm[j], argv[i], NULL, bReadNode);
                         bRemove[i] = TRUE;
                         i++;
                         /* only repeat for 'multiple' file options: */
@@ -640,7 +625,7 @@ void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
         sfree(bRemove);
     }
 
-    set_filenms(nf, fnm, bReadNode);
+    set_filenms(nf, fnm, deffnm, bReadNode);
 
 }
 

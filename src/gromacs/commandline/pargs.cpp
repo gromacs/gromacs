@@ -765,13 +765,9 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
                     (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
-    if (FF(PCA_CAN_SET_DEFFNM) && (deffnm != NULL))
-    {
-        set_default_file_name(deffnm);
-    }
-
     /* Parse the file args */
-    parse_file_args(argc, argv, nfile, fnm, FF(PCA_KEEP_ARGS), !FF(PCA_NOT_READ_NODE));
+    parse_file_args(argc, argv, nfile, fnm, deffnm,
+                    FF(PCA_KEEP_ARGS), !FF(PCA_NOT_READ_NODE));
 
     /* Open the debug file */
     if (debug_level > 0)
