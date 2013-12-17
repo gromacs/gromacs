@@ -237,22 +237,26 @@ void check_multi_large_int(FILE *log, const gmx_multisim_t *ms,
 }
 
 
-char *gmx_gethostname(char *name, size_t len)
+int gmx_gethostname(char *name, size_t len)
 {
     if (len < 8)
     {
         gmx_incons("gmx_gethostname called with len<8");
     }
-#ifdef HAVE_UNISTD_H
+#ifdef __native_client__
+    strncpy(name, "unknown", 8);
+    return -1;
+#elif defined(HAVE_UNISTD_H)
     if (gethostname(name, len-1) != 0)
     {
         strncpy(name, "unknown", 8);
+        return -1;
     }
+    return 0;
 #else
     strncpy(name, "unknown", 8);
+    return -1;
 #endif
-
-    return name;
 }
 
 
