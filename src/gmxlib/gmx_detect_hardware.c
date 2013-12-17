@@ -558,7 +558,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr,
 
     if (rank_local == 0)
     {
-        char detection_error[STRLEN], sbuf[STRLEN];
+        char detection_error[STRLEN] = "", sbuf[STRLEN];
 
         if (detect_cuda_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
         {

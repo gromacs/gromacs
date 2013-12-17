@@ -70,6 +70,7 @@
 #include "network.h"
 #include "gmx_random.h"
 #include "checkpoint.h"
+#include "main.h"
 #include "futil.h"
 #include "string2.h"
 #include <fcntl.h>
@@ -844,14 +845,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     if (!bRead)
     {
         snew(fhost, 255);
-#ifdef HAVE_UNISTD_H
-        if (gethostname(fhost, 255) != 0)
-        {
-            sprintf(fhost, "unknown");
-        }
-#else
-        sprintf(fhost, "unknown");
-#endif
+        gmx_gethostname(fhost, 255);
     }
     do_cpt_string_err(xd, bRead, "GROMACS version", version, list);
     do_cpt_string_err(xd, bRead, "GROMACS build time", btime, list);
@@ -1770,7 +1764,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
     unsigned char        digest[16];
-#ifndef GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
     struct flock         fl; /* don't initialize here: the struct order is OS
                                 dependent! */
 #endif
@@ -1783,7 +1777,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
 
-#ifndef GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
     fl.l_type   = F_WRLCK;
     fl.l_whence = SEEK_SET;
     fl.l_start  = 0;
@@ -2080,11 +2074,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                  * will succeed, but a second process can also lock the file.
                  * We should probably try to detect this.
                  */
-#ifndef GMX_NATIVE_WINDOWS
-                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
-                    == -1)
-#else
+#if defined __native_client__
+                errno = ENOSYS;
+                if (1)
+
+#elif defined GMX_NATIVE_WINDOWS
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
+#else
+                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
 #endif
                 {
                     if (errno == ENOSYS)

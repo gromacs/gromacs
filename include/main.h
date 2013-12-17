@@ -48,10 +48,10 @@
 extern "C" {
 #endif
 
-char *gmx_gethostname(char *name, size_t len);
+int gmx_gethostname(char *name, size_t len);
 /* Sets the hostname to the value given by gethostname, if available,
  * and to "unknown" otherwise. name should have at least size len.
- * Returns name.
+ * Returns 0 on success, -1 on error.
  */
 
 GMX_LIBGMX_EXPORT

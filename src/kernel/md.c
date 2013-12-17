@@ -1461,6 +1461,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             fcReportProgress( ir->nsteps, step );
         }
 
+#if defined(__native_client__)
+        fcCheckin(MASTER(cr));
+#endif
+
         /* sync bCPT and fc record-keeping */
         if (bCPT && MASTER(cr))
         {

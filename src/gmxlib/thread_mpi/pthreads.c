@@ -436,8 +436,8 @@ static inline int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
                 goto err;
             }
         }
+        ret = pthread_mutex_unlock( &(mutex_init) );
     }
-    ret = pthread_mutex_unlock( &(mutex_init) );
     return ret;
 err:
     pthread_mutex_unlock( &(mutex_init) );
@@ -766,6 +766,9 @@ void tMPI_Thread_exit(void *value_ptr)
 
 int tMPI_Thread_cancel(tMPI_Thread_t thread)
 {
+    #ifdef __native_client__
+    return ENOSYS;
+    #endif
     return pthread_cancel(thread->th);
 }
 

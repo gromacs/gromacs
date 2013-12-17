@@ -1278,7 +1278,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
 #ifdef GMX_FAHCORE
-    fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
+    if (MASTER(cr))
+    {
+        fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
+    }
 #endif
 
     /* NMR restraints must be initialized before load_checkpoint,
