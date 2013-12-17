@@ -693,7 +693,7 @@ void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "Precision:          single\n");
 #endif
-    fprintf(fp, "Memory model:       %lu bit\n", 8*sizeof(void *));
+    fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
 
 #ifdef GMX_THREAD_MPI
     fprintf(fp, "MPI library:        thread_mpi\n");
