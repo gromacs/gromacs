@@ -159,8 +159,8 @@ static void printCopyright(FILE *fp)
         "GROMACS is written by:",
         "Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
         "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra,",
-        "Gerrit Groenhof, Peter Kasson, Per Larsson,"
-        "Magnus Lundborg, Pieter Meulenhoff, Teemu Murtola,",
+        "Gerrit Groenhof, Christoph Junghans, Peter Kasson, Carsten Kutzner",
+        "Per Larsson, Magnus Lundborg, Pieter Meulenhoff, Teemu Murtola,",
         "Szilard Pall, Sander Pronk, Roland Schulz,",
         "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
         "Christian Wennberg, Mark Abraham\n",
