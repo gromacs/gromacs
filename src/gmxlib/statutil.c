@@ -871,7 +871,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
 #ifdef HAVE_UNISTD_H
 
-#ifndef GMX_NO_NICE
+#if (!defined(GMX_NO_NICE) || defined(__native_client__))
     /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
     if (nicelevel != 0 && !bExit)
     {
