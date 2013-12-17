@@ -1055,6 +1055,12 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
     endif()
 endif()
 
+if (GMX_NACL)
+  list(APPEND GMX_EXTRA_LIBRARIES nosys)
+  set(GMX_EXE_LINKER_FLAGS "$CMAKE_EXE_LINKER_FLAGS -lnosys")
+  set(GMX_NO_NICE 1)
+endif()
+
 if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 
       "Path to swindirect.h")
