@@ -148,7 +148,7 @@ static int lpfactor(int z)
     return fft5d_fmax(lpfactor(f), lpfactor(z/f));
 }
 
-#ifndef GMX_MPI
+#if !defined GMX_MPI && !defined GMX_THREAD_MPI
 #ifdef HAVE_GETTIMEOFDAY
 #include <sys/time.h>
 double MPI_Wtime()
