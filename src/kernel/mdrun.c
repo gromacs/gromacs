@@ -39,6 +39,27 @@
 #include <config.h>
 #endif
 
+#ifdef __native_client__
+#include <pthread.h>
+#include <errno.h>
+
+int pthread_cancel(pthread_t thread) {
+  errno = ENOSYS;
+  return ENOSYS;
+}
+
+int gethostname(char *name, size_t len) {
+  errno = ENOSYS;
+  return -1;
+}
+
+int nice(int inc) {
+  errno = ENOSYS;
+  return -1;
+}
+#endif // __native_client__
+
+
 #include "typedefs.h"
 #include "macros.h"
 #include "copyrite.h"

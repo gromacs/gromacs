@@ -436,8 +436,8 @@ static inline int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
                 goto err;
             }
         }
+      ret = pthread_mutex_unlock( &(mutex_init) );
     }
-    ret = pthread_mutex_unlock( &(mutex_init) );
     return ret;
 err:
     pthread_mutex_unlock( &(mutex_init) );
