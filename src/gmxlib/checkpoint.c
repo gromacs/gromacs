@@ -1770,7 +1770,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
     unsigned char        digest[16];
-#ifndef GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
     struct flock         fl; /* don't initialize here: the struct order is OS
                                 dependent! */
 #endif
@@ -1783,7 +1783,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
 
-#ifndef GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
     fl.l_type   = F_WRLCK;
     fl.l_whence = SEEK_SET;
     fl.l_start  = 0;
@@ -2080,11 +2080,13 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                  * will succeed, but a second process can also lock the file.
                  * We should probably try to detect this.
                  */
-#ifndef GMX_NATIVE_WINDOWS
-                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
-                    == -1)
+#if defined __native_client__
+              if ((errno = ENOSYS))
+
+#elif defined GMX_NATIVE_WINDOWS
+              if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
 #else
-                if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
+              if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
 #endif
                 {
                     if (errno == ENOSYS)

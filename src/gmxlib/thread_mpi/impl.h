@@ -40,6 +40,9 @@
    library. It contains the definitions for all the internal data structures
    and the prototypes for all the internal functions that aren't static.  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
