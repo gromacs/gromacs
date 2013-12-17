@@ -26,6 +26,11 @@ if(${GMX_CPU_ACCELERATION} MATCHES "^(SSE|AVX)")
     set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION --enable-sse2 CACHE INTERNAL "Optimization flags for FFTW compilation")
 endif()
 
+# Allow cross-compiles
+if (TARGET_HOST)
+    set(GMX_BUILD_OWN_FFTW_TARGET --host=${TARGET_HOST})
+endif()
+
 # Machinery for running the external project
 set(EXTERNAL_FFTW_VERSION 3.3.2)
 include(ExternalProject)
@@ -40,7 +45,8 @@ message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} a
         URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
         CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
         ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
-        ${GMX_BUILD_OWN_FFTW_PREC})
+        ${GMX_BUILD_OWN_FFTW_PREC} ${GMX_BUILD_OWN_FFTW_FORTRAN_CONFIGURATION}
+        ${GMX_BUILD_OWN_FFTW_TARGET})
 externalproject_get_property(fftwBuild INSTALL_DIR)
 
 string(TOUPPER "${FFTW}" UPPERFFTW)
