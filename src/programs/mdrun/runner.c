@@ -994,8 +994,7 @@ static void override_nsteps_cmdline(FILE            *fplog,
  * in this run because the PME ranks have no knowledge of whether GPUs
  * are used or not, but all ranks need to enter the barrier below.
  */
-static void free_gpu_resources(FILE             *fplog,
-                               const t_forcerec *fr,
+static void free_gpu_resources(const t_forcerec *fr,
                                const t_commrec  *cr)
 {
     gmx_bool bIsPPrankUsingGPU;
@@ -1006,7 +1005,7 @@ static void free_gpu_resources(FILE             *fplog,
     if (bIsPPrankUsingGPU)
     {
         /* free nbnxn data in GPU memory */
-        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
+        nbnxn_cuda_free(fr->nbv->cu_nbv);
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
          * destroying the context in free_gpu() as some ranks may be sharing
@@ -1783,7 +1782,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
 
     /* Free GPU memory and context */
-    free_gpu_resources(fplog, fr, cr);
+    free_gpu_resources(fr, cr);
 
     if (opt2bSet("-membed", nfile, fnm))
     {
