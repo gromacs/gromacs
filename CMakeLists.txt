@@ -549,12 +549,18 @@ gmx_test__isfinite(HAVE__ISFINITE)
 gmx_test__finite(HAVE__FINITE)
 
 include(gmxTestCXX11)
-gmx_test_cxx11(GMX_CXX11 GMX_CXX11_FLAGS)
-if(CXX11_FLAG AND GMX_GPU)
-    #FIXME: add proper solution for progate all but cxx11 flag
-    set(CUDA_PROPAGATE_HOST_FLAGS no)
-    message(WARNING "Please manually add compiler flags to CUDA_NVCC_FLAGS. Automatic propogation temporary not working.")
+gmx_test_cxx11(GMX_CXX11_SUPPORTED GMX_CXX11_FLAGS)
+include(CMakeDependentOption)
+# nvcc does not support C++11 flags, so with GPUs we prefer to skip C++11 flags
+# entirely to keep the compilation environment uniform.
+cmake_dependent_option(GMX_CXX11
+    "Use C++11 features"
+    ON "GMX_CXX11_SUPPORTED AND NOT GMX_GPU" OFF)
+mark_as_advanced(GMX_CXX11)
+if(GMX_CXX11)
+    set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
 endif()
+
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
@@ -855,7 +861,7 @@ endif(GMX_FAHCORE)
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
     set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
@@ -863,7 +869,7 @@ else()
     message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
     message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
     message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
-    message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
+    message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
     message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")

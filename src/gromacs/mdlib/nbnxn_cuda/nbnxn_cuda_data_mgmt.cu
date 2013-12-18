@@ -107,8 +107,9 @@ static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
     and the table GPU array. If called with an already allocated table,
     it just re-uploads the table.
  */
-static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
-                                           const cuda_dev_info_t *dev_info)
+static void
+init_ewald_coulomb_force_table(cu_nbparam_t                     *nbp,
+                               const cuda_dev_info_t gmx_unused *dev_info)
 {
     float       *ftmp, *coul_tab;
     int         tabsize;
@@ -821,7 +822,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
+void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
 {
     cudaError_t     stat;
     cu_atomdata_t   *atdat;
