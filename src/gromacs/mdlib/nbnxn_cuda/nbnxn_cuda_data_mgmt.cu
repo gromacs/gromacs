@@ -58,6 +58,8 @@
 #include "pmalloc_cuda.h"
 #include "gpu_utils.h"
 
+#include "gromacs/utility/common.h"
+
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
 
 /* This is a heuristically determined parameter for the Fermi architecture for
@@ -156,6 +158,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
         else
 #endif
         {
+            GMX_UNUSED_VALUE(dev_info);
             cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
             stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
                                    coul_tab, &cd, tabsize*sizeof(*coul_tab));
@@ -821,7 +824,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
+void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
 {
     cudaError_t     stat;
     cu_atomdata_t   *atdat;
