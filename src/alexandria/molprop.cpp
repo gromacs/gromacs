@@ -649,25 +649,41 @@ bool MolProp::GenerateComposition(gmx_poldata_t pd)
     return false;
 }
 
+static void add_element_to_formula(const char *elem, int number, char *formula, char *texform)
+{
+    if (number > 0)
+    {
+        strcat(formula, elem);
+        strcat(texform, elem);
+        if (number > 1) 
+        {
+            char cnumber[32];
+    
+            sprintf(cnumber,"%d", number);
+            strcat(formula, cnumber);
+            sprintf(cnumber,"$_{%d}$", number);
+            strcat(texform, cnumber);
+        }
+    }
+}
+
 bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 {
-    int  j,cnumber,an;
-    char formula[1280],number[32];
+    char formula[1280], texform[2560];
     int  *ncomp;
-    real value;
-    std::string compname,catom,mform;
-    alexandria::MolPropIterator mpi;
     alexandria::MolecularCompositionIterator mci;
-    alexandria::AtomNumIterator ani;
     
     snew(ncomp,110);  
     formula[0] = '\0';
+    texform[0] = '\0';
     mci = SearchMolecularComposition("bosque");
     if (mci != EndMolecularComposition()) 
     {
-        for(ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
+        for(alexandria::AtomNumIterator ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
         {
-            catom   = ani->GetAtom();
+            int  cnumber,an;
+            real value;
+            std::string catom = ani->GetAtom();
             cnumber = ani->GetNumber();
             if (gmx_atomprop_query(ap,epropElement,"???",catom.c_str(),&value))
             {
@@ -680,39 +696,15 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
             }
         }
     }
-    if (ncomp[6] > 0) 
+    add_element_to_formula("C", ncomp[6], formula, texform);
+    add_element_to_formula("H", ncomp[1], formula, texform);
+    ncomp[6] = ncomp[1] = 0;
+
+    for(int j=109; (j>=1); j--) 
     {
-        strcat(formula,"C");
-        if (ncomp[6] > 1) 
-        {
-            sprintf(number,"%d",ncomp[6]);
-            strcat(formula,number);
-        }
-        ncomp[6] = 0;
-        if (ncomp[1] > 0) 
-        {
-            strcat(formula,"H");
-            if (ncomp[1] > 1) 
-            {
-                sprintf(number,"%d",ncomp[1]);
-                strcat(formula,number);
-            }
-            ncomp[1] = 0;
-        }
+        add_element_to_formula(gmx_atomprop_element(ap,j), ncomp[j], formula, texform);
     }
-    for(j=109; (j>=1); j--) 
-    {
-        if (ncomp[j] > 0)
-        {
-            strcat(formula,gmx_atomprop_element(ap,j));
-            if (ncomp[j] > 1) 
-            {
-                sprintf(number,"%d",ncomp[j]);
-                strcat(formula,number);
-            }
-        }
-    }
-    mform = GetFormula();
+    std::string mform = GetFormula();
     if (strlen(formula) > 0) 
     {
         if (debug) 
@@ -725,6 +717,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
             }
         }
         SetFormula(formula);
+        SetTexFormula(texform);
     }
     else if ((mform.size() == 0) && debug)
     {
@@ -1856,6 +1849,18 @@ CommunicationStatus MolProp::Receive(t_commrec *cr,int src)
         }
     }
     return cs;
+}
+
+std::string MolProp::GetTexFormula()
+{
+    if (_texform.size() > 0)
+    {
+        return _texform;
+    }
+    else
+    {
+        return _formula;
+    }
 }
 
 }

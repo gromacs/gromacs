@@ -73,7 +73,9 @@ void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
         mpi->DeleteComposition("miller");
         mpi->DeleteComposition("bosque");
         if (true == mpi->GenerateComposition(pd))
+        {
             nOK++;
+        }
         else if (debug)
         {
             fprintf(debug,"Failed to make composition for %s\n",
@@ -81,86 +83,16 @@ void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
         }
     }
     if (mp.size() > 1)
+    {
         printf("Generated composition for %d out of %d molecules.\n",nOK,(int)mp.size());
+    }
 }
 
 void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap)
 {
-    int  j,cnumber,an;
-    char formula[1280],number[32];
-    int  *ncomp;
-    real value;
-    std::string compname,catom,mform;
-    alexandria::MolPropIterator mpi;
-    alexandria::MolecularCompositionIterator mci;
-    alexandria::AtomNumIterator ani;
-    
-    for(mpi=mp.begin(); (mpi<mp.end()); mpi++) {
-        snew(ncomp,110);  
-        formula[0] = '\0';
-        mci=mpi->SearchMolecularComposition("bosque");
-        if (mci != mpi->EndMolecularComposition()) 
-        {
-            for(ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++)
-            {
-                catom = ani->GetAtom();
-                cnumber = ani->GetNumber();
-                if (gmx_atomprop_query(ap,epropElement,"???",catom.c_str(),&value))
-                {
-                    an = gmx_nint(value);
-                    range_check(an,0,110);
-                    if (an > 0)
-                        ncomp[an] += cnumber;
-                }
-            }
-        }
-        if (ncomp[6] > 0) 
-        {
-            strcat(formula,"C");
-            if (ncomp[6] > 1) 
-            {
-                sprintf(number,"%d",ncomp[6]);
-                strcat(formula,number);
-            }
-            ncomp[6] = 0;
-            if (ncomp[1] > 0) 
-            {
-                strcat(formula,"H");
-                if (ncomp[1] > 1) 
-                {
-                    sprintf(number,"%d",ncomp[1]);
-                    strcat(formula,number);
-                }
-                ncomp[1] = 0;
-            }
-        }
-        for(j=109; (j>=1); j--) 
-        {
-            if (ncomp[j] > 0)
-            {
-                strcat(formula,gmx_atomprop_element(ap,j));
-                if (ncomp[j] > 1) 
-                {
-                    sprintf(number,"%d",ncomp[j]);
-                    strcat(formula,number);
-                }
-            }
-        }
-        mform = mpi->GetFormula();
-        if (strlen(formula) > 0) 
-        {
-            if (debug) 
-            {
-                if ((mform.size() > 0) && (strcasecmp(formula,mform.c_str()) != 0))
-                    fprintf(debug,"Formula '%s' does match '%s' based on composition for %s.\n",
-                            mform.c_str(),formula,mpi->GetMolname().c_str());
-            }
-            mpi->SetFormula(formula);
-        }
-        else if ((mform.size() == 0) && debug)
-            fprintf(debug,"Empty composition and formula for %s\n",
-                    mpi->GetMolname().c_str());
-        sfree(ncomp);
+    for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++) 
+    {
+        mpi->GenerateFormula(ap);
     }
 }
   
@@ -302,9 +234,13 @@ bool molprop_2_topology2(alexandria::MolProp mp,gmx_atomprop_t ap,
 int my_strcmp(const char *a,const char *b)
 {
     if ((NULL != a) && (NULL != b))
+    {
         return strcasecmp(a,b);
+    }
     else
+    {
         return 1;
+    }
 }
 
 void merge_doubles(std::vector<alexandria::MolProp> &mp,char *doubles,

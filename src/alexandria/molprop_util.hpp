@@ -43,6 +43,7 @@
 #include "poldata.hpp"
 #include "molselect.hpp"
 
+extern void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd);
 extern void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap);
 
 alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,

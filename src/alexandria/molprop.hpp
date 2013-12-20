@@ -1058,7 +1058,7 @@ private:
     int _index;
     double _mass;
     int _charge,_multiplicity;
-    std::string _formula,_molname,_iupac,_cas,_cid,_inchi;
+    std::string _formula,_texform, _molname,_iupac,_cas,_cid,_inchi;
     std::vector<std::string> _category;
     std::vector<MolecularComposition> _mol_comp;
     std::vector<Calculation> _calc;
@@ -1113,6 +1113,9 @@ public:
     //! Dump the contents of this object to a file
     void Dump(FILE *fp);
     
+    //! Set the LaTeX formula
+    void SetTexFormula(const char *formula) { _texform.assign(formula); }
+
     //! Set the formula
     void SetFormula(const char *formula) { _formula.assign(formula); }
 
@@ -1122,13 +1125,16 @@ public:
     //! Return the formula
     std::string GetFormula() { return _formula; }
     
+    //! Return the LaTeX formula
+    std::string GetTexFormula();
+    
     /*! \brief
      * Generate the chemical formula for this molecule based on atoms
      * present in a calculation
      *
      * \param[in] ap Data structure containing information about atoms
      * \todo Check and double check. If there is no calculation data no 
-     * formula anbe generated
+     * formula can be generated
      */
     bool GenerateFormula(gmx_atomprop_t ap);
     

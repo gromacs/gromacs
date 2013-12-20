@@ -244,27 +244,28 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
                 {
                     if (mpi->SearchCategory(cats->catli[i].cat) == 1)
                     {
-                        /*for(m=0; (m<qmc->nconf); m++) 
-                          {*/
-                            if (mpi->GetProp(mpo,iqmExp,NULL,
-                                             NULL/*qmc->conf[m]*/,exp_type,&exp_val))
+                        if (mpi->GetProp(mpo,iqmExp,NULL,
+                                         NULL/*qmc->conf[m]*/,exp_type,&exp_val))
+                        {
+                            nexpres = 1;
+                            if (mpi->GetProp(mpo,iqmQM,lbuf,NULL/*qmc->conf[m]*/,
+                                             qmc->type[k],&qm_val))
                             {
-                                nexpres = 1;
-                                if (mpi->GetProp(mpo,iqmQM,lbuf,NULL/*qmc->conf[m]*/,
-                                                 qmc->type[k],&qm_val))
+                                if (debug)
                                 {
-                                    if (debug)
-                                        fprintf(debug,"%s %s k = %d - TAB4\n",
-                                                mpi->GetMolname().c_str(),cats->catli[i].cat,k);
-                                    gmx_stats_add_point(lsq,exp_val,qm_val,0,0);
+                                    fprintf(debug,"%s %s k = %d - TAB4\n",
+                                            mpi->GetMolname().c_str(),cats->catli[i].cat,k);
                                 }
+                                gmx_stats_add_point(lsq,exp_val,qm_val,0,0);
                             }
-                            /*}*/
+                        }
                     }
                 }
             }
             if (outlier > 0)
+            {
                 gmx_stats_remove_outliers(lsq,outlier);
+            }
             if (gmx_stats_get_rmsd(lsq,&rms) == estatsOK)
             { 
                 sprintf(tmp,"& %8.2f",rms);
@@ -277,7 +278,9 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
             }
             
             if (gmx_stats_done(lsq) == estatsOK)
+            {
                 sfree(lsq);
+            }
         }
         cats->catli[i].bPrint = ((nqmres > 0) && (nexpres > 0));
         if (cats->catli[i].bPrint)
@@ -298,7 +301,8 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
             if ((gmx_molselect_status(gms,mpi->GetIupac().c_str()) == ims) &&
                 (mpi->HasComposition(SPOEL)))
             {
-                for(m=0; (m<qmc->nconf); m++) {
+                for(m=0; (m<qmc->nconf); m++) 
+                {
                     if ((mpi->GetProp(mpo,iqmExp,NULL,qmc->conf[m],exp_type,&exp_val)) &&
                         (mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[m],qmc->type[k],&qm_val))) 
                     {
@@ -308,9 +312,13 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
             }
         }
         if (gmx_stats_get_rmsd(lsqtot[k],&rms) == estatsOK)
+        {
             fprintf(fp,"& %8.2f",rms);
+        }
         else
+        {
             fprintf(fp,"& -");
+        }
     }
     fprintf(fp,"\\\\\n");
     fprintf(fp,"\\hline\n");
@@ -357,9 +365,43 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
     {
         if (gmx_stats_get_ab(lsqtot[k],elsqWEIGHT_NONE,&a,&b,&da,&db,&chi2,&R) ==
             estatsOK)
+        {
             fprintf(fp,"& %8.2f",chi2);
+        }
         else
+        {
             fprintf(fp,"& -");
+        }
+    }
+    fprintf(fp,"\\\\\n");
+    fprintf(fp,"MSE");
+    for(k=0; (k<qmc->n); k++) 
+    {
+        real mse;
+        if (gmx_stats_get_mse_mae(lsqtot[k],&mse,NULL) ==
+            estatsOK)
+        {
+            fprintf(fp,"& %8.2f", mse);
+        }
+        else
+        {
+            fprintf(fp,"& -");
+        }
+    }
+    fprintf(fp,"\\\\\n");
+    fprintf(fp,"MAE");
+    for(k=0; (k<qmc->n); k++) 
+    {
+        real mae;
+        if (gmx_stats_get_mse_mae(lsqtot[k],NULL,&mae) ==
+            estatsOK)
+        {
+            fprintf(fp,"& %8.2f", mae);
+        }
+        else
+        {
+            fprintf(fp,"& -");
+        }
     }
     fprintf(fp,"\\\\\n");
     stats_footer(fp,bSideways);
@@ -367,7 +409,9 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
     for(k=0; (k<qmc->n); k++) 
     {
         if (gmx_stats_done(lsqtot[k]) == estatsOK)
+        {
             sfree(lsqtot[k]);
+        }
     }
     sfree(lsqtot);
 }
@@ -431,7 +475,7 @@ void gmx_molprop_composition_table(FILE *fp,std::vector<alexandria::MolProp> mp,
             }
             fprintf(fp,"%3d. %s%s & %s &",++iline,
                     mpi->GetIupac().c_str(),qbuf,
-                    mpi->GetFormula().c_str());
+                    mpi->GetTexFormula().c_str());
             for(k=0; (k<kmax); k++) 
             {
                 mci = mpi->SearchMolecularComposition(comps[k]);
@@ -630,7 +674,6 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     std::vector<alexandria::MolProp>::iterator mpi;
     FILE   *xvg;
     int    i,j,pp,ntab;
-    int    nfirst = 20,nsecond = 24;
     double ahc,ahp,bos_pol,alexandria_pol,sig_pol;
     double exp_val,qm_val;
     real   alexandria_aver,alexandria_sigma,nnn;
@@ -947,7 +990,7 @@ static void prop_header(FILE *fp,const char *property,real rel_toler,real abs_to
     {
         fprintf(fp, "\\begin{landscape}\n");
     }
-    fprintf(fp,"\\begin{longtable}{lcc");
+    fprintf(fp,"\\begin{longtable}{p{75mm}cc");
     if (bPrintMultQ)
         fprintf(fp,"cc");
     if (bPrintConf)
@@ -1161,20 +1204,26 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                 if ((bPrintAll || (ed.size() > 0))  && (cd.size() > 0))
                 {
                     if (0 == nexp)
+                    {
                         iprint++;
+                    }
                     myline[0] = '\0';
                     if (nexp == 0)
                     {
                         if (bPrintMultQ)
+                        {
                             sprintf(myline,"%d. %-15s & %s & %d & %d",
                                     iprint,mpi->GetIupac().c_str(),
-                                    mpi->GetFormula().c_str(),
+                                    mpi->GetTexFormula().c_str(),
                                     mpi->GetCharge(),
                                     mpi->GetMultiplicity());
+                        }
                         else
+                        {
                             sprintf(myline,"%d. %-15s & %s",
                                     iprint,mpi->GetIupac().c_str(),
-                                    mpi->GetFormula().c_str());
+                                    mpi->GetTexFormula().c_str());
+                        }
                     }
                     else 
                     {
@@ -1190,7 +1239,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                     {
                         sprintf(mylbuf,"& %8.3f",ed[nexp].val_);
                         strncat(myline,mylbuf,BLEN-strlen(myline));
-                        if (strcmp(ed[nexp].ref_.c_str(),"Maaren2013a") == 0)
+                        if (strcmp(ed[nexp].ref_.c_str(),"Maaren2014a") == 0)
                             sprintf(mylbuf," (*)");
                         else
                             sprintf(mylbuf,"~\\cite{%s} ",ed[nexp].ref_.c_str());

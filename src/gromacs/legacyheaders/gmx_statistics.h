@@ -121,6 +121,9 @@ int gmx_stats_get_error(gmx_stats_t stats, real *error);
    assignment will be done. */
 int gmx_stats_get_ase(gmx_stats_t gstats, real *aver, real *sigma, real *error);
 
+/* Get mean signed error and mean absolute error  */
+int gmx_stats_get_mse_mae(gmx_stats_t gstats, real *mse, real *mae);
+
 /* Dump the x, y, dx, dy data to a text file */
 int gmx_stats_dump_xy(gmx_stats_t gstats, FILE *fp);
 

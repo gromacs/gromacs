@@ -50,7 +50,7 @@ static int gmx_dnint(double x)
 
 typedef struct gmx_stats {
     double  aa, a, b, sigma_aa, sigma_a, sigma_b, aver, sigma_aver, error;
-    double  rmsd, Rdata, Rfit, Rfitaa, chi2, chi2aa;
+    double  rmsd, Rdata, Rfit, Rfitaa, chi2, chi2aa, mse, mae;
     double *x, *y, *dx, *dy;
     int     computed;
     int     np, np_c, nalloc;
@@ -198,6 +198,7 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
     double yy, yx, xx, sx, sy, dy, chi2, chi2aa, d2;
     double ssxx, ssyy, ssxy;
     double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2, dy2;
+    double mse, mae;
     int    i, N;
 
     N = stats->np;
@@ -215,9 +216,15 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         sy   = sy_nw = 0;
         wtot = 0;
         d2   = 0;
+        mae  = 0;
+        mse  = 0;
         for (i = 0; (i < N); i++)
         {
-            d2 += dsqr(stats->x[i]-stats->y[i]);
+            double dd = stats->x[i]-stats->y[i];
+            d2 += dsqr(dd);
+            
+            mae += fabs(dd);
+            mse += dd;
             if ((stats->dy[i]) && (weight == elsqWEIGHT_Y))
             {
                 w = 1/dsqr(stats->dy[i]);
@@ -246,6 +253,8 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         }
 
         /* Compute average, sigma and error */
+        stats->mae        = mae/N;
+        stats->mse        = mse/N; 
         stats->aver       = sy_nw/N;
         stats->sigma_aver = sqrt(yy_nw/N - dsqr(sy_nw/N));
         stats->error      = stats->sigma_aver/sqrt(N);
@@ -403,6 +412,28 @@ int gmx_stats_get_average(gmx_stats_t gstats, real *aver)
     }
 
     *aver = stats->aver;
+
+    return estatsOK;
+}
+
+int gmx_stats_get_mse_mae(gmx_stats_t gstats, real *mse, real *mae)
+{
+    gmx_stats *stats = (gmx_stats *) gstats;
+    int        ok;
+
+    if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != estatsOK)
+    {
+        return ok;
+    }
+
+    if (NULL != mse)
+    {
+        *mse = stats->mse;
+    }
+    if (NULL != mae)
+    {
+        *mae = stats->mae;
+    }
 
     return estatsOK;
 }

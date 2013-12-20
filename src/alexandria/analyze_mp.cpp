@@ -573,6 +573,9 @@ int alex_analyze_mp(int argc, char *argv[])
     {
         MolPropRead((const char *)mpname[0], mp);
     }
+    generate_composition(mp, pd[0]);
+    generate_formula(mp, ap);
+    
     if (mpsa != MPSA_NR)
     {
         MolPropSort(mp, mpsa, ap, gms);
