@@ -634,11 +634,6 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "CPU acceleration:   %s\n", GMX_CPU_ACCELERATION_STRING);
 
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
-#ifdef GMX_LARGEFILES
-    fprintf(fp, "Large file support: enabled\n");
-#else
-    fprintf(fp, "Large file support: disabled\n");
-#endif
 #ifdef HAVE_RDTSCP
     fprintf(fp, "RDTSCP usage:       enabled\n");
 #else
