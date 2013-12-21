@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include <new>
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
@@ -106,8 +107,8 @@ CommandLine::CommandLine()
 {
 }
 
-CommandLine::CommandLine(const char *const cmdline[], size_t count)
-    : impl_(new Impl(cmdline, count))
+CommandLine::CommandLine(const ConstArrayRef<const char *> &cmdline)
+    : impl_(new Impl(cmdline.data(), cmdline.size()))
 {
 }
 
@@ -118,6 +119,11 @@ CommandLine::CommandLine(const CommandLine &other)
 
 CommandLine::~CommandLine()
 {
+}
+
+void CommandLine::initFromArray(const ConstArrayRef<const char *> &cmdline)
+{
+    impl_.reset(new Impl(cmdline.data(), cmdline.size()));
 }
 
 void CommandLine::append(const char *arg)
