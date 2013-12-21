@@ -40,8 +40,6 @@
 
    lookup-table optimized scalar operations:
    real gmx_invsqrt(real x)
-   void vecinvsqrt(real in[],real out[],int n)
-   void vecrecip(real in[],real out[],int n)
    real sqr(real x)
    double dsqr(double x)
 
@@ -88,19 +86,19 @@
     could produce less rounding errors, not due to the operations themselves,
     but because the compiler can easier recombine the operations
    void copy_mat(matrix a,matrix b)                 b = a
-   void clear_mat(matrix a)			   a = 0
-   void mmul(matrix a,matrix b,matrix dest)	!  dest = a . b
+   void clear_mat(matrix a)                         a = 0
+   void mmul(matrix a,matrix b,matrix dest)      !  dest = a . b
    void mmul_ur0(matrix a,matrix b,matrix dest)     dest = a . b
-   void transpose(matrix src,matrix dest)	!  dest = src*
-   void tmmul(matrix a,matrix b,matrix dest)	!  dest = a* . b
-   void mtmul(matrix a,matrix b,matrix dest)	!  dest = a . b*
-   real det(matrix a)				   = det(a)
-   void m_add(matrix a,matrix b,matrix dest)	   dest = a + b
-   void m_sub(matrix a,matrix b,matrix dest)	   dest = a - b
-   void msmul(matrix m1,real r1,matrix dest)	   dest = r1 * m1
+   void transpose(matrix src,matrix dest)        !  dest = src*
+   void tmmul(matrix a,matrix b,matrix dest)     !  dest = a* . b
+   void mtmul(matrix a,matrix b,matrix dest)     !  dest = a . b*
+   real det(matrix a)                               = det(a)
+   void m_add(matrix a,matrix b,matrix dest)        dest = a + b
+   void m_sub(matrix a,matrix b,matrix dest)        dest = a - b
+   void msmul(matrix m1,real r1,matrix dest)        dest = r1 * m1
    void m_inv_ur0(matrix src,matrix dest)           dest = src^-1
-   void m_inv(matrix src,matrix dest)		!  dest = src^-1
-   void mvmul(matrix a,rvec src,rvec dest)	!  dest = a . src
+   void m_inv(matrix src,matrix dest)            !  dest = src^-1
+   void mvmul(matrix a,rvec src,rvec dest)       !  dest = a . src
    void mvmul_ur0(matrix a,rvec src,rvec dest)      dest = a . src
    void tmvmul_ur0(matrix a,rvec src,rvec dest)     dest = a* . src
    real trace(matrix m)                             = trace(m)
@@ -114,27 +112,12 @@
 #include "physics.h"
 
 #ifdef __cplusplus
-
-static gmx_inline real det(const matrix a)
-{
-    return ( a[XX][XX]*(a[YY][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[YY][ZZ])
-             -a[YY][XX]*(a[XX][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[XX][ZZ])
-             +a[ZZ][XX]*(a[XX][YY]*a[YY][ZZ]-a[YY][YY]*a[XX][ZZ]));
-}
-
-static gmx_inline void mvmul(const matrix a, const rvec src, rvec dest)
-{
-    dest[XX] = a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
-    dest[YY] = a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
-    dest[ZZ] = a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
-}
-
 extern "C" {
 #elif 0
 } /* avoid screwing up indentation */
 #endif
 
-
+#ifdef GMX_SOFTWARE_INVSQRT
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000
 #define EXP_SHIFT       23
@@ -144,13 +127,8 @@ extern "C" {
 #define EXP_ADDR(val)   (((val)&EXP_MASK)>>EXP_SHIFT)
 #define FRACT_ADDR(val) (((val)&(FRACT_MASK|EXP_LSB))>>FRACT_SHIFT)
 
-#define PR_VEC(a)       a[XX], a[YY], a[ZZ]
-
-#ifdef GMX_SOFTWARE_INVSQRT
-extern const unsigned int *  gmx_invsqrt_exptab;
-extern const unsigned int *  gmx_invsqrt_fracttab;
-#endif
-
+extern const unsigned int *gmx_invsqrt_exptab;
+extern const unsigned int *gmx_invsqrt_fracttab;
 
 typedef union
 {
@@ -158,9 +136,7 @@ typedef union
     float        fval;
 } t_convert;
 
-
-#ifdef GMX_SOFTWARE_INVSQRT
-static real gmx_software_invsqrt(real x)
+static gmx_inline real gmx_software_invsqrt(real x)
 {
     const real   half  = 0.5;
     const real   three = 3.0;
@@ -212,7 +188,7 @@ static real gmx_software_invsqrt(real x)
 #endif
 
 
-static real sqr(real x)
+static gmx_inline real sqr(real x)
 {
     return (x*x);
 }
@@ -231,22 +207,6 @@ static gmx_inline real series_sinhx(real x)
     real x2 = x*x;
     return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
 }
-
-void vecinvsqrt(real in[], real out[], int n);
-/* Perform out[i]=1.0/sqrt(in[i]) for n elements */
-
-
-void vecrecip(real in[], real out[], int n);
-/* Perform out[i]=1.0/(in[i]) for n elements */
-
-/* Note: If you need a fast version of vecinvsqrt
- * and/or vecrecip, call detectcpu() and run the SSE/3DNow/SSE2/Altivec
- * versions if your hardware supports it.
- *
- * To use those routines, your memory HAS TO BE CACHE-ALIGNED.
- * Use snew_aligned(ptr,size,32) to allocate and sfree_aligned to free.
- */
-
 
 static gmx_inline void rvec_add(const rvec a, const rvec b, rvec c)
 {
@@ -452,7 +412,6 @@ static gmx_inline void clear_ivec(ivec a)
 
 static gmx_inline void clear_rvecs(int n, rvec v[])
 {
-/*  memset(v[0],0,DIM*n*sizeof(v[0][0])); */
     int i;
 
     for (i = 0; (i < n); i++)
@@ -463,8 +422,6 @@ static gmx_inline void clear_rvecs(int n, rvec v[])
 
 static gmx_inline void clear_mat(matrix a)
 {
-/*  memset(a[0],0,DIM*DIM*sizeof(a[0][0])); */
-
     const real nul = 0.0;
 
     a[XX][XX] = a[XX][YY] = a[XX][ZZ] = nul;
@@ -550,7 +507,7 @@ cos_angle(const rvec a, const rvec b)
     double aa, bb, ip, ipa, ipb, ipab; /* For accuracy these must be double! */
 
     ip = ipa = ipb = 0.0;
-    for (m = 0; (m < DIM); m++) /* 18		*/
+    for (m = 0; (m < DIM); m++) /* 18 */
     {
         aa   = a[m];
         bb   = b[m];
@@ -561,13 +518,13 @@ cos_angle(const rvec a, const rvec b)
     ipab = ipa*ipb;
     if (ipab > 0)
     {
-        cosval = ip*gmx_invsqrt(ipab);  /*  7		*/
+        cosval = ip*gmx_invsqrt(ipab);  /*  7 */
     }
     else
     {
         cosval = 1;
     }
-    /* 25 TOTAL	*/
+    /* 25 TOTAL */
     if (cosval > 1.0)
     {
         return 1.0;
@@ -595,7 +552,7 @@ cos_angle_no_table(const rvec a, const rvec b)
     double aa, bb, ip, ipa, ipb; /* For accuracy these must be double! */
 
     ip = ipa = ipb = 0.0;
-    for (m = 0; (m < DIM); m++) /* 18		*/
+    for (m = 0; (m < DIM); m++) /* 18 */
     {
         aa   = a[m];
         bb   = b[m];
@@ -603,8 +560,8 @@ cos_angle_no_table(const rvec a, const rvec b)
         ipa += aa*aa;
         ipb += bb*bb;
     }
-    cosval = ip/sqrt(ipa*ipb);  /* 12		*/
-    /* 30 TOTAL	*/
+    cosval = ip/sqrt(ipa*ipb);  /* 12 */
+    /* 30 TOTAL */
     if (cosval > 1.0)
     {
         return 1.0;
@@ -883,7 +840,7 @@ static gmx_inline int _mod(int a, int b, char *file, int line)
 }
 
 /* Operations on multidimensional rvecs, used e.g. in edsam.c */
-static void m_rveccopy(int dim, rvec *a, rvec *b)
+static gmx_inline void m_rveccopy(int dim, rvec *a, rvec *b)
 {
     /* b = a */
     int i;
@@ -895,7 +852,7 @@ static void m_rveccopy(int dim, rvec *a, rvec *b)
 }
 
 /*computer matrix vectors from base vectors and angles */
-static void matrix_convert(matrix box, rvec vec, rvec angle)
+static gmx_inline void matrix_convert(matrix box, rvec vec, rvec angle)
 {
     svmul(DEG2RAD, angle, angle);
     box[XX][XX] = vec[XX];
@@ -912,6 +869,20 @@ static void matrix_convert(matrix box, rvec vec, rvec angle)
 #define mod(a, b)    _mod((a), (b), __FILE__, __LINE__)
 
 #ifdef __cplusplus
+}
+
+static gmx_inline real det(const matrix a)
+{
+    return ( a[XX][XX]*(a[YY][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[YY][ZZ])
+             -a[YY][XX]*(a[XX][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[XX][ZZ])
+             +a[ZZ][XX]*(a[XX][YY]*a[YY][ZZ]-a[YY][YY]*a[XX][ZZ]));
+}
+
+static gmx_inline void mvmul(const matrix a, const rvec src, rvec dest)
+{
+    dest[XX] = a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
+    dest[YY] = a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
+    dest[ZZ] = a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
 }
 
 static gmx_inline void tmvmul_ur0(const matrix a, const rvec src, rvec dest)

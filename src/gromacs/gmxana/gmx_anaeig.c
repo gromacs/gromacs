@@ -761,7 +761,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                     j = 0;
                 }
                 fprintf(out, pdbform, "ATOM", i+1, "C", "PRJ", ' ', j+1,
-                        PR_VEC(10*x[i]), 1.0, 10*b[i]);
+                        10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i]);
                 if (j > 0)
                 {
                     fprintf(out, "CONECT%5d%5d\n", i, i+1);
