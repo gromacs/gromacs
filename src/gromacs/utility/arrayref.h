@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,6 +75,9 @@ namespace gmx
  *
  * Methods in this class do not throw, except where indicated.
  *
+ * Note that due to a Doxygen limitation, the constructor that takes a C array
+ * whose size is known at compile time does not appear in the documentation.
+ *
  * \inpublicapi
  * \ingroup module_utility
  */
@@ -131,8 +134,8 @@ class ConstArrayRef
          * The referenced vector must remain valid and not be reallocated for
          * the lifetime of this object.
          */
-        ConstArrayRef(typename std::vector<T>::const_iterator begin,
-                      typename std::vector<T>::const_iterator end)
+        ConstArrayRef(typename std::vector<value_type>::const_iterator begin,
+                      typename std::vector<value_type>::const_iterator end)
             : begin_((begin != end) ? &*begin : NULL),
               end_(begin_+(end-begin))
         {
@@ -151,6 +154,29 @@ class ConstArrayRef
             : begin_(begin), end_(begin + size)
         {
         }
+        //! \cond
+        // Doxygen 1.8.5 doesn't parse the declaration correctly...
+        /*! \brief
+         * Constructs a reference to a C array.
+         *
+         * \param[in] array  C array to reference.
+         * \tparam    count  Deduced number of elements in \p array.
+         *
+         * This constructor can only be used with a real array (not with a
+         * pointer).  It constructs a reference to the whole array, without
+         * a need to pass the number of elements explicitly.  The compiler
+         * must be able to deduce the array size.
+         * Passed array must remain valid for the lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * a C array to a function that takes a ConstArrayRef parameter.
+         */
+        template <size_t count>
+        ConstArrayRef(const value_type (&array)[count])
+            : begin_(array), end_(array + count)
+        {
+        }
+        //! \endcond
 
         //! Returns an interator to the beginning of the container.
         const_iterator begin() const { return begin_; }
