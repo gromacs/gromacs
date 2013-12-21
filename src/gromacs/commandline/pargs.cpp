@@ -866,7 +866,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     for (i = 0; i < npall; i++)
     {
-        if ((all_pa[i].type == etTIME) && (*all_pa[i].u.r >= 0))
+        if (all_pa[i].type == etTIME && all_pa[i].bSet)
         {
             *all_pa[i].u.r *= output_env_get_time_invfactor(*oenv);
         }
