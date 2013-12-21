@@ -315,8 +315,9 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
         {
             if (debug)
             {
-                fprintf (debug, "\nShifting position of molecule %d "
-                         "by %8.3f  %8.3f  %8.3f\n", i+1, PR_VEC(shift));
+                fprintf(debug, "\nShifting position of molecule %d "
+                        "by %8.3f  %8.3f  %8.3f\n", i+1,
+                        shift[XX], shift[YY], shift[ZZ]);
             }
             for (j = mols->index[i]; (j < mols->index[i+1] && j < natoms); j++)
             {
@@ -370,9 +371,9 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             {
                 if (debug)
                 {
-                    fprintf (debug, "\nShifting position of residue %d (atoms %u-%u) "
-                             "by %g,%g,%g\n", atom[res_start].resind+1,
-                             res_start+1, res_end+1, PR_VEC(shift));
+                    fprintf(debug, "\nShifting position of residue %d (atoms %u-%u) "
+                            "by %g,%g,%g\n", atom[res_start].resind+1,
+                            res_start+1, res_end+1, shift[XX], shift[YY], shift[ZZ]);
                 }
                 for (j = res_start; j < res_end; j++)
                 {
