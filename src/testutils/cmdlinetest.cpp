@@ -48,6 +48,7 @@
 #include <new>
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
@@ -106,8 +107,8 @@ CommandLine::CommandLine()
 {
 }
 
-CommandLine::CommandLine(const char *const cmdline[], size_t count)
-    : impl_(new Impl(cmdline, count))
+CommandLine::CommandLine(const ConstArrayRef<const char *> &cmdline)
+    : impl_(new Impl(cmdline.data(), cmdline.size()))
 {
 }
 
@@ -118,6 +119,11 @@ CommandLine::CommandLine(const CommandLine &other)
 
 CommandLine::~CommandLine()
 {
+}
+
+void CommandLine::initFromArray(const ConstArrayRef<const char *> &cmdline)
+{
+    impl_.reset(new Impl(cmdline.data(), cmdline.size()));
 }
 
 void CommandLine::append(const char *arg)

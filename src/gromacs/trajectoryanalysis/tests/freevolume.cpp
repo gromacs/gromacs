@@ -68,7 +68,7 @@ TEST_F(FreeVolumeModuleTest, ComputesFreeVolume)
     };
     setTopology("freevolume.tpr");
     setTrajectory("freevolume.xtc");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(FreeVolumeModuleTest, ComputesFreeVolumeSelection)
@@ -79,7 +79,7 @@ TEST_F(FreeVolumeModuleTest, ComputesFreeVolumeSelection)
     };
     setTopology("freevolume.tpr");
     setTrajectory("freevolume.xtc");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 } // namespace
