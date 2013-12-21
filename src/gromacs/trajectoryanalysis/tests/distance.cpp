@@ -68,7 +68,7 @@ TEST_F(DistanceModuleTest, ComputesDistances)
         "-len", "2", "-binw", "0.5"
     };
     setTopology("simple.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(DistanceModuleTest, ComputesMultipleDistances)
@@ -80,7 +80,7 @@ TEST_F(DistanceModuleTest, ComputesMultipleDistances)
         "-len", "2", "-binw", "0.5"
     };
     setTopology("simple.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(DistanceModuleTest, HandlesDynamicSelections)
@@ -91,7 +91,7 @@ TEST_F(DistanceModuleTest, HandlesDynamicSelections)
         "-len", "2", "-binw", "0.5"
     };
     setTopology("simple.gro");
-    runTest(CommandLine::create(cmdline));
+    runTest(CommandLine(cmdline));
 }
 
 } // namespace

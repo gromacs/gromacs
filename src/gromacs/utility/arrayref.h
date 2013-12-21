@@ -151,6 +151,26 @@ class ConstArrayRef
             : begin_(begin), end_(begin + size)
         {
         }
+        /*! \brief
+         * Constructs a reference to a C array.
+         *
+         * \param[in] array  C array to reference.
+         * \tparam    count  Deduced number of elements in \p array.
+         *
+         * This constructor can only be used with a real array (not with a
+         * pointer).  It constructs a reference to the whole array, without
+         * a need to pass the number of elements explicitly.  The compiler
+         * must be able to deduce the array size.
+         * Passed array must remain valid for the lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * a C array to a function that takes a ConstArrayRef parameter.
+         */
+        template <size_t count>
+        ConstArrayRef(const T (&array)[count])
+            : begin_(array), end_(array + count)
+        {
+        }
 
         //! Returns an interator to the beginning of the container.
         const_iterator begin() const { return begin_; }
