@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
-            : MyBase(name), filetype_(eftUnknown), defaultBasename_(NULL),
+            : MyBase(name), filetype_(eftUnknown), legacyType_(-1),
+              defaultBasename_(NULL),
               bRead_(false), bWrite_(false), bLibrary_(false)
         {
         }
@@ -78,10 +79,18 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         /*! \brief
          * Sets the type of the file this option accepts.
          *
-         * This attribute must be provided.
+         * Either this attribute or legacyType() must be provided.
          */
         MyClass &filetype(OptionFileType type)
         { filetype_ = type; return me(); }
+        /*! \brief
+         * Sets the type of the file from an enum in filenm.h.
+         *
+         * New code should prefer filetype(), extending the enumeration if
+         * necessary.
+         */
+        MyClass &legacyType(int type)
+        { legacyType_ = type; return me(); }
         //! Tells that the file provided by this option is used for input only.
         MyClass &inputFile()
         { bRead_ = true; bWrite_ = false; return me(); }
@@ -95,6 +104,11 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         MyClass &inputOutputFile()
         { bRead_ = bWrite_ = true; return me(); }
         /*! \brief
+         * Sets the read/write usage for this file from boolean flags.
+         */
+        MyClass &readWriteFlags(bool bRead, bool bWrite)
+        { bRead_ = bRead; bWrite_ = bWrite; return me(); }
+        /*! \brief
          * Tells that the file will be looked up in library directories in
          * addition to working directory.
          *
@@ -104,7 +118,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * directories.  It would be nicer to do this searching within the
          * file name option implementation.
          */
-        MyClass &libraryFile() { bLibrary_ = true; return me(); }
+        MyClass &libraryFile(bool bLibrary = true)
+        { bLibrary_ = bLibrary; return me(); }
         /*! \brief
          * Sets a default basename for the file option.
          *
@@ -128,6 +143,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         virtual AbstractOptionStoragePointer createStorage() const;
 
         OptionFileType          filetype_;
+        int                     legacyType_;
         const char             *defaultBasename_;
         bool                    bRead_;
         bool                    bWrite_;
