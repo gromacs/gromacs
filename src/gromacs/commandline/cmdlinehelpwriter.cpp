@@ -53,6 +53,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/options/timeunitmanager.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
@@ -83,6 +84,9 @@ class OptionsFormatterInterface
         //! Formats the description text block for a section.
         virtual void formatDescription(const HelpWriterContext &context,
                                        const Options           &section) = 0;
+        //! Formats a known issue.
+        virtual void formatBug(const HelpWriterContext &context,
+                               const char              *bug) = 0;
         //! Formats a single file option.
         virtual void formatFileOption(const HelpWriterContext  &context,
                                       const FileNameOptionInfo &option) = 0;
@@ -343,6 +347,8 @@ class OptionsExportFormatter : public OptionsFormatterInterface
 
         virtual void formatDescription(const HelpWriterContext &context,
                                        const Options           &section);
+        virtual void formatBug(const HelpWriterContext &context,
+                               const char              *bug);
         virtual void formatFileOption(const HelpWriterContext  &context,
                                       const FileNameOptionInfo &option);
         virtual void formatOption(const HelpWriterContext &context,
@@ -376,6 +382,27 @@ void OptionsExportFormatter::formatDescription(
 {
     // TODO: Print title for the section?
     context.writeTextBlock(section.description());
+}
+
+void OptionsExportFormatter::formatBug(
+        const HelpWriterContext &context, const char *bug)
+{
+    // TODO: The context should be able to do this also for console output, but
+    // that requires a lot more elaborate parser for the markup.
+    if (context.outputFormat() == eHelpOutputFormat_Console)
+    {
+        TextLineWrapperSettings settings;
+        settings.setIndent(2);
+        settings.setFirstLineIndent(0);
+        settings.setLineLength(78);
+        context.outputFile().writeLine(
+                context.substituteMarkupAndWrapToString(
+                        settings, formatString("* %s", bug)));
+    }
+    else
+    {
+        context.writeTextBlock(formatString("[LI]%s", bug));
+    }
 }
 
 void OptionsExportFormatter::formatFileOption(
@@ -470,11 +497,13 @@ class CommandLineHelpWriter::Impl
         explicit Impl(const Options &options);
 
         //! Options object to use for generating help.
-        const Options          &options_;
+        const Options               &options_;
+        //! List of bugs/knows issues.
+        ConstArrayRef<const char *>  bugs_;
         //! Time unit to show in descriptions.
-        std::string             timeUnit_;
+        std::string                  timeUnit_;
         //! Whether to write descriptions to output.
-        bool                    bShowDescriptions_;
+        bool                         bShowDescriptions_;
 };
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
@@ -496,15 +525,24 @@ CommandLineHelpWriter::~CommandLineHelpWriter()
 {
 }
 
-CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
+CommandLineHelpWriter &
+CommandLineHelpWriter::setShowDescriptions(bool bSet)
 {
     impl_->bShowDescriptions_ = bSet;
     return *this;
 }
 
-CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
+CommandLineHelpWriter &
+CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
 {
     impl_->timeUnit_ = timeUnit;
+    return *this;
+}
+
+CommandLineHelpWriter &
+CommandLineHelpWriter::setKnownIssues(const ConstArrayRef<const char *> &bugs)
+{
+    impl_->bugs_ = bugs;
     return *this;
 }
 
@@ -536,6 +574,23 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
                           impl_->options_, "File Options");
     filter.formatSelected(OptionsFilter::eSelectOtherOptions,
                           impl_->options_, "Options");
+    if (!impl_->bugs_.empty())
+    {
+        writerContext.writeTitle("Known Issues");
+        if (writerContext.outputFormat() != eHelpOutputFormat_Console)
+        {
+            writerContext.writeTextBlock("[UL]");
+        }
+        ConstArrayRef<const char *>::const_iterator i;
+        for (i = impl_->bugs_.begin(); i != impl_->bugs_.end(); ++i)
+        {
+            formatter.formatBug(writerContext, *i);
+        }
+        if (writerContext.outputFormat() != eHelpOutputFormat_Console)
+        {
+            writerContext.writeTextBlock("[ul]");
+        }
+    }
 }
 
 } // namespace gmx
