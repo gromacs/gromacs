@@ -1048,16 +1048,20 @@ static void calc_fluctuation_props(FILE *fp,
     /* Alpha, dcp */
     if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
     {
-        vvhh = 0;
+        vvhh = vv2 = hh2 = 0;
         for (j = 0; (j < edat->nframes); j++)
         {
             v     = edat->s[ii[eVol]].ener[j]*NANO3;
             h     = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
+            vv2  += v;
+            hh2  += h;
             vvhh += (v*h);
         }
         vvhh /= edat->nframes;
-        alpha = (vvhh-vv*hh)/(vv*BOLTZMANN*tt*tt);
-        dcp   = (vv*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
+        vv2  /= edat->nframes;
+        hh2  /= edat->nframes;
+        alpha = (vvhh-vv2*hh2)/(vv2*BOLTZMANN*tt*tt);
+        dcp   = (vv2*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
     }
 
     if (tt != NOTSET)
