@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -248,7 +248,8 @@ class OptionTemplate : public AbstractOption
         //! Requires exactly \p count values for the option.
         MyClass &valueCount(int count) { setValueCount(count); return me(); }
         //! Allows any number of values for the option.
-        MyClass &multiValue() { maxValueCount_ = -1; return me(); }
+        MyClass &multiValue(bool bMulti = true)
+        { if (bMulti) { maxValueCount_ = -1; } return me(); }
 
         /*! \brief
          * Sets a default value for the option.

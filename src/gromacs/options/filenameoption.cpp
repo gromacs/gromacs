@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -147,16 +147,17 @@ class FileTypeRegistry
         //! Returns a singleton instance of this class.
         static const FileTypeRegistry &instance();
         //! Returns a handler for a single file type.
-        const FileTypeHandler &handlerForType(OptionFileType type) const;
+        const FileTypeHandler &
+        handlerForType(OptionFileType type, int legacyType) const;
 
     private:
         //! Initializes the file type registry.
         FileTypeRegistry();
 
         //! Registers a file type that corresponds to a ftp in filenm.h.
-        void registerType(OptionFileType type, int ftp);
+        void registerType(int type, int ftp);
         //! Registers a file type with a single extension.
-        void registerType(OptionFileType type, const char *extension);
+        void registerType(int type, const char *extension);
 
         std::vector<FileTypeHandler> filetypes_;
 };
@@ -170,25 +171,34 @@ FileTypeRegistry::instance()
 }
 
 const FileTypeHandler &
-FileTypeRegistry::handlerForType(OptionFileType type) const
+FileTypeRegistry::handlerForType(OptionFileType type, int legacyType) const
 {
-    GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
+    int index = type;
+    if (type == eftUnknown && legacyType >= 0)
+    {
+        index = eftOptionFileType_NR + legacyType;
+    }
+    GMX_RELEASE_ASSERT(index >= 0 && static_cast<size_t>(index) < filetypes_.size(),
                        "Invalid file type");
-    return filetypes_[type];
+    return filetypes_[index];
 }
 
 FileTypeRegistry::FileTypeRegistry()
 {
-    filetypes_.resize(eftOptionFileType_NR);
+    filetypes_.resize(eftOptionFileType_NR + efNR);
     registerType(eftTopology,    efTPS);
     registerType(eftTrajectory,  efTRX);
     registerType(eftPDB,         efPDB);
     registerType(eftIndex,       efNDX);
     registerType(eftPlot,        efXVG);
     registerType(eftGenericData, efDAT);
+    for (int i = 0; i < efNR; ++i)
+    {
+        registerType(eftOptionFileType_NR + i, i);
+    }
 }
 
-void FileTypeRegistry::registerType(OptionFileType type, int ftp)
+void FileTypeRegistry::registerType(int type, int ftp)
 {
     GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
                        "Invalid file type");
@@ -209,8 +219,7 @@ void FileTypeRegistry::registerType(OptionFileType type, int ftp)
     }
 }
 
-void FileTypeRegistry::registerType(OptionFileType type,
-                                    const char    *extension)
+void FileTypeRegistry::registerType(int type, const char *extension)
 {
     GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
                        "Invalid file type");
@@ -220,14 +229,16 @@ void FileTypeRegistry::registerType(OptionFileType type,
 /*! \brief
  * Helper method to complete a file name provided to a file name option.
  *
- * \param[in] value     Value provided to the file name option.
- * \param[in] filetype  File type for the option.
+ * \param[in] value      Value provided to the file name option.
+ * \param[in] filetype   File type for the option.
+ * \param[in] legacyType If \p filetype is eftUnknown, this gives the type as
+ *     an enum value from filenm.h.
  * \param[in] bCompleteToExisting
- *      Whether to check existing files when completing the extension.
+ *     Whether to check existing files when completing the extension.
  * \returns   \p value with possible extension added.
  */
 std::string completeFileName(const std::string &value, OptionFileType filetype,
-                             bool bCompleteToExisting)
+                             int legacyType, bool bCompleteToExisting)
 {
     if (bCompleteToExisting && File::exists(value))
     {
@@ -237,7 +248,7 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
         return value;
     }
     const FileTypeRegistry &registry    = FileTypeRegistry::instance();
-    const FileTypeHandler  &typeHandler = registry.handlerForType(filetype);
+    const FileTypeHandler  &typeHandler = registry.handlerForType(filetype, legacyType);
     if (typeHandler.hasKnownExtension(value))
     {
         return value;
@@ -261,6 +272,7 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
 
 FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
     : MyBase(settings), info_(this), filetype_(settings.filetype_),
+      legacyType_(settings.legacyType_),
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
 {
@@ -268,13 +280,15 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
     {
         if (isRequired())
         {
-            setDefaultValue(completeFileName(settings.defaultBasename_,
-                                             filetype_, false));
+            setDefaultValue(
+                    completeFileName(settings.defaultBasename_,
+                                     filetype_, legacyType_, false));
         }
         else
         {
-            setDefaultValueIfSet(completeFileName(settings.defaultBasename_,
-                                                  filetype_, false));
+            setDefaultValueIfSet(
+                    completeFileName(settings.defaultBasename_,
+                                     filetype_, legacyType_, false));
         }
     }
 }
@@ -287,7 +301,7 @@ std::string FileNameOptionStorage::formatSingleValue(const std::string &value) c
 void FileNameOptionStorage::convertValue(const std::string &value)
 {
     bool bInput = isInputFile() || isInputOutputFile();
-    addValue(completeFileName(value, filetype_, bInput));
+    addValue(completeFileName(value, filetype_, legacyType_, bInput));
 }
 
 /********************************************************************
