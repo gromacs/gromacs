@@ -3759,7 +3759,7 @@ int gmx_hbond(int argc, char *argv[])
           "one particle" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
           "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With [TT]-gemfit[tt] we suggest [TT]-fitstart 0[tt]" },
-        { "-fitstart", FALSE, etREAL, {&fit_start},
+        { "-fitend", FALSE, etREAL, {&fit_end},
           "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with [TT]-gemfit[tt])" },
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },

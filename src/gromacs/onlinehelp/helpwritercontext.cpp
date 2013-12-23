@@ -123,6 +123,8 @@ const t_sandr sandrTty[] = {
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
     { "[BR]", "\n"},
+    /* [UL], [LI], [ul] cannot be implemented properly with the current
+     * approach. */
     { "[GRK]", "" },
     { "[grk]", "" }
 };
@@ -173,6 +175,11 @@ const t_sandr sandrMan[] = {
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
     { "\n ",    "\n" },
+    // The following three work only in the specific context in which they are
+    // currently used.
+    { "[UL]", "" },
+    { "[LI]", "\n- " },
+    { "[ul]", "" },
     { "<",    "" },
     { ">",    "" },
     { "^",    "" },
@@ -231,6 +238,9 @@ const t_sandr sandrHtml[] = {
     { "[tanh]", ")" },
     { "[PAR]", "<p>" },
     { "[BR]", "<br>" },
+    { "[UL]", "<ul>" },
+    { "[LI]", "<li>" },
+    { "[ul]", "</ul>" },
     { "[GRK]", "&"  },
     { "[grk]", ";"  }
 };

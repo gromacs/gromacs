@@ -125,7 +125,6 @@ class Options
          * concatenateStrings() is useful for forming the input string.
          */
         void setDescription(const std::string &desc);
-        //int addBugs(int nbugs, const char *const *bugs);
 
         /*! \brief
          * Adds an option collection as a subsection of this collection.
