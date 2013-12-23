@@ -896,7 +896,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
+void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
 {
     cudaError_t     stat;
     cu_atomdata_t   *atdat;
