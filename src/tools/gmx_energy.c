@@ -980,7 +980,7 @@ static void calc_fluctuation_props(FILE *fp,
                                    int nbmin, int nbmax)
 {
     int    i, j;
-    double vvhh, vv, v, h, hh2, vv2, varv, hh, varh, tt, cv, cp, alpha, kappa, dcp, et, varet;
+    double vv, v, h, varv, hh, varh, tt, cv, cp, alpha, kappa, dcp, et, varet;
     double NANO3;
     enum {
         eVol, eEnth, eTemp, eEtot, eNR
@@ -1010,7 +1010,7 @@ static void calc_fluctuation_props(FILE *fp,
             fprintf(fp,"Found %s data.\n",my_ener[i]);
  */ }
     /* Compute it all! */
-    vvhh = alpha = kappa = cp = dcp = cv = NOTSET;
+    alpha = kappa = cp = dcp = cv = NOTSET;
 
     /* Temperature */
     tt = NOTSET;
@@ -1048,16 +1048,21 @@ static void calc_fluctuation_props(FILE *fp,
     /* Alpha, dcp */
     if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
     {
-        vvhh = 0;
+        double v_sum, h_sum, vh_sum, v_aver, h_aver, vh_aver;
+        vh_sum = v_sum = h_sum = 0;
         for (j = 0; (j < edat->nframes); j++)
         {
-            v     = edat->s[ii[eVol]].ener[j]*NANO3;
-            h     = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
-            vvhh += (v*h);
+            v       = edat->s[ii[eVol]].ener[j]*NANO3;
+            h       = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
+            v_sum  += v;
+            h_sum  += h;
+            vh_sum += (v*h);
         }
-        vvhh /= edat->nframes;
-        alpha = (vvhh-vv*hh)/(vv*BOLTZMANN*tt*tt);
-        dcp   = (vv*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
+        vh_aver = vh_sum / edat->nframes;
+        v_aver  = v_sum  / edat->nframes;
+        h_aver  = h_sum  / edat->nframes;
+        alpha = (vh_aver-v_aver*h_aver)/(v_aver*BOLTZMANN*tt*tt);
+        dcp   = (v_aver*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
     }
 
     if (tt != NOTSET)
@@ -1079,10 +1084,6 @@ static void calc_fluctuation_props(FILE *fp,
             if (varv != NOTSET)
             {
                 fprintf(fp, "varv  =  %10g (m^6)\n", varv*AVOGADRO/nmol);
-            }
-            if (vvhh != NOTSET)
-            {
-                fprintf(fp, "vvhh  =  %10g (m^3 J)\n", vvhh);
             }
         }
         if (vv != NOTSET)
