@@ -248,7 +248,8 @@ class OptionTemplate : public AbstractOption
         //! Requires exactly \p count values for the option.
         MyClass &valueCount(int count) { setValueCount(count); return me(); }
         //! Allows any number of values for the option.
-        MyClass &multiValue() { maxValueCount_ = -1; return me(); }
+        MyClass &multiValue(bool bMulti = true)
+        { if (bMulti) { maxValueCount_ = -1; } return me(); }
 
         /*! \brief
          * Sets a default value for the option.

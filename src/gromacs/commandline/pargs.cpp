@@ -62,12 +62,16 @@
 #include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/shellcompletions.h"
-#include "gromacs/commandline/wman.h"
 #include "gromacs/fileio/timecontrol.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/options.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-
+#include "gromacs/utility/stringutil.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
@@ -161,8 +165,7 @@ static char *sscan(int argc, char *argv[], int *i)
 
 gmx_bool is_hidden(t_pargs *pa)
 {
-    return ((strstr(pa->desc, "HIDDEN") != NULL) ||
-            (strstr(pa->desc, "[hidden]") != NULL));
+    return (strstr(pa->desc, "HIDDEN") != NULL);
 }
 
 int nenum(const char *const enumc[])
@@ -486,86 +489,111 @@ static int add_parg(int npargs, t_pargs *pa, t_pargs *pa_add)
     return npargs+1;
 }
 
-static char *mk_desc(t_pargs *pa, const char *time_unit_str)
+namespace gmx
 {
-    char      *newdesc = NULL, *ndesc = NULL, *nptr = NULL;
-    const char*ptr     = NULL;
-    int        len, k;
 
-    /* First compute length for description */
-    len = strlen(pa->desc)+1;
-    if ((ptr = strstr(pa->desc, "HIDDEN")) != NULL)
-    {
-        len += 4;
-    }
-    if (pa->type == etENUM)
-    {
-        len += 10;
-        for (k = 1; (pa->u.c[k] != NULL); k++)
-        {
-            len += strlen(pa->u.c[k])+12;
-        }
-    }
-    snew(newdesc, len);
+namespace
+{
 
-    /* add label for hidden options */
-    if (is_hidden(pa))
+/*! \brief
+ * Converts a t_filenm option into an Options option.
+ *
+ * \param     options Options object to add the new option to.
+ * \param[in] fnm     t_filenm option to convert.
+ *
+ * \ingroup module_commandline
+ */
+void filenmToOptions(Options *options, const t_filenm *fnm)
+{
+    const bool        bRead     = ((fnm->flag & ffREAD)  != 0);
+    const bool        bWrite    = ((fnm->flag & ffWRITE) != 0);
+    const bool        bOptional = ((fnm->flag & ffOPT)   != 0);
+    const bool        bLibrary  = ((fnm->flag & ffLIB)   != 0);
+    const bool        bMultiple = ((fnm->flag & ffMULT)  != 0);
+    const char *const name      = &fnm->opt[1];
+    const char *      defName   = fnm->fn;
+    if (defName == NULL)
     {
-        sprintf(newdesc, "[hidden] %s", ptr+6);
+        defName = ftp2defnm(fnm->ftp);
     }
-    else
-    {
-        strcpy(newdesc, pa->desc);
-    }
-
-    /* change '%t' into time_unit */
-#define TUNITLABEL "%t"
-#define NTUNIT strlen(TUNITLABEL)
-    if (pa->type == etTIME)
-    {
-        while ( (nptr = strstr(newdesc, TUNITLABEL)) != NULL)
-        {
-            nptr[0] = '\0';
-            nptr   += NTUNIT;
-            len    += strlen(time_unit_str)-NTUNIT;
-            snew(ndesc, len);
-            strcpy(ndesc, newdesc);
-            strcat(ndesc, time_unit_str);
-            strcat(ndesc, nptr);
-            sfree(newdesc);
-            newdesc = ndesc;
-            ndesc   = NULL;
-        }
-    }
-#undef TUNITLABEL
-#undef NTUNIT
-
-    /* Add extra comment for enumerateds */
-    if (pa->type == etENUM)
-    {
-        strcat(newdesc, ": ");
-        for (k = 1; (pa->u.c[k] != NULL); k++)
-        {
-            strcat(newdesc, "[TT]");
-            strcat(newdesc, pa->u.c[k]);
-            strcat(newdesc, "[tt]");
-            /* Print a comma everywhere but at the last one */
-            if (pa->u.c[k+1] != NULL)
-            {
-                if (pa->u.c[k+2] == NULL)
-                {
-                    strcat(newdesc, " or ");
-                }
-                else
-                {
-                    strcat(newdesc, ", ");
-                }
-            }
-        }
-    }
-    return newdesc;
+    // Since we are not (yet) using this for actual parsing, we don't need to
+    // set any storage.
+    options->addOption(
+            FileNameOption(name).defaultBasename(defName).legacyType(fnm->ftp)
+                .readWriteFlags(bRead, bWrite).required(!bOptional)
+                .libraryFile(bLibrary).multiValue(bMultiple)
+                .description(ftp2desc(fnm->ftp)));
 }
 
+/*! \brief
+ * Converts a t_pargs option into an Options option.
+ *
+ * \param     options Options object to add the new option to.
+ * \param[in] pa      t_pargs option to convert.
+ *
+ * \ingroup module_commandline
+ */
+void pargsToOptions(Options *options, t_pargs *pa)
+{
+    const bool        bHidden = is_hidden(pa);
+    const char *const name    = &pa->option[1];
+    const char *const desc    = (bHidden ? &pa->desc[6] : pa->desc);
+    // Since we are not (yet) using this for actual parsing, we can take some
+    // shortcuts and not set any storage where there is no direct
+    // correspondence in the types.
+    switch (pa->type)
+    {
+        case etINT:
+            options->addOption(
+                IntegerOption(name).store(pa->u.i)
+                    .description(desc).hidden(bHidden));
+            return;
+        case etINT64:
+            options->addOption(
+                Int64Option(name).store(pa->u.is)
+                    .description(desc).hidden(bHidden));
+            return;
+        case etREAL:
+            options->addOption(
+                RealOption(name).store(pa->u.r)
+                    .description(desc).hidden(bHidden));
+            return;
+        case etTIME:
+            options->addOption(
+                RealOption(name).store(pa->u.r).timeValue()
+                    .description(desc).hidden(bHidden));
+            return;
+        case etSTR:
+        {
+            const char *const defValue = (*pa->u.c != NULL ? *pa->u.c : "");
+            options->addOption(
+                    StringOption(name).defaultValue(defValue)
+                        .description(desc).hidden(bHidden));
+            return;
+        }
+        case etBOOL:
+            options->addOption(
+                BooleanOption(name).defaultValue(*pa->u.b)
+                    .description(desc).hidden(bHidden));
+            return;
+        case etRVEC:
+            options->addOption(
+                RealOption(name).store(*pa->u.rv).vector()
+                    .description(desc).hidden(bHidden));
+            return;
+        case etENUM:
+            options->addOption(
+                StringOption(name).defaultEnumIndex(nenum(pa->u.c))
+                    .enumValueFromNullTerminatedArray(pa->u.c + 1)
+                    .description(desc).hidden(bHidden));
+            return;
+    }
+    GMX_THROW(NotImplementedError("Argument type not implemented"));
+}
+
+} // namespace
+
+} // namespace gmx
 
 gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
@@ -792,12 +820,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         memcpy(&(pa[i]), &(all_pa[k]), (size_t)sizeof(pa[i]));
     }
 
-
-    for (i = 0; (i < npall); i++)
-    {
-        all_pa[i].desc = mk_desc(&(all_pa[i]), output_env_get_time_unit(*oenv));
-    }
-
 #if (defined __sgi && USE_SGI_FPE)
     doexceptions();
 #endif
@@ -812,7 +834,21 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         {
             if (context != NULL)
             {
-                write_man(*context, ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+                gmx::Options options(NULL, NULL);
+                options.setDescription(gmx::concatenateStrings(desc, ndesc));
+                for (i = 0; i < nfile; i++)
+                {
+                    gmx::filenmToOptions(&options, &fnm[i]);
+                }
+                for (i = 0; i < npall; i++)
+                {
+                    gmx::pargsToOptions(&options, &all_pa[i]);
+                }
+                gmx::CommandLineHelpWriter(options)
+                    .setShowDescriptions(true)
+                    .setTimeUnitString(output_env_get_time_unit(*oenv))
+                    .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
+                    .writeHelp(*context);
             }
             else if (!strcmp(manstr[0], "completion"))
             {
@@ -882,10 +918,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     }
 
     /* clear memory */
-    for (i = 0; i < npall; ++i)
-    {
-        sfree((void *)all_pa[i].desc);
-    }
     sfree(all_pa);
 
     if (!FF(PCA_NOEXIT_ON_ARGS))
