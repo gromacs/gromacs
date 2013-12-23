@@ -122,9 +122,13 @@ namespace
 /*! \internal \brief
  * Option visitor that scales time options.
  *
+ * \tparam FloatingPointOptionInfo  OptionInfo type for an option that provides
+ *     isTime() and setScaleFactor() methods.
+ *
  * \ingroup module_options
  */
-class TimeOptionScaler : public OptionsModifyingTypeVisitor<DoubleOptionInfo>
+template <class FloatingPointOptionInfo>
+class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionInfo>
 {
     public:
         //! Initializes a scaler with the given factor.
@@ -137,7 +141,7 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<DoubleOptionInfo>
             iterator.acceptOptions(this);
         }
 
-        void visitOptionType(DoubleOptionInfo *option)
+        void visitOptionType(FloatingPointOptionInfo *option)
         {
             if (option->isTime())
             {
@@ -154,7 +158,8 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<DoubleOptionInfo>
 void TimeUnitManager::scaleTimeOptions(Options *options) const
 {
     double factor = timeScaleFactor();
-    TimeOptionScaler(factor).visitSubSection(options);
+    TimeOptionScaler<DoubleOptionInfo>(factor).visitSubSection(options);
+    TimeOptionScaler<FloatOptionInfo>(factor).visitSubSection(options);
 }
 
 } // namespace gmx

@@ -51,11 +51,6 @@
 namespace gmx
 {
 
-class BooleanOption;
-class IntegerOption;
-class DoubleOption;
-class StringOption;
-
 /*! \addtogroup module_options
  * \{
  */
@@ -111,6 +106,29 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
 };
 
 /*! \internal \brief
+ * Converts, validates, and stores integer values.
+ */
+class Int64OptionStorage : public OptionStorageTemplate<gmx_int64_t>
+{
+    public:
+        //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
+        explicit Int64OptionStorage(const Int64Option &settings)
+            : MyBase(settings), info_(this)
+        {
+        }
+
+        virtual OptionInfo &optionInfo() { return info_; }
+        virtual const char *typeString() const
+        { return "int"; }
+        virtual std::string formatSingleValue(const gmx_int64_t &value) const;
+
+    private:
+        virtual void convertValue(const std::string &value);
+
+        Int64OptionInfo       info_;
+};
+
+/*! \internal \brief
  * Converts, validates, and stores floating-point (double) values.
  */
 class DoubleOptionStorage : public OptionStorageTemplate<double>
@@ -131,9 +149,35 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
     private:
         virtual void convertValue(const std::string &value);
         virtual void processSetValues(ValueList *values);
-        virtual void processAll();
 
         DoubleOptionInfo        info_;
+        bool                    bTime_;
+        double                  factor_;
+};
+
+/*! \internal \brief
+ * Converts, validates, and stores floating-point (float) values.
+ */
+class FloatOptionStorage : public OptionStorageTemplate<float>
+{
+    public:
+        //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
+        explicit FloatOptionStorage(const FloatOption &settings);
+
+        virtual OptionInfo &optionInfo() { return info_; }
+        virtual const char *typeString() const;
+        virtual std::string formatSingleValue(const float &value) const;
+
+        //! \copydoc DoubleOptionStorage::isTime()
+        bool isTime() const { return bTime_; }
+        //! \copydoc DoubleOptionStorage::setScaleFactor()
+        void setScaleFactor(double factor);
+
+    private:
+        virtual void convertValue(const std::string &value);
+        virtual void processSetValues(ValueList *values);
+
+        FloatOptionInfo         info_;
         bool                    bTime_;
         double                  factor_;
 };
