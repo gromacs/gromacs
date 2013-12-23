@@ -57,6 +57,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/options/timeunitmanager.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
@@ -598,12 +599,17 @@ class CommandLineHelpWriter::Impl
         //! Sets the Options object to use for generating help.
         explicit Impl(const Options &options);
 
+        //! Format the list of known issues.
+        void formatBugs(const HelpWriterContext &context);
+
         //! Options object to use for generating help.
-        const Options          &options_;
+        const Options               &options_;
+        //! List of bugs/knows issues.
+        ConstArrayRef<const char *>  bugs_;
         //! Time unit to show in descriptions.
-        std::string             timeUnit_;
+        std::string                  timeUnit_;
         //! Whether to write descriptions to output.
-        bool                    bShowDescriptions_;
+        bool                         bShowDescriptions_;
 };
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
@@ -611,6 +617,45 @@ CommandLineHelpWriter::Impl::Impl(const Options &options)
       bShowDescriptions_(false)
 {
 }
+
+void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
+{
+    if (bugs_.empty())
+    {
+        return;
+    }
+    context.writeTitle("Known Issues");
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        context.writeTextBlock("[UL]");
+    }
+    ConstArrayRef<const char *>::const_iterator i;
+    for (i = bugs_.begin(); i != bugs_.end(); ++i)
+    {
+        const char *const bug = *i;
+        // TODO: The context should be able to do this also for console output, but
+        // that requires a lot more elaborate parser for the markup.
+        if (context.outputFormat() == eHelpOutputFormat_Console)
+        {
+            TextLineWrapperSettings settings;
+            settings.setIndent(2);
+            settings.setFirstLineIndent(0);
+            settings.setLineLength(78);
+            context.outputFile().writeLine(
+                    context.substituteMarkupAndWrapToString(
+                            settings, formatString("* %s", bug)));
+        }
+        else
+        {
+            context.writeTextBlock(formatString("[LI]%s", bug));
+        }
+    }
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        context.writeTextBlock("[ul]");
+    }
+}
+
 
 /********************************************************************
  * CommandLineHelpWriter
@@ -625,15 +670,24 @@ CommandLineHelpWriter::~CommandLineHelpWriter()
 {
 }
 
-CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
+CommandLineHelpWriter &
+CommandLineHelpWriter::setShowDescriptions(bool bSet)
 {
     impl_->bShowDescriptions_ = bSet;
     return *this;
 }
 
-CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
+CommandLineHelpWriter &
+CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
 {
     impl_->timeUnit_ = timeUnit;
+    return *this;
+}
+
+CommandLineHelpWriter &
+CommandLineHelpWriter::setKnownIssues(const ConstArrayRef<const char *> &bugs)
+{
+    impl_->bugs_ = bugs;
     return *this;
 }
 
@@ -677,6 +731,8 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
     filter.formatSelected(OptionsFilter::eSelectOtherOptions,
                           &formatter, impl_->options_);
     formatter.finishSection();
+
+    impl_->formatBugs(writerContext);
 }
 
 } // namespace gmx
