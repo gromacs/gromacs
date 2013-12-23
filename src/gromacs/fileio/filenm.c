@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -156,26 +156,22 @@ static const t_deffile
     deffile[efNR] =
 {
     { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters" },
-    { eftGEN, ".???", "traj", "-f",
-      "Trajectory: tng xtc trr trj gro g96 pdb cpt", NTRXS, trxs },
-    { eftGEN, ".???", "trajout", "-f",
-      "Trajectory: tng xtc trr trj gro g96 pdb", NTROS, tros },
+    { eftGEN, ".???", "traj", "-f", "Trajectory", NTRXS, trxs },
+    { eftGEN, ".???", "trajout", "-f", "Trajectory", NTROS, tros },
     { eftGEN, ".???", "traj", NULL,
-      "Full precision trajectory: tng trr trj cpt", NTRNS, trns },
+      "Full precision trajectory", NTRNS, trns },
     { eftXDR, ".trr", "traj", NULL, "Trajectory in portable xdr format" },
     { eftBIN, ".trj", "traj", NULL, "Trajectory file (architecture specific)" },
     { eftGEN, ".???", "traj_comp", NULL,
-      "Compressed trajectory (tng format or portable xdr format): tng xtc", NTRCOMPRESSED, trcompressed},
+      "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed},
     { eftXDR, ".xtc", "traj", NULL,
       "Compressed trajectory (portable xdr format): xtc" },
     { eftTNG, ".tng", "traj", NULL,
       "Trajectory file (tng format)" },
     { eftASC, ".g87", "gtraj", NULL, "Gromos-87 ASCII trajectory format" },
     { eftXDR, ".edr", "ener",   NULL, "Energy file"},
-    { eftGEN, ".???", "conf", "-c", "Structure file: gro g96 pdb tpr etc.",
-      NSTXS, stxs },
-    { eftGEN, ".???", "out", "-o", "Structure file: gro g96 pdb etc.",
-      NSTOS, stos },
+    { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
+    { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },
     { eftASC, ".gro", "conf", "-c", "Coordinate file in Gromos-87 format" },
     { eftASC, ".g96", "conf", "-c", "Coordinate file in Gromos-96 format" },
     { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"},
@@ -191,10 +187,8 @@ static const t_deffile
     { eftASC, ".ndx", "index",  "-n", "Index file", },
     { eftASC, ".top", "topol",  "-p", "Topology file"},
     { eftASC, ".itp", "topinc", NULL, "Include file for topology"},
-    { eftGEN, ".???", "topol", "-s", "Run input file: tpr tpb tpa",
-      NTPXS, tpxs },
-    { eftGEN, ".???", "topol", "-s",
-      "Structure+mass(db): tpr tpb tpa gro g96 pdb", NTPSS, tpss },
+    { eftGEN, ".???", "topol", "-s", "Run input file", NTPXS, tpxs },
+    { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
     { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
     { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"},
     { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"},
