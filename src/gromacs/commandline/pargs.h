@@ -102,8 +102,6 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 /* adds options -b and -e for begin and end time for reading trajectories */
 #define PCA_TIME_UNIT      (1<<15)
 /* set time unit for output */
-#define PCA_KEEP_ARGS      (1<<8)
-/* keep parsed args in argv (doesn't make sense without NOEXIT_ON_ARGS) */
 #define PCA_CAN_SET_DEFFNM (1<<10)
 /* does something for non-master mdrun nodes */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
