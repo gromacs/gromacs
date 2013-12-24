@@ -556,7 +556,7 @@ static void set_filenms(int nf, t_filenm fnm[], const char *deffnm, gmx_bool bRe
 }
 
 void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     const char *deffnm, gmx_bool bKeep, gmx_bool bReadNode)
+                     const char *deffnm, gmx_bool bReadNode)
 {
     int       i, j;
     gmx_bool *bRemove;
@@ -610,18 +610,15 @@ void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
         }
         while (i < *argc);
 
-        if (!bKeep)
+        /* Remove used entries */
+        for (i = j = 0; (i <= *argc); i++)
         {
-            /* Remove used entries */
-            for (i = j = 0; (i <= *argc); i++)
+            if (!bRemove[i])
             {
-                if (!bRemove[i])
-                {
-                    argv[j++] = argv[i];
-                }
+                argv[j++] = argv[i];
             }
-            (*argc) = j - 1;
         }
+        (*argc) = j - 1;
         sfree(bRemove);
     }
 

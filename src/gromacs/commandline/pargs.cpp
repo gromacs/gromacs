@@ -184,10 +184,8 @@ int nenum(const char *const enumc[])
 /* Read a number of arguments from the command line.
  * For etINT, etREAL and etCHAR an extra argument is read (when present)
  * for etBOOL the gmx_boolean option is changed to the negate value
- * If !bKeepArgs, the command line arguments are removed from the command line
  */
-static void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[],
-                      gmx_bool bKeepArgs)
+static void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[])
 {
     int       i, j, k, match;
     gmx_bool *bKeep;
@@ -304,18 +302,16 @@ static void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[],
             }
         }
     }
-    if (!bKeepArgs)
+
+    /* Remove used entries */
+    for (i = j = 0; (i <= *argc); i++)
     {
-        /* Remove used entries */
-        for (i = j = 0; (i <= *argc); i++)
+        if (bKeep[i])
         {
-            if (bKeep[i])
-            {
-                argv[j++] = argv[i];
-            }
+            argv[j++] = argv[i];
         }
-        (*argc) = j-1;
     }
+    (*argc) = j-1;
     sfree(bKeep);
 }
 
@@ -763,15 +759,14 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     set_default_xvg_format(xvg_format);
 
     /* Now parse all the command-line options */
-    get_pargs(argc, argv, npall, all_pa, FF(PCA_KEEP_ARGS));
+    get_pargs(argc, argv, npall, all_pa);
 
     /* set program name, command line, and default values for output options */
     output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
                     (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
     /* Parse the file args */
-    parse_file_args(argc, argv, nfile, fnm, deffnm,
-                    FF(PCA_KEEP_ARGS), !FF(PCA_NOT_READ_NODE));
+    parse_file_args(argc, argv, nfile, fnm, deffnm, !FF(PCA_NOT_READ_NODE));
 
     /* Open the debug file */
     if (debug_level > 0)
