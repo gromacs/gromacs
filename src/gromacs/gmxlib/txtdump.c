@@ -336,7 +336,7 @@ static void pr_int(FILE *fp, int indent, const char *title, int i)
     fprintf(fp, "%-20s = %d\n", title, i);
 }
 
-static void pr_int64(FILE *fp, int indent, const char *title, gmx_int64_t i)
+static void pr_gmx_large_int(FILE *fp, int indent, const char *title, gmx_large_int_t i)
 {
     char buf[STEPSTRSIZE];
 
@@ -541,32 +541,23 @@ static void pr_cosine(FILE *fp, int indent, const char *title, t_cosines *cos,
 
 #define PS(t, s) pr_str(fp, indent, t, s)
 #define PI(t, s) pr_int(fp, indent, t, s)
-#define PSTEP(t, s) pr_int64(fp, indent, t, s)
+#define PSTEP(t, s) pr_gmx_large_int(fp, indent, t, s)
 #define PR(t, s) pr_real(fp, indent, t, s)
 #define PD(t, s) pr_double(fp, indent, t, s)
 
-static void pr_pull_group(FILE *fp, int indent, int g, t_pull_group *pgrp)
+static void pr_pullgrp(FILE *fp, int indent, int g, t_pullgrp *pg)
 {
     pr_indent(fp, indent);
     fprintf(fp, "pull-group %d:\n", g);
     indent += 2;
-    pr_ivec_block(fp, indent, "atom", pgrp->ind, pgrp->nat, TRUE);
-    pr_rvec(fp, indent, "weight", pgrp->weight, pgrp->nweight, TRUE);
-    PI("pbcatom", pgrp->pbcatom);
-}
-
-static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
-{
-    pr_indent(fp, indent);
-    fprintf(fp, "pull-coord %d:\n", c);
-    PI("group[0]", pcrd->group[0]);
-    PI("group[1]", pcrd->group[1]);
-    pr_rvec(fp, indent, "origin", pcrd->origin, DIM, TRUE);
-    pr_rvec(fp, indent, "vec", pcrd->vec, DIM, TRUE);
-    PR("init", pcrd->init);
-    PR("rate", pcrd->rate);
-    PR("k", pcrd->k);
-    PR("kB", pcrd->kB);
+    pr_ivec_block(fp, indent, "atom", pg->ind, pg->nat, TRUE);
+    pr_rvec(fp, indent, "weight", pg->weight, pg->nweight, TRUE);
+    PI("pbcatom", pg->pbcatom);
+    pr_rvec(fp, indent, "vec", pg->vec, DIM, TRUE);
+    pr_rvec(fp, indent, "init", pg->init, DIM, TRUE);
+    PR("rate", pg->rate);
+    PR("k", pg->k);
+    PR("kB", pg->kB);
 }
 
 static void pr_simtempvals(FILE *fp, int indent, t_simtemp *simtemp, int n_lambda)
@@ -687,18 +678,12 @@ static void pr_pull(FILE *fp, int indent, t_pull *pull)
     PR("pull-r1", pull->cyl_r1);
     PR("pull-r0", pull->cyl_r0);
     PR("pull-constr-tol", pull->constr_tol);
-    PS("pull-bPrintRef", EBOOL(pull->bPrintRef));
     PI("pull-nstxout", pull->nstxout);
     PI("pull-nstfout", pull->nstfout);
-    PI("pull-ngroup", pull->ngroup);
-    for (g = 0; g < pull->ngroup; g++)
+    PI("pull-ngrp", pull->ngrp);
+    for (g = 0; g < pull->ngrp+1; g++)
     {
-        pr_pull_group(fp, indent, g, &pull->group[g]);
-    }
-    PI("pull-ncoord", pull->ncoord);
-    for (g = 0; g < pull->ncoord; g++)
-    {
-        pr_pull_coord(fp, indent, g, &pull->coord[g]);
+        pr_pullgrp(fp, indent, g, &pull->grp[g]);
     }
 }
 
@@ -1194,6 +1179,21 @@ void pr_iparams(FILE *fp, t_functype ftype, t_iparams *iparams)
             break;
         case F_CMAP:
             fprintf(fp, "cmapA=%1d, cmapB=%1d\n", iparams->cmap.cmapA, iparams->cmap.cmapB);
+            break;
+        case  F_RESTRANGLES: 
+            pr_harm(fp,iparams,"b0","cb");
+            break;
+        case  F_RESTRDIHS: 
+            fprintf(fp,"phiA=%15.8e, cpA=%15.8e",
+	    iparams->restrdihs.phiA,iparams->restrdihs.cpA);
+            break;
+        case  F_CBTDIHS: 
+            for (i=0; i<NR_CBTDIHS; i++) 
+                fprintf(fp,"%srbcA[%d]=%15.8e",i==0?"":", ",i,iparams->cbtdihs.rbcA[i]);
+                fprintf(fp,"\n");
+            for (i=0; i<NR_CBTDIHS; i++) 
+                fprintf(fp,"%srbcB[%d]=%15.8e",i==0?"":", ",i,iparams->cbtdihs.rbcB[i]);
+                fprintf(fp,"\n");
             break;
         default:
             gmx_fatal(FARGS, "unknown function type %d (%s) in %s line %d",

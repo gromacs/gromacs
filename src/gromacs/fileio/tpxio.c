@@ -70,7 +70,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 95;
+static const int tpx_version = 94;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -233,14 +233,10 @@ static void _do_section(t_fileio *fio, int key, gmx_bool bRead, const char *src,
  * Now the higer level routines that do io of the structures and arrays
  *
  **************************************************************/
-static void do_pullgrp_tpx_pre95(t_fileio *fio,
-                                 t_pull_group *pgrp,
-                                 t_pull_coord *pcrd,
-                                 gmx_bool bRead,
-                                 int file_version)
+static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead,
+                       int file_version)
 {
-    int  i;
-    rvec tmp;
+    int      i;
 
     gmx_fio_do_int(fio, pgrp->nat);
     if (bRead)
@@ -255,53 +251,18 @@ static void do_pullgrp_tpx_pre95(t_fileio *fio,
     }
     gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
     gmx_fio_do_int(fio, pgrp->pbcatom);
-    gmx_fio_do_rvec(fio, pcrd->vec);
-    clear_rvec(pcrd->origin);
-    gmx_fio_do_rvec(fio, tmp);
-    pcrd->init = tmp[0];
-    gmx_fio_do_real(fio, pcrd->rate);
-    gmx_fio_do_real(fio, pcrd->k);
+    gmx_fio_do_rvec(fio, pgrp->vec);
+    gmx_fio_do_rvec(fio, pgrp->init);
+    gmx_fio_do_real(fio, pgrp->rate);
+    gmx_fio_do_real(fio, pgrp->k);
     if (file_version >= 56)
     {
-        gmx_fio_do_real(fio, pcrd->kB);
+        gmx_fio_do_real(fio, pgrp->kB);
     }
     else
     {
-        pcrd->kB = pcrd->k;
+        pgrp->kB = pgrp->k;
     }
-}
-
-static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
-{
-    int      i;
-
-    gmx_fio_do_int(fio, pgrp->nat);
-    if (bRead)
-    {
-        snew(pgrp->ind, pgrp->nat);
-    }
-    gmx_fio_ndo_int(fio, pgrp->ind, pgrp->nat);
-    gmx_fio_do_int(fio, pgrp->nweight);
-    if (bRead)
-    {
-        snew(pgrp->weight, pgrp->nweight);
-    }
-    gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
-    gmx_fio_do_int(fio, pgrp->pbcatom);
-}
-
-static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd)
-{
-    int      i;
-
-    gmx_fio_do_int(fio, pcrd->group[0]);
-    gmx_fio_do_int(fio, pcrd->group[1]);
-    gmx_fio_do_rvec(fio, pcrd->origin);
-    gmx_fio_do_rvec(fio, pcrd->vec);
-    gmx_fio_do_real(fio, pcrd->init);
-    gmx_fio_do_real(fio, pcrd->rate);
-    gmx_fio_do_real(fio, pcrd->k);
-    gmx_fio_do_real(fio, pcrd->kB);
 }
 
 static void do_expandedvals(t_fileio *fio, t_expanded *expand, t_lambda *fepvals, gmx_bool bRead, int file_version)
@@ -600,67 +561,21 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
 {
     int g;
 
-    if (file_version >= 95)
-    {
-        gmx_fio_do_int(fio, pull->ngroup);
-    }
-    gmx_fio_do_int(fio, pull->ncoord);
-    if (file_version < 95)
-    {
-        pull->ngroup = pull->ncoord + 1;
-    }
+    gmx_fio_do_int(fio, pull->ngrp);
     gmx_fio_do_int(fio, pull->eGeom);
     gmx_fio_do_ivec(fio, pull->dim);
     gmx_fio_do_real(fio, pull->cyl_r1);
     gmx_fio_do_real(fio, pull->cyl_r0);
     gmx_fio_do_real(fio, pull->constr_tol);
-    if (file_version >= 95)
-    {
-        gmx_fio_do_int(fio, pull->bPrintRef);
-    }
     gmx_fio_do_int(fio, pull->nstxout);
     gmx_fio_do_int(fio, pull->nstfout);
     if (bRead)
     {
-        snew(pull->group, pull->ngroup);
-        snew(pull->coord, pull->ncoord);
+        snew(pull->grp, pull->ngrp+1);
     }
-    if (file_version < 95)
+    for (g = 0; g < pull->ngrp+1; g++)
     {
-        /* epullgPOS for position pulling, before epullgDIRPBC was removed */
-        if (pull->eGeom == epullgDIRPBC)
-        {
-            gmx_fatal(FARGS, "pull-geometry=position is no longer supported");
-        }
-        if (pull->eGeom > epullgDIRPBC)
-        {
-            pull->eGeom -= 1;
-        }
-
-        for (g = 0; g < pull->ngroup; g++)
-        {
-            /* We read and ignore a pull coordinate for group 0 */
-            do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[max(g-1,0)],
-                                 bRead, file_version);
-            if (g > 0)
-            {
-                pull->coord[g-1].group[0] = 0;
-                pull->coord[g-1].group[1] = g;
-            }
-        }
-
-        pull->bPrintRef = (pull->group[0].nat > 0);
-    }
-    else
-    {
-        for (g = 0; g < pull->ngroup; g++)
-        {
-            do_pull_group(fio, &pull->group[g], bRead);
-        }
-        for (g = 0; g < pull->ncoord; g++)
-        {
-            do_pull_coord(fio, &pull->coord[g]);
-        }
+        do_pullgrp(fio, &pull->grp[g], bRead, file_version);
     }
 }
 
@@ -742,7 +657,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->eI);
     if (file_version >= 62)
     {
-        gmx_fio_do_int64(fio, ir->nsteps);
+        gmx_fio_do_gmx_large_int(fio, ir->nsteps);
     }
     else
     {
@@ -753,7 +668,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         if (file_version >= 62)
         {
-            gmx_fio_do_int64(fio, ir->init_step);
+            gmx_fio_do_gmx_large_int(fio, ir->init_step);
         }
         else
         {
@@ -1699,6 +1614,15 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 iparams->pdihs.cpB  = iparams->pdihs.cpA;
             }
             break;
+
+       case F_RESTRANGLES:
+            do_harm(fio,iparams);
+            if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && bRead) {
+            /* Correct incorrect storage of parameters */
+                iparams->restrdihs.phiB = iparams->restrdihs.phiA;
+                iparams->restrdihs.cpB  = iparams->restrdihs.cpA;
+            }
+         break;
         case F_LINEAR_ANGLES:
             gmx_fio_do_real(fio, iparams->linangle.klinA);
             gmx_fio_do_real(fio, iparams->linangle.aA);
@@ -1861,6 +1785,21 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 gmx_fio_do_int(fio, iparams->pdihs.mult);
             }
             break;
+       case F_RESTRDIHS: 
+            gmx_fio_do_real(fio,iparams->restrdihs.phiA);
+            gmx_fio_do_real(fio,iparams->restrdihs.cpA);
+            if ((ftype == F_ANGRES || ftype == F_ANGRESZ)  && file_version < 42) {
+                /* Read the incorrectly stored multiplicity */
+            gmx_fio_do_real(fio,iparams->harmonic.rB);
+            gmx_fio_do_real(fio,iparams->harmonic.krB);
+            iparams->restrdihs.phiB = iparams->restrdihs.phiA;
+            iparams->restrdihs.cpB  = iparams->restrdihs.cpA;
+            } 
+            else {
+            gmx_fio_do_real(fio,iparams->restrdihs.phiB);
+            gmx_fio_do_real(fio,iparams->restrdihs.cpB);
+            }
+            break; 
         case F_DISRES:
             gmx_fio_do_int(fio, iparams->disres.label);
             gmx_fio_do_int(fio, iparams->disres.type);
@@ -1919,6 +1858,12 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fbposres.r);
             gmx_fio_do_real(fio, iparams->fbposres.k);
             break;
+        case F_CBTDIHS: 
+            gmx_fio_ndo_real(fio,iparams->cbtdihs.rbcA,NR_CBTDIHS);
+            if(file_version>=25) 
+                gmx_fio_ndo_real(fio, iparams->cbtdihs.rbcB,NR_CBTDIHS);
+        break;
+ 
         case F_RBDIHS:
             gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
             if (file_version >= 25)
