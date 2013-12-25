@@ -158,6 +158,7 @@ static void stats_header(FILE *fp,MolPropObservable mpo,
             }
             fprintf(fp,"\\caption{Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$.}\n\\label{%s_rmsd}\\\\\n",
                     mpo_name[mpo],unit,ims_names[ims],mpo_name[mpo]);
+            fprintf(fp, "\\hline\n");
         }
         else 
         {
