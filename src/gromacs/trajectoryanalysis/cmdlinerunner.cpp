@@ -80,19 +80,20 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         Impl(TrajectoryAnalysisModule *module);
         ~Impl();
 
-        bool parseOptions(TrajectoryAnalysisSettings *settings,
+        void parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
                           SelectionCollection *selections,
                           int *argc, char *argv[]);
 
         TrajectoryAnalysisModule *module_;
+        bool                      bUseDefaultGroups_;
         int                       debugLevel_;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
         TrajectoryAnalysisModule *module)
-    : module_(module), debugLevel_(0)
+    : module_(module), bUseDefaultGroups_(true), debugLevel_(0)
 {
 }
 
@@ -102,7 +103,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 }
 
 
-bool
+void
 TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         TrajectoryAnalysisSettings *settings,
         TrajectoryAnalysisRunnerCommon *common,
@@ -136,14 +137,15 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     common->optionsFinished(&commonOptions);
     module_->optionsFinished(&moduleOptions, settings);
 
-    common->initIndexGroups(selections);
+    common->initIndexGroups(selections, bUseDefaultGroups_);
 
     // TODO: Check whether the input is a pipe.
-    bool bInteractive = true;
+    const bool bInteractive = true;
     seloptManager.parseRequestedFromStdin(bInteractive);
     common->doneIndexGroups(selections);
 
-    return true;
+    common->initTopology(selections);
+    selections->compile();
 }
 
 
@@ -160,6 +162,13 @@ TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
 
 TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 {
+}
+
+
+void
+TrajectoryAnalysisCommandLineRunner::setUseDefaultGroups(bool bUseDefaults)
+{
+    impl_->bUseDefaultGroups_ = bUseDefaults;
 }
 
 
@@ -181,13 +190,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     TrajectoryAnalysisSettings      settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
-    if (!impl_->parseOptions(&settings, &common, &selections, &argc, argv))
-    {
-        return 0;
-    }
-
-    common.initTopology(&selections);
-    selections.compile();
+    impl_->parseOptions(&settings, &common, &selections, &argc, argv);
 
     const TopologyInformation &topology = common.topologyInformation();
     module->initAnalysis(settings, topology);

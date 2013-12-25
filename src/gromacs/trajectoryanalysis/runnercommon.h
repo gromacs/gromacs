@@ -90,7 +90,8 @@ class TrajectoryAnalysisRunnerCommon
          */
         void optionsFinished(Options *options);
         //! Initialize index groups for selections.
-        void initIndexGroups(SelectionCollection *selections);
+        void initIndexGroups(SelectionCollection *selections,
+                             bool                 bUseDefaults);
         //! Free memory allocated for index groups.
         void doneIndexGroups(SelectionCollection *selections);
         //! Load topology information if provided and/or required.
