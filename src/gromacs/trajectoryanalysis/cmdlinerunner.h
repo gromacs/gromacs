@@ -150,11 +150,21 @@ class TrajectoryAnalysisCommandLineRunner
         ~TrajectoryAnalysisCommandLineRunner();
 
         /*! \brief
+         * Sets whether default index groups are initialized.
+         *
+         * This is intended only for internal unit testing purposes to avoid
+         * repeated, unnecessary initialization of the default groups, which
+         * can be expensive under, e.g., valgrind.
+         *
+         * Does not throw.
+         */
+        void setUseDefaultGroups(bool bUseDefaults);
+        /*! \brief
          * Sets the default debugging level for selections.
          *
-         * This is intended only for use by internal debugging tools.
-         *
          * \param[in] debuglevel  Level of debugging verbosity.
+         *
+         * This is intended only for use by internal debugging tools.
          *
          * Does not throw.
          *
