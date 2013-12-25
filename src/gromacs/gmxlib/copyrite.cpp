@@ -692,7 +692,7 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
 #ifdef GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
-    const std::string &name = programInfo.displayName();
+    const std::string &name = programInfo.programName();
     if (settings.bGeneratedByHeader_)
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
@@ -706,17 +706,14 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
         // necessary to read stuff above the copyright notice.
         // The line above the copyright notice puts the copyright notice is
         // context, though.
-        // TODO: It would be nice to know here whether we are really running a
-        // Gromacs binary or some other binary that is calling Gromacs; we
-        // could then print "%s is part of GROMACS" or some alternative text.
-        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
-                GromacsVersion(), precisionString, suffix);
+        fprintf(fp, "%sGROMACS %s%s%s program: %s\n", prefix,
+                GromacsVersion(), precisionString, suffix, name.c_str());
         fprintf(fp, "\n");
         printCopyright(fp);
         fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
-            GromacsVersion(), precisionString, suffix);
+    fprintf(fp, "%sGROMACS %s%s%s program: %s\n", prefix,
+            GromacsVersion(), precisionString, suffix, name.c_str());
     fprintf(fp, "%sExecutable: %s%s\n", prefix,
             programInfo.fullBinaryPath().c_str(), suffix);
     fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
