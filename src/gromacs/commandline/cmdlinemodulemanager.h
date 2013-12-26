@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,17 +51,13 @@ namespace gmx
 {
 
 class CommandLineModuleGroup;
+class CommandLineModuleGroupData;
 class CommandLineModuleInterface;
 class ProgramInfo;
 
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
     CommandLineModulePointer;
-
-namespace internal
-{
-class CommandLineModuleGroupData;
-}   // namespace internal
 
 /*! \brief
  * Implements a wrapper command-line interface for multiple modules.
@@ -319,7 +315,7 @@ class CommandLineModuleGroup
     public:
         /*! \cond internal */
         //! Shorthand for the implementation type that holds all the data.
-        typedef internal::CommandLineModuleGroupData Impl;
+        typedef CommandLineModuleGroupData Impl;
 
         //! Creates a new group (only called by CommandLineModuleManager).
         explicit CommandLineModuleGroup(Impl *impl) : impl_(impl) {}
