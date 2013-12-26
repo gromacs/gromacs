@@ -52,6 +52,7 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
+#include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -59,7 +60,6 @@
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/init.h"
 
 #include "refdata.h"
 #include "testfilemanager.h"
@@ -143,7 +143,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
 {
     try
     {
-        gmx::init(argc, argv);
+        gmx::initFromCommandLine(argc, argv);
         ::testing::InitGoogleMock(argc, *argv);
         if (dataPath != NULL)
         {

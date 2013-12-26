@@ -34,59 +34,45 @@
  */
 /*! \file
  * \brief
- * Declares functions for initializing the \Gromacs library.
+ * Declares gmx::ProgramContextInterface and related methods.
  *
- * Currently, only MPI initialization/finalization management is
- * required, and only if external MPI support is enabled.
- *
- * If MPI is already initialized, we should not call MPI_Init() or
- * MPI_Finalize(). This management object permits \Gromacs test code to
- * nest calls to functions that might normally implement a stand-alone
- * MPI-using tool. It also permits \Gromacs code to be called from code
- * that has already initialized MPI and needs that environment to work
- * and persist after \Gromacs code returns (e.g. \Gromacs tests,
- * external libraries that call \Gromacs code).
- *
- * It does so by maintaining a counter of the number of MPI
- * initializations, and only calling MPI_Init() or MPI_Finalize when
- * it is safe (ie. when the counter is at zero).
- *
- * Thread-MPI initialization and finalization for mdrun is all managed
- * in runner.c.
+ * This header is installed to support init.h because some compilers don't
+ * allow returning a reference to an incomplete type from a function.
+ * It should not be necessary to use gmx::ProgramInfo outside the Gromacs
+ * library.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_utility
  */
-#ifndef GMX_UTILITY_INIT_H
-#define GMX_UTILITY_INIT_H
+#ifndef GMX_UTILITY_PROGRAMCONTEXT_H
+#define GMX_UTILITY_PROGRAMCONTEXT_H
 
 namespace gmx
 {
 
+class ProgramContextInterface
+{
+    public:
+        virtual const char *programName() const = 0;
+        virtual const char *displayName() const = 0;
+        virtual const char *fullBinaryPath() const = 0;
+        virtual const char *commandLine() const = 0;
+
+    protected:
+        virtual ~ProgramContextInterface() {}
+};
+
 /*! \brief
- * Initializes the \Gromacs library.
+ * Returns the singleton ProgramInfo object.
  *
- * \param[in] argc  argc value passed to main().
- * \param[in] argv  argv array passed to main().
- *
- * Does not throw. Terminates the program on out-of-memory error.
- *
- * \ingroup module_utility
+ * \returns The same object as initialized with the last call to init().
+ * \throws  std::bad_alloc if out of memory (only if this is the first
+ *      call and init() has not been called either).
+ * \throws  tMPI::system_error on thread synchronization errors.
  */
-void init(int *argc, char ***argv);
-/*! \brief
- * Deinitializes the \Gromacs library.
- *
- * Decrements the initialization counter, and calls MPI_Finalize()
- * if \Gromacs is compiled with MPI support and the counter has
- * reached zero.  In that case, it is not possible to reinitialize
- * \Gromacs after calling this function.  Instead, call gmx::init() at
- * a higher level, and note that calls to init can be nested safely.
- *
- * \ingroup module_utility
- */
-void finalize();
+const ProgramContextInterface &getProgramContext();
+void setProgramContext(const ProgramContextInterface *context);
 
 } // namespace gmx
 

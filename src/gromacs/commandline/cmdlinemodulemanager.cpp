@@ -55,8 +55,10 @@
 #include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
@@ -67,8 +69,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/init.h"
-#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/uniqueptr.h"
 
@@ -1336,13 +1336,13 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 int CommandLineModuleManager::runAsMainSingleModule(
         int argc, char *argv[], CommandLineModuleInterface *module)
 {
-    ProgramInfo &programInfo = gmx::init(&argc, &argv);
+    ProgramInfo &programInfo = gmx::initFromCommandLine(&argc, &argv);
     try
     {
         CommandLineModuleManager manager(&programInfo);
         manager.setSingleModule(module);
         int rc = manager.run(argc, argv);
-        gmx::finalize();
+        gmx::finalizeFromCommandLine();
         return rc;
     }
     catch (const std::exception &ex)

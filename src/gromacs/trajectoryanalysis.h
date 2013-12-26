@@ -285,7 +285,6 @@
 #include "trajectoryanalysis/analysissettings.h"
 #include "trajectoryanalysis/cmdlinerunner.h"
 #include "utility/exceptions.h"
-#include "utility/programinfo.h"
 #include "utility/stringutil.h"
 
 #endif

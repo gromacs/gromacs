@@ -63,7 +63,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {

@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "programinfo.h"
+#include "cmdlineprogramcontext.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -233,6 +233,7 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
  * ProgramInfo
  */
 
+/*
 // static
 const ProgramInfo &ProgramInfo::getInstance()
 {
@@ -270,6 +271,7 @@ ProgramInfo &ProgramInfo::init(const char *realBinaryName,
         std::exit(processExceptionAtExit(ex));
     }
 }
+*/
 
 ProgramInfo::ProgramInfo()
     : impl_(new Impl)
@@ -319,9 +321,9 @@ const std::string &ProgramInfo::realBinaryName() const
     return impl_->realBinaryName_;
 }
 
-const std::string &ProgramInfo::programName() const
+const char *ProgramInfo::programName() const
 {
-    return impl_->programName_;
+    return impl_->programName_.c_str();
 }
 
 const std::string &ProgramInfo::invariantProgramName() const
@@ -329,20 +331,20 @@ const std::string &ProgramInfo::invariantProgramName() const
     return impl_->invariantProgramName_;
 }
 
-const std::string &ProgramInfo::displayName() const
+const char *ProgramInfo::displayName() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
     return impl_->displayName_.empty()
-           ? impl_->programName_
-           : impl_->displayName_;
+           ? impl_->programName_.c_str()
+           : impl_->displayName_.c_str();
 }
 
-const std::string &ProgramInfo::commandLine() const
+const char *ProgramInfo::commandLine() const
 {
-    return impl_->commandLine_;
+    return impl_->commandLine_.c_str();
 }
 
-const std::string &ProgramInfo::fullBinaryPath() const
+const char *ProgramInfo::fullBinaryPath() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
     if (impl_->fullBinaryPath_.empty())
@@ -357,7 +359,7 @@ const std::string &ProgramInfo::fullBinaryPath() const
         // with user binaries even if they are located in some arbitrary location,
         // as long as shared libraries are used.
     }
-    return impl_->fullBinaryPath_;
+    return impl_->fullBinaryPath_.c_str();
 }
 
 } // namespace gmx

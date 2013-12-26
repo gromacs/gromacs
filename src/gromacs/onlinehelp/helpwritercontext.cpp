@@ -53,7 +53,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -525,7 +525,7 @@ class HelpWriterContext::Impl
 
 void HelpWriterContext::Impl::initDefaultReplacements()
 {
-    const char *program = ProgramInfo::getInstance().programName().c_str();
+    const char *program = getProgramContext().programName();
     addReplacement("[PROGRAM]", program);
 }
 

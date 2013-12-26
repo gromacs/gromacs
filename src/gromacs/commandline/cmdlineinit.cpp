@@ -39,85 +39,95 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "gromacs/utility/init.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "gromacs/commandline/cmdlineinit.h"
 
 #include <cstring>
-
-#ifdef GMX_LIB_MPI
-#include "gromacs/utility/gmxmpi.h"
-#endif
 
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/utility/gmxassert.h"
+
+#include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/init.h"
+#include "gromacs/utility/programcontext.h"
 
 namespace gmx
 {
 
 namespace
 {
-#ifdef GMX_LIB_MPI
-    //! Maintains global counter of attempts to initialize MPI
-    int g_initializationCounter = 0;
-#endif
-}
 
-void init(int *argc, char ***argv)
-{
+ProgramInfo *g_programInfo = NULL;
+
 #ifdef GMX_LIB_MPI
-    int isInitialized = 0, isFinalized = 0;
-    MPI_Finalized(&isFinalized);
-    GMX_RELEASE_ASSERT(!isFinalized, "Invalid attempt to initialize MPI after finalization");
-    MPI_Initialized(&isInitialized);
-    if (isInitialized)
+void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
+{
+    gmx_bcast(sizeof(*argc), argc, cr);
+
+    if (!MASTER(cr))
     {
-        if (0 == g_initializationCounter)
+        snew(*argv, *argc+1);
+    }
+    for (int i = 0; i < *argc; i++)
+    {
+        int len;
+        if (MASTER(cr))
         {
-            // Some other code has already initialized MPI, so bump the counter so that
-            // we know not to finalize MPI ourselves later.
-            g_initializationCounter++;
+            len = std::strlen((*argv)[i])+1;
         }
+        gmx_bcast(sizeof(len), &len, cr);
+        if (!MASTER(cr))
+        {
+            snew((*argv)[i], len);
+        }
+        gmx_bcast(len, (*argv)[i], cr);
     }
-    else
-    {
-#ifdef GMX_FAHCORE
-        (void) fah_MPI_Init(argc, argv);
-#else
-        (void) MPI_Init(argc, argv);
+}
 #endif
-    }
-    // Bump the counter to record this initialization event
-    g_initializationCounter++;
 
+}   // namespace
+
+ProgramInfo &initFromCommandLine(const char *realBinaryName, int *argc, char ***argv)
+{
+    gmx::init(argc, argv);
+#ifdef GMX_LIB_MPI
+    // TODO: Rewrite this to not use t_commrec once there is clarity on
+    // the approach for MPI in C++ code.
+    // TODO: Consider whether the argument broadcast would better be done
+    // in CommandLineModuleManager.
+    t_commrec cr;
+    std::memset(&cr, 0, sizeof(cr));
+
+    gmx_fill_commrec_from_mpi(&cr);
+    if (PAR(&cr))
+    {
+        broadcastArguments(&cr, argc, argv);
+    }
 #endif
+    try
+    {
+        g_programInfo = new ProgramInfo(realBinaryName, *argc, *argv);
+        setProgramContext(g_programInfo);
+    }
+    catch (const std::exception &ex)
+    {
+        printFatalErrorMessage(stderr, ex);
+        std::exit(processExceptionAtExit(ex));
+    }
+    return *g_programInfo;
 }
 
-void finalize()
+ProgramInfo &initFromCommandLine(int *argc, char ***argv)
 {
-#ifdef GMX_LIB_MPI
-    GMX_RELEASE_ASSERT(0 < g_initializationCounter, "Excess attempt to finalize MPI");
-    // Bump the counter to record this finalization event
-    g_initializationCounter--;
+    return initFromCommandLine(NULL, argc, argv);
+}
 
-    if (0 == g_initializationCounter)
-    {
-        /* We sync the processes here to try to avoid problems
-         * with buggy MPI implementations that could cause
-         * unfinished processes to terminate.
-         */
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        /* Apparently certain mpich implementations cause problems
-         * with MPI_Finalize. In that case comment out MPI_Finalize.
-         */
-        MPI_Finalize();
-    }
-#endif
+void finalizeFromCommandLine()
+{
+    setProgramContext(NULL);
+    delete g_programInfo;
+    gmx::finalize();
 }
 
 } // namespace gmx

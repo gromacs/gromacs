@@ -51,7 +51,7 @@
 
 #include "gromacs/legacyheaders/copyrite.h"
 
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -69,7 +69,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     const char *programName = "GROMACS";
     try
     {
-        programName = ProgramInfo::getInstance().displayName().c_str();
+        programName = getProgramContext().displayName();
     }
     catch (const std::exception &)
     {

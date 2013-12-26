@@ -51,8 +51,9 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
-#include "uniqueptr.h"
+#include "../utility/common.h"
+#include "../utility/programcontext.h"
+#include "../utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -113,49 +114,9 @@ typedef gmx_unique_ptr<ExecutableEnvironmentInterface>::type
  *
  * \inlibraryapi
  */
-class ProgramInfo
+class ProgramInfo : public ProgramContextInterface
 {
     public:
-        /*! \brief
-         * Returns the singleton ProgramInfo object.
-         *
-         * \returns The same object as initialized with the last call to init().
-         * \throws  std::bad_alloc if out of memory (only if this is the first
-         *      call and init() has not been called either).
-         * \throws  tMPI::system_error on thread synchronization errors.
-         */
-        static const ProgramInfo &getInstance();
-        /*! \brief
-         * Initializes global program information.
-         *
-         * \param[in] argc  argc value passed to main().
-         * \param[in] argv  argv array passed to main().
-         * \returns   Reference to initialized program information object.
-         *
-         * The return value of realBinaryName() is the same as
-         * invariantProgramName().
-         *
-         * Does not throw. Terminates the program on out-of-memory error.
-         */
-        static ProgramInfo &init(int argc, const char *const argv[]);
-        /*! \brief
-         * Initializes global program information with explicit binary name.
-         *
-         * \param[in] realBinaryName  Name of the binary
-         *     (without Gromacs binary suffix or .exe on Windows).
-         * \param[in] argc  argc value passed to main().
-         * \param[in] argv  argv array passed to main().
-         * \returns   Reference to initialized program information object.
-         *
-         * This overload is provided for cases where the program may be invoked
-         * through a symlink, and it is necessary to know the real name of the
-         * binary.
-         *
-         * Does not throw. Terminates the program on out-of-memory error.
-         */
-        static ProgramInfo &init(const char *realBinaryName,
-                                 int argc, const char *const argv[]);
-
         /*! \brief
          * Constructs an empty program info objects.
          *
@@ -240,7 +201,7 @@ class ProgramInfo
          *
          * Does not throw.
          */
-        const std::string &programName() const;
+        virtual const char *programName() const;
         /*! \brief
          * Returns an invariant name of the binary.
          *
@@ -258,13 +219,13 @@ class ProgramInfo
          * The returned value equals programName(), unless a separate display
          * name has been set with setDisplayName().
          */
-        const std::string &displayName() const;
+        virtual const char *displayName() const;
         /*! \brief
          * Returns the full command line used to invoke the binary.
          *
          * Does not throw.
          */
-        const std::string &commandLine() const;
+        virtual const char *commandLine() const;
 
         /*! \brief
          * Returns the full path of the invoked binary.
@@ -273,7 +234,7 @@ class ProgramInfo
          *
          * Does not throw.
          */
-        const std::string &fullBinaryPath() const;
+        virtual const char *fullBinaryPath() const;
 
     private:
         class Impl;

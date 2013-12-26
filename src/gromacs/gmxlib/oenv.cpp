@@ -37,8 +37,8 @@
 
 #include "smalloc.h"
 
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
 
 struct output_env
 {
