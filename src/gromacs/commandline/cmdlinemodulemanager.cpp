@@ -155,9 +155,11 @@ class CommandLineModuleManager::Impl
         /*! \brief
          * Initializes the implementation class.
          *
+         * \param[in] realBinaryName Name of the running binary
+         *     (without Gromacs binary suffix or .exe on Windows).
          * \param     programInfo  Program information for the running binary.
          */
-        explicit Impl(ProgramInfo *programInfo);
+        Impl(const char *realBinaryName, ProgramInfo *programInfo);
 
         /*! \brief
          * Helper method that adds a given module to the module manager.
@@ -194,7 +196,7 @@ class CommandLineModuleManager::Impl
          *      \c modules_.end() if not found.
          *
          * Checks whether the program is invoked through a symlink whose name
-         * is different from ProgramInfo::realBinaryName(), and if so, checks
+         * is different from \a realBinaryName_, and if so, checks
          * if a module name matches the name of the symlink.
          *
          * Note that the \p programInfo parameter is currently not necessary
@@ -238,6 +240,8 @@ class CommandLineModuleManager::Impl
         CommandLineModuleGroupList   moduleGroups_;
         //! Information about the currently running program.
         ProgramInfo                 &programInfo_;
+        //! Name of the binary.
+        std::string                  realBinaryName_;
         /*! \brief
          * Module that implements help for the binary.
          *
@@ -257,8 +261,11 @@ class CommandLineModuleManager::Impl
         GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
-CommandLineModuleManager::Impl::Impl(ProgramInfo *programInfo)
-    : programInfo_(*programInfo), helpModule_(NULL), singleModule_(NULL),
+CommandLineModuleManager::Impl::Impl(const char  *realBinaryName,
+                                     ProgramInfo *programInfo)
+    : programInfo_(*programInfo),
+      realBinaryName_(realBinaryName != NULL ? realBinaryName : ""),
+      helpModule_(NULL), singleModule_(NULL),
       bQuiet_(false), bStdOutInfo_(false)
 {
     binaryInfoSettings_.copyright(true);
@@ -297,7 +304,7 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(
         const ProgramInfo &programInfo) const
 {
     std::string binaryName = programInfo.invariantProgramName();
-    if (binaryName == programInfo.realBinaryName())
+    if (binaryName == realBinaryName_)
     {
         return modules_.end();
     }
@@ -378,8 +385,7 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
     {
         if (singleModule_ == NULL)
         {
-            programInfo_.setDisplayName(
-                    programInfo_.realBinaryName() + " " + module->name());
+            programInfo_.setDisplayName(realBinaryName_ + " " + module->name());
         }
         // Recognize the common options also after the module name.
         // TODO: It could be nicer to only recognize -h/-hidden if module is not
@@ -418,8 +424,9 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
  * CommandLineModuleManager
  */
 
-CommandLineModuleManager::CommandLineModuleManager(ProgramInfo *programInfo)
-    : impl_(new Impl(programInfo))
+CommandLineModuleManager::CommandLineModuleManager(const char  *realBinaryName,
+                                                   ProgramInfo *programInfo)
+    : impl_(new Impl(realBinaryName, programInfo))
 {
 }
 
