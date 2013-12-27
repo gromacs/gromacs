@@ -34,22 +34,33 @@
  * Groningen Machine for Chemical Simulation
  */
 #include <stdlib.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "poldata_xml.hpp"
 #include "atomprop.h"
 
 int alex_poldata_test(int argc,char*argv[])
 {
-  gmx_poldata_t pd;
-  gmx_atomprop_t aps;
+    static const char               *desc[] = {
+        "poldata_test reads a poldata (force field) file and writes a new one.",
+    };
+    output_env_t   oenv;    
+    t_filenm        fnm[] = {
+        { efDAT, "-f", "pdin", ffREAD },
+        { efDAT, "-o", "pdout", ffWRITE }
+    };
+#define NFILE asize(fnm)
+
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, NULL,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     
-  if (argc < 3) {
-    fprintf(stderr,"Usage: %s infile outfile\n",argv[0]);
-    exit(1);
-  }
-  aps = gmx_atomprop_init();
-  pd = gmx_poldata_read(argv[1],aps);
-  gmx_poldata_write(argv[2],pd,0);
-  
-  return 0;
+    gmx_atomprop_t aps = gmx_atomprop_init();
+    gmx_poldata_t pd   = gmx_poldata_read(opt2fn("-f", NFILE, fnm), aps);
+    gmx_poldata_write(opt2fn("-o", NFILE, fnm), pd, 0);
+    
+    return 0;
 }

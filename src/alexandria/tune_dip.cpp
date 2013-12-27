@@ -995,8 +995,11 @@ int alex_tune_dip(int argc, char *argv[])
     
     cr = init_commrec();
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     if (qgen[0])
     {

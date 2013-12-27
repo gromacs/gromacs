@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \brief
- * Implements the alex wrapper binary.
+ * Implements the alexandria wrapper binary.
  * Copied straight from the gmx wrapper binary
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
@@ -100,7 +100,7 @@ void AlexHelpTopicInterface::writeHelp(const HelpWriterContext &context)
 int
 main(int argc, char *argv[])
 {
-    gmx::ProgramInfo &info = gmx::init("gmx", &argc, &argv);
+    gmx::ProgramInfo &info = gmx::init("alexandria", &argc, &argv);
     try
     {
         gmx::CommandLineModuleManager manager(&info);

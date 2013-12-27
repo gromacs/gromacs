@@ -224,10 +224,13 @@ int alex_merge_mp(int argc, char *argv[])
     gmx_poldata_t                    pd;
     output_env_t                     oenv;
 
-    parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
-                      sizeof(pa)/sizeof(pa[0]), pa,
-                      sizeof(desc)/sizeof(desc[0]), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
+                           sizeof(pa)/sizeof(pa[0]), pa,
+                           sizeof(desc)/sizeof(desc[0]), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     ap = gmx_atomprop_init();
     if ((pd = gmx_poldata_read(opt2fn_null("-di", NFILE, fnm), ap)) == NULL)

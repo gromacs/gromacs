@@ -143,28 +143,33 @@ iMolSelect gmx_molselect_status(gmx_molselect_t gms,const char *iupac)
 
 int gmx_molselect_index(gmx_molselect_t gms,const char *iupac)
 {
-    gmx_molselect *g = (gmx_molselect *)gms;
-    t_ims key;
-    t_ims *ims;
-
     if (NULL == iupac)
     {
-        gmx_fatal(FARGS,"iupac == NULL in gmx_molselect_index");
-        return g->nmol;
+        fprintf(stderr, "iupac == NULL in call to gmx_molselect_index.\n");
     }
-    key.iupac = strdup(iupac);
-    key.status = imsTest;
-    key.index = 0;
-    ims = (t_ims *)bsearch(&key,g->ims,g->nmol,sizeof(g->ims[0]),ims_comp);
-    sfree(key.iupac);
-    if (NULL != ims)
+    else if (0 == strlen(iupac))
     {
-        return ims->index;
+        fprintf(stderr, "strlen(iupac) == 0 in call to gmx_molselect_index.\n");
     }
     else
     {
-        gmx_fatal(FARGS,"Could not find %s in gmx_molselect_index",iupac);
-        return g->nmol;
+        t_ims key;
+        t_ims *ims;
+
+        key.iupac = strdup(iupac);
+        key.status = imsTest;
+        key.index = 0;
+        ims = (t_ims *)bsearch(&key,gms->ims,gms->nmol,sizeof(gms->ims[0]),ims_comp);
+        sfree(key.iupac);
+        if (NULL != ims)
+        {
+            return ims->index;
+        }
+        else
+        {
+            fprintf(stderr,"Could not find %s in gmx_molselect_index.\n",iupac);
+        }
     }
+    return -1;
 }
 

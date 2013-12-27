@@ -519,8 +519,11 @@ int alex_bastat(int argc, char *argv[])
     int                   nfiles;
     char                **fns;
     
-    parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     if (qgen[0])
     {

@@ -191,10 +191,13 @@ int alex_mp2csv(int argc, char*argv[])
     gmx_atomprop_t                   ap;
     output_env_t                     oenv;
 
-    parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
-                      sizeof(pa)/sizeof(pa[0]), pa,
-                      sizeof(desc)/sizeof(desc[0]), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
+                           sizeof(pa)/sizeof(pa[0]), pa,
+                           sizeof(desc)/sizeof(desc[0]), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
     MolPropRead(opt2fn("-f", NFILE, fnm), mp);
     ap = gmx_atomprop_init();
 

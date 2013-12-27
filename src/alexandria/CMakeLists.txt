@@ -34,19 +34,18 @@ set(ALEXANDRIA_SOURCES
         alex_modules.cpp
 	)
 	
-add_library(alexandria ${ALEXANDRIA_SOURCES})	
-target_link_libraries(alexandria libgromacs)
-set_target_properties(alexandria PROPERTIES OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
+add_library(libalexandria ${ALEXANDRIA_SOURCES})	
+target_link_libraries(libalexandria libgromacs)
+set_target_properties(libalexandria PROPERTIES OUTPUT_NAME "libalexandria${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
-list(APPEND GMX_EXTRA_LIBRARIES alexandria libgromacs)
+list(APPEND GMX_EXTRA_LIBRARIES libalexandria libgromacs)
 
-
-add_executable(alex alex.cpp)
-target_link_libraries(alex ${GMX_EXTRA_LIBRARIES})
-set_target_properties(alex PROPERTIES OUTPUT_NAME "alex${GMX_BINARY_SUFFIX}")
+add_executable(alexandria alexandria.cpp)
+target_link_libraries(alexandria ${GMX_EXTRA_LIBRARIES})
+set_target_properties(alexandria PROPERTIES OUTPUT_NAME "alexandria${GMX_BINARY_SUFFIX}")
 
 install(TARGETS 
-        alex
+        alexandria
         COMPONENT runtime
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 

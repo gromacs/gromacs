@@ -349,8 +349,11 @@ int alex_gentop(int argc, char *argv[])
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" }
     };
     
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
     printf("argc = %d\n", argc);
 
     /* Force field selection, interactive or direct */

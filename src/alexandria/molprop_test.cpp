@@ -35,7 +35,9 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <gmx_fatal.h>
+#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "molprop.hpp"
 #include "molprop_xml.hpp"
 #include "molprop_util.hpp"
@@ -44,31 +46,28 @@
 
 int alex_molprop_test(int argc,char*argv[])
 {
+    static const char               *desc[] = {
+        "molprop_test reads a molprop file and writes a new one.",
+    };
+    output_env_t    oenv;
     gmx_atomprop_t ap;
     gmx_poldata_t  pd;
     std::vector<alexandria::MolProp> mpt;
+    t_filenm        fnm[] = {
+        { efDAT, "-f", "molin", ffREAD },
+        { efDAT, "-o", "molout", ffWRITE }
+    };
+#define NFILE asize(fnm)
+
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, NULL,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     
-    if (argc < 3) 
-    {
-        fprintf(stderr,"Usage: %s infile outfile\n",argv[0]);
-        exit(1);
-    }
-    if (1) 
-    {
-        MolPropRead(argv[1],mpt);
-    }
-    else 
-    {
-        ap = gmx_atomprop_init();
-        if ((pd = gmx_poldata_read("tune_pol.dat",ap)) == NULL)
-            gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
-        
-        merge_xml(1,&argv[1],mpt,(char *)"g_mptest_out.dat",
-                  NULL,(char *)"double_dip.dat",
-                  ap,pd,TRUE);
-    }
+    MolPropRead(opt2fn("-f", NFILE, fnm), mpt);
     printf("Read %d molecules from %s\n",(int)mpt.size(),argv[1]);
-    MolPropWrite(argv[2],mpt,1);
+    MolPropWrite(opt2fn("-o", NFILE, fnm), mpt, 1);
     
     return 0;
 }

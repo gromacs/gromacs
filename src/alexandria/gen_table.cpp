@@ -1198,7 +1198,7 @@ static void do_DEC_qd_qd(FILE *fp, int eel, int pts_nm, double xi)
     }
 }
 
-static void do_maaren(FILE *fp, int eel, int pts_nm, int npow)
+static void do_maaren(FILE *fp, int pts_nm, int npow)
 {
     int    i, imax;
     double xi      = 0.05;
@@ -1307,8 +1307,11 @@ int alex_gen_table(int argc, char *argv[])
     ChargeGenerationModel iModel;
     output_env_t          oenv;
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     if (strcmp(opt[0], "cut") == 0)
     {
@@ -1421,7 +1424,7 @@ int alex_gen_table(int argc, char *argv[])
                 do_DEC_qd_qd(fp, eel, pts_nm, xi);
                 break;
             case mMaaren:
-                do_maaren(fp, eel, pts_nm, nrep);
+                do_maaren(fp, pts_nm, nrep);
                 break;
             case mAB1:
                 fprintf(fp, "#\n# Table AB1: ndisp=%d nrep=%d\n#\n", ndisp, nrep);

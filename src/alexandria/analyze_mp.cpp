@@ -89,7 +89,7 @@ static void calc_frag_miller(gmx_poldata_t pd,
                 iCspoel, iCbosque, iCmiller, iCnr
             };
             const char *comps[3] = { "spoel", "bosque", "miller" };
-            const char *crefs[3] = { "Maaren2013a", "Bosque2002a", "Miller1990a" };
+            const char *crefs[3] = { "Maaren2014a", "Bosque2002a", "Miller1990a" };
             const char *ctype[3] = { "AX", "BS", "MK" };
 
             for (int ic = iCspoel; (ic < iCnr); ic++)
@@ -512,10 +512,13 @@ int alex_analyze_mp(int argc, char *argv[])
     int                              npdfile, nmpfile;
 
     npa = sizeof(pa)/sizeof(pa[0]);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
-                      npa, pa,
-                      sizeof(desc)/sizeof(desc[0]), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
+                           npa, pa,
+                           sizeof(desc)/sizeof(desc[0]), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     ap = gmx_atomprop_init();
 
@@ -556,7 +559,7 @@ int alex_analyze_mp(int argc, char *argv[])
     {
         if ((pd[i] = gmx_poldata_read(fns[i], ap)) == NULL)
         {
-            gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
+            gmx_fatal(FARGS, "Can not read the force field information. File %s missing or incorrect.", fns[i]);
         }
     }
 

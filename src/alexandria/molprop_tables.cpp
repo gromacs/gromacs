@@ -633,13 +633,12 @@ static void atomtype_tab_header(FILE *fp)
     {
         if (0 == k)
         {
-            fprintf(fp,"\\caption{Definition of atom types. The number of occurences  of atom N$_{Exp}$ and N$_{QM}$ indicate how many of the polarizability values were fitted to experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.}\n\\label{fragments}\n");
+            fprintf(fp,"\\caption{Definition of atom types. The number of occurences  of atom N$_{Exp}$ and N$_{QM}$ indicate how many of the polarizability values were fitted to experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.}\n\\label{fragments}\\\\\n");
         }
         else 
         {
             fprintf(fp, "\\hline\n");
         }
-        fprintf(fp,"\\begin{tabular}\n\\hline\n");
         fprintf(fp,"Name  & N$_{Exp}$ & N$_{QM}$ & \\multicolumn{4}{c}{Polarizability} & Ref.\\\\\n");
         fprintf(fp,"& & & Ahc & Ahp & BS & AX ($\\sigma_{AX}$) & \\\\\n");
         fprintf(fp,"\\hline\n");
@@ -807,7 +806,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
         /* Construct group name from element composition */
         /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
         
-        if ((estats = gmx_stats_get_npoints(smlsq[j].lsq,&N)) != estatsOK)
+        if (estatsOK != (estats = gmx_stats_get_npoints(smlsq[j].lsq,&N)))
         {
             gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
         }
@@ -834,7 +833,8 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                       gmx_stats_message(estats),smlsq[j].ptype,nfitexp);
         }
         nfitexp /= npd;
-        if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nexp,&nnn)))
+        if ((nfitexp > 0) &&
+            (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nexp,&nnn))))
         {
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
                       gmx_stats_message(estats),smlsq[j].ptype,nfitexp);
@@ -847,10 +847,11 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                       gmx_stats_message(estats),smlsq[j].ptype,nfitqm);
         }
         nfitqm /= npd;
-        if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nqm,&nnn)))
+        if ((nfitqm > 0) && 
+            (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nqm,&nnn))))
         {
-            gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].ptype,nfitqm);
+            fprintf(stderr,"Statistics problem: %s. gt_type = %s. N = %d\n",
+                    gmx_stats_message(estats),smlsq[j].ptype,nfitqm);
         }
 
         fprintf(fp,"%s & %s & %s & %s & %s & %s & %s (%s)",
@@ -862,7 +863,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                 (bos_pol > 0)     ? gmx_ftoa(bos_pol)     : "",
                 (alexandria_aver > 0)  ? gmx_ftoa(alexandria_aver)  : "",
                 (alexandria_sigma > 0) ? gmx_ftoa(alexandria_sigma) : "-");
-        if (strcasecmp(ref,"Maaren2014a") == 0)
+        if (strcasecmp(ref,"Maaren2013a") == 0)
         {
             fprintf(fp,"& (*)\\\\\n");
         }
@@ -871,7 +872,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
             fprintf(fp,"& \\cite{%s}\\\\\n",ref);
         }
         ntab++;
-    
+        
         if ((NULL != xvg) && (gmx_stats_get_npoints(smlsq[j].lsq,&N) == estatsOK) && (N > 0))
         {
             real *x=NULL,*y=NULL;
@@ -881,7 +882,9 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
             {
                 fprintf(xvg,"@type xy\n");
                 for(i=0; (i<nbins); i++)
+                {
                     fprintf(xvg,"%g  %g\n",x[i],y[i]);
+                }
                 fprintf(xvg,"&\n");
             }
             sfree(x);
