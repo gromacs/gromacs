@@ -64,14 +64,15 @@ mark_as_advanced(CUSTOM_VERSION_STRING)
 if (CUSTOM_VERSION_STRING)
     set(PROJECT_VERSION ${CUSTOM_VERSION_STRING})
 endif (CUSTOM_VERSION_STRING)
-set(SOVERSION 8)
+set(LIBRARY_SOVERSION 0)
+set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "5")
 SET(CPACK_PACKAGE_VERSION_MINOR "0")
 #SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 # The numerical gromacs version. It is 40600 for 4.6.0.
-# The #define GMX_VERSION in gmx_header_config_h is set to this value.
+# The #define GMX_VERSION in gromacs/version.h is set to this value.
 math(EXPR NUM_VERSION 
     "${CPACK_PACKAGE_VERSION_MAJOR}*10000 + ${CPACK_PACKAGE_VERSION_MINOR}*100")
 if(CPACK_PACKAGE_VERSION_PATCH)

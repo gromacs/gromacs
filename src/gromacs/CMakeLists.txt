@@ -130,7 +130,8 @@ target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
-                      SOVERSION ${SOVERSION}
+                      SOVERSION ${LIBRARY_SOVERSION}
+                      VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 # Only install the library in mdrun-only mode if it is actually necessary
