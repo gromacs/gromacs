@@ -77,6 +77,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * \throws    std::bad_alloc if out of memory.
          */
         CommandLineHelpModule(const ProgramInfo                &programInfo,
+                              const std::string                &binaryName,
                               const CommandLineModuleMap       &modules,
                               const CommandLineModuleGroupList &groups);
         ~CommandLineHelpModule();
