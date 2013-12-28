@@ -448,8 +448,10 @@ void CommandLineModuleManager::addModuleCMain(
 CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
         const char *title)
 {
+    const char *const binaryName =
+        impl_->programInfo_.invariantProgramName().c_str();
     CommandLineModuleGroupDataPointer group(
-            new CommandLineModuleGroupData(impl_->modules_, title));
+            new CommandLineModuleGroupData(impl_->modules_, binaryName, title));
     impl_->moduleGroups_.push_back(move(group));
     return CommandLineModuleGroup(impl_->moduleGroups_.back().get());
 }
@@ -544,9 +546,7 @@ void CommandLineModuleGroupData::addModule(const char *name,
         GMX_RELEASE_ASSERT(description != NULL,
                            "Module without a description added to a group");
     }
-    const char *const program =
-        ProgramInfo::getInstance().invariantProgramName().c_str();
-    std::string       tag(formatString("%s-%s", program, name));
+    std::string       tag(formatString("%s-%s", binaryName_, name));
     modules_.push_back(std::make_pair(tag, description));
 }
 

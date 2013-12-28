@@ -110,11 +110,6 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          */
         void setModuleOverride(const CommandLineModuleInterface &module);
 
-        //! Returns the context object for help output.
-        const CommandLineHelpContext &context() const;
-        //! Returns the program info object for the running binary.
-        const ProgramInfo &programInfo() const;
-
         virtual const char *name() const { return "help"; }
         virtual const char *shortDescription() const
         {
