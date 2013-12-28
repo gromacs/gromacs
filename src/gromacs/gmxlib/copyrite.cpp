@@ -155,22 +155,42 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
 
 static void printCopyright(FILE *fp)
 {
+    static const char * const Authors[] = {
+        "Mark Abraham (*)",
+        "Emile Apol",
+        "Rossen Apostolov",
+        "Herman J.C. Berendsen",
+        "Par Bjelkmar",
+        "Aldert van Buuren",
+        "Rudi van Drunen",
+        "Anton Feenstra",
+        "Gerrit Groenhof",
+        "Berk Hess (*)",
+        "Christoph Junghans",
+        "Peter Kasson",
+        "Carsten Kutzner",
+        "Per Larsson",
+        "Erik Lindahl (*)",
+        "Magnus Lundborg",
+        "Pieter Meulenhoff",
+        "Teemu Murtola",
+        "Szilard Pall",
+        "Sander Pronk",
+        "Roland Schulz",
+        "Michael Shirts",
+        "Alfons Sijbers",
+        "David van der Spoel (*)",
+        "Peter Tieleman",
+        "Christian Wennberg"
+    };
     static const char * const CopyrightText[] = {
-        "GROMACS is written by:",
-        "Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
-        "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra,",
-        "Gerrit Groenhof, Christoph Junghans, Peter Kasson, Carsten Kutzner",
-        "Per Larsson, Magnus Lundborg, Pieter Meulenhoff, Teemu Murtola,",
-        "Szilard Pall, Sander Pronk, Roland Schulz,",
-        "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
-        "Christian Wennberg, Mark Abraham\n",
-        "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
         "Copyright (c) 2001-2013, The GROMACS development team at",
-        "Uppsala University & The Royal Institute of Technology, Sweden.",
+        "Uppsala University, Stockholm University and",
+        "the Royal Institute of Technology, Sweden.",
+        "The (*) in the author list are the project leaders.",
         "check out http://www.gromacs.org for more information."
     };
-
     static const char * const LicenseText[] = {
         "GROMACS is free software; you can redistribute it and/or modify it",
         "under the terms of the GNU Lesser General Public License",
@@ -178,7 +198,9 @@ static void printCopyright(FILE *fp)
         "of the License, or (at your option) any later version."
     };
 
+#define NAUTHORS (int)asize(Authors)
 #define NCR (int)asize(CopyrightText)
+
 // FAH has an exception permission from LGPL to allow digital signatures in Gromacs.
 #ifdef GMX_FAHCORE
 #define NLICENSE 0
@@ -186,6 +208,16 @@ static void printCopyright(FILE *fp)
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
+    fprintf(fp, "GROMACS is written by:\n");
+    for (int i = 0; i < NAUTHORS; )
+    {
+        for(int j = 0; (j < 3) && (i < NAUTHORS); ++j, ++i)
+        {
+            fprintf(fp, "%-25s", Authors[i]);
+        }
+        fprintf(fp, "\n");
+    }
+    fprintf(fp, "\n");
     for (int i = 0; i < NCR; ++i)
     {
         fprintf(fp, "%s\n", CopyrightText[i]);
