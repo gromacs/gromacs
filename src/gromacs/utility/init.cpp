@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
 }   // namespace
 #endif
 
-ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv)
+ProgramInfo &init(int *argc, char ***argv)
 {
 #ifdef GMX_LIB_MPI
     int isInitialized = 0, isFinalized = 0;
@@ -139,12 +139,7 @@ ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv)
         broadcastArguments(&cr, argc, argv);
     }
 #endif
-    return ProgramInfo::init(realBinaryName, *argc, *argv);
-}
-
-ProgramInfo &init(int *argc, char ***argv)
-{
-    return init(NULL, argc, argv);
+    return ProgramInfo::init(*argc, *argv);
 }
 
 void finalize()

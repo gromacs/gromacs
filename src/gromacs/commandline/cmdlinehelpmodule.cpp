@@ -79,6 +79,7 @@ class CommandLineHelpModuleImpl
 {
     public:
         CommandLineHelpModuleImpl(const ProgramInfo                &programInfo,
+                                  const std::string                &binaryName,
                                   const CommandLineModuleMap       &modules,
                                   const CommandLineModuleGroupList &groups);
 
@@ -86,6 +87,7 @@ class CommandLineHelpModuleImpl
 
         boost::scoped_ptr<RootHelpTopic>  rootTopic_;
         const ProgramInfo                &programInfo_;
+        std::string                       binaryName_;
         const CommandLineModuleMap       &modules_;
         const CommandLineModuleGroupList &groups_;
 
@@ -252,8 +254,7 @@ class ModuleHelpTopic : public HelpTopicInterface
 void ModuleHelpTopic::writeHelp(const HelpWriterContext & /*context*/) const
 {
     CommandLineHelpContext context(*helpModule_.context_);
-    const char *const      program =
-        helpModule_.programInfo_.realBinaryName().c_str();
+    const char *const      program = helpModule_.binaryName_.c_str();
     context.setModuleDisplayName(formatString("%s %s", program, module_.name()));
     module_.writeHelp(context);
 }
@@ -339,8 +340,7 @@ class HelpExportInterface
  */
 void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpModule)
 {
-    const char *const                    program =
-        helpModule.programInfo_.realBinaryName().c_str();
+    const char *const                    program = helpModule.binaryName_.c_str();
     CommandLineModuleMap::const_iterator module;
     for (module = helpModule.modules_.begin();
          module != helpModule.modules_.end();
@@ -604,10 +604,11 @@ void HelpExportHtml::writeHtmlFooter(File *file) const
  */
 CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const ProgramInfo                &programInfo,
+        const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
     : rootTopic_(new RootHelpTopic(modules)), programInfo_(programInfo),
-      modules_(modules), groups_(groups),
+      binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false)
 {
 }
@@ -616,7 +617,7 @@ void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter) const
 {
     // TODO: Would be nicer to have the file names supplied by the build system
     // and/or export a list of files from here.
-    const char *const program = programInfo_.realBinaryName().c_str();
+    const char *const program = binaryName_.c_str();
 
     exporter->startModuleExport();
     CommandLineModuleMap::const_iterator module;
@@ -648,9 +649,10 @@ void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter) const
 
 CommandLineHelpModule::CommandLineHelpModule(
         const ProgramInfo                &programInfo,
+        const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : impl_(new Impl(programInfo, modules, groups))
+    : impl_(new Impl(programInfo, binaryName, modules, groups))
 {
 }
 

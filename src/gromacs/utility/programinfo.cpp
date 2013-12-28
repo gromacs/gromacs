@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -181,14 +181,12 @@ class ProgramInfo::Impl
 {
     public:
         Impl();
-        Impl(const char *realBinaryName, int argc, const char *const argv[],
+        Impl(int argc, const char *const argv[],
              ExecutableEnvironmentPointer env);
 
         ExecutableEnvironmentPointer  executableEnv_;
-        std::string                   realBinaryName_;
         std::string                   invokedName_;
         std::string                   programName_;
-        std::string                   invariantProgramName_;
         std::string                   displayName_;
         std::string                   commandLine_;
         mutable std::string           fullBinaryPath_;
@@ -197,29 +195,17 @@ class ProgramInfo::Impl
 };
 
 ProgramInfo::Impl::Impl()
-    : realBinaryName_("GROMACS"),
-      programName_("GROMACS"), invariantProgramName_("GROMACS")
+    : programName_("GROMACS")
 {
 }
 
-ProgramInfo::Impl::Impl(const char *realBinaryName,
-                        int argc, const char *const argv[],
+ProgramInfo::Impl::Impl(int argc, const char *const argv[],
                         ExecutableEnvironmentPointer env)
-    : executableEnv_(move(env)),
-      realBinaryName_(realBinaryName != NULL ? realBinaryName : "")
+    : executableEnv_(move(env))
 {
     invokedName_          = (argc != 0 ? argv[0] : "");
     programName_          = Path::splitToPathAndFilename(invokedName_).second;
     programName_          = stripSuffixIfPresent(programName_, ".exe");
-    invariantProgramName_ = programName_;
-#ifdef GMX_BINARY_SUFFIX
-    invariantProgramName_ =
-        stripSuffixIfPresent(invariantProgramName_, GMX_BINARY_SUFFIX);
-#endif
-    if (realBinaryName == NULL)
-    {
-        realBinaryName_ = invariantProgramName_;
-    }
 
     commandLine_ = quoteIfNecessary(programName_.c_str());
     for (int i = 1; i < argc; ++i)
@@ -248,19 +234,12 @@ const ProgramInfo &ProgramInfo::getInstance()
 // static
 ProgramInfo &ProgramInfo::init(int argc, const char *const argv[])
 {
-    return init(NULL, argc, argv);
-}
-
-// static
-ProgramInfo &ProgramInfo::init(const char *realBinaryName,
-                               int argc, const char *const argv[])
-{
     try
     {
         tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
         if (g_programInfo.get() == NULL)
         {
-            g_programInfo.reset(new ProgramInfo(realBinaryName, argc, argv));
+            g_programInfo.reset(new ProgramInfo(argc, argv));
         }
         return *g_programInfo;
     }
@@ -276,29 +255,21 @@ ProgramInfo::ProgramInfo()
 {
 }
 
-ProgramInfo::ProgramInfo(const char *realBinaryName)
-    : impl_(new Impl(realBinaryName, 1, &realBinaryName,
+ProgramInfo::ProgramInfo(const char *binaryName)
+    : impl_(new Impl(1, &binaryName,
                      DefaultExecutableEnvironment::create()))
 {
 }
 
 ProgramInfo::ProgramInfo(int argc, const char *const argv[])
-    : impl_(new Impl(NULL, argc, argv,
+    : impl_(new Impl(argc, argv,
                      DefaultExecutableEnvironment::create()))
 {
 }
 
-ProgramInfo::ProgramInfo(const char *realBinaryName,
-                         int argc, const char *const argv[])
-    : impl_(new Impl(realBinaryName, argc, argv,
-                     DefaultExecutableEnvironment::create()))
-{
-}
-
-ProgramInfo::ProgramInfo(const char *realBinaryName,
-                         int argc, const char *const argv[],
+ProgramInfo::ProgramInfo(int argc, const char *const argv[],
                          ExecutableEnvironmentPointer env)
-    : impl_(new Impl(realBinaryName, argc, argv, move(env)))
+    : impl_(new Impl(argc, argv, move(env)))
 {
 }
 
@@ -314,19 +285,9 @@ void ProgramInfo::setDisplayName(const std::string &name)
     impl_->displayName_ = name;
 }
 
-const std::string &ProgramInfo::realBinaryName() const
-{
-    return impl_->realBinaryName_;
-}
-
 const std::string &ProgramInfo::programName() const
 {
     return impl_->programName_;
-}
-
-const std::string &ProgramInfo::invariantProgramName() const
-{
-    return impl_->invariantProgramName_;
 }
 
 const std::string &ProgramInfo::displayName() const
