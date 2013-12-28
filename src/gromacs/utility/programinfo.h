@@ -132,29 +132,9 @@ class ProgramInfo
          * \param[in] argv  argv array passed to main().
          * \returns   Reference to initialized program information object.
          *
-         * The return value of realBinaryName() is the same as
-         * invariantProgramName().
-         *
          * Does not throw. Terminates the program on out-of-memory error.
          */
         static ProgramInfo &init(int argc, const char *const argv[]);
-        /*! \brief
-         * Initializes global program information with explicit binary name.
-         *
-         * \param[in] realBinaryName  Name of the binary
-         *     (without Gromacs binary suffix or .exe on Windows).
-         * \param[in] argc  argc value passed to main().
-         * \param[in] argv  argv array passed to main().
-         * \returns   Reference to initialized program information object.
-         *
-         * This overload is provided for cases where the program may be invoked
-         * through a symlink, and it is necessary to know the real name of the
-         * binary.
-         *
-         * Does not throw. Terminates the program on out-of-memory error.
-         */
-        static ProgramInfo &init(const char *realBinaryName,
-                                 int argc, const char *const argv[]);
 
         /*! \brief
          * Constructs an empty program info objects.
@@ -165,14 +145,13 @@ class ProgramInfo
         /*! \brief
          * Initializes a program information object with binary name only.
          *
-         * \param[in] realBinaryName  Name of the binary
-         *     (without Gromacs binary suffix or .exe on Windows).
+         * \param[in] binaryName  Name of the binary.
          *
          * This is needed for unit testing purposes.
          * The constructed object works as if the command line consisted of
          * only of the binary name.
          */
-        explicit ProgramInfo(const char *realBinaryName);
+        explicit ProgramInfo(const char *binaryName);
         /*! \brief
          * Initializes a program information object based on command line.
          *
@@ -184,19 +163,6 @@ class ProgramInfo
          * Initializes a program information object based on binary name and
          * command line.
          *
-         * \param[in] realBinaryName  Name of the binary
-         *     (without Gromacs binary suffix or .exe on Windows).
-         * \param[in] argc  argc value passed to main().
-         * \param[in] argv  argv array passed to main().
-         */
-        ProgramInfo(const char *realBinaryName,
-                    int argc, const char *const argv[]);
-        /*! \brief
-         * Initializes a program information object based on binary name and
-         * command line.
-         *
-         * \param[in] realBinaryName  Name of the binary
-         *     (without Gromacs binary suffix or .exe on Windows).
          * \param[in] argc  argc value passed to main().
          * \param[in] argv  argv array passed to main().
          * \param[in] env   Customizes the way the binary name is handled.
@@ -210,8 +176,7 @@ class ProgramInfo
          * into a non-Gromacs executable (with possible extensions in
          * ExecutableEnvironmentInterface).
          */
-        ProgramInfo(const char *realBinaryName,
-                    int argc, const char *const argv[],
+        ProgramInfo(int argc, const char *const argv[],
                     ExecutableEnvironmentPointer env);
         ~ProgramInfo();
 
@@ -227,29 +192,11 @@ class ProgramInfo
         void setDisplayName(const std::string &name);
 
         /*! \brief
-         * Returns the real name of the binary.
-         *
-         * The returned value is comparable to invariantProgramName(), i.e., it
-         * has suffixes and OS-specific extensions removed.
-         *
-         * Does not throw.
-         */
-        const std::string &realBinaryName() const;
-        /*! \brief
          * Returns the name of the binary as it was invoked without any path.
          *
          * Does not throw.
          */
         const std::string &programName() const;
-        /*! \brief
-         * Returns an invariant name of the binary.
-         *
-         * The returned value has OS-specific extensions (.exe on Windows)
-         * removed, as well as any binary suffix that was configured.
-         *
-         * Does not throw.
-         */
-        const std::string &invariantProgramName() const;
         /*! \brief
          * Returns a display name of the current module.
          *

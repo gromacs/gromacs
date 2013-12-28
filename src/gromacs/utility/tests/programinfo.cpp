@@ -111,7 +111,7 @@ class ProgramInfoTest : public ::testing::Test
         void testBinaryPathSearch(const char *argv0)
         {
             ASSERT_TRUE(env_.get() != NULL);
-            gmx::ProgramInfo  info(NULL, 1, &argv0, move(env_));
+            gmx::ProgramInfo  info(1, &argv0, move(env_));
             EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
         }
         void testBinaryPathSearch(const std::string &argv0)

@@ -62,6 +62,9 @@
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
+// For GMX_BINARY_SUFFIX
+#include "config.h"
+
 namespace gmx
 {
 
@@ -149,9 +152,11 @@ class CommandLineModuleManager::Impl
         /*! \brief
          * Initializes the implementation class.
          *
+         * \param[in] binaryName   Name of the running binary
+         *     (without Gromacs binary suffix or .exe on Windows).
          * \param     programInfo  Program information for the running binary.
          */
-        explicit Impl(ProgramInfo *programInfo);
+        Impl(const char *binaryName, ProgramInfo *programInfo);
 
         /*! \brief
          * Helper method that adds a given module to the module manager.
@@ -188,7 +193,7 @@ class CommandLineModuleManager::Impl
          *      \c modules_.end() if not found.
          *
          * Checks whether the program is invoked through a symlink whose name
-         * is different from ProgramInfo::realBinaryName(), and if so, checks
+         * is different from \a binaryName_, and if so, checks
          * if a module name matches the name of the symlink.
          *
          * Note that the \p programInfo parameter is currently not necessary
@@ -232,6 +237,8 @@ class CommandLineModuleManager::Impl
         CommandLineModuleGroupList   moduleGroups_;
         //! Information about the currently running program.
         ProgramInfo                 &programInfo_;
+        //! Name of the binary.
+        std::string                  binaryName_;
         /*! \brief
          * Module that implements help for the binary.
          *
@@ -251,8 +258,11 @@ class CommandLineModuleManager::Impl
         GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
-CommandLineModuleManager::Impl::Impl(ProgramInfo *programInfo)
-    : programInfo_(*programInfo), helpModule_(NULL), singleModule_(NULL),
+CommandLineModuleManager::Impl::Impl(const char  *binaryName,
+                                     ProgramInfo *programInfo)
+    : programInfo_(*programInfo),
+      binaryName_(binaryName != NULL ? binaryName : ""),
+      helpModule_(NULL), singleModule_(NULL),
       bQuiet_(false), bStdOutInfo_(false)
 {
     binaryInfoSettings_.copyright(true);
@@ -273,8 +283,8 @@ void CommandLineModuleManager::Impl::ensureHelpModuleExists()
 {
     if (helpModule_ == NULL)
     {
-        helpModule_ = new CommandLineHelpModule(programInfo_, modules_,
-                                                moduleGroups_);
+        helpModule_ = new CommandLineHelpModule(programInfo_, binaryName_,
+                                                modules_, moduleGroups_);
         addModule(CommandLineModulePointer(helpModule_));
     }
 }
@@ -290,20 +300,23 @@ CommandLineModuleMap::const_iterator
 CommandLineModuleManager::Impl::findModuleFromBinaryName(
         const ProgramInfo &programInfo) const
 {
-    std::string binaryName = programInfo.invariantProgramName();
-    if (binaryName == programInfo.realBinaryName())
+    std::string moduleName = programInfo.programName();
+#ifdef GMX_BINARY_SUFFIX
+    moduleName = stripSuffixIfPresent(moduleName, GMX_BINARY_SUFFIX);
+#endif
+    if (moduleName == binaryName_)
     {
         return modules_.end();
     }
-    if (binaryName.compare(0, 2, "g_") == 0)
+    if (startsWith(moduleName, "g_"))
     {
-        binaryName.erase(0, 2);
+        moduleName.erase(0, 2);
     }
-    if (binaryName.compare(0, 3, "gmx") == 0)
+    if (startsWith(moduleName, "gmx"))
     {
-        binaryName.erase(0, 3);
+        moduleName.erase(0, 3);
     }
-    return findModuleByName(binaryName);
+    return findModuleByName(moduleName);
 }
 
 CommandLineModuleInterface *
@@ -372,8 +385,7 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
     {
         if (singleModule_ == NULL)
         {
-            programInfo_.setDisplayName(
-                    programInfo_.realBinaryName() + " " + module->name());
+            programInfo_.setDisplayName(binaryName_ + " " + module->name());
         }
         // Recognize the common options also after the module name.
         // TODO: It could be nicer to only recognize -h/-hidden if module is not
@@ -412,8 +424,9 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
  * CommandLineModuleManager
  */
 
-CommandLineModuleManager::CommandLineModuleManager(ProgramInfo *programInfo)
-    : impl_(new Impl(programInfo))
+CommandLineModuleManager::CommandLineModuleManager(const char  *binaryName,
+                                                   ProgramInfo *programInfo)
+    : impl_(new Impl(binaryName, programInfo))
 {
 }
 
@@ -448,8 +461,7 @@ void CommandLineModuleManager::addModuleCMain(
 CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
         const char *title)
 {
-    const char *const binaryName =
-        impl_->programInfo_.invariantProgramName().c_str();
+    const char *const binaryName = impl_->binaryName_.c_str();
     CommandLineModuleGroupDataPointer group(
             new CommandLineModuleGroupData(impl_->modules_, binaryName, title));
     impl_->moduleGroups_.push_back(move(group));
@@ -509,7 +521,7 @@ int CommandLineModuleManager::runAsMainSingleModule(
     ProgramInfo &programInfo = gmx::init(&argc, &argv);
     try
     {
-        CommandLineModuleManager manager(&programInfo);
+        CommandLineModuleManager manager(NULL, &programInfo);
         manager.setSingleModule(module);
         int rc = manager.run(argc, argv);
         gmx::finalize();

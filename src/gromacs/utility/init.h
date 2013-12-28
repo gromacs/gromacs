@@ -69,17 +69,11 @@ namespace gmx
 {
 
 /*! \brief
- * Initializes the \Gromacs library with explicit binary name.
+ * Initializes the \Gromacs library.
  *
- * \param[in] realBinaryName  Name of the binary
- *     (without Gromacs binary suffix or .exe on Windows).
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  * \returns   Reference to initialized program information object.
- *
- * This overload is provided for cases where the program may be invoked
- * through a symlink, and it is necessary to know the real name of the
- * binary.
  *
  * Currently, this is tailored for use in command-line/standalone applications.
  * Some additional thought may be required to make it generally usable.
@@ -88,18 +82,6 @@ namespace gmx
  * parsed on each processor.
  * Arguments are the number of command line arguments, and a pointer to the
  * array of argument strings. Both are allowed to be NULL.
- *
- * Does not throw. Terminates the program on out-of-memory error.
- *
- * \ingroup module_utility
- */
-ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv);
-/*! \brief
- * Initializes the \Gromacs library.
- *
- * \param[in] argc  argc value passed to main().
- * \param[in] argv  argv array passed to main().
- * \returns   Reference to initialized program information object.
  *
  * Does not throw. Terminates the program on out-of-memory error.
  *
