@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,10 +48,10 @@
 int
 main(int argc, char *argv[])
 {
-    gmx::ProgramInfo &info = gmx::init("gmx", &argc, &argv);
+    gmx::ProgramInfo &info = gmx::init(&argc, &argv);
     try
     {
-        gmx::CommandLineModuleManager manager(&info);
+        gmx::CommandLineModuleManager manager("gmx", &info);
         registerTrajectoryAnalysisModules(&manager);
         registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
