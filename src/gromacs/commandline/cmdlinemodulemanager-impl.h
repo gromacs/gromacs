@@ -83,15 +83,17 @@ class CommandLineModuleGroupData
         /*! \brief
          * Constructs an empty module group.
          *
-         * \param[in] modules  List of all modules
+         * \param[in] modules     List of all modules
          *     (used for checking and default descriptions).
-         * \param[in] title    Title of the group.
+         * \param[in] binaryName  Name of the binary containing the modules.
+         * \param[in] title       Title of the group.
          *
          * Does not throw.
          */
         CommandLineModuleGroupData(const CommandLineModuleMap &modules,
+                                   const char                 *binaryName,
                                    const char                 *title)
-            : allModules_(modules), title_(title)
+            : allModules_(modules), binaryName_(binaryName), title_(title)
         {
         }
 
@@ -114,6 +116,7 @@ class CommandLineModuleGroupData
 
     private:
         const CommandLineModuleMap &allModules_;
+        const char                 *binaryName_;
         const char                 *title_;
         ModuleList                  modules_;
 
