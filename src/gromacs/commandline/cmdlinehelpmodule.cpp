@@ -230,7 +230,7 @@ class ModuleHelpTopic : public HelpTopicInterface
     public:
         //! Constructs a help topic for a specific module.
         ModuleHelpTopic(const CommandLineModuleInterface &module,
-                        const CommandLineHelpModule      &helpModule)
+                        const CommandLineHelpModuleImpl  &helpModule)
             : module_(module), helpModule_(helpModule)
         {
         }
@@ -246,16 +246,16 @@ class ModuleHelpTopic : public HelpTopicInterface
 
     private:
         const CommandLineModuleInterface &module_;
-        const CommandLineHelpModule      &helpModule_;
+        const CommandLineHelpModuleImpl  &helpModule_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(ModuleHelpTopic);
 };
 
 void ModuleHelpTopic::writeHelp(const HelpWriterContext & /*context*/) const
 {
-    CommandLineHelpContext context(helpModule_.context());
+    CommandLineHelpContext context(*helpModule_.context_);
     const char *const      program =
-        helpModule_.programInfo().realBinaryName().c_str();
+        helpModule_.programInfo_.realBinaryName().c_str();
     context.setModuleDisplayName(formatString("%s %s", program, module_.name()));
     module_.writeHelp(context);
 }
@@ -330,20 +330,23 @@ class HelpExportInterface
 /*! \internal \brief
  * Adds hyperlinks to modules within this binary.
  *
- * \param[in,out] links   Links are added here.
- * \param[in]     modules Modules in the current binary.
+ * \param[in,out] links      Links are added here.
+ * \param[in]     helpModule Help module to get module information from.
  * \throws        std::bad_alloc if out of memory.
  *
- * Initializes a HelpLinks object with links to modules defined in \p modules.
+ * Initializes a HelpLinks object with links to modules defined in
+ * \p helpModule.
  *
  * \ingroup module_commandline
  */
-void initProgramLinks(HelpLinks *links, const CommandLineModuleMap &modules)
+void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpModule)
 {
     const char *const                    program =
-        ProgramInfo::getInstance().realBinaryName().c_str();
+        helpModule.programInfo_.realBinaryName().c_str();
     CommandLineModuleMap::const_iterator module;
-    for (module = modules.begin(); module != modules.end(); ++module)
+    for (module = helpModule.modules_.begin();
+         module != helpModule.modules_.end();
+         ++module)
     {
         if (module->second->shortDescription() != NULL)
         {
@@ -370,10 +373,10 @@ class HelpExportMan : public HelpExportInterface
 {
     public:
         //! Initializes man page exporter.
-        explicit HelpExportMan(const CommandLineModuleMap &modules)
+        explicit HelpExportMan(const CommandLineHelpModuleImpl &helpModule)
             : links_(eHelpOutputFormat_Man)
         {
-            initProgramLinks(&links_, modules);
+            initProgramLinks(&links_, helpModule);
         }
 
         virtual void startModuleExport() {}
@@ -474,7 +477,7 @@ class HelpExportHtml : public HelpExportInterface
 {
     public:
         //! Initializes HTML exporter.
-        explicit HelpExportHtml(const CommandLineModuleMap &modules);
+        explicit HelpExportHtml(const CommandLineHelpModuleImpl &helpModule);
 
         virtual void startModuleExport();
         virtual void exportModuleHelp(
@@ -500,10 +503,10 @@ class HelpExportHtml : public HelpExportInterface
         std::string              footer_;
 };
 
-HelpExportHtml::HelpExportHtml(const CommandLineModuleMap &modules)
+HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
     : links_(eHelpOutputFormat_Html)
 {
-    initProgramLinks(&links_, modules);
+    initProgramLinks(&links_, helpModule);
     char *linksFilename = low_gmxlibfn("links.dat", FALSE, FALSE);
     if (linksFilename != NULL)
     {
@@ -664,7 +667,7 @@ CommandLineHelpModule::~CommandLineHelpModule()
 HelpTopicPointer CommandLineHelpModule::createModuleHelpTopic(
         const CommandLineModuleInterface &module) const
 {
-    return HelpTopicPointer(new ModuleHelpTopic(module, *this));
+    return HelpTopicPointer(new ModuleHelpTopic(module, *impl_));
 }
 
 void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
@@ -683,16 +686,6 @@ void CommandLineHelpModule::setModuleOverride(
     impl_->moduleOverride_ = &module;
 }
 
-const CommandLineHelpContext &CommandLineHelpModule::context() const
-{
-    return *impl_->context_;
-}
-
-const ProgramInfo &CommandLineHelpModule::programInfo() const
-{
-    return impl_->programInfo_;
-}
-
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
     const char *const exportFormats[] = { "man", "html", "completion" };
@@ -706,11 +699,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         boost::scoped_ptr<HelpExportInterface> exporter;
         if (exportFormat == "man")
         {
-            exporter.reset(new HelpExportMan(impl_->modules_));
+            exporter.reset(new HelpExportMan(*impl_));
         }
         else if (exportFormat == "html")
         {
-            exporter.reset(new HelpExportHtml(impl_->modules_));
+            exporter.reset(new HelpExportHtml(*impl_));
         }
         else
         {
@@ -721,7 +714,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     }
 
     HelpLinks                                 links(eHelpOutputFormat_Console);
-    initProgramLinks(&links, impl_->modules_);
+    initProgramLinks(&links, *impl_);
     boost::scoped_ptr<CommandLineHelpContext> context(
             new CommandLineHelpContext(&File::standardOutput(),
                                        eHelpOutputFormat_Console, &links));
