@@ -939,7 +939,7 @@ else()
     add_definitions(-DBOOST_NO_TYPEID)
     # TODO: Propagate the above settings to the installed CMakeFiles.txt template
     # (from share/template/)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${INCL_INSTALL_DIR}/gromacs/external/boost")
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${CMAKE_INSTALL_PREFIX}/${INCL_INSTALL_DIR}/gromacs/external/boost")
     if (NOT GMX_BUILD_MDRUN_ONLY)
         install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
                 DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
