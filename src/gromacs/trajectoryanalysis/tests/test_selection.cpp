@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -187,17 +187,5 @@ SelectionTester::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    gmx::ProgramInfo::init(argc, argv);
-    try
-    {
-        gmx::SelectionTester                     module;
-        gmx::TrajectoryAnalysisCommandLineRunner runner(&module);
-        runner.setSelectionDebugLevel(1);
-        return runner.run(argc, argv);
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
+    return gmx::TrajectoryAnalysisCommandLineRunner::runAsMain<gmx::SelectionTester>(argc, argv);
 }

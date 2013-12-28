@@ -142,8 +142,8 @@ void CommandLineModuleManagerTest::initManager(
         const CommandLine &args, const char *realBinaryName)
 {
     manager_.reset();
-    programInfo_.reset(new gmx::ProgramInfo(realBinaryName, args.argc(), args.argv()));
-    manager_.reset(new gmx::CommandLineModuleManager(programInfo_.get()));
+    programInfo_.reset(new gmx::ProgramInfo(args.argc(), args.argv()));
+    manager_.reset(new gmx::CommandLineModuleManager(realBinaryName, programInfo_.get()));
     manager_->setQuiet(true);
 }
 
