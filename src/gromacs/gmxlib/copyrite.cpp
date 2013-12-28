@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,22 +157,42 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
 
 static void printCopyright(FILE *fp)
 {
+    static const char * const Contributors[] = {
+        "Emile Apol",
+        "Rossen Apostolov",
+        "Herman J.C. Berendsen",
+        "Par Bjelkmar",
+        "Aldert van Buuren",
+        "Rudi van Drunen",
+        "Anton Feenstra",
+        "Sebastian Fritsch",
+        "Gerrit Groenhof",
+        "Christoph Junghans",
+        "Peter Kasson",
+        "Carsten Kutzner",
+        "Per Larsson",
+        "Justin A. Lemkul",
+        "Magnus Lundborg",
+        "Pieter Meulenhoff",
+        "Erik Marklund",
+        "Teemu Murtola",
+        "Szilard Pall",
+        "Sander Pronk",
+        "Roland Schulz",
+        "Alexey Shvetsov",
+        "Michael Shirts",
+        "Alfons Sijbers",
+        "Peter Tieleman",
+        "Christian Wennberg",
+        "Maarten Wolf"
+    };
     static const char * const CopyrightText[] = {
-        "GROMACS is written by:",
-        "Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
-        "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra,",
-        "Gerrit Groenhof, Christoph Junghans, Peter Kasson, Carsten Kutzner",
-        "Per Larsson, Magnus Lundborg, Pieter Meulenhoff, Teemu Murtola,",
-        "Szilard Pall, Sander Pronk, Roland Schulz,",
-        "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
-        "Christian Wennberg, Mark Abraham\n",
-        "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-        "Copyright (c) 2001-2013, The GROMACS development team at",
-        "Uppsala University & The Royal Institute of Technology, Sweden.",
+        "Copyright (c) 2001-2014, The GROMACS development team at",
+        "Uppsala University, Stockholm University and",
+        "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
     };
-
     static const char * const LicenseText[] = {
         "GROMACS is free software; you can redistribute it and/or modify it",
         "under the terms of the GNU Lesser General Public License",
@@ -180,7 +200,9 @@ static void printCopyright(FILE *fp)
         "of the License, or (at your option) any later version."
     };
 
+#define NCONTRIBUTORS (int)asize(Contributors)
 #define NCR (int)asize(CopyrightText)
+
 // FAH has an exception permission from LGPL to allow digital signatures in Gromacs.
 #ifdef GMX_FAHCORE
 #define NLICENSE 0
@@ -188,6 +210,18 @@ static void printCopyright(FILE *fp)
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
+    fprintf(fp, "GROMACS is written by:\n");
+    for (int i = 0; i < NCONTRIBUTORS; )
+    {
+        for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
+        {
+            fprintf(fp, "%-18s ", Contributors[i]);
+        }
+        fprintf(fp, "\n");
+    }
+    fprintf(fp, "and the project leaders:\n");
+    fprintf(fp, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel\n");
+    fprintf(fp, "\n");
     for (int i = 0; i < NCR; ++i)
     {
         fprintf(fp, "%s\n", CopyrightText[i]);
