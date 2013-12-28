@@ -99,7 +99,7 @@ void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
 }   // namespace
 #endif
 
-ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv)
+ProgramInfo &init(int *argc, char ***argv)
 {
 #ifdef GMX_LIB_MPI
     int isInitialized = 0, isFinalized = 0;
@@ -139,12 +139,7 @@ ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv)
         broadcastArguments(&cr, argc, argv);
     }
 #endif
-    return ProgramInfo::init(realBinaryName, *argc, *argv);
-}
-
-ProgramInfo &init(int *argc, char ***argv)
-{
-    return init(NULL, argc, argv);
+    return ProgramInfo::init(*argc, *argv);
 }
 
 void finalize()
