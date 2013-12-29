@@ -55,7 +55,7 @@
 #include "copyrite.h"
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 
 #define round(a) (int)(a+0.5)
 
@@ -656,7 +656,7 @@ void write_xpm_header(FILE *out,
         settings.generatedByHeader(true);
         settings.linePrefix("/* ");
         settings.lineSuffix(" */");
-        gmx::printBinaryInformation(out, gmx::ProgramInfo::getInstance(),
+        gmx::printBinaryInformation(out, gmx::getProgramContext(),
                                     settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/physics.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/math/utilities.h"
 #include "gmxfio.h"
 
@@ -129,7 +129,8 @@ void gmx_tng_open(const char       *filename,
 #ifdef GMX_DOUBLE
         precisionString = " (double precision)";
 #endif
-        sprintf(programInfo, "%.100s, %.128s%.24s", gmx::ProgramInfo::getInstance().displayName().c_str(),
+        sprintf(programInfo, "%.100s, %.128s%.24s",
+                gmx::getProgramContext().displayName(),
                 GromacsVersion(), precisionString);
         if (mode == 'w')
         {

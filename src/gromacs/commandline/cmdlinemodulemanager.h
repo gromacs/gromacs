@@ -66,13 +66,13 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
  * \code
    int main(int argc, char *argv[])
    {
-       gmx::ProgramInfo &programInfo = gmx::init(&argc, &argv);
+       gmx::ProgramInfo &programInfo = gmx::initForCommandLine(&argc, &argv);
        try
        {
            gmx::CommandLineModuleManager manager("gmx", &programInfo);
            // <register all necessary modules>
            int rc = manager.run(argc, argv);
-           gmx::finalize();
+           gmx::finalizeForCommandLine();
            return rc;
        }
        catch (const std::exception &ex)
