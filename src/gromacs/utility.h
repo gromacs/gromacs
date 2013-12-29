@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -136,7 +136,8 @@
  * The header messagestringcollector.h declares a gmx::MessageStringCollector
  * class for composing messages with context information.
  *
- * The header programinfo.h declares a gmx::ProgramInfo class that is used to
+ * The header programcontext.h declares a gmx::ProgramContextInterface that is
+ * used to
  * initialize and access information about the running program, such as the
  * name and path of the executable.  This information is used, e.g., by the
  * error handling code in formatting standard error messages.
@@ -160,5 +161,6 @@
 #include "utility/exceptions.h"
 #include "utility/gmxassert.h"
 #include "utility/init.h"
+#include "utility/programcontext.h"
 
 #endif

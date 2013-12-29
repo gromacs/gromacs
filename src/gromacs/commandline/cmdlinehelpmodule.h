@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@ namespace gmx
 {
 
 class CommandLineHelpContext;
-class ProgramInfo;
+class ProgramContextInterface;
 
 class CommandLineHelpModuleImpl;
 
@@ -71,14 +71,14 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         /*! \brief
          * Creates a command-line help module.
          *
-         * \param[in] programInfo Information about the running binary.
-         * \param[in] binaryName  Name of the running binary
+         * \param[in] programContext Information about the running binary.
+         * \param[in] binaryName     Name of the running binary
          *     (without Gromacs binary suffix or .exe on Windows).
          * \param[in] modules  List of modules for to use for module listings.
          * \param[in] groups   List of module groups.
          * \throws    std::bad_alloc if out of memory.
          */
-        CommandLineHelpModule(const ProgramInfo                &programInfo,
+        CommandLineHelpModule(const ProgramContextInterface    &programContext,
                               const std::string                &binaryName,
                               const CommandLineModuleMap       &modules,
                               const CommandLineModuleGroupList &groups);

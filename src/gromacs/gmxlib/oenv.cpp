@@ -37,8 +37,8 @@
 
 #include "smalloc.h"
 
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
 
 struct output_env
 {
@@ -208,7 +208,7 @@ const char *output_env_get_program_name(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.fullBinaryPath().c_str();
+        return oenv->programInfo.fullBinaryPath();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -218,7 +218,7 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
     try
     {
         // TODO: Use the display name once it doesn't break anything.
-        return oenv->programInfo.programName().c_str();
+        return oenv->programInfo.programName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -227,7 +227,7 @@ const char *output_env_get_cmd_line(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.commandLine().c_str();
+        return oenv->programInfo.commandLine();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }

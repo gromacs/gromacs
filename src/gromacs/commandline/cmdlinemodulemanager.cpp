@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,15 +51,15 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpmodule.h"
+#include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager-impl.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/init.h"
-#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
 // For GMX_BINARY_SUFFIX
@@ -518,13 +518,13 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 int CommandLineModuleManager::runAsMainSingleModule(
         int argc, char *argv[], CommandLineModuleInterface *module)
 {
-    ProgramInfo &programInfo = gmx::init(&argc, &argv);
+    ProgramInfo &programInfo = gmx::initForCommandLine(&argc, &argv);
     try
     {
         CommandLineModuleManager manager(NULL, &programInfo);
         manager.setSingleModule(module);
         int rc = manager.run(argc, argv);
-        gmx::finalize();
+        gmx::finalizeForCommandLine();
         return rc;
     }
     catch (const std::exception &ex)
