@@ -64,7 +64,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
                 t_fcdata *fcd, int *ddgatindex,
                 t_atomtypes *atype, gmx_genborn_t *born,
                 int force_flags,
-                gmx_bool bPrintSepPot, gmx_int64_t step);
+                gmx_bool bPrintSepPot, gmx_large_int_t step);
 /*
  * The function calc_bonds() calculates all bonded force interactions.
  * The "bonds" are specified as follows:
@@ -149,7 +149,9 @@ void make_dp_periodic(real *dp);
  *************************************************************************/
 t_ifunc bonds, g96bonds, morse_bonds, cubic_bonds, FENE_bonds, restraint_bonds;
 t_ifunc angles, g96angles, cross_bond_bond, cross_bond_angle, urey_bradley, quartic_angles, linear_angles;
+t_ifunc restrangles;
 t_ifunc pdihs, idihs, rbdihs;
+t_ifunc restrdihs, cbtdihs;
 t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
 
