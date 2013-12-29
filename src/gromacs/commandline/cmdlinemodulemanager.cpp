@@ -244,11 +244,11 @@ class CommandLineModuleManager::Impl
         /*! \brief
          * Initializes the implementation class.
          *
-         * \param[in] binaryName   Name of the running binary
+         * \param[in] binaryName     Name of the running binary
          *     (without Gromacs binary suffix or .exe on Windows).
-         * \param     programInfo  Program information for the running binary.
+         * \param     programContext Program information for the running binary.
          */
-        Impl(const char *binaryName, ProgramInfo *programInfo);
+        Impl(const char *binaryName, CommandLineProgramContext *programContext);
 
         /*! \brief
          * Helper method that adds a given module to the module manager.
@@ -279,7 +279,7 @@ class CommandLineModuleManager::Impl
         /*! \brief
          * Finds a module that the name of the binary.
          *
-         * \param[in] programInfo  Program information object to use.
+         * \param[in] invokedName  Name by which the program was invoked.
          * \throws    std::bad_alloc if out of memory.
          * \returns   Iterator to the found module, or
          *      \c modules_.end() if not found.
@@ -288,12 +288,12 @@ class CommandLineModuleManager::Impl
          * is different from \a binaryName_, and if so, checks
          * if a module name matches the name of the symlink.
          *
-         * Note that the \p programInfo parameter is currently not necessary
-         * (as the program info object is also contained as a member), but it
-         * clarifies the control flow.
+         * Note that the \p invokedName parameter is currently not necessary
+         * (as the program context object is also available and provides this
+         * value), but it clarifies the control flow.
          */
         CommandLineModuleMap::const_iterator
-        findModuleFromBinaryName(const ProgramInfo &programInfo) const;
+        findModuleFromBinaryName(const char *invokedName) const;
 
         /*! \brief
          * Processes command-line options for the wrapper binary.
@@ -330,7 +330,7 @@ class CommandLineModuleManager::Impl
          */
         CommandLineModuleGroupList   moduleGroups_;
         //! Information about the currently running program.
-        ProgramInfo                 &programInfo_;
+        CommandLineProgramContext   &programContext_;
         //! Name of the binary.
         std::string                  binaryName_;
         /*! \brief
@@ -348,9 +348,9 @@ class CommandLineModuleManager::Impl
         GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
-CommandLineModuleManager::Impl::Impl(const char  *binaryName,
-                                     ProgramInfo *programInfo)
-    : programInfo_(*programInfo),
+CommandLineModuleManager::Impl::Impl(const char                *binaryName,
+                                     CommandLineProgramContext *programContext)
+    : programContext_(*programContext),
       binaryName_(binaryName != NULL ? binaryName : ""),
       helpModule_(NULL), singleModule_(NULL),
       bQuiet_(false)
@@ -372,7 +372,7 @@ void CommandLineModuleManager::Impl::ensureHelpModuleExists()
 {
     if (helpModule_ == NULL)
     {
-        helpModule_ = new CommandLineHelpModule(programInfo_, binaryName_,
+        helpModule_ = new CommandLineHelpModule(programContext_, binaryName_,
                                                 modules_, moduleGroups_);
         addModule(CommandLineModulePointer(helpModule_));
     }
@@ -387,9 +387,9 @@ CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
 
 CommandLineModuleMap::const_iterator
 CommandLineModuleManager::Impl::findModuleFromBinaryName(
-        const ProgramInfo &programInfo) const
+        const char *invokedName) const
 {
-    std::string moduleName = programInfo.programName();
+    std::string moduleName = invokedName;
 #ifdef GMX_BINARY_SUFFIX
     moduleName = stripSuffixIfPresent(moduleName, GMX_BINARY_SUFFIX);
 #endif
@@ -418,7 +418,7 @@ CommandLineModuleManager::Impl::processCommonOptions(
     {
         // Also check for invokation through named symlinks.
         CommandLineModuleMap::const_iterator moduleIter
-            = findModuleFromBinaryName(programInfo_);
+            = findModuleFromBinaryName(programContext_.programName());
         if (moduleIter != modules_.end())
         {
             module = moduleIter->second.get();
@@ -465,7 +465,7 @@ CommandLineModuleManager::Impl::processCommonOptions(
     {
         if (singleModule_ == NULL)
         {
-            programInfo_.setDisplayName(binaryName_ + " " + module->name());
+            programContext_.setDisplayName(binaryName_ + " " + module->name());
         }
         // Recognize the common options also after the module name.
         // TODO: It could be nicer to only recognize -h/-hidden if module is not
@@ -501,9 +501,9 @@ CommandLineModuleManager::Impl::processCommonOptions(
  * CommandLineModuleManager
  */
 
-CommandLineModuleManager::CommandLineModuleManager(const char  *binaryName,
-                                                   ProgramInfo *programInfo)
-    : impl_(new Impl(binaryName, programInfo))
+CommandLineModuleManager::CommandLineModuleManager(
+        const char *binaryName, CommandLineProgramContext *programContext)
+    : impl_(new Impl(binaryName, programContext))
 {
 }
 
@@ -567,7 +567,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         bQuiet |= optionsHolder.shouldBeQuiet();
         if (!bQuiet)
         {
-            printBinaryInformation(stderr, impl_->programInfo_,
+            printBinaryInformation(stderr, impl_->programContext_,
                                    optionsHolder.binaryInfoSettings());
         }
         throw;
@@ -576,7 +576,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     if (!bQuiet)
     {
         FILE *out = optionsHolder.startupInfoFile();
-        printBinaryInformation(out, impl_->programInfo_,
+        printBinaryInformation(out, impl_->programContext_,
                                optionsHolder.binaryInfoSettings());
         fprintf(out, "\n");
     }
@@ -596,10 +596,10 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 int CommandLineModuleManager::runAsMainSingleModule(
         int argc, char *argv[], CommandLineModuleInterface *module)
 {
-    ProgramInfo &programInfo = gmx::initForCommandLine(&argc, &argv);
+    CommandLineProgramContext &programContext = gmx::initForCommandLine(&argc, &argv);
     try
     {
-        CommandLineModuleManager manager(NULL, &programInfo);
+        CommandLineModuleManager manager(NULL, &programContext);
         manager.setSingleModule(module);
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();

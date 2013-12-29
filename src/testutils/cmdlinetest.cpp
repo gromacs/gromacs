@@ -209,7 +209,7 @@ const char *CommandLine::arg(int i) const
 
 std::string CommandLine::toString() const
 {
-    return ProgramInfo(argc(), argv()).commandLine();
+    return CommandLineProgramContext(argc(), argv()).commandLine();
 }
 
 } // namespace test

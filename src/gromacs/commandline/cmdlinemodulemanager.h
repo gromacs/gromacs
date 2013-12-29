@@ -53,7 +53,7 @@ namespace gmx
 class CommandLineModuleGroup;
 class CommandLineModuleGroupData;
 class CommandLineModuleInterface;
-class ProgramInfo;
+class CommandLineProgramContext;
 
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
@@ -66,10 +66,10 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
  * \code
    int main(int argc, char *argv[])
    {
-       gmx::ProgramInfo &programInfo = gmx::initForCommandLine(&argc, &argv);
+       gmx::CommandLineProgramContext &programContext = gmx::initForCommandLine(&argc, &argv);
        try
        {
-           gmx::CommandLineModuleManager manager("gmx", &programInfo);
+           gmx::CommandLineModuleManager manager("gmx", &programContext);
            // <register all necessary modules>
            int rc = manager.run(argc, argv);
            gmx::finalizeForCommandLine();
@@ -159,9 +159,9 @@ class CommandLineModuleManager
         /*! \brief
          * Initializes a command-line module manager.
          *
-         * \param[in] binaryName   Name of the running binary
+         * \param[in] binaryName     Name of the running binary
          *     (without Gromacs binary suffix or .exe on Windows).
-         * \param     programInfo  Program information for the running binary.
+         * \param     programContext Program information for the running binary.
          * \throws    std::bad_alloc if out of memory.
          *
          * \p binaryName is used to detect when the binary is run through a
@@ -170,8 +170,8 @@ class CommandLineModuleManager
          * \p programInfo is non-const to allow the manager to amend it based
          * on the actual module that is getting executed.
          */
-        CommandLineModuleManager(const char  *binaryName,
-                                 ProgramInfo *programInfo);
+        CommandLineModuleManager(const char                *binaryName,
+                                 CommandLineProgramContext *programContext);
         ~CommandLineModuleManager();
 
         /*! \brief
