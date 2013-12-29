@@ -47,7 +47,7 @@ struct output_env
         setDefaults();
     }
     output_env(int argc, const char *const argv[])
-        : programInfo(argc, argv)
+        : programContext(argc, argv)
     {
         setDefaults();
     }
@@ -61,13 +61,18 @@ struct output_env
         debug_level = 0;
     }
 
-    gmx::ProgramInfo programInfo;
+    gmx::CommandLineProgramContext programContext;
 
-    time_unit_t      time_unit;   /* the time unit, enum defined in oenv.h */
-    gmx_bool         view;        /* view of file requested */
-    xvg_format_t     xvg_format;  /* xvg output format, enum defined in oenv.h */
-    int              verbosity;   /* The level of verbosity for this program */
-    int              debug_level; /* the debug level */
+    /* the time unit, enum defined in oenv.h */
+    time_unit_t                    time_unit;
+    /* view of file requested */
+    gmx_bool                       view;
+    /* xvg output format, enum defined in oenv.h */
+    xvg_format_t                   xvg_format;
+    /* The level of verbosity for this program */
+    int                            verbosity;
+    /* the debug level */
+    int                            debug_level;
 };
 
 /* The source code in this file should be thread-safe.
@@ -208,7 +213,7 @@ const char *output_env_get_program_name(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.fullBinaryPath();
+        return oenv->programContext.fullBinaryPath();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -218,7 +223,7 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
     try
     {
         // TODO: Use the display name once it doesn't break anything.
-        return oenv->programInfo.programName();
+        return oenv->programContext.programName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -227,7 +232,7 @@ const char *output_env_get_cmd_line(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.commandLine();
+        return oenv->programContext.commandLine();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }

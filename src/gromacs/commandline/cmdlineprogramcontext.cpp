@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::ProgramInfo.
+ * Implements gmx::CommandLineProgramContext.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
@@ -87,7 +87,7 @@ std::string quoteIfNecessary(const char *str)
  * Default implementation for ExecutableEnvironmentInterface.
  *
  * Used if ExecutableEnvironmentInterface is not explicitly provided when
- * constructing ProgramInfo.
+ * constructing CommandLineProgramContext.
  */
 class DefaultExecutableEnvironment : public ExecutableEnvironmentInterface
 {
@@ -169,10 +169,10 @@ std::string findFullBinaryPath(const std::string                    &invokedName
 }   // namespace
 
 /********************************************************************
- * ProgramInfo::Impl
+ * CommandLineProgramContext::Impl
  */
 
-class ProgramInfo::Impl
+class CommandLineProgramContext::Impl
 {
     public:
         Impl();
@@ -189,13 +189,13 @@ class ProgramInfo::Impl
         mutable tMPI::mutex           binaryPathMutex_;
 };
 
-ProgramInfo::Impl::Impl()
+CommandLineProgramContext::Impl::Impl()
     : programName_("GROMACS")
 {
 }
 
-ProgramInfo::Impl::Impl(int argc, const char *const argv[],
-                        ExecutableEnvironmentPointer env)
+CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
+                                      ExecutableEnvironmentPointer env)
     : executableEnv_(move(env))
 {
     invokedName_          = (argc != 0 ? argv[0] : "");
@@ -211,37 +211,36 @@ ProgramInfo::Impl::Impl(int argc, const char *const argv[],
 }
 
 /********************************************************************
- * ProgramInfo
+ * CommandLineProgramContext
  */
 
-ProgramInfo::ProgramInfo()
+CommandLineProgramContext::CommandLineProgramContext()
     : impl_(new Impl)
 {
 }
 
-ProgramInfo::ProgramInfo(const char *binaryName)
-    : impl_(new Impl(1, &binaryName,
-                     DefaultExecutableEnvironment::create()))
+CommandLineProgramContext::CommandLineProgramContext(const char *binaryName)
+    : impl_(new Impl(1, &binaryName, DefaultExecutableEnvironment::create()))
 {
 }
 
-ProgramInfo::ProgramInfo(int argc, const char *const argv[])
-    : impl_(new Impl(argc, argv,
-                     DefaultExecutableEnvironment::create()))
+CommandLineProgramContext::CommandLineProgramContext(
+        int argc, const char *const argv[])
+    : impl_(new Impl(argc, argv, DefaultExecutableEnvironment::create()))
 {
 }
 
-ProgramInfo::ProgramInfo(int argc, const char *const argv[],
-                         ExecutableEnvironmentPointer env)
+CommandLineProgramContext::CommandLineProgramContext(
+        int argc, const char *const argv[], ExecutableEnvironmentPointer env)
     : impl_(new Impl(argc, argv, move(env)))
 {
 }
 
-ProgramInfo::~ProgramInfo()
+CommandLineProgramContext::~CommandLineProgramContext()
 {
 }
 
-void ProgramInfo::setDisplayName(const std::string &name)
+void CommandLineProgramContext::setDisplayName(const std::string &name)
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
     GMX_RELEASE_ASSERT(impl_->displayName_.empty(),
@@ -249,12 +248,12 @@ void ProgramInfo::setDisplayName(const std::string &name)
     impl_->displayName_ = name;
 }
 
-const char *ProgramInfo::programName() const
+const char *CommandLineProgramContext::programName() const
 {
     return impl_->programName_.c_str();
 }
 
-const char *ProgramInfo::displayName() const
+const char *CommandLineProgramContext::displayName() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
     return impl_->displayName_.empty()
@@ -262,12 +261,12 @@ const char *ProgramInfo::displayName() const
            : impl_->displayName_.c_str();
 }
 
-const char *ProgramInfo::commandLine() const
+const char *CommandLineProgramContext::commandLine() const
 {
     return impl_->commandLine_.c_str();
 }
 
-const char *ProgramInfo::fullBinaryPath() const
+const char *CommandLineProgramContext::fullBinaryPath() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
     if (impl_->fullBinaryPath_.empty())

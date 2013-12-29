@@ -43,8 +43,8 @@
 #ifndef GMX_COMMANDLINE_CMDLINEINIT_H
 #define GMX_COMMANDLINE_CMDLINEINIT_H
 
-// Forward declaration of class ProgramInfo is not sufficient for MSVC if
-// the return value of initForCommandLine() is ignored(!)
+// Forward declaration of class CommandLineProgramContext is not sufficient for
+// MSVC if the return value of initForCommandLine() is ignored(!)
 #include "cmdlineprogramcontext.h"
 
 namespace gmx
@@ -77,7 +77,7 @@ namespace gmx
  * \see setProgramContext()
  * \ingroup module_commandline
  */
-ProgramInfo &initForCommandLine(int *argc, char ***argv);
+CommandLineProgramContext &initForCommandLine(int *argc, char ***argv);
 /*! \brief
  * Deinitializes the \Gromacs library after initForCommandLine().
  *
