@@ -37,7 +37,9 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE
 
 set(COMMANDLINE_PUBLIC_HEADERS
     cmdlinehelpwriter.h
+    cmdlineinit.h
     cmdlineparser.h
+    cmdlineprogramcontext.h
     pargs.h)
 gmx_install_headers(commandline ${COMMANDLINE_PUBLIC_HEADERS})
 

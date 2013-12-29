@@ -38,17 +38,17 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/init.h"
 
 #include "legacymodules.h"
 
 int
 main(int argc, char *argv[])
 {
-    gmx::ProgramInfo &info = gmx::init(&argc, &argv);
+    gmx::ProgramInfo &info = gmx::initForCommandLine(&argc, &argv);
     try
     {
         gmx::CommandLineModuleManager manager("gmx", &info);
@@ -56,7 +56,7 @@ main(int argc, char *argv[])
         registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
         int rc = manager.run(argc, argv);
-        gmx::finalize();
+        gmx::finalizeForCommandLine();
         return rc;
     }
     catch (const std::exception &ex)

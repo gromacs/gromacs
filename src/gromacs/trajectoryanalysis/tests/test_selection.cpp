@@ -45,7 +45,6 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

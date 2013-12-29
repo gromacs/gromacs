@@ -48,8 +48,8 @@
 #include <new>
 #include <vector>
 
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {

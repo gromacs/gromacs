@@ -36,28 +36,29 @@
  * \brief
  * Declares gmx::ProgramInfo.
  *
- * This header is installed to support init.h because some compilers don't
- * allow returning a reference to an incomplete type from a function.
+ * This header is installed to support cmdlineinit.h because some compilers
+ * don't allow returning a reference to an incomplete type from a function.
  * It should not be necessary to use gmx::ProgramInfo outside the Gromacs
  * library.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_commandline
  */
-#ifndef GMX_UTILITY_PROGRAMINFO_H
-#define GMX_UTILITY_PROGRAMINFO_H
+#ifndef GMX_COMMANDLINE_CMDLINEPROGRAMCONTEXT_H
+#define GMX_COMMANDLINE_CMDLINEPROGRAMCONTEXT_H
 
 #include <string>
 #include <vector>
 
-#include "common.h"
-#include "uniqueptr.h"
+#include "../utility/common.h"
+#include "../utility/programcontext.h"
+#include "../utility/uniqueptr.h"
 
 namespace gmx
 {
 
-//! \addtogroup module_utility
+//! \addtogroup module_commandline
 //! \{
 
 /*! \libinternal \brief
@@ -95,13 +96,6 @@ typedef gmx_unique_ptr<ExecutableEnvironmentInterface>::type
 /*! \libinternal \brief
  * Helper class for managing information about the running binary.
  *
- * This class provides access to the name of the binary currently running, as
- * well as other information derived from it.
- *
- * ProgramInfo::init() should be called before any other (C++) Gromacs calls in
- * a command-line program, as the information is used for printing error
- * messages.
- *
  * Constructors are provided mostly for unit testing purposes; in normal usage,
  * a single ProgramInfo object is constructed with init() in the beginning of
  * the program.  The returned object can be explicitly passed to other methods,
@@ -113,29 +107,9 @@ typedef gmx_unique_ptr<ExecutableEnvironmentInterface>::type
  *
  * \inlibraryapi
  */
-class ProgramInfo
+class ProgramInfo : public ProgramContextInterface
 {
     public:
-        /*! \brief
-         * Returns the singleton ProgramInfo object.
-         *
-         * \returns The same object as initialized with the last call to init().
-         * \throws  std::bad_alloc if out of memory (only if this is the first
-         *      call and init() has not been called either).
-         * \throws  tMPI::system_error on thread synchronization errors.
-         */
-        static const ProgramInfo &getInstance();
-        /*! \brief
-         * Initializes global program information.
-         *
-         * \param[in] argc  argc value passed to main().
-         * \param[in] argv  argv array passed to main().
-         * \returns   Reference to initialized program information object.
-         *
-         * Does not throw. Terminates the program on out-of-memory error.
-         */
-        static ProgramInfo &init(int argc, const char *const argv[]);
-
         /*! \brief
          * Constructs an empty program info objects.
          *
@@ -196,7 +170,7 @@ class ProgramInfo
          *
          * Does not throw.
          */
-        const std::string &programName() const;
+        virtual const char *programName() const;
         /*! \brief
          * Returns a display name of the current module.
          *
@@ -205,22 +179,23 @@ class ProgramInfo
          * The returned value equals programName(), unless a separate display
          * name has been set with setDisplayName().
          */
-        const std::string &displayName() const;
+        virtual const char *displayName() const;
         /*! \brief
          * Returns the full command line used to invoke the binary.
          *
          * Does not throw.
          */
-        const std::string &commandLine() const;
+        virtual const char *commandLine() const;
 
         /*! \brief
          * Returns the full path of the invoked binary.
          *
-         * Returns argv[0] if there was an error in finding the absolute path.
+         * \throws std::bad_alloc if out of memory.
+         * \throws tMPI::system_error on thread synchronization errors.
          *
-         * Does not throw.
+         * Returns argv[0] if there was an error in finding the absolute path.
          */
-        const std::string &fullBinaryPath() const;
+        virtual const char *fullBinaryPath() const;
 
     private:
         class Impl;

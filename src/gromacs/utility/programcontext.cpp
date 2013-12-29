@@ -34,89 +34,64 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions from init.h.
+ * Implements gmx::ProgramContextInterface and related methods.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "gromacs/utility/init.h"
+#include "gromacs/utility/programcontext.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifdef GMX_LIB_MPI
-#include "gromacs/utility/gmxmpi.h"
-#endif
-
-#include "gromacs/utility/common.h"
-#include "gromacs/utility/gmxassert.h"
+#include <cstddef>
 
 namespace gmx
 {
 
 namespace
 {
-#ifdef GMX_LIB_MPI
-    //! Maintains global counter of attempts to initialize MPI
-    int g_initializationCounter = 0;
-#endif
+
+//! \addtogroup module_utility
+//! \{
+
+/*! \brief
+ * Default implementation of ProgramContextInterface.
+ *
+ * This implementation is used if nothing has been set with
+ * setProgramContext().
+ *
+ * Since it is constructed using a global initializer, it should not throw.
+ */
+class DefaultProgramContext : public ProgramContextInterface
+{
+    public:
+        DefaultProgramContext() {}
+
+        virtual const char *programName() const { return "GROMACS"; }
+        virtual const char *displayName() const { return "GROMACS"; }
+        virtual const char *fullBinaryPath() const { return ""; }
+        virtual const char *commandLine() const { return ""; }
+};
+
+//! Global program info; stores the object set with setProgramContext().
+const ProgramContextInterface *g_programContext;
+//! Default program context if nothing is set.
+const DefaultProgramContext    g_defaultContext;
+
+//! \}
+
+}   // namespace
+
+const ProgramContextInterface &getProgramContext()
+{
+    if (g_programContext != NULL)
+    {
+        return *g_programContext;
+    }
+    return g_defaultContext;
 }
 
-void init(int *argc, char ***argv)
+void setProgramContext(const ProgramContextInterface *programContext)
 {
-#ifdef GMX_LIB_MPI
-    int isInitialized = 0, isFinalized = 0;
-    MPI_Finalized(&isFinalized);
-    GMX_RELEASE_ASSERT(!isFinalized, "Invalid attempt to initialize MPI after finalization");
-    MPI_Initialized(&isInitialized);
-    if (isInitialized)
-    {
-        if (0 == g_initializationCounter)
-        {
-            // Some other code has already initialized MPI, so bump the counter so that
-            // we know not to finalize MPI ourselves later.
-            g_initializationCounter++;
-        }
-    }
-    else
-    {
-#ifdef GMX_FAHCORE
-        (void) fah_MPI_Init(argc, argv);
-#else
-        (void) MPI_Init(argc, argv);
-#endif
-    }
-    // Bump the counter to record this initialization event
-    g_initializationCounter++;
-
-#else
-    GMX_UNUSED_VALUE(argc);
-    GMX_UNUSED_VALUE(argv);
-#endif
-}
-
-void finalize()
-{
-#ifdef GMX_LIB_MPI
-    GMX_RELEASE_ASSERT(0 < g_initializationCounter, "Excess attempt to finalize MPI");
-    // Bump the counter to record this finalization event
-    g_initializationCounter--;
-
-    if (0 == g_initializationCounter)
-    {
-        /* We sync the processes here to try to avoid problems
-         * with buggy MPI implementations that could cause
-         * unfinished processes to terminate.
-         */
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        /* Apparently certain mpich implementations cause problems
-         * with MPI_Finalize. In that case comment out MPI_Finalize.
-         */
-        MPI_Finalize();
-    }
-#endif
+    g_programContext = programContext;
 }
 
 } // namespace gmx

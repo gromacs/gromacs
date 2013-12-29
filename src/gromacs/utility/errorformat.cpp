@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 
 #include "gromacs/legacyheaders/copyrite.h"
 
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -69,7 +69,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     const char *programName = "GROMACS";
     try
     {
-        programName = ProgramInfo::getInstance().displayName().c_str();
+        programName = getProgramContext().displayName();
     }
     catch (const std::exception &)
     {

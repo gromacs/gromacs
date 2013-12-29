@@ -73,7 +73,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/path.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gromacs/legacyheaders/thread_mpi/threads.h"
@@ -768,7 +768,7 @@ void get_libdir(char *libdir)
     // TODO: There is a potential buffer overrun in the way libdir is passed in.
     try
     {
-        std::string fullPath = gmx::ProgramInfo::getInstance().fullBinaryPath();
+        std::string fullPath = gmx::getProgramContext().fullBinaryPath();
 
         // If running directly from the build tree, try to use the source
         // directory.

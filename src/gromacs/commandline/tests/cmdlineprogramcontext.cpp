@@ -44,9 +44,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/path.h"
-#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/uniqueptr.h"
 
 #include "testutils/cmdlinetest.h"
@@ -73,7 +73,7 @@ class TestExecutableEnvironment : public gmx::ExecutableEnvironmentInterface
 {
     public:
         TestExecutableEnvironment()
-            : workingDirectory_(CMAKE_BINARY_DIR "/src/gromacs/utility/tests/test-bin")
+            : workingDirectory_(CMAKE_BINARY_DIR "/src/gromacs/commandline/tests/test-bin")
         {
         }
 

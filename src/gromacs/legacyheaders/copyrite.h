@@ -75,7 +75,7 @@ please_cite(FILE *fp, const char *key);
 namespace gmx
 {
 
-class ProgramInfo;
+class ProgramContextInterface;
 
 /*! \brief
  * Settings for printBinaryInformation().
@@ -126,27 +126,30 @@ class BinaryInformationSettings
         const char *suffix_;
 
         //! Needed to read the members without otherwise unnecessary accessors.
-        friend void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
-                                           const BinaryInformationSettings &settings);
+        friend void printBinaryInformation(
+            FILE *fp, const ProgramContextInterface &programContext,
+            const BinaryInformationSettings &settings);
 };
 
 /*! \brief
  * Print basic information about the executable.
  *
- * \param     fp           Where to print the information to.
- * \param[in] programInfo  Program information object to use.
+ * \param     fp             Where to print the information to.
+ * \param[in] programContext Program information object to use.
  */
-void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo);
+void printBinaryInformation(FILE                          *fp,
+                            const ProgramContextInterface &programContext);
 /*! \brief
  * Print basic information about the executable with custom settings.
  *
- * \param     fp           Where to print the information to.
- * \param[in] programInfo  Program information object to use.
- * \param[in] settings     Specifies what to print.
+ * \param     fp             Where to print the information to.
+ * \param[in] programContext Program information object to use.
+ * \param[in] settings       Specifies what to print.
  *
  * \see BinaryInformationSettings
  */
-void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
+void printBinaryInformation(FILE                            *fp,
+                            const ProgramContextInterface   &programContext,
                             const BinaryInformationSettings &settings);
 
 } // namespace gmx;
