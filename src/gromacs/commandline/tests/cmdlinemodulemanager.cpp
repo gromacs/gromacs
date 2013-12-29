@@ -134,16 +134,18 @@ class CommandLineModuleManagerTest : public ::testing::Test
         gmx::CommandLineModuleManager &manager() { return *manager_; }
 
     private:
-        boost::scoped_ptr<gmx::ProgramInfo>              programInfo_;
-        boost::scoped_ptr<gmx::CommandLineModuleManager> manager_;
+        boost::scoped_ptr<gmx::CommandLineProgramContext> programContext_;
+        boost::scoped_ptr<gmx::CommandLineModuleManager>  manager_;
 };
 
 void CommandLineModuleManagerTest::initManager(
         const CommandLine &args, const char *realBinaryName)
 {
     manager_.reset();
-    programInfo_.reset(new gmx::ProgramInfo(args.argc(), args.argv()));
-    manager_.reset(new gmx::CommandLineModuleManager(realBinaryName, programInfo_.get()));
+    programContext_.reset(
+            new gmx::CommandLineProgramContext(args.argc(), args.argv()));
+    manager_.reset(new gmx::CommandLineModuleManager(realBinaryName,
+                                                     programContext_.get()));
     manager_->setQuiet(true);
 }
 

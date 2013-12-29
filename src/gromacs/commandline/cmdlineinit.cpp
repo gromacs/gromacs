@@ -64,8 +64,8 @@ namespace
 //! \addtogroup module_commandline
 //! \{
 
-//! Global instance of ProgramInfo initialized in initForCommandLine().
-boost::scoped_ptr<ProgramInfo> g_commandLineContext;
+//! Global context instance initialized in initForCommandLine().
+boost::scoped_ptr<CommandLineProgramContext> g_commandLineContext;
 
 #ifdef GMX_LIB_MPI
 void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
@@ -97,7 +97,7 @@ void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
 
 }   // namespace
 
-ProgramInfo &initForCommandLine(int *argc, char ***argv)
+CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
 {
     gmx::init(argc, argv);
     GMX_RELEASE_ASSERT(!g_commandLineContext,
@@ -118,7 +118,7 @@ ProgramInfo &initForCommandLine(int *argc, char ***argv)
 #endif
     try
     {
-        g_commandLineContext.reset(new ProgramInfo(*argc, *argv));
+        g_commandLineContext.reset(new CommandLineProgramContext(*argc, *argv));
         setProgramContext(g_commandLineContext.get());
     }
     catch (const std::exception &ex)

@@ -48,10 +48,10 @@
 int
 main(int argc, char *argv[])
 {
-    gmx::ProgramInfo &info = gmx::initForCommandLine(&argc, &argv);
+    gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
     try
     {
-        gmx::CommandLineModuleManager manager("gmx", &info);
+        gmx::CommandLineModuleManager manager("gmx", &context);
         registerTrajectoryAnalysisModules(&manager);
         registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
