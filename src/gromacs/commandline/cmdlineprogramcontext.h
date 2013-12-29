@@ -34,12 +34,12 @@
  */
 /*! \file
  * \brief
- * Declares gmx::ProgramInfo.
+ * Declares gmx::CommandLineProgramContext.
  *
  * This header is installed to support cmdlineinit.h because some compilers
  * don't allow returning a reference to an incomplete type from a function.
- * It should not be necessary to use gmx::ProgramInfo outside the Gromacs
- * library.
+ * It should not be necessary to use gmx::CommandLineProgramContext outside the
+ * \Gromacs library.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -63,11 +63,11 @@ namespace gmx
 
 /*! \libinternal \brief
  * Allows customization of the way various directories are found by
- * ProgramInfo.
+ * CommandLineProgramContext.
  *
- * For the ProgramInfo constructors that do not take this interface as a
- * parameter, a default implementation is used that forwards the calls to the
- * corresponding methods in gmx::Path.
+ * For the CommandLineProgramContext constructors that do not take this
+ * interface as a parameter, a default implementation is used that forwards
+ * the calls to the corresponding methods in gmx::Path.
  *
  * \inlibraryapi
  */
@@ -94,12 +94,13 @@ typedef gmx_unique_ptr<ExecutableEnvironmentInterface>::type
     ExecutableEnvironmentPointer;
 
 /*! \libinternal \brief
- * Helper class for managing information about the running binary.
+ * Program context implementation for command line programs.
  *
  * Constructors are provided mostly for unit testing purposes; in normal usage,
- * a single ProgramInfo object is constructed with init() in the beginning of
- * the program.  The returned object can be explicitly passed to other methods,
- * or accessed through getInstance().
+ * a single CommandLineProgramContext object is constructed with
+ * initForCommandLine() in the beginning of the program.
+ * The returned object can be explicitly passed to other methods, or accessed
+ * through getProgramContext().
  *
  * Unless explicitly noted otherwise, methods in this class may throw
  * std::bad_alloc on out-of-memory conditions, but do not throw other
@@ -107,17 +108,17 @@ typedef gmx_unique_ptr<ExecutableEnvironmentInterface>::type
  *
  * \inlibraryapi
  */
-class ProgramInfo : public ProgramContextInterface
+class CommandLineProgramContext : public ProgramContextInterface
 {
     public:
         /*! \brief
-         * Constructs an empty program info objects.
+         * Constructs an empty context object.
          *
          * All methods in the constructed object return dummy values.
          */
-        ProgramInfo();
+        CommandLineProgramContext();
         /*! \brief
-         * Initializes a program information object with binary name only.
+         * Initializes a program context object with binary name only.
          *
          * \param[in] binaryName  Name of the binary.
          *
@@ -125,17 +126,16 @@ class ProgramInfo : public ProgramContextInterface
          * The constructed object works as if the command line consisted of
          * only of the binary name.
          */
-        explicit ProgramInfo(const char *binaryName);
+        explicit CommandLineProgramContext(const char *binaryName);
         /*! \brief
-         * Initializes a program information object based on command line.
+         * Initializes a program context object based on command line.
          *
          * \param[in] argc  argc value passed to main().
          * \param[in] argv  argv array passed to main().
          */
-        ProgramInfo(int argc, const char *const argv[]);
+        CommandLineProgramContext(int argc, const char *const argv[]);
         /*! \brief
-         * Initializes a program information object based on binary name and
-         * command line.
+         * Initializes a program context object based on command line.
          *
          * \param[in] argc  argc value passed to main().
          * \param[in] argv  argv array passed to main().
@@ -150,9 +150,9 @@ class ProgramInfo : public ProgramContextInterface
          * into a non-Gromacs executable (with possible extensions in
          * ExecutableEnvironmentInterface).
          */
-        ProgramInfo(int argc, const char *const argv[],
-                    ExecutableEnvironmentPointer env);
-        ~ProgramInfo();
+        CommandLineProgramContext(int argc, const char *const argv[],
+                                  ExecutableEnvironmentPointer env);
+        ~CommandLineProgramContext();
 
         /*! \brief
          * Sets a display name for the binary.
