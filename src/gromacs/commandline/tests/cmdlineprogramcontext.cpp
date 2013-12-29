@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,9 +44,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/path.h"
-#include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/uniqueptr.h"
 
 #include "testutils/cmdlinetest.h"
@@ -73,7 +73,7 @@ class TestExecutableEnvironment : public gmx::ExecutableEnvironmentInterface
 {
     public:
         TestExecutableEnvironment()
-            : workingDirectory_(CMAKE_BINARY_DIR "/src/gromacs/utility/tests/test-bin")
+            : workingDirectory_(CMAKE_BINARY_DIR "/src/gromacs/commandline/tests/test-bin")
         {
         }
 

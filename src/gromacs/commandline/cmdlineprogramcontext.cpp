@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,9 +37,9 @@
  * Implements gmx::ProgramInfo.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_utility
+ * \ingroup module_commandline
  */
-#include "programinfo.h"
+#include "cmdlineprogramcontext.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -67,13 +67,8 @@ namespace gmx
 namespace
 {
 
-//! \addtogroup module_utility
+//! \addtogroup module_commandline
 //! \{
-
-//! Mutex for updates to the global program info objects.
-tMPI::mutex                    g_programInfoMutex;
-//! Global program info; stores the object initialized with ProgramInfo::init().
-boost::scoped_ptr<ProgramInfo> g_programInfo;
 
 /*! \brief
  * Quotes a string if it contains spaces.
@@ -190,7 +185,6 @@ class ProgramInfo::Impl
         std::string                   displayName_;
         std::string                   commandLine_;
         mutable std::string           fullBinaryPath_;
-        mutable tMPI::mutex           displayNameMutex_;
         mutable tMPI::mutex           binaryPathMutex_;
 };
 
@@ -218,37 +212,6 @@ ProgramInfo::Impl::Impl(int argc, const char *const argv[],
 /********************************************************************
  * ProgramInfo
  */
-
-// static
-const ProgramInfo &ProgramInfo::getInstance()
-{
-    tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
-    if (g_programInfo.get() == NULL)
-    {
-        static ProgramInfo fallbackInfo;
-        return fallbackInfo;
-    }
-    return *g_programInfo;
-}
-
-// static
-ProgramInfo &ProgramInfo::init(int argc, const char *const argv[])
-{
-    try
-    {
-        tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
-        if (g_programInfo.get() == NULL)
-        {
-            g_programInfo.reset(new ProgramInfo(argc, argv));
-        }
-        return *g_programInfo;
-    }
-    catch (const std::exception &ex)
-    {
-        printFatalErrorMessage(stderr, ex);
-        std::exit(processExceptionAtExit(ex));
-    }
-}
 
 ProgramInfo::ProgramInfo()
     : impl_(new Impl)
@@ -279,31 +242,29 @@ ProgramInfo::~ProgramInfo()
 
 void ProgramInfo::setDisplayName(const std::string &name)
 {
-    tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
     GMX_RELEASE_ASSERT(impl_->displayName_.empty(),
                        "Can only set display name once");
     impl_->displayName_ = name;
 }
 
-const std::string &ProgramInfo::programName() const
+const char *ProgramInfo::programName() const
 {
-    return impl_->programName_;
+    return impl_->programName_.c_str();
 }
 
-const std::string &ProgramInfo::displayName() const
+const char *ProgramInfo::displayName() const
 {
-    tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
     return impl_->displayName_.empty()
-           ? impl_->programName_
-           : impl_->displayName_;
+           ? impl_->programName_.c_str()
+           : impl_->displayName_.c_str();
 }
 
-const std::string &ProgramInfo::commandLine() const
+const char *ProgramInfo::commandLine() const
 {
-    return impl_->commandLine_;
+    return impl_->commandLine_.c_str();
 }
 
-const std::string &ProgramInfo::fullBinaryPath() const
+const char *ProgramInfo::fullBinaryPath() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
     if (impl_->fullBinaryPath_.empty())
@@ -318,7 +279,7 @@ const std::string &ProgramInfo::fullBinaryPath() const
         // with user binaries even if they are located in some arbitrary location,
         // as long as shared libraries are used.
     }
-    return impl_->fullBinaryPath_;
+    return impl_->fullBinaryPath_.c_str();
 }
 
 } // namespace gmx
