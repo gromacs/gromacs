@@ -184,10 +184,16 @@ void LongTable::printHeader()
     }
     fprintf(fp_,"\\begin{longtable}{%s}\n", columns_.c_str());
     printHLine();
-    fprintf(fp_, "\\caption{%s}\\\\\n", caption_.c_str());
+    fprintf(fp_, "\\caption{%s}\n", caption_.c_str());
     fprintf(fp_, "\\label{%s}\\\\\n", label_.c_str());
     printHLine();
+    for(unsigned int i = 0; (i < headLines_.size()); i++)
+    {
+        fprintf(fp_, "%s\\\\\n", headLines_[i].c_str());
+    }
+    printHLine();
     fprintf(fp_, "\\endfirsthead\n");
+    printHLine();
     for(unsigned int i = 0; (i < headLines_.size()); i++)
     {
         fprintf(fp_, "%s\\\\\n", headLines_[i].c_str());
@@ -258,32 +264,34 @@ static void stats_header(alexandria::LongTable &lt,
             lt.setCaption(caption);
             lt.setLabel(label);
         }
-
-        char hline[STRLEN];
-        char koko[STRLEN];
-        snprintf(hline, STRLEN, "Method ");
-        for(int i=0; (i<qmc->n); i++) 
+        else 
         {
-            snprintf(koko, STRLEN, " & %s", qmc->method[i]);
-            strncat(hline, koko, STRLEN-strlen(hline)-1);
-        }
-        lt.addHeadLine(hline);
-        
-        snprintf(hline, STRLEN, " ");
-        for(int i=0; (i<qmc->n); i++) 
-        {
+            char hline[STRLEN];
+            char koko[STRLEN];
+            snprintf(hline, STRLEN, "Method ");
+            for(int i=0; (i<qmc->n); i++) 
+            {
+                snprintf(koko, STRLEN, " & %s", qmc->method[i]);
+                strncat(hline, koko, STRLEN-strlen(hline)-1);
+            }
+            lt.addHeadLine(hline);
+            
+            snprintf(hline, STRLEN, " ");
+            for(int i=0; (i<qmc->n); i++) 
+            {
             snprintf(koko, STRLEN, "& %s ", qmc->basis[i]);
             strncat(hline, koko, STRLEN-strlen(hline)-1);
-        }
-        lt.addHeadLine(hline);
+            }
+            lt.addHeadLine(hline);
         
-        snprintf(hline, STRLEN, " ");
-        for(int i=0; (i<qmc->n); i++) 
-        {
-            snprintf(koko, STRLEN, "& %s ", qmc->type[i]);
-            strncat(hline, koko, STRLEN-strlen(hline)-1);
+            snprintf(hline, STRLEN, " ");
+            for(int i=0; (i<qmc->n); i++) 
+            {
+                snprintf(koko, STRLEN, "& %s ", qmc->type[i]);
+                strncat(hline, koko, STRLEN-strlen(hline)-1);
+            }
+            lt.addHeadLine(hline);
         }
-        lt.addHeadLine(hline);
     }
     lt.printHeader();
 }
@@ -553,10 +561,11 @@ static void composition_header(alexandria::LongTable &lt,
 {
     char caption[STRLEN];
 
-    snprintf(caption, STRLEN,"\\caption{Decomposition of molecules into Alexandria atom types. {\\bf Data set: %s.} Charge is given when not zero, multiplicity is given when not 1.}\n\\label{frag_defs}\n",
+    snprintf(caption, STRLEN,"Decomposition of molecules into Alexandria atom types. {\\bf Data set: %s.} Charge is given when not zero, multiplicity is given when not 1.",
              ims_names[ims]);
     lt.setCaption(caption);
-    lt.setColumns("lll");
+    lt.setLabel("frag_defs");
+    lt.setColumns("p{75mm}ll");
     lt.addHeadLine("Molecule & Formula  & Types");
     lt.printHeader();
 }
@@ -570,7 +579,7 @@ void gmx_molprop_composition_table(FILE *fp,std::vector<alexandria::MolProp> mp,
     char qbuf[32], longbuf[STRLEN], buf[256];
     const char *comps[2] = { "spoel", "miller" };
     int  kmax = 1;
-    alexandria::LongTable lt(fp, false);
+    alexandria::LongTable lt(fp, true);
     
     nprint = 0;
     for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
@@ -614,8 +623,10 @@ void gmx_molprop_composition_table(FILE *fp,std::vector<alexandria::MolProp> mp,
             {
                 qbuf[0] = '\0';
             }
-            snprintf(longbuf, STRLEN, "%3d. %s%s & %s ",++iline,
-                     mpi->GetIupac().c_str(),qbuf,
+            snprintf(longbuf, STRLEN, "%3d. %s%s & %s & ",
+                     ++iline,
+                     mpi->GetIupac().c_str(),
+                     qbuf,
                      mpi->GetTexFormula().c_str());
             for(k=0; (k<kmax); k++) 
             {
@@ -626,7 +637,7 @@ void gmx_molprop_composition_table(FILE *fp,std::vector<alexandria::MolProp> mp,
                     
                     for(ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++)
                     {
-                        snprintf(buf, 256, "& %d%s\t",
+                        snprintf(buf, 256, " %d %s\t",
                                  ani->GetNumber(),ani->GetAtom().c_str());
                         strncat(longbuf, buf, STRLEN-sizeof(longbuf)-1);
                     }
@@ -777,7 +788,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     int    i,ntab;
     double ahc,ahp,bos_pol,alexandria_pol,sig_pol;
     double exp_val,qm_val;
-    real   alexandria_aver,alexandria_sigma,nnn;
+    real   alexandria_aver,alexandria_sigma;
     char   *ptype;
     char   *ref, *miller, *bosque;
     char   longbuf[STRLEN], buf[256];
@@ -1125,38 +1136,40 @@ static void prop_header(alexandria::LongTable &lt,
             snprintf(longbuf, STRLEN, "%s", ims_names[ims]);
             lt.setLabel(longbuf);
         }
-        
-        snprintf(longbuf, STRLEN, "Molecule & Form. %s %s & Exper. ",
-                 bPrintMultQ ? "& q & mult" : "",
-                 bPrintConf  ? "& Conf." : "");
-        for(i=0; (i<qmc->n); i++)
+        else
         {
-            snprintf(buf, 256, "& %s",qmc->method[i]);
-            strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
-        }
-        lt.addHeadLine(longbuf);
-
-        if (bPrintBasis) 
-        {
-            snprintf(longbuf, STRLEN," & & %s %s",
+            snprintf(longbuf, STRLEN, "Molecule & Form. %s %s & Exper. ",
+                     bPrintMultQ ? "& q & mult" : "",
+                     bPrintConf  ? "& Conf." : "");
+            for(i=0; (i<qmc->n); i++)
+            {
+                snprintf(buf, 256, "& %s",qmc->method[i]);
+                strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
+            }
+            lt.addHeadLine(longbuf);
+            
+            if (bPrintBasis) 
+            {
+                snprintf(longbuf, STRLEN," & & %s %s",
+                         bPrintMultQ ? "& &" : "",
+                         bPrintConf ? "&" : "");
+                for(i=0; (i<qmc->n); i++)
+                {
+                    snprintf(buf, 256, "& %s",qmc->basis[i]);
+                    strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
+                }
+                lt.addHeadLine(longbuf);
+            }
+            snprintf(longbuf, STRLEN, "Type & &%s %s",
                      bPrintMultQ ? "& &" : "",
                      bPrintConf ? "&" : "");
             for(i=0; (i<qmc->n); i++)
             {
-                snprintf(buf, 256, "& %s",qmc->basis[i]);
+                snprintf(buf, 256, "& %s",qmc->type[i]);
                 strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
             }
             lt.addHeadLine(longbuf);
         }
-        snprintf(longbuf, STRLEN, "Type & &%s %s",
-                 bPrintMultQ ? "& &" : "",
-                 bPrintConf ? "&" : "");
-        for(i=0; (i<qmc->n); i++)
-        {
-            snprintf(buf, 256, "& %s",qmc->type[i]);
-            strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
-        }
-        lt.addHeadLine(longbuf);
     }
     lt.printHeader();
 }
