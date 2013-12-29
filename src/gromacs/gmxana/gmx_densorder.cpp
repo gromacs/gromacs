@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
 #include "copyrite.h"
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 
 #ifdef GMX_DOUBLE
 #define FLOOR(x) ((int) floor(x))
@@ -624,10 +624,8 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);
         settings.linePrefix("# ");
-        gmx::printBinaryInformation(raw1, gmx::ProgramInfo::getInstance(),
-                                    settings);
-        gmx::printBinaryInformation(raw2, gmx::ProgramInfo::getInstance(),
-                                    settings);
+        gmx::printBinaryInformation(raw1, gmx::getProgramContext(), settings);
+        gmx::printBinaryInformation(raw2, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(raw1, "# Legend: nt nx ny\n# Xbin Ybin Z t\n");

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,36 +32,66 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \brief
- * Implements the gmx wrapper binary.
+/*! \internal \file
+ * \brief
+ * Implements gmx::ProgramContextInterface and related methods.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \ingroup module_utility
  */
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/commandline/cmdlineinit.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/trajectoryanalysis/modules.h"
-#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programcontext.h"
 
-#include "legacymodules.h"
+#include <cstddef>
 
-int
-main(int argc, char *argv[])
+namespace gmx
 {
-    gmx::ProgramInfo &info = gmx::initForCommandLine(&argc, &argv);
-    try
+
+namespace
+{
+
+//! \addtogroup module_utility
+//! \{
+
+/*! \brief
+ * Default implementation of ProgramContextInterface.
+ *
+ * This implementation is used if nothing has been set with
+ * setProgramContext().
+ *
+ * Since it is constructed using a global initializer, it should not throw.
+ */
+class DefaultProgramContext : public ProgramContextInterface
+{
+    public:
+        DefaultProgramContext() {}
+
+        virtual const char *programName() const { return "GROMACS"; }
+        virtual const char *displayName() const { return "GROMACS"; }
+        virtual const char *fullBinaryPath() const { return ""; }
+        virtual const char *commandLine() const { return ""; }
+};
+
+//! Global program info; stores the object set with setProgramContext().
+const ProgramContextInterface *g_programContext;
+//! Default program context if nothing is set.
+const DefaultProgramContext    g_defaultContext;
+
+//! \}
+
+}   // namespace
+
+const ProgramContextInterface &getProgramContext()
+{
+    if (g_programContext != NULL)
     {
-        gmx::CommandLineModuleManager manager("gmx", &info);
-        registerTrajectoryAnalysisModules(&manager);
-        registerLegacyModules(&manager);
-        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
-        int rc = manager.run(argc, argv);
-        gmx::finalizeForCommandLine();
-        return rc;
+        return *g_programContext;
     }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return gmx::processExceptionAtExit(ex);
-    }
+    return g_defaultContext;
 }
+
+void setProgramContext(const ProgramContextInterface *programContext)
+{
+    g_programContext = programContext;
+}
+
+} // namespace gmx
