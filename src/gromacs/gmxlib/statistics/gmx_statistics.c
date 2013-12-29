@@ -90,6 +90,11 @@ int gmx_stats_done(gmx_stats_t gstats)
     return estatsOK;
 }
 
+int gmx_stats_add_point_ydy(gmx_stats_t gstats, double y, double dy)
+{
+    return gmx_stats_add_point(gstats, gstats->np, y, 0, dy);
+}
+
 int gmx_stats_add_point(gmx_stats_t gstats, double x, double y,
                         double dx, double dy)
 {
@@ -198,7 +203,7 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
     double yy, yx, xx, sx, sy, dy, chi2, chi2aa, d2;
     double ssxx, ssyy, ssxy;
     double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2, dy2;
-    double mse, mae;
+    double mse, mae, dd;
     int    i, N;
 
     N = stats->np;
@@ -256,7 +261,15 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         stats->mae        = mae/N;
         stats->mse        = mse/N; 
         stats->aver       = sy_nw/N;
-        stats->sigma_aver = sqrt(yy_nw/N - dsqr(sy_nw/N));
+        dd = yy_nw/N - dsqr(sy_nw/N);
+        if (dd > 0)
+        {
+            stats->sigma_aver = sqrt(dd);
+        }
+        else
+        {
+            stats->sigma_aver = 0;
+        }
         stats->error      = stats->sigma_aver/sqrt(N);
 
         /* Compute RMSD between x and y */

@@ -68,6 +68,8 @@ int gmx_stats_remove_outliers(gmx_stats_t stats, double level);
 
 
 
+int gmx_stats_add_point_ydy(gmx_stats_t stats, double y, double dy);
+                        
 int gmx_stats_add_point(gmx_stats_t stats, double x, double y,
                         double dx, double dy);
 

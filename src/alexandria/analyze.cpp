@@ -1,5 +1,5 @@
 /*
- * $Id: analyze_mp.cpp,v 1.9 2009/05/26 14:40:49 spoel Exp $
+ * $Id: analyze.cpp,v 1.9 2009/05/26 14:40:49 spoel Exp $
  *
  *                This source code is part of
  *
@@ -414,10 +414,10 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
 }
 
 
-int alex_analyze_mp(int argc, char *argv[])
+int alex_analyze(int argc, char *argv[])
 {
     static const char               *desc[] = {
-        "analyze_mp reads force field information and a molecule database",
+        "analyze reads force field information and a molecule database",
         "and produces tables and figures to describe the data.[PAR]",
         "A series of force field files can be read for generating statistics",
         "on the parameters, like average and standard deviation.",

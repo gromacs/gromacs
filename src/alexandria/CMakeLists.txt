@@ -24,7 +24,7 @@ set(ALEXANDRIA_SOURCES
         tune_dip.cpp
         bastat.cpp
         gauss2molprop.cpp
-        analyze_mp.cpp
+        analyze.cpp
         mp2csv.cpp
         merge_mp.cpp
         poldata_test.cpp

@@ -51,7 +51,7 @@ int alex_tune_pol(int argc, char *argv[]);
 int alex_poldata_test(int argc, char *argv[]);
 int alex_gauss2molprop(int argc, char *argv[]);
 int alex_bastat(int argc, char *argv[]);
-int alex_analyze_mp(int argc, char *argv[]);
+int alex_analyze(int argc, char *argv[]);
 int alex_gen_table(int argc, char *argv[]);
 int alex_merge_mp(int argc, char *argv[]);
 int alex_mp2csv(int argc, char *argv[]);
@@ -92,8 +92,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Optimize electrostatics parameters");
     registerModule(manager, &alex_bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures");
-    registerModule(manager, &alex_analyze_mp, "analyze_mp",
-                   "Analyze molecular properties from a database and generate tables");
+    registerModule(manager, &alex_analyze, "analyze",
+                   "Analyze molecular- or force field properties from a database and generate tables");
     registerModule(manager, &alex_gen_table, "gen_table",
                    "Generate tables for interaction functions used in mdrun");
     registerModule(manager, &alex_poldata_test, "poldata_test",
@@ -134,7 +134,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     {
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Molprop utilities");
-        group.addModule("analyze_mp");
+        group.addModule("analyze");
         group.addModule("merge_mp");
         group.addModule("mp2csv");
     }
