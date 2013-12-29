@@ -53,7 +53,7 @@ namespace gmx
 
 class CommandLineHelpContext;
 class Options;
-class ProgramInfo;
+class ProgramContextInterface;
 
 class CommandLineHelpModuleImpl;
 
@@ -72,14 +72,14 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         /*! \brief
          * Creates a command-line help module.
          *
-         * \param[in] programInfo Information about the running binary.
-         * \param[in] binaryName  Name of the running binary
+         * \param[in] programContext Information about the running binary.
+         * \param[in] binaryName     Name of the running binary
          *     (without Gromacs binary suffix or .exe on Windows).
          * \param[in] modules  List of modules for to use for module listings.
          * \param[in] groups   List of module groups.
          * \throws    std::bad_alloc if out of memory.
          */
-        CommandLineHelpModule(const ProgramInfo                &programInfo,
+        CommandLineHelpModule(const ProgramContextInterface    &programContext,
                               const std::string                &binaryName,
                               const CommandLineModuleMap       &modules,
                               const CommandLineModuleGroupList &groups);
