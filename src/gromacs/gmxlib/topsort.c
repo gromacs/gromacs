@@ -61,7 +61,8 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
         case F_ANGLES:
         case F_G96ANGLES:
         case F_IDIHS:
-            bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
+        case F_RESTRANGLES:
+             bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
                      ip->harmonic.krA != ip->harmonic.krB);
             break;
         case F_MORSE:
@@ -88,11 +89,25 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
             bPert = (ip->pdihs.phiA != ip->pdihs.phiB ||
                      ip->pdihs.cpA  != ip->pdihs.cpB);
             break;
+        case F_RESTRDIHS:
+            bPert = (ip->restrdihs.phiA != ip->restrdihs.phiB ||
+                 ip->restrdihs.cpA  != ip->restrdihs.cpB);
+        break;
         case F_RBDIHS:
             bPert = FALSE;
             for (i = 0; i < NR_RBDIHS; i++)
             {
                 if (ip->rbdihs.rbcA[i] != ip->rbdihs.rbcB[i])
+                {
+                    bPert = TRUE;
+                }
+            }
+            break;
+        case F_CBTDIHS:
+            bPert = FALSE;
+            for(i=0; i<NR_CBTDIHS; i++)
+            {
+                if (ip->cbtdihs.rbcA[i] != ip->cbtdihs.rbcB[i])
                 {
                     bPert = TRUE;
                 }
