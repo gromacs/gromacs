@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@
 #include "gromacs/fileio/gmxfio.h"
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
@@ -252,8 +252,7 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
             gmx::BinaryInformationSettings settings;
             settings.generatedByHeader(true);
             settings.linePrefix("# ");
-            gmx::printBinaryInformation(fp, gmx::ProgramInfo::getInstance(),
-                                        settings);
+            gmx::printBinaryInformation(fp, gmx::getProgramContext(), settings);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         fprintf(fp, "# %s is part of G R O M A C S:\n#\n", ShortProgram());
