@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,8 @@
 
 #include "smalloc.h"
 
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
 
 struct output_env
 {
@@ -209,7 +209,7 @@ const char *output_env_get_program_name(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.fullBinaryPath().c_str();
+        return oenv->programInfo.fullBinaryPath();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -219,7 +219,7 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
     try
     {
         // TODO: Use the display name once it doesn't break anything.
-        return oenv->programInfo.programName().c_str();
+        return oenv->programInfo.programName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -228,7 +228,7 @@ const char *output_env_get_cmd_line(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.commandLine().c_str();
+        return oenv->programInfo.commandLine();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }

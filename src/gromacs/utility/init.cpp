@@ -45,16 +45,11 @@
 #include "config.h"
 #endif
 
-#include <cstring>
-
 #ifdef GMX_LIB_MPI
 #include "gromacs/utility/gmxmpi.h"
 #endif
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/common.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -63,43 +58,12 @@ namespace gmx
 namespace
 {
 #ifdef GMX_LIB_MPI
-    //! Maintains global counter of attempts to initialize MPI
-    int g_initializationCounter = 0;
+//! Maintains global counter of attempts to initialize MPI
+int g_initializationCounter = 0;
 #endif
 }
 
-#ifdef GMX_LIB_MPI
-namespace
-{
-
-void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
-{
-    gmx_bcast(sizeof(*argc), argc, cr);
-
-    if (!MASTER(cr))
-    {
-        snew(*argv, *argc+1);
-    }
-    for (int i = 0; i < *argc; i++)
-    {
-        int len;
-        if (MASTER(cr))
-        {
-            len = std::strlen((*argv)[i])+1;
-        }
-        gmx_bcast(sizeof(len), &len, cr);
-        if (!MASTER(cr))
-        {
-            snew((*argv)[i], len);
-        }
-        gmx_bcast(len, (*argv)[i], cr);
-    }
-}
-
-}   // namespace
-#endif
-
-ProgramInfo &init(int *argc, char ***argv)
+void init(int *argc, char ***argv)
 {
 #ifdef GMX_LIB_MPI
     int isInitialized = 0, isFinalized = 0;
@@ -126,20 +90,10 @@ ProgramInfo &init(int *argc, char ***argv)
     // Bump the counter to record this initialization event
     g_initializationCounter++;
 
-    // TODO: Rewrite this to not use t_commrec once there is clarity on
-    // the approach for MPI in C++ code.
-    // TODO: Consider whether the argument broadcast would better be done
-    // in CommandLineModuleManager.
-    t_commrec cr;
-    std::memset(&cr, 0, sizeof(cr));
-
-    gmx_fill_commrec_from_mpi(&cr);
-    if (PAR(&cr))
-    {
-        broadcastArguments(&cr, argc, argv);
-    }
+#else
+    GMX_UNUSED_VALUE(argc);
+    GMX_UNUSED_VALUE(argv);
 #endif
-    return ProgramInfo::init(*argc, *argv);
 }
 
 void finalize()

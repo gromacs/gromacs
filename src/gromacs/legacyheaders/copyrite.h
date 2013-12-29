@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ please_cite(FILE *fp, const char *key);
 namespace gmx
 {
 
-class ProgramInfo;
+class ProgramContextInterface;
 
 /*! \brief
  * Settings for printBinaryInformation().
@@ -128,27 +128,30 @@ class BinaryInformationSettings
         const char *suffix_;
 
         //! Needed to read the members without otherwise unnecessary accessors.
-        friend void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
-                                           const BinaryInformationSettings &settings);
+        friend void printBinaryInformation(
+            FILE *fp, const ProgramContextInterface &programContext,
+            const BinaryInformationSettings &settings);
 };
 
 /*! \brief
  * Print basic information about the executable.
  *
- * \param     fp           Where to print the information to.
- * \param[in] programInfo  Program information object to use.
+ * \param     fp             Where to print the information to.
+ * \param[in] programContext Program information object to use.
  */
-void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo);
+void printBinaryInformation(FILE                          *fp,
+                            const ProgramContextInterface &programContext);
 /*! \brief
  * Print basic information about the executable with custom settings.
  *
- * \param     fp           Where to print the information to.
- * \param[in] programInfo  Program information object to use.
- * \param[in] settings     Specifies what to print.
+ * \param     fp             Where to print the information to.
+ * \param[in] programContext Program information object to use.
+ * \param[in] settings       Specifies what to print.
  *
  * \see BinaryInformationSettings
  */
-void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
+void printBinaryInformation(FILE                            *fp,
+                            const ProgramContextInterface   &programContext,
                             const BinaryInformationSettings &settings);
 
 } // namespace gmx;

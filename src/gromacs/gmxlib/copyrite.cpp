@@ -64,7 +64,7 @@
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 
 #include "buildinfo.h"
 
@@ -608,7 +608,7 @@ const char *ShortProgram(void)
     try
     {
         // TODO: Use the display name once it doesn't break anything.
-        return gmx::ProgramInfo::getInstance().programName().c_str();
+        return gmx::getProgramContext().programName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -617,7 +617,7 @@ const char *Program(void)
 {
     try
     {
-        return gmx::ProgramInfo::getInstance().fullBinaryPath().c_str();
+        return gmx::getProgramContext().fullBinaryPath();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -729,12 +729,14 @@ BinaryInformationSettings::BinaryInformationSettings()
 {
 }
 
-void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo)
+void printBinaryInformation(FILE                          *fp,
+                            const ProgramContextInterface &programContext)
 {
-    printBinaryInformation(fp, programInfo, BinaryInformationSettings());
+    printBinaryInformation(fp, programContext, BinaryInformationSettings());
 }
 
-void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
+void printBinaryInformation(FILE                            *fp,
+                            const ProgramContextInterface   &programContext,
                             const BinaryInformationSettings &settings)
 {
     const char *prefix          = settings.prefix_;
@@ -743,7 +745,7 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
 #ifdef GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
-    const std::string &name = programInfo.displayName();
+    const char *const name = programContext.displayName();
     if (settings.bGeneratedByHeader_)
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
@@ -760,18 +762,25 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
         // TODO: It would be nice to know here whether we are really running a
         // Gromacs binary or some other binary that is calling Gromacs; we
         // could then print "%s is part of GROMACS" or some alternative text.
-        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
+        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
                 GromacsVersion(), precisionString, suffix);
         fprintf(fp, "\n");
         printCopyright(fp);
         fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
+    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
             GromacsVersion(), precisionString, suffix);
-    fprintf(fp, "%sExecutable: %s%s\n", prefix,
-            programInfo.fullBinaryPath().c_str(), suffix);
-    fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
-            prefix, suffix, prefix, programInfo.commandLine().c_str(), suffix);
+    const char *const binaryPath = programContext.fullBinaryPath();
+    if (binaryPath != NULL && binaryPath[0] != '\0')
+    {
+        fprintf(fp, "%sExecutable: %s%s\n", prefix, binaryPath, suffix);
+    }
+    const char *const commandLine = programContext.commandLine();
+    if (commandLine != NULL && commandLine[0] != '\0')
+    {
+        fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
+                prefix, suffix, prefix, commandLine, suffix);
+    }
     if (settings.bExtendedInfo_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
