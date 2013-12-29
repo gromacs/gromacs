@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Tests for gmx::ProgramInfo.
+ * Tests for gmx::CommandLineProgramContext.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
@@ -96,10 +96,10 @@ class TestExecutableEnvironment : public gmx::ExecutableEnvironmentInterface
 typedef gmx::gmx_unique_ptr<TestExecutableEnvironment>::type
     TestExecutableEnvironmentPointer;
 
-class ProgramInfoTest : public ::testing::Test
+class CommandLineProgramContextTest : public ::testing::Test
 {
     public:
-        ProgramInfoTest()
+        CommandLineProgramContextTest()
             : env_(new TestExecutableEnvironment())
         {
             expectedExecutable_ =
@@ -111,7 +111,7 @@ class ProgramInfoTest : public ::testing::Test
         void testBinaryPathSearch(const char *argv0)
         {
             ASSERT_TRUE(env_.get() != NULL);
-            gmx::ProgramInfo  info(1, &argv0, move(env_));
+            gmx::CommandLineProgramContext  info(1, &argv0, move(env_));
             EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
         }
         void testBinaryPathSearch(const std::string &argv0)
@@ -123,23 +123,23 @@ class ProgramInfoTest : public ::testing::Test
         TestExecutableEnvironmentPointer env_;
 };
 
-TEST_F(ProgramInfoTest, FindsBinaryWithAbsolutePath)
+TEST_F(CommandLineProgramContextTest, FindsBinaryWithAbsolutePath)
 {
     testBinaryPathSearch(Path::join(env_->getWorkingDirectory(), "bin/test-exe"));
 }
 
-TEST_F(ProgramInfoTest, FindsBinaryWithRelativePath)
+TEST_F(CommandLineProgramContextTest, FindsBinaryWithRelativePath)
 {
     testBinaryPathSearch("bin/test-exe");
 }
 
-TEST_F(ProgramInfoTest, FindsBinaryFromPath)
+TEST_F(CommandLineProgramContextTest, FindsBinaryFromPath)
 {
     env_->path_.push_back(Path::join(env_->getWorkingDirectory(), "bin"));
     testBinaryPathSearch("test-exe");
 }
 
-TEST_F(ProgramInfoTest, FindsBinaryFromCurrentDirectory)
+TEST_F(CommandLineProgramContextTest, FindsBinaryFromCurrentDirectory)
 {
     env_->workingDirectory_ = Path::join(env_->getWorkingDirectory(), "bin");
     env_->path_.push_back("");
@@ -147,12 +147,12 @@ TEST_F(ProgramInfoTest, FindsBinaryFromCurrentDirectory)
 }
 
 #ifdef TEST_SYMLINKS
-TEST_F(ProgramInfoTest, FindsBinaryFromAbsoluteSymLink)
+TEST_F(CommandLineProgramContextTest, FindsBinaryFromAbsoluteSymLink)
 {
     testBinaryPathSearch("bin/test-abs-link");
 }
 
-TEST_F(ProgramInfoTest, FindsBinaryFromRelativeSymLink)
+TEST_F(CommandLineProgramContextTest, FindsBinaryFromRelativeSymLink)
 {
     testBinaryPathSearch("bin/test-rel-link");
 }
