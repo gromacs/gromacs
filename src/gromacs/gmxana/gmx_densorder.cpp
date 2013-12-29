@@ -61,7 +61,7 @@
 #include "copyrite.h"
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 
 #ifdef GMX_DOUBLE
 #define FLOOR(x) ((int) floor(x))
@@ -624,10 +624,8 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);
         settings.linePrefix("# ");
-        gmx::printBinaryInformation(raw1, gmx::ProgramInfo::getInstance(),
-                                    settings);
-        gmx::printBinaryInformation(raw2, gmx::ProgramInfo::getInstance(),
-                                    settings);
+        gmx::printBinaryInformation(raw1, gmx::getProgramContext(), settings);
+        gmx::printBinaryInformation(raw2, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(raw1, "# Legend: nt nx ny\n# Xbin Ybin Z t\n");

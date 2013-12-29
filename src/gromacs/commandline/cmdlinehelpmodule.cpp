@@ -61,7 +61,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -80,7 +80,7 @@ class RootHelpTopic;
 class CommandLineHelpModuleImpl
 {
     public:
-        CommandLineHelpModuleImpl(const ProgramInfo                &programInfo,
+        CommandLineHelpModuleImpl(const ProgramContextInterface    &programContext,
                                   const std::string                &binaryName,
                                   const CommandLineModuleMap       &modules,
                                   const CommandLineModuleGroupList &groups);
@@ -88,7 +88,7 @@ class CommandLineHelpModuleImpl
         void exportHelp(HelpExportInterface *exporter) const;
 
         boost::scoped_ptr<RootHelpTopic>  rootTopic_;
-        const ProgramInfo                &programInfo_;
+        const ProgramContextInterface    &programContext_;
         std::string                       binaryName_;
         const CommandLineModuleMap       &modules_;
         const CommandLineModuleGroupList &groups_;
@@ -609,11 +609,11 @@ void HelpExportHtml::writeHtmlFooter(File *file) const
  * CommandLineHelpModuleImpl implementation
  */
 CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
-        const ProgramInfo                &programInfo,
+        const ProgramContextInterface    &programContext,
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : rootTopic_(new RootHelpTopic(modules)), programInfo_(programInfo),
+    : rootTopic_(new RootHelpTopic(modules)), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false)
 {
@@ -654,11 +654,11 @@ void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter) const
  */
 
 CommandLineHelpModule::CommandLineHelpModule(
-        const ProgramInfo                &programInfo,
+        const ProgramContextInterface    &programContext,
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : impl_(new Impl(programInfo, binaryName, modules, groups))
+    : impl_(new Impl(programContext, binaryName, modules, groups))
 {
 }
 
@@ -723,7 +723,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     context->setShowHidden(impl_->bHidden_);
     if (impl_->moduleOverride_ != NULL)
     {
-        context->setModuleDisplayName(impl_->programInfo_.displayName());
+        context->setModuleDisplayName(impl_->programContext_.displayName());
         impl_->moduleOverride_->writeHelp(*context);
         return 0;
     }

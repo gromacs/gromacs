@@ -70,7 +70,7 @@
 #include "copyrite.h"
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
@@ -560,8 +560,7 @@ void print_top_comment(FILE       *out,
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);
         settings.linePrefix(";\t");
-        gmx::printBinaryInformation(out, gmx::ProgramInfo::getInstance(),
-                                    settings);
+        gmx::printBinaryInformation(out, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
