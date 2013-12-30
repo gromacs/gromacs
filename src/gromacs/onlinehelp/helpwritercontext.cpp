@@ -559,10 +559,6 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         {
             result = repall(result, sandrTty);
             result = replaceLinks(result);
-            if (wrapper->settings().lineLength() == 0)
-            {
-                wrapper->settings().setLineLength(78);
-            }
             return wrapper->wrap(result);
         }
         case eHelpOutputFormat_Man:
@@ -667,12 +663,11 @@ void HelpWriterContext::writeTitle(const std::string &title) const
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
-    writeTextBlock(TextLineWrapperSettings(), text);
-}
-
-void HelpWriterContext::writeTextBlock(const TextLineWrapperSettings &settings,
-                                       const std::string             &text) const
-{
+    TextLineWrapperSettings settings;
+    if (outputFormat() == eHelpOutputFormat_Console)
+    {
+        settings.setLineLength(78);
+    }
     outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
 }
 
