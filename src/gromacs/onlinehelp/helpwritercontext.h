@@ -232,19 +232,6 @@ class HelpWriterContext
          * and writes the result directly to the output file.
          */
         void writeTextBlock(const std::string &text) const;
-        /*! \brief
-         * Writes a formatted text block into the output.
-         *
-         * \param[in] settings Line wrapper settings.
-         * \param[in] text     Text to format.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Convenience function that calls substituteMarkupAndWrapToString()
-         * and writes the result directly to the output file.
-         */
-        void writeTextBlock(const TextLineWrapperSettings &settings,
-                            const std::string             &text) const;
 
     private:
         class Impl;
