@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE
 set(COMMANDLINE_PUBLIC_HEADERS
     cmdlinehelpwriter.h
     cmdlineinit.h
+    cmdlinemodule.h
     cmdlineparser.h
     cmdlineprogramcontext.h
     pargs.h)

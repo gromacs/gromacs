@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -136,4 +137,15 @@ void finalizeForCommandLine()
     g_commandLineContext.reset();
 }
 
+int runCommandLineModule(int argc, char *argv[],
+                         CommandLineModuleInterface *module)
+{
+    return gmx::CommandLineModuleManager::runAsMainSingleModule(argc, argv, module);
+}
+
 } // namespace gmx
+
+int gmx_run_cmain(int argc, char *argv[], int (*mainFunction)(int, char *[]))
+{
+    return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, mainFunction);
+}
