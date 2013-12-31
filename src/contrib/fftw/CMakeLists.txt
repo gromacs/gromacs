@@ -72,7 +72,7 @@ message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} a
 # md5sum check to avoid needing the above warning
     ExternalProject_add(fftwBuild
         URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
         ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
         ${GMX_BUILD_OWN_FFTW_PREC})
 externalproject_get_property(fftwBuild INSTALL_DIR)

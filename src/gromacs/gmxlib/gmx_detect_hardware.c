@@ -56,6 +56,7 @@
 #include "gmx_detect_hardware.h"
 #include "main.h"
 #include "md_logging.h"
+#include "gmx_omp.h"
 
 #include "thread_mpi/threads.h"
 
@@ -517,7 +518,7 @@ static int get_nthreads_hw_avail(const t_commrec gmx_unused *cr)
                 "of supported hardware threads.\n", ret);
     }
 
-#ifdef GMX_OMPENMP
+#ifdef GMX_OPENMP
     if (ret != gmx_omp_get_num_procs())
     {
         md_print_warn(cr, fplog,
