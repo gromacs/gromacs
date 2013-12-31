@@ -38,6 +38,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE
 set(COMMANDLINE_PUBLIC_HEADERS
     cmdlinehelpwriter.h
     cmdlineinit.h
+    cmdlinemodule.h
     cmdlineparser.h
     cmdlineprogramcontext.h
     pargs.h)
