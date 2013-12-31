@@ -56,6 +56,7 @@
 #include "gmx_detect_hardware.h"
 #include "main.h"
 #include "md_logging.h"
+#include "gromacs/utility/gmxomp.h"
 
 #include "thread_mpi/threads.h"
 
@@ -481,7 +482,7 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
  * We assume that this is equal with the number of CPUs reported to be
  * online by the OS at the time of the call.
  */
-static int get_nthreads_hw_avail(const t_commrec gmx_unused *cr)
+static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
 {
     int ret = 0;
 
@@ -517,7 +518,7 @@ static int get_nthreads_hw_avail(const t_commrec gmx_unused *cr)
                 "of supported hardware threads.\n", ret);
     }
 
-#ifdef GMX_OMPENMP
+#ifdef GMX_OPENMP
     if (ret != gmx_omp_get_num_procs())
     {
         md_print_warn(cr, fplog,
@@ -633,7 +634,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         }
 
         /* detect number of hardware threads */
-        hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(cr);
+        hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
 
         /* detect GPUs */
         hwinfo_g->gpu_info.ncuda_dev            = 0;
