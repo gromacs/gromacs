@@ -49,6 +49,7 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -136,4 +137,15 @@ void finalizeForCommandLine()
     g_commandLineContext.reset();
 }
 
+int runCommandLineModule(int argc, char *argv[],
+                         CommandLineModuleInterface *module)
+{
+    return gmx::CommandLineModuleManager::runAsMainSingleModule(argc, argv, module);
+}
+
 } // namespace gmx
+
+int gmx_run_cmain(int argc, char *argv[], int (*mainFunction)(int, char *[]))
+{
+    return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, mainFunction);
+}

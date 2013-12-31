@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares functions for initializing the \Gromacs library for command-line use.
+ * Declares functions for initializing the \Gromacs library for command line use.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -43,12 +43,16 @@
 #ifndef GMX_COMMANDLINE_CMDLINEINIT_H
 #define GMX_COMMANDLINE_CMDLINEINIT_H
 
+#ifdef __cplusplus
+
 // Forward declaration of class CommandLineProgramContext is not sufficient for
 // MSVC if the return value of initForCommandLine() is ignored(!)
 #include "cmdlineprogramcontext.h"
 
 namespace gmx
 {
+
+class CommandLineModuleInterface;
 
 /*! \brief
  * Initializes the \Gromacs library for command-line use.
@@ -89,6 +93,81 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv);
  */
 void finalizeForCommandLine();
 
+/*! \brief
+ * Implements a main() method that runs a single module.
+ *
+ * \param argc   \c argc passed to main().
+ * \param argv   \c argv passed to main().
+ * \param module Module to run.
+ *
+ * This method allows for uniform behavior for binaries that only
+ * contain a single module without duplicating any of the
+ * implementation from CommandLineModuleManager (startup headers,
+ * common options etc.).
+ *
+ * The signature assumes that \p module construction does not throw
+ * (because otherwise the caller would need to duplicate all the
+ * exception handling code).  It is possible to move the construction
+ * inside the try/catch in this method using an indirection similar to
+ * TrajectoryAnalysisCommandLineRunner::runAsMain(), but until that is
+ * necessary, the current approach leads to simpler code.
+ *
+ * Usage:
+ * \code
+   int main(int argc, char *argv[])
+   {
+       CustomCommandLineModule module;
+       return gmx::runCommandLineModule(argc, argv, &module);
+   }
+   \endcode
+ *
+ * Does not throw.  All exceptions are caught and handled internally.
+ */
+int runCommandLineModule(int argc, char *argv[],
+                         CommandLineModuleInterface *module);
+
 } // namespace gmx
+
+extern "C"
+{
+#endif
+
+/*! \brief
+ * Implements a main() method that runs a given C main function.
+ *
+ * \param argc         \c argc passed to main().
+ * \param argv         \c argv passed to main().
+ * \param mainFunction The main()-like method to wrap.
+ *
+ * This method creates a dummy command line module that does its
+ * processing by calling \p mainFunction.  It then runs this module as with
+ * gmx::runCommandLineModule().
+ * This allows the resulting executable to handle common options and do
+ * other common actions (e.g., startup headers) without duplicate code
+ * in the main methods.
+ *
+ * \p mainFunction should call parse_common_args() to process its command-line
+ * arguments.
+ *
+ * Usage:
+ * \code
+   int my_main(int argc, char *argv[])
+   {
+       // <...>
+   }
+
+   int main(int argc, char *argv[])
+   {
+       return gmx_run_cmain(argc, argv, &my_main);
+   }
+   \endcode
+ *
+ * Does not throw.  All exceptions are caught and handled internally.
+ */
+int gmx_run_cmain(int argc, char *argv[], int (*mainFunction)(int, char *[]));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
