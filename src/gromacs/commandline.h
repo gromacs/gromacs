@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
  *    provides the functionality to implement the `gmx` wrapper binary, as well
  *    as command line options common to all \Gromacs programs (such as
  *    `-version`).
+ *    This is described in more detail at \ref page_wrapperbinary.
  *    \endif
  *
  *  - Helper classes for particular command line tasks:
