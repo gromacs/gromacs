@@ -34,6 +34,7 @@ src/contrib/*                           !filter
 src/gromacs/gmxlib/gpu_utils/memtestG80_core.*             !filter
 src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
 **/thread_mpi/**                        filter=uncrustify_only
+src/gromacs/gmxlib/thread_mpi/CMakeLists.txt               !filter
 src/gromacs/legacyheaders/thread_mpi.h  filter=uncrustify_only
 src/gromacs/legacyheaders/tmpi.h        filter=uncrustify_only
 src/gromacs/linearalgebra/gmx_blas/*    !filter

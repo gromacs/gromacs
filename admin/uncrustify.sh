@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -202,7 +202,7 @@ cut -f2 <$tmpdir/difflist | \
 cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
 grep -E '(uncrustify|uncrustify_only)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_uncrustify
-grep 'copyright$' <$tmpdir/filtered | \
+grep -E '(uncrustify|copyright)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_copyright
 git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 
@@ -262,9 +262,6 @@ if [[ $copyright_mode != "off" ]] ; then
         *)
             echo "Unknown copyright mode: $copyright_mode"
             exit 2
-    if [[ $copyright -eq 2 ]] ; then
-        cpscript_args+=" --update-header"
-    fi
     esac
     if [[ $action == check-* ]] ; then
         cpscript_args+=" --check"
