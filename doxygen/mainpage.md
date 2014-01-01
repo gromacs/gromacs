@@ -56,6 +56,8 @@ give an overview of some of the topics that are documented:
    Provides general guidance for writing software that uses the \Gromacs
    library.
 \if libapi
+ - \subpage page_wrapperbinary <br/>
+   Provides an overview of how the `gmx` wrapper binary is implemented.
  - \subpage thread_mpi <br/>
    This code is used internally for threading support, and also provides a
    (partial) MPI implementation that allows compiling a "thread-MPI" version of
