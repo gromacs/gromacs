@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -690,8 +690,7 @@ char *gmx_strerror(const char *key)
 
 void _gmx_error(const char *key, const char *msg, const char *file, int line)
 {
-    char buf[10240], tmpbuf[1024], errerrbuf[1024];
-    int  cqnum;
+    char buf[10240], errerrbuf[1024];
     const char *llines = "-------------------------------------------------------";
     char *strerr;
 
@@ -702,14 +701,13 @@ void _gmx_error(const char *key, const char *msg, const char *file, int line)
         sprintf(errerrbuf, "Empty fatal_error message. %s", gmxuser);
     }
 
-    cool_quote(tmpbuf, 1023, &cqnum);
     strerr = gmx_strerror(key);
     sprintf(buf, "\n%s\nProgram %s, %s\n"
             "Source code file: %s, line: %d\n\n"
             "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
-            "website at http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
+            "website at http://www.gromacs.org/Documentation/Errors\n%s\n",
             llines, ShortProgram(), GromacsVersion(), file, line,
-            strerr, msg ? msg : errerrbuf, llines, tmpbuf);
+            strerr, msg ? msg : errerrbuf, llines);
     free(strerr);
 
     gmx_error_handler(buf);
