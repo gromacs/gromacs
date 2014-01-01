@@ -54,6 +54,7 @@
  *    provides the functionality to implement the `gmx` wrapper binary, as well
  *    as command line options common to all \Gromacs programs (such as
  *    `-version`).
+ *    This is described in more detail at \ref page_wrapperbinary.
  *    \endif
  *
  *  - Helper classes for particular command line tasks:

@@ -32,12 +32,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::CommandLineModuleManager.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_commandline
  */
 #ifndef GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
@@ -55,11 +55,14 @@ class CommandLineModuleGroupData;
 class CommandLineModuleInterface;
 class CommandLineProgramContext;
 
+//! \addtogroup module_commandline
+//! \{
+
 //! Smart pointer type for managing a CommandLineModuleInterface.
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
     CommandLineModulePointer;
 
-/*! \brief
+/*! \libinternal \brief
  * Implements a wrapper command-line interface for multiple modules.
  *
  * Typical usage:
@@ -83,8 +86,8 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
    }
  * \endcode
  *
- * \inpublicapi
- * \ingroup module_commandline
+ * \see page_wrapperbinary
+ * \inlibraryapi
  */
 class CommandLineModuleManager
 {
@@ -301,7 +304,7 @@ class CommandLineModuleManager
         PrivateImplPointer<Impl> impl_;
 };
 
-/*! \brief
+/*! \libinternal \brief
  * Handle to add content to a group added with
  * CommandLineModuleManager::addModuleGroup().
  *
@@ -310,8 +313,7 @@ class CommandLineModuleManager
  * point to the same group.  The actual state of the group is maintained in an
  * internal implementation class.
  *
- * \inpublicapi
- * \ingroup module_commandline
+ * \inlibraryapi
  */
 class CommandLineModuleGroup
 {
@@ -352,6 +354,8 @@ class CommandLineModuleGroup
         //! Pointer to the data owned by CommandLineModuleManager.
         Impl                     *impl_;
 };
+
+//! \}
 
 } // namespace gmx
 
