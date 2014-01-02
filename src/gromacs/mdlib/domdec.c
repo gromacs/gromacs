@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,6 @@
 #include "shellfc.h"
 #include "mtop_util.h"
 #include "gmx_ga2la.h"
-#include "gmx_sort.h"
 #include "macros.h"
 #include "nbnxn_search.h"
 #include "bondf.h"
@@ -76,6 +75,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/qsort_threadsafe.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
@@ -8896,7 +8896,7 @@ static void ordered_sort(int nsort2, gmx_cgsort_t *sort2,
     int i1, i2, i_new;
 
     /* The new indices are not very ordered, so we qsort them */
-    qsort_threadsafe(sort_new, nsort_new, sizeof(sort_new[0]), comp_cgsort);
+    gmx_qsort_threadsafe(sort_new, nsort_new, sizeof(sort_new[0]), comp_cgsort);
 
     /* sort2 is already ordered, so now we can merge the two arrays */
     i1    = 0;
@@ -9009,7 +9009,7 @@ static int dd_sort_order(gmx_domdec_t *dd, t_forcerec *fr, int ncg_home_old)
             fprintf(debug, "qsort cgs: %d new home %d\n", dd->ncg_home, ncg_new);
         }
         /* Determine the order of the charge groups using qsort */
-        qsort_threadsafe(cgsort, dd->ncg_home, sizeof(cgsort[0]), comp_cgsort);
+        gmx_qsort_threadsafe(cgsort, dd->ncg_home, sizeof(cgsort[0]), comp_cgsort);
     }
 
     return ncg_new;

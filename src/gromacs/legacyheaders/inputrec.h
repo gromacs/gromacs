@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,20 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _GMX_INPUTREC_H_
-#define _GMX_INPUTREC_H_
-
-/** @file gmx_sort.h
- *
- *  @brief Portable implementation of thread-safe sort routines.
- *
- *
- *  This module provides a Gromacs version of the qsort() routine defined.
- *  It is not highly optimized, but it is thread safe, i.e. multiple threads
- *  can simultaneously call gmx_qsort with different data.
- */
-
-#include <stdlib.h>
+#ifndef GMX_INPUTREC_H
+#define GMX_INPUTREC_H
 
 #include "types/inputrec.h"
 
@@ -74,4 +62,4 @@ int ir_optimal_nstpcouple(const t_inputrec *ir);
 #endif
 
 
-#endif /* _GMX_INPUTREC_H_ */
+#endif
