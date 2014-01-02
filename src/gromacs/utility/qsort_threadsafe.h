@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,23 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Portable implementation of thread-safe sort routines.
+ * Portable implementation of threadsafe quicksort.
  *
- * This module provides a Gromacs version of the qsort() routine defined.
- * It is not highly optimized, but it is thread safe, i.e. multiple threads
+ * This module provides a \Gromacs version of the qsort() routine defined.
+ * It is not highly optimized, but it is threadsafe, i.e. multiple threads
  * can simultaneously call gmx_qsort() with different data.
  *
  * The rational is that some implementations of qsort() are not threadsafe.
- * For instance qsort in glibc contains a bug which makes it non-threadsafe:
+ * For instance qsort() in glibc contains a bug which makes it not threadsafe:
  * http://sources.redhat.com/bugzilla/show_bug.cgi?id=11655
- * On the other hand, system qsort might be faster than our own.
+ * On the other hand, system qsort() might be faster than our own.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
  */
-#ifndef GMX_SORT_H
-#define GMX_SORT_H
+#ifndef GMX_UTILITY_QSORT_THREADSAFE_H
+#define GMX_UTILITY_QSORT_THREADSAFE_H
 
 #include <stdlib.h>
+
+/* For GMX_THREAD_MPI */
+#include "config.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -58,8 +64,12 @@ extern "C"
 } /* fixes auto-indentation problems */
 #endif
 
+/*! \addtogroup module_utility
+ * \{
+ */
+
 /*! \brief
- * Portable thread-safe sort routine.
+ * Portable threadsafe sort routine.
  *
  * \param base    Pointer to first element in list to sort
  * \param nmemb   Number of elements in list
@@ -71,27 +81,29 @@ extern "C"
  *                equal to, or greater than the second.
  */
 void
-gmx_qsort(void *           base,
+gmx_qsort(void            *base,
           size_t           nmemb,
           size_t           size,
           int            (*compar)(const void *, const void *));
 
 
-/*! \def qsort_threadsafe
+/*! \def gmx_qsort_threadsafe
  * \brief
- * Thread-safe qsort.
+ * Threadsafe qsort().
  *
  * Expands to gmx_qsort() if Gromacs is built with threading, or system qsort()
  * otherwise.
  */
 #ifdef GMX_THREAD_MPI
-#define qsort_threadsafe gmx_qsort
+#define gmx_qsort_threadsafe gmx_qsort
 #else
-#define qsort_threadsafe qsort
+#define gmx_qsort_threadsafe qsort
 #endif
+
+/*! \} */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* GMX_SORT_H */
+#endif
