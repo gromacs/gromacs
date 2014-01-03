@@ -144,6 +144,33 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
 void make_dp_periodic(real *dp);
 /* make a dihedral fall in the range (-pi,pi) */
 
+void compute_factors_restangles(int type, const t_iparams forceparams[], real lambda,
+                                rvec delta_ante,  rvec delta_post,
+                                real *prefactor, real *ratio_ante, real *ratio_post, real *v);
+/* Compute factors for restricted angle potential */
+
+
+void compute_factors_restrdihs(int type,  const t_iparams forceparams[], real lambda,
+                               rvec delta_ante, rvec delta_crnt, rvec delta_post,
+                               real *factor_phi_middle_ante_ante, real *factor_phi_middle_ante_crnt,
+                               real *factor_phi_middle_ante_post, real *factor_phi_middle_post_ante,
+                               real *factor_phi_extrem_ante_ante, real *factor_phi_middle_post_crnt,
+                               real *factor_phi_extrem_ante_crnt, real *factor_phi_middle_post_post,
+                               real *factor_phi_extrem_ante_post, real *factor_phi_extrem_post_ante,
+                               real *factor_phi_extrem_post_crnt,  real *factor_phi_extrem_post_post,
+                               real *prefactor_phi, real *v);
+/* Compute factors for restricted dihedral potential */
+
+
+void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
+                             rvec delta_ante, rvec delta_crnt, rvec delta_post,
+                             rvec f_theta_ante_middle_ante, rvec f_theta_ante_middle_post,
+                             rvec f_theta_post_middle_ante, rvec f_theta_ante_extrem_ante,
+                             rvec f_theta_post_middle_post, rvec f_phi_middle_ante,
+                             rvec f_phi_middle_post, rvec f_phi_extrem_ante,
+                             rvec f_phi_extrem_post, rvec f_theta_post_extrem_post, real * v);
+/* Compute factors for CBT potential */
+
 /*************************************************************************
  *
  *  Bonded force functions
@@ -151,7 +178,9 @@ void make_dp_periodic(real *dp);
  *************************************************************************/
 t_ifunc bonds, g96bonds, morse_bonds, cubic_bonds, FENE_bonds, restraint_bonds;
 t_ifunc angles, g96angles, cross_bond_bond, cross_bond_angle, urey_bradley, quartic_angles, linear_angles;
+t_ifunc restrangles;
 t_ifunc pdihs, idihs, rbdihs;
+t_ifunc restrdihs, cbtdihs;
 t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
 
