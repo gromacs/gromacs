@@ -60,7 +60,7 @@
 #include "vec.h"
 #include "mtop_util.h"
 
-#define TPX_TAG_RELEASE  "release"
+#define TPX_TAG_RELEASE  "release1"
 
 /* This is the tag string which is stored in the tpx file.
  * Change this if you want to change the tpx format in a feature branch.
@@ -70,7 +70,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 95;
+static const int tpx_version = 96;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -82,12 +82,12 @@ static const int tpx_version = 95;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 25;
+static const int tpx_generation = 27;
 
 /* This number should be the most recent backwards incompatible version
- * I.e., if this number is 9, we cannot read tpx version 9 with this code.
+ * I.e., if this number is 10, we cannot read tpx version 9 with this code.
  */
-static const int tpx_incompatible_version = 9;
+static const int tpx_incompatible_version = 10;
 
 
 
@@ -1694,11 +1694,19 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             do_harm(fio, iparams);
             if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && bRead)
             {
-                /* Correct incorrect storage of parameters */
+                / * Correct incorrect storage of parameters * /
                 iparams->pdihs.phiB = iparams->pdihs.phiA;
                 iparams->pdihs.cpB  = iparams->pdihs.cpA;
             }
             break;
+       case F_RESTRANGLES:
+            do_harm(fio,iparams);
+            if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && bRead) {
+                / * Correct incorrect storage of parameters * /
+                iparams->restrdihs.phiB = iparams->restrdihs.phiA;
+                iparams->restrdihs.cpB  = iparams->restrdihs.cpA;
+            }
+        break; 
         case F_LINEAR_ANGLES:
             gmx_fio_do_real(fio, iparams->linangle.klinA);
             gmx_fio_do_real(fio, iparams->linangle.aA);
@@ -1709,6 +1717,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fene.bm);
             gmx_fio_do_real(fio, iparams->fene.kb);
             break;
+
         case F_RESTRBONDS:
             gmx_fio_do_real(fio, iparams->restraint.lowA);
             gmx_fio_do_real(fio, iparams->restraint.up1A);
@@ -1861,6 +1870,21 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 gmx_fio_do_int(fio, iparams->pdihs.mult);
             }
             break;
+        case F_RESTRDIHS:
+            gmx_fio_do_real(fio,iparams->restrdihs.phiA);
+            gmx_fio_do_real(fio,iparams->restrdihs.cpA);
+            if ((ftype == F_ANGRES || ftype == F_ANGRESZ)  && file_version < 42) {
+                /* Read the incorrectly stored multiplicity */
+            gmx_fio_do_real(fio,iparams->harmonic.rB);
+            gmx_fio_do_real(fio,iparams->harmonic.krB);
+            iparams->restrdihs.phiB = iparams->restrdihs.phiA;
+            iparams->restrdihs.cpB  = iparams->restrdihs.cpA;
+            }
+            else {
+            gmx_fio_do_real(fio,iparams->restrdihs.phiB);
+            gmx_fio_do_real(fio,iparams->restrdihs.cpB);
+            }
+            break;
         case F_DISRES:
             gmx_fio_do_int(fio, iparams->disres.label);
             gmx_fio_do_int(fio, iparams->disres.type);
@@ -1919,6 +1943,11 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fbposres.r);
             gmx_fio_do_real(fio, iparams->fbposres.k);
             break;
+        case F_CBTDIHS:
+            gmx_fio_ndo_real(fio, iparams->cbtdihs.rbcA, NR_CBTDIHS);
+            if(file_version>=25)
+                gmx_fio_ndo_real(fio, iparams->cbtdihs.rbcB, NR_CBTDIHS);
+        break;
         case F_RBDIHS:
             gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
             if (file_version >= 25)
