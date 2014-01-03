@@ -1699,6 +1699,14 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 iparams->pdihs.cpB  = iparams->pdihs.cpA;
             }
             break;
+        case F_RESTRANGLES:
+            do_harm(fio,iparams);
+            if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && bRead) {
+                /* Correct incorrect storage of parameters */
+                iparams->restrdihs.phiB = iparams->restrdihs.phiA;
+                iparams->restrdihs.cpB  = iparams->restrdihs.cpA;
+            }
+        break;
         case F_LINEAR_ANGLES:
             gmx_fio_do_real(fio, iparams->linangle.klinA);
             gmx_fio_do_real(fio, iparams->linangle.aA);
@@ -1709,6 +1717,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fene.bm);
             gmx_fio_do_real(fio, iparams->fene.kb);
             break;
+
         case F_RESTRBONDS:
             gmx_fio_do_real(fio, iparams->restraint.lowA);
             gmx_fio_do_real(fio, iparams->restraint.up1A);
@@ -1861,6 +1870,21 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 gmx_fio_do_int(fio, iparams->pdihs.mult);
             }
             break;
+        case F_RESTRDIHS:
+            gmx_fio_do_real(fio,iparams->restrdihs.phiA);
+            gmx_fio_do_real(fio,iparams->restrdihs.cpA);
+            if ((ftype == F_ANGRES || ftype == F_ANGRESZ)  && file_version < 42) {
+                /* Read the incorrectly stored multiplicity */
+            gmx_fio_do_real(fio,iparams->harmonic.rB);
+            gmx_fio_do_real(fio,iparams->harmonic.krB);
+            iparams->restrdihs.phiB = iparams->restrdihs.phiA;
+            iparams->restrdihs.cpB  = iparams->restrdihs.cpA;
+            }
+            else {
+            gmx_fio_do_real(fio,iparams->restrdihs.phiB);
+            gmx_fio_do_real(fio,iparams->restrdihs.cpB);
+            }
+            break;
         case F_DISRES:
             gmx_fio_do_int(fio, iparams->disres.label);
             gmx_fio_do_int(fio, iparams->disres.type);
@@ -1919,6 +1943,11 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fbposres.r);
             gmx_fio_do_real(fio, iparams->fbposres.k);
             break;
+        case F_CBTDIHS:
+            gmx_fio_ndo_real(fio, iparams->cbtdihs.rbcA, NR_CBTDIHS);
+            if(file_version>=25)
+                gmx_fio_ndo_real(fio, iparams->cbtdihs.rbcB, NR_CBTDIHS);
+        break;
         case F_RBDIHS:
             gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
             if (file_version >= 25)
