@@ -60,7 +60,7 @@
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
 #if __CUDA_ARCH__ >= 350
-__launch_bounds__(64,16)
+__launch_bounds__(64, 16)
 #endif
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
@@ -75,10 +75,10 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener)
 __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #endif
 #endif
-            (const cu_atomdata_t atdat,
-             const cu_nbparam_t nbparam,
-             const cu_plist_t plist,
-             bool bCalcFshift)
+(const cu_atomdata_t atdat,
+ const cu_nbparam_t nbparam,
+ const cu_plist_t plist,
+ bool bCalcFshift)
 {
     /* convenience variables */
     const nbnxn_sci_t *pl_sci   = plist.sci;
@@ -86,16 +86,16 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     const
 #endif
     nbnxn_cj4_t *pl_cj4         = plist.cj4;
-    const nbnxn_excl_t *excl    = plist.excl;
-    const int *atom_types       = atdat.atom_types;
-    int ntypes                  = atdat.ntypes;
-    const float4 *xq            = atdat.xq;
-    float3 *f                   = atdat.f;
-    const float3 *shift_vec     = atdat.shift_vec;
-    float rcoulomb_sq           = nbparam.rcoulomb_sq;
+    const nbnxn_excl_t *excl                    = plist.excl;
+    const int          *atom_types              = atdat.atom_types;
+    int                 ntypes                  = atdat.ntypes;
+    const float4       *xq                      = atdat.xq;
+    float3             *f                       = atdat.f;
+    const float3       *shift_vec               = atdat.shift_vec;
+    float               rcoulomb_sq             = nbparam.rcoulomb_sq;
 #ifdef VDW_CUTOFF_CHECK
-    float rvdw_sq               = nbparam.rvdw_sq;
-    float vdw_in_range;
+    float               rvdw_sq               = nbparam.rvdw_sq;
+    float               vdw_in_range;
 #endif
 #ifdef EL_RF
     float two_k_rf              = nbparam.two_k_rf;
@@ -112,12 +112,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #endif
 
 #ifdef CALC_ENERGIES
-    float lj_shift    = nbparam.sh_invrc6;
+    float  lj_shift    = nbparam.sh_invrc6;
 #ifdef EL_EWALD_ANY
-    float beta        = nbparam.ewald_beta;
-    float ewald_shift = nbparam.sh_ewald;
+    float  beta        = nbparam.ewald_beta;
+    float  ewald_shift = nbparam.sh_ewald;
 #else
-    float c_rf        = nbparam.c_rf;
+    float  c_rf        = nbparam.c_rf;
 #endif
     float *e_lj       = atdat.e_lj;
     float *e_el       = atdat.e_el;
@@ -130,11 +130,11 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     unsigned int bidx   = blockIdx.x;
     unsigned int widx   = tidx / WARP_SIZE; /* warp index */
 
-    int sci, ci, cj, ci_offset,
-        ai, aj,
-        cij4_start, cij4_end,
-        typei, typej,
-        i, jm, j4, wexcl_idx;
+    int          sci, ci, cj, ci_offset,
+                 ai, aj,
+                 cij4_start, cij4_end,
+                 typei, typej,
+                 i, jm, j4, wexcl_idx;
     float qi, qj_f,
           r2, inv_r, inv_r2, inv_r6,
           c6, c12,
@@ -142,12 +142,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef CALC_ENERGIES
           E_lj, E_el, E_lj_p,
 #endif
-          F_invr;
+    F_invr;
     unsigned int wexcl, imask, mask_ji;
-    float4 xqbuf;
-    float3 xi, xj, rv, f_ij, fcj_buf, fshift_buf;
-    float3 fci_buf[NCL_PER_SUPERCL];    /* i force buffer */
-    nbnxn_sci_t nb_sci;
+    float4       xqbuf;
+    float3       xi, xj, rv, f_ij, fcj_buf, fshift_buf;
+    float3       fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
+    nbnxn_sci_t  nb_sci;
 
     /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
@@ -185,7 +185,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #endif
     __syncthreads();
 
-    for(ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
         fci_buf[ci_offset] = make_float3(0.0f);
     }
@@ -268,11 +268,11 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && (defined EL_EWALD_ANY || defined EL_RF))
 #pragma unroll 8
 #endif
-                    for(i = 0; i < NCL_PER_SUPERCL; i++)
+                    for (i = 0; i < NCL_PER_SUPERCL; i++)
                     {
                         if (imask & mask_ji)
                         {
-                            ci_offset   = i;    /* i force buffer offset */
+                            ci_offset   = i;                     /* i force buffer offset */
 
                             ci      = sci * NCL_PER_SUPERCL + i; /* i cluster index */
                             ai      = ci * CL_SIZE + tidxi;      /* i atom index */
@@ -320,7 +320,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #else
                                 c6      = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej));
                                 c12     = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej) + 1);
-#endif /* USE_TEXOBJ */
+#endif                          /* USE_TEXOBJ */
 
 
                                 /* avoid NaN for excluded pairs at r=0 */
@@ -344,7 +344,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef VDW_CUTOFF_CHECK
                                 /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
                                 vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
-                                F_invr  *= vdw_in_range;
+                                F_invr      *= vdw_in_range;
 #ifdef CALC_ENERGIES
                                 E_lj_p  *= vdw_in_range;
 #endif
@@ -382,7 +382,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef EL_EWALD_ANY
                                 /* 1.0f - erff is faster than erfcf */
                                 E_el    += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
-#endif /* EL_EWALD_ANY */
+#endif                          /* EL_EWALD_ANY */
 #endif
                                 f_ij    = rv * F_invr;
 
@@ -420,7 +420,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     }
 
     /* reduce i forces */
-    for(ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
         ai  = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
 #ifdef REDUCE_SHUFFLE

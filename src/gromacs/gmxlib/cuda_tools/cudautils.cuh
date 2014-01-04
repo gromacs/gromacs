@@ -46,16 +46,16 @@
    with them (e.g. expected warp size = 32, check against the dev_info->props.warpsize). */
 #define WARP_SIZE           32
 
-/* TODO error checking needs to be rewritten. We have 2 types of error checks needed 
-   based on where they occur in the code: 
-   - non performance-critical: these errors are unsafe to be ignored and must be 
+/* TODO error checking needs to be rewritten. We have 2 types of error checks needed
+   based on where they occur in the code:
+   - non performance-critical: these errors are unsafe to be ignored and must be
      _always_ checked for, e.g. initializations
    - performance critical: handling errors might hurt performance so care need to be taken
-     when/if we should check for them at all, e.g. in cu_upload_X. However, we should be 
+     when/if we should check for them at all, e.g. in cu_upload_X. However, we should be
      able to turn the check for these errors on!
 
-  Probably we'll need two sets of the macros below... 
- 
+   Probably we'll need two sets of the macros below...
+
  */
 #define CHECK_CUDA_ERRORS
 
@@ -79,8 +79,8 @@
         } \
     } while (0)
 
-/*! Check for any previously occurred uncaught CUDA error 
-  -- aimed at use after kernel calls. */
+/*! Check for any previously occurred uncaught CUDA error
+   -- aimed at use after kernel calls. */
 #define CU_LAUNCH_ERR(msg) \
     do { \
         cudaError_t _CU_LAUNCH_ERR_status = cudaGetLastError(); \
@@ -89,8 +89,8 @@
         } \
     } while (0)
 
-/*! Synchronize with GPU and check for any previously occurred uncaught CUDA error 
-  -- aimed at use after kernel calls. */
+/*! Synchronize with GPU and check for any previously occurred uncaught CUDA error
+   -- aimed at use after kernel calls. */
 #define CU_LAUNCH_ERR_SYNC(msg) \
     do { \
         cudaError_t _CU_SYNC_LAUNCH_ERR_status = cudaThreadSynchronize(); \
@@ -106,7 +106,7 @@
 #define CU_LAUNCH_ERR(msg)      do { } while (0)
 #define CU_LAUNCH_ERR_SYNC(msg) do { } while (0)
 
-#endif /* CHECK_CUDA_ERRORS */ 
+#endif /* CHECK_CUDA_ERRORS */
 
 #ifdef __cplusplus
 extern "C" {

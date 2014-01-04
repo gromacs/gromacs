@@ -126,13 +126,13 @@ struct cu_nbparam
     float    sh_invrc6;      /**< LJ potential correction term                      */
 
     /* Non-bonded parameters - accessed through texture memory */
-    float            *nbfp;          /**< nonbonded parameter table with C6/C12 pairs  */
+    float              *nbfp;        /**< nonbonded parameter table with C6/C12 pairs  */
     cudaTextureObject_t nbfp_texobj; /**< texture object bound to nbfp                 */
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    int               coulomb_tab_size;      /**< table size (s.t. it fits in texture cache) */
-    float             coulomb_tab_scale;     /**< table scale/spacing                        */
-    float            *coulomb_tab;           /**< pointer to the table in the device memory  */
+    int                  coulomb_tab_size;   /**< table size (s.t. it fits in texture cache) */
+    float                coulomb_tab_scale;  /**< table scale/spacing                        */
+    float               *coulomb_tab;        /**< pointer to the table in the device memory  */
     cudaTextureObject_t  coulomb_tab_texobj; /**< texture object bound to coulomb_tab        */
 };
 

@@ -56,7 +56,7 @@ gmx_invsqrt_pr(gmx_mm_pr x)
     const gmx_mm_pr three = gmx_set1_pr(3.0);
 
     gmx_mm_pr       lu = gmx_rsqrt_pr(x);
-    
+
     return gmx_mul_pr(half, gmx_mul_pr(gmx_sub_pr(three, gmx_mul_pr(gmx_mul_pr(lu, lu), x)), lu));
 #endif
 }

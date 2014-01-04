@@ -701,7 +701,7 @@
 #else
     fscal_S0    = gmx_mul_pr(rinvsq_S0,
                              (
-                                        gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
+                                 gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
 #endif
 #else
     fscal_S0    = gmx_mul_pr(rinvsq_S0, frcoul_S0);
@@ -714,7 +714,7 @@
 #else
     fscal_S2    = gmx_mul_pr(rinvsq_S2,
                              (
-                                        gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
+                                 gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
 #endif
 #else
     /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */

@@ -58,12 +58,12 @@ static inline __device__
 float interpolate_coulomb_force_r(float r, float scale)
 {
     float   normalized = scale * r;
-    int     index = (int) normalized;
-    float   fract2 = normalized - index;
-    float   fract1 = 1.0f - fract2;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
 
-    return  fract1 * tex1Dfetch(coulomb_tab_texref, index)
-            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
+    return fract1 * tex1Dfetch(coulomb_tab_texref, index)
+           + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
 }
 
 #ifdef TEXOBJ_SUPPORTED
@@ -72,12 +72,12 @@ float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)
 {
     float   normalized = scale * r;
-    int     index = (int) normalized;
-    float   fract2 = normalized - index;
-    float   fract1 = 1.0f - fract2;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
 
-    return  fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
-            fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
+    return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
+           fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
 }
 #endif
 
@@ -101,7 +101,7 @@ float pmecorrF(float z2)
     const float FD0 = 1.0f;
 
     float       z4;
-    float       polyFN0,polyFN1,polyFD0,polyFD1;
+    float       polyFN0, polyFN1, polyFD0, polyFD1;
 
     z4          = z2*z2;
 
@@ -344,16 +344,16 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
 #pragma unroll 5
     for (i = 0; i < 5; i++)
     {
-        E_lj += __shfl_down(E_lj,sh);
-        E_el += __shfl_down(E_el,sh);
-        sh += sh;
+        E_lj += __shfl_down(E_lj, sh);
+        E_el += __shfl_down(E_el, sh);
+        sh   += sh;
     }
 
     /* The first thread in the warp writes the reduced energies */
     if (tidx == 0 || tidx == WARP_SIZE)
     {
-        atomicAdd(e_lj,E_lj);
-        atomicAdd(e_el,E_el);
+        atomicAdd(e_lj, E_lj);
+        atomicAdd(e_el, E_el);
     }
 }
 #endif /* __CUDA_ARCH__ */

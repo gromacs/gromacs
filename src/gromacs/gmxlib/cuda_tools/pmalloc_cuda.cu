@@ -40,8 +40,8 @@
 #include "cudautils.cuh"
 #include "pmalloc_cuda.h"
 
-/*! Allocates nbytes of page-locked memory. 
- *  This memory should always be freed using pfree (or with the page-locked 
+/*! Allocates nbytes of page-locked memory.
+ *  This memory should always be freed using pfree (or with the page-locked
  *  free functions provied by the CUDA library).
  */
 void pmalloc(void **h_ptr, size_t nbytes)
@@ -58,13 +58,13 @@ void pmalloc(void **h_ptr, size_t nbytes)
 
     CU_CHECK_PREV_ERR();
 
-    stat = cudaMallocHost(h_ptr, nbytes, flag);    
+    stat = cudaMallocHost(h_ptr, nbytes, flag);
     sprintf(strbuf, "cudaMallocHost of size %d bytes failed", (int)nbytes);
-    CU_RET_ERR(stat, strbuf);  
+    CU_RET_ERR(stat, strbuf);
 }
 
-/*! Allocates nbytes of page-locked memory with write-combining. 
- *  This memory should always be freed using pfree (or with the page-locked 
+/*! Allocates nbytes of page-locked memory with write-combining.
+ *  This memory should always be freed using pfree (or with the page-locked
  *  free functions provied by the CUDA library).
  */
 void pmalloc_wc(void **h_ptr, size_t nbytes)
@@ -81,21 +81,21 @@ void pmalloc_wc(void **h_ptr, size_t nbytes)
 
     CU_CHECK_PREV_ERR();
 
-    stat = cudaMallocHost(h_ptr, nbytes, flag);    
+    stat = cudaMallocHost(h_ptr, nbytes, flag);
     sprintf(strbuf, "cudaMallocHost of size %d bytes failed", (int)nbytes);
-    CU_RET_ERR(stat, strbuf);  
+    CU_RET_ERR(stat, strbuf);
 }
 
 /*! Frees page locked memory allocated with pmalloc.
- *  This function can safely be called also with a pointer to a page-locked 
+ *  This function can safely be called also with a pointer to a page-locked
  *  memory allocated directly with CUDA API calls.
  */
-void pfree(void *h_ptr) 
+void pfree(void *h_ptr)
 {
-    cudaError_t stat; 
+    cudaError_t stat;
 
     if (h_ptr == NULL)
-    {        
+    {
         return;
     }
 

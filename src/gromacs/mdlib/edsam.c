@@ -238,12 +238,12 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv);
  * for any of the ED groups? */
 static gmx_bool bNeedDoEdsam(t_edpar *edi)
 {
-    return     edi->vecs.mon.neig
-            || edi->vecs.linfix.neig
-            || edi->vecs.linacc.neig
-            || edi->vecs.radfix.neig
-            || edi->vecs.radacc.neig
-            || edi->vecs.radcon.neig;
+    return edi->vecs.mon.neig
+           || edi->vecs.linfix.neig
+           || edi->vecs.linacc.neig
+           || edi->vecs.radfix.neig
+           || edi->vecs.radacc.neig
+           || edi->vecs.radcon.neig;
 }
 
 
@@ -2606,7 +2606,7 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv)
     edi         = ed->edpar;
     for (nr_edi = 1; nr_edi <= nED; nr_edi++)
     {
-        if ( bNeedDoEdsam(edi) ) /* Only print ED legend if at least one ED option is on */
+        if (bNeedDoEdsam(edi) )  /* Only print ED legend if at least one ED option is on */
         {
             nice_legend(&setname, &nsets, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED) );
 
@@ -3041,7 +3041,7 @@ void do_edsam(t_inputrec     *ir,
     while (edi != NULL)
     {
         edinr++;
-        if ( bNeedDoEdsam(edi) )
+        if (bNeedDoEdsam(edi) )
         {
 
             buf = edi->buf->do_edsam;

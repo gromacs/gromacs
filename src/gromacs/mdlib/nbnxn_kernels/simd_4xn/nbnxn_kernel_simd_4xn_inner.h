@@ -374,7 +374,7 @@
 #endif
 #endif
 #else /* EXCL_FORCES */
-    /* No exclusion forces: remove all excluded atom pairs from the list */
+      /* No exclusion forces: remove all excluded atom pairs from the list */
     wco_S0      = gmx_and_pb(wco_S0, interact_S0);
     wco_S1      = gmx_and_pb(wco_S1, interact_S1);
     wco_S2      = gmx_and_pb(wco_S2, interact_S2);
@@ -906,7 +906,7 @@
 #else
     fscal_S0    = gmx_mul_pr(rinvsq_S0,
                              (
-                                        gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
+                                 gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
 #endif
 #ifdef CALC_COULOMB
     fscal_S1    = gmx_mul_pr(rinvsq_S1,
@@ -915,7 +915,7 @@
 #else
     fscal_S1    = gmx_mul_pr(rinvsq_S1,
                              (
-                                        gmx_sub_pr(FrLJ12_S1, FrLJ6_S1)));
+                                 gmx_sub_pr(FrLJ12_S1, FrLJ6_S1)));
 #endif
 #else
     fscal_S0    = gmx_mul_pr(rinvsq_S0, frcoul_S0);
@@ -929,7 +929,7 @@
 #else
     fscal_S2    = gmx_mul_pr(rinvsq_S2,
                              (
-                                        gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
+                                 gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
 #endif
 #ifdef CALC_COULOMB
     fscal_S3    = gmx_mul_pr(rinvsq_S3,
@@ -938,7 +938,7 @@
 #else
     fscal_S3    = gmx_mul_pr(rinvsq_S3,
                              (
-                                        gmx_sub_pr(FrLJ12_S3, FrLJ6_S3)));
+                                 gmx_sub_pr(FrLJ12_S3, FrLJ6_S3)));
 #endif
 #else
     /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */
