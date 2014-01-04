@@ -47,11 +47,9 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
@@ -504,17 +502,13 @@ HelpExportHtml::HelpExportHtml(const CommandLineModuleMap &modules)
     : links_(eHelpOutputFormat_Html)
 {
     initProgramLinks(&links_, modules);
-    char *linksFilename = low_gmxlibfn("links.dat", FALSE, FALSE);
-    if (linksFilename != NULL)
+    File             linksFile("links.dat", "r");
+    std::string      line;
+    while (linksFile.readLine(&line))
     {
-        scoped_ptr_sfree guard(linksFilename);
-        File             linksFile(linksFilename, "r");
-        std::string      line;
-        while (linksFile.readLine(&line))
-        {
-            links_.addLink(line, "../online/" + line, line);
-        }
+        links_.addLink(line, "../online/" + line, line);
     }
+    linksFile.close();
     setupHeaderAndFooter();
 }
 
