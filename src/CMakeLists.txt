@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -46,15 +46,20 @@ configure_file(config.h.cmakein config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
 
 if (BUILD_TESTING)
-    add_custom_target(tests)
     if (GMX_BUILD_UNITTESTS)
         add_subdirectory(external/gmock-1.7.0)
-    endif (GMX_BUILD_UNITTESTS)
+    endif()
     include(testutils/TestMacros.cmake)
     if (GMX_BUILD_UNITTESTS)
         add_subdirectory(testutils)
-    endif (GMX_BUILD_UNITTESTS)
-endif (BUILD_TESTING)
+    else()
+        add_custom_target(unittests-notice
+            ${CMAKE_COMMAND} -E echo "NOTE: Unit tests have not been run. You need to set GMX_BUILD_UNITTESTS=ON if you want to build and run them."
+            DEPENDS run-ctest
+            COMMENT "Unit tests disabled" VERBATIM)
+        add_dependencies(check unittests-notice)
+    endif()
+endif()
 
 add_subdirectory(gromacs)
 add_subdirectory(programs)
