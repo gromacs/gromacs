@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -956,12 +956,28 @@ if (GMX_BUILD_FOR_COVERAGE)
     add_definitions(-DNDEBUG -DBOOST_DISABLE_ASSERTS -DGMX_DISABLE_ASSERTS)
 endif ()
 
+if (BUILD_TESTING)
+    # "tests" target builds all the separate test binaries
+    add_custom_target(tests)
+    add_custom_target(run-ctest
+                      COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+                      COMMENT "Running all tests"
+                      VERBATIM)
+    add_dependencies(run-ctest tests)
+    # "check" target builds and runs all tests
+    add_custom_target(check DEPENDS run-ctest)
+endif()
+
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(doxygen)
     add_subdirectory(share)
     add_subdirectory(scripts)
 endif ()
 add_subdirectory(src)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 # Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
 # Don't bother the user after the first configure pass.
@@ -982,25 +998,6 @@ ADD_CUSTOM_TARGET(uninstall
                   "${CMAKE_COMMAND}" -P
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
-
-########################################################################
-# Tests                                                                #
-########################################################################
-
-IF(BUILD_TESTING)
-    enable_testing()
-    #"check" target builds and runs all tests
-    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
-    add_dependencies(check tests)
-    # TODO: This would be better within tests/CMakeLists.txt
-    if (NOT GMX_BUILD_MDRUN_ONLY)
-        #gmxtests target builds all binaries required for running gmxtest
-        add_custom_target(gmxtests DEPENDS gmx links)
-        add_dependencies(check gmxtests)
-        add_subdirectory(tests)
-    endif()
-    #TODO: Add warning if NOT REGRESSIONTEST_PATH OR NOT GMX_XML that regression/unit tests are not run.
-ENDIF()
 
 ########################################################################
 # Manual                                                               #
