@@ -572,7 +572,7 @@ class IncludeFileChecker(object):
         intramodule = \
                 (checkfile.module.get_top_level_module() == \
                  otherfile.module.get_top_level_module())
-        if otherfile.type not in ('publicheader', 'libheader'):
+        if otherfile.type not in ('publicheader', 'libheader', 'test'):
             if not intramodule and not _is_legacy_module(otherfile.module):
                 reporter.error(checkfile.path,
                         'included file "{0}" is missing API definition'
@@ -622,7 +622,7 @@ class GraphBuilder(object):
                 (fromfile.module.get_top_level_module() == \
                  tofile.module.get_top_level_module())
         is_legacy = _is_legacy_module(tofile.module)
-        if tofile.type not in ('publicheader', 'libheader', 'header'):
+        if tofile.type not in ('publicheader', 'libheader', 'header', 'test'):
             if intramodule:
                 link_type = 'intramodule'
             elif is_legacy:
@@ -631,6 +631,8 @@ class GraphBuilder(object):
                 link_type = 'undocumented'
         elif fromfile.type == 'test':
             link_type = 'test'
+        elif tofile.type == 'test':
+            link_type = 'undocumented'
         elif fromfile.type in ('source', 'header', 'implheader') and \
                 not fromfile.is_installed():
             if intramodule:
