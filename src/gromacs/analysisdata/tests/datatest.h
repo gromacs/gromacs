@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_testutils
+ * \ingroup module_analysisdata
  */
-#ifndef GMX_TESTUTILS_DATATEST_H
-#define GMX_TESTUTILS_DATATEST_H
+#ifndef GMX_ANALYSISDATA_TESTS_DATATEST_H
+#define GMX_ANALYSISDATA_TESTS_DATATEST_H
 
 #include <vector>
 
@@ -73,7 +73,7 @@ namespace test
  * between.
  *
  * \inlibraryapi
- * \ingroup module_testutils
+ * \ingroup module_analysisdata
  */
 class AnalysisDataTestInputPointSet
 {
@@ -145,7 +145,7 @@ class AnalysisDataTestInputPointSet
  * Represents a single frame in AnalysisDataTestInput structure.
  *
  * \inlibraryapi
- * \ingroup module_testutils
+ * \ingroup module_analysisdata
  */
 class AnalysisDataTestInputFrame
 {
@@ -202,7 +202,7 @@ class AnalysisDataTestInputFrame
  * \see AnalysisDataTestFixture
  *
  * \inlibraryapi
- * \ingroup module_testutils
+ * \ingroup module_analysisdata
  */
 class AnalysisDataTestInput
 {
@@ -285,7 +285,7 @@ class AnalysisDataTestInput
  * \see AnalysisDataTestInput
  *
  * \inlibraryapi
- * \ingroup module_testutils
+ * \ingroup module_analysisdata
  */
 class AnalysisDataTestFixture : public ::testing::Test
 {
