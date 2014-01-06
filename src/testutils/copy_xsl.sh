@@ -10,7 +10,7 @@ for destdir in analysisdata selection trajectoryanalysis ; do
           src/gromacs/$destdir/tests/refdata/
 done
 
-for destdir in analysisdata trajectoryanalysis ; do
-    cp -f src/testutils/analysisdata-referencedata.xsl \
+for destdir in trajectoryanalysis ; do
+    cp -f src/gromacs/analysisdata/tests/refdata/analysisdata-referencedata.xsl \
           src/gromacs/$destdir/tests/refdata/
 done

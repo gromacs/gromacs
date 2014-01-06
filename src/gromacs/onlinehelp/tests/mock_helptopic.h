@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_testutils
+ * \ingroup module_onlinehelp
  */
-#ifndef GMX_TESTUTILS_MOCK_HELPTOPIC_H
-#define GMX_TESTUTILS_MOCK_HELPTOPIC_H
+#ifndef GMX_ONLINEHELP_TESTS_MOCK_HELPTOPIC_H
+#define GMX_ONLINEHELP_TESTS_MOCK_HELPTOPIC_H
 
 #include <gmock/gmock.h>
 

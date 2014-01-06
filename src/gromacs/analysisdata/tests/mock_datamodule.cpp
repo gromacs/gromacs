@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,7 @@
  * Implements classes in mock_datamodule.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_testutils
+ * \ingroup module_analysisdata
  */
 #include "mock_datamodule.h"
 
@@ -49,7 +49,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "testutils/datatest.h"
+#include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
@@ -65,7 +65,7 @@ namespace test
 /*! \internal \brief
  * Private implementation class for gmx::test::MockAnalysisDataModule.
  *
- * \ingroup module_testutils
+ * \ingroup module_analysisdata
  */
 class MockAnalysisDataModule::Impl
 {
@@ -129,7 +129,7 @@ namespace
 /*! \internal \brief
  * Checks a single AnalysisDataValue.
  *
- * \ingroup module_testutils
+ * \ingroup module_analysisdata
  */
 void checkReferenceDataPoint(TestReferenceChecker    *checker,
                              const AnalysisDataValue &value)
