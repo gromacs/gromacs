@@ -314,9 +314,8 @@ void gmx_molprop_stats_table(FILE *fp,
     char   buf[32];
     t_cats *cats;
     gmx_stats_t lsq,*lsqtot;
-    bool   bSideways = (qmc->n > 3);
 
-    alexandria::LongTable lt(fp, bSideways);
+    alexandria::LongTable lt(fp, true);
 
     nprint = 0;
     snew(cats,1);
@@ -690,7 +689,7 @@ static void category_header(alexandria::LongTable &lt)
 {
     char longbuf[STRLEN];
     
-    lt.setColumns("lcc");
+    lt.setColumns("lcp{120mm}");
     for(int k = 0; (k<2); k++)
     {
         if (0 == k)
@@ -713,7 +712,7 @@ void gmx_molprop_category_table(FILE *fp,
     int i,j,ncs;
     t_cat_stat *cs=NULL;
     const char *iupac;
-    alexandria::LongTable lt(fp, false);
+    alexandria::LongTable lt(fp, true);
         
     ncs = 0;
     for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
@@ -753,21 +752,15 @@ static void atomtype_tab_header(alexandria::LongTable &lt)
 {
     char longbuf[STRLEN];
     
-    lt.setColumns("cccccccc");
+    lt.setColumns("ccccccc");
     
-    for(int k = 0; (k < 2); k++)
-    {
-        if (0 == k)
-        {
-            snprintf(longbuf, STRLEN, "Definition of atom types. The number of occurences  of atom N$_{Exp}$ and N$_{QM}$ indicate how many of the polarizability values were fitted to experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.");
-            lt.setCaption(longbuf);
-            lt.setLabel("fragments");
-        }
-        snprintf(longbuf, STRLEN, "Name  & N$_{Exp}$ & N$_{QM}$ & \\multicolumn{4}{c}{Polarizability} & Ref.");
-        lt.addHeadLine(longbuf);
-        snprintf(longbuf, STRLEN, "& & & Ahc & Ahp & BS & AX ($\\sigma_{AX}$) & ");
-        lt.addHeadLine(longbuf);
-    }
+    snprintf(longbuf, STRLEN, "Definition of atom types for polarization (AX column). The number of occurences  of atom N$_{Exp}$ and N$_{QM}$ indicate how many of the polarizability values were fitted to experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.");
+    lt.setCaption(longbuf);
+    lt.setLabel("fragments");
+    snprintf(longbuf, STRLEN, "Name  & N$_{Exp}$ & N$_{QM}$ & \\multicolumn{4}{c}{Polarizability}");
+    lt.addHeadLine(longbuf);
+    snprintf(longbuf, STRLEN, "& & & AX ($\\sigma_{AX}$) & Ahc & Ahp & BS ");
+    lt.addHeadLine(longbuf);
     lt.printHeader();
 }
 
@@ -790,8 +783,8 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     double exp_val,qm_val;
     real   alexandria_aver,alexandria_sigma;
     char   *ptype;
-    char   *ref, *miller, *bosque;
-    char   longbuf[STRLEN], buf[256];
+    char   *miller, *bosque;
+    char   longbuf[STRLEN];
     int    nsmlsq=0,estats,nset;
     t_sm_lsq *smlsq=NULL;
     MolPropObservable mpo=MPO_POLARIZABILITY;
@@ -828,6 +821,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     smlsq[j].lsq    = gmx_stats_init();
                     smlsq[j].nexp   = 0;
                     smlsq[j].nqm    = 0;
+                    printf("New poltype %s\n", ptype);
                 }
                 if ((estats = gmx_stats_add_point_ydy(smlsq[j].lsq, 
                                                       alexandria_pol, 
@@ -854,7 +848,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     const char *pt = 
                         gmx_poldata_atype_to_ptype(pd[0],
                                                    ani->GetAtom().c_str());
-                    if ((NULL != pt) && (strcasecmp(pt,ptype) == 0)) 
+                    if ((NULL != pt) && (strcasecmp(pt,smlsq[j].ptype) == 0)) 
                     {
                         int ngt = ani->GetNumber();
                         if (mpi->GetProp(mpo,iqmExp,lot,NULL,exp_type,&exp_val))
@@ -891,7 +885,6 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     atomtype_tab_header(lt);
     nset = 0;
     ntab = 0;
-    ref = gmx_poldata_get_polar_ref(pd[0]);
     for(int j = 0; (j<nsmlsq); j++) 
     {
         /* Determine Miller and Bosque polarizabilities for this Spoel element */
@@ -938,24 +931,15 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
         int nfitexp = smlsq[j].nexp / npd;
         int nfitqm  = smlsq[j].nqm  / npd;
 
-        snprintf(longbuf, STRLEN, "%s & %s & %s & %s & %s & %s & %s (%s)",
+        snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
                  smlsq[j].ptype,
                  (nfitexp > 0)     ? gmx_itoa(nfitexp)     : "",
                  (nfitqm > 0)      ? gmx_itoa(nfitqm)      : "",
+                 (alexandria_aver > 0)  ? gmx_ftoa(alexandria_aver)  : "",
+                 (alexandria_sigma > 0) ? gmx_ftoa(alexandria_sigma) : "-",
                  (ahc > 0)         ? gmx_ftoa(ahc)         : "",
                  (ahp > 0)         ? gmx_ftoa(ahp)         : "",
-                 (bos_pol > 0)     ? gmx_ftoa(bos_pol)     : "",
-                 (alexandria_aver > 0)  ? gmx_ftoa(alexandria_aver)  : "",
-                 (alexandria_sigma > 0) ? gmx_ftoa(alexandria_sigma) : "-");
-        if (strcasecmp(ref,"Maaren2013a") == 0)
-        {
-            snprintf(buf, 256, "& (*)");
-        }
-        else
-        {
-            snprintf(buf, 256, "& \\cite{%s}",ref);
-        }
-        strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
+                 (bos_pol > 0)     ? gmx_ftoa(bos_pol)     : "");
         lt.printLine(longbuf);
         ntab++;
         
@@ -1227,7 +1211,8 @@ public:
     { val_ = val; err_ = err; found_ = found; }
 }; 
 
-void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real abs_toler,
+void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,
+                            real rel_toler,real abs_toler,
                             std::vector<alexandria::MolProp> mp,
                             t_qmcount *qmc,bool bPrintAll,
                             bool bPrintBasis,bool bPrintMultQ,
@@ -1245,7 +1230,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
     tensor quadrupole;
     bool   bPrintConf;
   
-    alexandria::LongTable lt(fp, (qmc->n > 1));
+    alexandria::LongTable lt(fp, true);
     
     nprint = 0;
     for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)

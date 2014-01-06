@@ -1046,7 +1046,8 @@ int alex_tune_dip(int argc, char *argv[])
             minimum_data, bZero,
             opt_elem, const_elem,
             lot, oenv, gms, watoms, TRUE, seed);
-
+    printf("Read %u molecules\n", md._mymol.size());
+    
     optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),
                     &md, maxiter, tol, nrun, step, seed,
                     bRandom, oenv);
