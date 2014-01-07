@@ -60,7 +60,6 @@
 #include "txtdump.h"
 #include "mdrun.h"
 #include "constr.h"
-#include "edsam.h"
 #include "pull.h"
 #include "disre.h"
 #include "orires.h"
