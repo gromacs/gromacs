@@ -56,10 +56,10 @@
 #include "physics.h"
 #include "nrjac.h"
 #include "mtop_util.h"
-#include "edsam.h"
+#include "gromacs/edsam/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "xvgr.h"
-#include "groupcoord.h"
+#include "gromacs/mdlib/groupcoord.h"
 
 
 /* We use the same defines as in mvdata.c here */

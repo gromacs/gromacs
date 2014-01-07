@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@ add_subdirectory(options)
 add_subdirectory(timing)
 add_subdirectory(utility)
 add_subdirectory(fileio)
+add_subdirectory(edsam)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
