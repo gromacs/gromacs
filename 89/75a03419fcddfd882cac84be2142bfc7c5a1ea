@@ -1,0 +1,9 @@
+Code-Review+2: Kasson <kasson@gmail.com>
+Code-Review+1: Rossen Apostolov <rossen@kth.se>
+Verified+1: Rossen Apostolov <rossen@kth.se>
+Verified+2: Jenkins Buildbot
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Tue, 07 Jan 2014 06:24:05 +0100
+Reviewed-on: https://gerrit.gromacs.org/2957
+Project: gromacs
+Branch: refs/heads/master
