@@ -58,6 +58,8 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "macros.h"
 #include "gmx_omp_nthreads.h"
+#include "gromacs/essentialdynamics/edsam.h"
+
 
 typedef struct gmx_constr {
     int                ncon_tot;       /* The total number of constraints    */
