@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "main.h"
 #include "gromacs/fileio/futil.h"
-#include "edsam.h"
+#include "gromacs/essentialdynamics/edsam.h"
 #include "index.h"
 #include "physics.h"
 #include "names.h"

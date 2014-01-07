@@ -46,7 +46,6 @@
 #include "tgroup.h"
 #include "../fileio/filenm.h"
 #include "mshift.h"
-#include "edsam.h"
 #include "mdebin.h"
 #include "vcm.h"
 #include "vsite.h"
