@@ -87,6 +87,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/essentialdynamics/edsam.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

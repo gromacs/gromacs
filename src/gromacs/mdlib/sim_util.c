@@ -85,6 +85,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/essentialdynamics/edsam.h"
 
 #include "adress.h"
 #include "qmmm.h"

@@ -56,10 +56,10 @@
 #include "physics.h"
 #include "nrjac.h"
 #include "mtop_util.h"
-#include "edsam.h"
+#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "xvgr.h"
-#include "groupcoord.h"
+#include "gromacs/mdlib/groupcoord.h"
 
 
 /* We use the same defines as in mvdata.c here */
@@ -238,12 +238,12 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv);
  * for any of the ED groups? */
 static gmx_bool bNeedDoEdsam(t_edpar *edi)
 {
-    return     edi->vecs.mon.neig
-            || edi->vecs.linfix.neig
-            || edi->vecs.linacc.neig
-            || edi->vecs.radfix.neig
-            || edi->vecs.radacc.neig
-            || edi->vecs.radcon.neig;
+    return edi->vecs.mon.neig
+           || edi->vecs.linfix.neig
+           || edi->vecs.linacc.neig
+           || edi->vecs.radfix.neig
+           || edi->vecs.radacc.neig
+           || edi->vecs.radcon.neig;
 }
 
 
@@ -1054,14 +1054,14 @@ static void do_single_flood(
 
 /* Main flooding routine, called from do_force */
 extern void do_flood(
-        t_commrec       *cr,      /* Communication record */
-        t_inputrec      *ir,      /* Input record */
-        rvec             x[],     /* Positions on the local processor */
-        rvec             force[], /* forcefield forces, to these the flooding forces are added */
-        gmx_edsam_t      ed,      /* ed data structure contains all ED and flooding groups */
-        matrix           box,     /* the box */
-        gmx_int64_t      step,    /* The relative time step since ir->init_step is already subtracted */
-        gmx_bool         bNS)     /* Are we in a neighbor searching step? */
+        t_commrec       *cr,
+        t_inputrec      *ir,
+        rvec             x[],
+        rvec             force[],
+        gmx_edsam_t      ed,
+        matrix           box,
+        gmx_int64_t      step,
+        gmx_bool         bNS)
 {
     t_edpar *edi;
 
@@ -2606,7 +2606,7 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv)
     edi         = ed->edpar;
     for (nr_edi = 1; nr_edi <= nED; nr_edi++)
     {
-        if ( bNeedDoEdsam(edi) ) /* Only print ED legend if at least one ED option is on */
+        if (bNeedDoEdsam(edi) )  /* Only print ED legend if at least one ED option is on */
         {
             nice_legend(&setname, &nsets, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED) );
 
@@ -2648,12 +2648,14 @@ static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv)
 }
 
 
-void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
-                t_inputrec   *ir,    /* input record                       */
-                t_commrec    *cr,    /* communication record               */
-                gmx_edsam_t   ed,    /* contains all ED data               */
-                rvec          x[],   /* positions of the whole MD system   */
-                matrix        box,   /* the box                            */
+/* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle
+ * contained in the input file, creates a NULL terminated list of t_edpar structures */
+void init_edsam(gmx_mtop_t   *mtop,
+                t_inputrec   *ir,
+                t_commrec    *cr,
+                gmx_edsam_t   ed,
+                rvec          x[],
+                matrix        box,
                 edsamstate_t *EDstate)
 {
     t_edpar *edi = NULL;                    /* points to a single edi data set */
@@ -3004,8 +3006,8 @@ void init_edsam(gmx_mtop_t   *mtop,  /* global topology                    */
 void do_edsam(t_inputrec     *ir,
               gmx_int64_t     step,
               t_commrec      *cr,
-              rvec            xs[], /* The local current positions on this processor */
-              rvec            v[],  /* The velocities */
+              rvec            xs[],
+              rvec            v[],
               matrix          box,
               gmx_edsam_t     ed)
 {
@@ -3041,7 +3043,7 @@ void do_edsam(t_inputrec     *ir,
     while (edi != NULL)
     {
         edinr++;
-        if ( bNeedDoEdsam(edi) )
+        if (bNeedDoEdsam(edi) )
         {
 
             buf = edi->buf->do_edsam;
