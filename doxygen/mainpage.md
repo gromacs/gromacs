@@ -56,6 +56,8 @@ give an overview of some of the topics that are documented:
    Provides general guidance for writing software that uses the \Gromacs
    library.
 \if libapi
+ - \subpage page_unittesting <br/>
+   Provides an overview of unit testing in \Gromacs.
  - \subpage page_wrapperbinary <br/>
    Provides an overview of how the `gmx` wrapper binary is implemented.
  - \subpage thread_mpi <br/>
