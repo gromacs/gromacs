@@ -160,6 +160,9 @@
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
 
+/* Use if can't rename checkpoints */
+#cmakedefine GMX_NO_RENAME
+
 /* Ignore calls to system(3) */
 #cmakedefine GMX_NO_SYSTEM
 

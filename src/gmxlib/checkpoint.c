@@ -1442,6 +1442,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         npmenodes = 0;
     }
 
+#ifndef GMX_NO_RENAME
     /* make the new temporary filename */
     snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
     strcpy(fntemp, fn);
@@ -1449,7 +1450,13 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     sprintf(suffix, "_%s%s", "step", gmx_step_str(step, sbuf));
     strcat(fntemp, suffix);
     strcat(fntemp, fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
-
+#else
+    /* if we can't rename, we just overwrite the cpt file.
+     * dangerous if interrupted.
+     */
+    snew(fntemp, strlen(fn));
+    strcpy(fntemp, fn);
+#endif
     time(&now);
     gmx_ctime_r(&now, timebuf, STRLEN);
 
@@ -1591,6 +1598,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     /* we don't move the checkpoint if the user specified they didn't want it,
        or if the fsyncs failed */
+#ifndef GMX_NO_RENAME
     if (!bNumberAndKeep && !ret)
     {
         if (gmx_fexist(fn))
@@ -1619,6 +1627,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
             gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");
         }
     }
+#endif  /* GMX_NO_RENAME */
 
     sfree(outputfiles);
     sfree(fntemp);
