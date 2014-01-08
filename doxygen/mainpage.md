@@ -53,6 +53,8 @@ give an overview of some of the topics that are documented:
    Provides an overview of the framework that the \Gromacs library provides for
    writing (trajectory) analysis tools.
 \if libapi
+ - \subpage page_unittesting <br/>
+   Provides an overview of unit testing in \Gromacs.
  - \subpage thread_mpi <br/>
    This code is used internally for threading support, and also provides a
    (partial) MPI implementation that allows compiling a "thread-MPI" version of
