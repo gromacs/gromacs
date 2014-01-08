@@ -1699,6 +1699,18 @@ void get_ir(const char *mdparin, const char *mdparout,
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);
 
+    if (-1 == search_einp(ninp, inp, "cutoff-scheme"))
+    {
+        sprintf(warn_buf,
+                "%s did not specify a value for the .mdp option "
+                "\"cutoff-scheme\". Probably it was first intended for use "
+                "with GROMACS before 4.6. In 4.6, the Verlet scheme was "
+                "introduced, but the group scheme was still the default. "
+                "The default is now the Verlet scheme, so you will observe "
+                "different behaviour.", mdparin);
+        warning_note(wi, warn_buf);
+    }
+
     /* remove the following deprecated commands */
     REM_TYPE("title");
     REM_TYPE("cpp");

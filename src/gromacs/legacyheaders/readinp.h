@@ -72,6 +72,10 @@ void write_inpfile(const char *fn, int ninp, t_inpfile inp[],
 void replace_inp_entry(int ninp, t_inpfile *inp,
                        const char *old_entry, const char *new_entry);
 
+int search_einp(int ninp, const t_inpfile *inp, const char *name);
+/* Return the index of an .mdp field with the given name within the
+ * inp array, if it exists. Return -1 if it does not exist. */
+
 int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
              warninp_t wi);
 
