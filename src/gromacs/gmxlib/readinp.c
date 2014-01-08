@@ -51,10 +51,6 @@
 #include "warninp.h"
 #include "gmx_fatal.h"
 
-/* find an entry; return index, or -1 if not found */
-static int search_einp(int ninp, const t_inpfile *inp, const char *name);
-
-
 t_inpfile *read_inpfile(const char *fn, int *ninp,
                         warninp_t wi)
 {
@@ -312,7 +308,7 @@ void replace_inp_entry(int ninp, t_inpfile *inp, const char *old_entry, const ch
     }
 }
 
-static int search_einp(int ninp, const t_inpfile *inp, const char *name)
+int search_einp(int ninp, const t_inpfile *inp, const char *name)
 {
     int i;
 
