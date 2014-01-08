@@ -63,6 +63,9 @@ are not used outside a single source file are in the source file.
 
 Unit tests, and data required for them, are in a `tests/` subdirectory under
 the module directory.
+\if libapi
+See \ref page_unittesting for more details.
+\endif
 
 When compiling, the include search path is set to `src/`.  This means that
 source files include headers as
