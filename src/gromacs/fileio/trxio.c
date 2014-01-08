@@ -42,6 +42,7 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <assert.h>
 
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -1051,14 +1052,8 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
                                &fr->prec, &bOK) == 0)
             {
-                if (bOK)
-                {
-                    gmx_fatal(FARGS, "No XTC!\n");
-                }
-                else
-                {
-                    fr->not_ok = DATA_NOT_OK;
-                }
+                assert(!bOK);
+                fr->not_ok = DATA_NOT_OK;
             }
             if (fr->not_ok)
             {
