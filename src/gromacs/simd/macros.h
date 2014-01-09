@@ -54,7 +54,8 @@
 #define GMX_HAVE_SIMD_MACROS
 
 /* In general the reference SIMD supports any SIMD width, including 1.
- * See types/nb_verlet.h for details
+ * But the nbnxn SIMD 4xN kernels only support 2, 4, 8 and 2xNN only 8, 16,
+ * see types/nb_verlet.h for details
  */
 #define GMX_SIMD_REF_WIDTH  4
 
@@ -212,6 +213,7 @@
 
 /* exp and trigonometric functions are included above */
 #define GMX_SIMD_HAVE_EXP
+#define GMX_SIMD_HAVE_ERFC
 #define GMX_SIMD_HAVE_TRIGONOMETRIC
 
 #if !defined GMX_X86_AVX_256 || defined GMX_USE_HALF_WIDTH_SIMD_HERE
@@ -755,6 +757,7 @@ static gmx_inline gmx_mm_pr gmx_always_inline gmx_atan2_pr(gmx_mm_pr a, gmx_mm_p
 #endif
 }
 
+#define GMX_SIMD_HAVE_ERFC
 static gmx_inline gmx_mm_pr gmx_always_inline gmx_erfc_pr(gmx_mm_pr a)
 {
   /* The BG/Q qpxmath.h vector math library intended for use with

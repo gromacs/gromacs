@@ -96,10 +96,13 @@ gmx_add_pr4(gmx_mm_pr4 a, gmx_mm_pr4 b)
 
     return c;
 }
-
 #else
 
-typedef gmx_simd_ref_pr gmx_simd_ref_pr4;
+typedef gmx_simd_ref_pr gmx_mm_pr4;
+
+#define gmx_load_pr4   gmx_load_pr
+#define gmx_store_pr4  gmx_store_pr
+#define gmx_add_pr4    gmx_add_pr
 
 #endif
 
@@ -225,6 +228,7 @@ gmx_sum4_hpr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
     return c;
 }
 
+#ifdef GMX_NBNXN_SIMD_2XNN
 /* Sum the elements of halfs of each input register and store sums in out */
 static gmx_inline gmx_mm_pr4
 gmx_mm_transpose_sum4h_pr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
@@ -247,6 +251,7 @@ gmx_mm_transpose_sum4h_pr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
 
     return sum;
 }
+#endif
 
 static gmx_inline void
 gmx_pr_to_2hpr(gmx_simd_ref_pr a, gmx_mm_hpr *b, gmx_mm_hpr *c)
@@ -276,7 +281,8 @@ gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_ref_pr *c)
 
 #ifndef TAB_FDV0
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_simd_ref_epi32 ti_S, int *ti,
+load_table_f(const real *tab_coul_F, gmx_simd_ref_epi32 ti_S,
+             int gmx_unused *ti,
              gmx_simd_ref_pr *ctab0_S, gmx_simd_ref_pr *ctab1_S)
 {
     int i;
