@@ -1323,6 +1323,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Now we have the energies and forces corresponding to the
          * coordinates at time t. We must output all of this before
          * the update.
+#if defined(__native_client__)
+        fcCheckin(MASTER(cr));
+#endif
+
          */
         do_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                               ir, state, state_global, top_global, fr, upd,

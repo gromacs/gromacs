@@ -62,9 +62,11 @@
 
 int MPI_Buffer_attach(void* buffer, int size)
 {
+    return 0;
 }
 
 
 int MPI_Buffer_detach(void* buffer_addr, int* size)
 {
+    return 0;
 }
