@@ -1254,52 +1254,89 @@ static void check_gbsa_params(gpp_atomtype_t atype)
 
 }
 
+static real calc_temp(const gmx_mtop_t *mtop,
+                      const t_inputrec *ir,
+                      rvec             *v)
+{
+    double                  sum_mv2;
+    gmx_mtop_atomloop_all_t aloop;
+    t_atom                 *atom;
+    int                     a;
+    int                     nrdf, g;
+
+    sum_mv2 = 0;
+
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    {
+        sum_mv2 += atom->m*norm2(v[a]);
+    }
+
+    nrdf = 0;
+    for (g = 0; g < ir->opts.ngtc; g++)
+    {
+        nrdf += ir->opts.nrdf[g];
+    }
+
+    return sum_mv2/(nrdf*BOLTZ);
+}
+
+static real get_max_reference_temp(const t_inputrec *ir,
+                                   warninp_t         wi)
+{
+    real     ref_t;
+    int      i;
+    gmx_bool bNoCoupl;
+
+    ref_t    = 0;
+    bNoCoupl = FALSE;
+    for (i = 0; i < ir->opts.ngtc; i++)
+    {
+        if (ir->opts.tau_t[i] < 0)
+        {
+            bNoCoupl = TRUE;
+        }
+        else
+        {
+            ref_t = max(ref_t, ir->opts.ref_t[i]);
+        }
+    }
+
+    if (bNoCoupl)
+    {
+        char buf[STRLEN];
+
+        sprintf(buf, "Some temperature coupling groups do not use temperature coupling. We will assume their temperature is not more than %.3f K. If their temperature is higher, the energy error and the Verlet buffer might be underestimated.",
+                ref_t);
+        warning(wi, buf);
+    }
+
+    return ref_t;
+}
+
 static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               t_inputrec       *ir,
+                              real              buffer_temp,
                               matrix            box,
                               warninp_t         wi)
 {
-    real                   ref_T;
     int                    i;
     verletbuf_list_setup_t ls;
     real                   rlist_1x1;
     int                    n_nonlin_vsite;
     char                   warn_buf[STRLEN];
 
-    ref_T = 0;
-    for (i = 0; i < ir->opts.ngtc; i++)
-    {
-        if (ir->opts.ref_t[i] < 0)
-        {
-            warning(wi, "Some atom groups do not use temperature coupling. This cannot be accounted for in the energy error estimation for the Verlet buffer size. The energy error and the Verlet buffer might be underestimated.");
-        }
-        else
-        {
-            ref_T = max(ref_T, ir->opts.ref_t[i]);
-        }
-    }
-
-    printf("Determining Verlet buffer for a tolerance of %g kJ/mol/ps at %g K\n", ir->verletbuf_tol, ref_T);
-
-    for (i = 0; i < ir->opts.ngtc; i++)
-    {
-        if (ir->opts.ref_t[i] >= 0 && ir->opts.ref_t[i] != ref_T)
-        {
-            sprintf(warn_buf, "ref_T for group of %.1f DOFs is %g K, which is smaller than the maximum of %g K used for the buffer size calculation. The buffer size might be on the conservative (large) side.",
-                    ir->opts.nrdf[i], ir->opts.ref_t[i], ref_T);
-            warning_note(wi, warn_buf);
-        }
-    }
+    printf("Determining Verlet buffer for a tolerance of %g kJ/mol/ps at %g K\n", ir->verletbuf_tol, buffer_temp);
 
     /* Calculate the buffer size for simple atom vs atoms list */
     ls.cluster_size_i = 1;
     ls.cluster_size_j = 1;
-    calc_verlet_buffer_size(mtop, det(box), ir,
+    calc_verlet_buffer_size(mtop, det(box), ir, buffer_temp,
                             &ls, &n_nonlin_vsite, &rlist_1x1);
 
     /* Set the pair-list buffer size in ir */
     verletbuf_get_list_setup(FALSE, &ls);
-    calc_verlet_buffer_size(mtop, det(box), ir,
+    calc_verlet_buffer_size(mtop, det(box), ir, buffer_temp,
                             &ls, &n_nonlin_vsite, &ir->rlist);
 
     if (n_nonlin_vsite > 0)
@@ -1773,11 +1810,71 @@ int gmx_grompp(int argc, char *argv[])
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 &&
         ir->nstlist > 1)
     {
-        if (EI_DYNAMICS(ir->eI) &&
-            !(EI_MD(ir->eI) && ir->etc == etcNO) &&
-            inputrec2nboundeddim(ir) == 3)
+        if (EI_DYNAMICS(ir->eI) && inputrec2nboundeddim(ir) == 3)
         {
-            set_verlet_buffer(sys, ir, state.box, wi);
+            real buffer_temp;
+
+            if (EI_MD(ir->eI) && ir->etc == etcNO)
+            {
+                if (bGenVel)
+                {
+                    buffer_temp = opts->tempi;
+                }
+                else
+                {
+                    buffer_temp = calc_temp(sys, ir, state.v);
+                }
+                if (buffer_temp > 0)
+                {
+                    sprintf(warn_buf, "NVE simulation: will use the initial temperature of %.3f K for determining the Verlet buffer size", buffer_temp);
+                    warning_note(wi, warn_buf);
+                }
+                else
+                {
+                    sprintf(warn_buf, "NVE simulation with an initial temperature of zero: will use a Verlet buffer of %d%%. Check your energy drift!",
+                            (int)(verlet_buffer_ratio_NVE_T0*100 + 0.5));
+                    warning_note(wi, warn_buf);
+                }
+            }
+            else
+            {
+                buffer_temp = get_max_reference_temp(ir, wi);
+            }
+
+            if (EI_MD(ir->eI) && ir->etc == etcNO && buffer_temp == 0)
+            {
+                /* NVE with initial T=0: we add a fixed ratio to rlist.
+                 * Since we don't actually use verletbuf_tol, we set it to -1
+                 * so it can't be misused later.
+                 */
+                ir->rlist         *= 1.0 + verlet_buffer_ratio_NVE_T0;
+                ir->verletbuf_tol  = -1;
+            }
+            else
+            {
+                /* We warn for NVE simulations with >1(.1)% drift tolerance */
+                const real drift_tol = 0.01;
+                real       ener_runtime;
+
+                /* We use 2 DOF per atom = 2kT pot+kin energy, to be on
+                 * the safe side with constraints (without constraints: 3 DOF).
+                 */
+                ener_runtime = 2*BOLTZ*buffer_temp/(ir->nsteps*ir->delta_t);
+
+                if (EI_MD(ir->eI) && ir->etc == etcNO && ir->nstlist > 1 &&
+                    ir->nsteps > 0 &&
+                    ir->verletbuf_tol > 1.1*drift_tol*ener_runtime)
+                {
+                    sprintf(warn_buf, "You are using a Verlet buffer tolerance of %g kJ/mol/ps for an NVE simulation of length %g ps, which can give a final drift of %d%%. For conserving energy to %d%%, you might need to set verlet-buffer-tolerance to %.1e.",
+                            ir->verletbuf_tol, ir->nsteps*ir->delta_t,
+                            (int)(ir->verletbuf_tol/ener_runtime*100 + 0.5),
+                            (int)(100*drift_tol + 0.5),
+                            drift_tol*ener_runtime);
+                    warning_note(wi, warn_buf);
+                }
+
+                set_verlet_buffer(sys, ir, buffer_temp, state.box, wi);
+            }
         }
     }
 
