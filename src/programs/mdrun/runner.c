@@ -507,6 +507,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     t_state                state_tmp;
     gmx_bool               bBox, bDD, bCont;
     const char            *nstl_gpu = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
+    const char            *nve_err  = "Can not increase nstlist because an NVE ensemble is used";
     const char            *vbd_err  = "Can not increase nstlist because verlet-buffer-tolerance is not set or used";
     const char            *box_err  = "Can not increase nstlist because the box is too small";
     const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
@@ -528,6 +529,20 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             /* There are no larger nstlist value to try */
             return;
         }
+    }
+
+    if (EI_MD(ir->eI) && ir->etc == etcNO)
+    {
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "%s\n", nve_err);
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp, "%s\n", nve_err);
+        }
+
+        return;
     }
 
     if (ir->verletbuf_tol == 0 && bGPU)
@@ -578,7 +593,8 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
      */
     nstlist_prev = ir->nstlist;
     ir->nstlist  = 10;
-    calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_nstlist10);
+    calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL,
+                            &rlist_nstlist10);
     ir->nstlist  = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
@@ -602,7 +618,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         }
 
         /* Set the pair-list buffer size in ir */
-        calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_new);
+        calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL, &rlist_new);
 
         /* Does rlist fit in the box? */
         bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC, box));
@@ -684,7 +700,8 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                                   matrix                          box,
                                   gmx_bool                        bUseGPU)
 {
-    if (ir->verletbuf_tol > 0)
+    /* For NVE simulations, we will retain the initial list buffer */
+    if (ir->verletbuf_tol > 0 && !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
         /* Update the Verlet buffer size for the current run setup */
         verletbuf_list_setup_t ls;
@@ -696,7 +713,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
          */
         verletbuf_get_list_setup(bUseGPU, &ls);
 
-        calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_new);
+        calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL, &rlist_new);
 
         if (rlist_new != ir->rlist)
         {
@@ -789,12 +806,22 @@ static void convert_to_verlet_scheme(FILE *fplog,
         verletbuf_list_setup_t ls;
 
         verletbuf_get_list_setup(FALSE, &ls);
-        calc_verlet_buffer_size(mtop, box_vol, ir, &ls, NULL, &ir->rlist);
+        calc_verlet_buffer_size(mtop, box_vol, ir, -1, &ls, NULL, &ir->rlist);
     }
     else
     {
+        real rlist_fac;
+        
+        if (EI_MD(ir->eI))
+        {
+            rlist_fac       = 1 + verlet_buffer_ratio_NVE_T0;
+        }
+        else
+        {
+            rlist_fac       = 1 + verlet_buffer_ratio_nodynamics;
+        }
         ir->verletbuf_tol   = -1;
-        ir->rlist           = 1.05*max(ir->rvdw, ir->rcoulomb);
+        ir->rlist           = rlist_fac*max(ir->rvdw, ir->rcoulomb);
     }
 
     gmx_mtop_remove_chargegroups(mtop);
