@@ -49,6 +49,17 @@ typedef struct
 } verletbuf_list_setup_t;
 
 
+/* Add a 5% and 10% rlist buffer for simulations without dynamics (EM, NM, ...)
+ * and NVE simulations with zero initial temperature, respectively.
+ * 10% should be enough for any NVE simulation with PME and nstlist=10,
+ * for other settings it might not be enough, but then it's difficult
+ * to come up with any reasonable (not crazily expensive) value
+ * and grompp will notify the user when using the 10% buffer.
+ */
+static const real verlet_buffer_ratio_nodynamics = 0.05;
+static const real verlet_buffer_ratio_NVE_T0     = 0.10;
+
+
 /* Sets the pair-list setup assumed for the current Gromacs configuration.
  * The setup with smallest cluster sizes is return, such that the Verlet
  * buffer size estimated with this setup will be conservative.
@@ -60,6 +71,7 @@ void verletbuf_get_list_setup(gmx_bool                bGPU,
 /* Calculate the non-bonded pair-list buffer size for the Verlet list
  * based on the particle masses, temperature, LJ types, charges
  * and constraints as well as the non-bonded force behavior at the cut-off.
+ * If reference_temperature < 0, the maximum coupling temperature will be used.
  * The target is a maximum energy drift of ir->verletbuf_tol.
  * Returns the number of non-linear virtual sites. For these it's difficult
  * to determine their contribution to the drift exaclty, so we approximate.
@@ -67,6 +79,7 @@ void verletbuf_get_list_setup(gmx_bool                bGPU,
  */
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              const t_inputrec *ir,
+                             real reference_temperature,
                              const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist);
