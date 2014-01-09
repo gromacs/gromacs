@@ -117,6 +117,10 @@ do_trajectory_writing(FILE           *fplog,
         fcReportProgress( ir->nsteps, step );
     }
 
+#if defined(__native_client__)
+    fcCheckin(MASTER(cr));
+#endif
+
     /* sync bCPT and fc record-keeping */
     if (bCPT && MASTER(cr))
     {
