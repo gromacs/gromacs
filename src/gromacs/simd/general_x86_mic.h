@@ -137,6 +137,8 @@ gmx_cvttpr_epi32(gmx_mm_ps a)
 
 #define GMX_SIMD_HAVE_EXP
 #define gmx_exp_pr _mm512_exp_ps
+
+#define GMX_SIMD_HAVE_ERFC
 #define gmx_erfc_pr _mm512_erfc_ps
 
 #define GMX_SIMD_HAVE_TRIGONOMETRIC

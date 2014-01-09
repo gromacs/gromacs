@@ -58,7 +58,7 @@
 
 /* Align a stack-based thread-local working array. */
 static gmx_inline int *
-prepare_table_load_buffer(const int *array)
+prepare_table_load_buffer(const int gmx_unused *array)
 {
     return NULL;
 }
