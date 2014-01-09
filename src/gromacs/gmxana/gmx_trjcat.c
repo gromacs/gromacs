@@ -462,8 +462,6 @@ int gmx_trjcat(int argc, char *argv[])
           { &end }, "Last time to use (%t)" },
         { "-dt", FALSE, etTIME,
           { &dt }, "Only write frame when t MOD dt = first time (%t)" },
-        { "-prec", FALSE, etINT,
-          { &prec }, "Precision for [TT].xtc[tt] and [TT].gro[tt] writing in number of decimal places" },
         { "-vel", FALSE, etBOOL,
           { &bVels }, "Read and write velocities if possible" },
         { "-settime", FALSE, etBOOL,
@@ -481,7 +479,7 @@ int gmx_trjcat(int argc, char *argv[])
     int          ftpin, i, frame, frame_out, step = 0, trjout = 0;
     t_trxstatus *status;
     rvec        *x, *v;
-    real         xtcpr, t_corr;
+    real         t_corr;
     t_trxframe   fr, frout;
     char       **fnms, **fnms_out, *in_file, *out_file;
     int          n_append;
@@ -553,12 +551,6 @@ int gmx_trjcat(int argc, char *argv[])
                 fprintf(debug, "\n");
             }
         }
-    }
-    /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
-    xtcpr = 1;
-    for (i = 0; i < prec; i++)
-    {
-        xtcpr *= 10;
     }
 
     nfile_in = opt2fns(&fnms, "-f", NFILE, fnm);
