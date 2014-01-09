@@ -68,7 +68,7 @@ gmx_load_simd_4xn_interactions(int                    excl,
                                gmx_mm_pb             *interact_S2,
                                gmx_mm_pb             *interact_S3)
 {
-#ifdef GMX_X86_SSE2
+#if defined GMX_X86_SSE2 || defined GMX_SIMD_REFERENCE_PLAIN_C
     /* Load integer interaction mask */
     gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
     *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
