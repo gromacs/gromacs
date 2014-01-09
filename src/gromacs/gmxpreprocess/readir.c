@@ -62,6 +62,7 @@
 #include "mtop_util.h"
 #include "chargegroup.h"
 #include "inputrec.h"
+#include "calc_verletbuf.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -358,11 +359,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             {
                 if (EI_DYNAMICS(ir->eI))
                 {
-                    if (EI_MD(ir->eI) && ir->etc == etcNO)
-                    {
-                        warning_error(wi, "Temperature coupling is required for calculating rlist using the energy tolerance with verlet-buffer-tolerance > 0. Either use temperature coupling or set rlist yourself together with verlet-buffer-tolerance = -1.");
-                    }
-
                     if (inputrec2nboundeddim(ir) < 3)
                     {
                         warning_error(wi, "The box volume is required for calculating rlist from the energy drift with verlet-buffer-tolerance > 0. You are using at least one unbounded dimension, so no volume can be computed. Either use a finite box, or set rlist yourself together with verlet-buffer-tolerance = -1.");
@@ -373,7 +369,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 else
                 {
                     /* Set the buffer to 5% of the cut-off */
-                    ir->rlist = 1.05*rc_max;
+                    ir->rlist = (1.0 + verlet_buffer_ratio_nodynamics)*rc_max;
                 }
             }
         }
