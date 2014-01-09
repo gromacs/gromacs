@@ -531,7 +531,10 @@ Note that the generated buffer size takes into account that
 the GROMACS pair-list setup leads to a reduction in the drift by
 a factor 10, compared to a simple particle-pair based list.
 Without dynamics (energy minimization etc.), the buffer is 5% of the cut-off.
-For dynamics without temperature coupling or to override the buffer size,
+For NVE simulations the initial temperature is used, unless this is zero,
+in which case a buffer of 10% is used. For NVE simulations the tolerance
+usually needs to be lowered to achieve proper energy conservation on
+the nanosecond time scale. To override the automated buffer setting,
 use <b>verlet-buffer-tolerance</b>=-1 and set <b>rlist</b> manually.</dd>
 
 <dt><b>rlist: (1) [nm]</b></dt>
