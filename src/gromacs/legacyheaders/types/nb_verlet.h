@@ -43,17 +43,17 @@
 extern "C" {
 #endif
 
-
-/* For testing the reference plain-C SIMD kernels, uncomment the next lines,
- * as well as the GMX_SIMD_REFERENCE_PLAIN_C define in gromacs/simd/macros.h
- * The actual SIMD width is set in gromacs/simd/macros.h
- * The 4xN reference kernels support 2-, 4- and 8-way SIMD.
- * The 2x(N+N) reference kernels support 8- and 16-way SIMD.
- */
-/* #define GMX_NBNXN_SIMD */
-/* #define GMX_NBNXN_SIMD_4XN */
-/* #define GMX_NBNXN_SIMD_2XNN */
-
+#ifdef GMX_SIMD_REFERENCE_PLAIN_C
+#define GMX_NBNXN_SIMD
+/* For width 8 both kernels are build. 2xnn is used by default. Set env.-variable
+ * GMX_NBNXN_SIMD_4XN to use the 4xn kernel. */
+#if GMX_SIMD_REF_WIDTH==2 || GMX_SIMD_REF_WIDTH==4 || GMX_SIMD_REF_WIDTH==8
+#define GMX_NBNXN_SIMD_4XN
+#endif
+#if GMX_SIMD_REF_WIDTH==8 || GMX_SIMD_REF_WIDTH==16
+#define GMX_NBNXN_SIMD_2XNN
+#endif
+#endif
 
 #if (defined GMX_X86_SSE2) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
 /* Use SIMD accelerated nbnxn search and kernels */

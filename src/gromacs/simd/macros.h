@@ -46,18 +46,9 @@
 
 /* NOTE: SSE2 acceleration does not include floor or blendv */
 
-
-/* Uncomment the next line, without other SIMD active, for testing plain-C */
-/* #define GMX_SIMD_REFERENCE_PLAIN_C */
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
 /* Plain C SIMD reference implementation, also serves as documentation */
 #define GMX_HAVE_SIMD_MACROS
-
-/* In general the reference SIMD supports any SIMD width, including 1.
- * But the nbnxn SIMD 4xN kernels only support 2, 4, 8 and 2xNN only 8, 16,
- * see types/nb_verlet.h for details
- */
-#define GMX_SIMD_REF_WIDTH  4
 
 /* Include plain-C reference implementation, also serves as documentation */
 #include "gromacs/simd/macros_ref.h"
