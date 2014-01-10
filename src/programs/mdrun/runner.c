@@ -1149,10 +1149,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             bUseGPU = (hwinfo->gpu_info.ncuda_dev_compatible > 0 ||
                        getenv("GMX_EMULATE_GPU") != NULL);
 
-            if (bUseGPU && (inputrec->vdw_modifier == eintmodFORCESWITCH ||
-                            inputrec->vdw_modifier == eintmodPOTSWITCH))
+            if ( getenv("GMX_EMULATE_GPU") != NULL &&
+                            (inputrec->vdw_modifier == eintmodFORCESWITCH ||
+                             inputrec->vdw_modifier == eintmodPOTSWITCH))
             {
-                md_print_warn(cr, fplog, "LJ switch functions are not yet supported on the GPU, falling back to CPU-only");
+                // FIXME
+                md_print_warn(cr, fplog, "LJ switch functions are not yet supported on the GPU emulation, falling back to CPU-only");
                 bUseGPU = FALSE;
             }
 
