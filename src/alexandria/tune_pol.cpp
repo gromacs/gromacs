@@ -425,7 +425,7 @@ static int decompose_frag(FILE *fplog,
     {
         polstats[ii] = gmx_stats_init();
     }
-    int nUseBootStrap = 1+floor(fractionBootStrap*nusemol);
+    int nUseBootStrap = std::min(nusemol, (int)(1+floor(fractionBootStrap*nusemol)));
     if (seed <= 0)
     {
         seed = gmx_rng_make_seed();
