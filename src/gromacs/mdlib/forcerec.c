@@ -1535,11 +1535,9 @@ gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
     /* TODO: remove these GPU specific restrictions by implementing CUDA kernels */
     if (bGPU)
     {
-        if (ir->vdw_modifier == eintmodFORCESWITCH ||
-            ir->vdw_modifier == eintmodPOTSWITCH ||
-            ir->vdwtype == evdwPME)
+        if (ir->vdwtype == evdwPME)
         {
-            md_print_warn(cr, fplog, "LJ switch functions and LJ-PME are not yet supported on the GPU, falling back to CPU only\n");
+            md_print_warn(cr, fplog, "LJ-PME is not yet supported with GPUs, falling back to CPU only\n");
             return FALSE;
         }
     }
