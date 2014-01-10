@@ -197,7 +197,7 @@ gmx_option_multichoice(
     GMX_CPU_ACCELERATION
     "Acceleration for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_CPU_ACCELERATION}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 IBM_QPX Sparc64_HPC_ACE)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 IBM_QPX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
@@ -222,6 +222,9 @@ gmx_option_multichoice(
     "QM package for QM/MM"
     None
     none gaussian mopac gamess orca)
+
+gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_TYPE "Reference kernel type (4xn or 2xnn)" STRING "4xn" "GMX_CPU_ACCELERATION STREQUAL REFERENCE")
+gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_WIDTH "Reference kernel width" STRING "4" "GMX_CPU_ACCELERATION STREQUAL REFERENCE")
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
@@ -761,6 +764,23 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
     endif()
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
     set(GMX_CPU_ACCELERATION_SPARC64_HPC_ACE 1)
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "REFERENCE")
+    add_definitions(-DGMX_SIMD_REFERENCE_PLAIN_C)
+    if(${GMX_NBNXN_REF_KERNEL_TYPE} STREQUAL "4xn")
+        if(${GMX_NBNXN_REF_KERNEL_WIDTH} STREQUAL "2" OR ${GMX_NBNXN_REF_KERNEL_WIDTH} STREQUAL "4" OR ${GMX_NBNXN_REF_KERNEL_WIDTH} STREQUAL "8")
+            add_definitions(-DGMX_NBNXN_SIMD_4XN -DGMX_SIMD_REF_WIDTH=${GMX_NBNXN_REF_KERNEL_WIDTH})
+        else()
+            message(FATAL_ERROR "Unsupported width for 4xn reference kernels")
+        endif()
+    elseif(${GMX_NBNXN_REF_KERNEL_TYPE} STREQUAL "2xnn")
+        if(${GMX_NBNXN_REF_KERNEL_WIDTH} STREQUAL "8" OR ${GMX_NBNXN_REF_KERNEL_WIDTH} STREQUAL "16")
+            add_definitions(-DGMX_NBNXN_SIMD_2XNN -DGMX_SIMD_REF_WIDTH=${GMX_NBNXN_REF_KERNEL_WIDTH})
+        else()
+            message(FATAL_ERROR "Unsupported width for 2xn reference kernels")
+        endif()
+    else()
+        message(FATAL_ERROR "Unsupported kernel type")
+    endif()
 else()
     gmx_invalid_option_value(GMX_CPU_ACCELERATION)
 endif()
