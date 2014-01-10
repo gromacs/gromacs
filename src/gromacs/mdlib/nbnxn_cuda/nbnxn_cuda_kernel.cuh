@@ -111,17 +111,20 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float rlist_sq              = nbparam.rlist_sq;
 #endif
 
-#ifdef CALC_ENERGIES
+#if defined CALC_ENERGIES || defined VDW_POT_SWITCH
     float  lj_shift    = nbparam.sh_invrc6;
+#endif /* CALC_ENERGIES || VDW_POT_SWITCH */
+
+#ifdef CALC_ENERGIES
 #ifdef EL_EWALD_ANY
     float  beta        = nbparam.ewald_beta;
     float  ewald_shift = nbparam.sh_ewald;
 #else
     float  c_rf        = nbparam.c_rf;
-#endif
-    float *e_lj       = atdat.e_lj;
-    float *e_el       = atdat.e_el;
-#endif
+#endif /* EL_EWALD_ANY */
+    float *e_lj        = atdat.e_lj;
+    float *e_el        = atdat.e_el;
+#endif /* CALC_ENERGIES */
 
     /* thread/block/warp id-s */
     unsigned int tidxi  = threadIdx.x;
@@ -141,11 +144,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                  int_bit,
                  F_invr;
 #ifdef CALC_ENERGIES
-    float        E_lj, E_el, E_lj_p;
+    float        E_lj, E_el;
+#endif
+#if defined CALC_ENERGIES || defined VDW_POT_SWITCH
+    float        E_lj_p;
 #endif
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
     float3       xi, xj, rv, f_ij, fcj_buf, fshift_buf;
+#if defined VDW_FORCE_SWITCH || defined VDW_POT_SWITCH
+    //XXX float3       r, r_switch;
+#endif /* VDW_FORCE_SWITCH || VDW_POT_SWITCH */
     float3       fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
     nbnxn_sci_t  nb_sci;
 
@@ -336,19 +345,97 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
                                 F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
-
-#ifdef CALC_ENERGIES
-                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
+#if defined CALC_ENERGIES || defined VDW_POT_SWITCH
+                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift)*ONE_TWELVETH_F -
+                                                     c6 * (inv_r6 - lj_shift)*ONE_SIXTH_F);
 #endif
 
+#if defined VDW_FORCE_SWITCH || defined VDW_POT_SWITCH
+                                /* Force or potential switching */
+                                //{
+#ifdef VDW_FORCE_SWITCH
+                                    /* force switch constants */
+                                    float disp_shift_V2 = nbparam.dispersion_shift.c2;
+                                    float disp_shift_V3 = nbparam.dispersion_shift.c3;
+                                    float repu_shift_V2 = nbparam.repulsion_shift.c2;
+                                    float repu_shift_V3 = nbparam.repulsion_shift.c3;
+
+#ifdef CALC_ENERGIES
+                                    float disp_shift_F2 = nbparam.dispersion_shift.c2/3;
+                                    float disp_shift_F3 = nbparam.dispersion_shift.c3/4;
+                                    float repu_shift_F2 = nbparam.repulsion_shift.c2/3;
+                                    float repu_shift_F3 = nbparam.repulsion_shift.c3/4;
+#endif /* CALC_ENERGIES */
+#endif /* VDW_FORCE_SWITCH */
+#ifdef VDW_POT_SWITCH
+                                    /* potential switch constants */
+                                    float switch_V3 = nbparam.vdw_switch.c3;
+                                    float switch_V4 = nbparam.vdw_switch.c4;
+                                    float switch_V5 = nbparam.vdw_switch.c5;
+                                    float switch_F2 = 3*nbparam.vdw_switch.c3;
+                                    float switch_F3 = 4*nbparam.vdw_switch.c4;
+                                    float switch_F4 = 5*nbparam.vdw_switch.c5;
+#endif /* VDW_POT_SWITCH */
+                                    float r, r_switch;
+
+                                    r        = r2 * inv_r;
+                                    r_switch = r - nbparam.rvdw_switch;
+                                    // TODO try using rswitch_sq
+                                    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
+
+#ifdef VDW_FORCE_SWITCH
+                                    F_invr  +=
+                                        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
+                                         c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+#ifdef CALC_ENERGIES
+                                    E_lj_p  +=
+                                         c6*(disp_shift_F2 + disp_shift_F3*r_switch)*r_switch*r_switch*r_switch -
+                                         c12*(repu_shift_F2 + repu_shift_F3*r_switch)*r_switch*r_switch*r_switch;
+
+#endif /* CALC_ENERGIES */
+#endif /* VDW_FORCE_SWITCH */
+#endif /*  VDW_FORCE_SWITCH || VDW_POT_SWITCH */
+
+#if 1
 #ifdef VDW_CUTOFF_CHECK
-                                /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
-                                vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
-                                F_invr      *= vdw_in_range;
+                                /* Separate VDW cut-off check to enable twin-range cut-offs
+                                 * (rvdw < rcoulomb <= rlist)
+                                 */
+                                vdw_in_range  = (r2 < rvdw_sq) ? 1.0f : 0.0f;
+                                F_invr       *= vdw_in_range;
 #ifdef CALC_ENERGIES
-                                E_lj_p  *= vdw_in_range;
+                                E_lj_p       *= vdw_in_range;
 #endif
 #endif
+#endif // 1
+
+#ifdef VDW_POT_SWITCH
+                                    {
+                                        float sw, dsw;
+
+                                        sw      = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
+                                        dsw     = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+
+                                        F_invr  = F_invr*sw - inv_r*E_lj_p*dsw;
+                                        E_lj_p *= sw;
+                                    }
+#endif /* VDW_POT_SWITCH */
+                                //}
+//#endif /*  VDW_FORCE_SWITCH || VDW_POT_SWITCH */
+
+#if 0
+#ifdef VDW_CUTOFF_CHECK
+                                /* Separate VDW cut-off check to enable twin-range cut-offs
+                                 * (rvdw < rcoulomb <= rlist)
+                                 */
+                                vdw_in_range  = (r2 < rvdw_sq) ? 1.0f : 0.0f;
+                                F_invr       *= vdw_in_range;
+#ifdef CALC_ENERGIES
+                                E_lj_p       *= vdw_in_range;
+#endif
+#endif
+#endif // 0
+
 #ifdef CALC_ENERGIES
                                 E_lj    += E_lj_p;
 #endif
@@ -465,3 +552,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 }
 
 #undef EL_EWALD_ANY
+
+
+#ifdef VDW_POT_SWITCH
+//#warning "END Potential switch"
+#endif
