@@ -52,6 +52,9 @@
 #include "gmx_fatal.h"
 #include "names.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/legacyheaders/gmx_statistics.h"
+#include "gromacs/legacyheaders/gmx_random.h"
+#include "gromacs/legacyheaders/xvgr.h"
 #include "molselect.hpp"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"
@@ -190,16 +193,21 @@ static void dump_csv(gmx_poldata_t pd,
 }
      
 static int decompose_frag(FILE *fplog,
+                          const char *hisfn,
                           gmx_poldata_t pd,
                           std::vector<alexandria::MolProp> &mp,
-                          gmx_bool bQM, char *lot, int mindata, gmx_molselect_t gms,
-                          real sigma, gmx_bool bZero, gmx_bool bForceFit)
+                          gmx_bool bQM, char *lot, 
+                          int mindata, gmx_molselect_t gms,
+                          gmx_bool bZero, gmx_bool bForceFit,
+                          int nBootStrap, real fractionBootStrap,
+                          int seed,
+                          output_env_t oenv)
 {
     double  *x, *atx;
     double **a, **at, **ata, *fpp;
     double   pol, poltot, a0, da0, ax, chi2;
     char   **atype = NULL, *ptype;
-    int      j, niter = 0, nusemol, nn;
+    int      j, niter = 0, nusemol;
     int     *test = NULL, ntest[2], ntmax, row, cur = 0;
     bool    *bUseMol, *bUseAtype;
 #define prev (1-cur)
@@ -212,7 +220,7 @@ static int decompose_frag(FILE *fplog,
     snew(atype, ntmax);
     ntest[prev] = ntest[cur] = ntmax;
     j           = 0;
-    //! Copy all atom types into array. Set usage array.
+    // Copy all atom types into array. Set usage array.
     while (1 == gmx_poldata_get_ptype(pd, &ptype, NULL, NULL, NULL, NULL))
     {
         atype[j]     = strdup(ptype);
@@ -383,23 +391,21 @@ static int decompose_frag(FILE *fplog,
             }
         }
     }
-
+    /* Now we know how many atomtyopes there are (ntest[cur]) and 
+     * how many molecules (nusemol), now we fill the matrix a and the
+     * transposed matrix at 
+     */
     a      = alloc_matrix(nusemol, ntest[cur]);
     at     = alloc_matrix(ntest[cur], nusemol);
-    ata    = alloc_matrix(ntest[cur], ntest[cur]);
-
     if (NULL != fplog)
     {
         fprintf(fplog, "There are %d different atomtypes to optimize the polarizabilities\n",
                 ntest[cur]);
         fprintf(fplog, "There are %d (experimental) reference polarizabilities.\n", nusemol);
     }
-    
+    // As a side effect this function fills a and at and probably x.
     dump_csv(pd, mp, atype, nusemol, bUseMol, x, ntest[cur], a, at);
     
-    //! Check for linear dependencies
-    nusemol = check_matrix(a, x, nusemol, ntest[cur], atype);
-
     if (fplog)
     {
         for (int i = 0; (i < ntest[cur]); i++)
@@ -409,98 +415,135 @@ static int decompose_frag(FILE *fplog,
         }
     }
 
-    matrix_multiply(fplog, nusemol, ntest[cur], a, at, ata);
-    (void) check_matrix(ata, x, ntest[cur], ntest[cur], atype);
-
-    if ((row = matrix_invert(fplog, ntest[cur], ata)) != 0)
+    // Check for linear dependencies
+    nusemol = check_matrix(a, x, nusemol, ntest[cur], atype);
+    
+    // Now loop over the number of bootstrap loops
+    gmx_stats_t *polstats;
+    snew(polstats, ntest[cur]);
+    for(int ii=0; (ii<ntest[cur]); ii++)
     {
-        gmx_fatal(FARGS, "Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
-                  row);
+        polstats[ii] = gmx_stats_init();
     }
-    snew(atx, ntest[cur]);
-    snew(fpp, ntest[cur]);
-    a0 = 0;
-    do
+    int nUseBootStrap = 1+floor(fractionBootStrap*nusemol);
+    if (seed <= 0)
     {
-        for (int i = 0; (i < ntest[cur]); i++)
+        seed = gmx_rng_make_seed();
+    }
+    gmx_rng_t rng = gmx_rng_init(seed);
+    for(int kk=0; (kk<nBootStrap); kk++)
+    {
+        fprintf(stderr, "\rBootStrap %d", 1+kk);
+        ata    = alloc_matrix(ntest[cur], ntest[cur]);
+
+        double **a_copy  = alloc_matrix(nUseBootStrap, ntest[cur]);
+        double **at_copy = alloc_matrix(ntest[cur], nUseBootStrap);
+        double  *x_copy;
+        snew(x_copy, nUseBootStrap);
+        for(int ii=0; (ii<nUseBootStrap); ii++)
         {
-            atx[i] = 0;
-            for (j = 0; (j < nusemol); j++)
+            unsigned int uu = gmx_rng_uniform_uint32(rng) % nUseBootStrap;
+            for(int jj=0; (jj<ntest[cur]); jj++)
             {
-                atx[i] += at[i][j]*(x[j]-a0);
+                a_copy[ii][jj] = at_copy[jj][ii] =a[uu][jj];
+                x_copy[ii] = x[uu];
             }
         }
-        for (int i = 0; (i < ntest[cur]); i++)
+        matrix_multiply(fplog, nUseBootStrap, ntest[cur], a_copy, at_copy, ata);
+        (void) check_matrix(ata, x_copy, ntest[cur], ntest[cur], atype);
+
+        if ((row = matrix_invert(fplog, ntest[cur], ata)) == 0)
         {
-            fpp[i] = 0;
-            for (j = 0; (j < ntest[cur]); j++)
+            snew(atx, ntest[cur]);
+            snew(fpp, ntest[cur]);
+            a0 = 0;
+            do
             {
-                fpp[i] += ata[i][j]*atx[j];
-            }
-        }
-        da0  = 0;
-        chi2 = 0;
-        if (bZero)
-        {
-            for (j = 0; (j < nusemol); j++)
-            {
-                ax = a0;
                 for (int i = 0; (i < ntest[cur]); i++)
                 {
-                    ax += fpp[i]*a[j][i];
+                    atx[i] = 0;
+                    for (j = 0; (j < nUseBootStrap); j++)
+                    {
+                        atx[i] += at_copy[i][j]*(x_copy[j]-a0);
+                    }
                 }
-                da0  += (x[j]-ax);
-                chi2 += sqr(x[j]-ax);
+                for (int i = 0; (i < ntest[cur]); i++)
+                {
+                    fpp[i] = 0;
+                    for (j = 0; (j < ntest[cur]); j++)
+                    {
+                        fpp[i] += ata[i][j]*atx[j];
+                    }
+                }
+                da0  = 0;
+                chi2 = 0;
+                if (bZero)
+                {
+                    for (j = 0; (j < nUseBootStrap); j++)
+                    {
+                        ax = a0;
+                        for (int i = 0; (i < ntest[cur]); i++)
+                        {
+                            ax += fpp[i]*a_copy[j][i];
+                        }
+                        da0  += (x_copy[j]-ax);
+                        chi2 += sqr(x_copy[j]-ax);
+                    }
+                    da0 = da0 / nusemol;
+                    a0 += da0;
+                    niter++;
+                    printf("iter: %d <pol> = %g, a0 = %g, chi2 = %g\n",
+                           niter, poltot/nusemol, a0, chi2/nusemol);
+                }
             }
-            da0 = da0 / nusemol;
-            a0 += da0;
-            niter++;
-            printf("iter: %d <pol> = %g, a0 = %g, chi2 = %g\n",
-                   niter, poltot/nusemol, a0, chi2/nusemol);
+            while (bZero && (fabs(da0) > 1e-5) && (niter < 1000));
+            for (int i = 0; (i < ntest[cur]); i++)
+            {
+                gmx_stats_add_point_ydy(polstats[i], fpp[i], 0);
+            }
         }
     }
-    while (bZero && (fabs(da0) > 1e-5) && (niter < 1000));
-
-    fprintf(fplog, "\nPtype  Polarizability\n");
+    fprintf(stderr, "\n");
+    FILE *xp = xvgropen(hisfn, "Polarizability distribution", "alpha (A\\S3\\N)", "", oenv);
     for (int i = 0; (i < ntest[cur]); i++)
     {
-        gmx_poldata_set_ptype_polarizability(pd, atype[i], fpp[i], sigma*sqrt(ata[i][i]));
-        fprintf(fplog, "%-5s  %10.3f\n", atype[i], fpp[i]);
+        int result1, result2;
+        real aver, sigma;
+        // Extract data from statistics
+        if ((estatsOK == (result1 = gmx_stats_get_average(polstats[i], &aver))) &&
+            (estatsOK == (result2 = gmx_stats_get_sigma(polstats[i], &sigma))))
+        {
+            gmx_poldata_set_ptype_polarizability(pd, atype[i], aver, sigma);
+            fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", atype[i], aver, sigma);
+            int nbins = 1+sqrt(nBootStrap);
+            real *my_x, *my_y;
+            gmx_stats_make_histogram(polstats[i], 0, &nbins,
+                                     ehistoY, 1, &my_x, &my_y);
+            fprintf(xp, "@type xy\n");
+            for(int ll=0; (ll<nbins); ll++)
+            {
+                fprintf(xp, "%.3f  %.3f\n", my_x[i], my_y[i]);
+            }
+            fprintf(xp, "&\n");
+            sfree(my_x);
+            sfree(my_y);
+        }
+        else
+        {
+            fprintf(stderr, "Could not determine polarizability for %s\n",
+                    atype[i]);
+        }
+        gmx_stats_done(polstats[i]);
     }
+    fclose(xp);
+    sfree(polstats);
     if (bZero)
     {
         const char *null = (const char *)"0";
         gmx_poldata_add_ptype(pd, null, NULL, null, a0, 0);
     }
-    //! Now checking the result
-    j = nn = 0;
-    double diff2 = 0;
-    FILE  *xp    = fopen("diff.xvg", "w");
-    fprintf(fplog, "\nOutliers (molecules more than 10%% off the experimental value\n");
-    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++, j++)
-    {
-        if (bUseMol[j])
-        {
-            double pol = 0;
-            for (int i = 0; (i < ntest[cur]); i++)
-            {
-                pol += a[nn][i]*fpp[i];
-            }
-            double diff = pol-x[nn];
-            if (fabs(diff)/x[nn] > 0.1)
-            {
-                fprintf(fplog, "%-40s computed %10g actual %10g\n",
-                        mpi->GetMolname().c_str(), pol, x[nn]);
-            }
-            fprintf(xp, "%10g  %10g\n", x[nn], pol);
-            diff2 += sqr(diff);
-            nn++;
-        }
-    }
-    fclose(xp);
     sfree(bUseMol);
     sfree(fpp);
-    fprintf(fplog, "RMSD: %.2f\n", sqrt(diff2/nn));
     
     return ntest[cur];
 }
@@ -531,12 +574,15 @@ int alex_tune_pol(int argc, char *argv[])
         { efDAT, "-do", "tune_pol",  ffWRITE  },
         { efDAT, "-sel","molselect", ffREAD   },
         { efLOG, "-g",  "tune_pol",  ffWRITE  },
-        { efXVG, "-x",  "pol_corr",  ffWRITE  }
+        { efXVG, "-his",  "polhisto",  ffWRITE  }
     };
     int                              NFILE    = (sizeof(fnm)/sizeof(fnm[0]));
     static char                     *sort[]   = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
     static gmx_bool                  bQM      = FALSE;
     static int                       mindata  = 1;
+    static int                       nBootStrap = 1;
+    static int                       seed;
+    static real                      fractionBootStrap = 1;
     static char                     *lot      = (char *)"B3LYP/aug-cc-pVTZ";
     static real                      sigma    = 0;
     static gmx_bool                  bZero    = FALSE, bForceFit = FALSE, bCompress = TRUE;
@@ -556,6 +602,12 @@ int alex_tune_pol(int argc, char *argv[])
           "Use a zero term (like in Bosque and Sales)" },
         { "-force",   FALSE, etBOOL, {&bForceFit},
           "Reset all polarizablities to zero in order to re-optimize based on a gentop.dat file with previous values" },
+        { "-nBootStrap", FALSE, etINT, {&nBootStrap},
+          "Number of trials for bootstrapping" },
+        { "-fractionBootStrap", FALSE, etREAL, {&fractionBootStrap},
+          "Fraction of data points to use in each trial for bootstrapping" },
+        { "-seed", FALSE, etINT, {&seed},
+          "Seed for random numbers in bootstrapping. If <= 0 a seed will be generated." },
         { "-compress", FALSE, etBOOL, {&bCompress},
           "Compress output XML files" }
     };
@@ -578,6 +630,14 @@ int alex_tune_pol(int argc, char *argv[])
     {
         return 0;
     }
+    if ((fractionBootStrap < 0) || (fractionBootStrap > 1))
+    {
+        gmx_fatal(FARGS, "fractionBootStrap should be in [0..1]");
+    }
+    if (nBootStrap <= 0) 
+    {
+        gmx_fatal(FARGS, "nBootStrap should be >= 1");
+    }
     ap = gmx_atomprop_init();
     if ((pd = gmx_poldata_read(opt2fn_null("-di", NFILE, fnm), ap)) == NULL)
     {
@@ -591,8 +651,11 @@ int alex_tune_pol(int argc, char *argv[])
     }
     gms               = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
     FILE *fplog       = opt2FILE("-g", NFILE, fnm, "w");
-    nalexandria_atypes = decompose_frag(fplog, pd, mp, bQM, lot, mindata,
-                                        gms, sigma, bZero, bForceFit);
+    nalexandria_atypes = decompose_frag(fplog, opt2fn("-his", NFILE, fnm),
+                                        pd, mp, bQM, lot, mindata,
+                                        gms, bZero, bForceFit,
+                                        nBootStrap, fractionBootStrap, seed,
+                                        oenv);
     fprintf(fplog, "There are %d alexandria atom types\n", nalexandria_atypes);
 
     const char *pdout = opt2fn("-do", NFILE, fnm);
