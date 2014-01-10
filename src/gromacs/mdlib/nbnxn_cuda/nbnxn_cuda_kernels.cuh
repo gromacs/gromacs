@@ -44,50 +44,148 @@
  *  NOTE: No include fence as it is meant to be included multiple times.
  */
 
-/* Analytical plain cut-off kernels */
+/* Analytical plain cut-off electrostatics kernels
+ */
 #define EL_CUTOFF
+
+/* V shift */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJ ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
-#undef EL_CUTOFF
+#undef NB_KERNEL_FUNC_NAME
+/* F switch */
+#define VDW_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJFsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch */
+#define VDW_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJPsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
-/* Analytical reaction-field kernels */
+#undef EL_CUTOFF
+
+/* Analytical reaction-field kernels
+ */
 #define EL_RF
+
+/* V shift */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJ ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
-#undef EL_RF
 #undef NB_KERNEL_FUNC_NAME
+/* F switch */
+#define VDW_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJFsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch */
+#define VDW_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJPsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
+#undef EL_RF
+
 
 /* Analytical Ewald interaction kernels
  */
 #define EL_EWALD_ANA
+
+/* V shift */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJ ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
-#undef EL_EWALD_ANA
 #undef NB_KERNEL_FUNC_NAME
+/* F switch */
+#define VDW_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJFsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch */
+#define VDW_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJPsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
+#undef EL_EWALD_ANA
+
+
 
 /* Analytical Ewald interaction kernels with twin-range cut-off
  */
 #define EL_EWALD_ANA
 #define VDW_CUTOFF_CHECK
+
+/* V shift */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJ ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
+#undef NB_KERNEL_FUNC_NAME
+/* F switch */
+#define VDW_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJFsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch */
+#define VDW_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJPsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
 #undef EL_EWALD_ANA
 #undef VDW_CUTOFF_CHECK
-#undef NB_KERNEL_FUNC_NAME
+
+
 
 /* Tabulated Ewald interaction kernels */
 #define EL_EWALD_TAB
+
+/* V shift */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJ ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
-#undef EL_EWALD_TAB
 #undef NB_KERNEL_FUNC_NAME
+/* F switch */
+#define VDW_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJFsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch */
+#define VDW_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJPsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
+#undef EL_EWALD_TAB
+
 
 /* Tabulated Ewald interaction kernels with twin-range cut-off */
 #define EL_EWALD_TAB
 #define VDW_CUTOFF_CHECK
+
+/* V shift */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJ ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
+#undef NB_KERNEL_FUNC_NAME
+/* F switch */
+#define VDW_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJFsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch */
+#define VDW_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJPsw ## __VA_ARGS__
+#include "nbnxn_cuda_kernel.cuh"
+#undef VDW_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
 #undef EL_EWALD_TAB
 #undef VDW_CUTOFF_CHECK
-#undef NB_KERNEL_FUNC_NAME
