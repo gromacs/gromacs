@@ -197,7 +197,7 @@ gmx_option_multichoice(
     GMX_CPU_ACCELERATION
     "Acceleration for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_CPU_ACCELERATION}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 IBM_QPX Sparc64_HPC_ACE)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 IBM_QPX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
@@ -222,6 +222,13 @@ gmx_option_multichoice(
     "QM package for QM/MM"
     None
     none gaussian mopac gamess orca)
+
+gmx_option_multichoice(
+    GMX_NBNXN_REF_KERNEL_WIDTH
+    "Reference kernel width"
+    4
+    2 4 8 16)
+gmx_add_cache_dependency(GMX_NBNXN_REF_KERNEL_WIDTH STRING "GMX_CPU_ACCELERATION STREQUAL REFERENCE" 4)
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
@@ -761,6 +768,8 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
     endif()
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
     set(GMX_CPU_ACCELERATION_SPARC64_HPC_ACE 1)
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "REFERENCE")
+    add_definitions(-DGMX_SIMD_REFERENCE_PLAIN_C -DGMX_SIMD_REF_WIDTH=${GMX_NBNXN_REF_KERNEL_WIDTH})
 else()
     gmx_invalid_option_value(GMX_CPU_ACCELERATION)
 endif()
