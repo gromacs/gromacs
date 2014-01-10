@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,17 +43,9 @@
 extern "C" {
 #endif
 
-
-/* For testing the reference plain-C SIMD kernels, uncomment the next lines,
- * as well as the GMX_SIMD_REFERENCE_PLAIN_C define in gromacs/simd/macros.h
- * The actual SIMD width is set in gromacs/simd/macros.h
- * The 4xN reference kernels support 2-, 4- and 8-way SIMD.
- * The 2x(N+N) reference kernels support 8- and 16-way SIMD.
- */
-/* #define GMX_NBNXN_SIMD */
-/* #define GMX_NBNXN_SIMD_4XN */
-/* #define GMX_NBNXN_SIMD_2XNN */
-
+#ifdef GMX_SIMD_REFERENCE_PLAIN_C
+#define GMX_NBNXN_SIMD
+#endif
 
 #if (defined GMX_X86_SSE2) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
 /* Use SIMD accelerated nbnxn search and kernels */
