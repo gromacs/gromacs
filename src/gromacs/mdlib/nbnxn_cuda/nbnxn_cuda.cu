@@ -143,8 +143,8 @@ static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
 /* Constant arrays listing all kernel function pointers and enabling selection
    of a kernel in an elegant manner. */
 
-static const int nEnergyKernelTypes = 2; /* 0 - no energy, 1 - energy */
-static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
+//XXX static const int nEnergyKernelTypes = 2; /* 0 - no energy, 1 - energy */
+//XXX static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
 
 /*! Pointers to the default kernels organized in a 3 dim array by:
  *  electrostatics type, energy calculation on/off, and pruning on/off.
@@ -152,31 +152,98 @@ static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
  *  Note that the order of electrostatics (1st dimension) has to match the
  *  order of corresponding enumerated types defined in nbnxn_cuda_types.h.
  */
-static const nbnxn_cu_kfunc_ptr_t
-    nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
+// XXX  {{NULL,NULL,NULL},{NULL,NULL,NULL},{NULL,NULL,NULL},{NULL,NULL,NULL},{NULL,NULL,NULL},{NULL,NULL,NULL}};
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[eelCuNR][evdwCuNR] =
 {
-    { { nbnxn_kernel_ElecCut_VdwLJ_F_cuda,             nbnxn_kernel_ElecCut_VdwLJ_F_prune_cuda },
-      { nbnxn_kernel_ElecCut_VdwLJ_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJ_VF_prune_cuda } },
-    { { nbnxn_kernel_ElecRF_VdwLJ_F_cuda,              nbnxn_kernel_ElecRF_VdwLJ_F_prune_cuda },
-      { nbnxn_kernel_ElecRF_VdwLJ_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJ_VF_prune_cuda } },
-    { { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_cuda,         nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_cuda },
-      { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_cuda } },
-    { { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_cuda,  nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_cuda },
-      { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_cuda } },
-    { { nbnxn_kernel_ElecEw_VdwLJ_F_cuda,              nbnxn_kernel_ElecEw_VdwLJ_F_prune_cuda },
-      { nbnxn_kernel_ElecEw_VdwLJ_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJ_VF_prune_cuda } },
-    { { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_cuda,       nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_cuda },
-      { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_cuda } }
+    { nbnxn_kernel_ElecCut_VdwLJ_F_cuda,                nbnxn_kernel_ElecCut_VdwLJFsw_F_cuda,                    nbnxn_kernel_ElecCut_VdwLJPsw_F_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_F_cuda,                 nbnxn_kernel_ElecRF_VdwLJFsw_F_cuda,                     nbnxn_kernel_ElecRF_VdwLJPsw_F_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_cuda,            nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_cuda,                nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_cuda,     nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_cuda,         nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_F_cuda,                 nbnxn_kernel_ElecEw_VdwLJFsw_F_cuda,                     nbnxn_kernel_ElecEw_VdwLJPsw_F_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_cuda,          nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_cuda,              nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_cuda      }
 };
+
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[eelCuNR][evdwCuNR] =
+{
+    { nbnxn_kernel_ElecCut_VdwLJ_VF_cuda,                 nbnxn_kernel_ElecCut_VdwLJFsw_VF_cuda,                 nbnxn_kernel_ElecCut_VdwLJPsw_VF_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_VF_cuda,                  nbnxn_kernel_ElecRF_VdwLJFsw_VF_cuda,                  nbnxn_kernel_ElecRF_VdwLJPsw_VF_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_cuda,             nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_cuda,             nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_cuda,      nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_cuda,      nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_VF_cuda,                  nbnxn_kernel_ElecEw_VdwLJFsw_VF_cuda,                  nbnxn_kernel_ElecEw_VdwLJPsw_VF_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_cuda,           nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_cuda,           nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_cuda      }
+};
+
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[eelCuNR][evdwCuNR] =
+{
+    { nbnxn_kernel_ElecCut_VdwLJ_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_cuda      }
+};
+
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelCuNR][evdwCuNR] =
+{
+    { nbnxn_kernel_ElecCut_VdwLJ_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_cuda,           nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_cuda             },
+    { nbnxn_kernel_ElecRF_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_cuda,            nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_cuda              },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_cuda      }
+};
+
+/* FIXME
+static const nbnxn_cu_kfunc_ptr_t(*)[eelCuNR][evdwCuNR]
+nb_kfunc_ptr[nEnergyKernelTypes][nPruneKernelTypes] =
+{
+    { &nb_kfunc_noener_noprune_ptr, &nb_kfunc_noener_prune_ptr  },
+    { &nb_kfunc_noener_prune_ptr,   &nb_kfunc_noener_noprune_ptr},
+};
+*/
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
 static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
+                                                       int  evdwtype,
                                                        bool bDoEne,
                                                        bool bDoPrune)
 {
-    assert(eeltype < eelCuNR);
+    nbnxn_cu_kfunc_ptr_t res;
 
-    return nb_default_kfunc_ptr[eeltype][bDoEne][bDoPrune];
+    assert(eeltype < eelCuNR);
+    assert(evdwtype < eelCuNR);
+
+    if (bDoEne)
+    {
+        if (bDoPrune)
+        {
+            res = nb_kfunc_ener_prune_ptr[eeltype][evdwtype];
+        }
+        else
+        {
+            res = nb_kfunc_ener_noprune_ptr[eeltype][evdwtype];
+        }
+    }
+    else
+    {
+        if (bDoPrune)
+        {
+            res = nb_kfunc_noener_prune_ptr[eeltype][evdwtype];
+        }
+        else
+        {
+            res = nb_kfunc_noener_noprune_ptr[eeltype][evdwtype];
+        }
+    }
+
+    /* FIXME remove
+    if (res != nb_kfunc_ptr[bDoEne][bDoPrune][eeltype][evdwtype])
+    {
+        gmx_incons("CUDA NB kernel pointer not kosher!");
+    }
+    */
+
+    return res;
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
@@ -302,7 +369,9 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
     }
 
     /* get the pointer to the kernel flavor we need to use */
-    nb_kernel = select_nbnxn_kernel(nbp->eeltype, bCalcEner,
+    nb_kernel = select_nbnxn_kernel(nbp->eeltype,
+                                    nbp->vdwtype,
+                                    bCalcEner,
                                     plist->bDoPrune || always_prune);
 
     /* kernel launch config */
@@ -642,20 +711,27 @@ void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo)
 
     for (int i = 0; i < eelCuNR; i++)
     {
-        for (int j = 0; j < nEnergyKernelTypes; j++)
+        for (int j = 0; j < evdwCuNR; j++)
+        //for (int k = 0; k < nEnergyKernelTypes; k++)
         {
-            for (int k = 0; k < nPruneKernelTypes; k++)
+            //for (int l = 0; l < nPruneKernelTypes; l++)
             {
                 if (devinfo->prop.major >= 3)
                 {
                     /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
-                    stat = cudaFuncSetCacheConfig(nb_default_kfunc_ptr[i][j][k], cudaFuncCachePreferShared);
+                    stat = cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferShared);
+                    stat = cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferShared);
+                    stat = cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferShared);
+                    stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferShared);
                 }
                 else
                 {
                     /* On Fermi prefer L1 gives 2% higher performance */
                     /* Default kernel on sm_2.x 16/48 kB Shared/L1 */
-                    stat = cudaFuncSetCacheConfig(nb_default_kfunc_ptr[i][j][k], cudaFuncCachePreferL1);
+                    stat = cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferL1);
+                    stat = cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferL1);
+                    stat = cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferL1);
+                    stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferL1);
                 }
                 CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
             }
