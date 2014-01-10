@@ -38,6 +38,7 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
+#include "types/interaction_const.h"
 #include "types/nbnxn_pairlist.h"
 #include "types/nbnxn_cuda_types_ext.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
@@ -65,8 +66,13 @@ extern "C" {
  *  The order of pointers to different electrostatic kernels defined in
  *  nbnxn_cuda.cu by the nb_default_kfunc_ptr array
  *  should match the order of enumerated types below. */
-enum {
+enum eelCu {
     eelCuCUT, eelCuRF, eelCuEWALD_TAB, eelCuEWALD_TAB_TWIN, eelCuEWALD_ANA, eelCuEWALD_ANA_TWIN, eelCuNR
+};
+
+/* TODO add docs */
+enum evdwCu {
+    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
@@ -113,17 +119,23 @@ struct cu_atomdata
 /** Parameters required for the CUDA nonbonded calculations. */
 struct cu_nbparam
 {
-    int      eeltype;        /**< type of electrostatics                            */
+
+    int      eeltype;        /**< type of electrostatics, takes values from \eelCu   */
+    int      vdwtype;        /**< type of VdW impl., takes values from \evdwCu       */
 
     float    epsfac;         /**< charge multiplication factor                      */
     float    c_rf;           /**< Reaction-field/plain cutoff electrostatics const. */
     float    two_k_rf;       /**< Reaction-field electrostatics constant            */
     float    ewald_beta;     /**< Ewald/PME parameter                               */
     float    sh_ewald;       /**< Ewald/PME  correction term                        */
-    float    rvdw_sq;        /**< VdW cut-off                                       */
-    float    rcoulomb_sq;    /**< Coulomb cut-off                                   */
-    float    rlist_sq;       /**< pair-list cut-off                                 */
-    float    sh_invrc6;      /**< LJ potential correction term                      */
+    float    rvdw_sq;        /**< VdW cut-off squared                               */
+    float    rvdw_switch;    /**< VdW switched cut-off                              */
+    float    rcoulomb_sq;    /**< Coulomb cut-off squared                           */
+    float    rlist_sq;       /**< pair-list cut-off squared                         */
+
+    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
+    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
+    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
 
     /* Non-bonded parameters - accessed through texture memory */
     float              *nbfp;        /**< nonbonded parameter table with C6/C12 pairs  */
