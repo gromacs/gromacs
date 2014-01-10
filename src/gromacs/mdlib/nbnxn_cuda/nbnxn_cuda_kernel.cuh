@@ -112,16 +112,15 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
 #ifdef CALC_ENERGIES
-    float  lj_shift    = nbparam.sh_invrc6;
 #ifdef EL_EWALD_ANY
     float  beta        = nbparam.ewald_beta;
     float  ewald_shift = nbparam.sh_ewald;
 #else
     float  c_rf        = nbparam.c_rf;
-#endif
-    float *e_lj       = atdat.e_lj;
-    float *e_el       = atdat.e_el;
-#endif
+#endif /* EL_EWALD_ANY */
+    float *e_lj        = atdat.e_lj;
+    float *e_el        = atdat.e_el;
+#endif /* CALC_ENERGIES */
 
     /* thread/block/warp id-s */
     unsigned int tidxi  = threadIdx.x;
@@ -141,7 +140,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                  int_bit,
                  F_invr;
 #ifdef CALC_ENERGIES
-    float        E_lj, E_el, E_lj_p;
+    float        E_lj, E_el;
+#endif
+#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
+    float        E_lj_p;
 #endif
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
@@ -336,19 +338,38 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
                                 F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
-
-#ifdef CALC_ENERGIES
-                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
+#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
+                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot)*ONE_TWELVETH_F -
+                                                     c6 * (inv_r6 + nbparam.dispersion_shift.cpot)*ONE_SIXTH_F);
 #endif
+
+#ifdef LJ_FORCE_SWITCH
+#ifdef CALC_ENERGIES
+                                calculate_force_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#else
+                                calculate_force_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr);
+#endif /* CALC_ENERGIES */
+#endif /* LJ_FORCE_SWITCH */
 
 #ifdef VDW_CUTOFF_CHECK
-                                /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
-                                vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
-                                F_invr      *= vdw_in_range;
+                                /* Separate VDW cut-off check to enable twin-range cut-offs
+                                 * (rvdw < rcoulomb <= rlist)
+                                 */
+                                vdw_in_range  = (r2 < rvdw_sq) ? 1.0f : 0.0f;
+                                F_invr       *= vdw_in_range;
 #ifdef CALC_ENERGIES
-                                E_lj_p  *= vdw_in_range;
+                                E_lj_p       *= vdw_in_range;
 #endif
-#endif
+#endif                          /* VDW_CUTOFF_CHECK */
+
+#ifdef LJ_POT_SWITCH
+#ifdef CALC_ENERGIES
+                                calculate_potential_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#else
+                                calculate_potential_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#endif /* CALC_ENERGIES */
+#endif /* LJ_POT_SWITCH */
+
 #ifdef CALC_ENERGIES
                                 E_lj    += E_lj_p;
 #endif

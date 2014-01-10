@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
+#include "types/interaction_const.h"
 #include "types/nbnxn_pairlist.h"
 #include "types/nbnxn_cuda_types_ext.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
@@ -54,7 +55,9 @@ typedef int cudaTextureObject_t;
 extern "C" {
 #endif
 
-/** Types of electrostatics implementations available in the CUDA non-bonded
+/** \brief Electrostatic CUDA kernel flavors.
+ *
+ *  Types of electrostatics implementations available in the CUDA non-bonde
  *  force kernels. These represent both the electrostatics types implemented
  *  by the kernels (cut-off, RF, and Ewald - a subset of what's defined in
  *  enums.h) as well as encode implementation details analytical/tabulated
@@ -62,11 +65,25 @@ extern "C" {
  *  Note that the cut-off and RF kernels have only analytical flavor and unlike
  *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
  *
- *  The order of pointers to different electrostatic kernels defined in
- *  nbnxn_cuda.cu by the nb_default_kfunc_ptr array
- *  should match the order of enumerated types below. */
-enum {
+ *  The row-order of pointers to different electrostatic kernels defined in
+ *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
+ *  should match the order of enumerated types below.
+ */
+enum eelCu {
     eelCuCUT, eelCuRF, eelCuEWALD_TAB, eelCuEWALD_TAB_TWIN, eelCuEWALD_ANA, eelCuEWALD_ANA_TWIN, eelCuNR
+};
+
+/** \brief Electrostatic CUDA kernel flavors.
+ *
+ * The enumerates values correspond to the LJ implementations in the CUDA non-bonded
+ * kernels.
+ *
+ * The column-order of pointers to different electrostatic kernels defined in
+ * nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
+ * should match the order of enumerated types below.
+ */
+enum evdwCu {
+    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
@@ -97,9 +114,9 @@ struct cu_atomdata
 
     float4  *xq;                /**< atom coordinates + charges, size natoms      */
     float3  *f;                 /**< force output array, size natoms              */
-    /* TODO: try float2 for the energies */
-    float   *e_lj,              /**< LJ energy output, size 1                     */
-            *e_el;              /**< Electrostatics energy input, size 1          */
+
+    float   *e_lj;              /**< LJ energy output, size 1                     */
+    float   *e_el;              /**< Electrostatics energy input, size 1          */
 
     float3  *fshift;            /**< shift forces                                 */
 
@@ -113,17 +130,24 @@ struct cu_atomdata
 /** Parameters required for the CUDA nonbonded calculations. */
 struct cu_nbparam
 {
-    int      eeltype;        /**< type of electrostatics                            */
 
-    float    epsfac;         /**< charge multiplication factor                      */
-    float    c_rf;           /**< Reaction-field/plain cutoff electrostatics const. */
-    float    two_k_rf;       /**< Reaction-field electrostatics constant            */
-    float    ewald_beta;     /**< Ewald/PME parameter                               */
-    float    sh_ewald;       /**< Ewald/PME  correction term                        */
-    float    rvdw_sq;        /**< VdW cut-off                                       */
-    float    rcoulomb_sq;    /**< Coulomb cut-off                                   */
-    float    rlist_sq;       /**< pair-list cut-off                                 */
-    float    sh_invrc6;      /**< LJ potential correction term                      */
+    int             eeltype;          /**< type of electrostatics, takes values from \ref enum eelCu */
+    int             vdwtype;          /**< type of VdW impl., takes values from \ref enum evdwCu     */
+
+    float           epsfac;           /**< charge multiplication factor                      */
+    float           c_rf;             /**< Reaction-field/plain cutoff electrostatics const. */
+    float           two_k_rf;         /**< Reaction-field electrostatics constant            */
+    float           ewald_beta;       /**< Ewald/PME parameter                               */
+    float           sh_ewald;         /**< Ewald/PME  correction term                        */
+    float           rcoulomb_sq;      /**< Coulomb cut-off squared                           */
+
+    float           rvdw_sq;          /**< VdW cut-off squared                               */
+    float           rvdw_switch;      /**< VdW switched cut-off                              */
+    float           rlist_sq;         /**< pair-list cut-off squared                         */
+
+    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
+    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
+    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
 
     /* Non-bonded parameters - accessed through texture memory */
     float              *nbfp;        /**< nonbonded parameter table with C6/C12 pairs  */
