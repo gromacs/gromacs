@@ -48,6 +48,13 @@
 #define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
 #define FBUF_STRIDE                 (CL_SIZE_SQ)
 
+#define ONE_THIRD_F     0.33333334f
+#define ONE_FOUTH_F     0.25f
+#define ONE_SIXTH_F     0.16666667f
+#define ONE_TWELVETH_F  0.08333333f
+
+
+
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
