@@ -48,8 +48,141 @@
 #define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
 #define FBUF_STRIDE                 (CL_SIZE_SQ)
 
+#define ONE_SIXTH_F     0.16666667f
+#define ONE_TWELVETH_F  0.08333333f
+
+
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
+
+/*! Apply force switch,  force + energy version. */
+static inline __device__
+void calculate_force_switch_F(const  cu_nbparam_t nbparam,
+                              float  c6,
+                              float  c12,
+                              float  inv_r,
+                              float  r2,
+                              float *F_invr)
+{
+    float r, r_switch;
+
+    /* force switch constants */
+    float disp_shift_V2 = nbparam.dispersion_shift.c2;
+    float disp_shift_V3 = nbparam.dispersion_shift.c3;
+    float repu_shift_V2 = nbparam.repulsion_shift.c2;
+    float repu_shift_V3 = nbparam.repulsion_shift.c3;
+
+    r         = r2 * inv_r;
+    r_switch  = r - nbparam.rvdw_switch;
+    r_switch  = r_switch >= 0.0f ? r_switch : 0.0f;
+
+    *F_invr  +=
+        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
+        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+}
+
+/*! Apply force switch, force-only version. */
+static inline __device__
+void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
+                                float  c6,
+                                float  c12,
+                                float  inv_r,
+                                float  r2,
+                                float *F_invr,
+                                float *E_lj)
+{
+    float r, r_switch;
+
+    /* force switch constants */
+    float disp_shift_V2 = nbparam.dispersion_shift.c2;
+    float disp_shift_V3 = nbparam.dispersion_shift.c3;
+    float repu_shift_V2 = nbparam.repulsion_shift.c2;
+    float repu_shift_V3 = nbparam.repulsion_shift.c3;
+
+    float disp_shift_F2 = nbparam.dispersion_shift.c2/3;
+    float disp_shift_F3 = nbparam.dispersion_shift.c3/4;
+    float repu_shift_F2 = nbparam.repulsion_shift.c2/3;
+    float repu_shift_F3 = nbparam.repulsion_shift.c3/4;
+
+    r         = r2 * inv_r;
+    r_switch  = r - nbparam.rvdw_switch;
+    r_switch  = r_switch >= 0.0f ? r_switch : 0.0f;
+
+    *F_invr  +=
+        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
+        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+    *E_lj    +=
+        c6*(disp_shift_F2 + disp_shift_F3*r_switch)*r_switch*r_switch*r_switch -
+        c12*(repu_shift_F2 + repu_shift_F3*r_switch)*r_switch*r_switch*r_switch;
+}
+
+/*! Apply potential switch, force-only version. */
+static inline __device__
+void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
+                                  float  c6,
+                                  float  c12,
+                                  float  inv_r,
+                                  float  r2,
+                                  float *F_invr,
+                                  float *E_lj)
+{
+    float r, r_switch;
+    float sw, dsw;
+
+    /* potential switch constants */
+    float switch_V3 = nbparam.vdw_switch.c3;
+    float switch_V4 = nbparam.vdw_switch.c4;
+    float switch_V5 = nbparam.vdw_switch.c5;
+    float switch_F2 = 3*nbparam.vdw_switch.c3;
+    float switch_F3 = 4*nbparam.vdw_switch.c4;
+    float switch_F4 = 5*nbparam.vdw_switch.c5;
+
+    r        = r2 * inv_r;
+    r_switch = r - nbparam.rvdw_switch;
+
+    /* Unlike in the F+E kernel, conditional is faster here */
+    if (r_switch > 0.0f)
+    {
+        sw      = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
+        dsw     = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+
+        *F_invr = (*F_invr)*sw - inv_r*(*E_lj)*dsw;
+    }
+}
+
+/*! Apply potential switch, force + energy version. */
+static inline __device__
+void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
+                                    float  c6,
+                                    float  c12,
+                                    float  inv_r,
+                                    float  r2,
+                                    float *F_invr,
+                                    float *E_lj)
+{
+    float r, r_switch;
+    float sw, dsw;
+
+    /* potential switch constants */
+    float switch_V3 = nbparam.vdw_switch.c3;
+    float switch_V4 = nbparam.vdw_switch.c4;
+    float switch_V5 = nbparam.vdw_switch.c5;
+    float switch_F2 = 3*nbparam.vdw_switch.c3;
+    float switch_F3 = 4*nbparam.vdw_switch.c4;
+    float switch_F4 = 5*nbparam.vdw_switch.c5;
+
+    r        = r2 * inv_r;
+    r_switch = r - nbparam.rvdw_switch;
+    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
+
+    /* Unlike in the F-only kernel, masking is faster here */
+    sw       = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
+    dsw      = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+
+    *F_invr  = (*F_invr)*sw - inv_r*(*E_lj)*dsw;
+    *E_lj   *= sw;
+}
+
 
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
  *  Original idea: from the OpenMM project

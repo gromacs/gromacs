@@ -46,6 +46,7 @@
 #include "smalloc.h"
 #include "tables.h"
 #include "typedefs.h"
+#include "types/enums.h"
 #include "types/nb_verlet.h"
 #include "types/interaction_const.h"
 #include "types/force_flags.h"
@@ -277,13 +278,27 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     nbp->rvdw_sq     = ic->rvdw * ic->rvdw;
     nbp->rcoulomb_sq = ic->rcoulomb * ic->rcoulomb;
     nbp->rlist_sq    = ic->rlist * ic->rlist;
-    nbp->sh_invrc6   = ic->sh_invrc6;
 
-    /* TODO: implemented LJ force- and potential-switch CUDA kernels */
-    if (!(ic->vdw_modifier == eintmodNONE ||
-          ic->vdw_modifier == eintmodPOTSHIFT))
+    nbp->rvdw_switch      = ic->rvdw_switch;
+    nbp->dispersion_shift = ic->dispersion_shift;
+    nbp->repulsion_shift  = ic->repulsion_shift;
+    nbp->vdw_switch       = ic->vdw_switch;
+
+    switch (ic->vdw_modifier)
     {
-        gmx_fatal(FARGS, "The CUDA kernels do not yet support switched LJ interactions");
+        case eintmodNONE:
+        case eintmodPOTSHIFT:
+            nbp->vdwtype = evdwCuCUT;
+            break;
+        case eintmodFORCESWITCH:
+            nbp->vdwtype = evdwCuFSWITCH;
+            break;
+        case eintmodPOTSWITCH:
+            nbp->vdwtype = evdwCuPSWITCH;
+            break;
+        default:
+            gmx_incons("The requested VdW interaction modifier is not implemented in the CUDA GPU accelerated kernels!");
+            break;
     }
 
     if (ic->eeltype == eelCUT)
