@@ -49,7 +49,6 @@
 #include "txtdump.h"
 #include "gromacs/fileio/futil.h"
 #include "names.h"
-#include "writeps.h"
 #include "macros.h"
 
 real calc_ewaldcoeff_q(real rc, real dtol)

@@ -44,13 +44,14 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "xutil.h"
-#include "gromacs/math/3dview.h"
 #include "gmx_fatal.h"
 #include "buttons.h"
 #include "manager.h"
 #include "nmol.h"
-#include "writeps.h"
 #include "nleg.h"
+
+#include "gromacs/fileio/writeps.h"
+#include "gromacs/math/3dview.h"
 
 #define MSIZE 4
 
