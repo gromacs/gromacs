@@ -55,7 +55,7 @@
 #include <stdio.h>
 
 #include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/gmxcomplex.h"
+#include "../math/gmxcomplex.h"
 
 #ifdef __cplusplus
 extern "C" {

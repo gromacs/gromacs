@@ -37,6 +37,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
 
 set(MATH_PUBLIC_HEADERS
     3dview.h
+    gmxcomplex.h
     utilities.h
     )
 gmx_install_headers(maths ${MATH_PUBLIC_HEADERS})
