@@ -627,11 +627,6 @@ int gmx_trjconv(int argc, char *argv[])
         "Note that velocities are only supported in",
         "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
 
-        "Option [TT]-app[tt] can be used to",
-        "append output to an existing trajectory file.",
-        "No checks are performed to ensure integrity",
-        "of the resulting combined trajectory file.[PAR]",
-
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
         "[TT].gro, .g96[tt] or [TT].pdb[tt] file. By default, all frames all written to one file.",
         "[TT].pdb[tt] files with all frames concatenated can be viewed with",
@@ -770,7 +765,7 @@ int gmx_trjconv(int argc, char *argv[])
         "progressive", NULL
     };
 
-    static gmx_bool  bAppend       = FALSE, bSeparate = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
+    static gmx_bool  bSeparate     = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
     static gmx_bool  bCenter       = FALSE;
     static int       skip_nr       = 1, ndec = 3, nzero = 0;
     static real      tzero         = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
@@ -837,8 +832,6 @@ int gmx_trjconv(int argc, char *argv[])
           { &exec_command },
           "Execute command for every output frame with the "
           "frame number as argument" },
-        { "-app", FALSE, etBOOL,
-          { &bAppend }, "Append output" },
         { "-split", FALSE, etTIME,
           { &split_t },
           "Start writing new file when t MOD split = first "
@@ -1331,15 +1324,7 @@ int gmx_trjconv(int argc, char *argv[])
             }
 
             /* open output for writing */
-            if ((bAppend) && (gmx_fexist(out_file)))
-            {
-                strcpy(filemode, "a");
-                fprintf(stderr, "APPENDING to existing file %s\n", out_file);
-            }
-            else
-            {
-                strcpy(filemode, "w");
-            }
+            strcpy(filemode, "w");
             switch (ftp)
             {
                 case efTNG:
