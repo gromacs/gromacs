@@ -47,15 +47,15 @@
 #include "string2.h"
 #include "gstat.h"
 #include "smalloc.h"
-#include "gromacs/fileio/futil.h"
 #include "macros.h"
-#include "gromacs/math/utilities.h"
 #include "xvgr.h"
-#include "gmxcomplex.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "gmx_fatal.h"
 
+#include "gromacs/fileio/futil.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/utilities.h"
 
 /* Determines at which point in the array the fit should start */
 int calc_nbegin(int nx, real x[], real tbegin)

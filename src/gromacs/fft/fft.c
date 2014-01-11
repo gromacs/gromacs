@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 Erik Lindahl, David van der Spoel, University of Groningen.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,9 @@
 #include <errno.h>
 
 #include "types/simple.h"
-#include "gmxcomplex.h"
 #include "gmx_fatal.h"
 #include "gromacs/fft/fft.h"
+#include "gromacs/math/gmxcomplex.h"
 
 
 /* This file contains common fft utility functions, but not

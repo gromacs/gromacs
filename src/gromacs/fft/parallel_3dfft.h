@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@
 
 #include "../legacyheaders/types/nrnb.h"
 #include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/gmxcomplex.h"
+#include "../math/gmxcomplex.h"
 #include "../utility/gmxmpi.h"
 #include "fft.h"
 
