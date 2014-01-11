@@ -42,7 +42,7 @@
 #include "smalloc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/commandline/pargs.h"
-#include "writeps.h"
+#include "gromacs/fileio/writeps.h"
 #include "copyrite.h"
 #include "xvgr.h"
 #include "minvert.h"
