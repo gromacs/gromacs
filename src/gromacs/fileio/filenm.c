@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ static const int trxs[] =
 #ifdef USE_XDR
     efXTC, efTRR, efCPT,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87
+    efTRJ, efGRO, efG96, efPDB
 };
 #define NTRXS asize(trxs)
 
@@ -86,7 +86,7 @@ static const int tros[] =
 #ifdef USE_XDR
     efXTC, efTRR,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87
+    efTRJ, efGRO, efG96, efPDB
 };
 #define NTROS asize(tros)
 
@@ -100,12 +100,12 @@ static const int trns[] =
 #define NTRNS asize(trns)
 
 static const int stos[] =
-{ efGRO, efG96, efPDB, efBRK, efENT, efESP, efXYZ };
+{ efGRO, efG96, efPDB, efBRK, efENT, efESP };
 #define NSTOS asize(stos)
 
 static const int stxs[] =
 {
-    efGRO, efG96, efPDB, efBRK, efENT, efESP, efXYZ,
+    efGRO, efG96, efPDB, efBRK, efENT, efESP,
 #ifdef USE_XDR
     efTPR,
 #endif
@@ -157,7 +157,6 @@ static const t_deffile
     { eftBIN, ".trj", "traj", NULL, "Trajectory file (architecture specific)" },
     { eftXDR, ".xtc", "traj", NULL,
       "Compressed trajectory (portable xdr format)" },
-    { eftASC, ".g87", "gtraj", NULL, "Gromos-87 ASCII trajectory format" },
     { eftXDR, ".edr", "ener",   NULL, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file: gro g96 pdb tpr etc.",
       NSTXS, stxs },
@@ -170,7 +169,6 @@ static const t_deffile
     { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
     { eftASC, ".esp", "conf", "-f", "Coordinate file in Espresso format" },
     { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
-    { eftASC, ".xyz", "conf", "-o", "Coordinate file for some other programs" },
     { eftXDR, ".cpt", "state",  "-cp", "Checkpoint file"},
     { eftASC, ".log", "run",    "-l", "Log file"},
     { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},
