@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,16 +51,12 @@ extern "C" {
 
 /* Native windows uses backslash path separators.
  * Cygwin and everybody else in the world use slash.
- * When reading the PATH environment variable, Unix separates entries
- * with colon, while windows uses semicolon.
  */
 #include "../utility/gmx_header_config.h"
 #ifdef GMX_NATIVE_WINDOWS
 #define DIR_SEPARATOR '\\'
-#define PATH_SEPARATOR ";"
 #else
 #define DIR_SEPARATOR '/'
-#define PATH_SEPARATOR ":"
 #endif
 
 
@@ -166,9 +162,6 @@ gmx_directory_nextfile(gmx_directory_t gmxdir, char *name, int maxlength_name);
 int
 gmx_directory_close(gmx_directory_t gmxdir);
 
-
-
-void get_libdir(char *libdir);
 
 char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
 
