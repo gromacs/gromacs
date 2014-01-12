@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,16 +63,33 @@
 namespace
 {
 
+//! \addtogroup module_utility
+//! \{
+
 //! Directory separator to use when joining paths.
 const char cDirSeparator = '/';
 //! Directory separators to use when parsing paths.
 const char cDirSeparators[] = "/\\";
+/*! \var cPathSeparator
+ * \brief
+ * Separator to use to split the PATH environment variable.
+ *
+ * When reading the PATH environment variable, Unix separates entries
+ * with colon, while windows uses semicolon.
+ */
+#ifdef GMX_NATIVE_WINDOWS
+const char cPathSeparator = ';';
+#else
+const char cPathSeparator = ':';
+#endif
 
 //! Check whether a given character is a directory separator.
 bool isDirSeparator(char chr)
 {
     return std::strchr(cDirSeparators, chr);
 }
+
+//! \}
 
 } // namespace
 
@@ -168,11 +185,11 @@ std::string Path::getWorkingDirectory()
 void Path::splitPathEnvironment(const std::string        &pathEnv,
                                 std::vector<std::string> *result)
 {
-    size_t                   prevPos = 0;
-    size_t                   separator;
+    size_t prevPos = 0;
+    size_t separator;
     do
     {
-        separator = pathEnv.find_first_of(PATH_SEPARATOR, prevPos);
+        separator = pathEnv.find(cPathSeparator, prevPos);
         result->push_back(pathEnv.substr(prevPos, separator - prevPos));
         prevPos = separator + 1;
     }
