@@ -13,7 +13,7 @@ OPTIONS
 
 Options to specify input and output files:
 
- -f     <.xtc/.trr/...> (traj.xtc) (Input)
+ -f     [<.xtc/.trr/...>] (traj.xtc) (Input)
      Input file description: xtc trr cpt trj gro g96 pdb tng
  -mult  [<.xtc/.trr/...> [...]] (traj.xtc) (Input, Opt.)
      Multiple file description: xtc trr cpt trj gro g96 pdb tng
