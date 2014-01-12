@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1478,40 +1478,6 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
     }
 }
 
-static void write_xyz_conf(const char *outfile, const char *title,
-                           t_atoms *atoms, rvec *x)
-{
-    FILE          *fp;
-    int            i, anr;
-    real           value;
-    char          *ptr, *name;
-    gmx_atomprop_t aps = gmx_atomprop_init();
-
-    fp = gmx_fio_fopen(outfile, "w");
-    fprintf(fp, "%3d\n", atoms->nr);
-    fprintf(fp, "%s\n", title);
-    for (i = 0; (i < atoms->nr); i++)
-    {
-        anr  = atoms->atom[i].atomnumber;
-        name = *atoms->atomname[i];
-        if (anr == NOTSET)
-        {
-            if (gmx_atomprop_query(aps, epropElement, "???", name, &value))
-            {
-                anr = gmx_nint(value);
-            }
-        }
-        if ((ptr = gmx_atomprop_element(aps, anr)) == NULL)
-        {
-            ptr = name;
-        }
-        fprintf(fp, "%3s%10.5f%10.5f%10.5f\n", ptr,
-                10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ]);
-    }
-    gmx_fio_fclose(fp);
-    gmx_atomprop_destroy(aps);
-}
-
 void write_sto_conf(const char *outfile, const char *title, t_atoms *atoms,
                     rvec x[], rvec *v, int ePBC, matrix box)
 {
@@ -1544,9 +1510,6 @@ void write_sto_conf(const char *outfile, const char *title, t_atoms *atoms,
             out = gmx_fio_fopen(outfile, "w");
             write_g96_conf(out, &fr, -1, NULL);
             gmx_fio_fclose(out);
-            break;
-        case efXYZ:
-            write_xyz_conf(outfile, (strlen(title) > 0) ? title : outfile, atoms, x);
             break;
         case efPDB:
         case efBRK:
@@ -1599,54 +1562,6 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
     }
 }
 
-static int get_xyz_coordnum(const char *infile)
-{
-    FILE *fp;
-    int   n;
-
-    fp = gmx_fio_fopen(infile, "r");
-    if (fscanf(fp, "%d", &n) != 1)
-    {
-        gmx_fatal(FARGS, "Can not read number of atoms from %s", infile);
-    }
-    gmx_fio_fclose(fp);
-
-    return n;
-}
-
-static void read_xyz_conf(const char *infile, char *title,
-                          t_atoms *atoms, rvec *x)
-{
-    FILE     *fp;
-    int       i, n;
-    double    xx, yy, zz;
-    t_symtab *tab;
-    char      atomnm[32], buf[STRLEN];
-
-    snew(tab, 1);
-    fp = gmx_fio_fopen(infile, "r");
-    fgets2(buf, STRLEN-1, fp);
-    if (sscanf(buf, "%d", &n) != 1)
-    {
-        gmx_fatal(FARGS, "Can not read number of atoms from %s", infile);
-    }
-    fgets2(buf, STRLEN-1, fp);
-    strcpy(title, buf);
-    for (i = 0; (i < n); i++)
-    {
-        fgets2(buf, STRLEN-1, fp);
-        if (sscanf(buf, "%s%lf%lf%lf", atomnm, &xx, &yy, &zz) != 4)
-        {
-            gmx_fatal(FARGS, "Can not read coordinates from %s", infile);
-        }
-        atoms->atomname[i] = put_symtab(tab, atomnm);
-        x[i][XX]           = xx*0.1;
-        x[i][YY]           = yy*0.1;
-        x[i][ZZ]           = zz*0.1;
-    }
-    gmx_fio_fclose(fp);
-}
-
 void get_stx_coordnum(const char *infile, int *natoms)
 {
     FILE      *in;
@@ -1671,9 +1586,6 @@ void get_stx_coordnum(const char *infile, int *natoms)
             fr.f      = NULL;
             *natoms   = read_g96_conf(in, infile, &fr, g96_line);
             gmx_fio_fclose(in);
-            break;
-        case efXYZ:
-            *natoms = get_xyz_coordnum(infile);
             break;
         case efPDB:
         case efBRK:
@@ -1732,9 +1644,6 @@ void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
     {
         case efGRO:
             read_whole_conf(infile, title, atoms, x, v, box);
-            break;
-        case efXYZ:
-            read_xyz_conf(infile, title, atoms, x);
             break;
         case efG96:
             fr.title  = NULL;
