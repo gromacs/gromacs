@@ -748,12 +748,17 @@ void printBinaryInformation(FILE                            *fp,
         printCopyright(fp);
         fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
+    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
             GromacsVersion(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
     if (binaryPath != NULL && binaryPath[0] != '\0')
     {
-        fprintf(fp, "%sExecutable: %s%s\n", prefix, binaryPath, suffix);
+        fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
+    }
+    const char *const libraryPath = programContext.defaultLibraryDataPath();
+    if (libraryPath != NULL && libraryPath[0] != '\0')
+    {
+        fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
     }
     const char *const commandLine = programContext.commandLine();
     if (commandLine != NULL && commandLine[0] != '\0')
