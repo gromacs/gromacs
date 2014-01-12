@@ -45,7 +45,6 @@
 #include "fitahx.h"
 #include "gromacs/fileio/futil.h"
 #include "gstat.h"
-#include "gromacs/fileio/g87io.h"
 #include "hxprops.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"
@@ -63,38 +62,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
-
-void dump_otrj(FILE *otrj, int natoms, atom_id all_index[], rvec x[],
-               real fac, rvec xav[])
-{
-    static FILE *fp   = NULL;
-    static real  fac0 = 1.0;
-
-    int          i, ai, m;
-    real         xa, xm;
-
-    if (fp == NULL)
-    {
-        fp   = ffopen("WEDGAMMA10.DAT", "w");
-        fac0 = fac;
-    }
-    fac /= fac0;
-
-    fprintf(fp, "%10g\n", fac);
-
-    for (i = 0; (i < natoms); i++)
-    {
-        ai = all_index[i];
-        for (m = 0; (m < DIM); m++)
-        {
-            xa         = xav[ai][m];
-            xm         = x[ai][m]*fac;
-            xav[ai][m] = xa+xm;
-            x[ai][m]   = xm;
-        }
-    }
-    write_g87_ndx(otrj, natoms, all_index, x, NULL);
-}
 
 int gmx_helix(int argc, char *argv[])
 {
@@ -184,7 +151,6 @@ int gmx_helix(int argc, char *argv[])
     };
 
     output_env_t   oenv;
-    FILE          *otrj;
     char           buf[54], prop[256];
     t_trxstatus   *status;
     int            natoms, nre, nres;
@@ -203,9 +169,7 @@ int gmx_helix(int argc, char *argv[])
         { efTPX, NULL,  NULL,   ffREAD  },
         { efNDX, NULL,  NULL,   ffREAD  },
         { efTRX, "-f",  NULL,   ffREAD  },
-        { efG87, "-to", NULL,   ffOPTWR },
         { efSTO, "-cz", "zconf", ffWRITE },
-        { efSTO, "-co", "waver", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -221,17 +185,6 @@ int gmx_helix(int argc, char *argv[])
     top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
-
-    if (opt2bSet("-to", NFILE, fnm))
-    {
-        otrj = opt2FILE("-to", NFILE, fnm, "w");
-        strcpy(prop, ppp[0]);
-        fprintf(otrj, "%s Weighted Trajectory: %d atoms, NO box\n", prop, natoms);
-    }
-    else
-    {
-        otrj = NULL;
-    }
 
     if (natoms != top->atoms.nr)
     {
@@ -325,11 +278,6 @@ int gmx_helix(int argc, char *argv[])
                      xf[efhHB4].fp, xf[efhHB4].fp2,
                      xf[efhHB5].fp, xf[efhHB5].fp2,
                      t, nres, bb);
-
-            if (otrj)
-            {
-                dump_otrj(otrj, nall, allindex, x, xf[nSel].val, xav);
-            }
         }
     }
     while (read_next_x(oenv, status, &t, x, box));
@@ -338,23 +286,6 @@ int gmx_helix(int argc, char *argv[])
     gmx_rmpbc_done(gpbc);
 
     close_trj(status);
-
-    if (otrj)
-    {
-        ffclose(otrj);
-        fac = 1.0/teller;
-        for (i = 0; (i < nall); i++)
-        {
-            ai = allindex[i];
-            for (m = 0; (m < DIM); m++)
-            {
-                xav[ai][m] *= fac;
-            }
-        }
-        write_sto_conf_indexed(opt2fn("-co", NFILE, fnm),
-                               "Weighted and Averaged conformation",
-                               &(top->atoms), xav, NULL, ePBC, box, nall, allindex);
-    }
 
     for (i = 0; (i < nres); i++)
     {

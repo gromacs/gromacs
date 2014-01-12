@@ -113,12 +113,4 @@ TEST_F(GmxTrajTestNoFatalError, G96File)
     runTest("spc2-traj.g96");
 }
 
-// .g87 file reading has been broken since at least v4.5
-// proposed on gmx-developers for removing that support
-TEST_F(GmxTrajTestNoFatalError, DISABLED_G87File)
-{
-    redirectStringToStdin("0\n4\n6\n0.0\n");
-    runTest("spc2-traj.g87");
-}
-
 } // namespace

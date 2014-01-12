@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,6 @@
 #include "pdbio.h"
 #include "confio.h"
 #include "checkpoint.h"
-#include "g87io.h"
 
 #include "gromacs/fileio/timecontrol.h"
 
@@ -70,18 +69,12 @@
 #define SKIP2  100
 #define SKIP3 1000
 
-/* Globals for gromos-87 input */
-typedef enum {
-    effXYZ, effXYZBox, effG87, effG87Box, effNR
-} eFileFormat;
-
 struct t_trxstatus
 {
     int             __frame;
     t_trxframe     *xframe;
     int             nxframe;
     t_fileio       *fio;
-    eFileFormat     eFF;
     int             NATOMS;
     double          DT, BOX[3];
     gmx_bool        bReadBox;
@@ -229,36 +222,36 @@ t_fileio *trx_get_fileio(t_trxstatus *status)
 
 void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
 {
-    fr->not_ok  = 0;
-    fr->bTitle  = FALSE;
-    fr->bStep   = FALSE;
-    fr->bTime   = FALSE;
-    fr->bLambda = FALSE;
+    fr->not_ok    = 0;
+    fr->bTitle    = FALSE;
+    fr->bStep     = FALSE;
+    fr->bTime     = FALSE;
+    fr->bLambda   = FALSE;
     fr->bFepState = FALSE;
-    fr->bAtoms  = FALSE;
-    fr->bPrec   = FALSE;
-    fr->bX      = FALSE;
-    fr->bV      = FALSE;
-    fr->bF      = FALSE;
-    fr->bBox    = FALSE;
+    fr->bAtoms    = FALSE;
+    fr->bPrec     = FALSE;
+    fr->bX        = FALSE;
+    fr->bV        = FALSE;
+    fr->bF        = FALSE;
+    fr->bBox      = FALSE;
     if (bFirst)
     {
-        fr->flags   = 0;
-        fr->bDouble = FALSE;
-        fr->natoms  = -1;
-        fr->t0      = 0;
-        fr->tpf     = 0;
-        fr->tppf    = 0;
-        fr->title   = NULL;
-        fr->step    = 0;
-        fr->time    = 0;
-        fr->lambda  = 0;
+        fr->flags     = 0;
+        fr->bDouble   = FALSE;
+        fr->natoms    = -1;
+        fr->t0        = 0;
+        fr->tpf       = 0;
+        fr->tppf      = 0;
+        fr->title     = NULL;
+        fr->step      = 0;
+        fr->time      = 0;
+        fr->lambda    = 0;
         fr->fep_state = 0;
-        fr->atoms   = NULL;
-        fr->prec    = 0;
-        fr->x       = NULL;
-        fr->v       = NULL;
-        fr->f       = NULL;
+        fr->atoms     = NULL;
+        fr->prec      = 0;
+        fr->x         = NULL;
+        fr->v         = NULL;
+        fr->f         = NULL;
         clear_mat(fr->box);
         fr->bPBC   = FALSE;
         fr->ePBC   = -1;
@@ -324,7 +317,6 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             }
         /* no break */
         case efXTC:
-        case efG87:
             if (fr->bX)
             {
                 snew(xout, nind);
@@ -370,9 +362,6 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
                                       fr->x, -1, fr->box, ' ', fr->step, nind, ind, gc, TRUE);
             }
             break;
-        case efG87:
-            write_g87(gmx_fio_getfp(status->fio), nind, xout, fr->box);
-            break;
         case efG96:
             write_g96_conf(gmx_fio_getfp(status->fio), fr, nind, ind);
             break;
@@ -397,7 +386,6 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             }
         /* no break */
         case efXTC:
-        case efG87:
             sfree(xout);
             break;
         default:
@@ -466,9 +454,6 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
                               fr->atoms, fr->x, fr->bPBC ? fr->ePBC : -1, fr->box,
                               ' ', fr->step, gc, TRUE);
             }
-            break;
-        case efG87:
-            write_g87(gmx_fio_getfp(status->fio), fr->natoms, fr->x, fr->box);
             break;
         case efG96:
             write_g96_conf(gmx_fio_getfp(status->fio), fr, -1, NULL);
@@ -587,196 +572,6 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
     return bRet;
 }
 
-static void choose_file_format(FILE *fp)
-{
-    int          i, m, c;
-    int          rc;
-    eFileFormat  eFF;
-    t_trxstatus *stat;
-
-    printf("\n\n");
-    printf("   Select File Format\n");
-    printf("---------------------------\n");
-    printf("1. XYZ File\n");
-    printf("2. XYZ File with Box\n");
-    printf("3. Gromos-87 Ascii Trajectory\n");
-    printf("4. Gromos-87 Ascii Trajectory with Box\n");
-
-    snew(stat, 1);
-    status_init(stat);
-
-    do
-    {
-        printf("\nChoice: ");
-        fflush(stdout);
-        do
-        {
-            rc = scanf("%d", &i);
-        }
-        while (rc != 1);
-        i--;
-    }
-    while ((i < 0) || (i >= effNR));
-    printf("\n");
-
-    stat->eFF = (eFileFormat) i;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        stat->BOX[m] = 0;
-    }
-
-    stat->bReadBox = (stat->eFF == effG87Box) || (stat->eFF == effXYZBox);
-
-    switch (stat->eFF)
-    {
-        case effXYZ:
-        case effXYZBox:
-            if (5 != fscanf(fp, "%d%lf%lf%lf%lf", &stat->NATOMS, &stat->BOX[XX], &stat->BOX[YY], &stat->BOX[ZZ], &stat->DT))
-            {
-                gmx_fatal(FARGS, "Error reading natoms/box in file");
-            }
-            break;
-        case effG87:
-        case effG87Box:
-            printf("GROMOS! OH DEAR...\n\n");
-            printf("Number of atoms ? ");
-            fflush(stdout);
-            if (1 != scanf("%d", &stat->NATOMS))
-            {
-                gmx_fatal(FARGS, "Error reading natoms in file");
-            }
-
-            printf("Time between timeframes ? ");
-            fflush(stdout);
-            if (1 != scanf("%lf", &stat->DT))
-            {
-                gmx_fatal(FARGS, "Error reading dt from file");
-            }
-
-            if (stat->eFF == effG87)
-            {
-                printf("Box X Y Z ? ");
-                fflush(stdout);
-                if (3 != scanf("%lf%lf%lf", &stat->BOX[XX], &stat->BOX[YY], &stat->BOX[ZZ]))
-                {
-                    gmx_fatal(FARGS, "Error reading box in file");
-                }
-            }
-            do
-            {
-                c = fgetc(fp);
-                printf("%c", c);
-            }
-            while (c != '\n');
-            printf("\n");
-            fflush(stdout);
-            break;
-        default:
-            printf("Hellow World\n");
-    }
-}
-
-static gmx_bool do_read_xyz(t_trxstatus *status, FILE *fp, int natoms,
-                            rvec x[], matrix box)
-{
-    int    i, m;
-    double x0;
-
-    for (i = 0; (i < natoms); i++)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            if (fscanf(fp, "%lf", &x0) != 1)
-            {
-                if (i || m)
-                {
-                    fprintf(stderr, "error reading statusfile: x[%d][%d]\n", i, m);
-                }
-                /* else eof! */
-                return FALSE;
-            }
-            x[i][m] = x0;
-        }
-    }
-    if (status->bReadBox)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            if (fscanf(fp, "%lf", &x0) != 1)
-            {
-                return FALSE;
-            }
-            box[m][m] = x0;
-        }
-    }
-    return TRUE;
-}
-
-static gmx_bool xyz_next_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
-                           real *t, int natoms, rvec x[], matrix box)
-/* Reads until a new x can be found (return TRUE)
- * or eof (return FALSE)
- */
-{
-    real pt;
-
-    pt = *t;
-    while (!bTimeSet(TBEGIN) || (*t < rTimeValue(TBEGIN)))
-    {
-        if (!do_read_xyz(status, fp, natoms, x, box))
-        {
-            return FALSE;
-        }
-        printcount(status, oenv, *t, FALSE);
-        *t += status->DT;
-        pt  = *t;
-    }
-    if (!bTimeSet(TEND) || (*t <= rTimeValue(TEND)))
-    {
-        if (!do_read_xyz(status, fp, natoms, x, box))
-        {
-            printlast(status, oenv, *t);
-            return FALSE;
-        }
-        printcount(status, oenv, *t, FALSE);
-        pt  = *t;
-        *t += status->DT;
-        return TRUE;
-    }
-    printlast(status, oenv, pt);
-    return FALSE;
-}
-
-static int xyz_first_x(t_trxstatus *status, FILE *fp, const output_env_t oenv,
-                       real *t, rvec **x, matrix box)
-/* Reads fp, mallocs x, and returns x and box
- * Returns natoms when successful, FALSE otherwise
- */
-{
-    int    m;
-
-    initcount(status);
-
-    clear_mat(box);
-    choose_file_format(fp);
-
-    for (m = 0; (m < DIM); m++)
-    {
-        box[m][m] = status->BOX[m];
-    }
-
-    snew(*x, status->NATOMS);
-    *t = status->DT;
-    if (!xyz_next_x(status, fp, oenv, t, status->NATOMS, *x, box))
-    {
-        return 0;
-    }
-    *t = 0.0;
-
-    return status->NATOMS;
-}
-
 static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
 {
     t_atoms   atoms;
@@ -893,13 +688,6 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                 read_g96_conf(gmx_fio_getfp(status->fio), NULL, fr,
                               status->persistent_line);
                 bRet = (fr->natoms > 0);
-                break;
-            case efG87:
-                bRet = xyz_next_x(status, gmx_fio_getfp(status->fio), oenv, &fr->time,
-                                  fr->natoms, fr->x, fr->box);
-                fr->bTime = bRet;
-                fr->bX    = bRet;
-                fr->bBox  = bRet;
                 break;
             case efXTC:
                 /* B. Hess 2005-4-20
@@ -1035,18 +823,6 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
                 snew(fr->v, fr->natoms);
             }
             fio = (*status)->fio = gmx_fio_open(fn, "r");
-            break;
-        case efG87:
-            fr->natoms = xyz_first_x(*status, gmx_fio_getfp(fio), oenv, &fr->time,
-                                     &fr->x, fr->box);
-            if (fr->natoms)
-            {
-                fr->bTime = TRUE;
-                fr->bX    = TRUE;
-                fr->bBox  = TRUE;
-                printcount(*status, oenv, fr->time, FALSE);
-            }
-            bFirst = FALSE;
             break;
         case efXTC:
             if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
