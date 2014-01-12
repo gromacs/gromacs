@@ -51,16 +51,12 @@ extern "C" {
 
 /* Native windows uses backslash path separators.
  * Cygwin and everybody else in the world use slash.
- * When reading the PATH environment variable, Unix separates entries
- * with colon, while windows uses semicolon.
  */
 #include "../utility/gmx_header_config.h"
 #ifdef GMX_NATIVE_WINDOWS
 #define DIR_SEPARATOR '\\'
-#define PATH_SEPARATOR ";"
 #else
 #define DIR_SEPARATOR '/'
-#define PATH_SEPARATOR ":"
 #endif
 
 
@@ -166,9 +162,6 @@ gmx_directory_nextfile(gmx_directory_t gmxdir, char *name, int maxlength_name);
 int
 gmx_directory_close(gmx_directory_t gmxdir);
 
-
-
-void get_libdir(char *libdir);
 
 char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
 

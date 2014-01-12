@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -631,41 +631,4 @@ str_to_int64_t(const char *str, char **endptr)
 #else
     return _strtoi64(str, endptr, 10);
 #endif
-}
-
-char *gmx_strsep(char **stringp, const char *delim)
-{
-    char *ret;
-    int   len = strlen(delim);
-    int   i, j = 0;
-    int   found = 0;
-
-    if (!*stringp)
-    {
-        return NULL;
-    }
-    ret = *stringp;
-    do
-    {
-        if ( (*stringp)[j] == '\0')
-        {
-            found    = 1;
-            *stringp = NULL;
-            break;
-        }
-        for (i = 0; i < len; i++)
-        {
-            if ( (*stringp)[j] == delim[i])
-            {
-                (*stringp)[j] = '\0';
-                *stringp      = *stringp+j+1;
-                found         = 1;
-                break;
-            }
-        }
-        j++;
-    }
-    while (!found);
-
-    return ret;
 }

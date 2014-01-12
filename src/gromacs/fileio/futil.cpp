@@ -734,157 +734,62 @@ gmx_directory_close(gmx_directory_t gmxdir)
 }
 
 
-static gmx_bool search_subdirs(const char *parent, char *libdir)
-{
-    char    *ptr;
-    gmx_bool found;
-
-    /* Search a few common subdirectory names for the gromacs library dir */
-    sprintf(libdir, "%s%cshare%ctop%cgurgle.dat", parent,
-            DIR_SEPARATOR, DIR_SEPARATOR, DIR_SEPARATOR);
-    found = gmx_fexist(libdir);
-    if (!found)
-    {
-        sprintf(libdir, "%s%c%s%cgurgle.dat", parent,
-                DIR_SEPARATOR, GMXLIB_SEARCH_DIR, DIR_SEPARATOR);
-        found = gmx_fexist(libdir);
-    }
-
-    /* Remove the gurgle.dat part from libdir if we found something */
-    if (found)
-    {
-        ptr  = strrchr(libdir, DIR_SEPARATOR); /* slash or backslash always present, no check necessary */
-        *ptr = '\0';
-    }
-    return found;
-}
-
-
-void get_libdir(char *libdir)
-{
-    // TODO: There is a potential buffer overrun in the way libdir is passed in.
-    try
-    {
-        std::string fullPath = gmx::getProgramContext().fullBinaryPath();
-
-        // If running directly from the build tree, try to use the source
-        // directory.
-#if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
-        // TODO: Consider adding Path::startsWith(), as this may not work as
-        // expected.
-        if (gmx::startsWith(fullPath, CMAKE_BINARY_DIR))
-        {
-            if (search_subdirs(CMAKE_SOURCE_DIR, libdir))
-            {
-                return;
-            }
-        }
-#endif
-
-        // Remove the executable name
-        fullPath = gmx::Path::splitToPathAndFilename(fullPath).first;
-        // Now we have the full path to the gromacs executable.
-        // Use it to find the library dir.
-        while (!fullPath.empty())
-        {
-            if (search_subdirs(fullPath.c_str(), libdir))
-            {
-                return;
-            }
-            fullPath = gmx::Path::splitToPathAndFilename(fullPath).first;
-        }
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-    /* End of smart searching. If we didn't find it in our parent tree,
-     * or if the program name wasn't set, at least try some standard
-     * locations before giving up, in case we are running from e.g.
-     * a users home directory. This only works on unix or cygwin...
-     */
-    bool found = false;
-#ifndef GMX_NATIVE_WINDOWS
-    if (!found)
-    {
-        found = search_subdirs("/usr/local", libdir);
-    }
-    if (!found)
-    {
-        found = search_subdirs("/usr", libdir);
-    }
-    if (!found)
-    {
-        found = search_subdirs("/opt", libdir);
-    }
-#endif
-    if (!found)
-    {
-        strcpy(libdir, GMXLIB_FALLBACK);
-    }
-}
-
-
 char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
 {
-    char    *ret;
-    char    *lib, *dir;
-    char     buf[1024];
-    char     libpath[GMX_PATH_MAX];
-    gmx_bool env_is_set = FALSE;
-    char    *s, tmppath[GMX_PATH_MAX];
-
-    /* GMXLIB can be a path now */
-    lib = getenv("GMXLIB");
-    if (lib != NULL)
+    bool bEnvIsSet = false;
+    try
     {
-        env_is_set = TRUE;
-        strncpy(libpath, lib, GMX_PATH_MAX);
-    }
-    else
-    {
-        get_libdir(libpath);
-    }
-
-    ret = NULL;
-    if (bAddCWD && gmx_fexist(file))
-    {
-        ret = gmx_strdup(file);
-    }
-    else
-    {
-        strncpy(tmppath, libpath, GMX_PATH_MAX);
-        s = tmppath;
-        while (ret == NULL && (dir = gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
+        if (bAddCWD && gmx_fexist(file))
         {
-            sprintf(buf, "%s%c%s", dir, DIR_SEPARATOR, file);
-            if (gmx_fexist(buf))
-            {
-                ret = gmx_strdup(buf);
-            }
+            return gmx_strdup(file);
         }
-        if (ret == NULL && bFatal)
+        else
         {
-            if (env_is_set)
+            std::string  libpath;
+            // GMXLIB can be a path.
+            const char  *lib = getenv("GMXLIB");
+            if (lib != NULL)
             {
-                gmx_fatal(FARGS,
-                          "Library file %s not found %sin your GMXLIB path.",
-                          file, bAddCWD ? "in current dir nor " : "");
+                bEnvIsSet = true;
+                libpath   = lib;
             }
             else
             {
-                gmx_fatal(FARGS,
-                          "Library file %s not found %sin default directories.\n"
-                          "(You can set the directories to search with the GMXLIB path variable)",
-                          file, bAddCWD ? "in current dir nor " : "");
+                libpath = gmx::getProgramContext().defaultLibraryDataPath();
+            }
+
+            std::vector<std::string>                 pathEntries;
+            gmx::Path::splitPathEnvironment(libpath, &pathEntries);
+            std::vector<std::string>::const_iterator i;
+            for (i = pathEntries.begin(); i != pathEntries.end(); ++i)
+            {
+                std::string testPath = gmx::Path::join(*i, file);
+                if (gmx::Path::exists(testPath))
+                {
+                    return gmx_strdup(testPath.c_str());
+                }
             }
         }
     }
-
-    return ret;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    if (bFatal)
+    {
+        if (bEnvIsSet)
+        {
+            gmx_fatal(FARGS,
+                      "Library file %s not found %sin your GMXLIB path.",
+                      file, bAddCWD ? "in current dir nor " : "");
+        }
+        else
+        {
+            gmx_fatal(FARGS,
+                      "Library file %s not found %sin default directories.\n"
+                      "(You can set the directories to search with the GMXLIB path variable)",
+                      file, bAddCWD ? "in current dir nor " : "");
+        }
+    }
+    return NULL;
 }
-
-
-
-
 
 FILE *low_libopen(const char *file, gmx_bool bFatal)
 {
