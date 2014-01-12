@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,13 +97,25 @@ class ProgramContextInterface
         /*! \brief
          * Returns the full path of the running binary.
          *
+         * This is mainly used for informational purposes.  There are no
+         * constraints on contents, except that it should not be `NULL`.
+         * Currently, this is also used for sanity checks in checkpointing.
+         *
          * The implementation can provide an empty string if the path to the
-         * binary is not available.  In such a case, some functionality in the
-         * library may be lost.
-         * Currently, this is used for locating \Gromacs data files, and for
-         * sanity checks in checkpointing.
+         * binary is not available.  In such a case, the information is not
+         * shown.
          */
         virtual const char *fullBinaryPath() const = 0;
+        /*! \brief
+         * Returns the default path for \Gromacs data files.
+         *
+         * This path is used to locate the data files that are in `share/top/`
+         * in the source directory.
+         * The implementation can provide an empty string if the path is not
+         * available; in such a case, functions that require data files may
+         * fail.
+         */
+        virtual const char *defaultLibraryDataPath() const = 0;
         /*! \brief
          * Returns the full command line used to invoke the binary.
          *

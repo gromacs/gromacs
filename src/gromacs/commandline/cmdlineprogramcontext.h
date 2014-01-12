@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -181,14 +181,7 @@ class CommandLineProgramContext : public ProgramContextInterface
          */
         virtual const char *displayName() const;
         /*! \brief
-         * Returns the full command line used to invoke the binary.
-         *
-         * Does not throw.
-         */
-        virtual const char *commandLine() const;
-
-        /*! \brief
-         * Returns the full path of the invoked binary.
+         * Returns the full path of the running binary.
          *
          * \throws std::bad_alloc if out of memory.
          * \throws tMPI::system_error on thread synchronization errors.
@@ -196,6 +189,22 @@ class CommandLineProgramContext : public ProgramContextInterface
          * Returns argv[0] if there was an error in finding the absolute path.
          */
         virtual const char *fullBinaryPath() const;
+        /*! \brief
+         * Returns the default path for \Gromacs data files.
+         *
+         * \throws std::bad_alloc if out of memory.
+         * \throws tMPI::system_error on thread synchronization errors.
+         *
+         * Returns a hardcoded path set during configuration time if there is
+         * an error in finding the library data files.
+         */
+        virtual const char *defaultLibraryDataPath() const;
+        /*! \brief
+         * Returns the full command line used to invoke the binary.
+         *
+         * Does not throw.
+         */
+        virtual const char *commandLine() const;
 
     private:
         class Impl;
