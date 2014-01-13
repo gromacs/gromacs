@@ -54,8 +54,6 @@
 #include "vec.h"
 #include "gmx_ga2la.h"
 #include "xvgr.h"
-#include "groupcoord.h"
-#include "pull_rotation.h"
 #include "copyrite.h"
 #include "macros.h"
 
@@ -65,6 +63,8 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/qsort_threadsafe.h"
+#include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/mdlib/groupcoord.h"
 
 static char *RotStr = {"Enforced rotation:"};
 

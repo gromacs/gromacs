@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,6 @@
 #include "txtdump.h"
 #include "mdrun.h"
 #include "constr.h"
-#include "pull.h"
 #include "disre.h"
 #include "orires.h"
 #include "gmx_omp_nthreads.h"
@@ -69,6 +68,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/pulling/pull.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
