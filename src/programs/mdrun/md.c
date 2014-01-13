@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,6 @@
 #include "md_support.h"
 #include "md_logging.h"
 #include "network.h"
-#include "pull.h"
 #include "xvgr.h"
 #include "physics.h"
 #include "names.h"
@@ -94,6 +93,7 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/pulling/pull.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

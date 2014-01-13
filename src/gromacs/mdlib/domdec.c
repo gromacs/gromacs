@@ -57,8 +57,6 @@
 #include "names.h"
 #include "force.h"
 #include "pme.h"
-#include "pull.h"
-#include "pull_rotation.h"
 #include "mdrun.h"
 #include "nsgrid.h"
 #include "shellfc.h"
@@ -76,6 +74,8 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/qsort_threadsafe.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_rotation.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)

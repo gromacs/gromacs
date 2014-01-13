@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,8 +54,6 @@
 #include "md_logging.h"
 #include "md_support.h"
 #include "network.h"
-#include "pull.h"
-#include "pull_rotation.h"
 #include "names.h"
 #include "disre.h"
 #include "orires.h"
@@ -74,7 +72,6 @@
 #include "txtdump.h"
 #include "gmx_detect_hardware.h"
 #include "gmx_omp_nthreads.h"
-#include "pull_rotation.h"
 #include "calc_verletbuf.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
@@ -88,6 +85,8 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_rotation.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

@@ -42,8 +42,9 @@
 #include "mshift.h"
 #include "tgroup.h"
 #include "network.h"
-#include "pull.h"
 #include "gmx_random.h"
+#include "vec.h"
+
 
 #ifdef __cplusplus
 extern "C" {
