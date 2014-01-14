@@ -67,7 +67,6 @@
 #include "domdec.h"
 #include "domdec_network.h"
 #include "partdec.h"
-#include "topsort.h"
 #include "coulomb.h"
 #include "constr.h"
 #include "shellfc.h"

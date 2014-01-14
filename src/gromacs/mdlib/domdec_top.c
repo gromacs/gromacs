@@ -48,7 +48,7 @@
 #include "pbc.h"
 #include "chargegroup.h"
 #include "gmx_random.h"
-#include "topsort.h"
+#include "gromacs/gmxlib/topsort.h"
 #include "mtop_util.h"
 #include "mshift.h"
 #include "vsite.h"

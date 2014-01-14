@@ -51,7 +51,6 @@
 #include "futil.h"
 #include "filenm.h"
 #include "gmxfio.h"
-#include "topsort.h"
 #include "tpxio.h"
 #include "txtdump.h"
 #include "confio.h"
