@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 #include "orires.h"
 #include "force.h"
 #include "nonbonded.h"
+#include "restcbt.h"
 
 /* Include the SIMD macro file and then check for support */
 #include "gromacs/simd/macros.h"
@@ -2668,6 +2669,294 @@ real unimplemented(int gmx_unused nbonds,
     gmx_impl("*** you are using a not implemented function");
 
     return 0.0; /* To make the compiler happy */
+}
+
+
+real restrangles(int nbonds,
+            const t_iatom forceatoms[],const t_iparams forceparams[],
+            const rvec x[],rvec f[],rvec fshift[],
+            const t_pbc *pbc,const t_graph *g,
+            real lambda,real gmx_unused *dvdlambda,
+            const t_mdatoms gmx_unused *md,t_fcdata gmx_unused *fcd,
+            int gmx_unused *global_atom_index)
+{
+    int  i,ai,aj,ak, type, m;
+    int t1, t2;
+    rvec r_ij,r_kj;
+    real v, vtot;
+    ivec jt,dt_ij,dt_kj;
+    rvec f_i, f_j, f_k;
+    real prefactor, ratio_ante, ratio_post;
+    rvec delta_ante, delta_post, vec_temp;
+
+    vtot = 0.0;
+    for(i=0; (i<nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+
+        t1 = pbc_rvec_sub(pbc,x[ai],x[aj],vec_temp);
+        pbc_rvec_sub(pbc,x[aj],x[ai],delta_ante);
+        t2 = pbc_rvec_sub(pbc,x[ak],x[aj],delta_post);
+
+        compute_factors_restangles(type, forceparams, lambda, delta_ante, delta_post,
+                                   &prefactor, &ratio_ante, &ratio_post, &v);
+
+        /*   Forces are computed per component */
+
+        f_i[XX] = prefactor * (ratio_ante * delta_ante[XX] - delta_post[XX]);
+        f_i[YY] = prefactor * (ratio_ante * delta_ante[YY] - delta_post[YY]);
+        f_i[ZZ] = prefactor * (ratio_ante * delta_ante[ZZ] - delta_post[ZZ]);
+        f_j[XX] = prefactor * ((ratio_post + 1.0) * delta_post[XX] - (ratio_ante + 1.0) * delta_ante[XX]);
+        f_j[YY] = prefactor * ((ratio_post + 1.0) * delta_post[YY] - (ratio_ante + 1.0) * delta_ante[YY]);
+        f_j[ZZ] = prefactor * ((ratio_post + 1.0) * delta_post[ZZ] - (ratio_ante + 1.0) * delta_ante[ZZ]);
+        f_k[XX] = prefactor * (delta_ante[XX] - ratio_post * delta_post[XX]);
+        f_k[YY] = prefactor * (delta_ante[YY] - ratio_post * delta_post[YY]);
+        f_k[ZZ] = prefactor * (delta_ante[ZZ] - ratio_post * delta_post[ZZ]);
+
+
+        /*   Computation of potential energy   */
+
+        vtot +=v;
+
+        /*   Update forces */
+
+        for (m=0; (m<DIM); m++)
+        {
+            f[ai][m]+=f_i[m];
+            f[aj][m]+=f_j[m];
+            f[ak][m]+=f_k[m];
+         }
+
+        if (g)
+        {
+            copy_ivec(SHIFT_IVEC(g,aj),jt);
+            ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+            ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+            t1=IVEC2IS(dt_ij);
+            t2=IVEC2IS(dt_kj);
+        }
+
+        rvec_inc(fshift[t1],f_i);
+        rvec_inc(fshift[CENTRAL],f_j);
+        rvec_inc(fshift[t2],f_k);
+    }
+    return vtot;
+}
+
+
+real restrdihs(int nbonds,
+           const t_iatom forceatoms[],const t_iparams forceparams[],
+           const rvec x[],rvec f[],rvec fshift[],
+           const t_pbc *pbc,const t_graph *g,
+           real lambda,real gmx_unused *dvdlambda,
+           const t_mdatoms gmx_unused *md,t_fcdata gmx_unused *fcd,
+           int gmx_unused *global_atom_index)
+{
+    int  i,type,ai,aj,ak,al;
+    rvec f_i,f_j,f_k,f_l;
+    rvec dx_jl;
+    ivec jt,dt_ij,dt_kj,dt_lj;
+    int  t1,t2,t3;
+    real v, vtot;
+    rvec delta_ante,  delta_crnt, delta_post, vec_temp;
+    real factor_phi_middle_ante_ante, factor_phi_middle_ante_crnt;
+    real factor_phi_middle_ante_post, factor_phi_middle_post_ante;
+    real factor_phi_extrem_ante_ante, factor_phi_middle_post_crnt;
+    real factor_phi_extrem_ante_crnt, factor_phi_middle_post_post;
+    real factor_phi_extrem_ante_post, factor_phi_extrem_post_ante;
+    real factor_phi_extrem_post_crnt, factor_phi_extrem_post_post;
+    real prefactor_phi;
+
+
+    vtot = 0.0;
+    for(i=0; (i<nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+        al   = forceatoms[i++];
+
+        t1 = pbc_rvec_sub(pbc,x[ai],x[aj],vec_temp);
+        pbc_rvec_sub(pbc,x[aj],x[ai],delta_ante);
+        t2 = pbc_rvec_sub(pbc,x[ak],x[aj],delta_crnt);
+        t3 = pbc_rvec_sub(pbc,x[ak],x[al],vec_temp);
+        pbc_rvec_sub(pbc,x[al],x[ak],delta_post);
+
+        compute_factors_restrdihs(type, forceparams, lambda, delta_ante,  delta_crnt, delta_post,
+                                  &factor_phi_middle_ante_ante, &factor_phi_middle_ante_crnt,
+                                  &factor_phi_middle_ante_post, &factor_phi_middle_post_ante,
+                                  &factor_phi_extrem_ante_ante, &factor_phi_middle_post_crnt,
+                                  &factor_phi_extrem_ante_crnt, &factor_phi_middle_post_post,
+                                  &factor_phi_extrem_ante_post, &factor_phi_extrem_post_ante,
+                                  &factor_phi_extrem_post_crnt, &factor_phi_extrem_post_post, &prefactor_phi, &v);
+
+
+        /*      Computation of forces per component */
+        f_i[XX] = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante[XX] + factor_phi_extrem_ante_crnt * delta_crnt[XX] + factor_phi_extrem_ante_post * delta_post[XX]);
+        f_i[YY] = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante[YY] + factor_phi_extrem_ante_crnt * delta_crnt[YY] + factor_phi_extrem_ante_post * delta_post[YY]);
+        f_i[ZZ] = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante[ZZ] + factor_phi_extrem_ante_crnt * delta_crnt[ZZ] + factor_phi_extrem_ante_post * delta_post[ZZ]);
+        f_j[XX] = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante[XX] + factor_phi_middle_ante_crnt * delta_crnt[XX] + factor_phi_middle_ante_post * delta_post[XX]);
+        f_j[YY] = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante[YY] + factor_phi_middle_ante_crnt * delta_crnt[YY] + factor_phi_middle_ante_post * delta_post[YY]);
+        f_j[ZZ] = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante[ZZ] + factor_phi_middle_ante_crnt * delta_crnt[ZZ] + factor_phi_middle_ante_post * delta_post[ZZ]);
+        f_k[XX] = prefactor_phi * (factor_phi_middle_post_ante * delta_ante[XX] + factor_phi_middle_post_crnt * delta_crnt[XX] + factor_phi_middle_post_post * delta_post[XX]);
+        f_k[YY] = prefactor_phi * (factor_phi_middle_post_ante * delta_ante[YY] + factor_phi_middle_post_crnt * delta_crnt[YY] + factor_phi_middle_post_post * delta_post[YY]);
+        f_k[ZZ] = prefactor_phi * (factor_phi_middle_post_ante * delta_ante[ZZ] + factor_phi_middle_post_crnt * delta_crnt[ZZ] + factor_phi_middle_post_post * delta_post[ZZ]);
+        f_l[XX] = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante[XX] + factor_phi_extrem_post_crnt * delta_crnt[XX] + factor_phi_extrem_post_post * delta_post[XX]);
+        f_l[YY] = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante[YY] + factor_phi_extrem_post_crnt * delta_crnt[YY] + factor_phi_extrem_post_post * delta_post[YY]);
+        f_l[ZZ] = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante[ZZ] + factor_phi_extrem_post_crnt * delta_crnt[ZZ] + factor_phi_extrem_post_post * delta_post[ZZ]);
+
+          /*      Computation of the energy */
+
+        vtot += v;
+
+
+
+        /*    Updating the forces */
+
+        rvec_inc(f[ai],f_i);
+        rvec_inc(f[aj],f_j);
+        rvec_inc(f[ak],f_k);
+        rvec_inc(f[al],f_l);
+
+
+       /* Updating the fshift forces for the pressure coupling */
+        if (g)
+        {
+            copy_ivec(SHIFT_IVEC(g,aj),jt);
+            ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+            ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+            ivec_sub(SHIFT_IVEC(g,al),jt,dt_lj);
+            t1=IVEC2IS(dt_ij);
+            t2=IVEC2IS(dt_kj);
+            t3=IVEC2IS(dt_lj);
+        } else if (pbc)
+        {
+            t3 = pbc_rvec_sub(pbc,x[al],x[aj],dx_jl);
+        } else
+        {
+            t3 = CENTRAL;
+        }
+
+        rvec_inc(fshift[t1],f_i);
+        rvec_inc(fshift[CENTRAL],f_j);
+        rvec_inc(fshift[t2],f_k);
+        rvec_inc(fshift[t3],f_l);
+
+    }
+
+    return vtot;
+}
+
+
+real cbtdihs(int nbonds,
+            const t_iatom forceatoms[],const t_iparams forceparams[],
+            const rvec x[],rvec f[],rvec fshift[],
+            const t_pbc *pbc,const t_graph *g,
+            real gmx_unused lambda,real gmx_unused *dvdlambda,
+            const t_mdatoms gmx_unused *md,t_fcdata gmx_unused *fcd,
+            int gmx_unused *global_atom_index)
+{
+    int  type,ai,aj,ak,al,i;
+    int  t1,t2,t3;
+    real v, vtot;
+    rvec vec_temp;
+    rvec f_i,f_j,f_k,f_l;
+    ivec jt,dt_ij,dt_kj,dt_lj;
+    rvec dx_jl;
+    rvec f_theta_ante_middle_ante, f_theta_ante_middle_post;
+    rvec f_theta_post_middle_ante, f_theta_ante_extrem_ante;
+    rvec f_theta_post_middle_post, f_phi_middle_ante;
+    rvec f_phi_middle_post, f_phi_extrem_ante;
+    rvec f_phi_extrem_post, f_theta_post_extrem_post;
+    rvec delta_ante,     delta_crnt, delta_post;
+
+
+
+    vtot = 0.0;
+    for(i=0; (i<nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+        al   = forceatoms[i++];
+
+
+        t1 = pbc_rvec_sub(pbc,x[ai],x[aj],vec_temp);
+        pbc_rvec_sub(pbc,x[aj],x[ai],delta_ante);
+        t2 = pbc_rvec_sub(pbc,x[ak],x[aj],vec_temp);
+        pbc_rvec_sub(pbc,x[ak],x[aj],delta_crnt);
+        t3 = pbc_rvec_sub(pbc,x[ak],x[al],vec_temp);
+        pbc_rvec_sub(pbc,x[al],x[ak],delta_post);
+
+        compute_factors_cbtdihs(type, forceparams, delta_ante, delta_crnt, delta_post,
+                                f_theta_ante_middle_ante, f_theta_ante_middle_post,
+                                f_theta_post_middle_ante, f_theta_ante_extrem_ante,
+                                f_theta_post_middle_post, f_phi_middle_ante,
+                                f_phi_middle_post, f_phi_extrem_ante,
+                                f_phi_extrem_post, f_theta_post_extrem_post, &v);
+
+
+        /*      Acumulate the resuts per beads */
+        /*      On bead ai */
+        f_i[XX] = f_phi_extrem_ante[XX] + f_theta_ante_extrem_ante[XX];
+        f_i[YY] = f_phi_extrem_ante[YY] + f_theta_ante_extrem_ante[YY];
+        f_i[ZZ] = f_phi_extrem_ante[ZZ] + f_theta_ante_extrem_ante[ZZ];
+        /*      On bead aj */
+        f_j[XX] = f_phi_middle_ante[XX] + f_theta_ante_middle_ante[XX] + f_theta_post_middle_ante[XX];
+        f_j[YY] = f_phi_middle_ante[YY] + f_theta_ante_middle_ante[YY] + f_theta_post_middle_ante[YY];
+        f_j[ZZ] = f_phi_middle_ante[ZZ] + f_theta_ante_middle_ante[ZZ] + f_theta_post_middle_ante[ZZ];
+        /*      On bead ak */
+        f_k[XX] = f_phi_middle_post[XX] + f_theta_ante_middle_post[XX] + f_theta_post_middle_post[XX];
+        f_k[YY] = f_phi_middle_post[YY] + f_theta_ante_middle_post[YY] + f_theta_post_middle_post[YY];
+        f_k[ZZ] = f_phi_middle_post[ZZ] + f_theta_ante_middle_post[ZZ] + f_theta_post_middle_post[ZZ];
+        /*      On bead al */
+        f_l[XX] = f_phi_extrem_post[XX] + f_theta_post_extrem_post[XX];
+        f_l[YY] = f_phi_extrem_post[YY] + f_theta_post_extrem_post[YY];
+        f_l[ZZ] = f_phi_extrem_post[ZZ] + f_theta_post_extrem_post[ZZ];
+
+
+        /*      Compute the potential energy */
+
+        vtot += v;
+
+
+        /*  Updating the forces */
+        rvec_inc(f[ai],f_i);
+        rvec_inc(f[aj],f_j);
+        rvec_inc(f[ak],f_k);
+        rvec_inc(f[al],f_l);
+
+
+ /* Updating the fshift forces for the pressure coupling */
+        if (g)
+        {
+            copy_ivec(SHIFT_IVEC(g,aj),jt);
+            ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+            ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+            ivec_sub(SHIFT_IVEC(g,al),jt,dt_lj);
+            t1=IVEC2IS(dt_ij);
+            t2=IVEC2IS(dt_kj);
+            t3=IVEC2IS(dt_lj);
+         } else if (pbc)
+         {
+            t3 = pbc_rvec_sub(pbc,x[al],x[aj],dx_jl);
+         } else
+         {
+            t3 = CENTRAL;
+         }
+
+         rvec_inc(fshift[t1],f_i);
+         rvec_inc(fshift[CENTRAL],f_j);
+         rvec_inc(fshift[t2],f_k);
+         rvec_inc(fshift[t3],f_l);
+    }
+
+    return vtot;
 }
 
 real rbdihs(int nbonds,
