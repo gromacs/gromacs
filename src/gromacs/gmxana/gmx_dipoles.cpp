@@ -52,7 +52,7 @@
 #include "gromacs/fileio/futil.h"
 #include "xvgr.h"
 #include "txtdump.h"
-#include "gmx_statistics.h"
+#include "gromacs/statistics/statistics.h"
 #include "gstat.h"
 #include "index.h"
 #include "random.h"

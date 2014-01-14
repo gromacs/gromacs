@@ -47,7 +47,7 @@
 #include "pbc.h"
 #include "physics.h"
 #include "index.h"
-#include "gmx_statistics.h"
+#include "gromacs/statistics/statistics.h"
 #include "gmx_ana.h"
 #include "macros.h"
 

@@ -51,7 +51,7 @@
 #include "readinp.h"
 #include "txtdump.h"
 #include "gstat.h"
-#include "gmx_statistics.h"
+#include "gromacs/statistics/statistics.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
 #include "geminate.h"
