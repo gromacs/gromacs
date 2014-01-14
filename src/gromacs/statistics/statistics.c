@@ -42,7 +42,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "gmx_statistics.h"
+#include "gromacs/statistics/statistics.h"
 
 static int gmx_dnint(double x)
 {

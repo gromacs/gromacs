@@ -45,7 +45,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"
-#include "gmx_statistics.h"
+#include "gromacs/statistics/statistics.h"
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
 #include "xvgr.h"
