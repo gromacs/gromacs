@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 #include <config.h>
 #endif
 
+#include "nrama.h"
 #include <math.h>
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -47,7 +48,6 @@
 #include "bondf.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
-#include "nrama.h"
 #include "rmpbc.h"
 
 static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
