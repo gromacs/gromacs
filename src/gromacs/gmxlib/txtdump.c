@@ -1195,6 +1195,22 @@ void pr_iparams(FILE *fp, t_functype ftype, t_iparams *iparams)
         case F_CMAP:
             fprintf(fp, "cmapA=%1d, cmapB=%1d\n", iparams->cmap.cmapA, iparams->cmap.cmapB);
             break;
+        case  F_RESTRANGLES:
+            pr_harm(fp,iparams,"ktheta","costheta0");
+            break;
+        case  F_RESTRDIHS:
+            fprintf(fp,"phiA=%15.8e, cpA=%15.8e",
+            iparams->pdihs.phiA,iparams->pdihs.cpA);
+            break;
+        case  F_CBTDIHS:
+            fprintf(fp,"%skphi=%15.8e","",iparams->cbtdihs.cbtcA[0]);
+            for (i=1; i<NR_CBTDIHS; i++)
+                fprintf(fp,"%scbtcA[%d]=%15.8e",", ",i-1,iparams->cbtdihs.cbtcA[i]);
+                fprintf(fp,"\n");
+            for (i=0; i<NR_CBTDIHS; i++)
+                fprintf(fp,"%scbtccB[%d]=%15.8e",i==0?"":", ",i,iparams->cbtdihs.cbtcB[i]);
+                fprintf(fp,"\n");
+            break;
         default:
             gmx_fatal(FARGS, "unknown function type %d (%s) in %s line %d",
                       ftype, interaction_function[ftype].name, __FILE__, __LINE__);

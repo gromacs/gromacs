@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 #include "convparm.h"
 #include "names.h"
 #include "gpp_atomtype.h"
-#include "gromacs/math/utilities.h"
+#include "maths.h"
 
 static int round_check(real r, int limit, int ftype, const char *name)
 {
@@ -218,6 +218,12 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->harmonic.rB  = old[2];
             newparam->harmonic.krB = old[3];
             break;
+        case F_RESTRANGLES:
+            newparam->harmonic.rA  = old[0];
+            newparam->harmonic.krA = old[1];
+            newparam->harmonic.rB  = old[2];
+            newparam->harmonic.krB = old[3];
+            break;
         case F_MORSE:
             newparam->morse.b0A    = old[0];
             newparam->morse.cbA    = old[1];
@@ -308,6 +314,12 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->pdihs.mult = round_check(old[2], -99, ftype, "multiplicity");
 
             break;
+         case F_RESTRDIHS:
+            newparam->pdihs.phiA = old[0];
+            newparam->pdihs.cpA  = old[1];
+            newparam->pdihs.phiB = old[3];
+            newparam->pdihs.cpB  = old[4];
+            break;
         case F_POSRES:
             newparam->posres.fcA[XX]   = old[0];
             newparam->posres.fcA[YY]   = old[1];
@@ -365,6 +377,13 @@ assign_param(t_functype ftype, t_iparams *newparam,
             {
                 newparam->rbdihs.rbcA[i] = old[i];
                 newparam->rbdihs.rbcB[i] = old[NR_RBDIHS+i];
+            }
+            break;
+         case F_CBTDIHS:
+            for (i=0; (i<NR_CBTDIHS); i++)
+            {
+                  newparam->cbtdihs.cbtcA[i]=old[i];
+                  newparam->cbtdihs.cbtcB[i]=old[NR_CBTDIHS+i];
             }
             break;
         case F_FOURDIHS:
