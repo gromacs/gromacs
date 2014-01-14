@@ -52,7 +52,7 @@
 #include "typedefs.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "gmx_statistics.h"
+#include "gromacs/statistics/statistics.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "pbc.h"
