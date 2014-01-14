@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _GMX_STATS_H
-#define _GMX_STATS_H
+#ifndef _GMX_STATISTICS_H
+#define _GMX_STATISTICS_H
 
 #ifdef __cplusplus
 extern "C" {
