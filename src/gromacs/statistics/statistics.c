@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,11 @@
 #include <config.h>
 #endif
 
+#include "statistics.h"
 #include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "gmx_statistics.h"
 
 static int gmx_dnint(double x)
 {
