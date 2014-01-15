@@ -70,6 +70,11 @@ typedef struct {
     gmx_bool bCoupleIntra;
 } t_gromppopts;
 
+/*! \brief Initialise object to hold strings parsed from an .mdp file */
+extern void init_inputrec_strings();
+
+/*! \brief Clean up object that holds strings parsed from an .mdp file */
+void done_inputrec_strings();
 
 extern void init_ir(t_inputrec *ir, t_gromppopts *opts);
 /* Initiate stuff */
