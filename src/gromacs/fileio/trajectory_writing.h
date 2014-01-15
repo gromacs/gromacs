@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,11 +79,9 @@ do_trajectory_writing(FILE           *fplog,
 void write_traj(FILE *fplog, t_commrec *cr,
                 gmx_mdoutf_t *of,
                 int mdof_flags,
-                gmx_mtop_t *top_global,
                 gmx_int64_t step, double t,
                 t_state *state_local, t_state *state_global,
-                rvec *f_local, rvec *f_global,
-                int *n_xtc, rvec **x_xtc);
+                rvec *f_local, rvec *f_global);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
  * What is written is determined by the mdof_flags defined above.
  * Data is collected to the master node only when necessary.

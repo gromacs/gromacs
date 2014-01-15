@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,13 @@
 
 gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                           const t_commrec *cr, const t_inputrec *ir,
+                          gmx_mtop_t *top_global,
                           const output_env_t oenv)
 {
     gmx_mdoutf_t *of;
     char          filemode[3];
     gmx_bool      bAppendFiles;
+    int           i;
 
     snew(of, 1);
 
@@ -120,6 +122,21 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                 of->fp_field = xvgropen(opt2fn("-field", nfile, fnm),
                                         "Applied electric field", "Time (ps)",
                                         "E (V/nm)", oenv);
+            }
+        }
+
+        /* Set up atom counts so they can be passed to actual
+           trajectory-writing routines later. Also, XTC writing needs
+           to know what (and how many) atoms might be in the XTC
+           groups, and how to look up later which ones they are. */
+        of->natoms_global = top_global->natoms;
+        of->groups        = &top_global->groups;
+        of->natoms_xtc    = 0;
+        for (i = 0; (i < top_global->natoms); i++)
+        {
+            if (ggrpnr(of->groups, egcXTC, i) == 0)
+            {
+                of->natoms_xtc++;
             }
         }
     }

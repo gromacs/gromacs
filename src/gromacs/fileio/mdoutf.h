@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,23 +43,27 @@
 #include "gmxfio.h"
 
 typedef struct {
-    t_fileio   *fp_trn;
-    t_fileio   *fp_xtc;
-    int         xtc_prec;
-    ener_file_t fp_ene;
-    const char *fn_cpt;
-    gmx_bool    bKeepAndNumCPT;
-    int         eIntegrator;
-    gmx_bool    bExpanded;
-    int         elamstats;
-    int         simulation_part;
-    FILE       *fp_dhdl;
-    FILE       *fp_field;
+    t_fileio     *fp_trn;
+    t_fileio     *fp_xtc;
+    int           xtc_prec;
+    ener_file_t   fp_ene;
+    const char   *fn_cpt;
+    gmx_bool      bKeepAndNumCPT;
+    int           eIntegrator;
+    gmx_bool      bExpanded;
+    int           elamstats;
+    int           simulation_part;
+    FILE         *fp_dhdl;
+    FILE         *fp_field;
+    int           natoms_global;
+    int           natoms_xtc;
+    gmx_groups_t *groups; /* for XTC writing */
 } gmx_mdoutf_t;
 
 gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[],
                           int mdrun_flags,
                           const t_commrec *cr, const t_inputrec *ir,
+                          gmx_mtop_t *top_global,
                           const output_env_t oenv);
 /* Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
