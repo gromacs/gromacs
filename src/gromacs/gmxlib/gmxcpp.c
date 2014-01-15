@@ -173,6 +173,19 @@ static void add_include(const char *include)
     }
 }
 
+static void done_includes()
+{
+    int i;
+
+    for (i = 0; i < nincl; i++)
+    {
+        sfree(incl[i]);
+    }
+    sfree(incl);
+    incl = NULL;
+    nincl = 0;
+}
+
 static void add_define(const char *name, const char *value)
 {
     int  i;
@@ -207,6 +220,19 @@ static void add_define(const char *name, const char *value)
     {
         defs[i].def  = NULL;
     }
+}
+
+static void done_defines()
+{
+    int i;
+
+    for (i = 0; i < ndef; i++)
+    {
+        sfree(defs[i]);
+    }
+    sfree(defs);
+    defs = NULL;
+    ndef = 0;
 }
 
 /* Open the file to be processed. The handle variable holds internal
@@ -748,6 +774,12 @@ int cpp_close_file(gmx_cpp_t *handlep)
     }
 
     return eCPP_OK;
+}
+
+void cpp_done()
+{
+    done_includes();
+    done_defines();
 }
 
 /* Return a string containing the error message coresponding to status
