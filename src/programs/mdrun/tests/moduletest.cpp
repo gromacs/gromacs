@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,6 +93,7 @@ MdrunTestFixture::MdrunTestFixture() :
     topFileName(),
     groFileName(),
     trrFileName(),
+    ndxFileName(),
     mdpInputFileName(fileManager_.getTemporaryFilePath("input.mdp")),
     mdpOutputFileName(fileManager_.getTemporaryFilePath("output.mdp")),
     tprFileName(fileManager_.getTemporaryFilePath(".tpr")),
@@ -125,10 +126,17 @@ MdrunTestFixture::useStringAsMdpFile(const char *mdpString)
 }
 
 void
-MdrunTestFixture::useTopAndGroFromDatabase(const char *name)
+MdrunTestFixture::useStringAsNdxFile(const char *ndxString)
+{
+    gmx::File::writeFileFromString(ndxFileName, ndxString);
+}
+
+void
+MdrunTestFixture::useTopGroAndNdxFromDatabase(const char *name)
 {
     topFileName = fileManager_.getInputFilePath((std::string(name) + ".top").c_str());
     groFileName = fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
+    ndxFileName = fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
 }
 
 int
@@ -145,6 +153,7 @@ MdrunTestFixture::callGrompp()
     CommandLine caller;
     caller.append("grompp");
     caller.addOption("-f", mdpInputFileName);
+    caller.addOption("-n", ndxFileName);
     caller.addOption("-p", topFileName);
     caller.addOption("-c", groFileName);
 

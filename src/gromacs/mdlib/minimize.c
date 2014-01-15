@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -447,7 +447,7 @@ void init_em(FILE *fplog, const char *title,
         *gstat = global_stat_init(ir);
     }
 
-    *outf = init_mdoutf(nfile, fnm, 0, cr, ir, NULL);
+    *outf = init_mdoutf(nfile, fnm, 0, cr, ir, top_global, NULL);
 
     snew(*enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
@@ -523,8 +523,8 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
         mdof_flags |= MDOF_F;
     }
     write_traj(fplog, cr, outf, mdof_flags,
-               top_global, step, (double)step,
-               &state->s, state_global, state->f, f_global, NULL, NULL);
+               step, (double)step,
+               &state->s, state_global, state->f, f_global);
 
     if (confout != NULL && MASTER(cr))
     {
@@ -1812,7 +1812,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         }
 
         write_traj(fplog, cr, outf, mdof_flags,
-                   top_global, step, (real)step, state, state, f, f, NULL, NULL);
+                   step, (real)step, state, state, f, f);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 

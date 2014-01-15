@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,42 +35,62 @@
 
 /*! \internal \file
  * \brief
- * Tests for the mdrun -rerun functionality
+ * Tests for the mdrun -x functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
-#include <gtest/gtest.h>
 #include "moduletest.h"
+#include <gtest/gtest.h>
+#include <string>
 #include "gromacs/options/filenameoption.h"
+#include "programs/gmx/legacycmainfunctions.h"
 #include "testutils/cmdlinetest.h"
 
 namespace
 {
 
-//! Test fixture for mdrun -rerun
-typedef gmx::test::MdrunTestFixture RerunTest;
-
-/* Among other things, this test ensures mdrun can read a trajectory. */
-TEST_F(RerunTest, RerunExitsNormally)
+//! Test fixture for mdrun -x
+class XtcOutputTest : public gmx::test::MdrunTestFixture,
+                      public testing::WithParamInterface<const char*>
 {
-    useEmptyMdpFile();
+};
+
+/* Among other things, this test ensures mdrun can write a compressed trajectory. */
+TEST_P(XtcOutputTest, ExitsNormally)
+{
+    std::string mdpFile("cutoff-scheme = Group\n"
+                        "nsteps = 1\n"
+                        "nstxtcout = 1\n");
+    mdpFile += GetParam();
+    useStringAsMdpFile(mdpFile.c_str());
     useTopGroAndNdxFromDatabase("spc2");
-    EXPECT_EQ(0, callGrompp());
+    ASSERT_EQ(0, callGrompp());
 
-    std::string rerunFileName = fileManager_.getInputFilePath("spc2.trr");
+    xtcFileName = fileManager_.getTemporaryFilePath(".xtc");
+    ASSERT_EQ(0, callMdrun());
 
-    ::gmx::test::CommandLine rerunCaller;
-    rerunCaller.append("mdrun");
-    rerunCaller.addOption("-rerun", rerunFileName);
-    ASSERT_EQ(0, callMdrun(rerunCaller));
+    ::gmx::test::CommandLine checkCaller;
+    checkCaller.append("check");
+    checkCaller.addOption("-f", xtcFileName);
+    ASSERT_EQ(0, gmx_gmxcheck(checkCaller.argc(), checkCaller.argv()));
 }
 
-/*! \todo Add other tests for mdrun -rerun, e.g.
- *
- * - RerunReproducesRunWhenRunOnlyWroteEnergiesOnNeighborSearchSteps
- *   (e.g. do such a run, do a rerun, call gmxcheck)
- * - TpiExitsNormally (since it uses the -rerun machinery)
- */
+INSTANTIATE_TEST_CASE_P(WithDifferentMdpOptions, XtcOutputTest,
+                            ::testing::Values
+                            ( // Test writing the whole system to XTC via
+                              // the default behaviour
+                            "",
+
+                            // Test writing the whole system to XTC
+                            // explicitly
+                            "xtc-grps = System\n",
+
+                            // Test writing part of the system to XTC.
+                            // It would be nice to check that this test
+                            // writes 3 atoms and the others write 6, but
+                            // that's not yet easy
+                            "xtc-grps = SecondWaterMolecule\n"
+                            ));
 
 } // namespace
