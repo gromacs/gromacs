@@ -32,9 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_library(analysisdata-test-shared OBJECT
-            datatest.cpp
-            mock_datamodule.cpp)
+gmx_add_unit_test_object_library(analysisdata-test-shared
+                                 datatest.cpp
+                                 mock_datamodule.cpp)
 
 gmx_add_unit_test(AnalysisDataUnitTests analysisdata-test
                   analysisdata.cpp
