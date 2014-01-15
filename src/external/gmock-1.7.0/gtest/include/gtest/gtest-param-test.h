@@ -1412,7 +1412,16 @@ internal::CartesianProductHolder10<Generator1, Generator2, Generator3,
               #test_case_name, __FILE__, __LINE__)->AddTestCaseInstantiation(\
                   #prefix, \
                   &gtest_##prefix##test_case_name##_EvalGenerator_, \
-                  __FILE__, __LINE__)
+                  __FILE__, __LINE__);\
+  /* icc 12 on Windows thinks that the magic identifier that is declared \
+     as a side-effect of this macro expansion is "declared but not \
+     referenced". This hack references it in a way the compiler cannot \
+     tell is unreachable. Alternatively, suppressing diagnostic 177 \
+     might work. */ \
+  void dummy()\
+  {\
+       gtest_##prefix##test_case_name##_dummy_ = 0;\
+  }
 
 }  // namespace testing
 
