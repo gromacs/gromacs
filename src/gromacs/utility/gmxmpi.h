@@ -60,6 +60,15 @@
 #define MPICH_SKIP_MPICXX 1
 #define OMPI_SKIP_MPICXX 1
 #include <mpi.h>
+#ifndef MPI_INT64_T
+#if LONG_MAX==9223372036854775807L
+#define MPI_INT64_T MPI_LONG
+#elif LONG_LONG_MAX==9223372036854775807L
+#define MPI_INT64_T MPI_LONG_LONG
+#else
+#error No MPI_INT64_T and no 64 bit integer found. 
+#endif
+#endif /*MPI_INT64_T*/
 #else
 #ifdef GMX_THREAD_MPI
 #include "../legacyheaders/thread_mpi/tmpi.h"
