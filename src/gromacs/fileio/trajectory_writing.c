@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,8 +78,6 @@ do_trajectory_writing(FILE           *fplog,
                       )
 {
     int   mdof_flags;
-    int   n_xtc    = -1;
-    rvec *x_xtc    = NULL;
 
     mdof_flags = 0;
     if (do_per_step(step, ir->nstxout))
@@ -155,8 +153,8 @@ do_trajectory_writing(FILE           *fplog,
                 update_energyhistory(&state_global->enerhist, mdebin);
             }
         }
-        write_traj(fplog, cr, outf, mdof_flags, top_global,
-                   step, t, state, state_global, f, f_global, &n_xtc, &x_xtc);
+        write_traj(fplog, cr, outf, mdof_flags,
+                   step, t, state, state_global, f, f_global);
         if (bCPT)
         {
             (*nchkpt)++;

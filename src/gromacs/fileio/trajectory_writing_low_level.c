@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,17 +54,12 @@ static void moveit(t_commrec *cr, rvec xx[])
 void write_traj(FILE *fplog, t_commrec *cr,
                 gmx_mdoutf_t *of,
                 int mdof_flags,
-                gmx_mtop_t *top_global,
                 gmx_int64_t step, double t,
                 t_state *state_local, t_state *state_global,
-                rvec *f_local, rvec *f_global,
-                int *n_xtc, rvec **x_xtc)
+                rvec *f_local, rvec *f_global)
 {
-    int           i, j;
-    gmx_groups_t *groups;
-    rvec         *xxtc;
-    rvec         *local_v;
-    rvec         *global_v;
+    rvec *local_v;
+    rvec *global_v;
 
 #define MX(xvf) moveit(cr, xvf)
 
@@ -185,7 +180,7 @@ void write_traj(FILE *fplog, t_commrec *cr,
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
         {
             fwrite_trn(of->fp_trn, step, t, state_local->lambda[efptFEP],
-                       state_local->box, top_global->natoms,
+                       state_local->box, of->natoms_global,
                        (mdof_flags & MDOF_X) ? state_global->x : NULL,
                        (mdof_flags & MDOF_V) ? global_v : NULL,
                        (mdof_flags & MDOF_F) ? f_global : NULL);
@@ -196,42 +191,38 @@ void write_traj(FILE *fplog, t_commrec *cr,
         }
         if (mdof_flags & MDOF_XTC)
         {
-            groups = &top_global->groups;
-            if (*n_xtc == -1)
+            rvec *xxtc = NULL;
+
+            if (of->natoms_xtc == of->natoms_global)
             {
-                *n_xtc = 0;
-                for (i = 0; (i < top_global->natoms); i++)
-                {
-                    if (ggrpnr(groups, egcXTC, i) == 0)
-                    {
-                        (*n_xtc)++;
-                    }
-                }
-                if (*n_xtc != top_global->natoms)
-                {
-                    snew(*x_xtc, *n_xtc);
-                }
-            }
-            if (*n_xtc == top_global->natoms)
-            {
+                /* We are writing all the atoms to XTC output */
                 xxtc = state_global->x;
             }
             else
             {
-                xxtc = *x_xtc;
-                j    = 0;
-                for (i = 0; (i < top_global->natoms); i++)
+                /* We are writing only a subset of the atoms to XTC
+                   output, so we have to make a copy of the subset of
+                   coordinates. */
+                int i, j;
+
+                snew(xxtc, of->natoms_xtc);
+                for (i = 0, j = 0; ((i < of->natoms_global) &&
+                                    (j < of->natoms_xtc)); i++)
                 {
-                    if (ggrpnr(groups, egcXTC, i) == 0)
+                    if (ggrpnr(of->groups, egcXTC, i) == 0)
                     {
                         copy_rvec(state_global->x[i], xxtc[j++]);
                     }
                 }
             }
-            if (write_xtc(of->fp_xtc, *n_xtc, step, t,
+            if (write_xtc(of->fp_xtc, of->natoms_xtc, step, t,
                           state_local->box, xxtc, of->xtc_prec) == 0)
             {
                 gmx_fatal(FARGS, "XTC error - maybe you are out of disk space?");
+            }
+            if (of->natoms_xtc != of->natoms_global)
+            {
+                sfree(xxtc);
             }
         }
     }
