@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,6 +80,12 @@ int cpp_cur_linenr(const gmx_cpp_t *handlep);
    NOT THREAD SAFE
  */
 int cpp_close_file(gmx_cpp_t *handlep);
+
+/* Clean up file static data structures
+
+   NOT THREAD SAFE
+ */
+void cpp_done();
 
 /* Return a string containing the error message coresponding to status
    variable.

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -173,6 +173,13 @@ static void add_include(const char *include)
     }
 }
 
+static void done_includes()
+{
+    sfree(incl);
+    incl  = NULL;
+    nincl = 0;
+}
+
 static void add_define(const char *name, const char *value)
 {
     int  i;
@@ -207,6 +214,13 @@ static void add_define(const char *name, const char *value)
     {
         defs[i].def  = NULL;
     }
+}
+
+static void done_defines()
+{
+    sfree(defs);
+    defs = NULL;
+    ndef = 0;
 }
 
 /* Open the file to be processed. The handle variable holds internal
@@ -748,6 +762,12 @@ int cpp_close_file(gmx_cpp_t *handlep)
     }
 
     return eCPP_OK;
+}
+
+void cpp_done()
+{
+    done_includes();
+    done_defines();
 }
 
 /* Return a string containing the error message coresponding to status
