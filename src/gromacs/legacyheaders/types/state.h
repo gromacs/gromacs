@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,10 +49,6 @@ extern "C" {
  * information required to define the state of the system.
  * Currently the random seeds for SD and BD are missing.
  */
-
-/* for now, define the length of the NH chains here */
-#define NHCHAINLENGTH 10
-#define MAXLAMBDAS 1024
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
