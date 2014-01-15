@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,6 @@
 
 #define MAXPTR 254
 #define NOGID  255
-#define MAXLAMBDAS 1024
 
 /* Resource parameters
  * Do not change any of these until you read the instruction
@@ -74,22 +73,43 @@
  * message.
  */
 
-static char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN],
-            acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
-            energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], xtc_grps[STRLEN],
-            couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
-            wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN];
-static char   fep_lambda[efptNR][STRLEN];
-static char   lambda_weights[STRLEN];
-static char **pull_grp;
-static char **rot_grp;
-static char   anneal[STRLEN], anneal_npoints[STRLEN],
-              anneal_time[STRLEN], anneal_temp[STRLEN];
-static char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
-              bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
-              SAoff[STRLEN], SAsteps[STRLEN], bTS[STRLEN], bOPT[STRLEN];
-static char efield_x[STRLEN], efield_xt[STRLEN], efield_y[STRLEN],
-            efield_yt[STRLEN], efield_z[STRLEN], efield_zt[STRLEN];
+typedef struct t_inputrec_strings
+{
+    char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN],
+         acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
+         energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], xtc_grps[STRLEN],
+         couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
+         wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN];
+    char   fep_lambda[efptNR][STRLEN];
+    char   lambda_weights[STRLEN];
+    char **pull_grp;
+    char **rot_grp;
+    char   anneal[STRLEN], anneal_npoints[STRLEN],
+           anneal_time[STRLEN], anneal_temp[STRLEN];
+    char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
+           bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
+           SAoff[STRLEN], SAsteps[STRLEN], bTS[STRLEN], bOPT[STRLEN];
+    char efield_x[STRLEN], efield_xt[STRLEN], efield_y[STRLEN],
+         efield_yt[STRLEN], efield_z[STRLEN], efield_zt[STRLEN];
+
+} gmx_inputrec_strings;
+
+static gmx_inputrec_strings *is = NULL;
+
+void init_inputrec_strings()
+{
+    if (is)
+    {
+        gmx_incons("Attempted to call init_inputrec_strings before calling done_inputrec_strings. Only one inputrec (i.e. .mdp file) can be parsed at a time.");
+    }
+    snew(is, 1);
+}
+
+void done_inputrec_strings()
+{
+    sfree(is);
+    is = NULL;
+}
 
 enum {
     egrptpALL,         /* All particles have to be a member of a group.     */
@@ -1694,6 +1714,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
 
+    init_inputrec_strings();
     inp = read_inpfile(mdparin, &ninp, wi);
 
     snew(dumstr[0], STRLEN);
@@ -1749,7 +1770,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("number of steps for center of mass motion removal");
     ITYPE ("nstcomm", ir->nstcomm,    100);
     CTYPE ("group(s) for center of mass motion removal");
-    STYPE ("comm-grps",   vcm,            NULL);
+    STYPE ("comm-grps",   is->vcm,            NULL);
 
     CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
     CTYPE ("Friction coefficient (amu/ps) and random seed");
@@ -1788,9 +1809,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     RTYPE ("xtc-precision", ir->xtcprec,   1000.0);
     CTYPE ("This selects the subset of atoms for the .xtc file. You can");
     CTYPE ("select multiple groups. By default all atoms will be written.");
-    STYPE ("xtc-grps",    xtc_grps,       NULL);
+    STYPE ("xtc-grps",    is->xtc_grps,       NULL);
     CTYPE ("Selection of energy groups");
-    STYPE ("energygrps",  energy,         NULL);
+    STYPE ("energygrps",  is->energy,         NULL);
 
     /* Neighbor searching */
     CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
@@ -1836,7 +1857,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Extension of the potential lookup tables beyond the cut-off");
     RTYPE ("table-extension", ir->tabext, 1.0);
     CTYPE ("Separate tables between energy group pairs");
-    STYPE ("energygrp-table", egptable,   NULL);
+    STYPE ("energygrp-table", is->egptable,   NULL);
     CTYPE ("Spacing for the PME/PPPM FFT grid");
     RTYPE ("fourierspacing", ir->fourier_spacing, 0.12);
     CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
@@ -1882,13 +1903,13 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Temperature coupling");
     EETYPE("tcoupl",  ir->etc,        etcoupl_names);
     ITYPE ("nsttcouple", ir->nsttcouple,  -1);
-    ITYPE("nh-chain-length",     ir->opts.nhchainlength, NHCHAINLENGTH);
+    ITYPE("nh-chain-length",     ir->opts.nhchainlength, 10);
     EETYPE("print-nose-hoover-chain-variables", ir->bPrintNHChains, yesno_names);
     CTYPE ("Groups to couple separately");
-    STYPE ("tc-grps",     tcgrps,         NULL);
+    STYPE ("tc-grps",     is->tcgrps,         NULL);
     CTYPE ("Time constant (ps) and reference temperature (K)");
-    STYPE ("tau-t",   tau_t,      NULL);
-    STYPE ("ref-t",   ref_t,      NULL);
+    STYPE ("tau-t",   is->tau_t,      NULL);
+    STYPE ("ref-t",   is->ref_t,      NULL);
     CTYPE ("pressure coupling");
     EETYPE("pcoupl",  ir->epc,        epcoupl_names);
     EETYPE("pcoupltype",  ir->epct,       epcoupltype_names);
@@ -1904,41 +1925,41 @@ void get_ir(const char *mdparin, const char *mdparout,
     CCTYPE ("OPTIONS FOR QMMM calculations");
     EETYPE("QMMM", ir->bQMMM, yesno_names);
     CTYPE ("Groups treated Quantum Mechanically");
-    STYPE ("QMMM-grps",  QMMM,          NULL);
+    STYPE ("QMMM-grps",  is->QMMM,          NULL);
     CTYPE ("QM method");
-    STYPE("QMmethod",     QMmethod, NULL);
+    STYPE("QMmethod",     is->QMmethod, NULL);
     CTYPE ("QMMM scheme");
     EETYPE("QMMMscheme",  ir->QMMMscheme,    eQMMMscheme_names);
     CTYPE ("QM basisset");
-    STYPE("QMbasis",      QMbasis, NULL);
+    STYPE("QMbasis",      is->QMbasis, NULL);
     CTYPE ("QM charge");
-    STYPE ("QMcharge",    QMcharge, NULL);
+    STYPE ("QMcharge",    is->QMcharge, NULL);
     CTYPE ("QM multiplicity");
-    STYPE ("QMmult",      QMmult, NULL);
+    STYPE ("QMmult",      is->QMmult, NULL);
     CTYPE ("Surface Hopping");
-    STYPE ("SH",          bSH, NULL);
+    STYPE ("SH",          is->bSH, NULL);
     CTYPE ("CAS space options");
-    STYPE ("CASorbitals",      CASorbitals,   NULL);
-    STYPE ("CASelectrons",     CASelectrons,  NULL);
-    STYPE ("SAon", SAon, NULL);
-    STYPE ("SAoff", SAoff, NULL);
-    STYPE ("SAsteps",  SAsteps, NULL);
+    STYPE ("CASorbitals",      is->CASorbitals,   NULL);
+    STYPE ("CASelectrons",     is->CASelectrons,  NULL);
+    STYPE ("SAon", is->SAon, NULL);
+    STYPE ("SAoff", is->SAoff, NULL);
+    STYPE ("SAsteps", is->SAsteps, NULL);
     CTYPE ("Scale factor for MM charges");
     RTYPE ("MMChargeScaleFactor", ir->scalefactor, 1.0);
     CTYPE ("Optimization of QM subsystem");
-    STYPE ("bOPT",          bOPT, NULL);
-    STYPE ("bTS",          bTS, NULL);
+    STYPE ("bOPT",          is->bOPT, NULL);
+    STYPE ("bTS",          is->bTS, NULL);
 
     /* Simulated annealing */
     CCTYPE("SIMULATED ANNEALING");
     CTYPE ("Type of annealing for each temperature group (no/single/periodic)");
-    STYPE ("annealing",   anneal,      NULL);
+    STYPE ("annealing",   is->anneal,      NULL);
     CTYPE ("Number of time points to use for specifying annealing in each group");
-    STYPE ("annealing-npoints", anneal_npoints, NULL);
+    STYPE ("annealing-npoints", is->anneal_npoints, NULL);
     CTYPE ("List of times at the annealing points for each group");
-    STYPE ("annealing-time",       anneal_time,       NULL);
+    STYPE ("annealing-time",       is->anneal_time,       NULL);
     CTYPE ("Temp. at each annealing point, for each group.");
-    STYPE ("annealing-temp",  anneal_temp,  NULL);
+    STYPE ("annealing-temp",  is->anneal_temp,  NULL);
 
     /* Startup run */
     CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
@@ -1972,7 +1993,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* Energy group exclusions */
     CCTYPE ("ENERGY GROUP EXCLUSIONS");
     CTYPE ("Pairs of energy groups for which all non-bonded interactions are excluded");
-    STYPE ("energygrp-excl", egpexcl,     NULL);
+    STYPE ("energygrp-excl", is->egpexcl,     NULL);
 
     /* Walls */
     CCTYPE ("WALLS");
@@ -1980,8 +2001,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nwall", ir->nwall, 0);
     EETYPE("wall-type",     ir->wall_type,   ewt_names);
     RTYPE ("wall-r-linpot", ir->wall_r_linpot, -1);
-    STYPE ("wall-atomtype", wall_atomtype, NULL);
-    STYPE ("wall-density",  wall_density,  NULL);
+    STYPE ("wall-atomtype", is->wall_atomtype, NULL);
+    STYPE ("wall-density",  is->wall_density,  NULL);
     RTYPE ("wall-ewald-zfac", ir->wall_ewald_zfac, 3);
 
     /* COM pulling */
@@ -1991,7 +2012,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     if (ir->ePull != epullNO)
     {
         snew(ir->pull, 1);
-        pull_grp = read_pullparams(&ninp, &inp, ir->pull, &opts->pull_start, wi);
+        is->pull_grp = read_pullparams(&ninp, &inp, ir->pull, &opts->pull_start, wi);
     }
 
     /* Enforced rotation */
@@ -2001,7 +2022,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     if (ir->bRot)
     {
         snew(ir->rot, 1);
-        rot_grp = read_rotparams(&ninp, &inp, ir->rot, wi);
+        is->rot_grp = read_rotparams(&ninp, &inp, ir->rot, wi);
     }
 
     /* Refinement */
@@ -2021,14 +2042,14 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Orientation restraints force constant and tau for time averaging");
     RTYPE ("orire-fc",    ir->orires_fc,  0.0);
     RTYPE ("orire-tau",   ir->orires_tau, 0.0);
-    STYPE ("orire-fitgrp", orirefitgrp,    NULL);
+    STYPE ("orire-fitgrp", is->orirefitgrp,    NULL);
     CTYPE ("Output frequency for trace(SD) and S to energy file");
     ITYPE ("nstorireout", ir->nstorireout, 100);
 
     /* free energy variables */
     CCTYPE ("Free energy variables");
     EETYPE("free-energy", ir->efep, efep_names);
-    STYPE ("couple-moltype",  couple_moltype,  NULL);
+    STYPE ("couple-moltype",  is->couple_moltype,  NULL);
     EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
     EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
     EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names);
@@ -2039,15 +2060,15 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("init-lambda-state", fep->init_fep_state, -1);
     RTYPE ("delta-lambda", fep->delta_lambda, 0.0);
     ITYPE ("nstdhdl", fep->nstdhdl, 50);
-    STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
-    STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
-    STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);
-    STYPE ("vdw-lambdas", fep_lambda[efptVDW], NULL);
-    STYPE ("bonded-lambdas", fep_lambda[efptBONDED], NULL);
-    STYPE ("restraint-lambdas", fep_lambda[efptRESTRAINT], NULL);
-    STYPE ("temperature-lambdas", fep_lambda[efptTEMPERATURE], NULL);
+    STYPE ("fep-lambdas", is->fep_lambda[efptFEP], NULL);
+    STYPE ("mass-lambdas", is->fep_lambda[efptMASS], NULL);
+    STYPE ("coul-lambdas", is->fep_lambda[efptCOUL], NULL);
+    STYPE ("vdw-lambdas", is->fep_lambda[efptVDW], NULL);
+    STYPE ("bonded-lambdas", is->fep_lambda[efptBONDED], NULL);
+    STYPE ("restraint-lambdas", is->fep_lambda[efptRESTRAINT], NULL);
+    STYPE ("temperature-lambdas", is->fep_lambda[efptTEMPERATURE], NULL);
     ITYPE ("calc-lambda-neighbors", fep->lambda_neighbors, 1);
-    STYPE ("init-lambda-weights", lambda_weights, NULL);
+    STYPE ("init-lambda-weights", is->lambda_weights, NULL);
     EETYPE("dhdl-print-energy", fep->bPrintEnergy, yesno_names);
     RTYPE ("sc-alpha", fep->sc_alpha, 0.0);
     ITYPE ("sc-power", fep->sc_power, 1);
@@ -2064,12 +2085,12 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* Non-equilibrium MD stuff */
     CCTYPE("Non-equilibrium MD stuff");
-    STYPE ("acc-grps",    accgrps,        NULL);
-    STYPE ("accelerate",  acc,            NULL);
-    STYPE ("freezegrps",  freeze,         NULL);
-    STYPE ("freezedim",   frdim,          NULL);
+    STYPE ("acc-grps",    is->accgrps,        NULL);
+    STYPE ("accelerate",  is->acc,            NULL);
+    STYPE ("freezegrps",  is->freeze,         NULL);
+    STYPE ("freezedim",   is->frdim,          NULL);
     RTYPE ("cos-acceleration", ir->cos_accel, 0);
-    STYPE ("deform",      deform,         NULL);
+    STYPE ("deform",      is->deform,         NULL);
 
     /* simulated tempering variables */
     CCTYPE("simulated tempering variables");
@@ -2088,12 +2109,12 @@ void get_ir(const char *mdparin, const char *mdparout,
     CCTYPE("Electric fields");
     CTYPE ("Format is number of terms (int) and for all terms an amplitude (real)");
     CTYPE ("and a phase angle (real)");
-    STYPE ("E-x",     efield_x,   NULL);
-    STYPE ("E-xt",    efield_xt,  NULL);
-    STYPE ("E-y",     efield_y,   NULL);
-    STYPE ("E-yt",    efield_yt,  NULL);
-    STYPE ("E-z",     efield_z,   NULL);
-    STYPE ("E-zt",    efield_zt,  NULL);
+    STYPE ("E-x",     is->efield_x,   NULL);
+    STYPE ("E-xt",    is->efield_xt,  NULL);
+    STYPE ("E-y",     is->efield_y,   NULL);
+    STYPE ("E-yt",    is->efield_yt,  NULL);
+    STYPE ("E-z",     is->efield_z,   NULL);
+    STYPE ("E-zt",    is->efield_zt,  NULL);
 
     /* AdResS defined thingies */
     CCTYPE ("AdResS parameters");
@@ -2106,8 +2127,8 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* User defined thingies */
     CCTYPE ("User defined thingies");
-    STYPE ("user1-grps",  user1,          NULL);
-    STYPE ("user2-grps",  user2,          NULL);
+    STYPE ("user1-grps",  is->user1,          NULL);
+    STYPE ("user2-grps",  is->user2,          NULL);
     ITYPE ("userint1",    ir->userint1,   0);
     ITYPE ("userint2",    ir->userint2,   0);
     ITYPE ("userint3",    ir->userint3,   0);
@@ -2202,11 +2223,11 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     opts->couple_moltype = NULL;
-    if (strlen(couple_moltype) > 0)
+    if (strlen(is->couple_moltype) > 0)
     {
         if (ir->efep != efepNO)
         {
-            opts->couple_moltype = strdup(couple_moltype);
+            opts->couple_moltype = strdup(is->couple_moltype);
             if (opts->couple_lam0 == opts->couple_lam1)
             {
                 warning(wi, "The lambda=0 and lambda=1 states for coupling are identical");
@@ -2245,7 +2266,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         {
             ir->bExpanded = TRUE;
         }
-        do_fep_params(ir, fep_lambda, lambda_weights);
+        do_fep_params(ir, is->fep_lambda, is->lambda_weights);
         if (ir->bSimTemp) /* done after fep params */
         {
             do_simtemp_params(ir);
@@ -2258,11 +2279,11 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* WALL PARAMETERS */
 
-    do_wall_params(ir, wall_atomtype, wall_density, opts);
+    do_wall_params(ir, is->wall_atomtype, is->wall_density, opts);
 
     /* ORIENTATION RESTRAINT PARAMETERS */
 
-    if (opts->bOrire && str_nelem(orirefitgrp, MAXPTR, NULL) != 1)
+    if (opts->bOrire && str_nelem(is->orirefitgrp, MAXPTR, NULL) != 1)
     {
         warning_error(wi, "ERROR: Need one orientation restraint fit group\n");
     }
@@ -2274,7 +2295,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         dumdub[0][i] = 0;
     }
-    m = sscanf(deform, "%lf %lf %lf %lf %lf %lf",
+    m = sscanf(is->deform, "%lf %lf %lf %lf %lf %lf",
                &(dumdub[0][0]), &(dumdub[0][1]), &(dumdub[0][2]),
                &(dumdub[0][3]), &(dumdub[0][4]), &(dumdub[0][5]));
     for (i = 0; i < 3; i++)
@@ -2923,9 +2944,9 @@ void do_index(const char* mdparin, const char *ndx,
 
     set_warning_line(wi, mdparin, -1);
 
-    ntau_t = str_nelem(tau_t, MAXPTR, ptr1);
-    nref_t = str_nelem(ref_t, MAXPTR, ptr2);
-    ntcg   = str_nelem(tcgrps, MAXPTR, ptr3);
+    ntau_t = str_nelem(is->tau_t, MAXPTR, ptr1);
+    nref_t = str_nelem(is->ref_t, MAXPTR, ptr2);
+    ntcg   = str_nelem(is->tcgrps, MAXPTR, ptr3);
     if ((ntau_t != ntcg) || (nref_t != ntcg))
     {
         gmx_fatal(FARGS, "Invalid T coupling input: %d groups, %d ref-t values and "
@@ -3035,7 +3056,7 @@ void do_index(const char* mdparin, const char *ndx,
     }
 
     /* Simulated annealing for each group. There are nr groups */
-    nSA = str_nelem(anneal, MAXPTR, ptr1);
+    nSA = str_nelem(is->anneal, MAXPTR, ptr1);
     if (nSA == 1 && (ptr1[0][0] == 'n' || ptr1[0][0] == 'N'))
     {
         nSA = 0;
@@ -3080,7 +3101,7 @@ void do_index(const char* mdparin, const char *ndx,
             if (bAnneal)
             {
                 /* Read the other fields too */
-                nSA_points = str_nelem(anneal_npoints, MAXPTR, ptr1);
+                nSA_points = str_nelem(is->anneal_npoints, MAXPTR, ptr1);
                 if (nSA_points != nSA)
                 {
                     gmx_fatal(FARGS, "Found %d annealing-npoints values for %d groups\n", nSA_points, nSA);
@@ -3097,12 +3118,12 @@ void do_index(const char* mdparin, const char *ndx,
                     k += ir->opts.anneal_npoints[i];
                 }
 
-                nSA_time = str_nelem(anneal_time, MAXPTR, ptr1);
+                nSA_time = str_nelem(is->anneal_time, MAXPTR, ptr1);
                 if (nSA_time != k)
                 {
                     gmx_fatal(FARGS, "Found %d annealing-time values, wanter %d\n", nSA_time, k);
                 }
-                nSA_temp = str_nelem(anneal_temp, MAXPTR, ptr2);
+                nSA_temp = str_nelem(is->anneal_temp, MAXPTR, ptr2);
                 if (nSA_temp != k)
                 {
                     gmx_fatal(FARGS, "Found %d annealing-temp values, wanted %d\n", nSA_temp, k);
@@ -3176,18 +3197,18 @@ void do_index(const char* mdparin, const char *ndx,
 
     if (ir->ePull != epullNO)
     {
-        make_pull_groups(ir->pull, pull_grp, grps, gnames);
+        make_pull_groups(ir->pull, is->pull_grp, grps, gnames);
 
         make_pull_coords(ir->pull);
     }
 
     if (ir->bRot)
     {
-        make_rotation_groups(ir->rot, rot_grp, grps, gnames);
+        make_rotation_groups(ir->rot, is->rot_grp, grps, gnames);
     }
 
-    nacc = str_nelem(acc, MAXPTR, ptr1);
-    nacg = str_nelem(accgrps, MAXPTR, ptr2);
+    nacc = str_nelem(is->acc, MAXPTR, ptr1);
+    nacg = str_nelem(is->accgrps, MAXPTR, ptr2);
     if (nacg*DIM != nacc)
     {
         gmx_fatal(FARGS, "Invalid Acceleration input: %d groups and %d acc. values",
@@ -3214,8 +3235,8 @@ void do_index(const char* mdparin, const char *ndx,
         }
     }
 
-    nfrdim  = str_nelem(frdim, MAXPTR, ptr1);
-    nfreeze = str_nelem(freeze, MAXPTR, ptr2);
+    nfrdim  = str_nelem(is->frdim, MAXPTR, ptr1);
+    nfreeze = str_nelem(is->freeze, MAXPTR, ptr2);
     if (nfrdim != DIM*nfreeze)
     {
         gmx_fatal(FARGS, "Invalid Freezing input: %d groups and %d freeze values",
@@ -3250,12 +3271,12 @@ void do_index(const char* mdparin, const char *ndx,
         }
     }
 
-    nenergy = str_nelem(energy, MAXPTR, ptr1);
+    nenergy = str_nelem(is->energy, MAXPTR, ptr1);
     do_numbering(natoms, groups, nenergy, ptr1, grps, gnames, egcENER,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
     add_wall_energrps(groups, ir->nwall, symtab);
     ir->opts.ngener = groups->grps[egcENER].nr;
-    nvcm            = str_nelem(vcm, MAXPTR, ptr1);
+    nvcm            = str_nelem(is->vcm, MAXPTR, ptr1);
     bRest           =
         do_numbering(natoms, groups, nvcm, ptr1, grps, gnames, egcVCM,
                      restnm, nvcm == 0 ? egrptpALL_GENREST : egrptpPART, bVerbose, wi);
@@ -3293,23 +3314,23 @@ void do_index(const char* mdparin, const char *ndx,
         }
     }
 
-    nuser = str_nelem(user1, MAXPTR, ptr1);
+    nuser = str_nelem(is->user1, MAXPTR, ptr1);
     do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser1,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nuser = str_nelem(user2, MAXPTR, ptr1);
+    nuser = str_nelem(is->user2, MAXPTR, ptr1);
     do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser2,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nuser = str_nelem(xtc_grps, MAXPTR, ptr1);
+    nuser = str_nelem(is->xtc_grps, MAXPTR, ptr1);
     do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcXTC,
                  restnm, egrptpONE, bVerbose, wi);
-    nofg = str_nelem(orirefitgrp, MAXPTR, ptr1);
+    nofg = str_nelem(is->orirefitgrp, MAXPTR, ptr1);
     do_numbering(natoms, groups, nofg, ptr1, grps, gnames, egcORFIT,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
 
     /* QMMM input processing */
-    nQMg          = str_nelem(QMMM, MAXPTR, ptr1);
-    nQMmethod     = str_nelem(QMmethod, MAXPTR, ptr2);
-    nQMbasis      = str_nelem(QMbasis, MAXPTR, ptr3);
+    nQMg          = str_nelem(is->QMMM, MAXPTR, ptr1);
+    nQMmethod     = str_nelem(is->QMmethod, MAXPTR, ptr2);
+    nQMbasis      = str_nelem(is->QMbasis, MAXPTR, ptr3);
     if ((nQMmethod != nQMg) || (nQMbasis != nQMg))
     {
         gmx_fatal(FARGS, "Invalid QMMM input: %d groups %d basissets"
@@ -3333,9 +3354,9 @@ void do_index(const char* mdparin, const char *ndx,
                                                eQMbasis_names);
 
     }
-    nQMmult   = str_nelem(QMmult, MAXPTR, ptr1);
-    nQMcharge = str_nelem(QMcharge, MAXPTR, ptr2);
-    nbSH      = str_nelem(bSH, MAXPTR, ptr3);
+    nQMmult   = str_nelem(is->QMmult, MAXPTR, ptr1);
+    nQMcharge = str_nelem(is->QMcharge, MAXPTR, ptr2);
+    nbSH      = str_nelem(is->bSH, MAXPTR, ptr3);
     snew(ir->opts.QMmult, nr);
     snew(ir->opts.QMcharge, nr);
     snew(ir->opts.bSH, nr);
@@ -3347,8 +3368,8 @@ void do_index(const char* mdparin, const char *ndx,
         ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i], "Y", 1) == 0);
     }
 
-    nCASelec  = str_nelem(CASelectrons, MAXPTR, ptr1);
-    nCASorb   = str_nelem(CASorbitals, MAXPTR, ptr2);
+    nCASelec  = str_nelem(is->CASelectrons, MAXPTR, ptr1);
+    nCASorb   = str_nelem(is->CASorbitals, MAXPTR, ptr2);
     snew(ir->opts.CASelectrons, nr);
     snew(ir->opts.CASorbitals, nr);
     for (i = 0; i < nr; i++)
@@ -3358,8 +3379,8 @@ void do_index(const char* mdparin, const char *ndx,
     }
     /* special optimization options */
 
-    nbOPT = str_nelem(bOPT, MAXPTR, ptr1);
-    nbTS  = str_nelem(bTS, MAXPTR, ptr2);
+    nbOPT = str_nelem(is->bOPT, MAXPTR, ptr1);
+    nbTS  = str_nelem(is->bTS, MAXPTR, ptr2);
     snew(ir->opts.bOPT, nr);
     snew(ir->opts.bTS, nr);
     for (i = 0; i < nr; i++)
@@ -3367,9 +3388,9 @@ void do_index(const char* mdparin, const char *ndx,
         ir->opts.bOPT[i] = (gmx_strncasecmp(ptr1[i], "Y", 1) == 0);
         ir->opts.bTS[i]  = (gmx_strncasecmp(ptr2[i], "Y", 1) == 0);
     }
-    nSAon     = str_nelem(SAon, MAXPTR, ptr1);
-    nSAoff    = str_nelem(SAoff, MAXPTR, ptr2);
-    nSAsteps  = str_nelem(SAsteps, MAXPTR, ptr3);
+    nSAon     = str_nelem(is->SAon, MAXPTR, ptr1);
+    nSAoff    = str_nelem(is->SAoff, MAXPTR, ptr2);
+    nSAsteps  = str_nelem(is->SAsteps, MAXPTR, ptr3);
     snew(ir->opts.SAon, nr);
     snew(ir->opts.SAoff, nr);
     snew(ir->opts.SAsteps, nr);
@@ -3398,7 +3419,7 @@ void do_index(const char* mdparin, const char *ndx,
     nr = groups->grps[egcENER].nr;
     snew(ir->opts.egp_flags, nr*nr);
 
-    bExcl = do_egp_flag(ir, groups, "energygrp-excl", egpexcl, EGP_EXCL);
+    bExcl = do_egp_flag(ir, groups, "energygrp-excl", is->egpexcl, EGP_EXCL);
     if (bExcl && ir->cutoff_scheme == ecutsVERLET)
     {
         warning_error(wi, "Energy group exclusions are not (yet) implemented for the Verlet scheme");
@@ -3408,7 +3429,7 @@ void do_index(const char* mdparin, const char *ndx,
         warning(wi, "Can not exclude the lattice Coulomb energy between energy groups");
     }
 
-    bTable = do_egp_flag(ir, groups, "energygrp-table", egptable, EGP_TABLE);
+    bTable = do_egp_flag(ir, groups, "energygrp-table", is->egptable, EGP_TABLE);
     if (bTable && !(ir->vdwtype == evdwUSER) &&
         !(ir->coulombtype == eelUSER) && !(ir->coulombtype == eelPMEUSER) &&
         !(ir->coulombtype == eelPMEUSERSWITCH))
@@ -3416,12 +3437,12 @@ void do_index(const char* mdparin, const char *ndx,
         gmx_fatal(FARGS, "Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
     }
 
-    decode_cos(efield_x, &(ir->ex[XX]));
-    decode_cos(efield_xt, &(ir->et[XX]));
-    decode_cos(efield_y, &(ir->ex[YY]));
-    decode_cos(efield_yt, &(ir->et[YY]));
-    decode_cos(efield_z, &(ir->ex[ZZ]));
-    decode_cos(efield_zt, &(ir->et[ZZ]));
+    decode_cos(is->efield_x, &(ir->ex[XX]));
+    decode_cos(is->efield_xt, &(ir->et[XX]));
+    decode_cos(is->efield_y, &(ir->ex[YY]));
+    decode_cos(is->efield_yt, &(ir->et[YY]));
+    decode_cos(is->efield_z, &(ir->ex[ZZ]));
+    decode_cos(is->efield_zt, &(ir->et[ZZ]));
 
     if (ir->bAdress)
     {
