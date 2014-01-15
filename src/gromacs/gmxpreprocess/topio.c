@@ -1014,6 +1014,7 @@ static char **read_topol(const char *infile, const char *outfile,
     {
         gmx_fatal(FARGS, cpp_error(&handle, status));
     }
+    cpp_done();
     if (out)
     {
         gmx_fio_fclose(out);

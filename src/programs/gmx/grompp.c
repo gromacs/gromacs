@@ -1945,5 +1945,8 @@ int gmx_grompp(int argc, char *argv[])
 
     write_tpx_state(ftp2fn(efTPX, NFILE, fnm), ir, &state, sys);
 
+    done_atomtype(atype);
+    done_mtop(sys, TRUE);
+
     return 0;
 }
