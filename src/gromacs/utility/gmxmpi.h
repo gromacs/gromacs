@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,20 @@
 #define MPICH_SKIP_MPICXX 1
 #define OMPI_SKIP_MPICXX 1
 #include <mpi.h>
+/* Staring with 2.2 MPI_INT64_T is required. Earlier version still might have it.
+   In theory MPI_Datatype doesn't have to be a #define, but current available MPI
+   implementations (OpenMPI + MPICH (+derivates)) use #define and furture versions
+   should support 2.2. */
+#if (MPI_VERSION == 1 || (MPI_VERSION == 2 && MPI_SUBVERSION < 2)) && !defined MPI_INT64_T
+#include <limits.>
+#if LONG_MAX == 9223372036854775807L
+#define MPI_INT64_T MPI_LONG
+#elif LONG_LONG_MAX == 9223372036854775807L
+#define MPI_INT64_T MPI_LONG_LONG
+#else
+#error No MPI_INT64_T and no 64 bit integer found.
+#endif
+#endif /*MPI_INT64_T*/
 #else
 #ifdef GMX_THREAD_MPI
 #include "../legacyheaders/thread_mpi/tmpi.h"
