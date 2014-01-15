@@ -81,6 +81,12 @@ int cpp_cur_linenr(const gmx_cpp_t *handlep);
  */
 int cpp_close_file(gmx_cpp_t *handlep);
 
+/* Clean up file static data structures
+
+   NOT THREAD SAFE
+ */
+void cpp_done();
+
 /* Return a string containing the error message coresponding to status
    variable.
 
