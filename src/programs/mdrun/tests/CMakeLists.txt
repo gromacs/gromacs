@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@ gmx_build_unit_test(
     ${exename}
     # files with code for tests
     rerun.cpp
+    xtc_output.cpp
     # files with code for test fixtures
     moduletest.cpp
     # pseudo libraries for code for grompp and mdrun

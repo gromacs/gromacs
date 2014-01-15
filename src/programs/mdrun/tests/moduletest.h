@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,10 +89,12 @@ class MdrunTestFixture : public IntegrationTestFixture
 
         //! Use an empty .mdp file as input to grompp
         void useEmptyMdpFile();
-        //! Use an empty .mdp file as input to grompp
+        //! Use a string as -f input to grompp
         void useStringAsMdpFile(const char *mdpString);
+        //! Use a string as -n input to grompp
+        void useStringAsNdxFile(const char *ndxString);
         //! Use a standard .top and .gro file as input to grompp
-        void useTopAndGroFromDatabase(const char *name);
+        void useTopGroAndNdxFromDatabase(const char *name);
         //! Calls grompp to prepare for the mdrun test
         int callGrompp();
         //! Calls grompp (on this rank) to prepare for the mdrun test
@@ -118,6 +120,7 @@ class MdrunTestFixture : public IntegrationTestFixture
         std::string groFileName;
         std::string trrFileName;
         std::string xtcFileName;
+        std::string ndxFileName;
         std::string mdpInputFileName;
         std::string mdpOutputFileName;
         std::string tprFileName;
