@@ -73,6 +73,7 @@ find_library(${FFTW}_LIBRARY NAMES "${${FFTW}_PKG}" HINTS ${PC_${FFTW}_LIBRARY_D
 
 set(${FFTW}_LIBRARIES "${${FFTW}_LIBRARY}")
 set(${FFTW}_INCLUDE_DIRS "${${FFTW}_INCLUDE_DIR}")
+string(REPLACE ";" ":" ${FFTW}_LIBRARY_NORM "${${FFTW}_LIBRARY}")
 
 #better error message than find_package_handle_standard_args
 if (${FFTW}_LIBRARY AND ${FFTW}_INCLUDE_DIR)
@@ -90,10 +91,10 @@ if (${FFTW}_FOUND)
     #adding MATH_LIBRARIES here to allow static libs, this does not harm us as we are anyway using it
     set(CMAKE_REQUIRED_LIBRARIES m)
   endif (HAVE_LIBM)
-  check_library_exists("${${FFTW}_LIBRARIES}" "${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d" "" FOUND_${FFTW}_PLAN)
-  if(NOT FOUND_${FFTW}_PLAN)
+  check_library_exists("${${FFTW}_LIBRARIES}" "${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d" "" FOUND_${${FFTW}_LIBRARY_NORM}_PLAN)
+  if(NOT FOUND_${${FFTW}_LIBRARY_NORM}_PLAN)
     message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
-  endif(NOT FOUND_${FFTW}_PLAN)
+  endif(NOT FOUND_${${FFTW}_LIBRARY_NORM}_PLAN)
 
   # Check for FFTW3 compiled with --enable-avx, which is slower for GROMACS than --enable-sse or --enable-sse2
   foreach(AVX_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx)
