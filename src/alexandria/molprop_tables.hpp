@@ -129,9 +129,7 @@ extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
  *
  * \param[out] fp   File pointer to write to
  * \param[in] bPolar Calling this with bPolar TRUE will print an atomtype table with polarizability information. With bPolar FALSE it will print the same table with EEM parameters.
- * \param[in] npd   Number of force field structurs
- * \param[in] pd    Array of force field structures
- * \param[out] pd_aver Force field structure with average and standard deviation of parameters
+ * \param[in] pd    Force field file
  * \param[in] mp    Array of molecules
  * \param[in] iQM   Selecting the reference between QM and Experimental
  * \param[in] lot   Level of theory in 'A/B' format
@@ -146,11 +144,8 @@ extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
  * \ingroup module_alexandria
  */
 extern void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
-                                       int npd,gmx_poldata_t pd[],
-                                       gmx_poldata_t pd_aver, /* Output! */
+                                       gmx_poldata_t pd,
                                        std::vector<alexandria::MolProp> mp,
-                                       char *lot,char *exp_type,
-                                       output_env_t oenv,
-                                       const char *histo);
+                                       char *lot,char *exp_type);
 
 #endif

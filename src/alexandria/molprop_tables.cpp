@@ -754,7 +754,7 @@ static void atomtype_tab_header(alexandria::LongTable &lt)
     
     lt.setColumns("ccccccc");
     
-    snprintf(longbuf, STRLEN, "Definition of atom types for polarization (AX column). The number of occurences  of atom N$_{Exp}$ and N$_{QM}$ indicate how many of the polarizability values were fitted to experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.");
+    snprintf(longbuf, STRLEN, "Definition of atom types for polarization (AX column). The number of datapoints used for fitting the polarizability of atomtypes is given in N$_{Exp}$ and N$_{QM}$ for experimental data or quantum chemistry, respectively. The columns Ahc and Ahp contain group polarizabilites computed using Miller's equation~\\protect\\cite{Miller1979a} and parameters~\\protect\\cite{Miller1990a} and Kang and Jhon's method~\\cite{Kang1982a} with the parametrization of Miller~\\protect\\cite{Miller1990a} respectively. The column BS contains the equivalent using the polarizabilities of Bosque and Sales~\\protect\\cite{Bosque2002a}.");
     lt.setCaption(longbuf);
     lt.setLabel("fragments");
     snprintf(longbuf, STRLEN, "Name  & N$_{Exp}$ & N$_{QM}$ & \\multicolumn{4}{c}{Polarizability}");
@@ -770,200 +770,105 @@ typedef struct {
     int         nexp, nqm;
 } t_sm_lsq;
     
-static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[],
-                                             gmx_poldata_t pd_aver,
+static void gmx_molprop_atomtype_polar_table(FILE *fp,
+                                             gmx_poldata_t pd,
                                              std::vector<alexandria::MolProp> mp,
-                                             char *lot,char *exp_type,
-                                             output_env_t oenv,const char *histo)
+                                             char *lot,
+                                             char *exp_type)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
-    FILE   *xvg;
-    int    i,ntab;
     double ahc,ahp,bos_pol,alexandria_pol,sig_pol;
-    double exp_val,qm_val;
-    real   alexandria_aver,alexandria_sigma;
     char   *ptype;
     char   *miller, *bosque;
     char   longbuf[STRLEN];
-    int    nsmlsq=0,estats,nset;
-    t_sm_lsq *smlsq=NULL;
     MolPropObservable mpo=MPO_POLARIZABILITY;
     alexandria::LongTable lt(fp, false);
     
-    /* First gather statistics from different input files. Note that the input files
-     * do not need to have the same sets of types, as we check for the type name.
-     */
-    for(int pp = 0; (pp < npd); pp++) 
-    {
-        while(1 == gmx_poldata_get_ptype(pd[pp],
-                                         &ptype,
-                                         &miller,
-                                         &bosque,
-                                         &alexandria_pol,
-                                         &sig_pol))
-        {
-            if (alexandria_pol > 0)
-            {
-                int j;
-                for(j=0; (j<nsmlsq); j++)
-                {
-                    if (strcasecmp(ptype,smlsq[j].ptype) == 0)
-                    {
-                        break;
-                    }
-                }
-                if (j == nsmlsq) 
-                {
-                    srenew(smlsq,++nsmlsq);
-                    smlsq[j].ptype  = strdup(ptype);
-                    smlsq[j].miller = strdup(miller);
-                    smlsq[j].bosque = strdup(bosque);
-                    smlsq[j].lsq    = gmx_stats_init();
-                    smlsq[j].nexp   = 0;
-                    smlsq[j].nqm    = 0;
-                    printf("New poltype %s\n", ptype);
-                }
-                if ((estats = gmx_stats_add_point_ydy(smlsq[j].lsq, 
-                                                      alexandria_pol, 
-                                                      sig_pol)) != estatsOK)
-                {
-                    gmx_fatal(FARGS,"Statistics problems: %s",
-                              gmx_stats_message(estats));
-                }
-            }
-        }
-    }
-
-    /* Now loop over the poltypes and count number of occurrences in molecules */
-    for(int j=0; (j<nsmlsq); j++)
-    {
-        for(mpi=mp.begin(); (mpi<mp.end()); mpi++) 
-        {
-            alexandria::MolecularCompositionIterator mci = mpi->SearchMolecularComposition(SPOEL);
-            
-            if (mci != mpi->EndMolecularComposition())
-            {
-                for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++)
-                {
-                    const char *pt = 
-                        gmx_poldata_atype_to_ptype(pd[0],
-                                                   ani->GetAtom().c_str());
-                    if ((NULL != pt) && (strcasecmp(pt,smlsq[j].ptype) == 0)) 
-                    {
-                        int ngt = ani->GetNumber();
-                        if (mpi->GetProp(mpo,iqmExp,lot,NULL,exp_type,&exp_val))
-                        {
-                            smlsq[j].nexp += ngt;
-                        }
-                        else if (mpi->GetProp(mpo,iqmQM,lot,NULL,NULL,&qm_val))
-                        {
-                            smlsq[j].nqm += ngt;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if (NULL != histo)
-    {
-        nset = 0;
-        xvg = xvgropen(histo,"Distribution of polarizabilities","Polarizability","a.u.",oenv);
-        for(int j = 0; (j<nsmlsq); j++) 
-        {
-            int N;
-            if ((gmx_stats_get_npoints(smlsq[j].lsq,&N) == estatsOK) && (N > 0))
-            {
-                fprintf(xvg,"@ s%d legend \"%s\"\n",nset++,smlsq[j].ptype);
-            }
-        }
-    }
-    else
-    {
-        xvg = NULL;
-    }
-    /* Now print it! */
+    /* Prepare printing it! */
     atomtype_tab_header(lt);
-    nset = 0;
-    ntab = 0;
-    for(int j = 0; (j<nsmlsq); j++) 
+    
+    /* First gather statistics from different input files. 
+     * Note that the input files
+     * do not need to have the same sets of types, 
+     * as we check for the type name.
+     */
+    while(1 == gmx_poldata_get_ptype(pd,
+                                     &ptype,
+                                     &miller,
+                                     &bosque,
+                                     &alexandria_pol,
+                                     &sig_pol))
     {
-        /* Determine Miller and Bosque polarizabilities for this Spoel element */
-        ahc = ahp = bos_pol = 0;
-        int atomnumber;
-        if (1 == gmx_poldata_get_miller_pol(pd[0], smlsq[j].miller,
-                                            &atomnumber, &ahc, &ahp)) 
+        if (alexandria_pol > 0)
         {
-            ahc = (4.0/atomnumber)*sqr(ahc);
-        }
-        if (0 == gmx_poldata_get_bosque_pol(pd[0], smlsq[j].bosque, &bos_pol))
-        {
-            bos_pol = 0;
-        } 
-        /* Compute how many molecules contributed to the optimization 
-         * of this polarizability.
-         */
-        /* Construct group name from element composition */
-        /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
-        int N;
-        if (estatsOK != (estats = gmx_stats_get_npoints(smlsq[j].lsq,&N)))
-        {
-            gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
-        }
-        if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].lsq,
-                                                        &alexandria_aver)))
-        {
-            gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].ptype,N);
-        }
-        if (estatsOK != (estats = gmx_stats_get_sigma(smlsq[j].lsq,
-                                                      &alexandria_sigma)))
-        {
-            gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].ptype,N);
-        }
-        /* Store average values */
-        if (NULL != pd_aver) 
-        {
-            gmx_poldata_set_ptype_polarizability(pd_aver,smlsq[j].ptype,
-                                                 alexandria_aver,
-                                                 alexandria_sigma);
-        }
-        int nfitexp = smlsq[j].nexp / npd;
-        int nfitqm  = smlsq[j].nqm  / npd;
+            int atomnumber;
+            int nexp   = 0;
+            int nqm    = 0;
 
-        snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
-                 smlsq[j].ptype,
-                 (nfitexp > 0)     ? gmx_itoa(nfitexp)     : "",
-                 (nfitqm > 0)      ? gmx_itoa(nfitqm)      : "",
-                 (alexandria_aver > 0)  ? gmx_ftoa(alexandria_aver)  : "",
-                 (alexandria_sigma > 0) ? gmx_ftoa(alexandria_sigma) : "-",
-                 (ahc > 0)         ? gmx_ftoa(ahc)         : "",
-                 (ahp > 0)         ? gmx_ftoa(ahp)         : "",
-                 (bos_pol > 0)     ? gmx_ftoa(bos_pol)     : "");
-        lt.printLine(longbuf);
-        ntab++;
-        
-        if ((NULL != xvg) && (gmx_stats_get_npoints(smlsq[j].lsq,&N) == estatsOK) && (N > 0))
-        {
-            real *x=NULL,*y=NULL;
-            int nbins = 20;
-            
-            if (gmx_stats_make_histogram(smlsq[j].lsq,0,&nbins,ehistoY,1,&x,&y) == estatsOK)
+            /* Now loop over the poltypes and count number of occurrences 
+             * in molecules 
+             */
+            for(mpi=mp.begin(); (mpi<mp.end()); mpi++) 
             {
-                fprintf(xvg,"@type xy\n");
-                for(i=0; (i<nbins); i++)
+                alexandria::MolecularCompositionIterator mci = mpi->SearchMolecularComposition(SPOEL);
+                
+                if (mci != mpi->EndMolecularComposition())
                 {
-                    fprintf(xvg,"%g  %g\n",x[i],y[i]);
+                    bool bFound = false;
+
+                    for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); !bFound && (ani<mci->EndAtomNum()); ani++)
+                    {
+                        const char *pt = 
+                            gmx_poldata_atype_to_ptype(pd,
+                                                       ani->GetAtom().c_str());
+                        if ((NULL != pt) && (strcasecmp(pt,ptype) == 0)) 
+                        {
+                            bFound = true;
+                        }
+                    }
+                    if (bFound) 
+                    {
+                        double val;
+                        if (mpi->GetProp(mpo,iqmExp,lot,NULL,exp_type,&val))
+                        {
+                            nexp++;
+                        }
+                        else if (mpi->GetProp(mpo,iqmQM,lot,NULL,NULL,&val))
+                        {
+                            nqm++;
+                        }
+                    }
                 }
-                fprintf(xvg,"&\n");
             }
-            sfree(x);
-            sfree(y);
+        
+            /* Determine Miller and Bosque polarizabilities for this Spoel element */
+            ahc = ahp = bos_pol = 0;
+            if (1 == gmx_poldata_get_miller_pol(pd, miller,
+                                                &atomnumber, &ahc, &ahp)) 
+            {
+                ahc = (4.0/atomnumber)*sqr(ahc);
+            }
+            if (0 == gmx_poldata_get_bosque_pol(pd, bosque, &bos_pol))
+            {
+                bos_pol = 0;
+            } 
+            /* Compute how many molecules contributed to the optimization 
+             * of this polarizability.
+             */
+            /* Construct group name from element composition */
+            /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
+        
+            snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
+                     ptype,
+                     (nexp > 0)     ? gmx_itoa(nexp)     : "",
+                     (nqm > 0)      ? gmx_itoa(nqm)      : "",
+                     (alexandria_pol > 0)  ? gmx_ftoa(alexandria_pol)  : "",
+                     (sig_pol > 0)  ? gmx_ftoa(sig_pol) : "-",
+                     (ahc > 0)         ? gmx_ftoa(ahc)         : "",
+                     (ahp > 0)         ? gmx_ftoa(ahp)         : "",
+                     (bos_pol > 0)     ? gmx_ftoa(bos_pol)     : "");
+            lt.printLine(longbuf);
         }
-    }
-    if (NULL != xvg)
-    {
-        fclose(xvg);
     }
     lt.printFooter();
     fflush(fp);
@@ -1060,20 +965,17 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
 }
 
 void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
-                                int npd,gmx_poldata_t pd[],
-                                gmx_poldata_t pd_aver,
+                                gmx_poldata_t pd,
                                 std::vector<alexandria::MolProp> mp,
-                                char *lot,char *exp_type,
-                                output_env_t oenv,const char *histo)
+                                char *lot,char *exp_type)
 {
     if (bPolar)
     {
-        gmx_molprop_atomtype_polar_table(fp,npd,pd,pd_aver,mp,
-                                         lot,exp_type,oenv,histo);
+        gmx_molprop_atomtype_polar_table(fp,pd,mp,lot,exp_type);
     }
     else
     {
-        gmx_molprop_atomtype_dip_table(fp,pd[0]);
+        gmx_molprop_atomtype_dip_table(fp,pd);
     }
 }
                                

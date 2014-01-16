@@ -276,7 +276,7 @@ static void add_refc(t_refcount *rc, const char *ref)
 }
 
 static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
-                                int npd, gmx_poldata_t *pd, gmx_poldata_t pdref,
+                                gmx_poldata_t pd,
                                 gmx_bool bCalcPol,
                                 MolPropObservable prop, char *exp_type,
                                 char *lot,
@@ -288,8 +288,6 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                 gmx_bool bPrintBasis, gmx_bool bPrintMultQ,
                                 const char *texfn,
                                 const char *xvgfn,
-                                const char *histo,
-                                const char *atype,
                                 output_env_t oenv,
                                 gmx_molselect_t gms,
                                 const char *selout)
@@ -308,19 +306,9 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     const char   *iupac;
     char         *ref;
 
-    if (NULL != atype)
-    {
-        fp = fopen(atype, "w");
-        gmx_molprop_atomtype_table(fp, (prop == MPO_POLARIZABILITY),
-                                   npd, pd, pdref, mp, lot, exp_type,
-                                   oenv, histo);
-        fclose(fp);
-        do_view(oenv, histo, NULL);
-    }
-
     if (bCalcPol)
     {
-        calc_frag_miller(pdref ? pdref : pd[0], mp, gms);
+        calc_frag_miller(pd, mp, gms);
     }
 
     qmc = find_calculations(mp, prop, fc_str);
@@ -417,13 +405,8 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
 int alex_analyze(int argc, char *argv[])
 {
     static const char               *desc[] = {
-        "analyze reads force field information and a molecule database",
-        "and produces tables and figures to describe the data.[PAR]",
-        "A series of force field files can be read for generating statistics",
-        "on the parameters, like average and standard deviation.",
-        "The average values and errors can be written to a new force field file",
-        "([TT]-pout[tt] flag) based on a reference file given by the",
-        "[TT]-pref[tt] flag.[PAR]",
+        "analyze reads a molecule database",
+        "and produces tables and figures to describe the data.",
         "A selection of molecules into a training set and a test set (or ignore set)",
         "can be made using option [TT]-sel[tt]. The format of this file is:[BR]",
         "iupac|Train[BR]",
@@ -437,17 +420,13 @@ int alex_analyze(int argc, char *argv[])
         "yielding only those molecules for which experimental data is available."
     };
     t_filenm                         fnm[] = {
-        { efDAT, "-p",    "poldata",   ffRDMULT },
-        { efDAT, "-pref", "gentop",    ffOPTRD  },
-        { efDAT, "-pout", "gentop",    ffOPTWR  },
-        { efDAT, "-m",    "allmols",   ffRDMULT },
-        { efTEX, "-t",    "table",     ffWRITE  },
-        { efTEX, "-atype", "atomtypes", ffOPTWR  },
-        { efTEX, "-cat",  "category",  ffOPTWR  },
-        { efDAT, "-sel",  "molselect", ffREAD   },
-        { efDAT, "-selout", "selout",   ffOPTWR  },
-        { efXVG, "-c",    "correl",    ffWRITE  },
-        { efXVG, "-his",  "polhisto",  ffWRITE  }
+        { efDAT, "-d",      "gentop",    ffREAD   },
+        { efDAT, "-m",      "allmols",   ffRDMULT },
+        { efTEX, "-t",      "table",     ffWRITE  },
+        { efTEX, "-cat",    "category",  ffOPTWR  },
+        { efDAT, "-sel",    "molselect", ffREAD   },
+        { efDAT, "-selout", "selout",    ffOPTWR  },
+        { efXVG, "-c",      "correl",    ffWRITE  }
     };
 #define NFILE (sizeof(fnm)/sizeof(fnm[0]))
     static char                     *sort[]      = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", NULL };
@@ -504,12 +483,11 @@ int alex_analyze(int argc, char *argv[])
     MolPropSortAlgorithm             mpsa;
     MolPropObservable                mpo;
     gmx_atomprop_t                   ap;
-    gmx_poldata_t                   *pd, pdref = NULL;
+    gmx_poldata_t                    pd;
     output_env_t                     oenv;
     gmx_molselect_t                  gms;
     char                           **mpname = NULL, **fns = NULL;
-    const char                      *fn;
-    int                              npdfile, nmpfile;
+    int                              nmpfile;
 
     npa = sizeof(pa)/sizeof(pa[0]);
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
@@ -523,7 +501,6 @@ int alex_analyze(int argc, char *argv[])
     ap = gmx_atomprop_init();
 
     nmpfile = opt2fns(&mpname, "-m", NFILE, fnm);
-    npdfile = opt2fns(&fns, "-p", NFILE, fnm);
     gms     = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
 
     mpsa = MPSA_NR;
@@ -554,49 +531,35 @@ int alex_analyze(int argc, char *argv[])
     {
         mpo = MPO_DIPOLE;
     }
-    snew(pd, npdfile);
-    for (i = 0; (i < npdfile); i++)
+    if (NULL == (pd = gmx_poldata_read(opt2fn("-d", NFILE, fnm), ap)))
     {
-        if ((pd[i] = gmx_poldata_read(fns[i], ap)) == NULL)
-        {
-            gmx_fatal(FARGS, "Can not read the force field information. File %s missing or incorrect.", fns[i]);
-        }
+        gmx_fatal(FARGS, "Can not read the force field information. File %s missing or incorrect.", fns[i]);
     }
 
-    fn = opt2fn_null("-pref", NFILE, fnm);
-    if (NULL != fn)
-    {
-        pdref = gmx_poldata_read(fn, ap);
-    }
     if (bMerge)
     {
-        merge_xml(nmpfile, mpname, mp, NULL, NULL, NULL, ap, pd[0], TRUE);
+        merge_xml(nmpfile, mpname, mp, NULL, NULL, NULL, ap, pd, TRUE);
     }
     else
     {
         MolPropRead((const char *)mpname[0], mp);
     }
-    generate_composition(mp, pd[0]);
+    generate_composition(mp, pd);
     generate_formula(mp, ap);
     
     if (mpsa != MPSA_NR)
     {
         MolPropSort(mp, mpsa, ap, gms);
     }
-    gmx_molprop_analyze(mp, npdfile, pd, pdref, bCalcPol,
+    gmx_molprop_analyze(mp, pd, bCalcPol,
                         mpo, exp_type, lot, rtoler, atoler, outlier, fc_str, bAll,
                         bStatsTable,
                         opt2fn_null("-cat", NFILE, fnm),
                         bPropTable, bCompositionTable,
                         bPrintBasis, bPrintMultQ,
                         opt2fn("-t", NFILE, fnm), opt2fn("-c", NFILE, fnm),
-                        opt2fn("-his", NFILE, fnm), opt2fn("-atype", NFILE, fnm), oenv, gms,
+                        oenv, gms,
                         opt2fn_null("-selout", NFILE, fnm));
-
-    if (NULL != fn)
-    {
-        gmx_poldata_write(opt2fn("-pout", NFILE, fnm), pdref, FALSE);
-    }
 
     return 0;
 }

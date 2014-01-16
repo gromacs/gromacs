@@ -502,9 +502,15 @@ static int decompose_frag(FILE *fplog,
                 gmx_stats_add_point_ydy(polstats[i], fpp[i], 0);
             }
         }
+        free_matrix(a_copy);
+        free_matrix(at_copy);
+        free_matrix(ata);
+        sfree(x_copy);
     }
     fprintf(stderr, "\n");
     FILE *xp = xvgropen(hisfn, "Polarizability distribution", "alpha (A\\S3\\N)", "", oenv);
+    xvgr_legend(xp, ntest[cur], (const char **)atype, oenv);
+
     for (int i = 0; (i < ntest[cur]); i++)
     {
         int result1, result2;
@@ -522,7 +528,7 @@ static int decompose_frag(FILE *fplog,
             fprintf(xp, "@type xy\n");
             for(int ll=0; (ll<nbins); ll++)
             {
-                fprintf(xp, "%.3f  %.3f\n", my_x[i], my_y[i]);
+                fprintf(xp, "%.3f  %.3f\n", my_x[ll], my_y[ll]);
             }
             fprintf(xp, "&\n");
             sfree(my_x);
@@ -544,7 +550,9 @@ static int decompose_frag(FILE *fplog,
     }
     sfree(bUseMol);
     sfree(fpp);
-    
+    free_matrix(a);
+    free_matrix(at);
+        
     return ntest[cur];
 }
 
@@ -567,7 +575,8 @@ int alex_tune_pol(int argc, char *argv[])
         "iupac|Test[BR]",
         "iupac|Ignore[BR]",
         "and you should ideally have a line for each molecule in the molecule database",
-        "([TT]-f[tt] option). Missing molecules will be ignored."
+        "([TT]-f[tt] option). Missing molecules will be ignored.[PAR]",
+        "tune_pol produces a table and a figure to describe the data."
     };
     t_filenm                         fnm[] =
     {
@@ -577,10 +586,12 @@ int alex_tune_pol(int argc, char *argv[])
         { efDAT, "-do", "tune_pol",  ffWRITE  },
         { efDAT, "-sel","molselect", ffREAD   },
         { efLOG, "-g",  "tune_pol",  ffWRITE  },
+        { efTEX, "-atype",  "atomtypes", ffWRITE  },
         { efXVG, "-his",  "polhisto",  ffWRITE  }
     };
     int                              NFILE    = (sizeof(fnm)/sizeof(fnm[0]));
     static char                     *sort[]   = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
+    static char                     *exp_type    = (char *)"Polarizability";
     static gmx_bool                  bQM      = FALSE;
     static int                       mindata  = 1;
     static int                       nBootStrap = 1;
@@ -611,6 +622,8 @@ int alex_tune_pol(int argc, char *argv[])
           "Fraction of data points to use in each trial for bootstrapping" },
         { "-seed", FALSE, etINT, {&seed},
           "Seed for random numbers in bootstrapping. If <= 0 a seed will be generated." },
+        { "-exp_type", FALSE, etSTR, {&exp_type},
+          "[HIDDEN]The experimental property type that all the stuff above has to be compared to." },
         { "-compress", FALSE, etBOOL, {&bCompress},
           "Compress output XML files" }
     };
@@ -665,6 +678,12 @@ int alex_tune_pol(int argc, char *argv[])
     fprintf(fplog, "Now writing force field file %s\n", pdout);
     gmx_poldata_write(pdout, pd, bCompress);
     
+    const char *atype = opt2fn("-atype", NFILE, fnm);
+    fprintf(fplog, "Now writing LaTeX description of force field to %s\n", atype);
+    FILE *tp = fopen(atype, "w");
+    gmx_molprop_atomtype_table(tp, true, pd, mp, lot, exp_type);
+    fclose(tp);
+
     ffclose(fplog);
     
     const char *mpfn = opt2fn_null("-o", NFILE, fnm);

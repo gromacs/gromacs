@@ -266,6 +266,10 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         {
             stats->sigma_aver = sqrt(dd);
         }
+        else if (N == 1)
+        {
+            stats->sigma_aver = stats->dy[0];
+        }
         else
         {
             stats->sigma_aver = 0;
@@ -680,13 +684,6 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
     if (*nb == 0)
     {
         *nb = nbins;
-    }
-    for (i = 0; (i < nbins); i++)
-    {
-        if (nindex[i] > 0)
-        {
-            (*y)[i] /= nindex[i];
-        }
     }
 
     sfree(nindex);
