@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -86,10 +86,15 @@ endif()
 if (${FFTW}_FOUND)
   #The user could specify trash in ${FFTW}_LIBRARY, so test if we can link it
   include(CheckLibraryExists)
+  include(gmxOptionUtilities)
   if (HAVE_LIBM)
     #adding MATH_LIBRARIES here to allow static libs, this does not harm us as we are anyway using it
     set(CMAKE_REQUIRED_LIBRARIES m)
   endif (HAVE_LIBM)
+  gmx_check_if_changed(FFTW_LIBRARY_CHANGED ${FFTW}_LIBRARIES)
+  if (FFTW_LIBRARY_CHANGED)
+    unset(FOUND_${FFTW}_PLAN CACHE)
+  endif()
   check_library_exists("${${FFTW}_LIBRARIES}" "${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d" "" FOUND_${FFTW}_PLAN)
   if(NOT FOUND_${FFTW}_PLAN)
     message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
@@ -97,6 +102,9 @@ if (${FFTW}_FOUND)
 
   # Check for FFTW3 compiled with --enable-avx, which is slower for GROMACS than --enable-sse or --enable-sse2
   foreach(AVX_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx)
+    if (FFTW_LIBRARY_CHANGED)
+      unset(${FFTW}_HAVE_${AVX_FUNCTION} CACHE)
+    endif()
     check_library_exists("${${FFTW}_LIBRARIES}" "${AVX_FUNCTION}" "" ${FFTW}_HAVE_${AVX_FUNCTION})
     if(${FFTW}_HAVE_${AVX_FUNCTION})
       set(${FFTW}_HAVE_AVX TRUE)
@@ -106,6 +114,9 @@ if (${FFTW}_FOUND)
 
   #in 3.3 sse function name has changed
   foreach(SIMD_FCT ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2;${${FFTW}_FUNCTION_PREFIX}_have_simd_avx;${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec;${${FFTW}_FUNCTION_PREFIX}_have_simd_neon;${${FFTW}_FUNCTION_PREFIX}_have_sse2;${${FFTW}_FUNCTION_PREFIX}_have_sse;${${FFTW}_FUNCTION_PREFIX}_have_altivec)
+    if (FFTW_LIBRARY_CHANGED)
+      unset(${FFTW}_HAVE_${SIMD_FCT} CACHE)
+    endif()
     check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
     if(${FFTW}_HAVE_${SIMD_FCT})
       set(${FFTW}_HAVE_SIMD TRUE)
