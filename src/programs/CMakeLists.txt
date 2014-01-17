@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -52,19 +52,15 @@ elseif(GMX_BUILD_MDRUN_ONLY)
         COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
 else()
-    file(GLOB GMX_GENERAL_SOURCES gmx/*.c gmx/*.cpp)
     file(GLOB GMX_MAIN_SOURCES gmx/gmx.cpp gmx/legacymodules.cpp)
-    list(REMOVE_ITEM GMX_GENERAL_SOURCES ${GMX_MAIN_SOURCES})
     if(GMX_X11)
         file(GLOB VIEW_SOURCES view/*.cpp)
     else()
         file(GLOB VIEW_SOURCES view/view.cpp)
     endif()
-    add_library(gmx_objlib OBJECT ${GMX_GENERAL_SOURCES})
     add_library(view_objlib OBJECT ${VIEW_SOURCES})
     add_executable(gmx
         ${GMX_MAIN_SOURCES}
-        $<TARGET_OBJECTS:gmx_objlib>
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
     target_link_libraries(gmx

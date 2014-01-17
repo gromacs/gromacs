@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,44 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_GMXPREPROCESS_TOPIO_H
-#define GMX_GMXPREPROCESS_TOPIO_H
-
-#include "typedefs.h"
-#include "readir.h"
-#include "grompp-impl.h"
-#include "gpp_atomtype.h"
+#ifndef GMX_GMXPREPROCESS_PDB2GMX_H
+#define GMX_GMXPREPROCESS_PDB2GMX_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+}
+#endif
 
-double check_mol(gmx_mtop_t *mtop, warninp_t wi);
-/* Check mass and charge */
-
-char **do_top(gmx_bool         bVerbose,
-              const char      *topfile,
-              const char      *topppfile,
-              t_gromppopts    *opts,
-              gmx_bool         bZero,
-              t_symtab        *symtab,
-              t_params         plist[],
-              int             *combination_rule,
-              double          *repulsion_power,
-              real            *fudgeQQ,
-              gpp_atomtype_t   atype,
-              int             *nrmols,
-              t_molinfo      **molinfo,
-              t_inputrec      *ir,
-              int             *nmolblock,
-              gmx_molblock_t **molblock,
-              gmx_bool         bGB,
-              warninp_t        wi);
-
-
-/* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
-void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);
+int gmx_pdb2gmx(int argc, char *argv[]);
 
 #ifdef __cplusplus
 }

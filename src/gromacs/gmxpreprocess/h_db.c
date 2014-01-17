@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,11 +51,13 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 
-/* There are 11 types of adding hydrogens, numbered from
- * 1 thru 11. Each of these has a specific number of
- * control atoms, that determine how the hydrogens are added.
- * Here these number are given. Because arrays start at 0 an
- * extra dummy for index 0 is added
+/* Number of control atoms for each 'add' type.
+ *
+ * There are 11 types of adding hydrogens, numbered from 1 thru
+ * 11. Each of these has a specific number of control atoms, that
+ * determine how the hydrogens are added.  Here these number are
+ * given. Because arrays start at 0, an extra dummy for index 0 is
+ * added.
  */
 const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 };
 #define maxcontrol asize(ncontrol)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _pgutil_h
-#define _pgutil_h
+#ifndef GMX_GMXPREPROCESS_PGUTIL_H
+#define GMX_GMXPREPROCESS_PGUTIL_H
 
 #include "typedefs.h"
 
@@ -45,9 +45,9 @@ extern "C"
 {
 #endif
 
-extern atom_id search_atom(const char *type, int start,
-                           t_atoms *atoms,
-                           const char *bondtype, gmx_bool bAllowMissing);
+atom_id search_atom(const char *type, int start,
+                    t_atoms *atoms,
+                    const char *bondtype, gmx_bool bAllowMissing);
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
  * bondtype is only used for printing the error/warning string,
@@ -55,10 +55,10 @@ extern atom_id search_atom(const char *type, int start,
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
 
-extern void set_at(t_atom *at, real m, real q, int type, int resind);
+void set_at(t_atom *at, real m, real q, int type, int resind);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _pgutil_h */
+#endif

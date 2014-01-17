@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,10 +33,14 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _calc_verletbuf_h
-#define _calc_verletbuf_h
+#ifndef GMX_GMXPREPROCESS_CALC_VERLETBUF_H
+#define GMX_GMXPREPROCESS_CALC_VERLETBUF_H
 
 #include "typedefs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -67,4 +71,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              int *n_nonlin_vsite,
                              real *rlist);
 
-#endif  /* _calc_verletbuf_h */
+#ifdef __cplusplus
+}
+#endif
+
+#endif

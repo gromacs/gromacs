@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,8 +53,8 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "programs/mdrun/mdrun_main.h"
-#include "programs/gmx/legacycmainfunctions.h"
 
 namespace gmx
 {
