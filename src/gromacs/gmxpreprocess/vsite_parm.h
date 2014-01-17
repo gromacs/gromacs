@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,22 +35,30 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _vsite_parm_h
-#define _vsite_parm_h
+#ifndef GMX_GMXPREPROCESS_VSITE_PARM_H
+#define GMX_GMXPREPROCESS_VSITE_PARM_H
 
 #include "typedefs.h"
-#include "grompp.h"
+#include "grompp_int.h"
 #include "gpp_atomtype.h"
 
-extern int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
-                      t_params plist[]);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
+               t_params plist[]);
 /* set parameters for virtual sites, return number of virtual sites */
 
-extern void set_vsites_ptype(gmx_bool bVerbose,  gmx_moltype_t *molt);
+void set_vsites_ptype(gmx_bool bVerbose,  gmx_moltype_t *molt);
 /* set ptype to VSite for virtual sites */
 
-extern void clean_vsite_bondeds(t_params *ps, int natoms, gmx_bool bRmVSiteBds);
+void clean_vsite_bondeds(t_params *ps, int natoms, gmx_bool bRmVSiteBds);
 /* remove all bonded interaction (bonds, angles and diherals) that
    have become obsolete due to virtual site constructions */
 
-#endif  /* _vsite_parm_h */
+#ifdef __cplusplus
+}
+#endif
+
+#endif

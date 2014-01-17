@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,18 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GMXPREPROCESS_GROMPP_H
+#define GMX_GMXPREPROCESS_GROMPP_H
 
-#ifndef _xlate_h
-#define _xlate_h
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
-#include "index.h"
+int gmx_grompp(int argc, char *argv[]);
 
-/* If bResname is true renames atoms based on residue names,
- * otherwise renames atoms based on rtp entry names.
- */
-extern void rename_atoms(const char *xlfile, const char *ffdir,
-                         t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
-                         gmx_bool bResname, gmx_residuetype_t rt, gmx_bool bReorderNum,
-                         gmx_bool bVerbose);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

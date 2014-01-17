@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,17 +34,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _tomorse_h
-#define _tomorse_h
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#ifndef GMX_GMX_NM2TYPE_H
+#define GMX_GMX_NM2TYPE_H
 
 #include <stdio.h>
-#include "typedefs.h"
 
-extern void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#endif  /* _grompp_h */
+typedef struct {
+    char    *elem, *type;
+    double   q, m;
+    int      nbonds;
+    char   **bond;
+    double  *blen;
+} t_nm2type;
+
+t_nm2type *rd_nm2type(const char *ffdir, int *nnm);
+/* Read the name 2 type database. nnm is the number of entries
+ * ff is the force field.
+ */
+
+void dump_nm2type(FILE *fp, int nnm, t_nm2type nm2t[]);
+/* Dump the database for debugging. Can be reread by the program */
+
+int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
+            gpp_atomtype_t atype, int *nbonds, t_params *bond);
+/* Try to determine the atomtype (force field dependent) for the atoms
+ * with help of the bond list
+ */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

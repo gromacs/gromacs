@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,30 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
-#define GMX_GMXPREPROCESS_GEN_VSITE_H
-
-#include "typedefs.h"
-#include "grompp_int.h"
-#include "gpp_atomtype.h"
-#include "hackblock.h"
+#ifndef GMX_GMXPREPROCESS_PDB2GMX_H
+#define GMX_GMXPREPROCESS_PDB2GMX_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
+#endif
+#if 0
+}
 #endif
 
-/* stuff for pdb2gmx */
-
-void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
-               t_atoms *at, t_symtab *symtab, rvec *x[],
-               t_params plist[], int *dummy_type[], int *cgnr[],
-               real mHmult, gmx_bool bVSiteAromatics,
-               const char *ffdir);
-
-void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
-               gmx_bool bDeuterate);
+int gmx_pdb2gmx(int argc, char *argv[]);
 
 #ifdef __cplusplus
 }

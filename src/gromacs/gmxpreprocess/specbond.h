@@ -35,29 +35,19 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
-#define GMX_GMXPREPROCESS_GEN_VSITE_H
+#ifndef GMX_GMXPREPROCESS_SPECBOND_H
+#define GMX_GMXPREPROCESS_SPECBOND_H
 
-#include "typedefs.h"
-#include "grompp_int.h"
-#include "gpp_atomtype.h"
-#include "hackblock.h"
+#include "pdb2top.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-/* stuff for pdb2gmx */
+int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
+                 t_ssbond **specbonds, gmx_bool bVerbose);
 
-void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
-               t_atoms *at, t_symtab *symtab, rvec *x[],
-               t_params plist[], int *dummy_type[], int *cgnr[],
-               real mHmult, gmx_bool bVSiteAromatics,
-               const char *ffdir);
-
-void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
-               gmx_bool bDeuterate);
+gmx_bool yesno(void);
 
 #ifdef __cplusplus
 }

@@ -35,29 +35,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
-#define GMX_GMXPREPROCESS_GEN_VSITE_H
+#ifndef GMX_GMXPREPROCESS_CONVPARM_H
+#define GMX_GMXPREPROCESS_CONVPARM_H
 
 #include "typedefs.h"
-#include "grompp_int.h"
-#include "gpp_atomtype.h"
-#include "hackblock.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-/* stuff for pdb2gmx */
-
-void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
-               t_atoms *at, t_symtab *symtab, rvec *x[],
-               t_params plist[], int *dummy_type[], int *cgnr[],
-               real mHmult, gmx_bool bVSiteAromatics,
-               const char *ffdir);
-
-void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
-               gmx_bool bDeuterate);
+void convert_params(int atnr, t_params nbtypes[],
+                    t_molinfo *mi, int comb, double reppow, real fudgeQQ,
+                    gmx_mtop_t *mtop);
 
 #ifdef __cplusplus
 }
