@@ -35,8 +35,11 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _tpbcmp_h
-#define _tpbcmp_h
+#ifndef GMX_FILEIO_COMPARE_H
+#define GMX_FILEIO_COMPARE_H
+
+/* Routines for comparing data structures from non-trajectory binary
+   file formats (e.g. as used by gmx check). */
 
 void
 comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);

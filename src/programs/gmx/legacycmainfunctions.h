@@ -44,12 +44,9 @@
 extern "C"
 {
 
-int gmx_gmxcheck(int argc, char *argv[]);
-int gmx_gmxdump(int argc, char *argv[]);
 int gmx_grompp(int argc, char *argv[]);
 int gmx_pdb2gmx(int argc, char *argv[]);
 int gmx_protonate(int argc, char *argv[]);
-int gmx_tpbconv(int argc, char *argv[]);
 int gmx_x2top(int argc, char *argv[]);
 
 }

@@ -44,22 +44,22 @@
 #include <assert.h>
 #include "main.h"
 #include "macros.h"
-#include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
-#include "gromacs/fileio/xtcio.h"
-#include "gromacs/fileio/enxio.h"
 #include "smalloc.h"
 #include "names.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
 #include "txtdump.h"
 #include "gmxcpp.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "xtcio.h"
+#include "enxio.h"
+#include "gmxfio.h"
+#include "tpxio.h"
+#include "trnio.h"
+#include "futil.h"
 
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
@@ -522,7 +522,7 @@ static void list_mtx(const char *fn)
     sfree(full);
 }
 
-int gmx_gmxdump(int argc, char *argv[])
+int gmx_dump(int argc, char *argv[])
 {
     const char *desc[] = {
         "[THISMODULE] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",

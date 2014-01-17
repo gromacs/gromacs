@@ -47,16 +47,16 @@
 #include "macros.h"
 #include "names.h"
 #include "typedefs.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/enxio.h"
-#include "readir.h"
+#include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
 #include "vec.h"
 #include "mtop_util.h"
 #include "random.h"
 #include "checkpoint.h"
+#include "tpxio.h"
+#include "trnio.h"
+#include "enxio.h"
+#include "futil.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
 
