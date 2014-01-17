@@ -62,7 +62,7 @@
 #include "warninp.h"
 #include "vsite_parm.h"
 
-#include "grompp.h"
+#include "grompp_int.h"
 #include "toputil.h"
 #include "toppush.h"
 #include "topdirs.h"
@@ -915,7 +915,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                       bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
                             break;
                         case d_cmap:
-                            push_cmap(d, plist, mi0->plist, &(mi0->atoms), atype, pline,wi);
+                            push_cmap(d, plist, mi0->plist, &(mi0->atoms), atype, pline, wi);
                             break;
 
                         case d_vsitesn:
