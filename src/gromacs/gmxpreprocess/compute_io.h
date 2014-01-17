@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,13 +35,21 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _compute_io_h
-#define _compute_io_h
+#ifndef GMX_GMXPREPROCESS_COMPUTE_IO_H
+#define GMX_GMXPREPROCESS_COMPUTE_IO_H
 
 #include "typedefs.h"
 
-extern double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
-                         int nrener, int nrepl);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
+                  int nrener, int nrepl);
 /* Return total output to be written from this simulation. */
 
-#endif  /* _compute_io_h */
+#ifdef __cplusplus
+}
+#endif
+
+#endif

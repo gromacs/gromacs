@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,6 @@
 
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "grompp.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,13 +77,6 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
 
 void gb_pd_send(t_commrec *cr, real *send_data, int nr);
 
-
-/* Functions for setting up the F_GB12,13,14 lists in grompp */
-int
-init_gb_plist(t_params *p_list);
-
-int
-convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist, t_ilist *il);
 
 
 

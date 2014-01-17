@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _fflibutil_h
-#define _fflibutil_h
+#ifndef GMX_GMXPREPROCESS_FFLIBUTIL_H
+#define GMX_GMXPREPROCESS_FFLIBUTIL_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -47,40 +47,40 @@
 extern "C" {
 #endif
 
-extern const char *fflib_forcefield_dir_ext();
+const char *fflib_forcefield_dir_ext();
 /* Returns the name of the force field directory extension */
 
-extern const char *fflib_forcefield_itp();
+const char *fflib_forcefield_itp();
 /* Returns the name of the main forcefield itp file */
 
-extern const char *fflib_forcefield_doc();
+const char *fflib_forcefield_doc();
 /* Returns the name of the forcefield documentation file */
 
-extern void fflib_filename_base(const char *filename, char *filebase, int maxlen);
+void fflib_filename_base(const char *filename, char *filebase, int maxlen);
 /* Return the base file name of filename in base,
  * i.e. remove path and extension, if present.
  * base should be at least of size maxlen.
  */
 
-extern int fflib_search_file_end(const char *ffdir,
-                                 const char *file_end,
-                                 gmx_bool    bFatalError,
-                                 char     ***filenames);
+int fflib_search_file_end(const char *ffdir,
+                          const char *file_end,
+                          gmx_bool    bFatalError,
+                          char     ***filenames);
 /* Search for files ending on file_end in the force field directory fflib.
  * fflib should be in the GROMACS lib.path.
  * Return the number of files and the file names in filenames.
  */
 
-extern int fflib_search_file_in_dirend(const char *filename, const char *dirend,
-                                       char ***dirnames);
+int fflib_search_file_in_dirend(const char *filename, const char *dirend,
+                                char ***dirnames);
 /* Search for files with name filename in subdirectories with names
  * ending on dirend.
  * Return the number of files and the directory names in dirnames.
  */
-extern gmx_bool fflib_fexist(const char *file);
+gmx_bool fflib_fexist(const char *file);
 /* Check if a file exists in the force field library */
 
-extern FILE *fflib_open(const char *file);
+FILE *fflib_open(const char *file);
 /* Open force field library file "file" for reading.
  * "file" should contain the whole path to the force field library,
  * either absolute or relative to the current dir.
@@ -90,4 +90,4 @@ extern FILE *fflib_open(const char *file);
 }
 #endif
 
-#endif  /* _fflibutil_h */
+#endif

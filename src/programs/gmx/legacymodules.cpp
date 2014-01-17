@@ -51,8 +51,10 @@
 #include "gromacs/fileio/check.h"
 #include "gromacs/fileio/dump.h"
 #include "gromacs/fileio/tprconvert.h"
-
-#include "legacycmainfunctions.h"
+#include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/gmxpreprocess/pdb2gmx.h"
+#include "gromacs/gmxpreprocess/protonate.h"
+#include "gromacs/gmxpreprocess/x2top.h"
 
 namespace
 {
