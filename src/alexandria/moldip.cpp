@@ -106,14 +106,14 @@ static void dec_index_count(t_index_count *ic, char *name)
             }
             else
             {
-                gmx_fatal(FARGS, "Trying to decrease number of atoms %s below zero",
-                          name);
+                fprintf(stderr, "Trying to decrease number of atoms %s below zero\n",
+                        name);
             }
         }
     }
     if (i == ic->n)
     {
-        gmx_fatal(FARGS, "No such atom %s", name);
+        fprintf(stderr, "No such atom %s ic->n = %d\n", name, ic->n);
     }
 }
 

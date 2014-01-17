@@ -976,7 +976,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t        ap,
 
     if (bPol)
     {
-        printf("I forgot to implement generating polarizabilities.\n");
+        printf("I forgot to implement generating polarizabilities for %s.\n", GetMolname().c_str());
     }
     ftb    = bts[ebtsBONDS];
     nexcl_ = nexcl;
@@ -1119,77 +1119,75 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
 
     if (immOK == imm)
     {
-        switch (iModel) 
+        if (gmx_resp_add_atom_info(gr_, &topology_->atoms, pd))
         {
-        case eqgRESP:
-            if (gmx_resp_add_atom_info(gr_, &topology_->atoms, pd))
+            gmx_resp_add_atom_symmetry(gr_, symmetric_charges_);
+            gmx_resp_update_atomtypes(gr_, &(topology_->atoms));
+            gmx_resp_summary(debug, gr_, symmetric_charges_);
+            gmx_resp_add_atom_coords(gr_, x_);
+            
+            /* Even if we get the right LoT it may still not have
+             * the ESP
+             */
+            CalculationIterator ci = GetLotPropType(lot,
+                                                    MPO_POTENTIAL,
+                                                    NULL);
+            if (ci != EndCalculation())
             {
-                gmx_resp_add_atom_symmetry(gr_, symmetric_charges_);
-                gmx_resp_update_atomtypes(gr_, &(topology_->atoms));
-                gmx_resp_summary(debug, gr_, symmetric_charges_);
-                gmx_resp_add_atom_coords(gr_, x_);
-
-                /* Even if we get the right LoT it may still not have
-                 * the ESP
-                 */
-                CalculationIterator ci = GetLotPropType(lot,
-                                                        MPO_POTENTIAL,
-                                                        NULL);
-                if (ci != EndCalculation())
+                //printf("There are %d potential points\n",ci->NPotential());
+                for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); epi++)
                 {
-                    //printf("There are %d potential points\n",ci->NPotential());
-                    for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); epi++)
+                    /* Maybe not convert to gmx ? */
+                    int xu = string2unit(epi->GetXYZunit().c_str());
+                    int vu = string2unit(epi->GetVunit().c_str());
+                    if (-1 == xu)
                     {
-                        /* Maybe not convert to gmx ? */
-                        int xu = string2unit(epi->GetXYZunit().c_str());
-                        int vu = string2unit(epi->GetVunit().c_str());
-                        if (-1 == xu)
-                        {
-                            xu = eg2cAngstrom;
-                        }
-                        if (-1 == vu)
-                        {
-                            vu = eg2cHartree_e;
-                        }
-                        gmx_resp_add_point(gr_,
-                                           convert2gmx(epi->GetX(), xu),
-                                           convert2gmx(epi->GetY(), xu),
-                                           convert2gmx(epi->GetZ(), xu),
-                                           convert2gmx(epi->GetV(), vu));
+                        xu = eg2cAngstrom;
                     }
+                    if (-1 == vu)
+                    {
+                        vu = eg2cHartree_e;
+                    }
+                    gmx_resp_add_point(gr_,
+                                       convert2gmx(epi->GetX(), xu),
+                                       convert2gmx(epi->GetY(), xu),
+                                       convert2gmx(epi->GetZ(), xu),
+                                       convert2gmx(epi->GetV(), vu));
                 }
             }
-            else 
+        }
+        if ( 0 ) {
+            switch (iModel) 
             {
-                imm = immChargeGeneration;
-            }
-            break;
-        case eqgNone:
-            /* Check which algorithm to use for charge generation */
-            strcpy(qgen_msg, "");
-            printf("Using zero charges!\n");
-            for (i = 0; (i < topology_->atoms.nr); i++)
-            {
-                topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
-            }
-            eQGEN = eQGEN_OK;
-            break;
-        default:
-            qgen_ = gentop_qgen_init(pd, &topology_->atoms, ap, x_, iModel, hfac, GetCharge(), epsr);
-            
-            if (NULL == qgen_)
-            {
-                gmx_fatal(FARGS, "Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n", GetMolname().c_str());
-            }
-            eQGEN = generate_charges(NULL,
-                                         qgen_, gr_, GetMolname().c_str(), pd, &topology_->atoms, 0.0001,
+            case eqgRESP:
+            case eqgNone:
+                /* Check which algorithm to use for charge generation */
+                strcpy(qgen_msg, "");
+                printf("Using zero charges!\n");
+                for (i = 0; (i < topology_->atoms.nr); i++)
+                {
+                    topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
+                }
+                eQGEN = eQGEN_OK;
+                break;
+            default:
+                qgen_ = gentop_qgen_init(pd, &topology_->atoms, ap, x_, iModel, hfac, GetCharge(), epsr);
+                
+                if (NULL == qgen_)
+                {
+                    gmx_fatal(FARGS, "Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n", GetMolname().c_str());
+                }
+                eQGEN = generate_charges(NULL,
+                                         qgen_, gr_, GetMolname().c_str(), 
+                                     pd, &topology_->atoms, 0.0001,
                                          10000, 1, ap);
-            qgen_message(qgen_, sizeof(qgen_msg), qgen_msg, gr_);
-            if (eQGEN_OK != eQGEN)
-            {
-                imm = immChargeGeneration;
+                qgen_message(qgen_, sizeof(qgen_msg), qgen_msg, gr_);
+                if (eQGEN_OK != eQGEN)
+                {
+                    imm = immChargeGeneration;
+                }
+                break;
             }
-            break;
         }
     }
     return imm;
