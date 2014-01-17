@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,19 +48,11 @@
 
 #include "../view/view.h"
 #include "../mdrun/mdrun_main.h"
+#include "gromacs/fileio/check.h"
+#include "gromacs/fileio/dump.h"
+#include "gromacs/fileio/tprconvert.h"
 
-extern "C"
-{
-
-int gmx_gmxcheck(int argc, char *argv[]);
-int gmx_gmxdump(int argc, char *argv[]);
-int gmx_grompp(int argc, char *argv[]);
-int gmx_pdb2gmx(int argc, char *argv[]);
-int gmx_protonate(int argc, char *argv[]);
-int gmx_tpbconv(int argc, char *argv[]);
-int gmx_x2top(int argc, char *argv[]);
-
-}
+#include "legacycmainfunctions.h"
 
 namespace
 {
@@ -146,9 +138,9 @@ void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
 void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 {
     // Modules from this directory (were in src/kernel/).
-    registerModule(manager, &gmx_gmxcheck, "check",
+    registerModule(manager, &gmx_check, "check",
                    "Check and compare files");
-    registerModule(manager, &gmx_gmxdump, "dump",
+    registerModule(manager, &gmx_dump, "dump",
                    "Make binary files human readable");
     registerModule(manager, &gmx_grompp, "grompp",
                    "Make a run input file");
