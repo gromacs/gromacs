@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,25 +35,33 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _ter_db_h
-#define _ter_db_h
+#ifndef GMX_GMXPREPROCESS_TER_DB_H
+#define GMX_GMXPREPROCESS_TER_DB_H
 
 #include "sysstuff.h"
 #include "hackblock.h"
-#include "grompp.h"
+#include "grompp-impl.h"
 
-extern int read_ter_db(const char *ffdir, char ter,
-                       t_hackblock **tbptr, gpp_atomtype_t atype);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int read_ter_db(const char *ffdir, char ter,
+                t_hackblock **tbptr, gpp_atomtype_t atype);
 /* Read database for N&C terminal hacking */
 
-extern t_hackblock **filter_ter(int nrtp, t_restp rtp[],
-                                int nb, t_hackblock tb[],
-                                const char *resname,
-                                const char *rtpname,
-                                int *nret);
+t_hackblock **filter_ter(int nrtp, t_restp rtp[],
+                         int nb, t_hackblock tb[],
+                         const char *resname,
+                         const char *rtpname,
+                         int *nret);
 /* Return a list of pointers to blocks that match residue name */
 
-extern t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title);
+t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title);
 /* Interactively select one.. */
 
-#endif  /* _ter_db_h */
+#ifdef __cplusplus
+}
+#endif
+
+#endif

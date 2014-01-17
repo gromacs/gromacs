@@ -46,9 +46,8 @@ gmx_build_unit_test(
     compressed_x_output.cpp
     # files with code for test fixtures
     moduletest.cpp
-    # pseudo libraries for code for grompp and mdrun
+    # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
-    $<TARGET_OBJECTS:gmx_objlib>
     )
 gmx_register_integration_test(
     ${testname}

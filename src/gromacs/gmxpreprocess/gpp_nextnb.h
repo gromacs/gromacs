@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,10 +35,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _gpp_nextnb_h
-#define _gpp_nextnb_h
+#ifndef GMX_GMXPREPROCESS_GPP_NEXTNB_H
+#define GMX_GMXPREPROCESS_GPP_NEXTNB_H
 
-#include "grompp.h"
+#include "grompp-impl.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,4 +88,4 @@ void generate_excl (int nrexcl, int nratoms,
 }
 #endif
 
-#endif  /* _gpp_nextnb_h */
+#endif

@@ -51,8 +51,10 @@
 #include "gromacs/tools/check.h"
 #include "gromacs/tools/dump.h"
 #include "gromacs/tools/convert_tpr.h"
-
-#include "legacycmainfunctions.h"
+#include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/gmxpreprocess/pdb2gmx.h"
+#include "gromacs/gmxpreprocess/protonate.h"
+#include "gromacs/gmxpreprocess/x2top.h"
 
 namespace
 {

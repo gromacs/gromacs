@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _gmxcpp_h
-#define _gmxcpp_h
+#ifndef GMX_GMXPREPROCESS_GMXCPP_H
+#define GMX_GMXPREPROCESS_GMXCPP_H
 typedef struct gmx_cpp *gmx_cpp_t;
 
 /* The possible return codes for these functions */

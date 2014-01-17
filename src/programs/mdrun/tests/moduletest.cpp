@@ -53,8 +53,8 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "programs/mdrun/mdrun_main.h"
-#include "programs/gmx/legacycmainfunctions.h"
 
 namespace gmx
 {

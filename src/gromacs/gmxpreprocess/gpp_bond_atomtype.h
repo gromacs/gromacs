@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _gpp_bondatomtype_h
-#define _gpp_bondatomtype_h
+#ifndef GMX_GMXPREPROCESS_GPP_BONDATOMTYPE_H
+#define GMX_GMXPREPROCESS_GPP_BONDATOMTYPE_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -45,23 +45,31 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct gpp_bondatomtype *t_bond_atomtype;
 
-extern int get_bond_atomtype_type(char *str, t_bond_atomtype at);
+int get_bond_atomtype_type(char *str, t_bond_atomtype at);
 /* Return atomtype corresponding to case-insensitive str
    or NOTSET if not found */
 
-extern char *get_bond_atomtype_name(int nt, t_bond_atomtype at);
+char *get_bond_atomtype_name(int nt, t_bond_atomtype at);
 /* Return name corresponding to atomtype nt, or NULL if not found */
 
-extern t_bond_atomtype init_bond_atomtype(void);
+t_bond_atomtype init_bond_atomtype(void);
 /* Return a new atomtype structure */
 
-extern void done_bond_atomtype(t_bond_atomtype *at);
+void done_bond_atomtype(t_bond_atomtype *at);
 /* Free the memory in the structure */
 
-extern void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
-                              char *name);
+void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
+                       char *name);
 /* Add a complete new atom type to an existing atomtype structure */
 
-#endif  /* _gpp_bond_atomtype_h */
+#ifdef __cplusplus
+}
+#endif
+
+#endif

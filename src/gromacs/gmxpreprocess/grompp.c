@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "grompp.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -55,7 +57,7 @@
 #include "readir.h"
 #include "symtab.h"
 #include "names.h"
-#include "grompp.h"
+#include "grompp-impl.h"
 #include "random.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"

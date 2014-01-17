@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,11 +35,11 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _pdb2top_h
-#define _pdb2top_h
+#ifndef GMX_GMXPREPROCESS_PDB2TOP_H
+#define GMX_GMXPREPROCESS_PDB2TOP_H
 
 #include "typedefs.h"
-#include "grompp.h"
+#include "grompp-impl.h"
 #include "gpp_atomtype.h"
 #include "toputil.h"
 #include "hackblock.h"
@@ -131,4 +131,4 @@ void print_sums(t_atoms *atoms, gmx_bool bSystem);
 }
 #endif
 
-#endif  /* _pdb2top_h */
+#endif

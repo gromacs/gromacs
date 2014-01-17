@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,14 +35,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _topdirs_h
-#define _topdirs_h
+#ifndef GMX_GMXPREPROCESS_TOPDIRS_H
+#define GMX_GMXPREPROCESS_TOPDIRS_H
 
-#include "grompp.h"
+#include "grompp-impl.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 typedef struct tagDirStack {
@@ -50,24 +49,24 @@ typedef struct tagDirStack {
     struct tagDirStack *prev;
 } DirStack;
 
-extern int ifunc_index(directive d, int type);
+int ifunc_index(directive d, int type);
 
-extern const char *dir2str (directive d);
+const char *dir2str (directive d);
 
-extern directive str2dir (char *dstr);
+directive str2dir (char *dstr);
 
-extern void DS_Init (DirStack **DS);
+void DS_Init (DirStack **DS);
 
-extern void DS_Done (DirStack **DS);
+void DS_Done (DirStack **DS);
 
-extern void DS_Push (DirStack **DS, directive d);
+void DS_Push (DirStack **DS, directive d);
 
-extern int  DS_Search (DirStack *DS, directive d);
+int  DS_Search (DirStack *DS, directive d);
 
-extern int  DS_Check_Order (DirStack *DS, directive d);
+int  DS_Check_Order (DirStack *DS, directive d);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _topdirs_h */
+#endif
