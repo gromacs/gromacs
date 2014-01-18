@@ -57,9 +57,9 @@
 
 #include "gromacs/legacyheaders/thread_mpi/threads.h"
 
-static gmx_bool bDebug         = FALSE;
-static char    *fatal_tmp_file = NULL;
-static FILE    *log_file       = NULL;
+static gmx_bool            bDebug         = FALSE;
+static char               *fatal_tmp_file = NULL;
+static FILE               *log_file       = NULL;
 
 static tMPI_Thread_mutex_t debug_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -299,10 +299,10 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
                           const char *fmt, ...)
 {
     gmx_bool    bFinalize;
-    va_list ap;
-    char    msg[STRLEN];
+    va_list     ap;
+    char        msg[STRLEN];
 #ifdef GMX_MPI
-    int     result;
+    int         result;
 #endif
 
     bFinalize = TRUE;
@@ -388,8 +388,8 @@ void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline)
  * 0 to 3 of these filed are redirected to /dev/null
  *
  */
-FILE *debug           = NULL;
-gmx_bool gmx_debug_at = FALSE;
+FILE    *debug           = NULL;
+gmx_bool gmx_debug_at    = FALSE;
 
 void init_debug(const int dbglevel, const char *dbgfile)
 {
@@ -454,7 +454,7 @@ void doexceptions(void)
 
 static const char *gmxuser = "Please report this to the mailing list (gmx-users@gromacs.org)";
 
-static void (*gmx_error_handler)(const char *msg) = quit_gmx;
+static void        (*gmx_error_handler)(const char *msg) = quit_gmx;
 
 void set_gmx_error_handler(void (*func)(const char *msg))
 {
@@ -483,8 +483,8 @@ char *gmx_strerror(const char *key)
         { "range",  "Range checking error" }
     };
 #define NMSG asize(msg)
-    char buf[1024];
-    size_t i;
+    char        buf[1024];
+    size_t      i;
 
     if (key == NULL)
     {
@@ -514,9 +514,9 @@ char *gmx_strerror(const char *key)
 
 void _gmx_error(const char *key, const char *msg, const char *file, int line)
 {
-    char buf[10240], errerrbuf[1024];
+    char        buf[10240], errerrbuf[1024];
     const char *llines = "-------------------------------------------------------";
-    char *strerr;
+    char       *strerr;
 
     /* protect the audience from suggestive discussions */
 
@@ -564,7 +564,7 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
 void gmx_warning(const char *fmt, ...)
 {
     va_list ap;
-    char msg[STRLEN];
+    char    msg[STRLEN];
 
     va_start(ap, fmt);
     vsprintf(msg, fmt, ap);

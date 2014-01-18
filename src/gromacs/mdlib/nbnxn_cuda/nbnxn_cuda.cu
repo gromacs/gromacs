@@ -42,7 +42,7 @@
 
 #include <cuda.h>
 
-#include "types/simple.h" 
+#include "types/simple.h"
 #include "types/nbnxn_pairlist.h"
 #include "types/nb_verlet.h"
 #include "types/ishift.h"
@@ -153,7 +153,7 @@ static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
  *  order of corresponding enumerated types defined in nbnxn_cuda_types.h.
  */
 static const nbnxn_cu_kfunc_ptr_t
-nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
+    nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
     { { k_nbnxn_cutoff,                     k_nbnxn_cutoff_prune },
       { k_nbnxn_cutoff_ener,                k_nbnxn_cutoff_ener_prune } },
@@ -202,7 +202,7 @@ static inline int calc_shmem_required()
     return shmem;
 }
 
-/*! As we execute nonbonded workload in separate streams, before launching 
+/*! As we execute nonbonded workload in separate streams, before launching
    the kernel we need to make sure that he following operations have completed:
    - atomdata allocation and related H2D transfers (every nstlist step);
    - pair list H2D transfer (every nstlist step);
@@ -217,28 +217,28 @@ static inline int calc_shmem_required()
    However, for the sake of having a future-proof implementation, we use the
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
-*/
-void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
+ */
+void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
                               const nbnxn_atomdata_t *nbatom,
-                              int flags,
-                              int iloc)
+                              int                     flags,
+                              int                     iloc)
 {
-    cudaError_t stat;
-    int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
+    cudaError_t          stat;
+    int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     /* CUDA kernel launch-related stuff */
-    int  shmem, nblock;
-    dim3 dim_block, dim_grid;
+    int                  shmem, nblock;
+    dim3                 dim_block, dim_grid;
     nbnxn_cu_kfunc_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
 
-    cu_atomdata_t   *adat   = cu_nb->atdat;
-    cu_nbparam_t    *nbp    = cu_nb->nbparam;
-    cu_plist_t      *plist  = cu_nb->plist[iloc];
-    cu_timers_t     *t      = cu_nb->timers;
-    cudaStream_t    stream  = cu_nb->stream[iloc];
+    cu_atomdata_t       *adat    = cu_nb->atdat;
+    cu_nbparam_t        *nbp     = cu_nb->nbparam;
+    cu_plist_t          *plist   = cu_nb->plist[iloc];
+    cu_timers_t         *t       = cu_nb->timers;
+    cudaStream_t         stream  = cu_nb->stream[iloc];
 
-    bool bCalcEner   = flags & GMX_FORCE_VIRIAL;
-    bool bCalcFshift = flags & GMX_FORCE_VIRIAL;
-    bool bDoTime     = cu_nb->bDoTime;
+    bool                 bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                 bDoTime     = cu_nb->bDoTime;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
@@ -286,7 +286,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
 
     /* HtoD x, q */
     cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
-                      adat_len * sizeof(*adat->xq), stream); 
+                      adat_len * sizeof(*adat->xq), stream);
 
     if (bDoTime)
     {
@@ -320,7 +320,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
                 NCL_PER_SUPERCL, plist->na_c);
     }
 
-    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *plist, bCalcFshift);
+    nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
     CU_LAUNCH_ERR("k_calc_nb");
 
     if (bDoTime)
@@ -330,14 +330,14 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
                                const nbnxn_atomdata_t *nbatom,
-                               int flags,
-                               int aloc)
+                               int                     flags,
+                               int                     aloc)
 {
     cudaError_t stat;
-    int adat_begin, adat_len, adat_end;  /* local/nonlocal offset and length used for xq and f */
-    int iloc = -1;
+    int         adat_begin, adat_len, adat_end; /* local/nonlocal offset and length used for xq and f */
+    int         iloc = -1;
 
     /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
@@ -356,13 +356,13 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
         gmx_incons(stmp);
     }
 
-    cu_atomdata_t   *adat   = cu_nb->atdat;
-    cu_timers_t     *t      = cu_nb->timers;
-    bool            bDoTime = cu_nb->bDoTime;
-    cudaStream_t    stream  = cu_nb->stream[iloc];
+    cu_atomdata_t   *adat    = cu_nb->atdat;
+    cu_timers_t     *t       = cu_nb->timers;
+    bool             bDoTime = cu_nb->bDoTime;
+    cudaStream_t     stream  = cu_nb->stream[iloc];
 
-    bool bCalcEner   = flags & GMX_FORCE_VIRIAL;
-    bool bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* don't launch copy-back if there was no work to do */
     if (cu_nb->plist[iloc]->nsci == 0)
@@ -419,7 +419,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
         *(unsigned int*)&nbatom->out[0].f[adat_end*3 - 1] = poll_wait_pattern;
     }
 
-    /* With DD the local D2H transfer can only start after the non-local 
+    /* With DD the local D2H transfer can only start after the non-local
        has been launched. */
     if (iloc == eintLocal && cu_nb->bUseTwoStreams)
     {
@@ -428,7 +428,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* DtoH f */
-    cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f + adat_begin, 
+    cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f + adat_begin,
                       (adat_len)*sizeof(*adat->f), stream);
 
     /* After the non-local D2H is launched the nonlocal_done event can be
@@ -472,8 +472,8 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
  * polling wait for the GPU.
  */
 static inline bool atomic_cas(volatile unsigned int *ptr,
-                              unsigned int oldval,
-                              unsigned int newval)
+                              unsigned int           oldval,
+                              unsigned int           newval)
 {
     assert(ptr);
 
@@ -491,8 +491,8 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
                          real *e_lj, real *e_el, rvec *fshift)
 {
     /* NOTE:  only implemented for single-precision at this time */
-    cudaError_t stat;
-    int i, adat_end, iloc = -1;
+    cudaError_t            stat;
+    int                    i, adat_end, iloc = -1;
     volatile unsigned int *poll_word;
 
     /* determine interaction locality from atom locality */
@@ -512,16 +512,16 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         gmx_incons(stmp);
     }
 
-    cu_plist_t      *plist   = cu_nb->plist[iloc];
-    cu_timers_t     *timers  = cu_nb->timers;
-    wallclock_gpu_t *timings = cu_nb->timings;
-    nb_staging      nbst     = cu_nb->nbst;
+    cu_plist_t      *plist    = cu_nb->plist[iloc];
+    cu_timers_t     *timers   = cu_nb->timers;
+    wallclock_gpu_t *timings  = cu_nb->timings;
+    nb_staging       nbst     = cu_nb->nbst;
 
-    bool    bCalcEner   = flags & GMX_FORCE_VIRIAL;
-    bool    bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
-    bCalcEner = (bCalcEner || always_ener) && !never_ener; 
+    bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
     /* don't launch wait/update timers & counters if there was no work to do
 
@@ -548,7 +548,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         stat = cudaStreamSynchronize(cu_nb->stream[iloc]);
         CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
     }
-    else 
+    else
     {
         /* Busy-wait until we get the signal pattern set in last byte
          * of the l/nl float vector. This pattern corresponds to a floating
@@ -557,7 +557,9 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
          * The polling uses atomic compare-exchange.
          */
         poll_word = (volatile unsigned int*)&nbatom->out[0].f[adat_end*3 - 1];
-        while (atomic_cas(poll_word, poll_wait_pattern, poll_wait_pattern)) {}
+        while (atomic_cas(poll_word, poll_wait_pattern, poll_wait_pattern))
+        {
+        }
     }
 
     /* timing data accumulation */
@@ -576,9 +578,9 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 
         /* X/q H2D and F D2H timings */
         timings->nb_h2d_t += cu_event_elapsed(timers->start_nb_h2d[iloc],
-                                                 timers->stop_nb_h2d[iloc]);
+                                              timers->stop_nb_h2d[iloc]);
         timings->nb_d2h_t += cu_event_elapsed(timers->start_nb_d2h[iloc],
-                                                 timers->stop_nb_d2h[iloc]);
+                                              timers->stop_nb_d2h[iloc]);
 
         /* only count atdat and pair-list H2D at pair-search step */
         if (plist->bDoPrune)
@@ -588,11 +590,11 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
             {
                 timings->pl_h2d_c++;
                 timings->pl_h2d_t += cu_event_elapsed(timers->start_atdat,
-                                                         timers->stop_atdat);
+                                                      timers->stop_atdat);
             }
 
             timings->pl_h2d_t += cu_event_elapsed(timers->start_pl_h2d[iloc],
-                                                     timers->stop_pl_h2d[iloc]);
+                                                  timers->stop_pl_h2d[iloc]);
         }
     }
 
@@ -621,13 +623,13 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 }
 
 /*! Return the reference to the nbfp texture. */
-const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref()
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
 {
     return nbfp_texref;
 }
 
 /*! Return the reference to the coulomb_tab. */
-const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref()
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref()
 {
     return coulomb_tab_texref;
 }
