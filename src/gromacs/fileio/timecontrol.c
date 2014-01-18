@@ -54,7 +54,7 @@ typedef struct {
     gmx_bool bSet;
 } t_timecontrol;
 
-static t_timecontrol timecontrol[TNR] = {
+static t_timecontrol       timecontrol[TNR] = {
     { 0, FALSE },
     { 0, FALSE },
     { 0, FALSE }

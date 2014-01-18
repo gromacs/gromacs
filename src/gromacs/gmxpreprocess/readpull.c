@@ -72,7 +72,7 @@ static void string2dvec(const char buf[], dvec nums)
 }
 
 static void init_pull_group(t_pull_group *pg,
-                            const char *wbuf)
+                            const char   *wbuf)
 {
     double d;
     int    n, m;
@@ -98,7 +98,7 @@ static void init_pull_coord(t_pull_coord *pcrd, int eGeom,
     string2dvec(origin_buf, origin);
     if (pcrd->group[0] != 0 && dnorm(origin) > 0)
     {
-        gmx_fatal(FARGS,"The pull origin can only be set with an absolute reference");
+        gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
 
     if (eGeom == epullgDIST)
@@ -235,7 +235,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     return grpbuf;
 }
 
-void make_pull_groups(t_pull *pull, 
+void make_pull_groups(t_pull *pull,
                       char **pgnames,
                       const t_blocka *grps, char **gnames)
 {
@@ -413,14 +413,14 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
     {
         pcrd  = &pull->coord[c];
 
-        pgrp0 = &pull->group[pcrd->group[0]]; 
-        pgrp1 = &pull->group[pcrd->group[1]]; 
+        pgrp0 = &pull->group[pcrd->group[0]];
+        pgrp1 = &pull->group[pcrd->group[1]];
         fprintf(stderr, "%8d  %8d  %8d\n",
                 pcrd->group[0], pgrp0->nat, pgrp0->pbcatom+1);
         fprintf(stderr, "%8d  %8d  %8d ",
                 pcrd->group[1], pgrp1->nat, pgrp1->pbcatom+1);
 
-        init = pcrd->init;
+        init       = pcrd->init;
         pcrd->init = 0;
 
         if (pcrd->rate == 0)
