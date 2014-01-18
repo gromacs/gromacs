@@ -63,8 +63,8 @@ namespace gmx
 namespace
 {
 #ifdef GMX_LIB_MPI
-    //! Maintains global counter of attempts to initialize MPI
-    int g_initializationCounter = 0;
+//! Maintains global counter of attempts to initialize MPI
+int g_initializationCounter = 0;
 #endif
 }
 

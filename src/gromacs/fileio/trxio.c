@@ -229,36 +229,36 @@ t_fileio *trx_get_fileio(t_trxstatus *status)
 
 void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
 {
-    fr->not_ok  = 0;
-    fr->bTitle  = FALSE;
-    fr->bStep   = FALSE;
-    fr->bTime   = FALSE;
-    fr->bLambda = FALSE;
+    fr->not_ok    = 0;
+    fr->bTitle    = FALSE;
+    fr->bStep     = FALSE;
+    fr->bTime     = FALSE;
+    fr->bLambda   = FALSE;
     fr->bFepState = FALSE;
-    fr->bAtoms  = FALSE;
-    fr->bPrec   = FALSE;
-    fr->bX      = FALSE;
-    fr->bV      = FALSE;
-    fr->bF      = FALSE;
-    fr->bBox    = FALSE;
+    fr->bAtoms    = FALSE;
+    fr->bPrec     = FALSE;
+    fr->bX        = FALSE;
+    fr->bV        = FALSE;
+    fr->bF        = FALSE;
+    fr->bBox      = FALSE;
     if (bFirst)
     {
-        fr->flags   = 0;
-        fr->bDouble = FALSE;
-        fr->natoms  = -1;
-        fr->t0      = 0;
-        fr->tpf     = 0;
-        fr->tppf    = 0;
-        fr->title   = NULL;
-        fr->step    = 0;
-        fr->time    = 0;
-        fr->lambda  = 0;
+        fr->flags     = 0;
+        fr->bDouble   = FALSE;
+        fr->natoms    = -1;
+        fr->t0        = 0;
+        fr->tpf       = 0;
+        fr->tppf      = 0;
+        fr->title     = NULL;
+        fr->step      = 0;
+        fr->time      = 0;
+        fr->lambda    = 0;
         fr->fep_state = 0;
-        fr->atoms   = NULL;
-        fr->prec    = 0;
-        fr->x       = NULL;
-        fr->v       = NULL;
-        fr->f       = NULL;
+        fr->atoms     = NULL;
+        fr->prec      = 0;
+        fr->x         = NULL;
+        fr->v         = NULL;
+        fr->f         = NULL;
         clear_mat(fr->box);
         fr->bPBC   = FALSE;
         fr->ePBC   = -1;

@@ -232,11 +232,11 @@ static void _do_section(t_fileio *fio, int key, gmx_bool bRead, const char *src,
  * Now the higer level routines that do io of the structures and arrays
  *
  **************************************************************/
-static void do_pullgrp_tpx_pre95(t_fileio *fio,
+static void do_pullgrp_tpx_pre95(t_fileio     *fio,
                                  t_pull_group *pgrp,
                                  t_pull_coord *pcrd,
-                                 gmx_bool bRead,
-                                 int file_version)
+                                 gmx_bool      bRead,
+                                 int           file_version)
 {
     int  i;
     rvec tmp;
@@ -639,7 +639,7 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
         for (g = 0; g < pull->ngroup; g++)
         {
             /* We read and ignore a pull coordinate for group 0 */
-            do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[max(g-1,0)],
+            do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[max(g-1, 0)],
                                  bRead, file_version);
             if (g > 0)
             {
