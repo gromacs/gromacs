@@ -85,14 +85,14 @@ struct t_fileio
                     bDebug,            /* the file ops should come with debug info */
                     bStdio,            /* the file is actually stdin or stdout */
                     bReadWrite;        /* the file is open for reading and writing */
-    char       *fn;                    /* the file name */
-    XDR        *xdr;                   /* the xdr data pointer */
-    enum xdr_op xdrmode;               /* the xdr mode */
-    int         iFTP;                  /* the file type identifier */
+    char        *fn;                   /* the file name */
+    XDR         *xdr;                  /* the xdr data pointer */
+    enum xdr_op  xdrmode;              /* the xdr mode */
+    int          iFTP;                 /* the file type identifier */
 
-    const char *comment;               /* a comment string for debugging */
+    const char  *comment;              /* a comment string for debugging */
 
-    t_fileio   *next, *prev;           /* next and previous file pointers in the
+    t_fileio    *next, *prev;          /* next and previous file pointers in the
                                           linked list */
     tMPI_Lock_t  mtx;                  /* content locking mutex. This is a fast lock
                                           for performance reasons: in some cases every

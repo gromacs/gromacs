@@ -14,7 +14,7 @@ CMakeLists.txt  filter=copyright
 *.tex           filter=copyright
 *.bm            filter=copyright
 # Exceptions: extra files to include
-admin/uncrustify.sh                     filter=copyright
+admin/*.sh                              filter=copyright
 admin/git-pre-commit                    filter=copyright
 # Exceptions: files to exclude
 *.pc.cmakein                            !filter
