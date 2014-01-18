@@ -44,7 +44,7 @@
 #include <gtest/gtest.h>
 #include <string>
 #include "gromacs/options/filenameoption.h"
-#include "programs/gmx/legacycmainfunctions.h"
+#include "gromacs/tools/check.h"
 #include "testutils/cmdlinetest.h"
 
 namespace
@@ -73,7 +73,7 @@ TEST_P(XtcOutputTest, ExitsNormally)
     ::gmx::test::CommandLine checkCaller;
     checkCaller.append("check");
     checkCaller.addOption("-f", xtcFileName);
-    ASSERT_EQ(0, gmx_gmxcheck(checkCaller.argc(), checkCaller.argv()));
+    ASSERT_EQ(0, gmx_check(checkCaller.argc(), checkCaller.argv()));
 }
 
 #ifdef __INTEL_COMPILER

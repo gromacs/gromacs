@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,28 +44,28 @@
 #include "main.h"
 #include "macros.h"
 #include <math.h>
-#include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/xtcio.h"
 #include "atomprop.h"
 #include "vec.h"
 #include "pbc.h"
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
+#include "names.h"
+#include "mtop_util.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "names.h"
-#include "mtop_util.h"
 
-#include "tpbcmp.h"
+#include "compare.h"
 
 typedef struct {
     int bStep;
@@ -707,7 +707,7 @@ void chk_enx(const char *fn)
     sfree(fr);
 }
 
-int gmx_gmxcheck(int argc, char *argv[])
+int gmx_check(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[THISMODULE] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",

@@ -65,6 +65,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(analysisdata)
     add_subdirectory(selection)
     add_subdirectory(trajectoryanalysis)
+    add_subdirectory(tools)
 endif ()
 
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
