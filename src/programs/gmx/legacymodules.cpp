@@ -50,7 +50,7 @@
 #include "../mdrun/mdrun_main.h"
 #include "gromacs/tools/check.h"
 #include "gromacs/tools/dump.h"
-#include "gromacs/tools/tpbconv.h"
+#include "gromacs/tools/convert_tpr.h"
 
 #include "legacycmainfunctions.h"
 
@@ -146,7 +146,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Make a run input file");
     registerModule(manager, &gmx_pdb2gmx, "pdb2gmx",
                    "Convert coordinate files to topology and FF-compliant coordinate files");
-    registerModule(manager, &gmx_tpbconv, "tpbconv",
+    registerModule(manager, &gmx_convert_tpr, "convert-tpr",
                    "Make a modifed run-input file");
 
     registerModule(manager, &gmx_protonate, "protonate",
@@ -346,7 +346,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Running a simulation");
         group.addModule("grompp");
         group.addModule("mdrun");
-        group.addModule("tpbconv");
+        group.addModule("convert-tpr");
     }
     {
         gmx::CommandLineModuleGroup group =

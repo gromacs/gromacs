@@ -737,7 +737,7 @@ static void cont_status(const char *slog, const char *ener,
 
     /* Set the relative box lengths for preserving the box shape.
      * Note that this call can lead to differences in the last bit
-     * with respect to using tpbconv to create a [TT].tpx[tt] file.
+     * with respect to using gmx convert-tpr to create a [TT].tpx[tt] file.
      */
     set_box_rel(ir, state);
 
@@ -1388,7 +1388,7 @@ int gmx_grompp(int argc, char *argv[])
         "[THISMODULE] can be used to restart simulations (preserving",
         "continuity) by supplying just a checkpoint file with [TT]-t[tt].",
         "However, for simply changing the number of run steps to extend",
-        "a run, using [gmx-tpbconv] is more convenient than [THISMODULE].",
+        "a run, using [gmx-convert-tpr] is more convenient than [THISMODULE].",
         "You then supply the old checkpoint file directly to [gmx-mdrun]",
         "with [TT]-cpi[tt]. If you wish to change the ensemble or things",
         "like output frequency, then supplying the checkpoint file to",

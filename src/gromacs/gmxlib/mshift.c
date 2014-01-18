@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ static void mk_igraph(t_graph *g, int ftype, t_ilist *il,
                           "above natoms (%d).\n"
                           "You are probably trying to use a trajectory which does "
                           "not match the first %d atoms of the run input file.\n"
-                          "You can make a matching run input file with tpbconv.",
+                          "You can make a matching run input file with gmx convert-tpr.",
                           at_end, at_end);
             }
             if (ftype == F_SETTLE)

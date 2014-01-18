@@ -321,7 +321,7 @@ static void zeroq(atom_id index[], gmx_mtop_t *mtop)
     }
 }
 
-int gmx_tpbconv(int argc, char *argv[])
+int gmx_convert_tpr(int argc, char *argv[])
 {
     const char       *desc[] = {
         "[THISMODULE] can edit run input files in four ways.[PAR]",
@@ -438,10 +438,10 @@ int gmx_tpbconv(int argc, char *argv[])
     if (bTraj)
     {
         fprintf(stderr, "\n"
-                "NOTE: Reading the state from trajectory is an obsolete feature of tpbconv.\n"
+                "NOTE: Reading the state from trajectory is an obsolete feature of gmx convert-tpr.\n"
                 "      Continuation should be done by loading a checkpoint file with mdrun -cpi\n"
                 "      This guarantees that all state variables are transferred.\n"
-                "      tpbconv is now only useful for increasing nsteps,\n"
+                "      gmx convert-tpr is now only useful for increasing nsteps,\n"
                 "      but even that can often be avoided by using mdrun -maxh\n"
                 "\n");
 
@@ -460,7 +460,7 @@ int gmx_tpbconv(int argc, char *argv[])
         if (ir->epc != epcNO || EI_SD(ir->eI) || ir->eI == eiBD)
         {
             fprintf(stderr, "NOTE: The simulation uses pressure coupling and/or stochastic dynamics.\n"
-                    "tpbconv can not provide binary identical continuation.\n"
+                    "gmx convert-tpr can not provide binary identical continuation.\n"
                     "If you want that, supply a checkpoint file to mdrun\n\n");
         }
 
