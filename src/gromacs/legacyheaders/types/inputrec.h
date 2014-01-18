@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -294,7 +294,7 @@ typedef struct {
     int             eI;                     /* Integration method                 */
     gmx_int64_t     nsteps;                 /* number of steps to be taken			*/
     int             simulation_part;        /* Used in checkpointing to separate chunks */
-    gmx_int64_t     init_step;              /* start at a stepcount >0 (used w. tpbconv)    */
+    gmx_int64_t     init_step;              /* start at a stepcount >0 (used w. gmx convert-tpr)    */
     int             nstcalcenergy;          /* frequency of energy calc. and T/P coupl. upd.	*/
     int             cutoff_scheme;          /* group or verlet cutoffs     */
     int             ns_type;                /* which ns method should we use?               */

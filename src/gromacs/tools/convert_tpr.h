@@ -32,8 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_TOOLS_TPBCONV_H
-#define GMX_TOOLS_TPBCONV_H
+#ifndef GMX_TOOLS_CONVERT_TPR_H
+#define GMX_TOOLS_CONVERT_TPR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,12 +42,12 @@ extern "C" {
 }
 #endif
 
-/*! \brief Implements gmx tpbconv
+/*! \brief Implements gmx convert-tpr
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
-int gmx_tpbconv(int argc, char *argv[]);
+int gmx_convert_tpr(int argc, char *argv[]);
 
 #ifdef __cplusplus
 }
