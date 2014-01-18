@@ -46,13 +46,15 @@
  *
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
-static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes, 
+static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes,
                                bool bAsync = false, cudaStream_t s = 0)
 {
     cudaError_t stat;
-    
+
     if (h_dest == NULL || d_src == NULL || bytes == 0)
+    {
         return -1;
+    }
 
     if (bAsync)
     {
@@ -83,9 +85,11 @@ int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t s 
 }
 
 int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
-{ 
+{
     if (h_dest == NULL || d_src == NULL || bytes == 0)
+    {
         return -1;
+    }
 
     smalloc(*h_dest, bytes);
 
@@ -96,13 +100,15 @@ int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
  *
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
-static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes, 
+static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes,
                                bool bAsync = false, cudaStream_t s = 0)
 {
     cudaError_t stat;
 
     if (d_dest == NULL || h_src == NULL || bytes == 0)
+    {
         return -1;
+    }
 
     if (bAsync)
     {
@@ -119,7 +125,7 @@ static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes,
 }
 
 int cu_copy_H2D(void * d_dest, void * h_src, size_t bytes)
-{   
+{
     return cu_copy_H2D_generic(d_dest, h_src, bytes, false);
 }
 
@@ -127,7 +133,7 @@ int cu_copy_H2D(void * d_dest, void * h_src, size_t bytes)
  *  The copy is launched in stream s or if not specified, in stream 0.
  */
 int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s = 0)
-{   
+{
     return cu_copy_H2D_generic(d_dest, h_src, bytes, true, s);
 }
 
@@ -136,7 +142,9 @@ int cu_copy_H2D_alloc(void ** d_dest, void * h_src, size_t bytes)
     cudaError_t stat;
 
     if (d_dest == NULL || h_src == NULL || bytes == 0)
+    {
         return -1;
+    }
 
     stat = cudaMalloc(d_dest, bytes);
     CU_RET_ERR(stat, "cudaMalloc failed in cu_copy_H2D_alloc");
@@ -146,7 +154,7 @@ int cu_copy_H2D_alloc(void ** d_dest, void * h_src, size_t bytes)
 
 float cu_event_elapsed(cudaEvent_t start, cudaEvent_t end)
 {
-    float t = 0.0;
+    float       t = 0.0;
     cudaError_t stat;
 
     stat = cudaEventElapsedTime(&t, start, end);
@@ -165,10 +173,10 @@ int cu_wait_event(cudaEvent_t e)
     return 0;
 }
 
-/*! 
+/*!
  *  If time != NULL it also calculates the time elapsed between start and end and
  *  return this is milliseconds.
- */ 
+ */
 int cu_wait_event_time(cudaEvent_t end, cudaEvent_t start, float *time)
 {
     cudaError_t s;
@@ -211,11 +219,11 @@ void cu_free_buffered(void *d_ptr, int *n, int *nalloc)
 }
 
 /*!
- *  Reallocation of the memory pointed by d_ptr and copying of the data from 
- *  the location pointed by h_src host-side pointer is done. Allocation is 
- *  buffered and therefore freeing is only needed if the previously allocated 
+ *  Reallocation of the memory pointed by d_ptr and copying of the data from
+ *  the location pointed by h_src host-side pointer is done. Allocation is
+ *  buffered and therefore freeing is only needed if the previously allocated
  *  space is not enough.
- *  The H2D copy is launched in stream s and can be done synchronously or 
+ *  The H2D copy is launched in stream s and can be done synchronously or
  *  asynchronously (the default is the latter).
  */
 void cu_realloc_buffered(void **d_dest, void *h_src,
@@ -232,7 +240,7 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
         return;
     }
 
-    /* reallocate only if the data does not fit = allocation size is smaller 
+    /* reallocate only if the data does not fit = allocation size is smaller
        than the current requested size */
     if (req_size > *curr_alloc_size)
     {
