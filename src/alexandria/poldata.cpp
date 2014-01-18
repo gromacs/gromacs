@@ -1698,9 +1698,13 @@ static t_eemprops *get_eep(gmx_poldata *pd,ChargeGenerationModel eqg_model,char 
     int i;
   
     for(i=0; (i<pd->nep); i++) 
+    {
         if ((strcasecmp(pd->eep[i].name,name) == 0) &&
             (pd->eep[i].eqg_model == eqg_model))
+        {
             return &(pd->eep[i]);
+        }
+    }
     return NULL;
 }
 
@@ -1714,7 +1718,8 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
     int  n;
     
     eep = get_eep(pold,eqg_model,name);
-    if (NULL == eep) {
+    if (NULL == eep) 
+    {
         srenew(pd->eep,++pd->nep);
         eep = &(pd->eep[pd->nep-1]);
     }
@@ -1773,7 +1778,8 @@ int gmx_poldata_get_eemprops(gmx_poldata_t pd,
                              ChargeGenerationModel *eqg_model,char **name,
                              double *J0,double *chi0,char **zeta,char **q,char **row)
 {
-    if (pd->nep_c < pd->nep) {
+    if (pd->nep_c < pd->nep) 
+    {
         assign_scal(eqg_model,pd->eep[pd->nep_c].eqg_model);
         assign_str(name,pd->eep[pd->nep_c].name);
         assign_scal(J0,pd->eep[pd->nep_c].J0);
