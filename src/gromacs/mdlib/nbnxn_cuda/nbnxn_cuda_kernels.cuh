@@ -46,14 +46,14 @@
 
 /* Analytical plain cut-off kernels */
 #define EL_CUTOFF
-#define NB_KERNEL_FUNC_NAME(x,...) x##_cutoff##__VA_ARGS__
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _cutoff ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_CUTOFF
 #undef NB_KERNEL_FUNC_NAME
 
 /* Analytical reaction-field kernels */
 #define EL_RF
-#define NB_KERNEL_FUNC_NAME(x,...) x##_rf##__VA_ARGS__
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _rf ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_RF
 #undef NB_KERNEL_FUNC_NAME
@@ -61,7 +61,7 @@
 /* Analytical Ewald interaction kernels
  */
 #define EL_EWALD_ANA
-#define NB_KERNEL_FUNC_NAME(x,...) x##_ewald##__VA_ARGS__
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ewald ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_EWALD_ANA
 #undef NB_KERNEL_FUNC_NAME
@@ -70,7 +70,7 @@
  */
 #define EL_EWALD_ANA
 #define VDW_CUTOFF_CHECK
-#define NB_KERNEL_FUNC_NAME(x,...) x##_ewald_twin##__VA_ARGS__
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ewald_twin ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_EWALD_ANA
 #undef VDW_CUTOFF_CHECK
@@ -78,7 +78,7 @@
 
 /* Tabulated Ewald interaction kernels */
 #define EL_EWALD_TAB
-#define NB_KERNEL_FUNC_NAME(x,...) x##_ewald_tab##__VA_ARGS__
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ewald_tab ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_EWALD_TAB
 #undef NB_KERNEL_FUNC_NAME
@@ -86,7 +86,7 @@
 /* Tabulated Ewald interaction kernels with twin-range cut-off */
 #define EL_EWALD_TAB
 #define VDW_CUTOFF_CHECK
-#define NB_KERNEL_FUNC_NAME(x,...) x##_ewald_tab_twin##__VA_ARGS__
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ewald_tab_twin ## __VA_ARGS__
 #include "nbnxn_cuda_kernel.cuh"
 #undef EL_EWALD_TAB
 #undef VDW_CUTOFF_CHECK

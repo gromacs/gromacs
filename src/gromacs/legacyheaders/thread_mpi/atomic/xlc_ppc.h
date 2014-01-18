@@ -141,7 +141,7 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
                                       void* newval)
 {
-    int ret;
+    int                     ret;
     volatile char* volatile oldv = (char*)oldval;
     volatile char* volatile newv = (char*)newval;
 

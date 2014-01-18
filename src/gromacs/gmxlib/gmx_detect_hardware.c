@@ -307,7 +307,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         ngpu_comp = hwinfo->gpu_info.ncuda_dev_compatible;
         ngpu_use  = hw_opt->gpu_opt.ncuda_dev_use;
 
-        sprintf(gpu_comp_plural, "%s", (ngpu_comp> 1) ? "s" : "");
+        sprintf(gpu_comp_plural, "%s", (ngpu_comp > 1) ? "s" : "");
         sprintf(gpu_use_plural,  "%s", (ngpu_use > 1) ? "s" : "");
 
         /* number of tMPI threads auto-adjusted */

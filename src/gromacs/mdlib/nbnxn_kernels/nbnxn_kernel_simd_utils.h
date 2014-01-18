@@ -159,7 +159,7 @@ gmx_sum_simd2(gmx_mm_pr x, real* b)
     return b[0]+b[1];
 }
 
-#if GMX_SIMD_WIDTH_HERE>=4
+#if GMX_SIMD_WIDTH_HERE >= 4
 static gmx_inline real
 gmx_sum_simd4(gmx_mm_pr4 x, real* b)
 {

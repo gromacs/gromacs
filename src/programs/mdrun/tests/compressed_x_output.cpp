@@ -52,7 +52,7 @@ namespace
 
 //! Test fixture for mdrun -x
 class CompressedXOutputTest : public gmx::test::MdrunTestFixture,
-                      public testing::WithParamInterface<const char*>
+                              public testing::WithParamInterface<const char*>
 {
 };
 

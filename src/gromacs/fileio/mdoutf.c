@@ -86,10 +86,10 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
     of->fp_dhdl      = NULL;
     of->fp_field     = NULL;
 
-    of->eIntegrator     = ir->eI;
-    of->bExpanded       = ir->bExpanded;
-    of->elamstats       = ir->expandedvals->elamstats;
-    of->simulation_part = ir->simulation_part;
+    of->eIntegrator             = ir->eI;
+    of->bExpanded               = ir->bExpanded;
+    of->elamstats               = ir->expandedvals->elamstats;
+    of->simulation_part         = ir->simulation_part;
     of->x_compression_precision = ir->x_compression_precision;
 
     if (MASTER(cr))
@@ -190,8 +190,8 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
            trajectory-writing routines later. Also, XTC writing needs
            to know what (and how many) atoms might be in the XTC
            groups, and how to look up later which ones they are. */
-        of->natoms_global = top_global->natoms;
-        of->groups        = &top_global->groups;
+        of->natoms_global       = top_global->natoms;
+        of->groups              = &top_global->groups;
         of->natoms_x_compressed = 0;
         for (i = 0; (i < top_global->natoms); i++)
         {
