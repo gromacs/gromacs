@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,23 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \brief Declares C-style main functions as used in
- * remaining 4.x-style GROMACS tools
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- */
 
-#ifndef GMX_LEGACYCMAINFUNCTIONS_H
-#define GMX_LEGACYCMAINFUNCTIONS_H
+#ifndef GMX_TOOLS_COMPARE_H
+#define GMX_TOOLS_COMPARE_H
 
-extern "C"
-{
+/* Routines for comparing data structures from non-trajectory binary
+   file formats (e.g. as used by gmx check). */
 
-int gmx_grompp(int argc, char *argv[]);
-int gmx_pdb2gmx(int argc, char *argv[]);
-int gmx_protonate(int argc, char *argv[]);
-int gmx_x2top(int argc, char *argv[]);
+void
+comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);
+/* Compare two binary run input files */
 
-}
+void
+comp_trx(const output_env_t oenv, const char *fn1, const char *fn2,
+         gmx_bool bRMSD, real ftol, real abstol);
+/* Compare two binary trajectory files */
+
+void
+comp_enx(const char *fn1, const char *fn2, real ftol, real abstol,
+         const char *lastener);
+/* Compare two binary energy files */
 
 #endif

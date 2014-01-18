@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,22 +32,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_TOOLS_CHECK_H
+#define GMX_TOOLS_CHECK_H
 
-#ifndef _tpbcmp_h
-#define _tpbcmp_h
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
-void
-comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);
-/* Compare two binary topology files */
+/*! \brief Implements gmx check
+ *
+ * \param[in] argc  argc value passed to main().
+ * \param[in] argv  argv array passed to main().
+ */
+int gmx_check(int argc, char *argv[]);
 
-void
-comp_trx(const output_env_t oenv, const char *fn1, const char *fn2,
-         gmx_bool bRMSD, real ftol, real abstol);
-/* Compare two binary trajectory files */
-
-void
-comp_enx(const char *fn1, const char *fn2, real ftol, real abstol,
-         const char *lastener);
-/* Compare two binary energy files */
+#ifdef __cplusplus
+}
+#endif
 
 #endif
