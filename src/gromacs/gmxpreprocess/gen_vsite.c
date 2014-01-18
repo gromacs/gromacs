@@ -1076,16 +1076,16 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     for (j = 0; j < NMASS; j++)
     {
         sprintf(name, "MW%d", j+1);
-        (*newatomname)  [atM[j]]        = put_symtab(symtab, name);
-        (*newatom)      [atM[j]].m      = (*newatom)[atM[j]].mB    = mM[j];
-        (*newatom)      [atM[j]].q      = (*newatom)[atM[j]].qB    = 0.0;
-        (*newatom)      [atM[j]].type   = (*newatom)[atM[j]].typeB = tpM;
-        (*newatom)      [atM[j]].ptype  = eptAtom;
-        (*newatom)      [atM[j]].resind = at->atom[i0].resind;
+        (*newatomname)  [atM[j]]         = put_symtab(symtab, name);
+        (*newatom)      [atM[j]].m       = (*newatom)[atM[j]].mB    = mM[j];
+        (*newatom)      [atM[j]].q       = (*newatom)[atM[j]].qB    = 0.0;
+        (*newatom)      [atM[j]].type    = (*newatom)[atM[j]].typeB = tpM;
+        (*newatom)      [atM[j]].ptype   = eptAtom;
+        (*newatom)      [atM[j]].resind  = at->atom[i0].resind;
         (*newatom)      [atM[j]].elem[0] = 'M';
         (*newatom)      [atM[j]].elem[1] = '\0';
-        (*newvsite_type)[atM[j]]        = NOTSET;
-        (*newcgnr)      [atM[j]]        = (*cgnr)[i0];
+        (*newvsite_type)[atM[j]]         = NOTSET;
+        (*newcgnr)      [atM[j]]         = (*cgnr)[i0];
     }
     /* renumber cgnr: */
     for (i = i0; i < at->nr; i++)
@@ -1260,16 +1260,16 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     rvec_add(r1, x[ats[atHH]], (*newx)[atM]);
 
     strcpy(name, "MW1");
-    (*newatomname)  [atM]        = put_symtab(symtab, name);
-    (*newatom)      [atM].m      = (*newatom)[atM].mB    = mM;
-    (*newatom)      [atM].q      = (*newatom)[atM].qB    = 0.0;
-    (*newatom)      [atM].type   = (*newatom)[atM].typeB = tpM;
-    (*newatom)      [atM].ptype  = eptAtom;
-    (*newatom)      [atM].resind = at->atom[i0].resind;
+    (*newatomname)  [atM]         = put_symtab(symtab, name);
+    (*newatom)      [atM].m       = (*newatom)[atM].mB    = mM;
+    (*newatom)      [atM].q       = (*newatom)[atM].qB    = 0.0;
+    (*newatom)      [atM].type    = (*newatom)[atM].typeB = tpM;
+    (*newatom)      [atM].ptype   = eptAtom;
+    (*newatom)      [atM].resind  = at->atom[i0].resind;
     (*newatom)      [atM].elem[0] = 'M';
     (*newatom)      [atM].elem[1] = '\0';
-    (*newvsite_type)[atM]        = NOTSET;
-    (*newcgnr)      [atM]        = (*cgnr)[i0];
+    (*newvsite_type)[atM]         = NOTSET;
+    (*newcgnr)      [atM]         = (*cgnr)[i0];
     /* renumber cgnr: */
     for (i = i0; i < at->nr; i++)
     {
@@ -1988,18 +1988,18 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                         {
                             name[k+1] = (*at->atomname[Heavy])[k];
                         }
-                        name[k+1]             = atomnamesuffix[j];
-                        name[k+2]             = '\0';
-                        newatomname[ni0+j]    = put_symtab(symtab, name);
-                        newatom[ni0+j].m      = newatom[ni0+j].mB    = mtot/NMASS;
-                        newatom[ni0+j].q      = newatom[ni0+j].qB    = 0.0;
-                        newatom[ni0+j].type   = newatom[ni0+j].typeB = tpM;
-                        newatom[ni0+j].ptype  = eptAtom;
-                        newatom[ni0+j].resind = at->atom[i0].resind;
+                        name[k+1]              = atomnamesuffix[j];
+                        name[k+2]              = '\0';
+                        newatomname[ni0+j]     = put_symtab(symtab, name);
+                        newatom[ni0+j].m       = newatom[ni0+j].mB    = mtot/NMASS;
+                        newatom[ni0+j].q       = newatom[ni0+j].qB    = 0.0;
+                        newatom[ni0+j].type    = newatom[ni0+j].typeB = tpM;
+                        newatom[ni0+j].ptype   = eptAtom;
+                        newatom[ni0+j].resind  = at->atom[i0].resind;
                         newatom[ni0+j].elem[0] = 'M';
                         newatom[ni0+j].elem[1] = '\0';
-                        newvsite_type[ni0+j]  = NOTSET;
-                        newcgnr[ni0+j]        = (*cgnr)[i0];
+                        newvsite_type[ni0+j]   = NOTSET;
+                        newcgnr[ni0+j]         = (*cgnr)[i0];
                     }
                     /* add constraints between dummy masses and to heavies[0] */
                     /* 'add_shift' says which atoms won't be renumbered afterwards */

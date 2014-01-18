@@ -692,9 +692,9 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
 #else
     static write_data_func_pointer           write_data           = tng_util_generic_with_time_write;
 #endif
-    double                  elapsedSeconds = elapsedPicoSeconds * PICO;
-    gmx_int64_t             nParticles;
-    char                    compression;
+    double                                   elapsedSeconds = elapsedPicoSeconds * PICO;
+    gmx_int64_t                              nParticles;
+    char                                     compression;
 
 
     if (!tng)

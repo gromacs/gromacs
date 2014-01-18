@@ -176,7 +176,7 @@ prepare_table_load_buffer(const int *array)
    and low/high half after each other, then simply doing a gather for tab_coul_F and tab_coul_F+1.
    The ording of the 16 elements doesn't matter, so it doesn't help to get FD sorted as odd/even
    instead of low/high.
-*/
+ */
 static gmx_inline void
 load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
              gmx_mm_ps *ctab0_S, gmx_mm_ps *ctab1_S)

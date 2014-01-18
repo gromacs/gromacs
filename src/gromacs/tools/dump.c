@@ -319,15 +319,15 @@ void list_xtc(const char *fn)
 
 /*! \brief Callback used by list_tng_for_gmx_dump. */
 static void list_tng_inner(const char *fn,
-                    gmx_bool bFirstFrame,
-                    real *values,
-                    gmx_int64_t step, 
-                    double frame_time,
-                    gmx_int64_t n_values_per_frame,
-                    gmx_int64_t n_atoms,
-                    real prec,
-                    gmx_int64_t nframe,
-                    char *block_name)
+                           gmx_bool    bFirstFrame,
+                           real       *values,
+                           gmx_int64_t step,
+                           double      frame_time,
+                           gmx_int64_t n_values_per_frame,
+                           gmx_int64_t n_atoms,
+                           real        prec,
+                           gmx_int64_t nframe,
+                           char       *block_name)
 {
     char                 buf[256];
     int                  indent = 0;
