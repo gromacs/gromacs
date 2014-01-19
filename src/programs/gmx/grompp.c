@@ -56,12 +56,13 @@
 #include "symtab.h"
 #include "names.h"
 #include "grompp.h"
-#include "random.h"
+#include "gromacs/random/random.h"
+#include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "splitter.h"
-#include "sortwater.h"
+#include "gromacs/gmxana/sortwater.h"
 #include "convparm.h"
 #include "gmx_fatal.h"
 #include "warninp.h"
@@ -599,6 +600,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         real                   *mass;
         gmx_mtop_atomloop_all_t aloop;
         t_atom                 *atom;
+        unsigned int            useed;
 
         snew(mass, state->natoms);
         aloop = gmx_mtop_atomloop_all_init(sys);
@@ -607,12 +609,13 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             mass[i] = atom->m;
         }
 
+        useed = opts->seed;
         if (opts->seed == -1)
         {
-            opts->seed = make_seed();
-            fprintf(stderr, "Setting gen_seed to %d\n", opts->seed);
+            useed = (int)gmx_rng_make_seed();
+            fprintf(stderr, "Setting gen_seed to %u\n", useed);
         }
-        maxwell_speed(opts->tempi, opts->seed, sys, state->v);
+        maxwell_speed(opts->tempi, useed, sys, state->v);
 
         stop_cm(stdout, state->natoms, mass, state->x, state->v);
         sfree(mass);
@@ -1443,6 +1446,7 @@ int gmx_grompp(int argc, char *argv[])
     gmx_bool           bVerbose = FALSE;
     warninp_t          wi;
     char               warn_buf[STRLEN];
+    unsigned int       useed;
 
     t_filenm           fnm[] = {
         { efMDP, NULL,  NULL,        ffREAD  },
@@ -1507,13 +1511,13 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->ld_seed == -1)
     {
-        ir->ld_seed = make_seed();
+        ir->ld_seed = (int)gmx_rng_make_seed();
         fprintf(stderr, "Setting the LD random seed to %d\n", ir->ld_seed);
     }
 
     if (ir->expandedvals->lmc_seed == -1)
     {
-        ir->expandedvals->lmc_seed = make_seed();
+        ir->expandedvals->lmc_seed = (int)gmx_rng_make_seed();
         fprintf(stderr, "Setting the lambda MC random seed to %d\n", ir->expandedvals->lmc_seed);
     }
 

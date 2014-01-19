@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 #include "txtdump.h"
 #include <math.h>
 #include "macros.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "gromacs/fileio/futil.h"
 #include "atomprop.h"
 #include "names.h"
@@ -401,7 +401,9 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
     rvec             offset_x;
     int              trial;
     double         **rpos;
+    gmx_rng_t        rng;
 
+    rng = gmx_rng_init(seed);
     set_pbc(&pbc, ePBC, box);
 
     /* read number of atoms of insert molecules */
@@ -459,13 +461,13 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
         switch (enum_rot)
         {
             case en_rotXYZ:
-                alfa  = 2*M_PI *rando(&seed);
-                beta  = 2*M_PI *rando(&seed);
-                gamma = 2*M_PI *rando(&seed);
+                alfa  = 2*M_PI * gmx_rng_uniform_real(rng);
+                beta  = 2*M_PI * gmx_rng_uniform_real(rng);
+                gamma = 2*M_PI * gmx_rng_uniform_real(rng);
                 break;
             case en_rotZ:
                 alfa  = beta = 0.;
-                gamma = 2*M_PI*rando(&seed);
+                gamma = 2*M_PI * gmx_rng_uniform_real(rng);
                 break;
             case en_rotNone:
                 alfa = beta = gamma = 0.;
@@ -478,9 +480,9 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
         if (posfn == NULL)
         {
             /* insert at random positions */
-            offset_x[XX] = box[XX][XX]*rando(&seed);
-            offset_x[YY] = box[YY][YY]*rando(&seed);
-            offset_x[ZZ] = box[ZZ][ZZ]*rando(&seed);
+            offset_x[XX] = box[XX][XX] * gmx_rng_uniform_real(rng);
+            offset_x[YY] = box[YY][YY] * gmx_rng_uniform_real(rng);
+            offset_x[ZZ] = box[ZZ][ZZ] * gmx_rng_uniform_real(rng);
             gen_box(0, atoms_insrt.nr, x_n, box_insrt, offset_x, TRUE);
             if (!in_box(&pbc, x_n[0]) || !in_box(&pbc, x_n[atoms_insrt.nr-1]))
             {
@@ -490,9 +492,9 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
         else
         {
             /* Insert at positions taken from option -ip file */
-            offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2*rando(&seed)-1);
-            offset_x[YY] = rpos[YY][mol] + deltaR[YY]*(2*rando(&seed)-1);
-            offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2*rando(&seed)-1);
+            offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2 * gmx_rng_uniform_real(rng)-1);
+            offset_x[YY] = rpos[YY][mol] + deltaR[YY]*(2 * gmx_rng_uniform_real(rng)-1);
+            offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2 * gmx_rng_uniform_real(rng)-1);
             for (i = 0; i < atoms_insrt.nr; i++)
             {
                 rvec_inc(x_n[i], offset_x);
@@ -521,6 +523,7 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
             fprintf(stderr, " success (now %d atoms)!\n", atoms->nr);
         }
     }
+    gmx_rng_destroy(rng);
     srenew(atoms->resinfo,  atoms->nres);
     srenew(atoms->atomname, atoms->nr);
     srenew(atoms->atom,     atoms->nr);

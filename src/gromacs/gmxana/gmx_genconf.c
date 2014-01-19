@@ -46,7 +46,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "gromacs/math/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"
@@ -56,7 +56,7 @@
 #include "gromacs/fileio/trxio.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
-                     int *seed, rvec max_rot)
+                     gmx_rng_t rng, rvec max_rot)
 {
     mat4 mt1, mt2, mr[DIM], mtemp1, mtemp2, mtemp3, mxtot, mvtot;
     rvec xcm;
@@ -76,7 +76,7 @@ static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
     translate(-xcm[XX], -xcm[YY], -xcm[ZZ], mt1); /* move c.o.ma to origin */
     for (m = 0; (m < DIM); m++)
     {
-        phi = M_PI*max_rot[m]*(2*rando(seed) - 1)/180;
+        phi = M_PI*max_rot[m]*(2*gmx_rng_uniform_real(rng) - 1)/180;
         rotate(m, phi, mr[m]);
     }
     translate(xcm[XX], xcm[YY], xcm[ZZ], mt2);
@@ -159,6 +159,7 @@ int gmx_genconf(int argc, char *argv[])
     t_trxstatus    *status;
     gmx_bool        bTRX;
     output_env_t    oenv;
+    gmx_rng_t       rng;
 
     t_filenm        fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
@@ -199,9 +200,13 @@ int gmx_genconf(int argc, char *argv[])
         return 0;
     }
 
-    if (bRandom && (seed == 0))
+    if (seed == 0)
     {
-        seed = make_seed();
+        rng = gmx_rng_init(gmx_rng_make_seed());
+    }
+    else
+    {
+        rng = gmx_rng_init(seed);
     }
 
     bTRX = ftp2bSet(efTRX, NFILE, fnm);
@@ -272,7 +277,7 @@ int gmx_genconf(int argc, char *argv[])
                 /* Random rotation on input coords */
                 if (bRandom)
                 {
-                    rand_rot(natoms, xx, v, xrot, vrot, &seed, max_rot);
+                    rand_rot(natoms, xx, v, xrot, vrot, rng, max_rot);
                 }
 
                 for (l = 0; (l < natoms); l++)
@@ -362,7 +367,7 @@ int gmx_genconf(int argc, char *argv[])
 
     if (bShuffle)
     {
-        randwater(0, atoms->nr/nmolat, nmolat, x, v, &seed);
+        randwater(0, atoms->nr/nmolat, nmolat, x, v, rng);
     }
     else if (bSort)
     {
@@ -372,6 +377,7 @@ int gmx_genconf(int argc, char *argv[])
     {
         mkcompact(0, atoms->nr/nmolat, nmolat, x, v, nblock, box);
     }
+    gmx_rng_destroy(rng);
 
     write_sto_conf(opt2fn("-o", NFILE, fnm), title, atoms, x, v, ePBC, box);
 
