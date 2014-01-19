@@ -52,7 +52,7 @@
 #include "mdrun.h"
 #include "names.h"
 #include "calcgrid.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "update.h"
 #include "mdebin.h"
 

@@ -38,7 +38,7 @@
 
 #include <ctype.h>
 #include <string.h>
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "vec.h"

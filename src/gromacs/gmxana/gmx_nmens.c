@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "txtdump.h"
 #include "physics.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "eigio.h"
 #include "gmx_ana.h"
 
@@ -107,7 +107,7 @@ int gmx_nmens(int argc, char *argv[])
     real                rfac, invfr, rhalf, jr;
     int          *      eigvalnr;
     output_env_t        oenv;
-
+    gmx_rng_t           rng;
     unsigned long       jran;
     const unsigned long im = 0xffff;
     const unsigned long ia = 1093;
@@ -217,14 +217,20 @@ int gmx_nmens(int argc, char *argv[])
 
     if (seed == -1)
     {
-        seed = make_seed();
+        seed = (int)gmx_rng_make_seed();
+        rng  = gmx_rng_init(seed);
+    }
+    else
+    {
+        rng = gmx_rng_init(seed);
     }
     fprintf(stderr, "Using seed %d and a temperature of %g K\n", seed, temp);
 
     snew(xout1, natoms);
     snew(xout2, atoms->nr);
     out  = open_trx(ftp2fn(efTRO, NFILE, fnm), "w");
-    jran = (unsigned long)((real)im*rando(&seed));
+    jran = (unsigned long)((real)im*gmx_rng_uniform_real(rng));
+    gmx_rng_destroy(rng);
     for (s = 0; s < nstruct; s++)
     {
         for (i = 0; i < natoms; i++)

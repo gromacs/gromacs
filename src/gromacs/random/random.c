@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#include "gmx_random.h"
+#include "random.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,7 +52,7 @@
 #endif
 
 #include "gromacs/math/utilities.h"
-#include "gmx_random_gausstable.h"
+#include "random_gausstable.h"
 
 #define RNG_N 624
 #define RNG_M 397

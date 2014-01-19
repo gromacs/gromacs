@@ -65,7 +65,7 @@
 #include "txtdump.h"
 #include "vec.h"
 #include "network.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "checkpoint.h"
 #include "main.h"
 #include "string2.h"

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,13 +39,14 @@
 #define _sortwater_h
 
 #include "typedefs.h"
+#include "gromacs/random/random.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 void randwater(int astart, int nwater, int nwatom,
-               rvec x[], rvec v[], int *seed);
+               rvec x[], rvec v[], gmx_rng_t rng);
 /* Randomize the order of nwater molecules of length nwatom, the
  * first atom of which is at astart.
  * If v is not NULL it will be shuffled along

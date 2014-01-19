@@ -55,7 +55,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gstat.h"
 #include "index.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "names.h"
 #include "physics.h"
 #include "calcmu.h"

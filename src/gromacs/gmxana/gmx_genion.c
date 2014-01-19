@@ -54,7 +54,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "mdrun.h"
 #include "main.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "index.h"
 #include "mtop_util.h"
 #include "gmx_ana.h"
@@ -64,7 +64,7 @@ static void insert_ion(int nsa, int *nwater,
                        rvec x[], t_pbc *pbc,
                        int sign, int q, const char *ionname,
                        t_atoms *atoms,
-                       real rmin, int *seed)
+                       real rmin, gmx_rng_t rng)
 {
     int             i, ei, nw;
     real            rmin2;
@@ -78,7 +78,7 @@ static void insert_ion(int nsa, int *nwater,
 
     do
     {
-        ei = nw*rando(seed);
+        ei = nw*gmx_rng_uniform_real(rng);
         maxrand--;
     }
     while (bSet[ei] && (maxrand > 0));
@@ -395,6 +395,7 @@ int gmx_genion(int argc, char *argv[])
     gmx_bool          *bSet;
     int                i, nw, nwa, nsa, nsalt, iqtot;
     output_env_t       oenv;
+    gmx_rng_t          rng;
     t_filenm           fnm[] = {
         { efTPX, NULL,  NULL,      ffREAD  },
         { efNDX, NULL,  NULL,      ffOPTRD },
@@ -522,17 +523,26 @@ int gmx_genion(int argc, char *argv[])
 
     set_pbc(&pbc, ePBC, box);
 
+    if (seed == 0)
+    {
+        rng = gmx_rng_init(gmx_rng_make_seed());
+    }
+    else
+    {
+        rng = gmx_rng_init(seed);
+    }
     /* Now loop over the ions that have to be placed */
     while (p_num-- > 0)
     {
         insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                   1, p_q, p_name, &atoms, rmin, &seed);
+                   1, p_q, p_name, &atoms, rmin, rng);
     }
     while (n_num-- > 0)
     {
         insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                   -1, n_q, n_name, &atoms, rmin, &seed);
+                   -1, n_q, n_name, &atoms, rmin, rng);
     }
+    gmx_rng_destroy(rng);
     fprintf(stderr, "\n");
 
     if (nw)
