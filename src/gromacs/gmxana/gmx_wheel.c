@@ -50,16 +50,15 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "strdb.h"
 #include "pbc.h"
 #include "index.h"
 #include "gstat.h"
 #include "gmx_fatal.h"
-#include "strdb.h"
 #include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/writeps.h"
 
 static gmx_bool *bPhobics(int nres, char *resnm[])

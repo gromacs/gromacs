@@ -43,7 +43,7 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "random.h"
-#include "strdb.h"
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/futil.h"
 #include "physics.h"
 #include "ehdata.h"

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,6 @@
 #include "resall.h"
 #include "pdb2top.h"
 #include "ter_db.h"
-#include "strdb.h"
 #include "gbutil.h"
 #include "genhydro.h"
 #include "readinp.h"
@@ -69,6 +68,8 @@
 #include "index.h"
 #include "fflibutil.h"
 #include "macros.h"
+
+#include "gromacs/fileio/strdb.h"
 
 #include "hizzie.h"
 #include "specbond.h"

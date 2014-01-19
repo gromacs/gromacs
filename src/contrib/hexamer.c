@@ -49,12 +49,10 @@
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
 #include "string2.h"
-#include "strdb.h"
 #include "index.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "gbutil.h"
-#include "strdb.h"
 #include "physics.h"
 #include "atomprop.h"
 

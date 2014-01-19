@@ -48,7 +48,7 @@
 #include "vec.h"
 #include "macros.h"
 #include "index.h"
-#include "strdb.h"
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "typedefs.h"
