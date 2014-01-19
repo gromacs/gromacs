@@ -52,7 +52,7 @@
 #include <set>
 #include <vector>
 
-#include "gromacs/legacyheaders/gmx_random.h"
+#include "gromacs/random/gmx_random.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/vec.h"

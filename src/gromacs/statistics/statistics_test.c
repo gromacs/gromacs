@@ -42,7 +42,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "gmx_random.h"
+#include "gromacs/random/gmx_random.h"
 #include "statistics.h"
 
 static void horizontal()

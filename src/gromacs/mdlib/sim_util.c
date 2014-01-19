@@ -70,7 +70,7 @@
 #include "constr.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "gmx_random.h"
+#include "gromacs/random/gmx_random.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "genborn.h"
