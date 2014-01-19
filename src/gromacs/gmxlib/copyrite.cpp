@@ -52,7 +52,7 @@
 /* This file is completely threadsafe - keep it that way! */
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/random.h"
+#include "gromacs/random/random.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/vec.h"
@@ -83,18 +83,19 @@ static gmx_bool be_cool(void)
 static void pukeit(const char *db, const char *defstring, char *retstring,
                    int retsize, int *cqnum)
 {
-    FILE  *fp;
-    char **help;
-    int    i, nhlp;
-    int    seed;
+    FILE     *fp;
+    char    **help;
+    int       i, nhlp;
+    gmx_rng_t rng;
 
     if (be_cool() && ((fp = low_libopen(db, FALSE)) != NULL))
     {
         nhlp = fget_lines(fp, &help);
         /* for libraries we can use the low-level close routines */
         ffclose(fp);
-        seed   = time(NULL);
-        *cqnum = static_cast<int>(nhlp*rando(&seed));
+        rng    = gmx_rng_init(gmx_rng_make_seed());
+        *cqnum = static_cast<int>(nhlp*gmx_rng_uniform_real(rng));
+        gmx_rng_destroy(rng);
         if (strlen(help[*cqnum]) >= STRLEN)
         {
             help[*cqnum][STRLEN-1] = '\0';

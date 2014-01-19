@@ -51,7 +51,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "mtop_util.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
@@ -467,7 +467,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         if (EI_SD(ir->eI) || ir->eI == eiBD)
         {
             fprintf(stderr, "\nChanging ld-seed from %d ", ir->ld_seed);
-            ir->ld_seed = make_seed();
+            ir->ld_seed = (int)gmx_rng_make_seed();
             fprintf(stderr, "to %d\n\n", ir->ld_seed);
         }
 

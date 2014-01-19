@@ -46,7 +46,6 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "physics.h"
-#include "random.h"
 #include "gmx_ana.h"
 #include "macros.h"
 #include "gromacs/fileio/trxio.h"

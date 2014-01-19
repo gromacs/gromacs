@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@
 #endif
 
 #include "typedefs.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "smalloc.h"
 #include "vec.h"
 #include "sortwater.h"
@@ -49,7 +49,8 @@ static int     nwat;
 static matrix  BOX;
 static ivec    NBOX;
 
-void randwater(int astart, int nwater, int nwatom, rvec x[], rvec v[], int *seed)
+void randwater(int astart, int nwater, int nwatom, rvec x[], rvec v[],
+               gmx_rng_t rng)
 {
     int  i, j, wi, wj, *tab;
     rvec buf;
@@ -61,10 +62,10 @@ void randwater(int astart, int nwater, int nwatom, rvec x[], rvec v[], int *seed
     }
     for (j = 0; (j < 23*nwater); j++)
     {
-        wi = (int) (nwater*rando(seed)) % nwater;
+        wi = (int) (nwater*gmx_rng_uniform_real(rng)) % nwater;
         do
         {
-            wj = (int) (nwater*rando(seed)) % nwater;
+            wj = (int) (nwater*gmx_rng_uniform_real(rng)) % nwater;
         }
         while (wi == wj);
         wi = astart+wi*nwatom;

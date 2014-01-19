@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,13 +39,13 @@
 #endif
 
 #include <math.h>
+#include "gromacs/random/random.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "physics.h"
 #include "typedefs.h"
 #include "vec.h"
-#include "gmx_random.h"
-#include "random.h"
+#include "gen_maxwell_velocities.h"
 #include "mtop_util.h"
 
 static void low_mspeed(real tempi,
@@ -98,15 +98,15 @@ static void low_mspeed(real tempi,
     }
 }
 
-void maxwell_speed(real tempi, int seed, gmx_mtop_t *mtop, rvec v[])
+void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[])
 {
     atom_id  *dummy;
     int       i;
     gmx_rng_t rng;
 
-    if (seed == -1)
+    if (seed == 0)
     {
-        seed = make_seed();
+        seed = gmx_rng_make_seed();
         fprintf(stderr, "Using random seed %d for generating velocities\n", seed);
     }
 
@@ -117,8 +117,8 @@ void maxwell_speed(real tempi, int seed, gmx_mtop_t *mtop, rvec v[])
     gmx_rng_destroy(rng);
 }
 
-real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
-             rvec xcm, rvec vcm, rvec acm, matrix L)
+static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
+                    rvec xcm, rvec vcm, rvec acm, matrix L)
 {
     rvec dx, a0;
     real tm, m0;
