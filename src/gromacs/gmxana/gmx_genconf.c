@@ -46,7 +46,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "gromacs/math/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"
