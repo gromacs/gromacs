@@ -40,7 +40,7 @@
 #  include <config.h>
 #endif
 
-#include "thread_mpi/atomic.h"
+#include "../thread_mpi/atomic.h"
 
 #ifdef __cplusplus
 extern "C" {
