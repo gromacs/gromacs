@@ -45,7 +45,7 @@
 
 #include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_random.h"
+#include "gromacs/random/gmx_random.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
 

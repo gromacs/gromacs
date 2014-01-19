@@ -56,7 +56,7 @@
 #include "symtab.h"
 #include "names.h"
 #include "grompp.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
