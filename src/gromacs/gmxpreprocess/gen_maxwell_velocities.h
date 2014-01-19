@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _random_h
-#define _random_h
+#ifndef GMX_MAXWELL_VELOCITIES
+#define GMX_MAXWELL_VELOCITIES
 
 #include "typedefs.h"
 
@@ -44,28 +44,30 @@
 extern "C" {
 #endif
 
-int make_seed(void);
-/* Make a random seed: (time+getpid) % 1000000 */
-
-real rando(int *seed);
-/* Generate a random number 0 <= r < 1. seed is the (address of) the
- * random seed variable.
+/*! \brief
+ * Generate Maxwellian velocities.
+ *
+ * \param[in] tempi Temperature to generate around
+ * \param[in] seed  Random number generator seed
+ * \param[in] mtop  Molecular Topology
+ * \param[out] v    Velocities
  */
-
 void maxwell_speed(real tempi, int seed,
                    gmx_mtop_t *mtop, rvec v[]);
-/* Generate velocites according to a maxwellian distribution */
 
-real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
-             rvec xcm, rvec vcm, rvec acm, matrix L);
-/* Calculate the c.o.m. position, velocity, acceleration and the
- * moment of Inertia. Returns the total mass.
+/*! \brief
+ * Remove the center of mass motion in a set of coordinates.
+ *
+ * \param[out] log  File for printing debug information
+ * \param[in]  natoms Number of atoms
+ * \param[in]  mass   Atomic masses
+ * \param[in]  x      Coordinates
+ * \param[out] v      Velocities
  */
-
 void stop_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[]);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _random_h */
+#endif  /* gen_maxwell_vel_h */
