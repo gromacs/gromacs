@@ -76,9 +76,6 @@ else()
         OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}"
         COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
-    configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)
-    set(CREATE_LINKS_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/CreateLinks.cmake)
-
     install(TARGETS gmx
             RUNTIME DESTINATION ${BIN_INSTALL_DIR})
     if (GMX_SYMLINK_OLD_BINARY_NAMES)
