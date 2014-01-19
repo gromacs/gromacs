@@ -1,0 +1,9 @@
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Code-Review+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Verified+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Verified+2: Jenkins Buildbot
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Sun, 19 Jan 2014 19:11:09 +0100
+Reviewed-on: https://gerrit.gromacs.org/2997
+Project: gromacs
+Branch: refs/heads/master
