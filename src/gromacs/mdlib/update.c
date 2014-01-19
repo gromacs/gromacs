@@ -52,7 +52,7 @@
 #include "vec.h"
 #include "main.h"
 #include "update.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "mshift.h"
 #include "tgroup.h"
 #include "force.h"
