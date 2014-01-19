@@ -48,7 +48,6 @@
 #include "gromacs/fileio/confio.h"
 #include "physics.h"
 #include "vec.h"
-#include "random.h"
 #include "gromacs/math/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"

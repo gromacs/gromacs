@@ -54,7 +54,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "mdrun.h"
 #include "main.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "index.h"
 #include "mtop_util.h"
 #include "gmx_ana.h"

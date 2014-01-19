@@ -42,7 +42,7 @@
 #include "mshift.h"
 #include "tgroup.h"
 #include "network.h"
-#include "gmx_random.h"
+#include "gromacs/random/gmx_random.h"
 #include "vec.h"
 
 
