@@ -36,13 +36,13 @@
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
+l #endif
 
 #include <stdio.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "statistics.h"
 
 static void horizontal()

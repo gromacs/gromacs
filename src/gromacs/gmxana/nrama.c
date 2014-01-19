@@ -44,7 +44,6 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "typedefs.h"
-#include "random.h"
 #include "bondf.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"

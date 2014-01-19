@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "chargegroup.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "gromacs/gmxlib/topsort.h"
 #include "mtop_util.h"
 #include "mshift.h"
