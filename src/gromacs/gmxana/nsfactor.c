@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,11 +41,11 @@
 #include "gmx_random.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "strdb.h"
 #include "vec.h"
 #include "nsfactor.h"
 
 #include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/utility/gmxomp.h"
 
 void check_binwidth(real binwidth)

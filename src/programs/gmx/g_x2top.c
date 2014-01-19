@@ -45,7 +45,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "strdb.h"
 #include "sysstuff.h"
 #include "gromacs/fileio/confio.h"
 #include "physics.h"

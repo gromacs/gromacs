@@ -42,14 +42,15 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "atomprop.h"
-#include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "index.h"
-#include "strdb.h"
 #include "copyrite.h"
+
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/math/utilities.h"
 
 typedef struct {
     gmx_bool    bSet;

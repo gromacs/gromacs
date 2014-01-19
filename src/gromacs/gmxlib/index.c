@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,12 +42,9 @@
 #include <string.h>
 #include <assert.h>
 #include "sysstuff.h"
-#include "strdb.h"
-#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "names.h"
 #include "string2.h"
-#include "gromacs/fileio/confio.h"
 #include "main.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -55,9 +52,10 @@
 #include "macros.h"
 #include "index.h"
 #include "txtdump.h"
+
+#include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
-
-
+#include "gromacs/fileio/strdb.h"
 
 const char gmx_residuetype_undefined[] = "Other";
 

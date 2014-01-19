@@ -52,7 +52,7 @@
 #include "txtdump.h"
 #include "gromacs/fileio/trnio.h"
 #include "symtab.h"
-#include "strdb.h"
+#include "gromacs/fileio/strdb.h"
 #include "atomprop.h"
 #include "gromacs/fileio/confio.h"
 

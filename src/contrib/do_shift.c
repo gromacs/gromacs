@@ -41,7 +41,6 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "string2.h"
-#include "strdb.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "mshift.h"
