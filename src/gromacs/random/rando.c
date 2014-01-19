@@ -47,7 +47,7 @@
 #endif
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "random.h"
+#include "rando.h"
 
 int make_seed(void)
 {
