@@ -622,7 +622,6 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     int i;
 
     state->natoms = natoms;
-    state->nrng   = 0;
     state->flags  = 0;
     state->lambda = 0;
     snew(state->lambda, efptNR);
@@ -712,19 +711,6 @@ t_state *serial_init_local_state(t_state *state_global)
     for (i = 0; i < efptNR; i++)
     {
         state_local->lambda[i] = state_global->lambda[i];
-    }
-    if (state_global->nrngi > 1)
-    {
-        /* With stochastic dynamics we need local storage for the random state */
-        if (state_local->flags & (1<<estLD_RNG))
-        {
-            state_local->nrng = gmx_rng_n();
-            snew(state_local->ld_rng, state_local->nrng);
-        }
-        if (state_local->flags & (1<<estLD_RNGI))
-        {
-            snew(state_local->ld_rngi, 1);
-        }
     }
 
     return state_local;
