@@ -67,11 +67,12 @@ endif()
 
 # Machinery for running the external project
 set(EXTERNAL_FFTW_VERSION 3.3.2)
+set(EXTERNAL_FFTW_MD5SUM 6977ee770ed68c85698c7168ffa6e178)
 include(ExternalProject)
 # TODO in master branch - show this warning only on the first run
 # by using gmx_check_if_changed_result from I21b791ab8e4f3 when
 # that becomes available
-message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} as requested, but it will not know the file it receives is correct. GROMACS will build and link to FFTW anyway, but there is a possible security risk if you execute a GROMACS tool that calls this library. You can use\nmake gmxfftw\n to do the download and build, and then run\nmd5sum src/contrib/fftw/gmxfftw-prefix/src/fftw-3.3.2.tar.gz\nto see if it matches 6977ee770ed68c85698c7168ffa6e178. If so, everything is OK and you should proceed with the rest of the GROMACS build. Alternatively, you can follow the GROMACS installation instructions to build FFTW yourself.")
+message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} as requested, but it will not know the file it receives is correct. GROMACS will build and link to FFTW anyway, but there is a possible security risk if you execute a GROMACS tool that calls this library. You can use\nmake fftwBuild\n to do the download and build, and then run\nmd5sum src/contrib/fftw/fftwBuild-prefix/src/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz\nto see if it matches ${EXTERNAL_FFTW_MD5SUM}. If so, everything is OK and you should proceed with the rest of the GROMACS build. Alternatively, you can follow the GROMACS installation instructions to build FFTW yourself.")
 # TODO if/when CMake fixes http://www.cmake.org/Bug/view.php?id=14330
 # (ie. at least version > 2.8.11.2), consider reverting to using an
 # md5sum check to avoid needing the above warning
