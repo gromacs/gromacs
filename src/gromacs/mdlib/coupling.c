@@ -722,203 +722,50 @@ void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
     }
 }
 
-static int poisson_variate(real lambda, gmx_rng_t rng)
+void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
+                     const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac)
 {
-
-    real L;
-    int  k = 0;
-    real p = 1.0;
-
-    L = exp(-lambda);
-
-    do
-    {
-        k  = k+1;
-        p *= gmx_rng_uniform_real(rng);
-    }
-    while (p > L);
-
-    return k-1;
-}
-
-void andersen_tcoupl(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock, gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac)
-{
-    t_grpopts *opts;
-    int        i, j, k, d, len, n, ngtc, gc = 0;
-    int        nshake, nsettle, nrandom, nrand_group;
-    real       boltz, scal, reft, prand;
-    t_iatom   *iatoms;
-
-    /* convenience variables */
-    opts = &ir->opts;
-    ngtc = opts->ngtc;
-
-    /* idef is only passed in if it's chance-per-particle andersen, so
-       it essentially serves as a boolean to determine which type of
-       andersen is being used */
-    if (idef)
-    {
-
-        /* randomly atoms to randomize.  However, all constraint
-           groups have to have either all of the atoms or none of the
-           atoms randomize.
-
-           Algorithm:
-           1. Select whether or not to randomize each atom to get the correct probability.
-           2. Cycle through the constraint groups.
-              2a. for each constraint group, determine the fraction f of that constraint group that are
-                  chosen to be randomized.
-              2b. all atoms in the constraint group are randomized with probability f.
-         */
-
-        nrandom = 0;
-        if ((rate < 0.05) && (md->homenr > 50))
-        {
-            /* if the rate is relatively high, use a standard method, if low rate,
-             * use poisson */
-            /* poisson distributions approxmation, more efficient for
-             * low rates, fewer random numbers required */
-            nrandom = poisson_variate(md->homenr*rate, rng);  /* how many do we randomize? Use Poisson. */
-            /* now we know how many, choose them randomly. No worries about repeats, at this rate, it's negligible.
-               worst thing that happens, it lowers the true rate an negligible amount */
-            for (i = 0; i < nrandom; i++)
-            {
-                randatom[(int)(gmx_rng_uniform_real(rng)*md->homenr)] = TRUE;
-            }
-        }
-        else
-        {
-            for (i = 0; i < md->homenr; i++)
-            {
-                if (gmx_rng_uniform_real(rng) < rate)
-                {
-                    randatom[i] = TRUE;
-                    nrandom++;
-                }
-            }
-        }
-
-        /* instead of looping over the constraint groups, if we had a
-           list of which atoms were in which constraint groups, we
-           could then loop over only the groups that are randomized
-           now.  But that is not available now.  Create later after
-           determining whether there actually is any slowing. */
-
-        /* first, loop through the settles to make sure all groups either entirely randomized, or not randomized. */
-
-        nsettle  = idef->il[F_SETTLE].nr/2;
-        for (i = 0; i < nsettle; i++)
-        {
-            iatoms      = idef->il[F_SETTLE].iatoms;
-            nrand_group = 0;
-            for (k = 0; k < 3; k++)  /* settles are always 3 atoms, hardcoded */
-            {
-                if (randatom[iatoms[2*i+1]+k])
-                {
-                    nrand_group++;     /* count the number of atoms to be shaken in the settles group */
-                    randatom[iatoms[2*i+1]+k] = FALSE;
-                    nrandom--;
-                }
-            }
-            if (nrand_group > 0)
-            {
-                prand = (nrand_group)/3.0;  /* use this fraction to compute the probability the
-                                               whole group is randomized */
-                if (gmx_rng_uniform_real(rng) < prand)
-                {
-                    for (k = 0; k < 3; k++)
-                    {
-                        randatom[iatoms[2*i+1]+k] = TRUE;   /* mark them all to be randomized */
-                    }
-                    nrandom += 3;
-                }
-            }
-        }
-
-        /* now loop through the shake groups */
-        nshake = nblocks;
-        for (i = 0; i < nshake; i++)
-        {
-            iatoms      = &(idef->il[F_CONSTR].iatoms[sblock[i]]);
-            len         = sblock[i+1]-sblock[i];
-            nrand_group = 0;
-            for (k = 0; k < len; k++)
-            {
-                if (k%3 != 0)
-                {   /* only 2/3 of the sblock items are atoms, the others are labels */
-                    if (randatom[iatoms[k]])
-                    {
-                        nrand_group++;
-                        randatom[iatoms[k]] = FALSE;  /* need to mark it false here in case the atom is in more than
-                                                         one group in the shake block */
-                        nrandom--;
-                    }
-                }
-            }
-            if (nrand_group > 0)
-            {
-                prand = (nrand_group)/(1.0*(2*len/3));
-                if (gmx_rng_uniform_real(rng) < prand)
-                {
-                    for (k = 0; k < len; k++)
-                    {
-                        if (k%3 != 0)
-                        {                               /* only 2/3 of the sblock items are atoms, the others are labels */
-                            randatom[iatoms[k]] = TRUE; /* randomize all of them */
-                            nrandom++;
-                        }
-                    }
-                }
-            }
-        }
-        if (nrandom > 0)
-        {
-            n = 0;
-            for (i = 0; i < md->homenr; i++)  /* now loop over the list of atoms */
-            {
-                if (randatom[i])
-                {
-                    randatom_list[n] = i;
-                    n++;
-                }
-            }
-            nrandom = n;  /* there are some values of nrandom for which
-                             this algorithm won't work; for example all
-                             water molecules and nrandom =/= 3.  Better to
-                             recount and use this number (which we
-                             calculate anyway: it will not affect
-                             the average number of atoms accepted.
-                           */
-        }
-    }
-    else
-    {
-        /* if it's andersen-massive, then randomize all the atoms */
-        nrandom = md->homenr;
-        for (i = 0; i < nrandom; i++)
-        {
-            randatom_list[i] = i;
-        }
-    }
+    const int *gatindex = (DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+    int        i;
+    int        gc = 0;
 
     /* randomize the velocities of the selected particles */
 
-    for (i = 0; i < nrandom; i++)  /* now loop over the list of atoms */
+    for (i = 0; i < md->homenr; i++)  /* now loop over the list of atoms */
     {
-        n = randatom_list[i];
+        int      ng = gatindex ? gatindex[i] : i;
+        gmx_bool bRandomize;
+
         if (md->cTC)
         {
-            gc   = md->cTC[n];  /* assign the atom to a temperature group if there are more than one */
+            gc = md->cTC[i];  /* assign the atom to a temperature group if there are more than one */
         }
         if (randomize[gc])
         {
-            scal = sqrt(boltzfac[gc]*md->invmass[n]);
-            for (d = 0; d < DIM; d++)
+            if (ir->etc == etcANDERSEN)
             {
-                state->v[n][d] = scal*gmx_rng_gaussian_table(rng);
+                bRandomize = TRUE;
+            }
+            else
+            {
+                double uniform[2];
+
+                gmx_rng_cycle_2uniform(step*2, ng, ir->andersen_seed, RND_SEED_ANDERSEN, uniform);
+                bRandomize = (uniform[0] < rate);
+            }
+            if (bRandomize)
+            {
+                real scal, gauss[3];
+                int  d;
+
+                scal = sqrt(boltzfac[gc]*md->invmass[i]);
+                gmx_rng_cycle_3gaussian_table(step*2+1, ng, ir->andersen_seed, RND_SEED_ANDERSEN, gauss);
+                for (d = 0; d < DIM; d++)
+                {
+                    state->v[i][d] = scal*gauss[d];
+                }
             }
         }
-        randatom[n] = FALSE; /* unmark this atom for randomization */
     }
 }
 
@@ -1507,11 +1354,14 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
     return ener_npt;
 }
 
-static real vrescale_gamdev(int ia, gmx_rng_t rng)
+static real vrescale_gamdev(int ia,
+                            gmx_int64_t step, gmx_int64_t *count,
+                            gmx_int64_t seed1, gmx_int64_t seed2)
 /* Gamma distribution, adapted from numerical recipes */
 {
-    int  j;
-    real am, e, s, v1, v2, x, y;
+    int    j;
+    real   am, e, s, v1, v2, x, y;
+    double rnd[2];
 
     if (ia < 6)
     {
@@ -1520,7 +1370,8 @@ static real vrescale_gamdev(int ia, gmx_rng_t rng)
             x = 1.0;
             for (j = 1; j <= ia; j++)
             {
-                x *= gmx_rng_uniform_real(rng);
+                gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
+                x *= rnd[0];
             }
         }
         while (x == 0);
@@ -1534,8 +1385,9 @@ static real vrescale_gamdev(int ia, gmx_rng_t rng)
             {
                 do
                 {
-                    v1 = gmx_rng_uniform_real(rng);
-                    v2 = 2.0*gmx_rng_uniform_real(rng)-1.0;
+                    gmx_rng_cycle_2uniform(step, (*count++), seed1, seed2, rnd);
+                    v1 = rnd[0];
+                    v2 = 2.0*rnd[1] - 1.0;
                 }
                 while (v1*v1 + v2*v2 > 1.0 ||
                        v1*v1*GMX_REAL_MAX < 3.0*ia);
@@ -1549,44 +1401,59 @@ static real vrescale_gamdev(int ia, gmx_rng_t rng)
             }
             while (x <= 0.0);
             e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
+
+            gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
         }
-        while (gmx_rng_uniform_real(rng) > e);
+        while (rnd[0] > e);
     }
 
     return x;
 }
 
-static real vrescale_sumnoises(int nn, gmx_rng_t rng)
+static real gaussian_count(gmx_int64_t step, gmx_int64_t *count,
+                           gmx_int64_t seed1, gmx_int64_t seed2)
+{
+    double rnd[2], x, y, r;
+
+    do
+    {
+        gmx_rng_cycle_2uniform(step, (*count++), seed1, seed2, rnd);
+        x = 2.0*rnd[0] - 1.0;
+        y = 2.0*rnd[1] - 1.0;
+        r = x*x + y*y;
+    }
+    while (r > 1.0 || r == 0.0);
+
+    r = sqrt(-2.0*log(r)/r);
+
+    return x*r;
+}
+
+static real vrescale_sumnoises(int nn,
+                               gmx_int64_t step, gmx_int64_t *count,
+                               gmx_int64_t seed1, gmx_int64_t seed2)
 {
 /*
  * Returns the sum of n independent gaussian noises squared
  * (i.e. equivalent to summing the square of the return values
  * of nn calls to gmx_rng_gaussian_real).xs
  */
-    real rr;
+    real r, gauss;
 
-    if (nn == 0)
+    r = 2.0*vrescale_gamdev(nn/2, step, count, seed1, seed2);
+
+    if (nn % 2 == 1)
     {
-        return 0.0;
+        gauss = gaussian_count(step, count, seed1, seed2);
+
+        r += gauss*gauss;
     }
-    else if (nn == 1)
-    {
-        rr = gmx_rng_gaussian_real(rng);
-        return rr*rr;
-    }
-    else if (nn % 2 == 0)
-    {
-        return 2.0*vrescale_gamdev(nn/2, rng);
-    }
-    else
-    {
-        rr = gmx_rng_gaussian_real(rng);
-        return 2.0*vrescale_gamdev((nn-1)/2, rng) + rr*rr;
-    }
+
+    return r;
 }
 
 static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
-                                 gmx_rng_t rng)
+                                 gmx_int64_t step, gmx_int64_t seed)
 {
 /*
  * Generates a new value for the kinetic energy,
@@ -1596,7 +1463,11 @@ static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
  * ndeg:  number of degrees of freedom of the atoms to be thermalized
  * taut:  relaxation time of the thermostat, in units of 'how often this routine is called'
  */
-    real factor, rr;
+    /* rnd_count tracks the step-local state for the cycle random
+     * number generates.
+     */
+    gmx_int64_t rnd_count = 0;
+    real        factor, rr, ekin_new;
 
     if (taut > 0.1)
     {
@@ -1606,15 +1477,20 @@ static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
     {
         factor = 0.0;
     }
-    rr = gmx_rng_gaussian_real(rng);
-    return
+
+    rr = gaussian_count(step, &rnd_count, seed, RND_SEED_VRESCALE);
+
+    ekin_new =
         kk +
-        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, rng) + rr*rr)/ndeg - kk) +
+        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, step, &rnd_count, seed, RND_SEED_VRESCALE) + rr*rr)/ndeg - kk) +
         2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
+
+    return ekin_new;
 }
 
-void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
-                     double therm_integral[], gmx_rng_t rng)
+void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
+                     gmx_ekindata_t *ekind, real dt,
+                     double therm_integral[])
 {
     t_grpopts *opts;
     int        i;
@@ -1639,7 +1515,8 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
             Ek_ref  = Ek_ref1*opts->nrdf[i];
 
             Ek_new  = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i],
-                                           opts->tau_t[i]/dt, rng);
+                                           opts->tau_t[i]/dt,
+                                           ir->ld_seed, step);
 
             /* Analytically Ek_new>=0, but we check for rounding errors */
             if (Ek_new <= 0)
