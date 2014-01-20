@@ -182,7 +182,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_update_t      upd   = NULL;
     t_graph          *graph = NULL;
     globsig_t         gs;
-    gmx_rng_t         mcrng = NULL;
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind, *ekind_save;
     gmx_shellfc_t     shellfc;
@@ -413,7 +412,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (ir->bExpanded)
     {
-        init_expanded_ensemble(bStateFromCP, ir, &mcrng, &state->dfhist);
+        init_expanded_ensemble(bStateFromCP, ir, &state->dfhist);
     }
 
     if (MASTER(cr))
@@ -436,17 +435,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(&state_global->enerhist, mdebin);
-    }
-
-    if ((state->flags & (1<<estLD_RNG)) && (Flags & MD_READ_RNG))
-    {
-        /* Set the random state if we read a checkpoint file */
-        set_stochd_state(upd, state);
-    }
-
-    if (state->flags & (1<<estMC_RNG))
-    {
-        set_mc_state(mcrng, state);
     }
 
     /* Initialize constraints */
@@ -1287,7 +1275,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, mcrng, state->v, mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, state->v, mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             copy_df_history(&state_global->dfhist, &state->dfhist);
         }
@@ -1297,9 +1285,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * the update.
          */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
-                                 ir, state, state_global, top_global, fr, upd,
+                                 ir, state, state_global, top_global, fr,
                                  outf, mdebin, ekind, f, f_global,
-                                 wcycle, mcrng, &nchkpt,
+                                 wcycle, &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
 
@@ -1408,12 +1396,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             if (!bInitStep)
             {
-                update_tcouple(step, ir, state, ekind, upd, &MassQ, mdatoms);
+                update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
             }
             if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
             {
                 gmx_bool bIfRandomize;
-                bIfRandomize = update_randomize_velocities(ir, step, mdatoms, state, upd, &top->idef, constr);
+                bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state, upd, constr);
                 /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
                 if (constr && bIfRandomize)
                 {
@@ -1486,7 +1474,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 else
                 {
-                    update_tcouple(step, ir, state, ekind, upd, &MassQ, mdatoms);
+                    update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
                     update_pcouple(fplog, step, ir, state, pcoupl_mu, M, bInitStep);
                 }
 
