@@ -39,6 +39,7 @@
 
 #include "../legacyheaders/types/simple.h"
 #include <limits.h>
+#include <math.h>
 
 #ifdef __cplusplus
 extern "C" {
