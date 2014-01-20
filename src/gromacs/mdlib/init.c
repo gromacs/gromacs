@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
 #define NOT_FINISHED(l1, l2) \
     printf("not finished yet: lines %d .. %d in %s\n", l1, l2, __FILE__)
 
-void set_state_entries(t_state *state, const t_inputrec *ir, int nnodes)
+void set_state_entries(t_state *state, const t_inputrec *ir)
 {
     int nnhpres;
 
@@ -108,31 +108,6 @@ void set_state_entries(t_state *state, const t_inputrec *ir, int nnodes)
             /* cg_p is not stored in the tpx file, so we need to allocate it */
             snew(state->cg_p, state->nalloc);
         }
-    }
-    if (EI_SD(ir->eI) || ir->eI == eiBD || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
-    {
-        state->nrng  = gmx_rng_n();
-        state->nrngi = 1;
-        if (EI_SD(ir->eI) || ir->eI == eiBD || ETC_ANDERSEN(ir->etc))
-        {
-            /* This will be correct later with DD */
-            state->nrng  *= nnodes;
-            state->nrngi *= nnodes;
-        }
-        state->flags |= ((1<<estLD_RNG) | (1<<estLD_RNGI));
-        snew(state->ld_rng, state->nrng);
-        snew(state->ld_rngi, state->nrngi);
-    }
-    else
-    {
-        state->nrng = 0;
-    }
-
-    if (ir->bExpanded)
-    {
-        state->nmcrng  = gmx_rng_n();
-        snew(state->mc_rng, state->nmcrng);
-        snew(state->mc_rngi, 1);
     }
 
     state->nnhpres = 0;
@@ -190,7 +165,7 @@ void init_parallel(t_commrec *cr, t_inputrec *inputrec,
 {
     bcast_ir_mtop(cr, inputrec, mtop);
 
-    if (inputrec->eI == eiBD || EI_SD(inputrec->eI) || ETC_ANDERSEN(inputrec->etc))
+    if (ETC_ANDERSEN(inputrec->etc))
     {
         /* Make sure the random seeds are different on each node */
         inputrec->ld_seed += cr->nodeid;

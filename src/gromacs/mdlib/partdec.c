@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -969,39 +969,6 @@ t_state *partdec_init_local_state(t_commrec gmx_unused *cr, t_state *state_globa
     for (i = 0; i < efptNR; i++)
     {
         state_local->lambda[i] = state_global->lambda[i];
-    }
-    if (state_global->nrngi > 1)
-    {
-        /* With stochastic dynamics we need local storage for the random state */
-        if (state_local->flags & (1<<estLD_RNG))
-        {
-            state_local->nrng = gmx_rng_n();
-            snew(state_local->ld_rng, state_local->nrng);
-#ifdef GMX_MPI
-            if (PAR(cr))
-            {
-                MPI_Scatter(state_global->ld_rng,
-                            state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                            state_local->ld_rng,
-                            state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                            MASTERRANK(cr), cr->mpi_comm_mygroup);
-            }
-#endif
-        }
-        if (state_local->flags & (1<<estLD_RNGI))
-        {
-            snew(state_local->ld_rngi, 1);
-#ifdef GMX_MPI
-            if (PAR(cr))
-            {
-                MPI_Scatter(state_global->ld_rngi,
-                            sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                            state_local->ld_rngi,
-                            sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                            MASTERRANK(cr), cr->mpi_comm_mygroup);
-            }
-#endif
-        }
     }
 
     return state_local;
