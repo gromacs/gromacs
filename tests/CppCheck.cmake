@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -84,6 +84,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidscanf
         --suppress=sizeofCalculation
         --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
+	--suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
         --inline-suppr)
     set(_cxx_flags
         -D__cplusplus

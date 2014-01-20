@@ -217,9 +217,7 @@ typedef struct
     int              natoms;
     int              ngtc;
     int              nnhpres;
-    int              nhchainlength; /* number of nose-hoover chains               */
-    int              nrng;
-    int              nrngi;
+    int              nhchainlength;   /* number of nose-hoover chains               */
     int              flags;           /* Flags telling which entries are present      */
     int              fep_state;       /* indicates which of the alchemical states we are in                 */
     real            *lambda;          /* lambda vector                               */
@@ -241,13 +239,6 @@ typedef struct
     rvec            *v;               /* the velocities (natoms)                      */
     rvec            *sd_X;            /* random part of the x update for stoch. dyn.  */
     rvec            *cg_p;            /* p vector for conjugate gradient minimization */
-
-    unsigned int    *ld_rng;          /* RNG random state                           */
-    int             *ld_rngi;         /* RNG index                                  */
-
-    int              nmcrng;          /* number of RNG states                       */
-    unsigned int    *mc_rng;          /* lambda MC RNG random state                 */
-    int             *mc_rngi;         /* lambda MC RNG index                        */
 
     history_t        hist;            /* Time history for restraints                  */
 

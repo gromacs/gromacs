@@ -69,7 +69,6 @@
 #include "constr.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "gromacs/random/random.h"
 #include "domdec.h"
 #include "genborn.h"
 #include "nbnxn_atomdata.h"

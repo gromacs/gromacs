@@ -49,6 +49,7 @@
 #include "vec.h"
 #include "names.h"
 #include "domdec.h"
+#include "gromacs/random/random.h"
 
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
@@ -974,18 +975,22 @@ test_for_replica_exchange(FILE                 *fplog,
     if (bMultiEx)
     {
         /* multiple random switch exchange */
-        for (i = 0; i < re->nex; i++)
+        int nself = 0;
+        for (i = 0; i < re->nex + nself; i++)
         {
+            double rnd[2];
+
+            gmx_rng_cycle_2uniform(step, i*2, re->seed, RND_SEED_REPLEX, rnd);
             /* randomly select a pair  */
             /* in theory, could reduce this by identifying only which switches had a nonneglibible
                probability of occurring (log p > -100) and only operate on those switches */
             /* find out which state it is from, and what label that state currently has. Likely
                more work that useful. */
-            i0 = (int)(re->nrepl*gmx_rng_uniform_real(re->rng));
-            i1 = (int)(re->nrepl*gmx_rng_uniform_real(re->rng));
+            i0 = (int)(re->nrepl*rnd[0]);
+            i1 = (int)(re->nrepl*rnd[1]);
             if (i0 == i1)
             {
-                i--;
+                nself++;
                 continue;  /* self-exchange, back up and do it again */
             }
 
@@ -1021,7 +1026,8 @@ test_for_replica_exchange(FILE                 *fplog,
                     prob[0] = exp(-delta);
                 }
                 /* roll a number to determine if accepted */
-                bEx[0] = (gmx_rng_uniform_real(re->rng) < prob[0]);
+                gmx_rng_cycle_2uniform(step, i*2+1, re->seed, RND_SEED_REPLEX, rnd);
+                bEx[0] = rnd[0] < prob[0];
             }
             re->prob_sum[0] += prob[0];
 
@@ -1039,6 +1045,7 @@ test_for_replica_exchange(FILE                 *fplog,
     else
     {
         /* standard nearest neighbor replica exchange */
+
         m = (step / re->nst) % 2;
         for (i = 1; i < re->nrepl; i++)
         {
@@ -1057,6 +1064,8 @@ test_for_replica_exchange(FILE                 *fplog,
                 }
                 else
                 {
+                    double rnd[2];
+
                     if (delta > PROBABILITYCUTOFF)
                     {
                         prob[i] = 0;
@@ -1066,7 +1075,8 @@ test_for_replica_exchange(FILE                 *fplog,
                         prob[i] = exp(-delta);
                     }
                     /* roll a number to determine if accepted */
-                    bEx[i] = (gmx_rng_uniform_real(re->rng) < prob[i]);
+                    gmx_rng_cycle_2uniform(step, i, re->seed, RND_SEED_REPLEX, rnd);
+                    bEx[i] = rnd[0] < prob[i];
                 }
                 re->prob_sum[i] += prob[i];
 
