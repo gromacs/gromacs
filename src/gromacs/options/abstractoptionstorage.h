@@ -109,6 +109,14 @@ class AbstractOptionStorage
         //! Returns the description of the option set by the calling code.
         const std::string &description() const { return descr_; }
 
+        //! Returns true if defaultValueIfSet() value is specified.
+        bool defaultValueIfSetExists() const
+        { return hasFlag(efOption_DefaultValueIfSetExists); }
+        //! Returns the minimum number of values required in one set.
+        int minValueCount() const { return minValueCount_; }
+        //! Returns the maximum allowed number of values in one set (-1 = no limit).
+        int maxValueCount() const { return maxValueCount_; }
+
         /*! \brief
          * Returns an option info object corresponding to this option.
          */
@@ -221,10 +229,6 @@ class AbstractOptionStorage
         //! Clears the given flag.
         void clearFlag(OptionFlag flag) { return flags_.clear(flag); }
 
-        //! Returns the minimum number of values required in one set.
-        int minValueCount() const { return minValueCount_; }
-        //! Returns the maximum allowed number of values in one set (-1 = no limit).
-        int maxValueCount() const { return maxValueCount_; }
         /*! \brief
          * Sets a new minimum number of values required in one set.
          *

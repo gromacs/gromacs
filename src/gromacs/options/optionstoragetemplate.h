@@ -475,6 +475,7 @@ void OptionStorageTemplate<T>::setDefaultValueIfSet(const T &value)
     {
         GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
     }
+    setFlag(efOption_DefaultValueIfSetExists);
     defaultValueIfSet_.reset(new T(value));
 }
 

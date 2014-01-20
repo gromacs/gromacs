@@ -306,7 +306,6 @@ fileOptionFlagsAsString(const FileNameOptionInfo &option, bool bAbbrev)
     {
         type += bAbbrev ? ", Lib." : ", Library";
     }
-    // TODO: Add a tag for options that accept multiple files.
     return type;
 }
 
@@ -384,6 +383,14 @@ void OptionsExportFormatter::formatFileOption(
 {
     const bool  bAbbrev = (context.outputFormat() == eHelpOutputFormat_Console);
     std::string value("<" + option.type() + ">");
+    if (option.maxValueCount() != 1)
+    {
+        value += " [...]";
+    }
+    if (option.minValueCount() == 0)
+    {
+        value = "[" + value + "]";
+    }
     std::string defaultValue(defaultOptionValue(option));
     std::string info = "(" + fileOptionFlagsAsString(option, bAbbrev) + ")";
     if (!defaultValue.empty())

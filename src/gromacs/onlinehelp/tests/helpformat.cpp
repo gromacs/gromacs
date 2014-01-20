@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,6 +135,12 @@ TEST_F(TextTableFormatterTest, HandlesOverflowingLines)
     formatter_.setColumnFirstLineOffset(2, 2);
     formatter_.addColumnLine(3, g_wrapText2);
     checkText(formatter_.formatRow(), "FormattedRow3");
+    // Test a case where a column value overflows even the next column.
+    formatter_.addColumnLine(0, "foobarfoobar");
+    formatter_.addColumnLine(1, "barfoobarfoo");
+    formatter_.addColumnLine(2, g_wrapText);
+    formatter_.addColumnLine(3, g_wrapText2);
+    checkText(formatter_.formatRow(), "FormattedRow4");
 }
 
 TEST_F(TextTableFormatterTest, HandlesLastColumnFolding)

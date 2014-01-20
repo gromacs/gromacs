@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ enum OptionFlag
     //! The current value of the option is a programmatic default value.
     efOption_HasDefaultValue            = 1<<1,
     //! An explicit default value has been provided for the option.
-    efOption_ExplicitDefaultValue      = 1<<2,
+    efOption_ExplicitDefaultValue       = 1<<2,
     /*! \brief
      * Next assignment to the option clears old values.
      *
@@ -89,6 +89,8 @@ enum OptionFlag
      * \see AbstractOption::setVector()
      */
     efOption_Vector                     = 1<<8,
+    //! %Option has a defaultValueIfSet() specified.
+    efOption_DefaultValueIfSetExists    = 1<<11,
     //! %Option does not support default values.
     efOption_NoDefaultValue             = 1<<9,
     /*! \brief
