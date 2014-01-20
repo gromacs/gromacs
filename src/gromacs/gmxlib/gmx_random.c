@@ -51,6 +51,8 @@
 #include <process.h>
 #endif
 
+#include <Random123/threefry.h>
+
 #include "gromacs/math/utilities.h"
 #include "gmx_random_gausstable.h"
 
@@ -386,4 +388,14 @@ gmx_rng_gaussian_table(gmx_rng_t rng)
 
     /* The Gaussian table is a static constant in this file */
     return gaussian_table[i >> GAUSS_SHIFT];
+}
+
+void
+gmx_rng_cycle_gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2, gmx_int64_t key1, real* rnd)
+{
+    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
+    threefry2x64_key_t key  = {{key1, 0xbadcafe}};
+    threefry2x64_ctr_t rand = threefry2x64(ctr, key);
+    rnd[0] = gaussian_table[rand.v[0] >> (64 - GAUSS_TABLE)];
+    rnd[1] = gaussian_table[rand.v[1] >> (64 - GAUSS_TABLE)];
 }
