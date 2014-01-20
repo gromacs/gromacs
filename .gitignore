@@ -1,5 +1,3 @@
-bin
-lib
 *~
 #*
 *.pyc
@@ -8,7 +6,6 @@ lib
 *.exe
 *.lib
 *.cache
-log
 Makefile
 lib*.pc
 .project
