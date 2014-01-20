@@ -51,6 +51,8 @@
 #include <process.h>
 #endif
 
+#include <Random123/threefry.h>
+
 #include "gromacs/math/utilities.h"
 #include "gmx_random_gausstable.h"
 
@@ -60,15 +62,15 @@
 #define RNG_UPPER_MASK 0x80000000UL /* most significant w-r bits */
 #define RNG_LOWER_MASK 0x7fffffffUL /* least significant r bits */
 
-/* Note that if you change the size of the Gaussian table you will also
- * have to generate new initialization data for the table in
+/* Note that if you change the size of the Gaussian table you will
+ * also have to generate new initialization data for the table in
  * gmx_random_gausstable.h
  *
  * A routine print_gaussian_table() is in contrib/random.c
  * for convenience - use it if you need a different size of the table.
  */
 #define GAUSS_TABLE 14 /* the size of the gauss table is 2^GAUSS_TABLE */
-#define GAUSS_SHIFT (32 - GAUSS_TABLE)
+#define GAUSS_MASK  ((1 << GAUSS_TABLE) - 1)
 
 
 struct gmx_rng {
@@ -374,10 +376,8 @@ gmx_rng_uniform_real(gmx_rng_t rng)
      * we are limited to an accuracy of 1e-7.
      */
 }
-
-
-
 real
+
 gmx_rng_gaussian_table(gmx_rng_t rng)
 {
     unsigned int i;
@@ -385,5 +385,49 @@ gmx_rng_gaussian_table(gmx_rng_t rng)
     i = gmx_rng_uniform_uint32(rng);
 
     /* The Gaussian table is a static constant in this file */
-    return gaussian_table[i >> GAUSS_SHIFT];
+    return gaussian_table[i >> (32 - GAUSS_TABLE)];
+}
+
+void
+gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                       gmx_int64_t key1, gmx_int64_t key2,
+                       double* rnd)
+{
+    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
+    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t rand = threefry2x64(ctr, key);
+
+    rnd[0] = (rand.v[0] & 0x1FFFFFFFFFFFFF)*(1.0/9007199254740992.0);
+    rnd[1] = (rand.v[1] & 0x1FFFFFFFFFFFFF)*(1.0/9007199254740992.0);
+}
+
+void
+gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2,
+                              real* rnd)
+{
+    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
+    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t rand = threefry2x64(ctr, key);
+
+    rnd[0] = gaussian_table[(rand.v[0] >> 48) & GAUSS_MASK];
+    rnd[1] = gaussian_table[(rand.v[0] >> 32) & GAUSS_MASK];
+    rnd[2] = gaussian_table[(rand.v[0] >> 16) & GAUSS_MASK];
+}
+
+void
+gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2,
+                              real* rnd)
+{
+    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
+    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t rand = threefry2x64(ctr, key);
+
+    rnd[0] = gaussian_table[(rand.v[0] >> 48) & GAUSS_MASK];
+    rnd[1] = gaussian_table[(rand.v[0] >> 32) & GAUSS_MASK];
+    rnd[2] = gaussian_table[(rand.v[0] >> 16) & GAUSS_MASK];
+    rnd[3] = gaussian_table[(rand.v[1] >> 48) & GAUSS_MASK];
+    rnd[4] = gaussian_table[(rand.v[1] >> 32) & GAUSS_MASK];
+    rnd[5] = gaussian_table[(rand.v[1] >> 16) & GAUSS_MASK];
 }
