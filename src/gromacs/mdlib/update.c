@@ -783,7 +783,6 @@ static void do_update_sd2_Tconsts(gmx_stochd_t *sd,
 }
 
 static void do_update_sd2(gmx_stochd_t *sd,
-                          gmx_rng_t gaussrand,
                           gmx_bool bInitStep,
                           int start, int nrend,
                           rvec accel[], ivec nFreeze[],
@@ -793,19 +792,21 @@ static void do_update_sd2(gmx_stochd_t *sd,
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
                           rvec sd_X[],
                           const real tau_t[],
-                          gmx_bool bFirstHalf)
+                          gmx_bool bFirstHalf, gmx_int64_t step, int seed,
+                          int* gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
     /* The random part of the velocity update, generated in the first
      * half of the update, needs to be remembered for the second half.
      */
-    rvec  *sd_V;
-    real   kT;
-    int    gf = 0, ga = 0, gt = 0;
-    real   vn = 0, Vmh, Xmh;
-    real   ism;
-    int    n, d;
+    rvec       *sd_V;
+    real        kT;
+    int         gf = 0, ga = 0, gt = 0;
+    real        vn = 0, Vmh, Xmh;
+    real        ism;
+    gmx_int64_t rnd[2];
+    int         n, d, ng;
 
     sdc  = sd->sdc;
     sig  = sd->sdsig;
@@ -813,6 +814,7 @@ static void do_update_sd2(gmx_stochd_t *sd,
 
     for (n = start; n < nrend; n++)
     {
+        ng  = gatindex ? gatindex[n] : n;
         ism = sqrt(invmass[n]);
         if (cFREEZE)
         {
@@ -839,11 +841,13 @@ static void do_update_sd2(gmx_stochd_t *sd,
                 {
                     if (bInitStep)
                     {
-                        sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
+                        gmx_rng_cycle_gaussian_table(step*2, ng, seed, rnd);
+                        sd_X[n][d] = ism*sig[gt].X*rnd[0];
                     }
+                    gmx_rng_cycle_gaussian_table(step*2+1, ng, seed, rnd);
                     Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c)
-                        + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
-                    sd_V[n][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+                        + ism*sig[gt].Yv*rnd[0];
+                    sd_V[n][d] = ism*sig[gt].V*rnd[1];
 
                     v[n][d] = vn*sdc[gt].em
                         + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
@@ -853,7 +857,7 @@ static void do_update_sd2(gmx_stochd_t *sd,
                 }
                 else
                 {
-
+                    gmx_rng_cycle_gaussian_table(step*2+2, ng, seed, rnd);
                     /* Correct the velocities for the constraints.
                      * This operation introduces some inaccuracy,
                      * since the velocity is determined from differences in coordinates.
@@ -862,8 +866,8 @@ static void do_update_sd2(gmx_stochd_t *sd,
                         (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));
 
                     Xmh = sd_V[n][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1)
-                        + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
-                    sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
+                        + ism*sig[gt].Yx*rnd[0];
+                    sd_X[n][d] = ism*sig[gt].X*rnd[1];
 
                     xprime[n][d] += sd_X[n][d] - Xmh;
 
@@ -1652,14 +1656,15 @@ void update_constraints(FILE             *fplog,
             end_th   = start + ((nrend-start)*(th+1))/nth;
 
             /* The second part of the SD integration */
-            do_update_sd2(upd->sd, upd->sd->gaussrand[th],
+            do_update_sd2(upd->sd,
                           FALSE, start_th, end_th,
                           inputrec->opts.acc, inputrec->opts.nFreeze,
                           md->invmass, md->ptype,
                           md->cFREEZE, md->cACC, md->cTC,
                           state->x, xprime, state->v, force, state->sd_X,
                           inputrec->opts.tau_t,
-                          FALSE);
+                          FALSE, step, inputrec->ld_seed,
+                          DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
 
@@ -1963,14 +1968,15 @@ void update_coords(FILE             *fplog,
                 /* The SD update is done in 2 parts, because an extra constraint step
                  * is needed
                  */
-                do_update_sd2(upd->sd, upd->sd->gaussrand[th],
+                do_update_sd2(upd->sd,
                               bInitStep, start_th, end_th,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force, state->sd_X,
                               inputrec->opts.tau_t,
-                              TRUE);
+                              TRUE, step, inputrec->ld_seed,
+                              DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 break;
             case (eiBD):
                 do_update_bd(start_th, end_th, dt,
