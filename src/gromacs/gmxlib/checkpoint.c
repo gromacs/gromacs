@@ -979,10 +979,9 @@ static int do_cpt_footer(XDR *xd, int file_version)
 
 static int do_cpt_state(XDR *xd, gmx_bool bRead,
                         int fflags, t_state *state,
-                        gmx_bool bReadRNG, FILE *list)
+                        FILE *list)
 {
     int    sflags;
-    int  **rng_p, **rngi_p;
     int    i;
     int    ret;
     int    nnht, nnhtp;
@@ -992,24 +991,10 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
     nnht  = state->nhchainlength*state->ngtc;
     nnhtp = state->nhchainlength*state->nnhpres;
 
-    if (bReadRNG)
-    {
-        rng_p  = (int **)&state->ld_rng;
-        rngi_p = &state->ld_rngi;
-    }
-    else
-    {
-        /* Do not read the RNG data */
-        rng_p  = NULL;
-        rngi_p = NULL;
-    }
-
     if (bRead) /* we need to allocate space for dfhist if we are reading */
     {
         init_df_history(&state->dfhist, state->dfhist.nlambda);
     }
-
-    /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */
 
     sflags = state->flags;
     for (i = 0; (i < estNR && ret == 0); i++)
@@ -1036,10 +1021,13 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
                 case estX:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->x, list); break;
                 case estV:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->v, list); break;
                 case estSDX:     ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->sd_X, list); break;
-                case estLD_RNG:  ret      = do_cpte_ints(xd, cptpEST, i, sflags, state->nrng, rng_p, list); break;
-                case estLD_RNGI: ret      = do_cpte_ints(xd, cptpEST, i, sflags, state->nrngi, rngi_p, list); break;
-                case estMC_RNG:  ret      = do_cpte_ints(xd, cptpEST, i, sflags, state->nmcrng, (int **)&state->mc_rng, list); break;
-                case estMC_RNGI: ret      = do_cpte_ints(xd, cptpEST, i, sflags, 1, &state->mc_rngi, list); break;
+                /* The RNG entries are no longer written,
+                 * the next 4 lines are only for reading old files.
+                 */
+                case estLD_RNG:  ret      = do_cpte_ints(xd, cptpEST, i, sflags, 0, NULL, list); break;
+                case estLD_RNGI: ret      = do_cpte_ints(xd, cptpEST, i, sflags, 0, NULL, list); break;
+                case estMC_RNG:  ret      = do_cpte_ints(xd, cptpEST, i, sflags, 0, NULL, list); break;
+                case estMC_RNGI: ret      = do_cpte_ints(xd, cptpEST, i, sflags, 0, NULL, list); break;
                 case estDISRE_INITF:  ret = do_cpte_real (xd, cptpEST, i, sflags, &state->hist.disre_initf, list); break;
                 case estDISRE_RM3TAV: ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
                 case estORIRE_INITF:  ret = do_cpte_real (xd, cptpEST, i, sflags, &state->hist.orire_initf, list); break;
@@ -1541,7 +1529,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     sfree(bhost);
     sfree(fprog);
 
-    if ((do_cpt_state(gmx_fio_getxdr(fp), FALSE, state->flags, state, TRUE, NULL) < 0)        ||
+    if ((do_cpt_state(gmx_fio_getxdr(fp), FALSE, state->flags, state, NULL) < 0)        ||
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, NULL) < 0) ||
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, &state->enerhist, NULL) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL) < 0)  ||
@@ -1739,7 +1727,7 @@ static void check_match(FILE *fplog,
 static void read_checkpoint(const char *fn, FILE **pfplog,
                             t_commrec *cr, gmx_bool bPartDecomp, ivec dd_nc,
                             int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
-                            t_state *state, gmx_bool *bReadRNG, gmx_bool *bReadEkin,
+                            t_state *state, gmx_bool *bReadEkin,
                             int *simulation_part,
                             gmx_bool bAppendOutputFiles, gmx_bool bForceAppend)
 {
@@ -1898,16 +1886,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         nppnodes = -1;
     }
 
-    if ((EI_SD(eIntegrator) || eIntegrator == eiBD) && nppnodes > 0)
-    {
-        /* Correct the RNG state size for the number of PP nodes.
-         * Such assignments should all be moved to one central function.
-         */
-        state->nrng  = nppnodes*gmx_rng_n();
-        state->nrngi = nppnodes;
-    }
-
-    *bReadRNG = TRUE;
     if (fflags != state->flags)
     {
 
@@ -1943,7 +1921,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         if ((EI_SD(eIntegrator) || eIntegrator == eiBD) &&
             nppnodes != nppnodes_f)
         {
-            *bReadRNG = FALSE;
             if (MASTER(cr))
             {
                 fprintf(stderr, sd_note, nppnodes_f, nppnodes);
@@ -1959,7 +1936,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                         cr, bPartDecomp, nppnodes_f, npmenodes_f, dd_nc, dd_nc_f);
         }
     }
-    ret             = do_cpt_state(gmx_fio_getxdr(fp), TRUE, fflags, state, *bReadRNG, NULL);
+    ret             = do_cpt_state(gmx_fio_getxdr(fp), TRUE, fflags, state, NULL);
     *init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.
                                             Investigate for 5.0. */
     if (ret)
@@ -2176,7 +2153,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 void load_checkpoint(const char *fn, FILE **fplog,
                      t_commrec *cr, gmx_bool bPartDecomp, ivec dd_nc,
                      t_inputrec *ir, t_state *state,
-                     gmx_bool *bReadRNG, gmx_bool *bReadEkin,
+                     gmx_bool *bReadEkin,
                      gmx_bool bAppend, gmx_bool bForceAppend)
 {
     gmx_int64_t     step;
@@ -2187,7 +2164,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
         /* Read the state from the checkpoint file */
         read_checkpoint(fn, fplog,
                         cr, bPartDecomp, dd_nc,
-                        ir->eI, &(ir->fepvals->init_fep_state), &step, &t, state, bReadRNG, bReadEkin,
+                        ir->eI, &(ir->fepvals->init_fep_state), &step, &t, state, bReadEkin,
                         &ir->simulation_part, bAppend, bForceAppend);
     }
     if (PAR(cr))
@@ -2195,7 +2172,6 @@ void load_checkpoint(const char *fn, FILE **fplog,
         gmx_bcast(sizeof(cr->npmenodes), &cr->npmenodes, cr);
         gmx_bcast(DIM*sizeof(dd_nc[0]), dd_nc, cr);
         gmx_bcast(sizeof(step), &step, cr);
-        gmx_bcast(sizeof(*bReadRNG), bReadRNG, cr);
         gmx_bcast(sizeof(*bReadEkin), bReadEkin, cr);
     }
     ir->bContinuation    = TRUE;
@@ -2209,7 +2185,6 @@ void load_checkpoint(const char *fn, FILE **fplog,
 
 static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                                  gmx_int64_t *step, double *t, t_state *state,
-                                 gmx_bool bReadRNG,
                                  int *nfiles, gmx_file_position_t **outputfiles)
 {
     int                  file_version;
@@ -2230,7 +2205,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                   &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
                   &state->edsamstate.nED, NULL);
     ret =
-        do_cpt_state(gmx_fio_getxdr(fp), TRUE, state->flags, state, bReadRNG, NULL);
+        do_cpt_state(gmx_fio_getxdr(fp), TRUE, state->flags, state, NULL);
     if (ret)
     {
         cp_error();
@@ -2292,7 +2267,7 @@ read_checkpoint_state(const char *fn, int *simulation_part,
     t_fileio *fp;
 
     fp = gmx_fio_open(fn, "r");
-    read_checkpoint_data(fp, simulation_part, step, t, state, FALSE, NULL, NULL);
+    read_checkpoint_data(fp, simulation_part, step, t, state, NULL, NULL);
     if (gmx_fio_close(fp) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
@@ -2312,7 +2287,7 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 
     init_state(&state, 0, 0, 0, 0, 0);
 
-    read_checkpoint_data(fp, &simulation_part, &step, &t, &state, FALSE, NULL, NULL);
+    read_checkpoint_data(fp, &simulation_part, &step, &t, &state, NULL, NULL);
 
     fr->natoms  = state.natoms;
     fr->bTitle  = FALSE;
@@ -2373,7 +2348,7 @@ void list_checkpoint(const char *fn, FILE *out)
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
                   &(state.dfhist.nlambda), &state.flags,
                   &flags_eks, &flags_enh, &flags_dfh, &state.edsamstate.nED, out);
-    ret = do_cpt_state(gmx_fio_getxdr(fp), TRUE, state.flags, &state, TRUE, out);
+    ret = do_cpt_state(gmx_fio_getxdr(fp), TRUE, state.flags, &state, out);
     if (ret)
     {
         cp_error();
@@ -2470,7 +2445,7 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
         {
             init_state(&state, 0, 0, 0, 0, 0);
 
-            read_checkpoint_data(fp, simulation_part, &step, &t, &state, FALSE,
+            read_checkpoint_data(fp, simulation_part, &step, &t, &state,
                                  &nfiles, &outputfiles);
             if (gmx_fio_close(fp) != 0)
             {

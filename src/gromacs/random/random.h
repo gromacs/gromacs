@@ -45,6 +45,15 @@
 extern "C" {
 #endif
 
+/*! Fixed random number seeds for different types of RNG */
+#define RND_SEED_UPDATE    1 /*!< For coordinate update (sd, bd, ..) */
+#define RND_SEED_REPLEX    2 /*!< For replica exchange */
+#define RND_SEED_VRESCALE  3 /*!< For V-rescale thermostat */
+#define RND_SEED_ANDERSEN  4 /*!< For Andersen thermostat */
+#define RND_SEED_TPI       5 /*!< For test particle insertion */
+#define RND_SEED_EXPANDED  6 /*!< For expanded emseble methods */
+#define RND_SEED_NSCATTER  9 /*!< For neutron scattering (nsfactor) */
+
 /*! \brief Abstract datatype for a random number generator
  *
  * This is a handle to the full state of a random number generator.
@@ -259,6 +268,33 @@ gmx_rng_gaussian_real(gmx_rng_t rng);
  */
 real
 gmx_rng_gaussian_table(gmx_rng_t rng);
+
+/* Return two uniform random numbers with 2^53 equally
+ * probable values between 0 and 1 - 2^-53.
+ */
+void
+gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                       gmx_int64_t key1, gmx_int64_t key2,
+                       double* rnd);
+
+/* Return three Gaussian random numbers with expectation value
+ * 0.0 and standard deviation 1.0. This routine uses a table
+ * lookup for maximum speed. It uses a stateless counter
+ * based random number generator (threefry2x64). See
+ * gmx_rng_gaussian_table for a warning about accuracy of the table.
+ *
+ * threadsafe: yes
+ */
+void
+gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2,
+                              real* rnd);
+
+/* As gmx_rng_3gaussian_table, but returns 6 Gaussian numbers. */
+void
+gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2,
+                              real* rnd);
 
 #ifdef __cplusplus
 }
