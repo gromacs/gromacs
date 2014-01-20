@@ -1959,29 +1959,6 @@ void dd_init_local_state(gmx_domdec_t *dd,
 
     init_state(state_local, 0, buf[1], buf[2], buf[3], buf[4]);
     state_local->flags = buf[0];
-
-    /* With Langevin Dynamics we need to make proper storage space
-     * in the global and local state for the random numbers.
-     */
-    if (state_local->flags & (1<<estLD_RNG))
-    {
-        if (DDMASTER(dd) && state_global->nrngi > 1)
-        {
-            state_global->nrng = dd->nnodes*gmx_rng_n();
-            srenew(state_global->ld_rng, state_global->nrng);
-        }
-        state_local->nrng = gmx_rng_n();
-        snew(state_local->ld_rng, state_local->nrng);
-    }
-    if (state_local->flags & (1<<estLD_RNGI))
-    {
-        if (DDMASTER(dd) && state_global->nrngi > 1)
-        {
-            state_global->nrngi = dd->nnodes;
-            srenew(state_global->ld_rngi, state_global->nrngi);
-        }
-        snew(state_local->ld_rngi, 1);
-    }
 }
 
 static void check_link(t_blocka *link, int cg_gl, int cg_gl_j)
