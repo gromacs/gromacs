@@ -33,6 +33,10 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB FILEIO_SOURCES *.cpp *.c)
+if(GMX_BUILD_MDRUN_ONLY)
+    file(GLOB FILEIO_SOURCES_TO_REMOVE tngio_for_dump.cpp)
+    list(REMOVE_ITEM FILEIO_SOURCES ${FILEIO_SOURCES_TO_REMOVE})
+endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
 
 set(FILEIO_PUBLIC_HEADERS
