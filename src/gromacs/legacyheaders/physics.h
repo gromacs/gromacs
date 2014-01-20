@@ -44,8 +44,6 @@
  * be anywhere else in the code.
  */
 
-#include <math.h>
-
 /* we do it anyway. */
 #ifdef __cplusplus
 extern "C" {

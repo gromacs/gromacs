@@ -39,6 +39,7 @@
 #endif
 
 #include <vector>
+#include <math.h>
 
 #include "tngio.h"
 #include "trx.h"
