@@ -38,6 +38,8 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "tngio.h"
 #include "trx.h"
 

@@ -44,19 +44,10 @@
  * be anywhere else in the code.
  */
 
-#include <math.h>
+#include "gromacs/math/utilities.h"
 
-/* we do it anyway. */
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#ifndef M_PI
-#ifdef _PI
-#define M_PI _PI
-#else
-#define M_PI        3.14159265358979323846
-#endif
 #endif
 
 #define ANGSTROM     (1e-10)                               /* Old...	*/
