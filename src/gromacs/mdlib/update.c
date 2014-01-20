@@ -685,14 +685,14 @@ gmx_update_t init_update(t_inputrec *ir)
 }
 
 static void do_update_sd1(gmx_stochd_t *sd,
-                          gmx_rng_t gaussrand,
                           int start, int nrend, double dt,
                           rvec accel[], ivec nFreeze[],
                           real invmass[], unsigned short ptype[],
                           unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
-                          int ngtc, real tau_t[], real ref_t[])
+                          int ngtc, real tau_t[], real ref_t[],
+                          gmx_int64_t step, int seed, int* gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
@@ -713,6 +713,8 @@ static void do_update_sd1(gmx_stochd_t *sd,
 
     for (n = start; n < nrend; n++)
     {
+        real rnd[2];
+        int  ng  = gatindex ? gatindex[n] : n;
         ism = sqrt(invmass[n]);
         if (cFREEZE)
         {
@@ -729,9 +731,13 @@ static void do_update_sd1(gmx_stochd_t *sd,
 
         for (d = 0; d < DIM; d++)
         {
+            if (d%2 == 0)
+            {
+                gmx_rng_cycle_gaussian_table(step*3+d, ng, seed, RND_SEED_UPDATE, rnd);
+            }
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
-                sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+                sd_V = ism*sig[gt].V*rnd[d%2];
 
                 v[n][d] = v[n][d]*sdc[gt].em
                     + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
@@ -783,7 +789,6 @@ static void do_update_sd2_Tconsts(gmx_stochd_t *sd,
 }
 
 static void do_update_sd2(gmx_stochd_t *sd,
-                          gmx_rng_t gaussrand,
                           gmx_bool bInitStep,
                           int start, int nrend,
                           rvec accel[], ivec nFreeze[],
@@ -793,19 +798,21 @@ static void do_update_sd2(gmx_stochd_t *sd,
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
                           rvec sd_X[],
                           const real tau_t[],
-                          gmx_bool bFirstHalf)
+                          gmx_bool bFirstHalf, gmx_int64_t step, int seed,
+                          int* gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
     /* The random part of the velocity update, generated in the first
      * half of the update, needs to be remembered for the second half.
      */
-    rvec  *sd_V;
-    real   kT;
-    int    gf = 0, ga = 0, gt = 0;
-    real   vn = 0, Vmh, Xmh;
-    real   ism;
-    int    n, d;
+    rvec       *sd_V;
+    real        kT;
+    int         gf = 0, ga = 0, gt = 0;
+    real        vn = 0, Vmh, Xmh;
+    real        ism;
+    real        rnd[2];
+    int         n, d, ng;
 
     sdc  = sd->sdc;
     sig  = sd->sdsig;
@@ -813,6 +820,7 @@ static void do_update_sd2(gmx_stochd_t *sd,
 
     for (n = start; n < nrend; n++)
     {
+        ng  = gatindex ? gatindex[n] : n;
         ism = sqrt(invmass[n]);
         if (cFREEZE)
         {
@@ -839,11 +847,13 @@ static void do_update_sd2(gmx_stochd_t *sd,
                 {
                     if (bInitStep)
                     {
-                        sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
+                        gmx_rng_cycle_gaussian_table(step*6+d, ng, seed, RND_SEED_UPDATE, rnd);
+                        sd_X[n][d] = ism*sig[gt].X*rnd[0];
                     }
+                    gmx_rng_cycle_gaussian_table(step*6+3+d, ng, seed, RND_SEED_UPDATE, rnd);
                     Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c)
-                        + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
-                    sd_V[n][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+                        + ism*sig[gt].Yv*rnd[0];
+                    sd_V[n][d] = ism*sig[gt].V*rnd[1];
 
                     v[n][d] = vn*sdc[gt].em
                         + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
@@ -853,7 +863,7 @@ static void do_update_sd2(gmx_stochd_t *sd,
                 }
                 else
                 {
-
+                    gmx_rng_cycle_gaussian_table(step*6+6+d, ng, seed, RND_SEED_UPDATE, rnd);
                     /* Correct the velocities for the constraints.
                      * This operation introduces some inaccuracy,
                      * since the velocity is determined from differences in coordinates.
@@ -862,8 +872,8 @@ static void do_update_sd2(gmx_stochd_t *sd,
                         (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));
 
                     Xmh = sd_V[n][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1)
-                        + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
-                    sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
+                        + ism*sig[gt].Yx*rnd[0];
+                    sd_X[n][d] = ism*sig[gt].X*rnd[1];
 
                     xprime[n][d] += sd_X[n][d] - Xmh;
 
@@ -910,7 +920,8 @@ static void do_update_bd(int start, int nrend, double dt,
                          unsigned short cFREEZE[], unsigned short cTC[],
                          rvec x[], rvec xprime[], rvec v[],
                          rvec f[], real friction_coefficient,
-                         real *rf, gmx_rng_t gaussrand)
+                         real *rf, gmx_int64_t step, int seed,
+                         int* gatindex)
 {
     /* note -- these appear to be full step velocities . . .  */
     int    gf = 0, gt = 0;
@@ -925,6 +936,9 @@ static void do_update_bd(int start, int nrend, double dt,
 
     for (n = start; (n < nrend); n++)
     {
+        real rnd[2];
+        int  ng  = gatindex ? gatindex[n] : n;
+
         if (cFREEZE)
         {
             gf = cFREEZE[n];
@@ -935,17 +949,21 @@ static void do_update_bd(int start, int nrend, double dt,
         }
         for (d = 0; (d < DIM); d++)
         {
+            if (d%2 == 0)
+            {
+                gmx_rng_cycle_gaussian_table(step*3+d, ng, seed, RND_SEED_UPDATE, rnd);
+            }
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
                 if (friction_coefficient != 0)
                 {
-                    vn = invfr*f[n][d] + rf[gt]*gmx_rng_gaussian_table(gaussrand);
+                    vn = invfr*f[n][d] + rf[gt]*rnd[d%2];
                 }
                 else
                 {
                     /* NOTE: invmass = 2/(mass*friction_constant*dt) */
                     vn = 0.5*invmass[n]*f[n][d]*dt
-                        + sqrt(0.5*invmass[n])*rf[gt]*gmx_rng_gaussian_table(gaussrand);
+                        + sqrt(0.5*invmass[n])*rf[gt]*rnd[d%2];
                 }
 
                 v[n][d]      = vn;
@@ -1652,14 +1670,15 @@ void update_constraints(FILE             *fplog,
             end_th   = start + ((nrend-start)*(th+1))/nth;
 
             /* The second part of the SD integration */
-            do_update_sd2(upd->sd, upd->sd->gaussrand[th],
+            do_update_sd2(upd->sd,
                           FALSE, start_th, end_th,
                           inputrec->opts.acc, inputrec->opts.nFreeze,
                           md->invmass, md->ptype,
                           md->cFREEZE, md->cACC, md->cTC,
                           state->x, xprime, state->v, force, state->sd_X,
                           inputrec->opts.tau_t,
-                          FALSE);
+                          FALSE, step, inputrec->ld_seed,
+                          DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
 
@@ -1951,26 +1970,28 @@ void update_coords(FILE             *fplog,
                 }
                 break;
             case (eiSD1):
-                do_update_sd1(upd->sd, upd->sd->gaussrand[th],
+                do_update_sd1(upd->sd,
                               start_th, end_th, dt,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force,
-                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t);
+                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t,
+                              step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 break;
             case (eiSD2):
                 /* The SD update is done in 2 parts, because an extra constraint step
                  * is needed
                  */
-                do_update_sd2(upd->sd, upd->sd->gaussrand[th],
+                do_update_sd2(upd->sd,
                               bInitStep, start_th, end_th,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force, state->sd_X,
                               inputrec->opts.tau_t,
-                              TRUE);
+                              TRUE, step, inputrec->ld_seed,
+                              DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 break;
             case (eiBD):
                 do_update_bd(start_th, end_th, dt,
@@ -1978,7 +1999,8 @@ void update_coords(FILE             *fplog,
                              md->cFREEZE, md->cTC,
                              state->x, xprime, state->v, force,
                              inputrec->bd_fric,
-                             upd->sd->bd_rf, upd->sd->gaussrand[th]);
+                             upd->sd->bd_rf,
+                             step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 break;
             case (eiVV):
             case (eiVVAK):
