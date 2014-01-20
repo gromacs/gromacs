@@ -68,7 +68,6 @@ extern "C" {
 #define MD_DDBONDCOMM     (1<<11)
 #define MD_CONFOUT        (1<<12)
 #define MD_REPRODUCIBLE   (1<<13)
-#define MD_READ_RNG       (1<<14)
 #define MD_APPENDFILES    (1<<15)
 #define MD_APPENDFILESSET (1<<21)
 #define MD_KEEPANDNUMCPT  (1<<16)
@@ -146,29 +145,24 @@ gmx_integrator_t do_tpi;
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
-void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rng_t *mcrng, df_history_t *dfhist);
+void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t *dfhist);
 
 int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
                              t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
-                             gmx_int64_t step, gmx_rng_t mcrng,
+                             gmx_int64_t step,
                              rvec *v, t_mdatoms *mdatoms);
 
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
                                int fep_state, int frequency, gmx_int64_t step);
-
-void get_mc_state(gmx_rng_t rng, t_state *state);
-
-void set_mc_state(gmx_rng_t rng, t_state *state);
 
 /* check the version */
 void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
                                t_inputrec *ir, gmx_mtop_t *mtop);
 
 /* Allocate and initialize node-local state entries. */
-void set_state_entries(t_state *state, const t_inputrec *ir, int nnodes);
+void set_state_entries(t_state *state, const t_inputrec *ir);
 
-/* Broadcast the data for a simulation, and allocate node-specific settings
-   such as rng generators. */
+/* Broadcast the data for a simulation, and allocate node-specific settings */
 void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop);
 

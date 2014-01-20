@@ -204,10 +204,8 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     double          **tgr;
     int               tid;
     int               nthreads;
-    gmx_rng_t        *trng = NULL;
 #endif
     gmx_int64_t       mc  = 0, max;
-    gmx_rng_t         rng = NULL;
 
     /* allocate memory for pr */
     snew(pr, 1);
@@ -239,31 +237,35 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         {
             max = (gmx_int64_t)floor(0.5*mcover*isize*(isize-1));
         }
-        rng = gmx_rng_init(seed);
 #ifdef GMX_OPENMP
         nthreads = gmx_omp_get_max_threads();
         snew(tgr, nthreads);
-        snew(trng, nthreads);
         for (i = 0; i < nthreads; i++)
         {
             snew(tgr[i], pr->grn);
-            trng[i] = gmx_rng_init(gmx_rng_uniform_uint32(rng));
         }
-        #pragma omp parallel shared(tgr,trng,mc) private(tid,i,j)
+#endif
+#pragma omp parallel shared(tgr,mc)
         {
-            tid = gmx_omp_get_thread_num();
             /* now starting parallel threads */
-            #pragma omp for
+#pragma omp for
             for (mc = 0; mc < max; mc++)
             {
-                i = (int)floor(gmx_rng_uniform_real(trng[tid])*isize);
-                j = (int)floor(gmx_rng_uniform_real(trng[tid])*isize);
+	        int    i, j;
+		double rnd[4];
+
+		gmx_rng_cycle_4uniform(seed, RND_SEED_REST, mc, 1,
+                                       rnd);
+
+                i = (int)floor(rnd[0]*isize);
+                j = (int)floor(rnd[1]*isize);
                 if (i != j)
                 {
                     tgr[tid][(int)floor(sqrt(distance2(x[index[i]], x[index[j]]))/binwidth)] += gsans->slength[index[i]]*gsans->slength[index[j]];
                 }
             }
         }
+#ifdef GMX_OPENMP
         /* collecting data from threads */
         for (i = 0; i < pr->grn; i++)
         {
@@ -272,26 +274,8 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
                 pr->gr[i] += tgr[j][i];
             }
         }
-        /* freeing memory for tgr and destroying trng */
-        for (i = 0; i < nthreads; i++)
-        {
-            sfree(tgr[i]);
-            gmx_rng_destroy(trng[i]);
-        }
         sfree(tgr);
-        sfree(trng);
-#else
-        for (mc = 0; mc < max; mc++)
-        {
-            i = (int)floor(gmx_rng_uniform_real(rng)*isize);
-            j = (int)floor(gmx_rng_uniform_real(rng)*isize);
-            if (i != j)
-            {
-                pr->gr[(int)floor(sqrt(distance2(x[index[i]], x[index[j]]))/binwidth)] += gsans->slength[index[i]]*gsans->slength[index[j]];
-            }
-        }
 #endif
-        gmx_rng_destroy(rng);
     }
     else
     {

@@ -88,9 +88,8 @@ static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, in
 
 /* Eventually should contain all the functions needed to initialize expanded ensemble
    before the md loop starts */
-extern void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rng_t *mcrng, df_history_t *dfhist)
+extern void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t *dfhist)
 {
-    *mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
     if (!bStateFromCP)
     {
         init_df_history_weights(dfhist, ir->expandedvals, ir->fepvals->n_lambda);
@@ -737,7 +736,8 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     return FALSE;
 }
 
-static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, double *p_k, gmx_rng_t rng)
+static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, double *p_k,
+                           gmx_int64_t seed, gmx_int64_t step)
 {
     /* Choose new lambda value, and update transition matrix */
 
@@ -783,6 +783,9 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 
     for (i = 0; i < expand->lmc_repeats; i++)
     {
+        double rnd[4];
+
+        gmx_rng_cycle_4uniform(seed, RND_SEED_EXPANDED, step, i, rnd);
 
         for (ifep = 0; ifep < nlim; ifep++)
         {
@@ -824,7 +827,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                     accept[ifep]  = 1.0;
                 }
                 /* Gibbs sampling */
-                r1 = gmx_rng_uniform_real(rng);
+                r1 = rnd[0];
                 for (lamnew = minfep; lamnew <= maxfep; lamnew++)
                 {
                     if (r1 <= p_k[lamnew])
@@ -865,7 +868,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                         }
                     }
 
-                    r1 = gmx_rng_uniform_real(rng);
+                    r1 = rnd[0];
                     for (lamtrial = minfep; lamtrial <= maxfep; lamtrial++)
                     {
                         pnorm = p_k[lamtrial]/remainder[fep_state];
@@ -887,7 +890,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                     {
                         tprob = trialprob;
                     }
-                    r2 = gmx_rng_uniform_real(rng);
+                    r2 = rnd[1];
                     if (r2 < tprob)
                     {
                         lamnew = lamtrial;
@@ -948,7 +951,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
         else if ((expand->elmcmove == elmcmoveMETROPOLIS) || (expand->elmcmove == elmcmoveBARKER))
         {
             /* use the metropolis sampler with trial +/- 1 */
-            r1 = gmx_rng_uniform_real(rng);
+            r1 = rnd[0];
             if (r1 < 0.5)
             {
                 if (fep_state == 0)
@@ -997,7 +1000,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                 accept[lamtrial]   = 1.0;
             }
 
-            r2 = gmx_rng_uniform_real(rng);
+            r2 = rnd[1];
             if (r2 < tprob)
             {
                 lamnew = lamtrial;
@@ -1197,19 +1200,9 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
     }
 }
 
-extern void get_mc_state(gmx_rng_t rng, t_state *state)
-{
-    gmx_rng_get_state(rng, state->mc_rng, state->mc_rngi);
-}
-
-extern void set_mc_state(gmx_rng_t rng, t_state *state)
-{
-    gmx_rng_set_state(rng, state->mc_rng, state->mc_rngi[0]);
-}
-
 extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
                                     t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
-                                    gmx_int64_t step, gmx_rng_t mcrng,
+                                    gmx_int64_t step,
                                     rvec *v, t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */
@@ -1322,7 +1315,8 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
         }
     }
 
-    lamnew = ChooseNewLambda(nlim, expand, dfhist, fep_state, weighted_lamee, p_k, mcrng);
+    lamnew = ChooseNewLambda(nlim, expand, dfhist, fep_state, weighted_lamee, p_k,
+                             ir->expandedvals->lmc_seed, step);
     /* if using simulated tempering, we need to adjust the temperatures */
     if (ir->bSimTemp && (lamnew != fep_state)) /* only need to change the temperatures if we change the state */
     {
