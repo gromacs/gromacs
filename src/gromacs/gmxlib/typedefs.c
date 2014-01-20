@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -586,7 +586,6 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     int i;
 
     state->natoms = natoms;
-    state->nrng   = 0;
     state->flags  = 0;
     state->lambda = 0;
     snew(state->lambda, efptNR);

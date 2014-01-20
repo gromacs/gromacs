@@ -86,10 +86,10 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
     of->fp_dhdl      = NULL;
     of->fp_field     = NULL;
 
-    of->eIntegrator     = ir->eI;
-    of->bExpanded       = ir->bExpanded;
-    of->elamstats       = ir->expandedvals->elamstats;
-    of->simulation_part = ir->simulation_part;
+    of->eIntegrator             = ir->eI;
+    of->bExpanded               = ir->bExpanded;
+    of->elamstats               = ir->expandedvals->elamstats;
+    of->simulation_part         = ir->simulation_part;
     of->x_compression_precision = ir->x_compression_precision;
 
     if (MASTER(cr))
@@ -190,8 +190,8 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
            trajectory-writing routines later. Also, XTC writing needs
            to know what (and how many) atoms might be in the XTC
            groups, and how to look up later which ones they are. */
-        of->natoms_global = top_global->natoms;
-        of->groups        = &top_global->groups;
+        of->natoms_global       = top_global->natoms;
+        of->groups              = &top_global->groups;
         of->natoms_x_compressed = 0;
         for (i = 0; (i < top_global->natoms); i++)
         {
@@ -305,29 +305,6 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 if (state_local->flags & (1<<estSDX))
                 {
                     MX(state_global->sd_X);
-                }
-                if (state_global->nrngi > 1)
-                {
-                    if (state_local->flags & (1<<estLD_RNG))
-                    {
-#ifdef GMX_MPI
-                        MPI_Gather(state_local->ld_rng,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                                   state_global->ld_rng,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                                   MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-                    }
-                    if (state_local->flags & (1<<estLD_RNGI))
-                    {
-#ifdef GMX_MPI
-                        MPI_Gather(state_local->ld_rngi,
-                                   sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                                   state_global->ld_rngi,
-                                   sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                                   MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-                    }
                 }
             }
             else
