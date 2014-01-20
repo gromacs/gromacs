@@ -42,7 +42,6 @@
 #include "mshift.h"
 #include "tgroup.h"
 #include "network.h"
-#include "gromacs/random/random.h"
 #include "vec.h"
 
 
@@ -72,7 +71,6 @@ void update_tcouple(gmx_int64_t       step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
-                    gmx_update_t      upd,
                     t_extmass        *MassQ,
                     t_mdatoms        *md
                     );
@@ -107,7 +105,7 @@ void update_coords(FILE             *fplog,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr_t constr);
 
 void update_constraints(FILE             *fplog,
                         gmx_int64_t       step,
@@ -175,7 +173,8 @@ restore_ekinstate_from_state(t_commrec *cr,
 
 void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt);
 
-void andersen_tcoupl(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock, gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac);
+void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
+                     const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac);
 
 void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
                        double xi[], double vxi[], t_extmass *MassQ);
@@ -196,9 +195,9 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
 void NBaroT_trotter(t_grpopts *opts, real dt,
                     double xi[], double vxi[], real *veta, t_extmass *MassQ);
 
-void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
-                     double therm_integral[],
-                     gmx_rng_t rng);
+void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
+                     gmx_ekindata_t *ekind, real dt,
+                     double therm_integral[]);
 /* Compute temperature scaling. For V-rescale it is done in update. */
 
 real vrescale_energy(t_grpopts *opts, double therm_integral[]);

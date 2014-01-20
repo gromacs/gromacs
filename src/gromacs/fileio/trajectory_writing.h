@@ -43,7 +43,6 @@
 #include "mdoutf.h"
 #include "../legacyheaders/types/simple.h"
 #include "../legacyheaders/types/commrec.h"
-#include "../legacyheaders/update.h"
 #include "../legacyheaders/mdebin.h"
 
 /*! \brief Wrapper routine for writing trajectories during mdrun
@@ -63,14 +62,12 @@ do_md_trajectory_writing(FILE           *fplog,
                          t_state        *state_global,
                          gmx_mtop_t     *top_global,
                          t_forcerec     *fr,
-                         gmx_update_t    upd,
                          gmx_mdoutf_t    outf,
                          t_mdebin       *mdebin,
                          gmx_ekindata_t *ekind,
                          rvec           *f,
                          rvec           *f_global,
                          gmx_wallcycle_t wcycle,
-                         gmx_rng_t       mcrng,
                          int            *nchkpt,
                          gmx_bool        bCPT,
                          gmx_bool        bRerunMD,
