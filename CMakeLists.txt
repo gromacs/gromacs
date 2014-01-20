@@ -966,6 +966,8 @@ else()
     endif ()
 endif()
 
+include_directories(${CMAKE_SOURCE_DIR}/src/external/Random123-1.08/include)
+
 # TODO The Windows builds are still broken (we are avoiding some
 # unknown bug, perhaps with checkpointing?), because defaulting to
 # .tng output leads to calling null-op implementation functions, so

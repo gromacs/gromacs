@@ -45,6 +45,14 @@
 extern "C" {
 #endif
 
+/*! Fixed random number seeds for different types of RNG */
+#define RND_SEED_UPDATE    1 /*!< For coordinate update (sd, bd, ..) */
+#define RND_SEED_REPLEX    2 /*!< For replica exchange */
+#define RND_SEED_VRESCALE  3 /*!< For V-rescale thermostat */
+#define RND_SEED_ANDERSEN  4 /*!< For Andersen thermostat */
+#define RND_SEED_TPI       5 /*!< For test particle insertion */
+#define RND_SEED_EXPANDED  6 /*!< For expanded emseble methods */
+
 /*! \brief Abstract datatype for a random number generator
  *
  * This is a handle to the full state of a random number generator.
@@ -259,6 +267,53 @@ gmx_rng_gaussian_real(gmx_rng_t rng);
  */
 real
 gmx_rng_gaussian_table(gmx_rng_t rng);
+
+
+/* The stateless cycle bases random number generators below,
+ * which all use threefry2x64, take the following arguments:
+ *
+ * ctr1: In mdrun the step counter, in tools the frame(-step)
+ *       counter, so we can ensure reproducible results, even
+ *       we starting at different steps/frames. Might need to
+ *       multiplied by a constant if we need more random numbers.
+ * ctr2: A local counter, in mdrun often a global atom index.
+ *       If any algorithm needs a variable number of random numbers,
+ *       the second counter is usually a function local counter.
+ * key1: A user provided random seed.
+ * key2: A fixed seed which is particular for the algorithm,
+ *       as defined at the top of this file, to ensure different
+ *       random sequences when the same user seed is used for
+ *       different algorithms.
+ */
+
+/* Return two uniform random numbers with 2^53 equally
+ * probable values between 0 and 1 - 2^-53.
+ * It uses a stateless counter based random number generator
+ * (threefry2x64). 
+ */
+void
+gmx_rng_cycle_2uniform(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                       gmx_int64_t key1, gmx_int64_t key2,
+                       double* rnd);
+
+/* Return three Gaussian random numbers with expectation value
+ * 0.0 and standard deviation 1.0. This routine uses a table
+ * lookup for maximum speed. It uses a stateless counter
+ * based random number generator (threefry2x64). See
+ * gmx_rng_gaussian_table for a warning about accuracy of the table.
+ *
+ * threadsafe: yes
+ */
+void
+gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2,
+                              real* rnd);
+
+/* As gmx_rng_3gaussian_table, but returns 6 Gaussian numbers. */
+void
+gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2,
+                              real* rnd);
 
 #ifdef __cplusplus
 }
