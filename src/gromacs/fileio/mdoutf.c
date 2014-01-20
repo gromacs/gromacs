@@ -314,29 +314,6 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 {
                     MX(state_global->sd_X);
                 }
-                if (state_global->nrngi > 1)
-                {
-                    if (state_local->flags & (1<<estLD_RNG))
-                    {
-#ifdef GMX_MPI
-                        MPI_Gather(state_local->ld_rng,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                                   state_global->ld_rng,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                                   MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-                    }
-                    if (state_local->flags & (1<<estLD_RNGI))
-                    {
-#ifdef GMX_MPI
-                        MPI_Gather(state_local->ld_rngi,
-                                   sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                                   state_global->ld_rngi,
-                                   sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                                   MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-                    }
-                }
             }
             else
             {

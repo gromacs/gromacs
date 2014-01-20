@@ -49,7 +49,6 @@
 #include "main.h"
 #include "force.h"
 #include "macros.h"
-#include "gromacs/random/random.h"
 #include "names.h"
 #include "gmx_fatal.h"
 #include "txtdump.h"
