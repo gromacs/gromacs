@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -259,6 +259,17 @@ gmx_rng_gaussian_real(gmx_rng_t rng);
  */
 real
 gmx_rng_gaussian_table(gmx_rng_t rng);
+
+/* Return two new gaussian random numbers with expectation value
+ * 0.0 and standard deviation 1.0. This routine uses a table
+ * lookup for maximum speed. It uses a stateless counter
+ * based random number generator (threefry2x64). See
+ * gmx_rng_gaussian_table for a warning about accuracy of the table.
+ *
+ * threadsafe: yes
+ */
+void
+gmx_rng_cycle_gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2, gmx_int64_t key1, gmx_int64_t* rnd);
 
 #ifdef __cplusplus
 }
