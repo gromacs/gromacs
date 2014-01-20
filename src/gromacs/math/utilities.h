@@ -37,8 +37,10 @@
 #ifndef GMX_MATH_UTILITIES_H
 #define GMX_MATH_UTILITIES_H
 
-#include "../legacyheaders/types/simple.h"
 #include <limits.h>
+#include <math.h>
+
+#include "../legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
