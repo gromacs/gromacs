@@ -51,7 +51,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "mtop_util.h"
-#include "gromacs/random/random.h"
 #include "checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
@@ -462,13 +461,6 @@ int gmx_convert_tpr(int argc, char *argv[])
             fprintf(stderr, "NOTE: The simulation uses pressure coupling and/or stochastic dynamics.\n"
                     "gmx convert-tpr can not provide binary identical continuation.\n"
                     "If you want that, supply a checkpoint file to mdrun\n\n");
-        }
-
-        if (EI_SD(ir->eI) || ir->eI == eiBD)
-        {
-            fprintf(stderr, "\nChanging ld-seed from %d ", ir->ld_seed);
-            ir->ld_seed = (int)gmx_rng_make_seed();
-            fprintf(stderr, "to %d\n\n", ir->ld_seed);
         }
 
         frame_fn = ftp2fn(efTRN, NFILE, fnm);

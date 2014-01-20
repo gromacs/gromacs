@@ -1064,7 +1064,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       i, m, nChargePerturbed = -1, nTypePerturbed = 0, status, nalloc;
     char                     *gro;
     gmx_wallcycle_t           wcycle;
-    gmx_bool                  bReadRNG, bReadEkin;
+    gmx_bool                  bReadEkin;
     int                       list;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
@@ -1258,7 +1258,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* now make sure the state is initialized and propagated */
-    set_state_entries(state, inputrec, cr->nnodes);
+    set_state_entries(state, inputrec);
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
@@ -1377,14 +1377,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
                             cr, Flags & MD_PARTDEC, ddxyz,
-                            inputrec, state, &bReadRNG, &bReadEkin,
+                            inputrec, state, &bReadEkin,
                             (Flags & MD_APPENDFILES),
                             (Flags & MD_APPENDFILESSET));
 
-            if (bReadRNG)
-            {
-                Flags |= MD_READ_RNG;
-            }
             if (bReadEkin)
             {
                 Flags |= MD_READ_EKIN;
