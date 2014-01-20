@@ -56,6 +56,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         ${CMAKE_SOURCE_DIR}/src/contrib/*.cu
         ${CMAKE_SOURCE_DIR}/src/external/*.c
         ${CMAKE_SOURCE_DIR}/src/external/*.cpp
+        ${CMAKE_SOURCE_DIR}/src/external/*.h
         ${CMAKE_SOURCE_DIR}/src/external/*.cu
         )
     list(REMOVE_ITEM _inputfiles ${_files_to_ignore})
