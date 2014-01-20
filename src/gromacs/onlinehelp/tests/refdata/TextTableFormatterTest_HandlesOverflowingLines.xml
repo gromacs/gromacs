@@ -22,4 +22,10 @@ foobar                   A quick brown
           fox jumps over dog
           the lazy dog
 ]]></String>
+  <String Name="FormattedRow4"><![CDATA[
+foobarfoobar barfoobarfoo A quick brown
+          A quick brown  fox jumps
+          fox jumps over over the lazy
+          the lazy dog   dog
+]]></String>
 </ReferenceData>

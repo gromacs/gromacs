@@ -209,6 +209,20 @@ bool OptionInfo::isRequired() const
     return option().isRequired();
 }
 
+int OptionInfo::minValueCount() const
+{
+    if (option().defaultValueIfSetExists())
+    {
+        return 0;
+    }
+    return option().minValueCount();
+}
+
+int OptionInfo::maxValueCount() const
+{
+    return option().maxValueCount();
+}
+
 const std::string &OptionInfo::name() const
 {
     return option().name();
@@ -230,6 +244,11 @@ std::string OptionInfo::formatDescription() const
     return description;
 }
 
+std::string OptionInfo::formatDefaultValueIfSet() const
+{
+    return option().formatDefaultValueIfSet();
+}
+
 int OptionInfo::valueCount() const
 {
     return option().valueCount();
@@ -238,11 +257,6 @@ int OptionInfo::valueCount() const
 std::string OptionInfo::formatValue(int i) const
 {
     return option().formatValue(i);
-}
-
-std::string OptionInfo::formatDefaultValueIfSet() const
-{
-    return option().formatDefaultValueIfSet();
 }
 
 } // namespace gmx
