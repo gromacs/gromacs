@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <math.h>
 
 #include "tngio.h"
 #include "trx.h"
@@ -527,22 +529,22 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
                 for (int i = 0; i < DIM; i++)
                 {
                     convert_array_to_real_array((char *)(values) + size * i * DIM,
-                                                    (real *) fr->box[i],
-                                                    getDistanceScaleFactor(input),
-                                                    1,
-                                                    DIM,
-                                                    datatype);
+                                                (real *) fr->box[i],
+                                                getDistanceScaleFactor(input),
+                                                1,
+                                                DIM,
+                                                datatype);
                 }
                 fr->bBox = TRUE;
                 break;
             case TNG_TRAJ_POSITIONS:
                 srenew(fr->x, fr->natoms);
                 convert_array_to_real_array(values,
-                                                (real *) fr->x,
-                                                getDistanceScaleFactor(input),
-                                                fr->natoms,
-                                                DIM,
-                                                datatype);
+                                            (real *) fr->x,
+                                            getDistanceScaleFactor(input),
+                                            fr->natoms,
+                                            DIM,
+                                            datatype);
                 fr->bX = TRUE;
                 tng_util_frame_current_compression_get(input, blockId, &codecId, &prec);
                 /* This must be updated if/when more lossy compression methods are added */
@@ -555,11 +557,11 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
             case TNG_TRAJ_VELOCITIES:
                 srenew(fr->v, fr->natoms);
                 convert_array_to_real_array(values,
-                                                (real *) fr->v,
-                                                getDistanceScaleFactor(input),
-                                                fr->natoms,
-                                                DIM,
-                                                datatype);
+                                            (real *) fr->v,
+                                            getDistanceScaleFactor(input),
+                                            fr->natoms,
+                                            DIM,
+                                            datatype);
                 fr->bV = TRUE;
                 tng_util_frame_current_compression_get(input, blockId, &codecId, &prec);
                 /* This must be updated if/when more lossy compression methods are added */
@@ -572,11 +574,11 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
             case TNG_TRAJ_FORCES:
                 srenew(fr->f, fr->natoms);
                 convert_array_to_real_array(values,
-                                                (real *) fr->f,
-                                                getDistanceScaleFactor(input),
-                                                fr->natoms,
-                                                DIM,
-                                                datatype);
+                                            (real *) fr->f,
+                                            getDistanceScaleFactor(input),
+                                            fr->natoms,
+                                            DIM,
+                                            datatype);
                 fr->bF = TRUE;
                 break;
             case TNG_GMX_LAMBDA:
@@ -824,11 +826,11 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     }
     snew(*values, sizeof(real) * *nValuesPerFrame * *nAtoms);
     convert_array_to_real_array(data,
-                                    *values,
-                                    getDistanceScaleFactor(input),
-                                    *nAtoms,
-                                    *nValuesPerFrame,
-                                    datatype);
+                                *values,
+                                getDistanceScaleFactor(input),
+                                *nAtoms,
+                                *nValuesPerFrame,
+                                datatype);
 
     tng_util_frame_current_compression_get(input, blockId, &codecId, &localPrec);
 
