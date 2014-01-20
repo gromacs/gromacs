@@ -111,6 +111,7 @@
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "gmx_fatal.h"
+#include <math.h>
 #include "physics.h"
 
 #ifdef __cplusplus
