@@ -1585,37 +1585,6 @@ void dd_collect_state(gmx_domdec_t *dd,
                 case estCGP:
                     dd_collect_vec(dd, state_local, state_local->cg_p, state->cg_p);
                     break;
-                case estLD_RNG:
-                    if (state->nrngi == 1)
-                    {
-                        if (DDMASTER(dd))
-                        {
-                            for (i = 0; i < state_local->nrng; i++)
-                            {
-                                state->ld_rng[i] = state_local->ld_rng[i];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dd_gather(dd, state_local->nrng*sizeof(state->ld_rng[0]),
-                                  state_local->ld_rng, state->ld_rng);
-                    }
-                    break;
-                case estLD_RNGI:
-                    if (state->nrngi == 1)
-                    {
-                        if (DDMASTER(dd))
-                        {
-                            state->ld_rngi[0] = state_local->ld_rngi[0];
-                        }
-                    }
-                    else
-                    {
-                        dd_gather(dd, sizeof(state->ld_rngi[0]),
-                                  state_local->ld_rngi, state->ld_rngi);
-                    }
-                    break;
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
                 case estORIRE_INITF:
@@ -1657,8 +1626,6 @@ static void dd_realloc_state(t_state *state, rvec **f, int nalloc)
                 case estCGP:
                     srenew(state->cg_p, state->nalloc);
                     break;
-                case estLD_RNG:
-                case estLD_RNGI:
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
                 case estORIRE_INITF:
@@ -1915,32 +1882,6 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
                     break;
                 case estCGP:
                     dd_distribute_vec(dd, cgs, state->cg_p, state_local->cg_p);
-                    break;
-                case estLD_RNG:
-                    if (state->nrngi == 1)
-                    {
-                        dd_bcastc(dd,
-                                  state_local->nrng*sizeof(state_local->ld_rng[0]),
-                                  state->ld_rng, state_local->ld_rng);
-                    }
-                    else
-                    {
-                        dd_scatter(dd,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]),
-                                   state->ld_rng, state_local->ld_rng);
-                    }
-                    break;
-                case estLD_RNGI:
-                    if (state->nrngi == 1)
-                    {
-                        dd_bcastc(dd, sizeof(state_local->ld_rngi[0]),
-                                  state->ld_rngi, state_local->ld_rngi);
-                    }
-                    else
-                    {
-                        dd_scatter(dd, sizeof(state_local->ld_rngi[0]),
-                                   state->ld_rngi, state_local->ld_rngi);
-                    }
                     break;
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
