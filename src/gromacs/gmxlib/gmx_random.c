@@ -51,6 +51,8 @@
 #include <process.h>
 #endif
 
+#include <Random123/threefry.h>
+
 #include "gromacs/math/utilities.h"
 #include "gmx_random_gausstable.h"
 
@@ -375,7 +377,18 @@ gmx_rng_uniform_real(gmx_rng_t rng)
      */
 }
 
-
+void
+gmx_rng_cycle32_uniform_double(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                               gmx_int64_t key1, gmx_int64_t key2, double* rnd)
+{
+    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
+    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t rand = threefry2x64(ctr, key);
+    rnd[0] = (rand.v[0]&0xFFFFFFFF)*(1.0/4294967296.0);
+    rnd[1] = (rand.v[0]>>32)*(1.0/4294967296.0);
+    rnd[2] = (rand.v[1]&0xFFFFFFFF)*(1.0/4294967296.0);
+    rnd[3] = (rand.v[1]>>32)*(1.0/4294967296.0);
+}
 
 real
 gmx_rng_gaussian_table(gmx_rng_t rng)
@@ -386,4 +399,31 @@ gmx_rng_gaussian_table(gmx_rng_t rng)
 
     /* The Gaussian table is a static constant in this file */
     return gaussian_table[i >> GAUSS_SHIFT];
+}
+
+void
+gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2, real* rnd)
+{
+    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
+    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t rand = threefry2x64(ctr, key);
+    rnd[0] = gaussian_table[rand.v[0] >> (64 - GAUSS_TABLE)];
+    rnd[1] = gaussian_table[rand.v[0] & (1<<GAUSS_TABLE)];
+    rnd[2] = gaussian_table[rand.v[1] >> (64 - GAUSS_TABLE)];
+}
+
+void
+gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2, real* rnd)
+{
+    threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
+    threefry2x64_key_t key  = {{key1, key2}};
+    threefry2x64_ctr_t rand = threefry2x64(ctr, key);
+    rnd[0] = gaussian_table[rand.v[0] >> (64 - GAUSS_TABLE)];
+    rnd[1] = gaussian_table[rand.v[0] & (1<<GAUSS_TABLE)];
+    rnd[2] = gaussian_table[(rand.v[0] >> 32) & (1<<GAUSS_TABLE)];
+    rnd[3] = gaussian_table[rand.v[1] >> (64 - GAUSS_TABLE)];
+    rnd[4] = gaussian_table[rand.v[1] & (1<<GAUSS_TABLE)];
+    rnd[5] = gaussian_table[(rand.v[1] >> 32) & (1<<GAUSS_TABLE)];
 }
