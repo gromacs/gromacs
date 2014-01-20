@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*! Fixed random number seeds for different types of RNG */
+#define RND_SEED_UPDATE 1 /*!< For coordinate update (sd, bd, ..) */
+#define RND_SEED_REPLEX 2 /*!< For replica exchange */
 
 /*! \brief Abstract datatype for a random number generator
  *
@@ -259,6 +263,27 @@ gmx_rng_gaussian_real(gmx_rng_t rng);
  */
 real
 gmx_rng_gaussian_table(gmx_rng_t rng);
+
+/* Return four new uniform random numbers */
+void
+gmx_rng_cycle32_uniform_double(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                               gmx_int64_t key1, gmx_int64_t key2, double* rnd);
+
+/* Return three new Gaussian random numbers with expectation value
+ * 0.0 and standard deviation 1.0. This routine uses a table
+ * lookup for maximum speed. It uses a stateless counter
+ * based random number generator (threefry2x64). See
+ * gmx_rng_gaussian_table for a warning about accuracy of the table.
+ *
+ * threadsafe: yes
+ */
+void
+gmx_rng_cycle_3gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2, real* rnd);
+
+void
+gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
+                              gmx_int64_t key1, gmx_int64_t key2, real* rnd);
 
 #ifdef __cplusplus
 }
