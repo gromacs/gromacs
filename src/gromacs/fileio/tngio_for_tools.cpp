@@ -38,8 +38,6 @@
 #include <config.h>
 #endif
 
-#include <vector>
-
 #include "tngio.h"
 #include "trx.h"
 
@@ -52,7 +50,6 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/physics.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
-#include "gromacs/tools/dump.h"
 
 void gmx_prepare_tng_writing(const char              *filename,
                              char                     mode,
@@ -860,64 +857,5 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     GMX_UNUSED_VALUE(maxLen);
     GMX_UNUSED_VALUE(bOK);
     return FALSE;
-#endif
-}
-
-void list_tng_for_gmx_dump(const char *fn)
-{
-#ifdef GMX_USE_TNG
-    tng_trajectory_t     tng;
-    gmx_int64_t          nframe = 0;
-    gmx_int64_t          i, *block_ids = NULL, step, ndatablocks;
-    gmx_bool             bOK;
-
-    gmx_tng_open(fn, 'r', &tng);
-    gmx_print_tng_molecule_system(tng, stdout);
-
-    bOK    = gmx_get_tng_data_block_types_of_next_frame(tng, -1,
-                                                        0,
-                                                        NULL,
-                                                        &step, &ndatablocks,
-                                                        &block_ids);
-    do
-    {
-        for (i = 0; i < ndatablocks; i++)
-        {
-            double               frame_time;
-            real                 prec, *values = NULL;
-            gmx_int64_t          n_values_per_frame, n_atoms;
-            char                 block_name[STRLEN];
-
-            gmx_get_tng_data_next_frame_of_block_type(tng, block_ids[i], &values,
-                                                      &step, &frame_time,
-                                                      &n_values_per_frame, &n_atoms,
-                                                      &prec,
-                                                      block_name, STRLEN, &bOK);
-            if (!bOK)
-            {
-                /* Can't write any output because we don't know what
-                   arrays are valid. */
-                fprintf(stderr, "\nWARNING: Incomplete frame at time %g, will not write output\n", frame_time);
-                list_tng_inner(fn, (0 == i), values, step, frame_time,
-                               n_values_per_frame, n_atoms, prec, nframe, block_name);
-            }
-        }
-        nframe++;
-    }
-    while (gmx_get_tng_data_block_types_of_next_frame(tng, step,
-                                                      0,
-                                                      NULL,
-                                                      &step,
-                                                      &ndatablocks,
-                                                      &block_ids));
-
-    if (block_ids)
-    {
-        sfree(block_ids);
-    }
-
-    gmx_tng_close(&tng);
-#else
-    GMX_UNUSED_VALUE(fn);
 #endif
 }
