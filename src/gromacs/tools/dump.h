@@ -51,21 +51,6 @@ extern "C" {
  */
 int gmx_dump(int argc, char *argv[]);
 
-/*! \brief Callback used by list_tng_for_gmx_dump.
- *
- * This keeps TNG-related stuff in a TNG-related file, and
- * dumping-related stuff in the dumping file. */
-void list_tng_inner(const char *fn,
-                    gmx_bool bFirstFrame,
-                    real *values,
-                    gmx_int64_t step, 
-                    double frame_time,
-                    gmx_int64_t n_values_per_frame,
-                    gmx_int64_t n_atoms,
-                    real prec,
-                    gmx_int64_t nframe,
-                    char *block_name);
-
 #ifdef __cplusplus
 }
 #endif
