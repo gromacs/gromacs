@@ -110,8 +110,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
                                                    gmx_bool            *bOK);
 
 /*! \brief Implements TNG file reading for gmxdump. */
-void list_tng_for_gmx_dump(const char *fn,
-                           gmx_bool bXVG);
+void list_tng_for_gmx_dump(const char *fn);
 
 #ifdef __cplusplus
 }

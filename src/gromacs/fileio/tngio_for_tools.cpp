@@ -863,21 +863,20 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
 #endif
 }
 
-void list_tng_for_gmx_dump(const char *fn, gmx_bool bXVG)
+void list_tng_for_gmx_dump(const char *fn)
 {
 #ifdef GMX_USE_TNG
     tng_trajectory_t     tng;
     gmx_int64_t          nframe = 0;
     gmx_int64_t          i, *block_ids = NULL, step, ndatablocks;
-    gmx_int64_t          pos_block_id = TNG_TRAJ_POSITIONS;
     gmx_bool             bOK;
 
     gmx_tng_open(fn, 'r', &tng);
     gmx_print_tng_molecule_system(tng, stdout);
 
     bOK    = gmx_get_tng_data_block_types_of_next_frame(tng, -1,
-                                                        bXVG ? 1 : 0,
-                                                        bXVG ? &pos_block_id : NULL,
+                                                        0,
+                                                        NULL,
                                                         &step, &ndatablocks,
                                                         &block_ids);
     do
@@ -899,15 +898,15 @@ void list_tng_for_gmx_dump(const char *fn, gmx_bool bXVG)
                 /* Can't write any output because we don't know what
                    arrays are valid. */
                 fprintf(stderr, "\nWARNING: Incomplete frame at time %g, will not write output\n", frame_time);
-                list_tng_inner(fn, (0 == i), bXVG, values, step, frame_time,
+                list_tng_inner(fn, (0 == i), values, step, frame_time,
                                n_values_per_frame, n_atoms, prec, nframe, block_name);
             }
         }
         nframe++;
     }
     while (gmx_get_tng_data_block_types_of_next_frame(tng, step,
-                                                      bXVG ? 1 : 0,
-                                                      bXVG ? &pos_block_id : NULL,
+                                                      0,
+                                                      NULL,
                                                       &step,
                                                       &ndatablocks,
                                                       &block_ids));
@@ -920,6 +919,5 @@ void list_tng_for_gmx_dump(const char *fn, gmx_bool bXVG)
     gmx_tng_close(&tng);
 #else
     GMX_UNUSED_VALUE(fn);
-    GMX_UNUSED_VALUE(bXVG);
 #endif
 }

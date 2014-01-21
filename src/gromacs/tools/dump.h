@@ -57,7 +57,6 @@ int gmx_dump(int argc, char *argv[]);
  * dumping-related stuff in the dumping file. */
 void list_tng_inner(const char *fn,
                     gmx_bool bFirstFrame,
-                    gmx_bool bXVG,
                     real *values,
                     gmx_int64_t step, 
                     double frame_time,

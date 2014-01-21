@@ -280,7 +280,7 @@ static void list_trn(const char *fn)
     close_trn(fpread);
 }
 
-void list_xtc(const char *fn, gmx_bool bXVG)
+void list_xtc(const char *fn)
 {
     t_fileio  *xd;
     int        indent;
@@ -297,31 +297,14 @@ void list_xtc(const char *fn, gmx_bool bXVG)
     nframe = 0;
     do
     {
-        if (bXVG)
-        {
-            int i, d;
-
-            fprintf(stdout, "%g", time);
-            for (i = 0; i < natoms; i++)
-            {
-                for (d = 0; d < DIM; d++)
-                {
-                    fprintf(stdout, " %g", x[i][d]);
-                }
-            }
-            fprintf(stdout, "\n");
-        }
-        else
-        {
-            sprintf(buf, "%s frame %d", fn, nframe);
-            indent = 0;
-            indent = pr_title(stdout, indent, buf);
-            pr_indent(stdout, indent);
-            fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  prec=%10g\n",
-                    natoms, step, time, prec);
-            pr_rvecs(stdout, indent, "box", box, DIM);
-            pr_rvecs(stdout, indent, "x", x, natoms);
-        }
+        sprintf(buf, "%s frame %d", fn, nframe);
+        indent = 0;
+        indent = pr_title(stdout, indent, buf);
+        pr_indent(stdout, indent);
+        fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  prec=%10g\n",
+                natoms, step, time, prec);
+        pr_rvecs(stdout, indent, "box", box, DIM);
+        pr_rvecs(stdout, indent, "x", x, natoms);
         nframe++;
     }
     while (read_next_xtc(xd, natoms, &step, &time, box, x, &prec, &bOK));
@@ -336,7 +319,6 @@ void list_xtc(const char *fn, gmx_bool bXVG)
 /* Callback used by list_tng_for_gmx_dump. */
 void list_tng_inner(const char *fn,
                     gmx_bool bFirstFrame,
-                    gmx_bool bXVG,
                     real *values,
                     gmx_int64_t step, 
                     double frame_time,
@@ -349,52 +331,31 @@ void list_tng_inner(const char *fn,
     char                 buf[256];
     int                  indent = 0;
 
-    if (bXVG)
+    if (bFirstFrame)
     {
-        gmx_int64_t j;
-        int         d;
-
-        if (bFirstFrame)
+        sprintf(buf, "%s frame %" GMX_PRId64, fn, nframe);
+        indent = 0;
+        indent = pr_title(stdout, indent, buf);
+        pr_indent(stdout, indent);
+        fprintf(stdout, "natoms=%10" GMX_PRId64 "  step=%10" GMX_PRId64 "  time=%12.7e",
+                n_atoms, step, frame_time);
+        if (prec > 0)
         {
-            fprintf(stdout, "%g", (real)frame_time);
-        }
-        for (j = 0; j < n_atoms; j++)
-        {
-            for (d = 0; d < DIM; d++)
-            {
-                fprintf(stdout, " %g", values[j * DIM + d]);
-            }
+            fprintf(stdout, "  prec=%10g", prec);
         }
         fprintf(stdout, "\n");
     }
-    else
-    {
-        if (bFirstFrame)
-        {
-            sprintf(buf, "%s frame %" GMX_PRId64, fn, nframe);
-            indent = 0;
-            indent = pr_title(stdout, indent, buf);
-            pr_indent(stdout, indent);
-            fprintf(stdout, "natoms=%10" GMX_PRId64 "  step=%10" GMX_PRId64 "  time=%12.7e",
-                    n_atoms, step, frame_time);
-            if (prec > 0)
-            {
-                fprintf(stdout, "  prec=%10g", prec);
-            }
-            fprintf(stdout, "\n");
-        }
-        pr_reals_of_dim(stdout, indent, block_name, values, n_atoms, n_values_per_frame);
-    }
+    pr_reals_of_dim(stdout, indent, block_name, values, n_atoms, n_values_per_frame);
 }
 
-void list_trx(const char *fn, gmx_bool bXVG)
+void list_trx(const char *fn)
 {
     int ftp;
 
     ftp = fn2ftp(fn);
     if (ftp == efXTC)
     {
-        list_xtc(fn, bXVG);
+        list_xtc(fn);
     }
     else if ((ftp == efTRR) || (ftp == efTRJ))
     {
@@ -402,7 +363,7 @@ void list_trx(const char *fn, gmx_bool bXVG)
     }
     else if (ftp == efTNG)
     {
-        list_tng_for_gmx_dump(fn, bXVG);
+        list_tng_for_gmx_dump(fn);
     }
     else
     {
@@ -614,11 +575,9 @@ int gmx_dump(int argc, char *argv[])
 
     output_env_t    oenv;
     /* Command line options */
-    static gmx_bool bXVG         = FALSE;
     static gmx_bool bShowNumbers = TRUE;
     static gmx_bool bSysTop      = FALSE;
     t_pargs         pa[]         = {
-        { "-xvg", FALSE, etBOOL, {&bXVG}, "HIDDENXVG layout for xtc" },
         { "-nr", FALSE, etBOOL, {&bShowNumbers}, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
         { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
     };
@@ -637,7 +596,7 @@ int gmx_dump(int argc, char *argv[])
     }
     else if (ftp2bSet(efTRX, NFILE, fnm))
     {
-        list_trx(ftp2fn(efTRX, NFILE, fnm), bXVG);
+        list_trx(ftp2fn(efTRX, NFILE, fnm));
     }
     else if (ftp2bSet(efEDR, NFILE, fnm))
     {
