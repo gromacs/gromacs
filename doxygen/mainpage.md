@@ -52,6 +52,9 @@ give an overview of some of the topics that are documented:
  - \subpage page_analysisframework <br/>
    Provides an overview of the framework that the \Gromacs library provides for
    writing (trajectory) analysis tools.
+ - \subpage page_simd <br/>
+   Documentation about the new SIMD module that makes it possible to write
+   highly accelerated CPU code that is still portable.
 \if libapi
  - \subpage thread_mpi <br/>
    This code is used internally for threading support, and also provides a
