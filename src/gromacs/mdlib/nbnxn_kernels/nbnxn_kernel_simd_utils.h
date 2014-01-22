@@ -83,7 +83,7 @@ static const int nbfp_stride = 4;
  * full-width AVX_256 use the array, but other implementations do
  * not. */
 static gmx_inline int *
-prepare_table_load_buffer(const int gmx_unused *array)
+prepare_table_load_buffer(int gmx_unused *array)
 {
 #if defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
     return gmx_simd_align_i(array);

@@ -58,12 +58,9 @@
 #include "force.h"
 #include "nonbonded.h"
 
-/* Include the SIMD macro file and then check for support */
-#include "gromacs/simd/macros.h"
-#if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_TRIGONOMETRIC
-#define SIMD_BONDEDS
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
-#endif
 
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
@@ -116,7 +113,7 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
     }
 }
 
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
 
 /* SIMD PBC data structure, containing 1/boxdiag and the box vectors */
 typedef struct {
@@ -191,7 +188,7 @@ pbc_dx_simd(gmx_simd_real_t *dx, gmx_simd_real_t *dy, gmx_simd_real_t *dz,
     *dx = gmx_simd_fnmadd_r(sh, pbc->bxx, *dx);
 }
 
-#endif /* SIMD_BONDEDS */
+#endif /* GMX_SIMD_HAVE_REAL */
 
 /*
  * Morse potential bond by Frank Everdij
@@ -1037,7 +1034,7 @@ real angles(int nbonds,
     return vtot;
 }
 
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
 
 /* As angles, but using SIMD to calculate many dihedrals at once.
  * This routines does not calculate energies and shift forces.
@@ -1202,7 +1199,7 @@ angles_noener_simd(int nbonds,
     }
 }
 
-#endif /* SIMD_BONDEDS */
+#endif /* GMX_SIMD_HAVE_REAL */
 
 real linear_angles(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -1502,7 +1499,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 }
 
 
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
 
 /* As dih_angle above, but calculates 4 dihedral angles at once using SIMD,
  * also calculates the pre-factor required for the dihedral force update.
@@ -1618,7 +1615,7 @@ dih_angle_simd(const rvec *x,
     *nrkj_n2_S = gmx_simd_mul_r(nrkj_S, gmx_simd_inv_r(iprn_S));
 
     /* Set sign of phi_S with the sign of ipr_S; phi_S is currently positive */
-    *phi_S     = gmx_cpsgn_nonneg_pr(ipr_S, *phi_S);
+    *phi_S     = gmx_simd_or_r(gmx_simd_and_r(ipr_S, gmx_simd_set1_r(-0.0)), *phi_S);
 
     p_S        = gmx_simd_iprod_r(rijx_S, rijy_S, rijz_S,
                                   rkjx_S, rkjy_S, rkjz_S);
@@ -1632,7 +1629,7 @@ dih_angle_simd(const rvec *x,
     gmx_simd_store_r(q, q_S);
 }
 
-#endif /* SIMD_BONDEDS */
+#endif /* GMX_SIMD_HAVE_REAL */
 
 
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
@@ -1967,7 +1964,7 @@ pdihs_noener(int nbonds,
 }
 
 
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
 
 /* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
 static void
@@ -2097,7 +2094,7 @@ pdihs_noener_simd(int nbonds,
     }
 }
 
-#endif /* SIMD_BONDEDS */
+#endif /* GMX_SIMD_HAVE_REAL */
 
 
 real idihs(int nbonds,
@@ -4162,7 +4159,7 @@ static real calc_one_bond(FILE *fplog, int thread,
                           pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                           md, fcd, global_atom_index);
         }
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
         else if (ftype == F_ANGLES &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
@@ -4179,10 +4176,10 @@ static real calc_one_bond(FILE *fplog, int thread,
                  !bCalcEnerVir && fr->efep == efepNO)
         {
             /* No energies, shift forces, dvdl */
-#ifndef SIMD_BONDEDS
-            pdihs_noener
-#else
+#ifdef GMX_SIMD_HAVE_REAL
             pdihs_noener_simd
+#else
+            pdihs_noener
 #endif
                 (nbn, idef->il[ftype].iatoms+nb0,
                 idef->iparams,
