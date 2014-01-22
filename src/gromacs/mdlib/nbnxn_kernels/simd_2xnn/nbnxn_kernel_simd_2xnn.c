@@ -43,11 +43,11 @@
 
 #include "typedefs.h"
 
+#include "gromacs/mdlib/nbnxn_simd.h"
+
 #ifdef GMX_NBNXN_SIMD_2XNN
 
 /* Include the full-width SIMD macros */
-
-#include "gromacs/simd/macros.h"
 #include "gromacs/simd/vector_operations.h"
 
 #if !(GMX_SIMD_REAL_WIDTH == 8 || GMX_SIMD_REAL_WIDTH == 16)
