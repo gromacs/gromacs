@@ -78,11 +78,6 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-#include "gromacs/simd/general_x86_sse2.h"
-#endif
-
-
 static void global_max(t_commrec *cr, int *n)
 {
     int *sum, i;
@@ -438,9 +433,9 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     refvolshift = log(det(rerun_fr.box));
 
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-    /* Make sure we don't detect SSE overflow generated before this point */
-    gmx_mm_check_and_reset_overflow();
+#ifdef GMX_SIMD
+    /* Make sure we don't detect SIMD overflow generated before this point */
+    gmx_simd_check_and_reset_overflow();
 #endif
 
     while (bNotLastFrame)
@@ -630,13 +625,13 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
                 epot               = enerd->term[F_EPOT];
                 bEnergyOutOfBounds = FALSE;
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-                /* With SSE the energy can overflow, check for this */
-                if (gmx_mm_check_and_reset_overflow())
+#ifdef GMX_SIMD
+                /* With SIMD the energy can overflow, check for this */
+                if (gmx_simd_check_and_reset_overflow())
                 {
                     if (debug)
                     {
-                        fprintf(debug, "Found an SSE overflow, assuming the energy is out of bounds\n");
+                        fprintf(debug, "Found a SIMD overflow, assuming the energy is out of bounds\n");
                     }
                     bEnergyOutOfBounds = TRUE;
                 }
