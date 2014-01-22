@@ -178,7 +178,7 @@
     ty_S4 = gmx_simd4_set1_r(thy[4]);
 #endif
 
-#ifdef GMX_SIMD4_HAVE_UNALIGNED
+#ifdef PME_SIMD4_UNALIGNED
     tz_S0 = gmx_simd4_loadu_r(thz-offset);
     tz_S1 = gmx_simd4_loadu_r(thz-offset+4);
 #else
@@ -288,7 +288,7 @@
     fy_S = gmx_simd4_setzero_r();
     fz_S = gmx_simd4_setzero_r();
 
-#ifdef GMX_SIMD4_HAVE_UNALIGNED
+#ifdef PME_SIMD4_UNALIGNED
     tz_S0 = gmx_simd4_loadu_r(thz-offset);
     tz_S1 = gmx_simd4_loadu_r(thz-offset+4);
     dz_S0 = gmx_simd4_loadu_r(dthz-offset);
