@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,10 +48,10 @@
 #ifdef GMX_NBNXN_HALF_WIDTH_SIMD
 #define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
-#include "gromacs/simd/macros.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
-#if !(GMX_SIMD_WIDTH_HERE == 2 || GMX_SIMD_WIDTH_HERE == 4 || GMX_SIMD_WIDTH_HERE == 8)
+#if !(GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8)
 #error "unsupported SIMD width"
 #endif
 
@@ -161,7 +161,7 @@ reduce_group_energies(int ng, int ng_2log,
                       const real *VSvdw, const real *VSc,
                       real *Vvdw, real *Vc)
 {
-    const int unrollj      = GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE;
+    const int unrollj      = GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE;
     const int unrollj_half = unrollj/2;
     int       ng_p2, i, j, j0, j1, c, s;
 
