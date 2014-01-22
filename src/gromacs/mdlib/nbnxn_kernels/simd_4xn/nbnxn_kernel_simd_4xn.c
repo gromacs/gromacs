@@ -43,13 +43,10 @@
 
 #include "typedefs.h"
 
+#include "gromacs/mdlib/nbnxn_simd.h"
+
 #ifdef GMX_NBNXN_SIMD_4XN
 
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-
-#include "gromacs/simd/macros.h"
 #include "gromacs/simd/vector_operations.h"
 #if !(GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8)
 #error "unsupported SIMD width"

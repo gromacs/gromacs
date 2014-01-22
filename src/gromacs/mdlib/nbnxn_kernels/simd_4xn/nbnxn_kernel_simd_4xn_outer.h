@@ -37,8 +37,8 @@
 {
     const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
-    const int          *type;
-    const real         *q;
+    const int *         type;
+    const real *        q;
     const real         *shiftvec;
     const real         *x;
     const real         *nbfp0, *nbfp1, *nbfp2 = NULL, *nbfp3 = NULL;
@@ -109,9 +109,9 @@
 #ifdef CALC_COUL_TAB
     /* Coulomb table variables */
     gmx_simd_real_t   invtsp_S;
-    const real       *tab_coul_F;
+    const real *      tab_coul_F;
 #ifndef TAB_FDV0
-    const real       *tab_coul_V;
+    const real *      tab_coul_V;
 #endif
     /* Thread-local working buffers for force and potential lookups */
     int               ti0_array[2*GMX_SIMD_REAL_WIDTH], *ti0 = NULL;
