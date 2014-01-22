@@ -66,14 +66,28 @@ static const int filter_stride = 1;
 #define gmx_set1_hpr(a, b)   *(a) = _mm_set1_ps(b)
 /* Load one real at b and one real at b+1 into halves of a, respectively */
 #define gmx_load1p1_pr(a, b)  *(a) = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_load1_ps(b)), _mm_load1_ps(b+1), 0x1)
-/* Load reals at half-width aligned pointer b into two halves of a */
-#define gmx_loaddh_pr(a, b)   *(a) = gmx_mm256_load4_ps(b)
 /* To half-width SIMD register b into half width aligned memory a */
 #define gmx_store_hpr(a, b)          _mm_store_ps(a, b)
 #define gmx_add_hpr                  _mm_add_ps
 #define gmx_sub_hpr                  _mm_sub_ps
+
 /* Sum over 4 half SIMD registers */
-#define gmx_sum4_hpr                 gmx_mm256_sum4h_m128
+static __m128 gmx_sum4_hpr(__m256 x, __m256 y)
+{
+    __m256 sum;
+
+    sum = _mm256_add_ps(x, y);
+    return _mm_add_ps(_mm256_castps256_ps128(sum), _mm256_extractf128_ps(sum, 0x1));
+}
+
+/* Load reals at half-width aligned pointer b into two halves of a */
+static gmx_inline void
+gmx_loaddh_pr(gmx_simd_real_t *a, const real *b)
+{
+    __m128 tmp;
+    tmp = _mm_load_ps(b);
+    *a  = _mm256_insertf128_ps(_mm256_castps128_ps256(tmp), tmp, 0x1);
+}
 
 static gmx_inline void
 gmx_pr_to_2hpr(gmx_simd_real_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)

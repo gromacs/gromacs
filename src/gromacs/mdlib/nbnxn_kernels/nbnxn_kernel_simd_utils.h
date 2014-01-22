@@ -83,16 +83,16 @@ static const int nbfp_stride = 4;
  * full-width AVX_256 use the array, but other implementations do
  * not. */
 static gmx_inline int *
-prepare_table_load_buffer(const int gmx_unused *array)
+prepare_table_load_buffer(int gmx_unused *array)
 {
-#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
+#ifdef GMX_SIMD_X86_AVX_256_OR_HIGHER
     return gmx_simd_align_i(array);
 #else
     return NULL;
 #endif
 }
 
-#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
+#ifdef GMX_SIMD_X86_AVX_256_OR_HIGHER
 
 /* With full AVX-256 SIMD, half SIMD-width table loads are optimal */
 #if GMX_SIMD_REAL_WIDTH == 8
@@ -104,7 +104,7 @@ prepare_table_load_buffer(const int gmx_unused *array)
 #include "nbnxn_kernel_simd_utils_x86_256s.h"
 #endif /* GMX_DOUBLE */
 
-#else  /* defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_USE_HALF_WIDTH_SIMD_HERE */
+#else  /* defined GMX_SIMD_X86_AVX_256_OR_HIGHER */
 
 /* We use the FDV0 table layout when we can use aligned table loads */
 #if GMX_SIMD_REAL_WIDTH == 4
@@ -117,7 +117,7 @@ prepare_table_load_buffer(const int gmx_unused *array)
 #include "nbnxn_kernel_simd_utils_x86_128s.h"
 #endif /* GMX_DOUBLE */
 
-#endif /* defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_USE_HALF_WIDTH_SIMD_HERE */
+#endif /* defined GMX_SIMD_X86_AVX_256_OR_HIGHER */
 
 #else  /* GMX_SIMD_X86_SSE2_OR_HIGHER */
 
