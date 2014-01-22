@@ -342,8 +342,8 @@
 
 #ifdef CHECK_EXCLS
     /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = gmx_masknot_add_pr(interact_S0, rsq_S0, avoid_sing_S);
-    rsq_S2      = gmx_masknot_add_pr(interact_S2, rsq_S2, avoid_sing_S);
+    rsq_S0      = gmx_simd_add_r(rsq_S0, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S0));
+    rsq_S2      = gmx_simd_add_r(rsq_S2, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S2));
 #endif
 
     /* Calculate 1/r */
@@ -397,6 +397,11 @@
     rinv_S0     = gmx_simd_blendzero_r(rinv_S0, wco_S0);
     rinv_S2     = gmx_simd_blendzero_r(rinv_S2, wco_S2);
 #else
+    /* This needs to be modified: It makes assumptions about the internal storage
+     * of the SIMD representation, in particular that the blendv instruction always
+     * selects based on the sign bit. If the performance is really critical, it
+     * should be turned into a function that is platform-specific.
+     */
     /* We only need to mask for the cut-off: blendv is faster */
     rinv_S0     = gmx_simd_blendv_r(rinv_S0, zero_S, gmx_simd_sub_r(rc2_S, rsq_S0));
     rinv_S2     = gmx_simd_blendv_r(rinv_S2, zero_S, gmx_simd_sub_r(rc2_S, rsq_S2));
@@ -467,9 +472,9 @@
     /* Truncate scaled r to an int */
     ti_S0       = gmx_simd_cvtt_r2i(rs_S0);
     ti_S2       = gmx_simd_cvtt_r2i(rs_S2);
-#ifdef GMX_SIMD_HAVE_FLOOR
-    rf_S0       = gmx_simd_floor_r(rs_S0);
-    rf_S2       = gmx_simd_floor_r(rs_S2);
+#ifdef GMX_SIMD_HAVE_TRUNC
+    rf_S0       = gmx_simd_trunc_r(rs_S0);
+    rf_S2       = gmx_simd_trunc_r(rs_S2);
 #else
     rf_S0       = gmx_simd_cvt_i2r(ti_S0);
     rf_S2       = gmx_simd_cvt_i2r(ti_S2);
