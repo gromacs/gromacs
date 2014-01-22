@@ -66,6 +66,9 @@ give an overview of some of the topics that are documented:
    Provides an overview of unit testing in \Gromacs.
  - \subpage page_wrapperbinary <br/>
    Provides an overview of how the `gmx` wrapper binary is implemented.
+ - \subpage page_simd <br/>
+   Documentation about the new SIMD module that makes it possible to write
+   highly accelerated CPU code that is still portable.
  - \subpage thread_mpi <br/>
    This code is used internally for threading support, and also provides a
    (partial) MPI implementation that allows compiling a "thread-MPI" version of

@@ -39,6 +39,8 @@
 
 #include "typedefs.h"
 
+#include "gromacs/mdlib/nbnxn_simd.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

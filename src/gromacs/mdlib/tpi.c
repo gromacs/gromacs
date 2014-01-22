@@ -78,11 +78,6 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-#include "gromacs/simd/general_x86_sse2.h"
-#endif
-
-
 static void global_max(t_commrec *cr, int *n)
 {
     int *sum, i;
@@ -466,9 +461,10 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             gmx_fatal(FARGS, "Unknown integrator %s", ei_names[inputrec->eI]);
     }
 
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-    /* Make sure we don't detect SSE overflow generated before this point */
-    gmx_mm_check_and_reset_overflow();
+#ifdef GMX_SIMD
+    /* Make sure we don't detect SIMD overflow generated before this point */
+    gmx_simd_check_and_reset_overflow();
+#endif /* not NEW */
 #endif
 
     while (bNotLastFrame)

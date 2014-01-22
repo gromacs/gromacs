@@ -38,9 +38,6 @@
 typedef gmx_simd_real_t gmx_exclfilter;
 static const int filter_stride = 1;
 
-/* The 4xn kernel operates on 4-wide i-force registers */
-typedef gmx_simd_real_t gmx_mm_pr4;
-
 /* This files contains all functions/macros for the SIMD kernels
  * which have explicit dependencies on the j-cluster size and/or SIMD-width.
  * The functionality which depends on the j-cluster size is:
@@ -113,7 +110,7 @@ gmx_shuffle_4_ps_fil2_to_1_ps(gmx_simd_real_t a, gmx_simd_real_t b,
 /* Align a stack-based thread-local working array. Table loads on QPX
  * use the array, but most other implementations do not. */
 static gmx_inline int *
-prepare_table_load_buffer(const int *array)
+prepare_table_load_buffer(int *array)
 {
     return gmx_simd_align_i(array);
 }
@@ -185,22 +182,6 @@ gmx_mm_transpose_sum4_pr(gmx_simd_real_t a, gmx_simd_real_t b,
     gmx_simd_real_t sim23 = gmx_simd_add_r(a2b2c2d2, a3b3c3d3);
     return gmx_simd_add_r(sum01, sim23);
 }
-
-#ifdef GMX_DOUBLE
-/* In double precision on x86 it can be faster to first calculate
- * single precision square roots for two double precision registers at
- * once and then use double precision Newton-Raphson iteration to
- * reach full double precision. For QPX, we just wrap the usual
- * reciprocal square roots.
- */
-static gmx_inline void
-gmx_mm_invsqrt2_pd(gmx_simd_real_t in0, gmx_simd_real_t in1,
-                   gmx_simd_real_t *out0, gmx_simd_real_t *out1)
-{
-    *out0 = gmx_simd_invsqrt_r(in0);
-    *out1 = gmx_simd_invsqrt_r(in1);
-}
-#endif
 
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
