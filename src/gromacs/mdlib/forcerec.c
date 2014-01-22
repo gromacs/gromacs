@@ -69,6 +69,7 @@
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
+#include "nbnxn_simd.h"
 #include "nbnxn_search.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_consts.h"
@@ -1542,14 +1543,23 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         *kernel_type = nbnxnk4xN_SIMD_4xN;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-        /* We expect the 2xNN kernels to be faster in most cases */
+        /* We expect the 2xNN kernels to be faster in most cases,
+         * since they calculate less (zero) interactions.
+         */
         *kernel_type = nbnxnk4xN_SIMD_2xNN;
 #endif
 
-#if defined GMX_NBNXN_SIMD_4XN && defined GMX_SIMD_X86_AVX_256_OR_HIGHER
+#if defined GMX_NBNXN_SIMD_2XNN && defined GMX_NBNXN_SIMD_4XN
+        /* We need to choose if we want 2x(N+N) or 4xN kernels.
+         * Currently this is based on the SIMD acceleration choice,
+         * but it might be better to decide this at runtime based on CPU.
+         */
+
+#ifdef GMX_SIMD_X86_AVX_256
         if (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT)
         {
-            /* The raw pair rate of the 4x8 kernel is higher than 2x(4+4),
+            /* This should be only for Intel Sandy/Ivy Bridge.
+             * The raw pair rate of the 4x8 kernel is higher than 2x(4+4),
              * 10% with HT, 50% without HT, but extra zeros interactions
              * can compensate. As we currently don't detect the actual use
              * of HT, switch to 4x8 to avoid a potential performance hit.
@@ -1557,6 +1567,21 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
             *kernel_type = nbnxnk4xN_SIMD_4xN;
         }
 #endif
+
+#ifdef GMX_SIMD_X86_AVX2_256_OR_HIGHER
+        {
+            /* Intel Haswell or later.
+             * The flop rate and the simd load/store bandwidth are so high
+             * that 4x8 is always at least slightly faster than 2x(4x4).
+             * This should be reevalulated for future Intel and especially
+             * AMD CPUs.
+             */
+            *kernel_type = nbnxnk4xN_SIMD_4xN;
+        }
+#endif
+#endif /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
+
+
         if (getenv("GMX_NBNXN_SIMD_4XN") != NULL)
         {
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -1575,11 +1600,14 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         }
 
         /* Analytical Ewald exclusion correction is only an option in
-         * the SIMD kernel. On BlueGene/Q, this is faster regardless
-         * of precision. In single precision, this is faster on
-         * Bulldozer, and slightly faster on Sandy Bridge.
+         * the SIMD kernel.
+         * Since table lookup's don't parallelize with SIMD, analytical
+         * will always be faster for a SIMD width of 8 or more.
+         * With FMA analytical is sometimes faster for a width if 4 as well.
+         * On BlueGene/Q, this is faster regardless
+         * of precision. In single precision, this is faster on Bulldozer.
          */
-#if ((defined GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER || defined GMX_SIMD_X86_AVX_256_OR_HIGHER || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_SIMD_IBM_QPX)
+#if GMX_SIMD_REAL_WIDTH >= 8 || (defined GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER && !defined GMX_DOUBLE) || defined GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1623,7 +1651,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
              * For gcc we check for __AVX__
              * At least a check for icc should be added (if there is a macro)
              */
-#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_NBNXN_HALF_WIDTH_SIMD
+#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER
             returnvalue = "AVX-256";
 #else
             returnvalue = "AVX-128";
