@@ -36,6 +36,8 @@
 #ifndef NB_VERLET_H
 #define NB_VERLET_H
 
+#include "gromacs/simd/simd.h"
+
 #include "nbnxn_pairlist.h"
 #include "nbnxn_cuda_types_ext.h"
 
@@ -47,7 +49,12 @@ extern "C" {
 #define GMX_NBNXN_SIMD
 #endif
 
-#if (defined GMX_SIMD_X86_SSE2_OR_HIGHER) || (defined GMX_SIMD_IBM_QPX)
+/* As we modularize the verlet kernels, we should remove stuff like this
+ * that checks internal SIMD implementation details.
+ */
+#if (defined GMX_SIMD_X86_SSE2) || (defined GMX_SIMD_X86_SSE4_1) || \
+    (defined GMX_SIMD_X86_AVX_128_FMA) || (defined GMX_SIMD_X86_AVX_256) || \
+    (GMX_SIMD_X86_AVX2_256) || (defined GMX_SIMD_IBM_QPX)
 /* Use SIMD accelerated nbnxn search and kernels */
 #define GMX_NBNXN_SIMD
 

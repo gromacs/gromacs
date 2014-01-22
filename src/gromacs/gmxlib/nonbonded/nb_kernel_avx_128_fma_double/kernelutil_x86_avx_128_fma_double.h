@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,8 +35,22 @@
 #ifndef _kernelutil_x86_avx_128_fma_double_h_
 #define _kernelutil_x86_avx_128_fma_double_h_
 
-#include "gromacs/simd/general_x86_avx_128_fma.h"
+#include <math.h>
+#include <immintrin.h>
+#ifdef _MSC_VER
+#    include <intrin.h>
+#else
+#    include <x86intrin.h>
+#endif
 
+#define gmx_mm_castsi128_pd   _mm_castsi128_pd
+#define gmx_mm_extract_epi32  _mm_extract_epi32
+
+#define GMX_MM_TRANSPOSE2_PD(row0, row1) {           \
+        __m128d __gmx_t1 = row0;                         \
+        row0           = _mm_unpacklo_pd(row0, row1);     \
+        row1           = _mm_unpackhi_pd(__gmx_t1, row1); \
+}
 
 static int
 gmx_mm_any_lt(__m128d a, __m128d b)
