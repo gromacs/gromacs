@@ -37,8 +37,8 @@
 {
     const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
-    const int          *type;
-    const real         *q;
+    const int *         type;
+    const real *        q;
     const real         *shiftvec;
     const real         *x;
     const real         *nbfp0, *nbfp1, *nbfp2 = NULL, *nbfp3 = NULL;
@@ -109,9 +109,9 @@
 #ifdef CALC_COUL_TAB
     /* Coulomb table variables */
     gmx_simd_real_t   invtsp_S;
-    const real       *tab_coul_F;
+    const real *      tab_coul_F;
 #ifndef TAB_FDV0
-    const real       *tab_coul_V;
+    const real *      tab_coul_V;
 #endif
     /* Thread-local working buffers for force and potential lookups */
     int               ti0_array[2*GMX_SIMD_REAL_WIDTH], *ti0 = NULL;
@@ -190,15 +190,6 @@
     gmx_simd_real_t  rc2_S;
 #ifdef VDW_CUTOFF_CHECK
     gmx_simd_real_t  rcvdw2_S;
-#endif
-
-#ifdef CALC_ENERGIES
-    /* cppcheck-suppress unassignedVariable */
-    real       tmpsum_array[GMX_SIMD_REAL_WIDTH*2], *tmpsum;
-#endif
-#ifdef CALC_SHIFTFORCES
-    /* cppcheck-suppress unassignedVariable */
-    real       shf_array[GMX_SIMD_REAL_WIDTH*2], *shf;
 #endif
 
     int ninner;
@@ -374,13 +365,6 @@
     facel               = ic->epsfac;
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
-
-#ifdef CALC_ENERGIES
-    tmpsum   = gmx_simd_align_r(tmpsum_array);
-#endif
-#ifdef CALC_SHIFTFORCES
-    shf      = gmx_simd_align_r(shf_array);
-#endif
 
 #ifdef FIX_LJ_C
     pvdw_c6  = gmx_simd_align_real(pvdw_array);
@@ -701,9 +685,9 @@
         gmx_simd4_store_r(f+sciz, gmx_simd4_add_r(fiz_S, gmx_simd4_load_r(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
-        fshift[ish3+0] += gmx_sum_simd4(fix_S, shf);
-        fshift[ish3+1] += gmx_sum_simd4(fiy_S, shf);
-        fshift[ish3+2] += gmx_sum_simd4(fiz_S, shf);
+        fshift[ish3+0] += gmx_simd4_reduce_r(fix_S);
+        fshift[ish3+1] += gmx_simd4_reduce_r(fiy_S);
+        fshift[ish3+2] += gmx_simd4_reduce_r(fiz_S);
 #endif
 #else
         fix0_S = gmx_mm_transpose_sum2_pr(fix_S0, fix_S1);
@@ -722,19 +706,19 @@
         gmx_simd_store_r(f+sciz+2, gmx_simd_add_r(fiz2_S, gmx_simd_load_r(f+sciz+2)));
 
 #ifdef CALC_SHIFTFORCES
-        fshift[ish3+0] += gmx_sum_simd2(gmx_simd_add_r(fix0_S, fix2_S), shf);
-        fshift[ish3+1] += gmx_sum_simd2(gmx_simd_add_r(fiy0_S, fiy2_S), shf);
-        fshift[ish3+2] += gmx_sum_simd2(gmx_simd_add_r(fiz0_S, fiz2_S), shf);
+        fshift[ish3+0] += gmx_simd_reduce_r(gmx_simd_add_r(fix0_S, fix2_S));
+        fshift[ish3+1] += gmx_simd_reduce_r(gmx_simd_add_r(fiy0_S, fiy2_S));
+        fshift[ish3+2] += gmx_simd_reduce_r(gmx_simd_add_r(fiz0_S, fiz2_S));
 #endif
 #endif
 
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
-            *Vc += gmx_sum_simd(vctot_S, tmpsum);
+            *Vc += gmx_simd_reduce_r(vctot_S);
         }
 
-        *Vvdw += gmx_sum_simd(Vvdwtot_S, tmpsum);
+        *Vvdw += gmx_simd_reduce_r(Vvdwtot_S);
 #endif
 
         /* Outer loop uses 6 flops/iteration */
