@@ -190,12 +190,14 @@ include(gmxManageGPU)
 # SIMD.
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
+
+if(GMX_CPU_ACCELERATION)
+    # Stay compatible with old Jenkins command line options for specific SIMD acceleration
+    set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
+endif(GMX_CPU_ACCELERATION)
+
 include(gmxDetectSimd)
 gmx_detect_simd(GMX_SUGGESTED_SIMD)
-if("${GMX_SUGGESTED_SIMD}" STREQUAL "AVX2_256")
-    message(STATUS "Changing acceleration from AVX2 to AVX (until AVX2 patches commited).")
-    set(GMX_SUGGESTED_SIMD "AVX_256")
-endif()
 
 gmx_option_multichoice(
     GMX_SIMD
