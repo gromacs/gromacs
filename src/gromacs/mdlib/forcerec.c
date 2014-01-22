@@ -69,6 +69,7 @@
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
+#include "nbnxn_simd.h"
 #include "nbnxn_search.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_consts.h"
@@ -1542,21 +1543,44 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         *kernel_type = nbnxnk4xN_SIMD_4xN;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-        /* We expect the 2xNN kernels to be faster in most cases */
         *kernel_type = nbnxnk4xN_SIMD_2xNN;
 #endif
 
-#if defined GMX_NBNXN_SIMD_4XN && defined GMX_SIMD_X86_AVX_256_OR_HIGHER
-        if (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT)
+#if defined GMX_NBNXN_SIMD_2XNN && defined GMX_NBNXN_SIMD_4XN
+        /* We need to choose if we want 2x(N+N) or 4xN kernels.
+         * Currently this is based on the SIMD acceleration choice,
+         * but it might be better to decide this at runtime based on CPU.
+         *
+         * 4xN calculates more (zero) interactions, but has less pair-search
+         * work and much better kernel instruction scheduling.
+         *
+         * Up till now we have only seen that on Intel Sandy/Ivy Bridge,
+         * which doesn't have FMA, both the analytical and tabulated Ewald
+         * kernels have similar pair rates for 4x8 and 2x(4+4), so we choose
+         * 2x(4+4) because it results in significantly fewer pairs.
+         * For RF, the raw pair rate of the 4x8 kernel is higher than 2x(4+4),
+         * 10% with HT, 50% without HT. As we currently don't detect the actual
+         * use of HT, use 4x8 to avoid a potential performance hit.
+         * On Intel Haswell 4x8 is always faster.
+         */
+        *kernel_type = nbnxnk4xN_SIMD_4xN;
+
+#ifndef GMX_SIMD_HAVE_FMA
+        if (EEL_PME(ir->coulombtype) || EEL_EWALD(ir->coulombtype) ||
+            EVDW_PME(ir->vdwtype))
         {
-            /* The raw pair rate of the 4x8 kernel is higher than 2x(4+4),
+            /* We have Ewald kernels on Intel Sandy/Ivy Bridge.
+             * The raw pair rate of the 4x8 kernel is higher than 2x(4+4),
              * 10% with HT, 50% without HT, but extra zeros interactions
              * can compensate. As we currently don't detect the actual use
              * of HT, switch to 4x8 to avoid a potential performance hit.
              */
-            *kernel_type = nbnxnk4xN_SIMD_4xN;
+            *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
 #endif
+#endif  /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
+
+
         if (getenv("GMX_NBNXN_SIMD_4XN") != NULL)
         {
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -1575,11 +1599,16 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         }
 
         /* Analytical Ewald exclusion correction is only an option in
-         * the SIMD kernel. On BlueGene/Q, this is faster regardless
-         * of precision. In single precision, this is faster on
-         * Bulldozer, and slightly faster on Sandy Bridge.
+         * the SIMD kernel.
+         * Since table lookup's don't parallelize with SIMD, analytical
+         * will probably always be faster for a SIMD width of 8 or more.
+         * With FMA analytical is sometimes faster for a width if 4 as well.
+         * On BlueGene/Q, this is faster regardless of precision.
+         * In single precision, this is faster on Bulldozer.
          */
-#if ((defined GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER || defined GMX_SIMD_X86_AVX_256_OR_HIGHER || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_SIMD_IBM_QPX)
+#if GMX_SIMD_REAL_WIDTH >= 8 || \
+        (GMX_SIMD_REAL_WIDTH >= 4 && defined GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || \
+        defined GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1623,7 +1652,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
              * For gcc we check for __AVX__
              * At least a check for icc should be added (if there is a macro)
              */
-#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_NBNXN_HALF_WIDTH_SIMD
+#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER
             returnvalue = "AVX-256";
 #else
             returnvalue = "AVX-128";
