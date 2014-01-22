@@ -45,6 +45,8 @@
  *   energy group pair energy storage
  */
 
+#define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
+
 typedef gmx_simd_int32_t gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
@@ -183,13 +185,13 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return _mm_load_si128((__m128i *) i);
+    return gmx_simd_load_fi(i);
 }
 
 static gmx_inline gmx_simd_bool_t
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
-    return gmx_mm_castsi128_pd(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
+    return _mm_castsi128_pd(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s128d_h_ */

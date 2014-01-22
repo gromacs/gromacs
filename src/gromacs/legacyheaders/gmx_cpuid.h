@@ -124,6 +124,7 @@ enum gmx_cpuid_simd
 {
     GMX_CPUID_SIMD_CANNOTDETECT,    /* Should only be used if something fails */
     GMX_CPUID_SIMD_NONE,
+    GMX_CPUID_SIMD_REFERENCE,
     GMX_CPUID_SIMD_X86_SSE2,
     GMX_CPUID_SIMD_X86_SSE4_1,
     GMX_CPUID_SIMD_X86_AVX_128_FMA,
