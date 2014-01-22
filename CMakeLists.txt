@@ -185,24 +185,19 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 include(gmxManageGPU)
 
 # Detect the architecture the compiler is targetting, detect
-# acceleration possibilities on that hardware, suggest an acceleration
+# SIMD possibilities on that hardware, suggest a SIMD instruction set
 # to use if none is specified, and populate the cache option for CPU
-# accleration.
+# SIMD accleration.
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
-include(gmxDetectAcceleration)
-gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
-if("${GMX_SUGGESTED_CPU_ACCELERATION}" STREQUAL "AVX2_256")
-    message(STATUS "Changing acceleration from AVX2 to AVX (AVX2 implementation still in pipeline)")
-    set(GMX_SUGGESTED_CPU_ACCELERATION "AVX_256")
-endif()
-
+include(gmxDetectSimd)
+gmx_detect_simd(GMX_SUGGESTED_SIMD)
 
 gmx_option_multichoice(
-    GMX_CPU_ACCELERATION
-    "Acceleration for CPU kernels and compiler optimization"
-    "${GMX_SUGGESTED_CPU_ACCELERATION}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 IBM_QPX Sparc64_HPC_ACE)
+    GMX_SIMD
+    "SIMD instruction set level and compiler optimization"
+    "${GMX_SUGGESTED_SIMD}"
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 IBM_QPX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
@@ -284,7 +279,7 @@ include(gmxCFlags)
 gmx_c_flags()
 
 # This variable should be used for additional compiler flags which are not
-# generated in gmxCFlags nor are acceleration or MPI related.
+# generated in gmxCFlags nor are SIMD-instruction or MPI related.
 set(EXTRA_C_FLAGS "")
 set(EXTRA_CXX_FLAGS "")
 
@@ -574,13 +569,13 @@ endif(NOT GMX_SYSTEM_XDR)
 
 
 ##################################################
-# Process CPU acceleration settings
+# Process SIMD settings
 ##################################################
 # This checks what flags to add in order to
 # support the SIMD instructions we need, and sets
-# correct defines for the acceleration supported.
-include(gmxTestCPUAcceleration)
-gmx_test_cpu_acceleration()
+# correct defines for the SIMD instructions supported.
+include(gmxTestSimd)
+gmx_test_simd()
 
 
 # Process QM/MM Settings
@@ -676,16 +671,16 @@ endif(GMX_FAHCORE)
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
-    message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
+    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
     message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
     message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
-    message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
+    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
     message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")

@@ -38,7 +38,7 @@
 # SOURCE              Source code to test
 #                     The compiler is chosen based on the extension of this file
 # FLAGSVAR            Variable (string) to which we should add the correct flag
-# Args 5 through N    Multiple strings with acceleration flags to test
+# Args 5 through N    Multiple strings with different flags to test
 FUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
     IF(NOT DEFINED ${VARIABLE})
         # Insert a blank element last in the list (try without any flags too)
@@ -71,7 +71,7 @@ ENDFUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
 # SOURCE              Source code to test
 #                     The compiler is chosen based on the extension of this file
 # FLAGSVAR            Variable (string) to which we should add the correct flag
-# Args 5 through N    Multiple strings with acceleration flags to test
+# Args 5 through N    Multiple strings with different flags to test
 FUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
     IF(NOT DEFINED ${VARIABLE})
         # Insert a blank element last in the list (try without any flags too)

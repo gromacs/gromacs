@@ -58,7 +58,7 @@
 #include "gromacs/utility/gmxmpi.h"
 
 /* Only compile this file if SSE2 intrinsics are available */
-#if 0 && defined (GMX_X86_SSE2)
+#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
 #include <gmx_sse2_double.h>
 #include <emmintrin.h>
 
