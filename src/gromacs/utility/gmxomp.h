@@ -53,8 +53,14 @@
 #include "config.h"
 #endif
 
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-#include <xmmintrin.h>
+/* Ugly hack because the openmp implementation below hacks into the SIMD
+ * settings to decide when to use _mm_pause(). This should eventually be
+ * changed into proper detection of the intrinsics uses, not SIMD.
+ */
+#if (defined GMX_SIMD_X86_SSE2) || (defined GMX_SIMD_X86_SSE4_1) || \
+    (defined GMX_SIMD_X86_AVX_128_FMA) || (defined GMX_SIMD_X86_AVX_256) || \
+    (GMX_SIMD_X86_AVX2_256)
+#    include <xmmintrin.h>
 #endif
 
 #include "types/commrec.h"
@@ -112,8 +118,14 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
  */
 static gmx_inline void gmx_pause()
 {
+    /* Ugly hack because the openmp implementation below hacks into the SIMD
+     * settings to decide when to use _mm_pause(). This should eventually be
+     * changed into proper detection of the intrinsics uses, not SIMD.
+     */
+#if (defined GMX_SIMD_X86_SSE2) || (defined GMX_SIMD_X86_SSE4_1) || \
+    (defined GMX_SIMD_X86_AVX_128_FMA) || (defined GMX_SIMD_X86_AVX_256) || \
+    (GMX_SIMD_X86_AVX2_256)
     /* Replace with tbb::internal::atomic_backoff when/if we use TBB */
-#if defined GMX_SIMD_X86_SSE2_OR_HIGHER
     _mm_pause();
 #elif defined __MIC__
     _mm_delay_32(32);
