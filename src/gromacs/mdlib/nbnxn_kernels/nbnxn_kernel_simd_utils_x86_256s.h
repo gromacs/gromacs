@@ -43,15 +43,6 @@
  *   energy group pair energy storage
  */
 
-typedef gmx_simd_real_t gmx_exclfilter;
-static const int filter_stride = 1;
-
-/* The 4xn kernel operates on 4-wide i-force registers */
-#define gmx_mm_pr4     __m128
-#define gmx_load_pr4   _mm_load_ps
-#define gmx_store_pr4  _mm_store_ps
-#define gmx_add_pr4    _mm_add_ps
-
 
 #ifdef GMX_NBNXN_SIMD_2XNN
 /* Half-width operations are required for the 2xnn kernels */
@@ -66,14 +57,28 @@ static const int filter_stride = 1;
 #define gmx_set1_hpr(a, b)   *(a) = _mm_set1_ps(b)
 /* Load one real at b and one real at b+1 into halves of a, respectively */
 #define gmx_load1p1_pr(a, b)  *(a) = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_load1_ps(b)), _mm_load1_ps(b+1), 0x1)
-/* Load reals at half-width aligned pointer b into two halves of a */
-#define gmx_loaddh_pr(a, b)   *(a) = gmx_mm256_load4_ps(b)
 /* To half-width SIMD register b into half width aligned memory a */
 #define gmx_store_hpr(a, b)          _mm_store_ps(a, b)
 #define gmx_add_hpr                  _mm_add_ps
 #define gmx_sub_hpr                  _mm_sub_ps
+
 /* Sum over 4 half SIMD registers */
-#define gmx_sum4_hpr                 gmx_mm256_sum4h_m128
+static __m128 gmx_sum4_hpr(__m256 x, __m256 y)
+{
+    __m256 sum;
+
+    sum = _mm256_add_ps(x, y);
+    return _mm_add_ps(_mm256_castps256_ps128(sum), _mm256_extractf128_ps(sum, 0x1));
+}
+
+/* Load reals at half-width aligned pointer b into two halves of a */
+static gmx_inline void
+gmx_loaddh_pr(gmx_simd_real_t *a, const real *b)
+{
+    __m128 tmp;
+    tmp = _mm_load_ps(b);
+    *a  = _mm256_insertf128_ps(_mm256_castps128_ps256(tmp), tmp, 0x1);
+}
 
 static gmx_inline void
 gmx_pr_to_2hpr(gmx_simd_real_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
@@ -267,6 +272,35 @@ load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
     *ctabv_S = gmx_2_mm_to_m256(ctabvt_S[0], ctabvt_S[1]);
 }
 
+#ifdef GMX_SIMD_HAVE_FINT32_LOGICAL
+
+typedef gmx_simd_int32_t gmx_exclfilter;
+static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
+
+static gmx_inline gmx_exclfilter
+gmx_load1_exclfilter(int e)
+{
+    return _mm256_set1_epi32(e);
+}
+
+static gmx_inline gmx_exclfilter
+gmx_load_exclusion_filter(const unsigned *i)
+{
+    return gmx_simd_load_i(i);
+}
+
+static gmx_inline gmx_simd_bool_t
+gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
+{
+    return _mm256_castsi256_ps(_mm256_cmpeq_epi32(_mm256_andnot_si256(m0, m1), _mm256_setzero_si256()));
+}
+
+#else /* GMX_SIMD_HAVE_FINT32_LOGICAL */
+
+/* No integer support, use a real to store the exclusion bits */
+typedef gmx_simd_real_t gmx_exclfilter;
+static const int filter_stride = 1;
+
 static gmx_inline gmx_exclfilter
 gmx_load1_exclfilter(int e)
 {
@@ -284,5 +318,7 @@ gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c);
 }
+
+#endif /* GMX_SIMD_HAVE_FINT32_LOGICAL */
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s256s_h_ */

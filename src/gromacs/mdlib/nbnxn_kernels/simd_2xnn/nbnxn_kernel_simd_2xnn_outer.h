@@ -97,8 +97,8 @@
     gmx_simd_real_t  fix_S0, fiy_S0, fiz_S0;
     gmx_simd_real_t  fix_S2, fiy_S2, fiz_S2;
     /* We use an i-force SIMD register width of 4 */
-    /* The pr4 stuff is defined in nbnxn_kernel_simd_utils.h */
-    gmx_mm_pr4       fix_S, fiy_S, fiz_S;
+    /* The simd4 stuff might be defined in nbnxn_kernel_simd_utils.h */
+    gmx_simd4_real_t fix_S, fiy_S, fiz_S;
 
     gmx_simd_real_t  diagonal_jmi_S;
 #if UNROLLI == UNROLLJ
@@ -200,15 +200,6 @@
     gmx_simd_real_t  rc2_S;
 #ifdef VDW_CUTOFF_CHECK
     gmx_simd_real_t  rcvdw2_S;
-#endif
-
-#ifdef CALC_ENERGIES
-    /* cppcheck-suppress unassignedVariable */
-    real       tmpsum_array[2*GMX_SIMD_REAL_WIDTH], *tmpsum;
-#endif
-#ifdef CALC_SHIFTFORCES
-    /* cppcheck-suppress unassignedVariable */
-    real       shf_array[2*GMX_SIMD_REAL_WIDTH], *shf;
 #endif
 
     int ninner;
@@ -359,13 +350,6 @@
     facel               = ic->epsfac;
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
-
-#ifdef CALC_ENERGIES
-    tmpsum   = gmx_simd_align_r(tmpsum_array);
-#endif
-#ifdef CALC_SHIFTFORCES
-    shf      = gmx_simd_align_r(shf_array);
-#endif
 
 #ifdef FIX_LJ_C
     pvdw_c6  = gmx_simd_align_r(pvdw_array);
@@ -625,26 +609,26 @@
 
         /* Add accumulated i-forces to the force array */
         fix_S = gmx_mm_transpose_sum4h_pr(fix_S0, fix_S2);
-        gmx_simd4_store_r(f+scix, gmx_add_pr4(fix_S, gmx_load_pr4(f+scix)));
+        gmx_simd4_store_r(f+scix, gmx_simd4_add_r(fix_S, gmx_simd4_load_r(f+scix)));
 
         fiy_S = gmx_mm_transpose_sum4h_pr(fiy_S0, fiy_S2);
-        gmx_simd4_store_r(f+sciy, gmx_add_pr4(fiy_S, gmx_load_pr4(f+sciy)));
+        gmx_simd4_store_r(f+sciy, gmx_simd4_add_r(fiy_S, gmx_simd4_load_r(f+sciy)));
 
         fiz_S = gmx_mm_transpose_sum4h_pr(fiz_S0, fiz_S2);
-        gmx_simd4_store_r(f+sciz, gmx_add_pr4(fiz_S, gmx_load_pr4(f+sciz)));
+        gmx_simd4_store_r(f+sciz, gmx_simd4_add_r(fiz_S, gmx_simd4_load_r(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
-        fshift[ish3+0] += gmx_sum_simd4(fix_S, shf);
-        fshift[ish3+1] += gmx_sum_simd4(fiy_S, shf);
-        fshift[ish3+2] += gmx_sum_simd4(fiz_S, shf);
+        fshift[ish3+0] += gmx_simd4_reduce_r(fix_S);
+        fshift[ish3+1] += gmx_simd4_reduce_r(fiy_S);
+        fshift[ish3+2] += gmx_simd4_reduce_r(fiz_S);
 #endif
 
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
-            *Vc += gmx_sum_simd(vctot_S, tmpsum);
+            *Vc += gmx_simd_reduce_r(vctot_S);
         }
-        *Vvdw += gmx_sum_simd(Vvdwtot_S, tmpsum);
+        *Vvdw += gmx_simd_reduce_r(Vvdwtot_S);
 #endif
 
         /* Outer loop uses 6 flops/iteration */

@@ -37,28 +37,16 @@
 #define _nbnxn_internal_h
 
 #include "typedefs.h"
+#include "nbnxn_simd.h"
 #include "domdec.h"
 #include "gromacs/timing/cyclecounter.h"
 
-#ifdef GMX_NBNXN_SIMD
-/* The include below sets the SIMD instruction type (precision+width)
- * for all nbnxn SIMD search and non-bonded kernel code.
- */
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gromacs/simd/macros.h"
-#endif
 
-
-/* Bounding box calculations are (currently) always in single precision.
+/* Bounding box calculations are (currently) always in single precision, so
+ * we only need to check for single precision support here.
  * This uses less (cache-)memory and SIMD is faster, at least on x86.
  */
-#define GMX_SIMD4_SINGLE
-/* Include the 4-wide SIMD macro file */
-#include "gromacs/simd/four_wide_macros.h"
-/* Check if we have 4-wide SIMD macro support */
-#ifdef GMX_HAVE_SIMD4_MACROS
+#ifdef GMX_SIMD4_HAVE_FLOAT
 #define NBNXN_SEARCH_BB_SIMD4
 #endif
 
