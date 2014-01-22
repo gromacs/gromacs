@@ -38,6 +38,12 @@
    fun:PMPI_Init
 }
 {
+   MPI_Init/Addr8
+   Memcheck:Addr8
+   ...
+   fun:PMPI_Init
+}
+{
    MPI_Init/sched_setaffinity
    Memcheck:Param
    sched_setaffinity(mask)
