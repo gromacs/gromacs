@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,9 +35,50 @@
 #ifndef _kernelutil_x86_avx_256_double_h_
 #define _kernelutil_x86_avx_256_double_h_
 
+#define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 
-#include "gromacs/simd/general_x86_avx_256.h"
+#define _GMX_MM_BLEND256D(b3, b2, b1, b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
+#define _GMX_MM_PERMUTE(fp3, fp2, fp1, fp0) (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | ((fp0)))
+#define _GMX_MM_PERMUTE128D(fp1, fp0)         (((fp1) << 1) | ((fp0)))
+#define _GMX_MM_PERMUTE256D(fp3, fp2, fp1, fp0) (((fp3) << 3) | ((fp2) << 2) | ((fp1) << 1) | ((fp0)))
+#define GMX_MM256_FULLTRANSPOSE4_PD(row0, row1, row2, row3) \
+    {                                                        \
+        __m256d _t0, _t1, _t2, _t3;                          \
+        _t0  = _mm256_unpacklo_pd((row0), (row1));           \
+        _t1  = _mm256_unpackhi_pd((row0), (row1));           \
+        _t2  = _mm256_unpacklo_pd((row2), (row3));           \
+        _t3  = _mm256_unpackhi_pd((row2), (row3));           \
+        row0 = _mm256_permute2f128_pd(_t0, _t2, 0x20);       \
+        row1 = _mm256_permute2f128_pd(_t1, _t3, 0x20);       \
+        row2 = _mm256_permute2f128_pd(_t0, _t2, 0x31);       \
+        row3 = _mm256_permute2f128_pd(_t1, _t3, 0x31);       \
+    }
 
+#define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32((x), (imm))
+
+static __m256d
+gmx_mm256_unpack128lo_pd(__m256d xmm1, __m256d xmm2)
+{
+    return _mm256_permute2f128_pd(xmm1, xmm2, 0x20);
+}
+
+static __m256d
+gmx_mm256_unpack128hi_pd(__m256d xmm1, __m256d xmm2)
+{
+    return _mm256_permute2f128_pd(xmm1, xmm2, 0x31);
+}
+
+static __m256d
+gmx_mm256_set_m128d(__m128d hi, __m128d lo)
+{
+    return _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), hi, 0x1);
+}
+
+static gmx_inline __m256
+gmx_mm256_set_m128(__m128 hi, __m128 lo)
+{
+    return _mm256_insertf128_ps(_mm256_castps128_ps256(lo), hi, 0x1);
+}
 
 static int
 gmx_mm256_any_lt(__m256d a, __m256d b)
