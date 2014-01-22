@@ -87,8 +87,8 @@
 #include "gromacs/utility/gmxomp.h"
 
 /* Include the SIMD macro file and then check for support */
-#include "gromacs/simd/macros.h"
-#if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
+#include "gromacs/simd/simd.h"
+#if defined GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
 #define PME_SIMD
 #endif
@@ -108,21 +108,19 @@ const real lb_scale_factor[] = {
 /* Pascal triangle coefficients used in solve_pme_lj_yzx, only need to do 4 calculations due to symmetry */
 const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 };
 
-/* Include the 4-wide SIMD macro file */
-#include "gromacs/simd/four_wide_macros.h"
 /* Check if we have 4-wide SIMD macro support */
-#ifdef GMX_HAVE_SIMD4_MACROS
+#if (defined GMX_SIMD4_HAVE_REAL)
 /* Do PME spread and gather with 4-wide SIMD.
  * NOTE: SIMD is only used with PME order 4 and 5 (which are the most common).
  */
-#define PME_SIMD4_SPREAD_GATHER
+#    define PME_SIMD4_SPREAD_GATHER
 
-#ifdef GMX_SIMD4_HAVE_UNALIGNED
+#    if (defined GMX_SIMD_HAVE_LOADU) && (defined GMX_SIMD_HAVE_STOREU)
 /* With PME-order=4 on x86, unaligned load+store is slightly faster
  * than doubling all SIMD operations when using aligned load+store.
  */
-#define PME_SIMD4_UNALIGNED
-#endif
+#        define PME_SIMD4_UNALIGNED
+#    endif
 #endif
 
 #define DFT_TOL 1e-7
@@ -140,10 +138,10 @@ const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 };
 #endif
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-#define SIMD4_ALIGNMENT  (GMX_SIMD4_WIDTH*sizeof(real))
+#    define SIMD4_ALIGNMENT  (GMX_SIMD4_WIDTH*sizeof(real))
 #else
 /* We can use any alignment, apart from 0, so we use 4 reals */
-#define SIMD4_ALIGNMENT  (4*sizeof(real))
+#    define SIMD4_ALIGNMENT  (4*sizeof(real))
 #endif
 
 /* GMX_CACHE_SEP should be a multiple of the SIMD and SIMD4 register size
@@ -260,9 +258,9 @@ typedef struct {
 typedef struct {
 #ifdef PME_SIMD4_SPREAD_GATHER
     /* Masks for 4-wide SIMD aligned spreading and gathering */
-    gmx_simd4_pb mask_S0[6], mask_S1[6];
+    gmx_simd4_bool_t mask_S0[6], mask_S1[6];
 #else
-    int          dummy; /* C89 requires that struct has at least one member */
+    int              dummy; /* C89 requires that struct has at least one member */
 #endif
 } pme_spline_work_t;
 
@@ -1505,9 +1503,9 @@ static void spread_q_bsplines_thread(pmegrid_t                    *pmegrid,
     int            offx, offy, offz;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    real           thz_buffer[12], *thz_aligned;
+    real           thz_buffer[GMX_SIMD4_WIDTH*3], *thz_aligned;
 
-    thz_aligned = gmx_simd4_align_real(thz_buffer);
+    thz_aligned = gmx_simd4_align_r(thz_buffer);
 #endif
 
     pnx = pmegrid->s[XX];
@@ -1877,7 +1875,7 @@ static void realloc_work(pme_work_t *work, int nkx)
          * elements at the end for padding.
          */
 #ifdef PME_SIMD
-        simd_width = GMX_SIMD_WIDTH_HERE;
+        simd_width = GMX_SIMD_REAL_WIDTH;
 #else
         /* We can use any alignment, apart from 0, so we use 4 */
         simd_width = 4;
@@ -1914,24 +1912,24 @@ static void free_work(pme_work_t *work)
 inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
-        const gmx_mm_pr two = gmx_set1_pr(2.0);
-        gmx_mm_pr f_simd;
-        gmx_mm_pr lu;
-        gmx_mm_pr tmp_d1, d_inv, tmp_r, tmp_e;
+        const gmx_simd_real_t two = gmx_simd_set1_r(2.0);
+        gmx_simd_real_t f_simd;
+        gmx_simd_real_t lu;
+        gmx_simd_real_t tmp_d1, d_inv, tmp_r, tmp_e;
         int kx;
-        f_simd = gmx_set1_pr(f);
+        f_simd = gmx_simd_set1_r(f);
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        for (kx = 0; kx < end; kx += GMX_SIMD_WIDTH_HERE)
+        for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
         {
-            tmp_d1   = gmx_load_pr(d_aligned+kx);
-            d_inv    = gmx_inv_pr(tmp_d1);
-            tmp_r    = gmx_load_pr(r_aligned+kx);
-            tmp_r    = gmx_exp_pr(tmp_r);
-            tmp_e    = gmx_mul_pr(f_simd, d_inv);
-            tmp_e    = gmx_mul_pr(tmp_e, tmp_r);
-            gmx_store_pr(e_aligned+kx, tmp_e);
+            tmp_d1   = gmx_simd_load_r(d_aligned+kx);
+            d_inv    = gmx_simd_inv_r(tmp_d1);
+            tmp_r    = gmx_simd_load_r(r_aligned+kx);
+            tmp_r    = gmx_simd_exp_r(tmp_r);
+            tmp_e    = gmx_simd_mul_r(f_simd, d_inv);
+            tmp_e    = gmx_simd_mul_r(tmp_e, tmp_r);
+            gmx_simd_store_r(e_aligned+kx, tmp_e);
         }
     }
 }
@@ -1958,23 +1956,23 @@ inline static void calc_exponentials_q(int start, int end, real f, real *d, real
 /* Calculate exponentials through SIMD */
 inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
 {
-    gmx_mm_pr tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
-    const gmx_mm_pr sqr_PI = gmx_sqrt_pr(gmx_set1_pr(M_PI));
+    gmx_simd_real_t tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
+    const gmx_simd_real_t sqr_PI = gmx_simd_sqrt_r(gmx_simd_set1_r(M_PI));
     int kx;
-    for (kx = 0; kx < end; kx += GMX_SIMD_WIDTH_HERE)
+    for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
     {
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        tmp_d = gmx_load_pr(d_aligned+kx);
-        d_inv = gmx_inv_pr(tmp_d);
-        gmx_store_pr(d_aligned+kx, d_inv);
-        tmp_r = gmx_load_pr(r_aligned+kx);
-        tmp_r = gmx_exp_pr(tmp_r);
-        gmx_store_pr(r_aligned+kx, tmp_r);
-        tmp_mk  = gmx_load_pr(factor_aligned+kx);
-        tmp_fac = gmx_mul_pr(sqr_PI, gmx_mul_pr(tmp_mk, gmx_erfc_pr(tmp_mk)));
-        gmx_store_pr(factor_aligned+kx, tmp_fac);
+        tmp_d = gmx_simd_load_r(d_aligned+kx);
+        d_inv = gmx_simd_inv_r(tmp_d);
+        gmx_simd_store_r(d_aligned+kx, d_inv);
+        tmp_r = gmx_simd_load_r(r_aligned+kx);
+        tmp_r = gmx_simd_exp_r(tmp_r);
+        gmx_simd_store_r(r_aligned+kx, tmp_r);
+        tmp_mk  = gmx_simd_load_r(factor_aligned+kx);
+        tmp_fac = gmx_simd_mul_r(sqr_PI, gmx_simd_mul_r(tmp_mk, gmx_simd_erfc_r(tmp_mk)));
+        gmx_simd_store_r(factor_aligned+kx, tmp_fac);
     }
 }
 #else
@@ -2646,11 +2644,11 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
     pme_spline_work_t *work;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    real           thz_buffer[12],  *thz_aligned;
-    real           dthz_buffer[12], *dthz_aligned;
+    real           thz_buffer[GMX_SIMD4_WIDTH*3],  *thz_aligned;
+    real           dthz_buffer[GMX_SIMD4_WIDTH*3], *dthz_aligned;
 
-    thz_aligned  = gmx_simd4_align_real(thz_buffer);
-    dthz_aligned = gmx_simd4_align_real(dthz_buffer);
+    thz_aligned  = gmx_simd4_align_r(thz_buffer);
+    dthz_aligned = gmx_simd4_align_r(dthz_buffer);
 #endif
 
     work = pme->spline_work;
@@ -3399,31 +3397,31 @@ static pme_spline_work_t *make_pme_spline_work(int gmx_unused order)
     pme_spline_work_t *work;
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-    real         tmp[12], *tmp_aligned;
-    gmx_simd4_pr zero_S;
-    gmx_simd4_pr real_mask_S0, real_mask_S1;
-    int          of, i;
+    real             tmp[GMX_SIMD4_WIDTH*3], *tmp_aligned;
+    gmx_simd4_real_t zero_S;
+    gmx_simd4_real_t real_mask_S0, real_mask_S1;
+    int              of, i;
 
     snew_aligned(work, 1, SIMD4_ALIGNMENT);
 
-    tmp_aligned = gmx_simd4_align_real(tmp);
+    tmp_aligned = gmx_simd4_align_r(tmp);
 
-    zero_S = gmx_simd4_setzero_pr();
+    zero_S = gmx_simd4_setzero_r();
 
     /* Generate bit masks to mask out the unused grid entries,
      * as we only operate on order of the 8 grid entries that are
      * load into 2 SIMD registers.
      */
-    for (of = 0; of < 8-(order-1); of++)
+    for (of = 0; of < 2*GMX_SIMD4_WIDTH-(order-1); of++)
     {
-        for (i = 0; i < 8; i++)
+        for (i = 0; i < 2*GMX_SIMD4_WIDTH; i++)
         {
             tmp_aligned[i] = (i >= of && i < of+order ? -1.0 : 1.0);
         }
-        real_mask_S0      = gmx_simd4_load_pr(tmp_aligned);
-        real_mask_S1      = gmx_simd4_load_pr(tmp_aligned+4);
-        work->mask_S0[of] = gmx_simd4_cmplt_pr(real_mask_S0, zero_S);
-        work->mask_S1[of] = gmx_simd4_cmplt_pr(real_mask_S1, zero_S);
+        real_mask_S0      = gmx_simd4_load_r(tmp_aligned);
+        real_mask_S1      = gmx_simd4_load_r(tmp_aligned+GMX_SIMD4_WIDTH);
+        work->mask_S0[of] = gmx_simd4_cmplt_r(real_mask_S0, zero_S);
+        work->mask_S1[of] = gmx_simd4_cmplt_r(real_mask_S1, zero_S);
     }
 #else
     work = NULL;
