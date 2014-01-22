@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,10 +37,11 @@
 
 #include <math.h>
 
-#include "gromacs/simd/general_x86_sse4_1.h"
-
 #undef gmx_restrict
 #define gmx_restrict
+
+#define gmx_mm_castsi128_ps   _mm_castsi128_ps
+#define gmx_mm_extract_epi32  _mm_extract_epi32
 
 /* Normal sum of four xmm registers */
 #define gmx_mm_sum4_ps(t0, t1, t2, t3)  _mm_add_ps(_mm_add_ps(t0, t1), _mm_add_ps(t2, t3))
