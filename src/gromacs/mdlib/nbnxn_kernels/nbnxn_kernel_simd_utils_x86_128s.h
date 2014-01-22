@@ -125,13 +125,13 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *t
     /* Table has 4 entries, left-shift index by 2 */
     ti_S = _mm_slli_epi32(ti_S, 2);
     /* Without SSE4.1 the extract macro needs an immediate: unroll */
-    idx[0]    = gmx_mm_extract_epi32(ti_S, 0);
+    idx[0]    = gmx_simd_extract_i(ti_S, 0);
     ctab_S[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);
-    idx[1]    = gmx_mm_extract_epi32(ti_S, 1);
+    idx[1]    = gmx_simd_extract_i(ti_S, 1);
     ctab_S[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);
-    idx[2]    = gmx_mm_extract_epi32(ti_S, 2);
+    idx[2]    = gmx_simd_extract_i(ti_S, 2);
     ctab_S[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);
-    idx[3]    = gmx_mm_extract_epi32(ti_S, 3);
+    idx[3]    = gmx_simd_extract_i(ti_S, 3);
     ctab_S[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);
 
     /* Shuffle the force table entries to a convenient order */
@@ -148,13 +148,13 @@ load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused 
     /* Table has 4 entries, left-shift index by 2 */
     ti_S = _mm_slli_epi32(ti_S, 2);
     /* Without SSE4.1 the extract macro needs an immediate: unroll */
-    idx[0]    = gmx_mm_extract_epi32(ti_S, 0);
+    idx[0]    = gmx_simd_extract_i(ti_S, 0);
     ctab_S[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);
-    idx[1]    = gmx_mm_extract_epi32(ti_S, 1);
+    idx[1]    = gmx_simd_extract_i(ti_S, 1);
     ctab_S[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);
-    idx[2]    = gmx_mm_extract_epi32(ti_S, 2);
+    idx[2]    = gmx_simd_extract_i(ti_S, 2);
     ctab_S[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);
-    idx[3]    = gmx_mm_extract_epi32(ti_S, 3);
+    idx[3]    = gmx_simd_extract_i(ti_S, 3);
     ctab_S[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);
 
     /* Shuffle the force table entries to a convenient order */
@@ -172,13 +172,13 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return _mm_load_si128((__m128i *) i);
+    return gmx_simd_load_fi(i);
 }
 
 static gmx_inline gmx_simd_bool_t
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
-    return gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
+    return _mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s128s_h_ */
