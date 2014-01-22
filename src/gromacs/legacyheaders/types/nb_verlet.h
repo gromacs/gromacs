@@ -36,6 +36,8 @@
 #ifndef NB_VERLET_H
 #define NB_VERLET_H
 
+#include "gromacs/simd/simd.h"
+
 #include "nbnxn_pairlist.h"
 #include "nbnxn_cuda_types_ext.h"
 
