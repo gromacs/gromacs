@@ -57,7 +57,7 @@
 #ifdef GMX_NBNXN_HALF_WIDTH_SIMD
 #define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
-#include "gromacs/simd/macros.h"
+#include "gromacs/simd/simd.h"
 #endif
 
 

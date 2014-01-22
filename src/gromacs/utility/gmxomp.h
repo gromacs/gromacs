@@ -53,9 +53,7 @@
 #include "config.h"
 #endif
 
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-#include <xmmintrin.h>
-#endif
+#include "gromacs/simd/simd.h"
 
 #include "types/commrec.h"
 #include "mdrun.h"

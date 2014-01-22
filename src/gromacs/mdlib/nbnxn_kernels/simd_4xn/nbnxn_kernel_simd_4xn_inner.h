@@ -403,10 +403,10 @@
 
 #ifdef CHECK_EXCLS
     /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = gmx_masknot_add_pr(interact_S0, rsq_S0, avoid_sing_S);
-    rsq_S1      = gmx_masknot_add_pr(interact_S1, rsq_S1, avoid_sing_S);
-    rsq_S2      = gmx_masknot_add_pr(interact_S2, rsq_S2, avoid_sing_S);
-    rsq_S3      = gmx_masknot_add_pr(interact_S3, rsq_S3, avoid_sing_S);
+    rsq_S0      = gmx_simd_add_r(rsq_S0, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S0));
+    rsq_S1      = gmx_simd_add_r(rsq_S1, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S1));
+    rsq_S2      = gmx_simd_add_r(rsq_S2, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S2));
+    rsq_S3      = gmx_simd_add_r(rsq_S3, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S3));
 #endif
 
     /* Calculate 1/r */
@@ -416,8 +416,8 @@
     rinv_S2     = gmx_simd_invsqrt_r(rsq_S2);
     rinv_S3     = gmx_simd_invsqrt_r(rsq_S3);
 #else
-    gmx_mm_invsqrt2_pd(rsq_S0, rsq_S1, &rinv_S0, &rinv_S1);
-    gmx_mm_invsqrt2_pd(rsq_S2, rsq_S3, &rinv_S2, &rinv_S3);
+    gmx_simd_invsqrt_pair_r(rsq_S0, rsq_S1, &rinv_S0, &rinv_S1);
+    gmx_simd_invsqrt_pair_r(rsq_S2, rsq_S3, &rinv_S2, &rinv_S3);
 #endif
 
 #ifdef CALC_COULOMB
@@ -579,12 +579,12 @@
     ti_S1       = gmx_simd_cvtt_r2i(rs_S1);
     ti_S2       = gmx_simd_cvtt_r2i(rs_S2);
     ti_S3       = gmx_simd_cvtt_r2i(rs_S3);
-#ifdef GMX_SIMD_HAVE_FLOOR
-    /* SSE4.1 floor is faster than gmx_cvtepi32_ps int->float cast */
-    rf_S0       = gmx_simd_floor_r(rs_S0);
-    rf_S1       = gmx_simd_floor_r(rs_S1);
-    rf_S2       = gmx_simd_floor_r(rs_S2);
-    rf_S3       = gmx_simd_floor_r(rs_S3);
+#ifdef GMX_SIMD_HAVE_TRUNC
+    /* SSE4.1 trunc is faster than gmx_cvtepi32_ps int->float cast */
+    rf_S0       = gmx_simd_trunc_r(rs_S0);
+    rf_S1       = gmx_simd_trunc_r(rs_S1);
+    rf_S2       = gmx_simd_trunc_r(rs_S2);
+    rf_S3       = gmx_simd_trunc_r(rs_S3);
 #else
     rf_S0       = gmx_simd_cvt_i2r(ti_S0);
     rf_S1       = gmx_simd_cvt_i2r(ti_S1);
