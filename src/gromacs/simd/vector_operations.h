@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,67 +46,154 @@
 #ifndef GMX_SIMD_VECTOR_OPERATIONS_H
 #define GMX_SIMD_VECTOR_OPERATIONS_H
 
-#ifndef GMX_SIMD_MACROS_H
-#error "gromacs/simd/macros.h was not included before including gromacs/simd/vector_operations.h"
-#endif
+#include "gromacs/simd/simd.h"
 
-
-/* x^2 + y^2 + z^2 */
-static gmx_inline gmx_mm_pr
-gmx_calc_rsq_pr(gmx_mm_pr x, gmx_mm_pr y, gmx_mm_pr z)
-{
-    return gmx_madd_pr(z, z, gmx_madd_pr(y, y, gmx_mul_pr(x, x)));
-}
-
+#ifdef GMX_SIMD_HAVE_FLOAT
 /* inner-product of multiple vectors */
-static gmx_inline gmx_mm_pr
-gmx_iprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
-             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz)
+static gmx_inline gmx_simd_float_t
+gmx_simd_iprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
+                 gmx_simd_float_t bx, gmx_simd_float_t by, gmx_simd_float_t bz)
 {
-    gmx_mm_pr ret;
+    gmx_simd_float_t ret;
 
-    ret = gmx_mul_pr(ax, bx);
-    ret = gmx_madd_pr(ay, by, ret);
-    ret = gmx_madd_pr(az, bz, ret);
+    ret = gmx_simd_mul_f(ax, bx);
+    ret = gmx_simd_fmadd_f(ay, by, ret);
+    ret = gmx_simd_fmadd_f(az, bz, ret);
 
     return ret;
 }
 
 /* norm squared of multiple vectors */
-static gmx_inline gmx_mm_pr
-gmx_norm2_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az)
+static gmx_inline gmx_simd_float_t
+gmx_simd_norm2_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az)
 {
-    gmx_mm_pr ret;
+    gmx_simd_float_t ret;
 
-    ret = gmx_mul_pr(ax, ax);
-    ret = gmx_madd_pr(ay, ay, ret);
-    ret = gmx_madd_pr(az, az, ret);
+    ret = gmx_simd_mul_f(ax, ax);
+    ret = gmx_simd_fmadd_f(ay, ay, ret);
+    ret = gmx_simd_fmadd_f(az, az, ret);
 
     return ret;
 }
 
+/* Alias to name that makes more sense in kernels */
+#define gmx_simd_calc_rsq_f gmx_simd_norm2_f
+
 /* cross-product of multiple vectors */
 static gmx_inline void
-gmx_cprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
-             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz,
-             gmx_mm_pr *cx, gmx_mm_pr *cy, gmx_mm_pr *cz)
+gmx_simd_cprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
+                 gmx_simd_float_t bx, gmx_simd_float_t by, gmx_simd_float_t bz,
+                 gmx_simd_float_t *cx, gmx_simd_float_t *cy, gmx_simd_float_t *cz)
 {
-    *cx = gmx_mul_pr(ay, bz);
-    *cx = gmx_nmsub_pr(az, by, *cx);
+    *cx = gmx_simd_mul_f(ay, bz);
+    *cx = gmx_simd_fnmadd_f(az, by, *cx);
 
-    *cy = gmx_mul_pr(az, bx);
-    *cy = gmx_nmsub_pr(ax, bz, *cy);
+    *cy = gmx_simd_mul_f(az, bx);
+    *cy = gmx_simd_fnmadd_f(ax, bz, *cy);
 
-    *cz = gmx_mul_pr(ax, by);
-    *cz = gmx_nmsub_pr(ay, bx, *cz);
+    *cz = gmx_simd_mul_f(ax, by);
+    *cz = gmx_simd_fnmadd_f(ay, bx, *cz);
+}
+#endif /* GMX_SIMD_HAVE_FLOAT */
+
+#ifdef GMX_SIMD_HAVE_DOUBLE
+/* inner-product of multiple vectors */
+static gmx_inline gmx_simd_double_t
+gmx_simd_iprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az,
+                 gmx_simd_double_t bx, gmx_simd_double_t by, gmx_simd_double_t bz)
+{
+    gmx_simd_double_t ret;
+
+    ret = gmx_simd_mul_d(ax, bx);
+    ret = gmx_simd_fmadd_d(ay, by, ret);
+    ret = gmx_simd_fmadd_d(az, bz, ret);
+
+    return ret;
 }
 
-/* a + b + c + d (not really a vector operation, but where else put this?) */
-static gmx_inline gmx_mm_pr
-gmx_sum4_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c, gmx_mm_pr d)
+/* norm squared of multiple vectors */
+static gmx_inline gmx_simd_double_t
+gmx_simd_norm2_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az)
 {
-    return gmx_add_pr(gmx_add_pr(a, b), gmx_add_pr(c, d));
+    gmx_simd_double_t ret;
+
+    ret = gmx_simd_mul_d(ax, ax);
+    ret = gmx_simd_fmadd_d(ay, ay, ret);
+    ret = gmx_simd_fmadd_d(az, az, ret);
+
+    return ret;
 }
 
+/* Alias to name that makes more sense in kernels */
+#define gmx_simd_calc_rsq_d gmx_simd_norm2_d
 
-#endif
+/* cross-product of multiple vectors */
+static gmx_inline void
+gmx_simd_cprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az,
+                 gmx_simd_double_t bx, gmx_simd_double_t by, gmx_simd_double_t bz,
+                 gmx_simd_double_t *cx, gmx_simd_double_t *cy, gmx_simd_double_t *cz)
+{
+    *cx = gmx_simd_mul_d(ay, bz);
+    *cx = gmx_simd_fnmadd_d(az, by, *cx);
+
+    *cy = gmx_simd_mul_d(az, bx);
+    *cy = gmx_simd_fnmadd_d(ax, bz, *cy);
+
+    *cz = gmx_simd_mul_d(ax, by);
+    *cz = gmx_simd_fnmadd_d(ay, bx, *cz);
+}
+#endif /* GMX_SIMD_HAVE_DOUBLE */
+
+
+#ifdef GMX_SIMD4_HAVE_FLOAT
+static gmx_inline gmx_simd4_float_t
+gmx_simd4_norm2_f(gmx_simd4_float_t ax, gmx_simd4_float_t ay, gmx_simd4_float_t az)
+{
+    gmx_simd4_float_t ret;
+
+    ret = gmx_simd4_mul_f(ax, ax);
+    ret = gmx_simd4_fmadd_f(ay, ay, ret);
+    ret = gmx_simd4_fmadd_f(az, az, ret);
+
+    return ret;
+}
+
+#define gmx_simd4_calc_rsq_f gmx_simd4_norm2_f
+
+#endif /* GMX_SIMD4_HAVE_FLOAT */
+
+#ifdef GMX_SIMD4_HAVE_DOUBLE
+static gmx_inline gmx_simd4_double_t
+gmx_simd4_norm2_d(gmx_simd4_double_t ax, gmx_simd4_double_t ay, gmx_simd4_double_t az)
+{
+    gmx_simd4_double_t ret;
+
+    ret = gmx_simd4_mul_d(ax, ax);
+    ret = gmx_simd4_fmadd_d(ay, ay, ret);
+    ret = gmx_simd4_fmadd_d(az, az, ret);
+
+    return ret;
+}
+
+#define gmx_simd4_calc_rsq_d gmx_simd4_norm2_d
+
+#endif /* GMX_SIMD4_HAVE_DOUBLE */
+
+
+#ifdef GMX_DOUBLE
+#    define gmx_simd_iprod_r      gmx_simd_iprod_d
+#    define gmx_simd_norm2_r      gmx_simd_norm2_d
+#    define gmx_simd_calc_rsq_r   gmx_simd_calc_rsq_d
+#    define gmx_simd_cprod_r      gmx_simd_cprod_d
+#    define gmx_simd4_norm2_r     gmx_simd4_norm2_d
+#    define gmx_simd4_calc_rsq_r  gmx_simd4_calc_rsq_d
+#else /* GMX_DOUBLE */
+#    define gmx_simd_iprod_r      gmx_simd_iprod_f
+#    define gmx_simd_norm2_r      gmx_simd_norm2_f
+#    define gmx_simd_calc_rsq_r   gmx_simd_calc_rsq_f
+#    define gmx_simd_cprod_r      gmx_simd_cprod_f
+#    define gmx_simd4_norm2_r     gmx_simd4_norm2_f
+#    define gmx_simd4_calc_rsq_r  gmx_simd4_calc_rsq_f
+#endif /* GMX_DOUBLE */
+
+#endif /* GMX_SIMD_VECTOR_OPERATIONS_H */

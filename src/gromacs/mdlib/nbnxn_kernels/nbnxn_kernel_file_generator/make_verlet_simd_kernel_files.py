@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,7 @@ VerletKernelTypeDict = {
     '2xnn' : {
         'Define' : 'GMX_NBNXN_SIMD_2XNN',
         'WidthSetup' : '/* Include the full-width SIMD macros */\n',
-        'WidthCheck' : ('#if !(GMX_SIMD_WIDTH_HERE == 8 || GMX_SIMD_WIDTH_HERE == 16)\n' \
+        'WidthCheck' : ('#if !(GMX_SIMD_REAL_WIDTH == 8 || GMX_SIMD_REAL_WIDTH == 16)\n' \
                         '#error "unsupported SIMD width"\n' \
                         '#endif\n'),
         'UnrollSize' : 2,
@@ -142,7 +142,7 @@ VerletKernelTypeDict = {
         'WidthSetup' : ('#ifdef GMX_NBNXN_HALF_WIDTH_SIMD\n' \
                         '#define GMX_USE_HALF_WIDTH_SIMD_HERE\n' \
                         '#endif\n'),
-        'WidthCheck' : ('#if !(GMX_SIMD_WIDTH_HERE == 2 || GMX_SIMD_WIDTH_HERE == 4 || GMX_SIMD_WIDTH_HERE == 8)\n' \
+        'WidthCheck' : ('#if !(GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8)\n' \
                         '#error "unsupported SIMD width"\n' \
                         '#endif\n'),
         'UnrollSize' : 1,

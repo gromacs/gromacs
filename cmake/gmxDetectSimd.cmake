@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,22 +34,21 @@
 
 # - Check the username performing the build, as well as date and time
 #
-# gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
+# gmx_detect_simd(GMX_SUGGESTED_SIMD)
 #
-# Try to detect CPU information and suggest an acceleration option
+# Try to detect CPU information and suggest a SIMD instruction set
 # (such as SSE/AVX) that fits the current CPU. These functions assume
 # that gmx_detect_target_architecture() has already been run, so that
 # things like GMX_TARGET_X86 are already available.
 #
-# Sets ${GMX_SUGGESTED_CPU_ACCELERATION} in the parent scope if
-# GMX_CPU_ACCELERATION is not set (e.g. by the user, or a previous run
-# of CMake).
+# Sets ${GMX_SUGGESTED_SIMD} in the parent scope if GMX_SIMD is not
+# set (e.g. by the user, or a previous run of CMake).
 #
 
 # we rely on inline asm support for GNU!
 include(gmxTestInlineASM)
 
-function(gmx_suggest_x86_acceleration _suggested_acceleration)
+function(gmx_suggest_x86_simd _suggested_simd)
 
     gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
@@ -59,9 +58,9 @@ function(gmx_suggest_x86_acceleration _suggested_acceleration)
         set(GCC_INLINE_ASM_DEFINE "")
     endif(GMX_X86_GCC_INLINE_ASM)
 
-    message(STATUS "Detecting best acceleration for this CPU")
+    message(STATUS "Detecting best SIMD instruction set for this CPU")
 
-    # Get CPU acceleration information
+    # Get CPU instruction set information
     set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders -DGMX_CPUID_STANDALONE")
     if(GMX_TARGET_X86)
         set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
@@ -72,10 +71,10 @@ function(gmx_suggest_x86_acceleration _suggested_acceleration)
             COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_TMP
             COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
-            ARGS "-acceleration")
+            ARGS "-simd")
 
     if(NOT GMX_CPUID_COMPILED)
-        message(WARNING "Cannot compile CPUID code, which means no CPU-specific acceleration.")
+        message(WARNING "Cannot compile CPUID code, which means no CPU-specific SIMD instructions.")
         message(STATUS "Compile output: ${GMX_CPUID_COMPILE_OUTPUT}")
         set(OUTPUT_TMP "None")
     elseif(NOT GMX_CPUID_RUN_ACC EQUAL 0)
@@ -86,20 +85,20 @@ function(gmx_suggest_x86_acceleration _suggested_acceleration)
 
     string(STRIP "@OUTPUT_TMP@" OUTPUT_ACC)
 
-    set(${_suggested_acceleration} "@OUTPUT_ACC@" PARENT_SCOPE)
-    message(STATUS "Detected best acceleration for this CPU - @OUTPUT_ACC@")
+    set(${_suggested_simd} "@OUTPUT_ACC@" PARENT_SCOPE)
+    message(STATUS "Detected best SIMD instruction set for this CPU - @OUTPUT_ACC@")
 endfunction()
 
-function(gmx_detect_acceleration _suggested_acceleration)
-    if(NOT DEFINED GMX_CPU_ACCELERATION)
+function(gmx_detect_simd _suggested_simd)
+    if(NOT DEFINED GMX_SIMD)
         if(GMX_TARGET_BGQ)
-            set(${_suggested_acceleration} "IBM_QPX")
+            set(${_suggested_simd} "IBM_QPX")
         elseif(GMX_TARGET_X86)
-            gmx_suggest_x86_acceleration(${_suggested_acceleration})
+            gmx_suggest_x86_simd(${_suggested_simd})
         else()
-            set(${_suggested_acceleration} "None")
+            set(${_suggested_simd} "None")
         endif()
 
-        set(${_suggested_acceleration} ${${_suggested_acceleration}} PARENT_SCOPE)
+        set(${_suggested_simd} ${${_suggested_simd}} PARENT_SCOPE)
     endif()
 endfunction()
