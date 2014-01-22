@@ -80,8 +80,6 @@ elseif(${GMX_SIMD} STREQUAL "SSE2")
     endif()
 
     set(GMX_SIMD_X86_SSE2 1)
-    set(GMX_SIMD_X86_SSE2_OR_HIGHER 1)
-
     set(SIMD_STATUS_MESSAGE "Enabling SSE2 SIMD instructions")
 
 elseif(${GMX_SIMD} STREQUAL "SSE4.1")
@@ -108,8 +106,6 @@ elseif(${GMX_SIMD} STREQUAL "SSE4.1")
     endif()
 
     set(GMX_SIMD_X86_SSE4_1 1)
-    set(GMX_SIMD_X86_SSE4_1_OR_HIGHER 1)
-    set(GMX_SIMD_X86_SSE2_OR_HIGHER   1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE4.1 SIMD instructions")
 
 elseif(${GMX_SIMD} STREQUAL "AVX_128_FMA")
@@ -203,10 +199,6 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return 0;}"
     gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
 
     set(GMX_SIMD_X86_AVX_128_FMA 1)
-    set(GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER 1)
-    set(GMX_SIMD_X86_SSE4_1_OR_HIGHER      1)
-    set(GMX_SIMD_X86_SSE2_OR_HIGHER        1)
-
     set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD Gromacs SIMD (with fused-multiply add)")
 
 elseif(${GMX_SIMD} STREQUAL "AVX_256")
@@ -231,16 +223,9 @@ elseif(${GMX_SIMD} STREQUAL "AVX_256")
     gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
 
     set(GMX_SIMD_X86_AVX_256 1)
-    set(GMX_SIMD_X86_AVX_256_OR_HIGHER  1)
-    set(GMX_SIMD_X86_SSE4_1_OR_HIGHER   1)
-    set(GMX_SIMD_X86_SSE2_OR_HIGHER     1)
-
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions")
 
 elseif(${GMX_SIMD} STREQUAL "AVX2_256")
-
-    # Comment out this line for AVX2 development
-    message(FATAL_ERROR "AVX2_256 is disabled until the implementation has been commited.")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -262,11 +247,6 @@ elseif(${GMX_SIMD} STREQUAL "AVX2_256")
     # No need to test for Maskload bug - it was fixed before gcc added AVX2 support
 
     set(GMX_SIMD_X86_AVX2_256 1)
-    set(GMX_SIMD_X86_AVX2_256_OR_HIGHER 1)
-    set(GMX_SIMD_X86_AVX_256_OR_HIGHER  1)
-    set(GMX_SIMD_X86_SSE4_1_OR_HIGHER   1)
-    set(GMX_SIMD_X86_SSE2_OR_HIGHER     1)
-
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
 
 elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
@@ -287,6 +267,11 @@ elseif(${GMX_SIMD} STREQUAL "SPARC64_HPC_ACE")
 
     set(GMX_SIMD_SPARC64_HPC_ACE 1)
     set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions")
+
+elseif(${GMX_SIMD} STREQUAL "REFERENCE")
+
+    set(GMX_SIMD_REFERENCE 1)
+    set(SIMD_STATUS_MESSAGE "Enabling reference (emulated) SIMD instructions.")
 
 else()
     gmx_invalid_option_value(GMX_SIMD)
