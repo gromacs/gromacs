@@ -190,12 +190,14 @@ include(gmxManageGPU)
 # SIMD.
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
+
+if(GMX_CPU_ACCELERATION)
+    # Stay compatible with old Jenkins command line options for specific SIMD acceleration
+    set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
+endif(GMX_CPU_ACCELERATION)
+
 include(gmxDetectSimd)
 gmx_detect_simd(GMX_SUGGESTED_SIMD)
-if("${GMX_SUGGESTED_SIMD}" STREQUAL "AVX2_256")
-    message(STATUS "Changing acceleration from AVX2 to AVX (until AVX2 patches commited).")
-    set(GMX_SUGGESTED_SIMD "AVX_256")
-endif()
 
 gmx_option_multichoice(
     GMX_SIMD
@@ -227,8 +229,35 @@ gmx_option_multichoice(
     None
     none gaussian mopac gamess orca)
 
-gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_TYPE "Reference kernel type (4xn or 2xnn)" STRING "4xn" "GMX_SIMD STREQUAL REFERENCE")
-gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_WIDTH "Reference kernel width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
+gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
+gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
+gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_TYPE "Reference verlet kernel type (4xn or 2xnn)" STRING "4xn" "GMX_SIMD STREQUAL REFERENCE")
+
+# This should be moved to a separate NBNXN cmake module when that code is cleaned up and modularized
+
+if("${GMX_SIMD}" STREQUAL "REFERENCE")
+    if(GMX_DOUBLE)
+        set(KERNEL_WIDTH ${GMX_SIMD_REF_DOUBLE_WIDTH})
+    else()
+        set(KERNEL_WIDTH ${GMX_SIMD_REF_FLOAT_WIDTH})
+    endif()  
+
+    if(${GMX_NBNXN_REF_KERNEL_TYPE} STREQUAL "4xn")
+        if(${KERNEL_WIDTH} STREQUAL "2" OR ${KERNEL_WIDTH} STREQUAL "4" OR ${KERNEL_WIDTH} STREQUAL "8")
+            add_definitions(-DGMX_NBNXN_SIMD_4XN)
+        else()
+            message(FATAL_ERROR "Cannot do reference NxN 4xn kernels with this SIMD width")
+        endif()
+    elseif(${GMX_NBNXN_REF_KERNEL_TYPE} STREQUAL "2xnn")
+        if(${KERNEL_WIDTH} STREQUAL "8" OR ${KERNEL_WIDTH} STREQUAL "16")
+            add_definitions(-DGMX_NBNXN_SIMD_2XNN)
+        else()
+            message(FATAL_ERROR "Cannot do reference NxN 2xnn kernels with this SIMD width")
+        endif()
+    else()
+        message(FATAL_ERROR "Unsupported kernel type")
+    endif()
+endif()
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
@@ -650,15 +679,6 @@ endif()
 if(HAVE_LIBM)
     list(APPEND GMX_EXTRA_LIBRARIES m)
 endif(HAVE_LIBM)
-if (${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
-    check_library_exists(mass_simd atan2f4 "" HAVE_MASS_SIMD)
-    if(HAVE_MASS_SIMD)
-        list(APPEND GMX_EXTRA_LIBRARIES mass_simd)
-    else()
-        message(FATAL_ERROR "Could not link to the SIMD version of the IBM MASS library. Please adjust your CMAKE_PREFIX_PATH to contain it")
-    endif()
-endif()
-
 
 option(GMX_NACL "Configure for Native Client builds" OFF)
 if (GMX_NACL)
