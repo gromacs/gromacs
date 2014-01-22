@@ -346,11 +346,11 @@ void ewald_LRcorrection(int start, int end,
                                     /* The force is the derivative of the potential vc */
                                     fscal     = 6.0*vc*rinv + c6A*rinv6*exp(-ewcdr2)*ewc_lj*ewcdr5;
 
-                                    /* The force vector is obtained by
-                                     * multiplication with the distance
-                                     * vector
+                                    /* The force vector is obtained by multiplication with
+                                     * the distance vector. Here we also divide by r, to account
+                                     * for the length of dx
                                      */
-                                    svmul(fscal, dx, df);
+                                    svmul(fscal*rinv, dx, df);
                                     rvec_inc(f[k], df);
                                     rvec_dec(f[i], df);
                                     for (iv = 0; (iv < DIM); iv++)
@@ -483,7 +483,12 @@ void ewald_LRcorrection(int start, int end,
                                     Vexcl_lj     += vc;
                                     fscal         = 6.0*vc*rinv + c6L*rinv6*exp(-ewcdr2)*ewc_lj*ewcdr5;
                                     dvdl_excl_lj += (c6B - c6A)*v;
-                                    svmul(fscal, dx, df);
+
+                                    /* The force vector is obtained by multiplication with the
+                                     * distance vector. Here we also divide by r, to account
+                                     * for the length of dx
+                                     */
+                                    svmul(fscal*rinv, dx, df);
                                     rvec_inc(f[k], df);
                                     rvec_dec(f[i], df);
                                     for (iv = 0; (iv < DIM); iv++)
