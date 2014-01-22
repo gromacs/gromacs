@@ -26,10 +26,14 @@ MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
 
 ENABLED_SECTIONS       = @DOXYGEN_SECTIONS@
 
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
 # Extract documentation also for code in headers within #ifdef __cplusplus
 PREDEFINED             = __cplusplus
 # This is for thread_mpi to #ifdef some code out that should not be documented.
 PREDEFINED            += DOXYGEN
+# This makes 'static gmx_inline' functions appear better in the documentation.
+PREDEFINED            += gmx_inline=inline
 # This is for parser.cpp to make it produce code that Doxygen understands
 # and that does not have unnecessary function declarations.
 PREDEFINED            += __STDC__ YYMALLOC=malloc YYFREE=free
