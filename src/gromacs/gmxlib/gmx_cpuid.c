@@ -138,6 +138,7 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
 {
     "CannotDetect",
     "None",
+    "Reference",
     "SSE2",
     "SSE4.1",
     "AVX_128_FMA",
@@ -222,11 +223,10 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
 
 
 
-/* What type of SIMD was compiled in, if any?
- * This is set from Cmake. Note that the SSE2 and SSE4_1 macros are set for
- * AVX too, so it is important that they appear last in the list.
- */
-#ifdef GMX_SIMD_X86_AVX_256
+/* What type of SIMD was compiled in, if any? */
+#ifdef GMX_SIMD_X86_AVX2_256
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX2_256;
+#elif defined GMX_SIMD_X86_AVX_256
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_256;
 #elif defined GMX_SIMD_X86_AVX_128_FMA
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_128_FMA;
@@ -238,6 +238,8 @@ static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE2;
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
 #elif defined GMX_SIMD_IBM_QPX
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_QPX;
+#elif defined GMX_SIMD_REFERENCE
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_REFERENCE;
 #else
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_NONE;
 #endif
