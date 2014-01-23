@@ -60,7 +60,7 @@
 #undef  GMX_SIMD_HAVE_STOREU
 #define GMX_SIMD_HAVE_LOGICAL
 #define GMX_SIMD_HAVE_FMA
-#undef  GMX_SIMD_HAVE_FRACTION
+#undef  GMX_SIMD_HAVE_FRACTION //TODO: check for all undef whether they are really not supported. Or as in the case of SIMD4 mark as TODO. Also check that the performance of this version isn't lower than it was previous
 #define GMX_SIMD_HAVE_FINT32
 #undef  GMX_SIMD_HAVE_FINT32_EXTRACT
 #define GMX_SIMD_HAVE_FINT32_LOGICAL     /* AVX1 cannot do 256-bit int shifts */
@@ -88,7 +88,7 @@
 #define gmx_simd_load1_f(m)        _mm512_extload_ps(m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE)
 #define gmx_simd_set1_f            _mm512_set1_ps
 #define gmx_simd_store_f           _mm512_store_ps
-/* No support for unaligned load/store */
+/* No support for unaligned load/store */ //TODO: not true
 #define gmx_simd_setzero_f         _mm512_setzero_ps
 #define gmx_simd_add_f             _mm512_add_ps
 #define gmx_simd_sub_f             _mm512_sub_ps
@@ -97,10 +97,10 @@
 #define gmx_simd_fmsub_f           _mm512_fmsub_ps
 #define gmx_simd_fnmadd_f          _mm512_fnmadd_ps
 #define gmx_simd_fnmsub_f          _mm512_fnmsub_ps
-#define gmx_simd_and_f(a, b)        _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd_andnot_f(a, b)     _mm512_castsi512_ps(_mm512_andnot_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd_or_f(a, b)         _mm512_castsi512_ps(_mm512_or_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd_xor_f(a, b)        _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd_and_f(a, b)        _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd_andnot_f(a, b)     _mm512_castsi512_ps(_mm512_andnot_epi32(_mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd_or_f(a, b)         _mm512_castsi512_ps(_mm512_or_epi32(_mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd_xor_f(a, b)        _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a), _mm512_castps_si512(b)))
 #define gmx_simd_rsqrt_f           _mm512_rsqrt23_ps
 #define gmx_simd_rcp_f             _mm512_rcp23_ps
 #define gmx_simd_fabs_f(x)         gmx_simd_andnot_f(_mm512_set1_ps(-1.0), x)
@@ -112,12 +112,12 @@
 #define gmx_simd_fraction_f(x)     _mm512_sub_ps(x, gmx_simd_trunc_f(x))
 #define gmx_simd_get_exponent_f(x) _mm512_getexp_ps(x)
 #define gmx_simd_get_mantissa_f(x) _mm512_getmant_ps(x, _MM_MANT_NORM_1_2, _MM_MANT_SIGN_zero)
-#define gmx_simd_set_exponent_f(x) gmx_simd_set_exponent_f_mic
+#define gmx_simd_set_exponent_f(x) gmx_simd_set_exponent_f_mic(x)
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_fint32_t          __m512i
 #define gmx_simd_load_fi           _mm512_load_epi32
-#define gmx_simd_set1_fi           _mm512_set1_ps
-#define gmx_simd_store_fi(m, x)     _mm512_store_epi32
+#define gmx_simd_set1_fi           _mm512_set1_epi32
+#define gmx_simd_store_fi(m, x)    _mm512_store_epi32
 /* No support for unaligned load/store */
 #define gmx_simd_setzero_fi        _mm512_setzero_epi32
 #define gmx_simd_cvt_f2i(a)        _mm512_cvtfxpnt_round_adjustps_epi32(a, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE)
@@ -136,10 +136,11 @@
 #define gmx_simd_mul_fi            _mm512_mullo_epi32
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t           __mmask16
-#define gmx_simd_cmpeq_f(a, b)      _mm512_cmp_ps_mask(a, b, _CMP_EQ_OQ)
-#define gmx_simd_cmplt_f(a, b)      _mm512_cmp_ps_mask(a, b, _CMP_LT_OS)
-#define gmx_simd_cmple_f(a, b)      _mm512_cmp_ps_mask(a, b, _CMP_LE_OS)
+#define gmx_simd_cmpeq_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_EQ_OQ)
+#define gmx_simd_cmplt_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_LT_OS)
+#define gmx_simd_cmple_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_LE_OS)
 #define gmx_simd_and_fb            _mm512_kand
+#define gmx_simd_andnot_fb(a, b)   _mm512_knot(_mm512_kor(a,b))
 #define gmx_simd_or_fb             _mm512_kor
 #define gmx_simd_anytrue_fb        _mm512_mask2int
 #define gmx_simd_blendzero_f(a, sel) _mm512_mask_mov_ps(_mm512_setzero_ps(), sel, a)
@@ -159,14 +160,17 @@
 
 /* MIC provides full single precision of some neat functions: */
 /* 1/sqrt(x) and 1/x work fine in simd_math.h, and won't use extra iterations */
+
+/* doesn't work. scale_ps only does exp2 for integer exponent 
 #define gmx_simd_exp2_f(x)         _mm512_scale_ps(_mm512_set1_ps(1.0), x)
 #define gmx_simd_exp_f(x)          gmx_simd_exp2_f(_mm512_mul_ps(x, _mm512_set1_ps(1.44269504088896341)))
+*/
 #define gmx_simd_log_f(x)          _mm512_mul_ps(_mm512_set1_ps(0.693147180559945286226764g), _mm512_log2ae23_ps(x))
 
 /****************************************************
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#define gmx_simd_double_t          __m512
+#define gmx_simd_double_t          __m512d
 #define gmx_simd_load_d            _mm512_load_pd
 #define gmx_simd_load1_d(m)        _mm512_extload_pd(m, _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE)
 #define gmx_simd_set1_d            _mm512_set1_pd
@@ -180,12 +184,12 @@
 #define gmx_simd_fmsub_d           _mm512_fmsub_pd
 #define gmx_simd_fnmadd_d          _mm512_fnmadd_pd
 #define gmx_simd_fnmsub_d          _mm512_fnmsub_pd
-#define gmx_simd_and_d(a, b)        _mm512_castsi512_pd(_mm512_and_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd_andnot_d(a, b)     _mm512_castsi512_pd(_mm512_andnot_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd_or_d(a, b)         _mm512_castsi512_pd(_mm512_or_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd_xor_d(a, b)        _mm512_castsi512_pd(_mm512_xor_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd_rsqrt_d           _mm512_rsqrt23_ps
-#define gmx_simd_rcp_d             _mm512_rcp23_ps
+#define gmx_simd_and_d(a, b)       _mm512_castsi512_pd(_mm512_and_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd_andnot_d(a, b)    _mm512_castsi512_pd(_mm512_andnot_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd_or_d(a, b)        _mm512_castsi512_pd(_mm512_or_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd_xor_d(a, b)       _mm512_castsi512_pd(_mm512_xor_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd_rsqrt_d(x)        _mm512_cvtpslo_pd(_mm512_rsqrt23_ps(_mm512_cvtpd_pslo(x)))
+#define gmx_simd_rcp_d(x)          _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(x)))
 #define gmx_simd_fabs_d(x)         gmx_simd_andnot_d(_mm512_set1_pd(-1.0), x)
 #define gmx_simd_fneg_d(x)         _mm512_addn_pd(x, _mm512_setzero_pd())
 #define gmx_simd_max_d             _mm512_gmax_pd
@@ -195,7 +199,7 @@
 #define gmx_simd_fraction_d(x)     _mm512_sub_pd(x, gmx_simd_trunc_d(x))
 #define gmx_simd_get_exponent_d(x) _mm512_getexp_pd(x)
 #define gmx_simd_get_mantissa_d(x) _mm512_getmant_pd(x, _MM_MANT_NORM_1_2, _MM_MANT_SIGN_zero)
-#define gmx_simd_set_exponent_d(x) gmx_simd_set_exponent_d_mic
+#define gmx_simd_set_exponent_d(x) gmx_simd_set_exponent_d_mic(x)
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_dint32_t          __m512i
 #define gmx_simd_load_di           gmx_simd_load_di_mic
@@ -203,8 +207,8 @@
 #define gmx_simd_store_di          gmx_simd_store_di_mic
 /* No support for unaligned load/store */
 #define gmx_simd_setzero_di        _mm512_setzero_epi32
-#define gmx_simd_cvt_d2i(a)        _mm512_cvt_roundpd_epi32lo(a, _MM_FROUND_TO_NEAREST_INT)
-#define gmx_simd_cvtt_d2i(a)       _mm512_cvt_roundpd_epi32lo(a, _MM_FROUND_TO_ZERO)
+#define gmx_simd_cvt_d2i(a)        _mm512_cvtfxpnt_roundpd_epi32lo(a, _MM_FROUND_TO_NEAREST_INT)
+#define gmx_simd_cvtt_d2i(a)       _mm512_cvtfxpnt_roundpd_epi32lo(a, _MM_FROUND_TO_ZERO)
 #define gmx_simd_cvt_i2d(a)        _mm512_cvtepi32lo_pd
 /* Integer logical ops on gmx_simd_fint32_t */
 #define gmx_simd_slli_di           _mm512_slli_epi32
@@ -244,8 +248,14 @@
 #define gmx_simd_cvt_f2dd          gmx_simd_cvt_f2dd_mic
 #define gmx_simd_cvt_dd2f          gmx_simd_cvt_dd2f_mic
 
+#define PERM_LOW2HIGH _MM_PERM_BABA
+#define PERM_HIGH2LOW _MM_PERM_DCDC
+
+#define mask_loh _mm512_int2mask(0x00FF) /* would be better a constant - but can't initialize with a function call. */
+#define mask_hih _mm512_int2mask(0xFF00)
+
 /* This is likely faster than the built in scale operation (lat 8, t-put 3)
- * since we only work on the integer part and use shifts.
+ * since we only work on the integer part and use shifts. TODO: check. given that scale also only does integer
  */
 static gmx_inline __m512
 gmx_simd_set_exponent_f_mic(__m512 a)
@@ -264,9 +274,9 @@ gmx_simd_load_di(int *m)
 }
 
 static gmx_inline void
-gmx_simd_store_di(int *m, x)
+gmx_simd_store_di(int *m, __m512i x)
 {
-    __m512i index = _mm512_set_epi32(16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+    __m512i index = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); //TODO: shouldn't use scatter if it is contigous
     _mm512_mask_i32scatter_epi32(m, _mm512_int2mask(0x00FF), index, x, _MM_SCALE_1);
 }
 
@@ -275,10 +285,10 @@ gmx_simd_set_exponent_d_mic(__m512d a)
 {
     /* SIC: We use single storage as an intermediate here, so bias/mantissa _should_ be 127 & 23 */
     const __m512i expbias      = _mm512_set1_epi32(127);
-    __m512i       iexp         = _mm512_cvt_roundpd_epi32lo(a, _MM_FROUND_TO_NEAREST_INT);
+    __m512i       iexp         = _mm512_cvtfxpnt_roundpd_epi32lo(a, _MM_FROUND_TO_NEAREST_INT);
 
     iexp = _mm512_slli_epi32(_mm512_add_epi32(iexp, expbias), 23);
-    return _mm512_castpslo_pd(_mm512_castsi512_ps(iexp));
+    return _mm512_castps_pd(_mm512_castsi512_ps(iexp));
 }
 
 static gmx_inline void
@@ -292,12 +302,11 @@ gmx_simd_cvt_f2dd_mic(__m512 f, __m512d * d0, __m512d * d1)
 }
 
 static gmx_inline __m512
-gmx_simd_cvt_dd2f_mic(__m512 d0, __m512 d1)
+gmx_simd_cvt_dd2f_mic(__m512d d0, __m512d d1)
 {
-    __m512i i0 = _mm512_castps_si512(_mm512_cvtpd_pslo(d0));
-    __m512i i1 = _mm512_castps_si512(_mm512_cvtpd_pslo(d1))
-        /* I might have both the mask and permute constant backwards ... */
-        return _mm512_castsi512_pd(_mm512_mask_permute4f128_epi32(f0, _mm512_int2mask(0xFF00), f1, _MM_PERM_ABAB));
+    __m512 f0 = _mm512_cvtpd_pslo(d0);
+    __m512 f1 = _mm512_cvtpd_pslo(d1);
+    return _mm512_mask_permute4f128_ps(f0, mask_hih, f1, PERM_LOW2HIGH);
 }
 
 /* Presently we do not bother with SIMD4 on MIC, since it just does kernels */

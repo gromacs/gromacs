@@ -329,8 +329,10 @@
 
 #ifdef CHECK_EXCLS
     /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = gmx_simd_add_f(rsq_S0, gmx_simd_andnot_f(interact_S0, avoid_sing_S));
+    /* TODO
+    rsq_S0      = gmx_simd_and_f(rsq_S0, gmx_simd_andnot_f(interact_S0, avoid_sing_S));
     rsq_S2      = gmx_simd_add_f(rsq_S2, gmx_simd_andnot_f(interact_S2, avoid_sing_S));
+    */
 #endif
 
     /* Calculate 1/r */
