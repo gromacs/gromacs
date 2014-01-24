@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@
  *   energy group pair energy storage
  */
 
-typedef gmx_mm_pr gmx_exclfilter;
+typedef gmx_simd_real_t gmx_exclfilter;
 static const int filter_stride = 1;
 
 /* The 4xn kernel operates on 4-wide i-force registers */
@@ -76,7 +76,7 @@ static const int filter_stride = 1;
 #define gmx_sum4_hpr                 gmx_mm256_sum4h_m128
 
 static gmx_inline void
-gmx_pr_to_2hpr(gmx_mm_pr a, gmx_mm_hpr *b, gmx_mm_hpr *c)
+gmx_pr_to_2hpr(gmx_simd_real_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 {
     *b = _mm256_extractf128_ps(a, 0);
     *c = _mm256_extractf128_ps(a, 1);
@@ -84,7 +84,7 @@ gmx_pr_to_2hpr(gmx_mm_pr a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 
 /* Store half width SIMD registers a and b in full width register *c */
 static gmx_inline void
-gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_mm_pr *c)
+gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_real_t *c)
 {
     *c = _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 0x1);
 }
@@ -217,7 +217,7 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
  * AVX_256. */
 
 static gmx_inline void
-load_table_f(const real *tab_coul_FDV0, gmx_epi32 ti_S, int *ti,
+load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
              __m256 *ctab0_S, __m256 *ctab1_S)
 {
     __m128 ctab_S[8], ctabt_S[4];
@@ -239,7 +239,7 @@ load_table_f(const real *tab_coul_FDV0, gmx_epi32 ti_S, int *ti,
 }
 
 static gmx_inline void
-load_table_f_v(const real *tab_coul_FDV0, gmx_epi32 ti_S, int *ti,
+load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
                __m256 *ctab0_S, __m256 *ctab1_S, __m256 *ctabv_S)
 {
     __m128 ctab_S[8], ctabt_S[4], ctabvt_S[2];
@@ -276,10 +276,10 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return gmx_load_pr((real *) (i));
+    return gmx_simd_load_r((real *) (i));
 }
 
-static gmx_inline gmx_mm_pb
+static gmx_inline gmx_simd_bool_t
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c);

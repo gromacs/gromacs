@@ -55,7 +55,7 @@ MACRO(GMX_TEST_AVX_GCC_MASKLOAD_BUG VARIABLE AVX_CFLAGS)
         ELSE()
             TRY_COMPILE(${VARIABLE}_COMPILEOK "${CMAKE_BINARY_DIR}"
                         "${CMAKE_SOURCE_DIR}/cmake/TestAVXMaskload.c"
-                         COMPILE_DEFINITIONS "${AVX_CFLAGS} -DGMX_X86_AVX_GCC_MASKLOAD_BUG" )
+                         COMPILE_DEFINITIONS "${AVX_CFLAGS} -DGMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG" )
             IF(${VARIABLE}_COMPILEOK)
                 SET(${VARIABLE} 1 CACHE INTERNAL "Work around GCC bug in AVX maskload argument" FORCE)
                 MESSAGE(STATUS "Checking for gcc AVX maskload bug - found, will try to work around")
