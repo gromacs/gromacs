@@ -79,7 +79,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
-#ifdef GMX_X86_SSE2
+#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
 #include "gromacs/simd/general_x86_sse2.h"
 #endif
 
@@ -439,7 +439,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     refvolshift = log(det(rerun_fr.box));
 
-#ifdef GMX_X86_SSE2
+#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
     /* Make sure we don't detect SSE overflow generated before this point */
     gmx_mm_check_and_reset_overflow();
 #endif
@@ -631,7 +631,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
                 epot               = enerd->term[F_EPOT];
                 bEnergyOutOfBounds = FALSE;
-#ifdef GMX_X86_SSE2
+#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
                 /* With SSE the energy can overflow, check for this */
                 if (gmx_mm_check_and_reset_overflow())
                 {

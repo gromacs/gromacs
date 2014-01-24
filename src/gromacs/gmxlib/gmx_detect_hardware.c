@@ -251,11 +251,11 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
     bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != NULL);
     bMaxMpiThreadsSet = (getenv("GMX_MAX_MPI_THREADS") != NULL);
 
-    /* check the acceleration mdrun is compiled with against hardware
+    /* check the SIMD level mdrun is compiled with against hardware
        capabilities */
     /* TODO: Here we assume homogeneous hardware which is not necessarily
              the case! Might not hurt to add an extra check over MPI. */
-    gmx_cpuid_acceleration_check(hwinfo->cpuid_info, fplog, SIMMASTER(cr));
+    gmx_cpuid_simd_check(hwinfo->cpuid_info, fplog, SIMMASTER(cr));
 
     /* NOTE: this print is only for and on one physical node */
     print_gpu_detection_stats(fplog, &hwinfo->gpu_info, cr);

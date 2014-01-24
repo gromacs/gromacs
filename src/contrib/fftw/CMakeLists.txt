@@ -56,7 +56,7 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS) # FFTW doesn
 endif()
 
 # Testing shows FFTW configured with --enable-avx is never better than --enable-sse2, so we do the latter always.
-if(${GMX_CPU_ACCELERATION} MATCHES "^(SSE|AVX)")
+if(${GMX_SIMD} MATCHES "^(SSE|AVX)")
     set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION --enable-sse2 CACHE INTERNAL "Optimization flags for FFTW compilation")
 endif()
 
