@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ extern "C" {
 
 
 /* For testing the reference plain-C SIMD kernels, uncomment the next lines,
- * as well as the GMX_SIMD_REFERENCE_PLAIN_C define in gromacs/simd/macros.h
+ * as well as the GMX_SIMD_REFERENCE define in gromacs/simd/macros.h
  * The actual SIMD width is set in gromacs/simd/macros.h
  * The 4xN reference kernels support 2-, 4- and 8-way SIMD.
  * The 2x(N+N) reference kernels support 8- and 16-way SIMD.
@@ -55,7 +55,7 @@ extern "C" {
 /* #define GMX_NBNXN_SIMD_2XNN */
 
 
-#if (defined GMX_X86_SSE2) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if (defined GMX_X86_SSE2_OR_HIGHER) || (defined GMX_SIMD_IBM_QPX)
 /* Use SIMD accelerated nbnxn search and kernels */
 #define GMX_NBNXN_SIMD
 
@@ -68,7 +68,7 @@ extern "C" {
  * 16-way SIMD: 4x8 setup, not used, but most of the kernel code is there
  */
 #define GMX_NBNXN_SIMD_4XN
-#if defined GMX_X86_AVX_256 && !(defined GMX_DOUBLE || defined GMX_NBNXN_HALF_WIDTH_SIMD)
+#if defined GMX_X86_AVX_256_OR_HIGHER && !(defined GMX_DOUBLE || defined GMX_NBNXN_HALF_WIDTH_SIMD)
 #define GMX_NBNXN_SIMD_2XNN
 #endif
 

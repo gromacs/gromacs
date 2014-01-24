@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -284,7 +284,7 @@ gmx_simd4_ref_or_pb(gmx_simd4_ref_pb a, gmx_simd4_ref_pb b)
     return c;
 }
 
-/* gmx_anytrue_pb(x) returns if any of the boolean is x is True */
+/* gmx_simd_anytrue_b(x) returns if any of the boolean is x is True */
 static gmx_inline int
 gmx_simd4_ref_anytrue_pb(gmx_simd4_ref_pb a)
 {

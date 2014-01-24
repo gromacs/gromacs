@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -131,7 +131,7 @@ void verletbuf_get_list_setup(gmx_bool                bGPU,
 #ifndef GMX_NBNXN_SIMD
         list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
 #else
-        list_setup->cluster_size_j = GMX_SIMD_WIDTH_HERE;
+        list_setup->cluster_size_j = GMX_SIMD_REAL_WIDTH;
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We assume the smallest cluster size to be on the safe side */
         list_setup->cluster_size_j /= 2;

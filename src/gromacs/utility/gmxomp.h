@@ -53,7 +53,7 @@
 #include "config.h"
 #endif
 
-#ifdef GMX_X86_SSE2
+#ifdef GMX_X86_SSE2_OR_HIGHER
 #include <xmmintrin.h>
 #endif
 
@@ -113,7 +113,7 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
 static gmx_inline void gmx_pause()
 {
     /* Replace with tbb::internal::atomic_backoff when/if we use TBB */
-#if defined GMX_X86_SSE2
+#if defined GMX_X86_SSE2_OR_HIGHER
     _mm_pause();
 #elif defined __MIC__
     _mm_delay_32(32);

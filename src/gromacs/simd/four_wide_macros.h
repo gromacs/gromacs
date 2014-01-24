@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,8 +73,8 @@ typedef float   gmx_simd4_real;
 #endif
 
 /* Uncomment the next line, without other SIMD active, for testing plain-C */
-/* #define GMX_SIMD4_REFERENCE_PLAIN_C */
-#ifdef GMX_SIMD4_REFERENCE_PLAIN_C
+/* #define GMX_SIMD4_REFERENCE */
+#ifdef GMX_SIMD4_REFERENCE
 /* Plain C SIMD reference implementation, also serves as documentation */
 #define GMX_HAVE_SIMD4_MACROS
 
@@ -82,51 +82,51 @@ typedef float   gmx_simd4_real;
 #include "four_wide_macros_ref.h"
 
 /* float/double SIMD register type */
-#define gmx_simd4_pr  gmx_simd4_ref_pr
+#define gmx_simd4_real_t  gmx_simd4_ref_pr
 
 /* boolean SIMD register type */
 #define gmx_simd4_pb  gmx_simd4_ref_pb
 
-#define gmx_simd4_load_pr       gmx_simd4_ref_load_pr
+#define gmx_simd4_load_r       gmx_simd4_ref_load_pr
 #define gmx_simd4_load_bb_pr    gmx_simd4_ref_load_pr
-#define gmx_simd4_set1_pr       gmx_simd4_ref_set1_pr
-#define gmx_simd4_setzero_pr    gmx_simd4_ref_setzero_pr
-#define gmx_simd4_store_pr      gmx_simd4_ref_store_pr
+#define gmx_simd4_set1_r       gmx_simd4_ref_set1_pr
+#define gmx_simd4_setzero_r    gmx_simd4_ref_setzero_pr
+#define gmx_simd4_store_r      gmx_simd4_ref_store_pr
 
 /* Unaligned load+store are not required,
  * but they can speed up the PME spread+gather operations.
  */
 #define GMX_SIMD4_HAVE_UNALIGNED
 #ifdef GMX_SIMD4_HAVE_UNALIGNED
-#define gmx_simd4_loadu_pr      gmx_simd4_ref_load_pr
-#define gmx_simd4_storeu_pr     gmx_simd4_ref_store_pr
+#define gmx_simd4_loadu_r      gmx_simd4_ref_load_pr
+#define gmx_simd4_storeu_r     gmx_simd4_ref_store_pr
 #endif
 
-#define gmx_simd4_add_pr        gmx_simd4_ref_add_pr
-#define gmx_simd4_sub_pr        gmx_simd4_ref_sub_pr
-#define gmx_simd4_mul_pr        gmx_simd4_ref_mul_pr
+#define gmx_simd4_add_r        gmx_simd4_ref_add_pr
+#define gmx_simd4_sub_r        gmx_simd4_ref_sub_pr
+#define gmx_simd4_mul_r        gmx_simd4_ref_mul_pr
 /* For the FMA macros below, aim for c=d in code, so FMA3 uses 1 instruction */
-#define gmx_simd4_madd_pr       gmx_simd4_ref_madd_pr
-#define gmx_simd4_nmsub_pr      gmx_simd4_ref_nmsub_pr
+#define gmx_simd4_fmadd_r       gmx_simd4_ref_madd_pr
+#define gmx_simd4_fnmadd_r      gmx_simd4_ref_nmsub_pr
 
-#define gmx_simd4_dotproduct3   gmx_simd4_ref_dotproduct3
+#define gmx_simd4_dotproduct3_r   gmx_simd4_ref_dotproduct3
 
-#define gmx_simd4_min_pr        gmx_simd4_ref_min_pr
-#define gmx_simd4_max_pr        gmx_simd4_ref_max_pr
+#define gmx_simd4_min_r        gmx_simd4_ref_min_pr
+#define gmx_simd4_max_r        gmx_simd4_ref_max_pr
 
-#define gmx_simd4_blendzero_pr  gmx_simd4_ref_blendzero_pr
+#define gmx_simd4_blendzero_r  gmx_simd4_ref_blendzero_pr
 
 /* Comparison */
-#define gmx_simd4_cmplt_pr      gmx_simd4_ref_cmplt_pr
+#define gmx_simd4_cmplt_r      gmx_simd4_ref_cmplt_pr
 
 /* Logical operations on SIMD booleans */
-#define gmx_simd4_and_pb        gmx_simd4_ref_and_pb
-#define gmx_simd4_or_pb         gmx_simd4_ref_or_pb
+#define gmx_simd4_and_b        gmx_simd4_ref_and_pb
+#define gmx_simd4_or_b         gmx_simd4_ref_or_pb
 
 /* Returns a single int (0/1) which tells if any of the 4 booleans is True */
-#define gmx_simd4_anytrue_pb    gmx_simd4_ref_anytrue_pb
+#define gmx_simd4_anytrue_b    gmx_simd4_ref_anytrue_pb
 
-#endif /* GMX_SIMD4_REFERENCE_PLAIN_C */
+#endif /* GMX_SIMD4_REFERENCE */
 
 
 /* The same SIMD macros can be translated to SIMD intrinsics (and compiled
@@ -139,7 +139,7 @@ typedef float   gmx_simd4_real;
  */
 
 
-#ifdef GMX_X86_SSE2
+#ifdef GMX_X86_SSE2_OR_HIGHER
 /* This is for general x86 SIMD instruction sets that also support SSE2 */
 
 #ifdef GMX_SIMD4_SINGLE
@@ -147,17 +147,17 @@ typedef float   gmx_simd4_real;
 #endif
 
 #ifdef GMX_SIMD4_DOUBLE
-/* Note that here we will use 256-bit SIMD with GMX_X86_AVX_128_FMA.
+/* Note that here we will use 256-bit SIMD with GMX_X86_AVX_128_FMA_OR_HIGHER.
  * This is inconsistent naming wise, but should give the best performance.
  */
-#if defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256
+#if defined GMX_X86_AVX_128_FMA_OR_HIGHER || defined GMX_X86_AVX_256_OR_HIGHER
 #define GMX_HAVE_SIMD4_MACROS
 #endif
 #endif
 
 #ifdef GMX_HAVE_SIMD4_MACROS
 
-#if defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256
+#if defined GMX_X86_AVX_128_FMA_OR_HIGHER || defined GMX_X86_AVX_256_OR_HIGHER
 
 #include <immintrin.h>
 #ifdef HAVE_X86INTRIN_H
@@ -168,7 +168,7 @@ typedef float   gmx_simd4_real;
 #endif
 
 #else
-#ifdef GMX_X86_SSE4_1
+#ifdef GMX_X86_SSE4_1_OR_HIGHER
 #include <smmintrin.h>
 #else
 /* We only have SSE2 */
@@ -178,39 +178,39 @@ typedef float   gmx_simd4_real;
 
 #ifdef GMX_SIMD4_SINGLE
 
-#define gmx_simd4_pr  __m128
+#define gmx_simd4_real_t  __m128
 
 #define gmx_simd4_pb  __m128
 
-#define gmx_simd4_load_pr       _mm_load_ps
+#define gmx_simd4_load_r       _mm_load_ps
 #define gmx_simd4_load_bb_pr    _mm_load_ps
-#define gmx_simd4_set1_pr       _mm_set1_ps
-#define gmx_simd4_setzero_pr    _mm_setzero_ps
-#define gmx_simd4_store_pr      _mm_store_ps
+#define gmx_simd4_set1_r       _mm_set1_ps
+#define gmx_simd4_setzero_r    _mm_setzero_ps
+#define gmx_simd4_store_r      _mm_store_ps
 
 /* Some old AMD processors could have problems with unaligned loads+stores */
 #ifndef GMX_FAHCORE
 #define GMX_SIMD4_HAVE_UNALIGNED
 #endif
 #ifdef GMX_SIMD4_HAVE_UNALIGNED
-#define gmx_simd4_loadu_pr      _mm_loadu_ps
-#define gmx_simd4_storeu_pr     _mm_storeu_ps
+#define gmx_simd4_loadu_r      _mm_loadu_ps
+#define gmx_simd4_storeu_r     _mm_storeu_ps
 #endif
 
-#define gmx_simd4_add_pr        _mm_add_ps
-#define gmx_simd4_sub_pr        _mm_sub_ps
-#define gmx_simd4_mul_pr        _mm_mul_ps
+#define gmx_simd4_add_r        _mm_add_ps
+#define gmx_simd4_sub_r        _mm_sub_ps
+#define gmx_simd4_mul_r        _mm_mul_ps
 
-#ifdef GMX_X86_AVX_128_FMA
-#define gmx_simd4_madd_pr(a, b, c)   _mm_macc_ps(a, b, c)
-#define gmx_simd4_nmsub_pr(a, b, c)  _mm_nmacc_ps(a, b, c)
+#ifdef GMX_X86_AVX_128_FMA_OR_HIGHER
+#define gmx_simd4_fmadd_r(a, b, c)   _mm_macc_ps(a, b, c)
+#define gmx_simd4_fnmadd_r(a, b, c)  _mm_nmacc_ps(a, b, c)
 #else
-#define gmx_simd4_madd_pr(a, b, c)   _mm_add_ps(c, _mm_mul_ps(a, b))
-#define gmx_simd4_nmsub_pr(a, b, c)  _mm_sub_ps(c, _mm_mul_ps(a, b))
+#define gmx_simd4_fmadd_r(a, b, c)   _mm_add_ps(c, _mm_mul_ps(a, b))
+#define gmx_simd4_fnmadd_r(a, b, c)  _mm_sub_ps(c, _mm_mul_ps(a, b))
 #endif
 
-static inline float gmx_simd4_dotproduct3(__m128 a, __m128 b)
-#ifdef GMX_X86_SSE4_1
+static inline float gmx_simd4_dotproduct3_r(__m128 a, __m128 b)
+#ifdef GMX_X86_SSE4_1_OR_HIGHER
 {
     float dp;
 
@@ -232,66 +232,66 @@ static inline float gmx_simd4_dotproduct3(__m128 a, __m128 b)
 }
 #endif
 
-#define gmx_simd4_min_pr        _mm_min_ps
-#define gmx_simd4_max_pr        _mm_max_ps
+#define gmx_simd4_min_r        _mm_min_ps
+#define gmx_simd4_max_r        _mm_max_ps
 
-#define gmx_simd4_blendzero_pr  _mm_and_ps
+#define gmx_simd4_blendzero_r  _mm_and_ps
 
-#define gmx_simd4_cmplt_pr      _mm_cmplt_ps
-#define gmx_simd4_and_pb        _mm_and_ps
-#define gmx_simd4_or_pb         _mm_or_ps
+#define gmx_simd4_cmplt_r      _mm_cmplt_ps
+#define gmx_simd4_and_b        _mm_and_ps
+#define gmx_simd4_or_b         _mm_or_ps
 
-#define gmx_simd4_anytrue_pb    _mm_movemask_ps
+#define gmx_simd4_anytrue_b    _mm_movemask_ps
 
 #endif /* GMX_SIMD4_SINGLE */
 
 
 #ifdef GMX_SIMD4_DOUBLE
 
-#define gmx_simd4_pr  __m256d
+#define gmx_simd4_real_t  __m256d
 
 #define gmx_simd4_pb  __m256d
 
-#define gmx_simd4_load_pr       _mm256_load_pd
+#define gmx_simd4_load_r       _mm256_load_pd
 #define gmx_simd4_load_bb_pr    _mm256_load_pd
-#define gmx_simd4_set1_pr       _mm256_set1_pd
-#define gmx_simd4_setzero_pr    _mm256_setzero_pd
-#define gmx_simd4_store_pr      _mm256_store_pd
+#define gmx_simd4_set1_r       _mm256_set1_pd
+#define gmx_simd4_setzero_r    _mm256_setzero_pd
+#define gmx_simd4_store_r      _mm256_store_pd
 
 #define GMX_SIMD4_HAVE_UNALIGNED
-#define gmx_simd4_loadu_pr      _mm256_loadu_pd
-#define gmx_simd4_storeu_pr     _mm256_storeu_pd
+#define gmx_simd4_loadu_r      _mm256_loadu_pd
+#define gmx_simd4_storeu_r     _mm256_storeu_pd
 
-#define gmx_simd4_add_pr        _mm256_add_pd
-#define gmx_simd4_sub_pr        _mm256_sub_pd
-#define gmx_simd4_mul_pr        _mm256_mul_pd
-#ifdef GMX_X86_AVX_128_FMA
-#define gmx_simd4_madd_pr(a, b, c)   _mm256_macc_pd(a, b, c)
-#define gmx_simd4_nmsub_pr(a, b, c)  _mm256_nmacc_pd(a, b, c)
+#define gmx_simd4_add_r        _mm256_add_pd
+#define gmx_simd4_sub_r        _mm256_sub_pd
+#define gmx_simd4_mul_r        _mm256_mul_pd
+#ifdef GMX_X86_AVX_128_FMA_OR_HIGHER
+#define gmx_simd4_fmadd_r(a, b, c)   _mm256_macc_pd(a, b, c)
+#define gmx_simd4_fnmadd_r(a, b, c)  _mm256_nmacc_pd(a, b, c)
 #else
-#define gmx_simd4_madd_pr(a, b, c)   _mm256_add_pd(c, _mm256_mul_pd(a, b))
-#define gmx_simd4_nmsub_pr(a, b, c)  _mm256_sub_pd(c, _mm256_mul_pd(a, b))
+#define gmx_simd4_fmadd_r(a, b, c)   _mm256_add_pd(c, _mm256_mul_pd(a, b))
+#define gmx_simd4_fnmadd_r(a, b, c)  _mm256_sub_pd(c, _mm256_mul_pd(a, b))
 #endif
-#define gmx_simd4_min_pr        _mm256_min_pd
-#define gmx_simd4_max_pr        _mm256_max_pd
+#define gmx_simd4_min_r        _mm256_min_pd
+#define gmx_simd4_max_r        _mm256_max_pd
 
-#define gmx_simd4_blendzero_pr  _mm256_and_pd
+#define gmx_simd4_blendzero_r  _mm256_and_pd
 
 /* Less-than (we use ordered, non-signaling, but that's not required) */
-#define gmx_simd4_cmplt_pr(x, y) _mm256_cmp_pd(x, y, 0x11)
-#define gmx_simd4_and_pb        _mm256_and_pd
-#define gmx_simd4_or_pb         _mm256_or_pd
+#define gmx_simd4_cmplt_r(x, y) _mm256_cmp_pd(x, y, 0x11)
+#define gmx_simd4_and_b        _mm256_and_pd
+#define gmx_simd4_or_b         _mm256_or_pd
 
-#define gmx_simd4_anytrue_pb    _mm256_movemask_pd
+#define gmx_simd4_anytrue_b    _mm256_movemask_pd
 
 #endif /* GMX_SIMD4_DOUBLE */
 
 
 #endif /* GMX_HAVE_SIMD4_MACROS */
 
-#endif /* GMX_X86_SSE2 */
+#endif /* GMX_X86_SSE2_OR_HIGHER */
 
-#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+#ifdef GMX_SIMD_IBM_QPX
 /* i.e. BlueGene/Q */
 
 /* This hack works on the compilers that can reach this code. A real
@@ -302,7 +302,7 @@ static inline float gmx_simd4_dotproduct3(__m128 a, __m128 b)
 #define GMX_HAVE_SIMD4_MACROS
 #endif
 
-typedef vector4double gmx_simd4_pr;
+typedef vector4double gmx_simd4_real_t;
 typedef vector4double gmx_simd4_pb;
 
 /* The declarations of vec_ld* use non-const pointers, and IBM
@@ -316,10 +316,10 @@ typedef vector4double gmx_simd4_pb;
    always-float variables have to be done with a function that does
    the correct cast. Since functions cannot be overloaded by type in
    C, they have to have different names. Thus we have
-   gmx_simd4_load_pr and gmx_simd4_load_bb_pr.
+   gmx_simd4_load_r and gmx_simd4_load_bb_pr.
  */
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_load_pr(const real *a)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_load_r(const real *a)
 {
 #ifdef NDEBUG
     return vec_ld(0, (real *) a);
@@ -328,7 +328,7 @@ static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_load_pr(const real *a
 #endif
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_load_bb_pr(const float *a)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_load_bb_pr(const float *a)
 {
 #ifdef NDEBUG
     return vec_ld(0, (float *) a);
@@ -337,12 +337,12 @@ static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_load_bb_pr(const floa
 #endif
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_set1_pr(const real a)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_set1_r(const real a)
 {
     return vec_splats(a);
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_setzero_pr()
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_setzero_r()
 {
     return vec_splats(0.0);
 }
@@ -350,7 +350,7 @@ static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_setzero_pr()
 /* TODO this will not yet work, because the function might be passed a
    pointer to a float when running in double precision.
  */
-static gmx_inline void gmx_always_inline gmx_simd4_store_pr(real *a, gmx_simd4_pr b)
+static gmx_inline void gmx_always_inline gmx_simd4_store_r(real *a, gmx_simd4_real_t b)
 {
 #ifdef NDEBUG
     vec_st(b, 0, a);
@@ -359,64 +359,64 @@ static gmx_inline void gmx_always_inline gmx_simd4_store_pr(real *a, gmx_simd4_p
 #endif
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_add_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_add_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 {
     return vec_add(a, b);
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_sub_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_sub_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 {
     return vec_sub(a, b);
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_mul_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_mul_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 {
     return vec_mul(a, b);
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_madd_pr(gmx_simd4_pr a, gmx_simd4_pr b, gmx_simd4_pr c)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_fmadd_r(gmx_simd4_real_t a, gmx_simd4_real_t b, gmx_simd4_real_t c)
 {
     return vec_madd(a, b, c);
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_nmsub_pr(gmx_simd4_pr a, gmx_simd4_pr b, gmx_simd4_pr c)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_fnmadd_r(gmx_simd4_real_t a, gmx_simd4_real_t b, gmx_simd4_real_t c)
 {
     return vec_nmsub(a, b, c);
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_min_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_min_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 {
     /* Implemented the same way as max, but with the subtraction
        operands swapped. */
     return vec_sel(b, a, vec_sub(b, a));
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_max_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_max_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 {
     return vec_sel(b, a, vec_sub(a, b));
 }
 
-static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_blendzero_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+static gmx_inline gmx_simd4_real_t gmx_always_inline gmx_simd4_blendzero_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 {
-    return vec_sel(gmx_setzero_pr(), a, b);
+    return vec_sel(gmx_simd_setzero_r(), a, b);
 }
 
-static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_cmplt_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_cmplt_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 {
     return vec_cmplt(a, b);
 }
 
-static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_and_pb(gmx_simd4_pb a, gmx_simd4_pb b)
+static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_and_b(gmx_simd4_pb a, gmx_simd4_pb b)
 {
     return vec_and(a, b);
 }
 
-static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_or_pb(gmx_simd4_pb a, gmx_simd4_pb b)
+static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_or_b(gmx_simd4_pb a, gmx_simd4_pb b)
 {
     return vec_or(a, b);
 }
 
-static gmx_inline float gmx_always_inline gmx_simd4_dotproduct3(gmx_simd4_pr a, gmx_simd4_pr b)
+static gmx_inline float gmx_always_inline gmx_simd4_dotproduct3_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 {
     /* The dot product is done solely on the QPX AXU (which is the
        only available FPU). This is awkward, because pretty much no
@@ -432,25 +432,25 @@ static gmx_inline float gmx_always_inline gmx_simd4_dotproduct3(gmx_simd4_pr a, 
        memory at all.
      */
 
-    gmx_simd4_pr dp_shifted_left_0 = vec_mul(a, b);
-    gmx_simd4_pr dp_shifted_left_1 = vec_sldw(dp_shifted_left_0, dp_shifted_left_0, 1);
-    gmx_simd4_pr dp_shifted_left_2 = vec_sldw(dp_shifted_left_0, dp_shifted_left_0, 2);
-    gmx_simd4_pr dp                = vec_add(dp_shifted_left_2,
-                                             vec_add(dp_shifted_left_0, dp_shifted_left_1));
+    gmx_simd4_real_t dp_shifted_left_0 = vec_mul(a, b);
+    gmx_simd4_real_t dp_shifted_left_1 = vec_sldw(dp_shifted_left_0, dp_shifted_left_0, 1);
+    gmx_simd4_real_t dp_shifted_left_2 = vec_sldw(dp_shifted_left_0, dp_shifted_left_0, 2);
+    gmx_simd4_real_t dp                = vec_add(dp_shifted_left_2,
+                                                 vec_add(dp_shifted_left_0, dp_shifted_left_1));
 
     /* See comment in nbnxn_make_pairlist_part() about how this should
        be able to return a double on PowerPC. */
     return (float) vec_extract(dp, 0);
 }
 
-static gmx_inline int gmx_always_inline gmx_simd4_anytrue_pb(gmx_simd4_pb a)
+static gmx_inline int gmx_always_inline gmx_simd4_anytrue_b(gmx_simd4_pb a)
 {
-    return gmx_anytrue_pb(a);
+    return gmx_simd_anytrue_b(a);
 }
 
 #undef gmx_always_inline
 
-#endif /* GMX_CPU_ACCELERATION_IBM_QPX */
+#endif /* GMX_SIMD_IBM_QPX */
 
 #ifdef GMX_HAVE_SIMD4_MACROS
 /* Generic functions to extract a SIMD4 aligned pointer from a pointer x.

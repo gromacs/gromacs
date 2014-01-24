@@ -59,7 +59,7 @@
 
 
 /* Only compile this file if SSE intrinsics are available */
-#if 0 && defined (GMX_X86_SSE2)
+#if 0 && defined (GMX_X86_SSE2_OR_HIGHER)
 
 #include <gmx_sse2_single.h>
 #include <emmintrin.h>
