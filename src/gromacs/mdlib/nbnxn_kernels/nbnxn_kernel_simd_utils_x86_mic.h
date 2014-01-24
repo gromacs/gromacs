@@ -35,8 +35,8 @@
 #ifndef _nbnxn_kernel_simd_utils_x86_mic_h_
 #define _nbnxn_kernel_simd_utils_x86_mic_h_
 
-typedef gmx_epi32      gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
+typedef gmx_simd_fint32_t      gmx_exclfilter;
+static const int filter_stride = 1;
 
 #define nbfp_stride 2
 
@@ -88,7 +88,7 @@ gmx_set1_hpr(gmx_mm_hpr *a, real b)
 
 /* Load one real at b and one real at b+1 into halves of a, respectively */
 static gmx_inline void
-gmx_load1p1_pr(gmx_mm_ps *a, const real *b)
+gmx_load1p1_pr(gmx_simd_float_t *a, const real *b)
 {
 
     *a = _mm512_mask_extload_ps(_mm512_extload_ps(b, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE), mask_hih,
@@ -97,7 +97,7 @@ gmx_load1p1_pr(gmx_mm_ps *a, const real *b)
 
 /* Load reals at half-width aligned pointer b into two halves of a */
 static gmx_inline void
-gmx_loaddh_pr(gmx_mm_ps *a, const real *b)
+gmx_loaddh_pr(gmx_simd_float_t *a, const real *b)
 {
     *a = _mm512_permute4f128_ps(_mm512_loadunpacklo_ps(_mm512_undefined_ps(), b), PERM_LOW2HIGH);
 }
@@ -114,7 +114,7 @@ gmx_store_hpr(real *a, gmx_mm_hpr b)
 
 /* Sum over 4 half SIMD registers */
 static gmx_inline gmx_mm_hpr
-gmx_sum4_hpr(gmx_mm_ps a, gmx_mm_ps b)
+gmx_sum4_hpr(gmx_simd_float_t a, gmx_simd_float_t b)
 {
     a = _mm512_add_ps(a, b);
     b = _mm512_permute4f128_ps(a, PERM_HIGH2LOW);
@@ -123,7 +123,7 @@ gmx_sum4_hpr(gmx_mm_ps a, gmx_mm_ps b)
 
 /* Sum the elements of halfs of each input register and store sums in out */
 static gmx_inline gmx_mm_pr4
-gmx_mm_transpose_sum4h_pr(gmx_mm_ps a, gmx_mm_ps b)
+gmx_mm_transpose_sum4h_pr(gmx_simd_float_t a, gmx_simd_float_t b)
 {
     return _mm512_setr4_ps(_mm512_mask_reduce_add_ps(mask_loh, a),
                            _mm512_mask_reduce_add_ps(mask_hih, a),
@@ -132,34 +132,34 @@ gmx_mm_transpose_sum4h_pr(gmx_mm_ps a, gmx_mm_ps b)
 }
 
 static gmx_inline void
-gmx_pr_to_2hpr(gmx_mm_ps a, gmx_mm_hpr *b, gmx_mm_hpr *c)
+gmx_pr_to_2hpr(gmx_simd_float_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 {
     *b = a;
     *c = _mm512_permute4f128_ps(a, PERM_HIGH2LOW);
 }
 
 static gmx_inline void
-gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_mm_ps *c)
+gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_float_t *c)
 {
     *c = _mm512_mask_permute4f128_ps(a, mask_hih, b, PERM_LOW2HIGH);
 }
 
 /* recombine the 2 high half into c */
 static gmx_inline void
-gmx_2hpr_high_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_mm_ps *c)
+gmx_2hpr_high_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_float_t *c)
 {
     *c = _mm512_mask_permute4f128_ps(b, mask_loh, a, PERM_HIGH2LOW);
 }
 
 static gmx_inline void
-gmx_2hepi_to_epi(gmx_epi32 a, gmx_epi32 b, gmx_epi32 *c)
+gmx_2hepi_to_epi(gmx_simd_fint32_t a, gmx_simd_fint32_t b, gmx_simd_fint32_t *c)
 {
     *c = _mm512_mask_permute4f128_epi32(a, mask_hih, b, PERM_LOW2HIGH);
 }
 
 /* recombine the 2 high half into c */
 static gmx_inline void
-gmx_2hepi_high_to_epi(gmx_epi32 a, gmx_epi32 b, gmx_epi32 *c)
+gmx_2hepi_high_to_epi(gmx_simd_fint32_t a, gmx_simd_fint32_t b, gmx_simd_fint32_t *c)
 {
     *c = _mm512_mask_permute4f128_epi32(b, mask_loh, a, PERM_HIGH2LOW);
 }
@@ -178,8 +178,8 @@ prepare_table_load_buffer(const int *array)
    instead of low/high.
 */
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
-             gmx_mm_ps *ctab0_S, gmx_mm_ps *ctab1_S)
+load_table_f(const real *tab_coul_F, gmx_simd_fint32_t ti_S, int *ti,
+             gmx_simd_float_t *ctab0_S, gmx_simd_float_t *ctab1_S)
 {
     __m512i idx;
     __m512i ti1 = _mm512_add_epi32(ti_S, _mm512_set1_epi32(1)); /* incr by 1 for tab1 */
@@ -190,22 +190,22 @@ load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
 
     gmx_2hpr_to_pr(tmp1, tmp2, ctab0_S);
     gmx_2hpr_high_to_pr(tmp1, tmp2, ctab1_S);
-    *ctab1_S  = gmx_sub_pr(*ctab1_S, *ctab0_S);
+    *ctab1_S  = gmx_simd_sub_f(*ctab1_S, *ctab0_S);
 }
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_epi32 ti_S, int *ti,
-               gmx_mm_ps *ctab0_S, gmx_mm_ps *ctab1_S,
-               gmx_mm_ps *ctabv_S)
+               gmx_simd_fint32_t ti_S, int *ti,
+               gmx_simd_float_t *ctab0_S, gmx_simd_float_t *ctab1_S,
+               gmx_simd_float_t *ctabv_S)
 {
     load_table_f(tab_coul_F, ti_S, ti, ctab0_S, ctab1_S);
     *ctabv_S = _mm512_i32gather_ps(ti_S, tab_coul_V, sizeof(float));
 }
 
 static gmx_inline gmx_mm_pr4
-gmx_mm_transpose_sum4_pr(gmx_mm_ps in0, gmx_mm_ps in1,
-                         gmx_mm_ps in2, gmx_mm_ps in3)
+gmx_mm_transpose_sum4_pr(gmx_simd_float_t in0, gmx_simd_float_t in1,
+                         gmx_simd_float_t in2, gmx_simd_float_t in3)
 {
     return _mm512_setr4_ps(_mm512_reduce_add_ps(in0),
                            _mm512_reduce_add_ps(in1),
@@ -218,7 +218,7 @@ gmx_mm_transpose_sum4_pr(gmx_mm_ps in0, gmx_mm_ps in1,
 static gmx_inline void
 load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
                      const int *type, int aj,
-                     gmx_mm_ps *c6_S, gmx_mm_ps *c12_S)
+                     gmx_simd_float_t *c6_S, gmx_simd_float_t *c12_S)
 {
     __m512i idx0, idx1, idx;
 
@@ -241,12 +241,12 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
 
 #define HAVE_GMX_SUM_SIMD
 static gmx_inline real
-gmx_sum_simd(gmx_mm_pr x, real* b)
+gmx_sum_simd(gmx_simd_real_t x, real* b)
 {
     return _mm512_reduce_add_ps(x);
 }
 static gmx_inline real
-gmx_sum_simd4(gmx_mm_pr x, real* b)
+gmx_sum_simd4(gmx_simd_real_t x, real* b)
 {
     return _mm512_mask_reduce_add_ps(_mm512_int2mask(0xF), x);
 }

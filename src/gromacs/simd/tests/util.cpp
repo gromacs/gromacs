@@ -344,17 +344,21 @@ compareSimdMathFunction(const char * refFuncExpr, const char *simdFuncExpr,
 #endif
 
 #ifdef GMX_SIMD_HAVE_INT32
+
+typedef union
+{
+    gmx_simd_int32_t s;
+    int              d[GMX_SIMD_INT32_WIDTH];
+} gmx_simd_int32_u;
+
+
 //! Convert integer SIMD to STL vector
 std::vector<int>
 simd2Vector(const gmx_simd_int32_t simd)
 {
-    int                 mem[GMX_SIMD_INT32_WIDTH*2];
-    int *               p = gmx_simd_align_i(mem);
-
-    gmx_simd_store_i(p, simd);
-    std::vector<int>    v(p, p+GMX_SIMD_INT32_WIDTH);
-
-    return v;
+    gmx_simd_int32_u u;
+    u.s = simd;
+    return std::vector<int>(u.d, u.d+GMX_SIMD_INT32_WIDTH);
 }
     
 /// Return floating-point simd value from stl vector. If the vector is longer
