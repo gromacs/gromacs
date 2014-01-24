@@ -44,19 +44,19 @@
 #endif
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
+#define UNROLLJ    (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
 
 /* The stride of all the atom data arrays is equal to half the SIMD width */
-#define STRIDE     (GMX_SIMD_WIDTH_HERE/GMX_SIMD_J_UNROLL_SIZE)
+#define STRIDE     (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
 
 #include "../nbnxn_kernel_simd_utils.h"
 
 static gmx_inline void
-gmx_load_simd_2xnn_interactions(int            excl,
-                                gmx_exclfilter filter_S0,
-                                gmx_exclfilter filter_S2,
-                                gmx_mm_pb     *interact_S0,
-                                gmx_mm_pb     *interact_S2)
+gmx_load_simd_2xnn_interactions(int                  excl,
+                                gmx_exclfilter       filter_S0,
+                                gmx_exclfilter       filter_S2,
+                                gmx_simd_bool_t     *interact_S0,
+                                gmx_simd_bool_t     *interact_S2)
 {
     /* Load integer interaction mask */
     gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);

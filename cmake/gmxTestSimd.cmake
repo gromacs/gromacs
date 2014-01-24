@@ -44,75 +44,75 @@ macro(gmx_use_clang_as_with_gnu_compilers_on_osx)
     # compilers assembler instead - and this has to happen before we detect AVX
     # flags.
     if(APPLE AND ${CMAKE_C_COMPILER_ID} STREQUAL "GNU")
-        gmx_test_cflag(GNU_C_USE_CLANG_AS "-Wa,-q" ACCELERATION_C_FLAGS)
+        gmx_test_cflag(GNU_C_USE_CLANG_AS "-Wa,-q" SIMD_C_FLAGS)
     endif()
     if(APPLE AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-        gmx_test_cxxflag(GNU_CXX_USE_CLANG_AS "-Wa,-q" ACCELERATION_CXX_FLAGS)
+        gmx_test_cxxflag(GNU_CXX_USE_CLANG_AS "-Wa,-q" SIMD_CXX_FLAGS)
     endif()
 endmacro()
 
 
-macro(gmx_test_cpu_acceleration)
+macro(gmx_test_simd)
 #
 # To improve backward compatibility on x86 SIMD architectures,
-# we set the flags for all accelerations that are supported, not only
+# we set the flags for all SIMD instructions that are supported, not only
 # the most recent instruction set. I.e., if your machine supports AVX2_256,
 # we will set flags both for AVX2_256, AVX_256, SSE4.1, and SSE2 support.
 
-if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
+if(${GMX_SIMD} STREQUAL "NONE")
     # nothing to do configuration-wise
-    set(ACCELERATION_STATUS_MESSAGE "CPU SIMD acceleration disabled")
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
+    set(SIMD_STATUS_MESSAGE "SIMD instructions disabled")
+elseif(${GMX_SIMD} STREQUAL "SSE2")
 
     gmx_find_cflag_for_source(CFLAGS_SSE2 "C compiler SSE2 flag"
                               "#include<xmmintrin.h>
                               int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return 0;}"
-                              ACCELERATION_C_FLAGS
+                              SIMD_C_FLAGS
                               "-msse2" "/arch:SSE2")
     gmx_find_cxxflag_for_source(CXXFLAGS_SSE2 "C++ compiler SSE2 flag"
                                 "#include<xmmintrin.h>
                                 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return 0;}"
-                                ACCELERATION_CXX_FLAGS
+                                SIMD_CXX_FLAGS
                                 "-msse2" "/arch:SSE2")
 
     if(NOT CFLAGS_SSE2 OR NOT CXXFLAGS_SSE2)
-        message(FATAL_ERROR "Cannot find SSE2 compiler flag. Use a newer compiler, or disable acceleration (slower).")
+        message(FATAL_ERROR "Cannot find SSE2 compiler flag. Use a newer compiler, or disable SIMD (slower).")
     endif()
 
-    set(GMX_CPU_ACCELERATION_X86_SSE2 1)
-    set(GMX_X86_SSE2 1)
+    set(GMX_SIMD_X86_SSE2 1)
+    set(GMX_X86_SSE2_OR_HIGHER 1)
 
-    set(ACCELERATION_STATUS_MESSAGE "Enabling SSE2 SIMD Gromacs acceleration")
+    set(SIMD_STATUS_MESSAGE "Enabling SSE2 SIMD instructions")
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
+elseif(${GMX_SIMD} STREQUAL "SSE4.1")
 
     # Note: MSVC enables SSE4.1 with the SSE2 flag, so we include that in testing.
     gmx_find_cflag_for_source(CFLAGS_SSE4_1 "C compiler SSE4.1 flag"
                               "#include<smmintrin.h>
                               int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_dp_ps(x,x,0x77);return 0;}"
-                              ACCELERATION_C_FLAGS
+                              SIMD_C_FLAGS
                               "-msse4.1" "/arch:SSE4.1" "/arch:SSE2")
     gmx_find_cxxflag_for_source(CXXFLAGS_SSE4_1 "C++ compiler SSE4.1 flag"
                                 "#include<smmintrin.h>
                                 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_dp_ps(x,x,0x77);return 0;}"
-                                ACCELERATION_CXX_FLAGS
+                                SIMD_CXX_FLAGS
                                 "-msse4.1" "/arch:SSE4.1" "/arch:SSE2")
 
     if(NOT CFLAGS_SSE4_1 OR NOT CXXFLAGS_SSE4_1)
         message(FATAL_ERROR "Cannot find SSE4.1 compiler flag. "
-                            "Use a newer compiler, or choose SSE2 acceleration (slower).")
+                            "Use a newer compiler, or choose SSE2 SIMD (slower).")
     endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_EQUAL "11.1")
-        message(FATAL_ERROR "You are using Intel compiler version 11.1, which produces incorrect results with SSE4.1 acceleration. You need to use a newer compiler (e.g. icc >= 12.0) or in worst case try a lower level of acceleration if performance is not critical.")
+        message(FATAL_ERROR "You are using Intel compiler version 11.1, which produces incorrect results with SSE4.1 simd. You need to use a newer compiler (e.g. icc >= 12.0) or in worst case try a lower level of simd if performance is not critical.")
     endif()
 
-    set(GMX_CPU_ACCELERATION_X86_SSE4_1 1)
-    set(GMX_X86_SSE4_1 1)
-    set(GMX_X86_SSE2   1)
-    set(ACCELERATION_STATUS_MESSAGE "Enabling SSE4.1 SIMD Gromacs acceleration")
+    set(GMX_SIMD_X86_SSE4_1 1)
+    set(GMX_X86_SSE4_1_OR_HIGHER 1)
+    set(GMX_X86_SSE2_OR_HIGHER   1)
+    set(SIMD_STATUS_MESSAGE "Enabling SSE4.1 SIMD instructions")
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA")
+elseif(${GMX_SIMD} STREQUAL "AVX_128_FMA")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -125,18 +125,18 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA")
     gmx_find_cflag_for_source(CFLAGS_AVX_128 "C compiler AVX (128 bit) flag"
                               "#include<immintrin.h>
                               int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_permute_ps(x,1);return 0;}"
-                              ACCELERATION_C_FLAGS
+                              SIMD_C_FLAGS
                               "-mavx")
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128 "C++ compiler AVX (128 bit) flag"
                                 "#include<immintrin.h>
                                 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_permute_ps(x,1);return 0;}"
-                                ACCELERATION_CXX_FLAGS
+                                SIMD_CXX_FLAGS
                                 "-mavx")
 
     ### STAGE 2: Find the fused-multiply add flag.
     # GCC requires x86intrin.h for FMA support. MSVC 2010 requires intrin.h for FMA support.
-    check_include_file(x86intrin.h HAVE_X86INTRIN_H ${ACCELERATION_C_FLAGS})
-    check_include_file(intrin.h HAVE_INTRIN_H ${ACCELERATION_C_FLAGS})
+    check_include_file(x86intrin.h HAVE_X86INTRIN_H ${SIMD_C_FLAGS})
+    check_include_file(intrin.h HAVE_INTRIN_H ${SIMD_C_FLAGS})
     if(HAVE_X86INTRIN_H)
         set(INCLUDE_X86INTRIN_H "#include <x86intrin.h>")
     endif()
@@ -149,19 +149,19 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA")
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return 0;}"
-                              ACCELERATION_C_FLAGS
+                              SIMD_C_FLAGS
                               "-mfma4")
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128_FMA "C++ compiler AVX (128 bit) FMA4 flag"
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return 0;}"
-                                ACCELERATION_CXX_FLAGS
+                                SIMD_CXX_FLAGS
                                 "-mfma4")
 
     # We only need to check the last (FMA) test; that will always fail if the basic AVX128 test failed
     if(NOT CFLAGS_AVX_128_FMA OR NOT CXXFLAGS_AVX_128_FMA)
-        message(FATAL_ERROR "Cannot find compiler flags for 128 bit AVX with FMA support. Use a newer compiler, or choose SSE4.1 acceleration (slower).")
+        message(FATAL_ERROR "Cannot find compiler flags for 128 bit AVX with FMA support. Use a newer compiler, or choose SSE4.1 SIMD (slower).")
     endif()
 
     ### STAGE 3: Optional: Find the XOP instruction flag (No point in yelling if this does not work)
@@ -170,14 +170,14 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return 0;}"
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return 0;}"
-                              ACCELERATION_C_FLAGS
+                              SIMD_C_FLAGS
                               "-mxop")
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128_XOP "C++ compiler AVX (128 bit) XOP flag"
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return 0;}"
-                                ACCELERATION_CXX_FLAGS
+                                SIMD_CXX_FLAGS
                                 "-mxop")
 
     # We don't have the full compiler version string yet (BUILD_C_COMPILER),
@@ -185,7 +185,7 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return 0;}"
     # hackintoshes is not worth the effort.
     if (APPLE AND (${CMAKE_C_COMPILER_ID} STREQUAL "Clang" OR
                 ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
-        message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA acceleration. As we cannot work around this bug on OS X, you will have to select a different compiler or CPU acceleration.")
+        message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA SIMD. As we cannot work around this bug on OS X, you will have to select a different compiler or SIMD instruction set.")
     endif()
 
 
@@ -200,99 +200,99 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return 0;}"
         set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} -no-integrated-as")
     endif()
 
-    gmx_test_avx_gcc_maskload_bug(GMX_X86_AVX_GCC_MASKLOAD_BUG "${ACCELERATION_C_FLAGS}")
+    gmx_test_avx_gcc_maskload_bug(GMX_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
 
-    set(GMX_CPU_ACCELERATION_X86_AVX_128_FMA 1)
-    set(GMX_X86_AVX_128_FMA 1)
-    set(GMX_X86_SSE4_1      1)
-    set(GMX_X86_SSE2        1)
+    set(GMX_SIMD_X86_AVX_128_FMA 1)
+    set(GMX_X86_AVX_128_FMA_OR_HIGHER 1)
+    set(GMX_X86_SSE4_1_OR_HIGHER      1)
+    set(GMX_X86_SSE2_OR_HIGHER        1)
 
-    set(ACCELERATION_STATUS_MESSAGE "Enabling 128-bit AVX SIMD Gromacs acceleration (with fused-multiply add)")
+    set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD Gromacs SIMD (with fused-multiply add)")
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_256")
+elseif(${GMX_SIMD} STREQUAL "AVX_256")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
     gmx_find_cflag_for_source(CFLAGS_AVX "C compiler AVX (256 bit) flag"
                               "#include<immintrin.h>
                               int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return 0;}"
-                              ACCELERATION_C_FLAGS
+                              SIMD_C_FLAGS
                               "-mavx")
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX "C++ compiler AVX (256 bit) flag"
                                 "#include<immintrin.h>
                                 int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return 0;}"
-                                ACCELERATION_CXX_FLAGS
+                                SIMD_CXX_FLAGS
                                 "-mavx")
 
     if(NOT CFLAGS_AVX OR NOT CXXFLAGS_AVX)
-        message(FATAL_ERROR "Cannot find AVX compiler flag. Use a newer compiler, or choose SSE4.1 acceleration (slower).")
+        message(FATAL_ERROR "Cannot find AVX compiler flag. Use a newer compiler, or choose SSE4.1 SIMD (slower).")
     endif()
 
-    gmx_test_avx_gcc_maskload_bug(GMX_X86_AVX_GCC_MASKLOAD_BUG "${ACCELERATION_C_FLAGS}")
+    gmx_test_avx_gcc_maskload_bug(GMX_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
 
-    set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
-    set(GMX_X86_AVX_256  1)
-    set(GMX_X86_SSE4_1   1)
-    set(GMX_X86_SSE2     1)
+    set(GMX_SIMD_X86_AVX_256 1)
+    set(GMX_X86_AVX_256_OR_HIGHER  1)
+    set(GMX_X86_SSE4_1_OR_HIGHER   1)
+    set(GMX_X86_SSE2_OR_HIGHER     1)
 
-    set(ACCELERATION_STATUS_MESSAGE "Enabling 256-bit AVX SIMD Gromacs acceleration")
+    set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions")
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX2_256")
+elseif(${GMX_SIMD} STREQUAL "AVX2_256")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
     gmx_find_cflag_for_source(CFLAGS_AVX2 "C compiler AVX2 flag"
                               "#include<immintrin.h>
                               int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_fmadd_ps(x,x,x);return 0;}"
-                              ACCELERATION_C_FLAGS
+                              SIMD_C_FLAGS
                               "-march=core-avx2" "-mavx2")
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX2 "C++ compiler AVX2 flag"
                                 "#include<immintrin.h>
                                 int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_fmadd_ps(x,x,x);return 0;}"
-                                ACCELERATION_CXX_FLAGS
+                                SIMD_CXX_FLAGS
                                 "-march=core-avx2" "-mavx2")
 
     if(NOT CFLAGS_AVX2 OR NOT CXXFLAGS_AVX2)
-        message(FATAL_ERROR "Cannot find AVX2 compiler flag. Use a newer compiler, or choose AVX acceleration (slower).")
+        message(FATAL_ERROR "Cannot find AVX2 compiler flag. Use a newer compiler, or choose AVX SIMD (slower).")
     endif()
 
     # No need to test for Maskload bug - it was fixed before gcc added AVX2 support
 
-    set(GMX_CPU_ACCELERATION_X86_AVX2_256 1)
-    set(GMX_X86_AVX2_256 1)
-    set(GMX_X86_AVX_256  1)
-    set(GMX_X86_SSE4_1   1)
-    set(GMX_X86_SSE2     1)
+    set(GMX_SIMD_X86_AVX2_256 1)
+    set(GMX_X86_AVX2_256_OR_HIGHER 1)
+    set(GMX_X86_AVX_256_OR_HIGHER  1)
+    set(GMX_X86_SSE4_1_OR_HIGHER   1)
+    set(GMX_X86_SSE2_OR_HIGHER     1)
 
-    set(ACCELERATION_STATUS_MESSAGE "Enabling 256-bit AVX2 Gromacs acceleration")
+    set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
+elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
 
     try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
         "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c")
 
     if (TEST_QPX)
-        message(WARNING "IBM QPX acceleration was selected. This will work, but SIMD-accelerated kernels are only available for the Verlet cut-off scheme. The plain C kernels that are used for the group cut-off scheme kernels will be slow, so please consider using the Verlet cut-off scheme.")
-        set(GMX_CPU_ACCELERATION_IBM_QPX 1)
-        set(ACCELERATION_STATUS_MESSAGE "Enabling IBM QPX SIMD acceleration")
+        message(WARNING "IBM QPX SIMD instructions selected. This will work, but SIMD kernels are only available for the Verlet cut-off scheme. The plain C kernels that are used for the group cut-off scheme kernels will be slow, so please consider using the Verlet cut-off scheme.")
+        set(GMX_SIMD_IBM_QPX 1)
+        set(SIMD_STATUS_MESSAGE "Enabling IBM QPX SIMD instructions")
 
     else()
         message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics. If you are compiling for BlueGene/Q with the XL compilers, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-C' to set up the tool chain.")
     endif()
 
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
+elseif(${GMX_SIMD} STREQUAL "SPARC64_HPC_ACE")
 
-    set(GMX_CPU_ACCELERATION_SPARC64_HPC_ACE 1)
-    set(ACCELERATION_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD acceleration")
+    set(GMX_SIMD_SPARC64_HPC_ACE 1)
+    set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions")
 
 else()
-    gmx_invalid_option_value(GMX_CPU_ACCELERATION)
+    gmx_invalid_option_value(GMX_SIMD)
 endif()
 
 
-gmx_check_if_changed(ACCELERATION_CHANGED GMX_CPU_ACCELERATION)
-if (ACCELERATION_CHANGED AND DEFINED ACCELERATION_STATUS_MESSAGE)
-    message(STATUS "${ACCELERATION_STATUS_MESSAGE}")
+gmx_check_if_changed(SIMD_CHANGED GMX_SIMD)
+if (SIMD_CHANGED AND DEFINED SIMD_STATUS_MESSAGE)
+    message(STATUS "${SIMD_STATUS_MESSAGE}")
 endif()
 
 endmacro()

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,32 +37,32 @@
 
 
 /* 1.0/sqrt(x) */
-static gmx_inline gmx_mm_pr
-gmx_invsqrt_pr(gmx_mm_pr x)
+static gmx_inline gmx_simd_real_t
+gmx_simd_invsqrt_r(gmx_simd_real_t x)
 {
-    const gmx_mm_pr half  = gmx_set1_pr(0.5);
-    const gmx_mm_pr three = gmx_set1_pr(3.0);
+    const gmx_simd_real_t half  = gmx_simd_set1_r(0.5);
+    const gmx_simd_real_t three = gmx_simd_set1_r(3.0);
 
     /* Lookup instruction only exists in single precision, convert back and forth... */
-    gmx_mm_pr lu = gmx_rsqrt_pr(x);
+    gmx_simd_real_t lu = gmx_simd_rsqrt_r(x);
 
-    lu = gmx_mul_pr(gmx_mul_pr(half, lu), gmx_nmsub_pr(gmx_mul_pr(lu, lu), x, three));
-    return gmx_mul_pr(gmx_mul_pr(half, lu), gmx_nmsub_pr(gmx_mul_pr(lu, lu), x, three));
+    lu = gmx_simd_mul_r(gmx_simd_mul_r(half, lu), gmx_simd_fnmadd_r(gmx_simd_mul_r(lu, lu), x, three));
+    return gmx_simd_mul_r(gmx_simd_mul_r(half, lu), gmx_simd_fnmadd_r(gmx_simd_mul_r(lu, lu), x, three));
 }
 
 
 /* 1.0/x */
-static gmx_inline gmx_mm_pr
-gmx_inv_pr(gmx_mm_pr x)
+static gmx_inline gmx_simd_real_t
+gmx_simd_inv_r(gmx_simd_real_t x)
 {
-    const gmx_mm_pr two  = gmx_set1_pr(2.0);
+    const gmx_simd_real_t two  = gmx_simd_set1_r(2.0);
 
     /* Lookup instruction only exists in single precision, convert back and forth... */
-    gmx_mm_pr lu = gmx_rcp_pr(x);
+    gmx_simd_real_t lu = gmx_simd_rcp_r(x);
 
     /* Perform two N-R steps for double precision */
-    lu         = gmx_mul_pr(lu, gmx_nmsub_pr(lu, x, two));
-    return gmx_mul_pr(lu, gmx_nmsub_pr(lu, x, two));
+    lu         = gmx_simd_mul_r(lu, gmx_simd_fnmadd_r(lu, x, two));
+    return gmx_simd_mul_r(lu, gmx_simd_fnmadd_r(lu, x, two));
 }
 
 
@@ -134,54 +134,54 @@ gmx_inv_pr(gmx_mm_pr x)
  *    vectorial force to add to the particles.
  *
  */
-static gmx_mm_pr
-gmx_pmecorrF_pr(gmx_mm_pr z2)
+static gmx_simd_real_t
+gmx_simd_pmecorrF_r(gmx_simd_real_t z2)
 {
-    const gmx_mm_pr  FN10     = gmx_set1_pr(-8.0072854618360083154e-14);
-    const gmx_mm_pr  FN9      = gmx_set1_pr(1.1859116242260148027e-11);
-    const gmx_mm_pr  FN8      = gmx_set1_pr(-8.1490406329798423616e-10);
-    const gmx_mm_pr  FN7      = gmx_set1_pr(3.4404793543907847655e-8);
-    const gmx_mm_pr  FN6      = gmx_set1_pr(-9.9471420832602741006e-7);
-    const gmx_mm_pr  FN5      = gmx_set1_pr(0.000020740315999115847456);
-    const gmx_mm_pr  FN4      = gmx_set1_pr(-0.00031991745139313364005);
-    const gmx_mm_pr  FN3      = gmx_set1_pr(0.0035074449373659008203);
-    const gmx_mm_pr  FN2      = gmx_set1_pr(-0.031750380176100813405);
-    const gmx_mm_pr  FN1      = gmx_set1_pr(0.13884101728898463426);
-    const gmx_mm_pr  FN0      = gmx_set1_pr(-0.75225277815249618847);
+    const gmx_simd_real_t  FN10     = gmx_simd_set1_r(-8.0072854618360083154e-14);
+    const gmx_simd_real_t  FN9      = gmx_simd_set1_r(1.1859116242260148027e-11);
+    const gmx_simd_real_t  FN8      = gmx_simd_set1_r(-8.1490406329798423616e-10);
+    const gmx_simd_real_t  FN7      = gmx_simd_set1_r(3.4404793543907847655e-8);
+    const gmx_simd_real_t  FN6      = gmx_simd_set1_r(-9.9471420832602741006e-7);
+    const gmx_simd_real_t  FN5      = gmx_simd_set1_r(0.000020740315999115847456);
+    const gmx_simd_real_t  FN4      = gmx_simd_set1_r(-0.00031991745139313364005);
+    const gmx_simd_real_t  FN3      = gmx_simd_set1_r(0.0035074449373659008203);
+    const gmx_simd_real_t  FN2      = gmx_simd_set1_r(-0.031750380176100813405);
+    const gmx_simd_real_t  FN1      = gmx_simd_set1_r(0.13884101728898463426);
+    const gmx_simd_real_t  FN0      = gmx_simd_set1_r(-0.75225277815249618847);
 
-    const gmx_mm_pr  FD5      = gmx_set1_pr(0.000016009278224355026701);
-    const gmx_mm_pr  FD4      = gmx_set1_pr(0.00051055686934806966046);
-    const gmx_mm_pr  FD3      = gmx_set1_pr(0.0081803507497974289008);
-    const gmx_mm_pr  FD2      = gmx_set1_pr(0.077181146026670287235);
-    const gmx_mm_pr  FD1      = gmx_set1_pr(0.41543303143712535988);
-    const gmx_mm_pr  FD0      = gmx_set1_pr(1.0);
+    const gmx_simd_real_t  FD5      = gmx_simd_set1_r(0.000016009278224355026701);
+    const gmx_simd_real_t  FD4      = gmx_simd_set1_r(0.00051055686934806966046);
+    const gmx_simd_real_t  FD3      = gmx_simd_set1_r(0.0081803507497974289008);
+    const gmx_simd_real_t  FD2      = gmx_simd_set1_r(0.077181146026670287235);
+    const gmx_simd_real_t  FD1      = gmx_simd_set1_r(0.41543303143712535988);
+    const gmx_simd_real_t  FD0      = gmx_simd_set1_r(1.0);
 
-    gmx_mm_pr        z4;
-    gmx_mm_pr        polyFN0, polyFN1, polyFD0, polyFD1;
+    gmx_simd_real_t        z4;
+    gmx_simd_real_t        polyFN0, polyFN1, polyFD0, polyFD1;
 
-    z4             = gmx_mul_pr(z2, z2);
+    z4             = gmx_simd_mul_r(z2, z2);
 
-    polyFD1        = gmx_madd_pr(FD5, z4, FD3);
-    polyFD1        = gmx_madd_pr(polyFD1, z4, FD1);
-    polyFD1        = gmx_mul_pr(polyFD1, z2);
-    polyFD0        = gmx_madd_pr(FD4, z4, FD2);
-    polyFD0        = gmx_madd_pr(polyFD0, z4, FD0);
-    polyFD0        = gmx_add_pr(polyFD0, polyFD1);
+    polyFD1        = gmx_simd_fmadd_r(FD5, z4, FD3);
+    polyFD1        = gmx_simd_fmadd_r(polyFD1, z4, FD1);
+    polyFD1        = gmx_simd_mul_r(polyFD1, z2);
+    polyFD0        = gmx_simd_fmadd_r(FD4, z4, FD2);
+    polyFD0        = gmx_simd_fmadd_r(polyFD0, z4, FD0);
+    polyFD0        = gmx_simd_add_r(polyFD0, polyFD1);
 
-    polyFD0        = gmx_inv_pr(polyFD0);
+    polyFD0        = gmx_simd_inv_r(polyFD0);
 
-    polyFN0        = gmx_madd_pr(FN10, z4, FN8);
-    polyFN0        = gmx_madd_pr(polyFN0, z4, FN6);
-    polyFN0        = gmx_madd_pr(polyFN0, z4, FN4);
-    polyFN0        = gmx_madd_pr(polyFN0, z4, FN2);
-    polyFN0        = gmx_madd_pr(polyFN0, z4, FN0);
-    polyFN1        = gmx_madd_pr(FN9, z4, FN7);
-    polyFN1        = gmx_madd_pr(polyFN1, z4, FN5);
-    polyFN1        = gmx_madd_pr(polyFN1, z4, FN3);
-    polyFN1        = gmx_madd_pr(polyFN1, z4, FN1);
-    polyFN0        = gmx_madd_pr(polyFN1, z2, polyFN0);
+    polyFN0        = gmx_simd_fmadd_r(FN10, z4, FN8);
+    polyFN0        = gmx_simd_fmadd_r(polyFN0, z4, FN6);
+    polyFN0        = gmx_simd_fmadd_r(polyFN0, z4, FN4);
+    polyFN0        = gmx_simd_fmadd_r(polyFN0, z4, FN2);
+    polyFN0        = gmx_simd_fmadd_r(polyFN0, z4, FN0);
+    polyFN1        = gmx_simd_fmadd_r(FN9, z4, FN7);
+    polyFN1        = gmx_simd_fmadd_r(polyFN1, z4, FN5);
+    polyFN1        = gmx_simd_fmadd_r(polyFN1, z4, FN3);
+    polyFN1        = gmx_simd_fmadd_r(polyFN1, z4, FN1);
+    polyFN0        = gmx_simd_fmadd_r(polyFN1, z2, polyFN0);
 
-    return gmx_mul_pr(polyFN0, polyFD0);
+    return gmx_simd_mul_r(polyFN0, polyFD0);
 }
 
 
@@ -212,51 +212,51 @@ gmx_pmecorrF_pr(gmx_mm_pr z2)
  *    and you have your potential.
  *
  */
-static gmx_mm_pr
-gmx_pmecorrV_pr(gmx_mm_pr z2)
+static gmx_simd_real_t
+gmx_simd_pmecorrV_r(gmx_simd_real_t z2)
 {
-    const gmx_mm_pr  VN9      = gmx_set1_pr(-9.3723776169321855475e-13);
-    const gmx_mm_pr  VN8      = gmx_set1_pr(1.2280156762674215741e-10);
-    const gmx_mm_pr  VN7      = gmx_set1_pr(-7.3562157912251309487e-9);
-    const gmx_mm_pr  VN6      = gmx_set1_pr(2.6215886208032517509e-7);
-    const gmx_mm_pr  VN5      = gmx_set1_pr(-4.9532491651265819499e-6);
-    const gmx_mm_pr  VN4      = gmx_set1_pr(0.00025907400778966060389);
-    const gmx_mm_pr  VN3      = gmx_set1_pr(0.0010585044856156469792);
-    const gmx_mm_pr  VN2      = gmx_set1_pr(0.045247661136833092885);
-    const gmx_mm_pr  VN1      = gmx_set1_pr(0.11643931522926034421);
-    const gmx_mm_pr  VN0      = gmx_set1_pr(1.1283791671726767970);
+    const gmx_simd_real_t  VN9      = gmx_simd_set1_r(-9.3723776169321855475e-13);
+    const gmx_simd_real_t  VN8      = gmx_simd_set1_r(1.2280156762674215741e-10);
+    const gmx_simd_real_t  VN7      = gmx_simd_set1_r(-7.3562157912251309487e-9);
+    const gmx_simd_real_t  VN6      = gmx_simd_set1_r(2.6215886208032517509e-7);
+    const gmx_simd_real_t  VN5      = gmx_simd_set1_r(-4.9532491651265819499e-6);
+    const gmx_simd_real_t  VN4      = gmx_simd_set1_r(0.00025907400778966060389);
+    const gmx_simd_real_t  VN3      = gmx_simd_set1_r(0.0010585044856156469792);
+    const gmx_simd_real_t  VN2      = gmx_simd_set1_r(0.045247661136833092885);
+    const gmx_simd_real_t  VN1      = gmx_simd_set1_r(0.11643931522926034421);
+    const gmx_simd_real_t  VN0      = gmx_simd_set1_r(1.1283791671726767970);
 
-    const gmx_mm_pr  VD5      = gmx_set1_pr(0.000021784709867336150342);
-    const gmx_mm_pr  VD4      = gmx_set1_pr(0.00064293662010911388448);
-    const gmx_mm_pr  VD3      = gmx_set1_pr(0.0096311444822588683504);
-    const gmx_mm_pr  VD2      = gmx_set1_pr(0.085608012351550627051);
-    const gmx_mm_pr  VD1      = gmx_set1_pr(0.43652499166614811084);
-    const gmx_mm_pr  VD0      = gmx_set1_pr(1.0);
+    const gmx_simd_real_t  VD5      = gmx_simd_set1_r(0.000021784709867336150342);
+    const gmx_simd_real_t  VD4      = gmx_simd_set1_r(0.00064293662010911388448);
+    const gmx_simd_real_t  VD3      = gmx_simd_set1_r(0.0096311444822588683504);
+    const gmx_simd_real_t  VD2      = gmx_simd_set1_r(0.085608012351550627051);
+    const gmx_simd_real_t  VD1      = gmx_simd_set1_r(0.43652499166614811084);
+    const gmx_simd_real_t  VD0      = gmx_simd_set1_r(1.0);
 
-    gmx_mm_pr        z4;
-    gmx_mm_pr        polyVN0, polyVN1, polyVD0, polyVD1;
+    gmx_simd_real_t        z4;
+    gmx_simd_real_t        polyVN0, polyVN1, polyVD0, polyVD1;
 
-    z4             = gmx_mul_pr(z2, z2);
+    z4             = gmx_simd_mul_r(z2, z2);
 
-    polyVD1        = gmx_madd_pr(VD5, z4, VD3);
-    polyVD0        = gmx_madd_pr(VD4, z4, VD2);
-    polyVD1        = gmx_madd_pr(polyVD1, z4, VD1);
-    polyVD0        = gmx_madd_pr(polyVD0, z4, VD0);
-    polyVD0        = gmx_madd_pr(polyVD1, z2, polyVD0);
+    polyVD1        = gmx_simd_fmadd_r(VD5, z4, VD3);
+    polyVD0        = gmx_simd_fmadd_r(VD4, z4, VD2);
+    polyVD1        = gmx_simd_fmadd_r(polyVD1, z4, VD1);
+    polyVD0        = gmx_simd_fmadd_r(polyVD0, z4, VD0);
+    polyVD0        = gmx_simd_fmadd_r(polyVD1, z2, polyVD0);
 
-    polyVD0        = gmx_inv_pr(polyVD0);
+    polyVD0        = gmx_simd_inv_r(polyVD0);
 
-    polyVN1        = gmx_madd_pr(VN9, z4, VN7);
-    polyVN0        = gmx_madd_pr(VN8, z4, VN6);
-    polyVN1        = gmx_madd_pr(polyVN1, z4, VN5);
-    polyVN0        = gmx_madd_pr(polyVN0, z4, VN4);
-    polyVN1        = gmx_madd_pr(polyVN1, z4, VN3);
-    polyVN0        = gmx_madd_pr(polyVN0, z4, VN2);
-    polyVN1        = gmx_madd_pr(polyVN1, z4, VN1);
-    polyVN0        = gmx_madd_pr(polyVN0, z4, VN0);
-    polyVN0        = gmx_madd_pr(polyVN1, z2, polyVN0);
+    polyVN1        = gmx_simd_fmadd_r(VN9, z4, VN7);
+    polyVN0        = gmx_simd_fmadd_r(VN8, z4, VN6);
+    polyVN1        = gmx_simd_fmadd_r(polyVN1, z4, VN5);
+    polyVN0        = gmx_simd_fmadd_r(polyVN0, z4, VN4);
+    polyVN1        = gmx_simd_fmadd_r(polyVN1, z4, VN3);
+    polyVN0        = gmx_simd_fmadd_r(polyVN0, z4, VN2);
+    polyVN1        = gmx_simd_fmadd_r(polyVN1, z4, VN1);
+    polyVN0        = gmx_simd_fmadd_r(polyVN0, z4, VN0);
+    polyVN0        = gmx_simd_fmadd_r(polyVN1, z2, polyVN0);
 
-    return gmx_mul_pr(polyVN0, polyVD0);
+    return gmx_simd_mul_r(polyVN0, polyVD0);
 }
 
 

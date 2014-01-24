@@ -60,7 +60,7 @@
 
 #include "gromacs/utility/gmxmpi.h"
 
-#ifdef GMX_X86_SSE2
+#ifdef GMX_X86_SSE2_OR_HIGHER
 #  ifdef GMX_DOUBLE
 #    include "genborn_sse2_double.h"
 #    include "genborn_allvsall_sse2_double.h"
@@ -1090,8 +1090,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 
         if (ir->gb_algorithm == egbSTILL)
         {
-#if 0 && defined (GMX_X86_SSE2)
-            if (fr->use_acceleration)
+#if 0 && defined (GMX_X86_SSE2_OR_HIGHER)
+            if (fr->use_simd_kernels)
             {
 #  ifdef GMX_DOUBLE
                 genborn_allvsall_calc_still_radii_sse2_double(fr, md, born, top, x[0], cr, &fr->AllvsAll_workgb);
@@ -1111,8 +1111,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
         }
         else if (ir->gb_algorithm == egbHCT || ir->gb_algorithm == egbOBC)
         {
-#if 0 && defined (GMX_X86_SSE2)
-            if (fr->use_acceleration)
+#if 0 && defined (GMX_X86_SSE2_OR_HIGHER)
+            if (fr->use_simd_kernels)
             {
 #  ifdef GMX_DOUBLE
                 genborn_allvsall_calc_hct_obc_radii_sse2_double(fr, md, born, ir->gb_algorithm, top, x[0], cr, &fr->AllvsAll_workgb);
@@ -1140,12 +1140,12 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
     /* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
 
-#if 0 && defined (GMX_X86_SSE2)
+#if 0 && defined (GMX_X86_SSE2_OR_HIGHER)
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     switch (ir->gb_algorithm)
     {
         case egbSTILL:
-            if (fr->use_acceleration)
+            if (fr->use_simd_kernels)
             {
                 calc_gb_rad_still_sse2_double(cr, fr, born->nr, top, atype, x[0], nl, born);
             }
@@ -1155,7 +1155,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
             }
             break;
         case egbHCT:
-            if (fr->use_acceleration)
+            if (fr->use_simd_kernels)
             {
                 calc_gb_rad_hct_obc_sse2_double(cr, fr, born->nr, top, atype, x[0], nl, born, md, ir->gb_algorithm);
             }
@@ -1165,7 +1165,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
             }
             break;
         case egbOBC:
-            if (fr->use_acceleration)
+            if (fr->use_simd_kernels)
             {
                 calc_gb_rad_hct_obc_sse2_double(cr, fr, born->nr, top, atype, x[0], nl, born, md, ir->gb_algorithm);
             }
@@ -1199,12 +1199,12 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 
 #else
 
-#if 0 && defined (GMX_X86_SSE2)
+#if 0 && defined (GMX_X86_SSE2_OR_HIGHER)
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     switch (ir->gb_algorithm)
     {
         case egbSTILL:
-            if (fr->use_acceleration)
+            if (fr->use_simd_kernels)
             {
                 calc_gb_rad_still_sse2_single(cr, fr, born->nr, top, x[0], nl, born);
             }
@@ -1214,7 +1214,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
             }
             break;
         case egbHCT:
-            if (fr->use_acceleration)
+            if (fr->use_simd_kernels)
             {
                 calc_gb_rad_hct_obc_sse2_single(cr, fr, born->nr, top, x[0], nl, born, md, ir->gb_algorithm);
             }
@@ -1225,7 +1225,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
             break;
 
         case egbOBC:
-            if (fr->use_acceleration)
+            if (fr->use_simd_kernels)
             {
                 calc_gb_rad_hct_obc_sse2_single(cr, fr, born->nr, top, x[0], nl, born, md, ir->gb_algorithm);
             }
@@ -1654,8 +1654,8 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 
     if (fr->bAllvsAll)
     {
-#if 0 && defined (GMX_X86_SSE2)
-        if (fr->use_acceleration)
+#if 0 && defined (GMX_X86_SSE2_OR_HIGHER)
+        if (fr->use_simd_kernels)
         {
 #  ifdef GMX_DOUBLE
             genborn_allvsall_calc_chainrule_sse2_double(fr, md, born, x[0], f[0], gb_algorithm, fr->AllvsAll_workgb);
@@ -1676,8 +1676,8 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
         return;
     }
 
-#if 0 && defined (GMX_X86_SSE2)
-    if (fr->use_acceleration)
+#if 0 && defined (GMX_X86_SSE2_OR_HIGHER)
+    if (fr->use_simd_kernels)
     {
 #  ifdef GMX_DOUBLE
         calc_gb_chainrule_sse2_double(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, x[0],

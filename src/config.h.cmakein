@@ -110,40 +110,40 @@
 #cmakedefine GMX_TARGET_BGQ
 
 /* SSE2 instructions available */
-#cmakedefine GMX_X86_SSE2
+#cmakedefine GMX_X86_SSE2_OR_HIGHER
 
 /* SSE4.1 instructions available */
-#cmakedefine GMX_X86_SSE4_1
+#cmakedefine GMX_X86_SSE4_1_OR_HIGHER
 
-/* AVX 128-bit FMA instructions available */
-#cmakedefine GMX_X86_AVX_128_FMA
+/* AVX 128-bit FMA instructions available (AMD side of the AVX world) */
+#cmakedefine GMX_X86_AVX_128_FMA_OR_HIGHER
 
-/* AVX 256-bit instructions available */
-#cmakedefine GMX_X86_AVX_256
+/* AVX 256-bit instructions available (Intel side of the AVX world) */
+#cmakedefine GMX_X86_AVX_256_OR_HIGHER
 
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
 #cmakedefine GMX_X86_AVX_GCC_MASKLOAD_BUG
 
-/* SSE2 was selected as CPU acceleration level */
-#cmakedefine GMX_CPU_ACCELERATION_X86_SSE2
+/* SSE2 was selected for SIMD instruction set level */
+#cmakedefine GMX_SIMD_X86_SSE2
 
-/* SSE4.1 was selected as CPU acceleration level */
-#cmakedefine GMX_CPU_ACCELERATION_X86_SSE4_1
+/* SSE4.1 was selected as SIMD instructions */
+#cmakedefine GMX_SIMD_X86_SSE4_1
 
-/* AVX 128-bit FMA was selected as CPU acceleration level */
-#cmakedefine GMX_CPU_ACCELERATION_X86_AVX_128_FMA
+/* AVX 128-bit FMA was selected as SIMD instructions */
+#cmakedefine GMX_SIMD_X86_AVX_128_FMA
 
-/* AVX 256-bit was selected as CPU acceleration level */
-#cmakedefine GMX_CPU_ACCELERATION_X86_AVX_256
+/* AVX 256-bit was selected as SIMD instructions */
+#cmakedefine GMX_SIMD_X86_AVX_256
 
-/* IBM QPX was selected as CPU acceleration type (e.g. BlueGene/Q) */
-#cmakedefine GMX_CPU_ACCELERATION_IBM_QPX
+/* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
+#cmakedefine GMX_SIMD_IBM_QPX
 
 /* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
-#cmakedefine GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
+#cmakedefine GMX_SIMD_SPARC64_HPC_ACE
 
-/* String for CPU acceleration choice (for writing to log files and stdout) */
-#define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
+/* String for SIMD instruction choice (for writing to log files and stdout) */
+#define GMX_SIMD_STRING "@GMX_SIMD@"
 
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN

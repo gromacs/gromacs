@@ -1545,7 +1545,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         *kernel_type = nbnxnk4xN_SIMD_2xNN;
 #endif
 
-#if defined GMX_NBNXN_SIMD_4XN && defined GMX_X86_AVX_256
+#if defined GMX_NBNXN_SIMD_4XN && defined GMX_X86_AVX_256_OR_HIGHER
         if (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT)
         {
             /* The raw pair rate of the 4x8 kernel is higher than 2x(4+4),
@@ -1578,7 +1578,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * of precision. In single precision, this is faster on
          * Bulldozer, and slightly faster on Sandy Bridge.
          */
-#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256 || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if ((defined GMX_X86_AVX_128_FMA_OR_HIGHER || defined GMX_X86_AVX_256_OR_HIGHER || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_SIMD_IBM_QPX)
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1609,12 +1609,12 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
 #ifdef GMX_NBNXN_SIMD
-#ifdef GMX_X86_SSE2
+#ifdef GMX_X86_SSE2_OR_HIGHER
             /* We have x86 SSE2 compatible SIMD */
-#ifdef GMX_X86_AVX_128_FMA
+#ifdef GMX_X86_AVX_128_FMA_OR_HIGHER
             returnvalue = "AVX-128-FMA";
 #else
-#if defined GMX_X86_AVX_256 || defined __AVX__
+#if defined GMX_X86_AVX_256_OR_HIGHER || defined __AVX__
             /* x86 SIMD intrinsics can be converted to SSE or AVX depending
              * on compiler flags. As we use nearly identical intrinsics,
              * compiling for AVX without an AVX macros effectively results
@@ -1622,23 +1622,23 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
              * For gcc we check for __AVX__
              * At least a check for icc should be added (if there is a macro)
              */
-#if defined GMX_X86_AVX_256 && !defined GMX_NBNXN_HALF_WIDTH_SIMD
+#if defined GMX_X86_AVX_256_OR_HIGHER && !defined GMX_NBNXN_HALF_WIDTH_SIMD
             returnvalue = "AVX-256";
 #else
             returnvalue = "AVX-128";
 #endif
 #else
-#ifdef GMX_X86_SSE4_1
+#ifdef GMX_X86_SSE4_1_OR_HIGHER
             returnvalue  = "SSE4.1";
 #else
             returnvalue  = "SSE2";
 #endif
 #endif
 #endif
-#else   /* GMX_X86_SSE2 */
-            /* not GMX_X86_SSE2, but other SIMD */
+#else   /* GMX_X86_SSE2_OR_HIGHER */
+            /* not GMX_X86_SSE2_OR_HIGHER, but other SIMD */
             returnvalue  = "SIMD";
-#endif /* GMX_X86_SSE2 */
+#endif /* GMX_X86_SSE2_OR_HIGHER */
 #else  /* GMX_NBNXN_SIMD */
             returnvalue = "not available";
 #endif /* GMX_NBNXN_SIMD */
@@ -1657,7 +1657,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 
 static void pick_nbnxn_kernel(FILE                *fp,
                               const t_commrec     *cr,
-                              gmx_bool             use_cpu_acceleration,
+                              gmx_bool             use_simd_kernels,
                               gmx_bool             bUseGPU,
                               gmx_bool             bEmulateGPU,
                               const t_inputrec    *ir,
@@ -1686,7 +1686,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
 
     if (*kernel_type == nbnxnkNotSet)
     {
-        if (use_cpu_acceleration)
+        if (use_simd_kernels)
         {
             pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
@@ -1985,7 +1985,7 @@ static void init_nb_verlet(FILE                *fp,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(fp, cr, fr->use_cpu_acceleration,
+            pick_nbnxn_kernel(fp, cr, fr->use_simd_kernels,
                               nbv->bUseGPU, bEmulateGPU, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
@@ -1996,7 +1996,7 @@ static void init_nb_verlet(FILE                *fp,
             if (nbpu_opt != NULL && strcmp(nbpu_opt, "gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, fr->use_cpu_acceleration,
+                pick_nbnxn_kernel(fp, cr, fr->use_simd_kernels,
                                   FALSE, FALSE, ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
@@ -2133,8 +2133,8 @@ void init_forcerec(FILE              *fp,
         fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE);
     }
 
-    /* By default we turn acceleration on, but it might be turned off further down... */
-    fr->use_cpu_acceleration = TRUE;
+    /* By default we turn SIMD kernels on, but it might be turned off further down... */
+    fr->use_simd_kernels = TRUE;
 
     fr->bDomDec = DOMAINDECOMP(cr);
 
@@ -2274,12 +2274,12 @@ void init_forcerec(FILE              *fp,
 
     if ( (getenv("GMX_DISABLE_CPU_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
     {
-        fr->use_cpu_acceleration = FALSE;
+        fr->use_simd_kernels = FALSE;
         if (fp != NULL)
         {
             fprintf(fp,
                     "\nFound environment variable GMX_DISABLE_CPU_ACCELERATION.\n"
-                    "Disabling all CPU architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
+                    "Disabling the usage of most SIMD-specific kernel (e.g. SSE2/SSE4/AVX) routines.\n\n");
         }
     }
 
@@ -2296,7 +2296,7 @@ void init_forcerec(FILE              *fp,
     if (fr->bAllvsAll)
     {
         fr->bAllvsAll            = FALSE;
-        fr->use_cpu_acceleration = FALSE;
+        fr->use_simd_kernels     = FALSE;
         if (fp != NULL)
         {
             fprintf(fp,

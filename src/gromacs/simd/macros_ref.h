@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -410,7 +410,7 @@ gmx_simd_ref_cvttpr_epi32(gmx_simd_ref_pr a)
 };
 
 /* These two function only need to be approximate, Newton-Raphson iteration
- * is used for full accuracy in gmx_invsqrt_pr and gmx_inv_pr.
+ * is used for full accuracy in gmx_simd_invsqrt_r and gmx_simd_inv_r.
  */
 static gmx_inline gmx_simd_ref_pr
 gmx_simd_ref_rsqrt_pr(gmx_simd_ref_pr a)
