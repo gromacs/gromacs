@@ -679,7 +679,7 @@ static void gmx_print_version_info(FILE *fp)
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
-    fprintf(fp, "CPU acceleration:   %s\n", GMX_CPU_ACCELERATION_STRING);
+    fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
 
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP

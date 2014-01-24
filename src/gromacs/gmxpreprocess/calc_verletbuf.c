@@ -131,7 +131,7 @@ void verletbuf_get_list_setup(gmx_bool                bGPU,
 #ifndef GMX_NBNXN_SIMD
         list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
 #else
-        list_setup->cluster_size_j = GMX_SIMD_WIDTH_HERE;
+        list_setup->cluster_size_j = GMX_SIMD_REAL_WIDTH;
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We assume the smallest cluster size to be on the safe side */
         list_setup->cluster_size_j /= 2;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ static __m128i gmx_mm_castpd_si128(__m128d a)
 
 
 static void
-gmx_mm_printxmm_ps(const char *s, __m128 xmm)
+gmx_simd_real_tintxmm_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
@@ -104,7 +104,7 @@ gmx_mm_printxmm_ps(const char *s, __m128 xmm)
 
 
 static void
-gmx_mm_printxmmsum_ps(const char *s, __m128 xmm)
+gmx_simd_real_tintxmmsum_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
@@ -114,7 +114,7 @@ gmx_mm_printxmmsum_ps(const char *s, __m128 xmm)
 
 
 static void
-gmx_mm_printxmm_pd(const char *s, __m128d xmm)
+gmx_simd_real_tintxmm_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
@@ -123,7 +123,7 @@ gmx_mm_printxmm_pd(const char *s, __m128d xmm)
 }
 
 static void
-gmx_mm_printxmmsum_pd(const char *s, __m128d xmm)
+gmx_simd_real_tintxmmsum_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
@@ -133,7 +133,7 @@ gmx_mm_printxmmsum_pd(const char *s, __m128d xmm)
 
 
 static void
-gmx_mm_printxmm_epi32(const char *s, __m128i xmmi)
+gmx_simd_real_tintxmm_epi32(const char *s, __m128i xmmi)
 {
     int i[4];
 

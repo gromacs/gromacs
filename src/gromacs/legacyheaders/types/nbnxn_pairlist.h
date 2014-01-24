@@ -79,7 +79,7 @@ typedef void nbnxn_free_t (void *ptr);
 typedef struct {
     int      cj;    /* The j-cluster                    */
     unsigned excl;  /* The exclusion (interaction) bits */
-#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+#ifdef GMX_SIMD_IBM_QPX
     /* Indices into the arrays of SIMD interaction masks. */
     char     interaction_mask_indices[4];
 #endif
@@ -264,7 +264,7 @@ typedef struct {
      */
     unsigned                *simd_exclusion_filter1;
     unsigned                *simd_exclusion_filter2;
-#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+#ifdef GMX_SIMD_IBM_QPX
     real                    *simd_interaction_array; /* Array of masks needed for exclusions on QPX */
 #endif
     int                      nout;                   /* The number of force arrays                         */
