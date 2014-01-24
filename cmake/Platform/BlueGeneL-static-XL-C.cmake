@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2010,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -82,4 +82,4 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-set(GMX_CPU_ACCELERATION "BlueGene" CACHE STRING "Forcing BlueGene acceleration when using BlueGene toolchain")
+set(GMX_SIMD "BlueGene" CACHE STRING "Forcing BlueGene SIMD when using BlueGene toolchain")
