@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,8 +45,8 @@
  *   energy group pair energy storage
  */
 
-typedef gmx_epi32 gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
+typedef gmx_simd_int32_t gmx_exclfilter;
+static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
 /* Transpose 2 double precision registers */
 static gmx_inline void
@@ -130,7 +130,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * AVX_256. */
 
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int gmx_unused *ti,
+load_table_f(const real *tab_coul_F, gmx_simd_int32_t ti_S, int gmx_unused *ti,
              __m128d *ctab0_S, __m128d *ctab1_S)
 {
     int     idx[2];
@@ -150,7 +150,7 @@ load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int gmx_unused *ti,
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_epi32 ti_S, int gmx_unused *ti,
+               gmx_simd_int32_t ti_S, int gmx_unused *ti,
                __m128d *ctab0_S, __m128d *ctab1_S, __m128d *ctabv_S)
 {
     int     idx[2];
@@ -186,7 +186,7 @@ gmx_load_exclusion_filter(const unsigned *i)
     return _mm_load_si128((__m128i *) i);
 }
 
-static gmx_inline gmx_mm_pb
+static gmx_inline gmx_simd_bool_t
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return gmx_mm_castsi128_pd(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));

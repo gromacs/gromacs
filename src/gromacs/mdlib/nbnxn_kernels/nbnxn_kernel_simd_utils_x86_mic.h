@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,8 +35,8 @@
 #ifndef _nbnxn_kernel_simd_utils_x86_mic_h_
 #define _nbnxn_kernel_simd_utils_x86_mic_h_
 
-typedef gmx_epi32      gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
+typedef gmx_simd_int32_t      gmx_exclfilter;
+static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
 #define nbfp_stride 2
 
@@ -50,19 +50,19 @@ static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
 typedef __m512 gmx_mm_pr4;
 
 static gmx_inline gmx_mm_pr4
-gmx_load_pr4(const real *r)
+gmx_simd_load_r4(const real *r)
 {
     return _mm512_loadunpacklo_ps(_mm512_undefined_ps(), r);
 }
 
 static gmx_inline void
-gmx_store_pr4(real *dest, gmx_mm_pr4 src)
+gmx_simd_store_r4(real *dest, gmx_mm_pr4 src)
 {
     _mm512_mask_packstorelo_ps(dest, _mm512_int2mask(0xF), src);
 }
 
 static gmx_inline gmx_mm_pr4
-gmx_add_pr4(gmx_mm_pr4 a, gmx_mm_pr4 b)
+gmx_simd_add_r4(gmx_mm_pr4 a, gmx_mm_pr4 b)
 {
     return _mm512_add_ps(a, b);
 }
@@ -152,14 +152,14 @@ gmx_2hpr_high_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_mm_ps *c)
 }
 
 static gmx_inline void
-gmx_2hepi_to_epi(gmx_epi32 a, gmx_epi32 b, gmx_epi32 *c)
+gmx_2hepi_to_epi(gmx_simd_int32_t a, gmx_simd_int32_t b, gmx_simd_int32_t *c)
 {
     *c = _mm512_mask_permute4f128_epi32(a, mask_hih, b, PERM_LOW2HIGH);
 }
 
 /* recombine the 2 high half into c */
 static gmx_inline void
-gmx_2hepi_high_to_epi(gmx_epi32 a, gmx_epi32 b, gmx_epi32 *c)
+gmx_2hepi_high_to_epi(gmx_simd_int32_t a, gmx_simd_int32_t b, gmx_simd_int32_t *c)
 {
     *c = _mm512_mask_permute4f128_epi32(b, mask_loh, a, PERM_HIGH2LOW);
 }
@@ -176,9 +176,9 @@ prepare_table_load_buffer(const int *array)
    and low/high half after each other, then simply doing a gather for tab_coul_F and tab_coul_F+1.
    The ording of the 16 elements doesn't matter, so it doesn't help to get FD sorted as odd/even
    instead of low/high.
-*/
+ */
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
+load_table_f(const real *tab_coul_F, gmx_simd_int32_t ti_S, int *ti,
              gmx_mm_ps *ctab0_S, gmx_mm_ps *ctab1_S)
 {
     __m512i idx;
@@ -190,12 +190,12 @@ load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
 
     gmx_2hpr_to_pr(tmp1, tmp2, ctab0_S);
     gmx_2hpr_high_to_pr(tmp1, tmp2, ctab1_S);
-    *ctab1_S  = gmx_sub_pr(*ctab1_S, *ctab0_S);
+    *ctab1_S  = gmx_simd_sub_r(*ctab1_S, *ctab0_S);
 }
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_epi32 ti_S, int *ti,
+               gmx_simd_int32_t ti_S, int *ti,
                gmx_mm_ps *ctab0_S, gmx_mm_ps *ctab1_S,
                gmx_mm_ps *ctabv_S)
 {
@@ -241,12 +241,12 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
 
 #define HAVE_GMX_SUM_SIMD
 static gmx_inline real
-gmx_sum_simd(gmx_mm_pr x, real* b)
+gmx_sum_simd(gmx_simd_real_t x, real* b)
 {
     return _mm512_reduce_add_ps(x);
 }
 static gmx_inline real
-gmx_sum_simd4(gmx_mm_pr x, real* b)
+gmx_sum_simd4(gmx_simd_real_t x, real* b)
 {
     return _mm512_mask_reduce_add_ps(_mm512_int2mask(0xF), x);
 }

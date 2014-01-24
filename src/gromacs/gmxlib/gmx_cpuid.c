@@ -134,7 +134,7 @@ gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
 };
 
 const char *
-gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS] =
+gmx_cpuid_simd_string[GMX_CPUID_NSIMD] =
 {
     "CannotDetect",
     "None",
@@ -222,38 +222,24 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
 
 
 
-/* What type of acceleration was compiled in, if any?
+/* What type of SIMD was compiled in, if any?
  * This is set from Cmake. Note that the SSE2 and SSE4_1 macros are set for
  * AVX too, so it is important that they appear last in the list.
  */
-#ifdef GMX_X86_AVX_256
-static const
-enum gmx_cpuid_acceleration
-    compiled_acc = GMX_CPUID_ACCELERATION_X86_AVX_256;
-#elif defined GMX_X86_AVX_128_FMA
-static const
-enum gmx_cpuid_acceleration
-    compiled_acc = GMX_CPUID_ACCELERATION_X86_AVX_128_FMA;
-#elif defined GMX_X86_SSE4_1
-static const
-enum gmx_cpuid_acceleration
-    compiled_acc = GMX_CPUID_ACCELERATION_X86_SSE4_1;
-#elif defined GMX_X86_SSE2
-static const
-enum gmx_cpuid_acceleration
-    compiled_acc = GMX_CPUID_ACCELERATION_X86_SSE2;
-#elif defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
-static const
-enum gmx_cpuid_acceleration
-    compiled_acc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
-#elif defined GMX_CPU_ACCELERATION_IBM_QPX
-static const
-enum gmx_cpuid_acceleration
-    compiled_acc = GMX_CPUID_ACCELERATION_IBM_QPX;
+#ifdef GMX_SIMD_X86_AVX_256
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_256;
+#elif defined GMX_SIMD_X86_AVX_128_FMA
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_128_FMA;
+#elif defined GMX_SIMD_X86_SSE4_1
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE4_1;
+#elif defined GMX_SIMD_X86_SSE2
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE2;
+#elif defined GMX_SIMD_SPARC64_HPC_ACE
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
+#elif defined GMX_SIMD_IBM_QPX
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_QPX;
 #else
-static const
-enum gmx_cpuid_acceleration
-    compiled_acc = GMX_CPUID_ACCELERATION_NONE;
+static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_NONE;
 #endif
 
 
@@ -321,7 +307,7 @@ execute_x86cpuid(unsigned int   level,
     /* Death and horror!
      * Apparently this is an x86 platform where we don't know how to call cpuid.
      *
-     * This is REALLY bad, since we will lose all Gromacs acceleration.
+     * This is REALLY bad, since we will lose all Gromacs SIMD support.
      */
     *eax = 0;
     *ebx = 0;
@@ -1049,78 +1035,78 @@ gmx_cpuid_formatstring       (gmx_cpuid_t              cpuid,
 
 
 
-enum gmx_cpuid_acceleration
-gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
+enum gmx_cpuid_simd
+gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
 {
-    enum gmx_cpuid_acceleration  tmpacc;
+    enum gmx_cpuid_simd  tmpsimd;
 
-    tmpacc = GMX_CPUID_ACCELERATION_NONE;
+    tmpsimd = GMX_CPUID_SIMD_NONE;
 
     if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_INTEL)
     {
         if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX2))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_X86_AVX2_256;
+            tmpsimd = GMX_CPUID_SIMD_X86_AVX2_256;
         }
         else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_X86_AVX_256;
+            tmpsimd = GMX_CPUID_SIMD_X86_AVX_256;
         }
         else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_SSE4_1))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_X86_SSE4_1;
+            tmpsimd = GMX_CPUID_SIMD_X86_SSE4_1;
         }
         else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_SSE2))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_X86_SSE2;
+            tmpsimd = GMX_CPUID_SIMD_X86_SSE2;
         }
     }
     else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_AMD)
     {
         if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_X86_AVX_128_FMA;
+            tmpsimd = GMX_CPUID_SIMD_X86_AVX_128_FMA;
         }
         else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_SSE4_1))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_X86_SSE4_1;
+            tmpsimd = GMX_CPUID_SIMD_X86_SSE4_1;
         }
         else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_SSE2))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_X86_SSE2;
+            tmpsimd = GMX_CPUID_SIMD_X86_SSE2;
         }
     }
     else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_FUJITSU)
     {
         if (strstr(gmx_cpuid_brand(cpuid), "SPARC64"))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
+            tmpsimd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
         }
     }
     else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_IBM)
     {
         if (strstr(gmx_cpuid_brand(cpuid), "A2"))
         {
-            tmpacc = GMX_CPUID_ACCELERATION_IBM_QPX;
+            tmpsimd = GMX_CPUID_SIMD_IBM_QPX;
         }
     }
-    return tmpacc;
+    return tmpsimd;
 }
 
 
 
 int
-gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
-                             FILE *        log,
-                             int           print_to_stderr)
+gmx_cpuid_simd_check(gmx_cpuid_t   cpuid,
+                     FILE *        log,
+                     int           print_to_stderr)
 {
     int                           rc;
     char                          str[1024];
-    enum gmx_cpuid_acceleration   acc;
+    enum gmx_cpuid_simd           simd;
 
-    acc = gmx_cpuid_acceleration_suggest(cpuid);
+    simd = gmx_cpuid_simd_suggest(cpuid);
 
-    rc = (acc != compiled_acc);
+    rc = (simd != compiled_simd);
 
     gmx_cpuid_formatstring(cpuid, str, 1023);
     str[1023] = '\0';
@@ -1128,13 +1114,13 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
     if (log != NULL)
     {
         fprintf(log,
-                "\nDetecting CPU-specific acceleration.\nPresent hardware specification:\n"
+                "\nDetecting CPU SIMD instructions.\nPresent hardware specification:\n"
                 "%s"
-                "Acceleration most likely to fit this hardware: %s\n"
-                "Acceleration selected at GROMACS compile time: %s\n\n",
+                "SIMD instructions most likely to fit this hardware: %s\n"
+                "SIMD instructions selected at GROMACS compile time: %s\n\n",
                 str,
-                gmx_cpuid_acceleration_string[acc],
-                gmx_cpuid_acceleration_string[compiled_acc]);
+                gmx_cpuid_simd_string[simd],
+                gmx_cpuid_simd_string[compiled_simd]);
     }
 
     if (rc != 0)
@@ -1142,16 +1128,16 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
         if (log != NULL)
         {
             fprintf(log, "\nBinary not matching hardware - you might be losing performance.\n"
-                    "Acceleration most likely to fit this hardware: %s\n"
-                    "Acceleration selected at GROMACS compile time: %s\n\n",
-                    gmx_cpuid_acceleration_string[acc],
-                    gmx_cpuid_acceleration_string[compiled_acc]);
+                    "SIMD instructions most likely to fit this hardware: %s\n"
+                    "SIMD instructions selected at GROMACS compile time: %s\n\n",
+                    gmx_cpuid_simd_string[simd],
+                    gmx_cpuid_simd_string[compiled_simd]);
         }
         if (print_to_stderr)
         {
-            fprintf(stderr, "Compiled acceleration: %s (Gromacs could use %s on this machine, which is better)\n",
-                    gmx_cpuid_acceleration_string[compiled_acc],
-                    gmx_cpuid_acceleration_string[acc]);
+            fprintf(stderr, "Compiled SIMD instructions: %s (Gromacs could use %s on this machine, which is better)\n",
+                    gmx_cpuid_simd_string[compiled_simd],
+                    gmx_cpuid_simd_string[simd]);
         }
     }
     return rc;
@@ -1167,7 +1153,7 @@ int
 main(int argc, char **argv)
 {
     gmx_cpuid_t                   cpuid;
-    enum gmx_cpuid_acceleration   acc;
+    enum gmx_cpuid_simd           simd;
     int                           i, cnt;
 
     if (argc < 2)
@@ -1181,7 +1167,7 @@ main(int argc, char **argv)
                 "-model         Print CPU model version.\n"
                 "-stepping      Print CPU stepping version.\n"
                 "-features      Print CPU feature flags.\n"
-                "-acceleration  Print suggested GROMACS acceleration.\n",
+                "-simd          Print suggested GROMACS SIMD instructions.\n",
                 argv[0]);
         exit(0);
     }
@@ -1224,10 +1210,10 @@ main(int argc, char **argv)
         }
         printf("\n");
     }
-    else if (!strncmp(argv[1], "-acceleration", 3))
+    else if (!strncmp(argv[1], "-simd", 3))
     {
-        acc = gmx_cpuid_acceleration_suggest(cpuid);
-        fprintf(stdout, "%s\n", gmx_cpuid_acceleration_string[acc]);
+        simd = gmx_cpuid_simd_suggest(cpuid);
+        fprintf(stdout, "%s\n", gmx_cpuid_simd_string[simd]);
     }
 
     gmx_cpuid_done(cpuid);

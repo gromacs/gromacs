@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,60 +52,60 @@
 
 
 /* x^2 + y^2 + z^2 */
-static gmx_inline gmx_mm_pr
-gmx_calc_rsq_pr(gmx_mm_pr x, gmx_mm_pr y, gmx_mm_pr z)
+static gmx_inline gmx_simd_real_t
+gmx_simd_calc_rsq_r(gmx_simd_real_t x, gmx_simd_real_t y, gmx_simd_real_t z)
 {
-    return gmx_madd_pr(z, z, gmx_madd_pr(y, y, gmx_mul_pr(x, x)));
+    return gmx_simd_fmadd_r(z, z, gmx_simd_fmadd_r(y, y, gmx_simd_mul_r(x, x)));
 }
 
 /* inner-product of multiple vectors */
-static gmx_inline gmx_mm_pr
-gmx_iprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
-             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz)
+static gmx_inline gmx_simd_real_t
+gmx_simd_iprod_r(gmx_simd_real_t ax, gmx_simd_real_t ay, gmx_simd_real_t az,
+                 gmx_simd_real_t bx, gmx_simd_real_t by, gmx_simd_real_t bz)
 {
-    gmx_mm_pr ret;
+    gmx_simd_real_t ret;
 
-    ret = gmx_mul_pr(ax, bx);
-    ret = gmx_madd_pr(ay, by, ret);
-    ret = gmx_madd_pr(az, bz, ret);
+    ret = gmx_simd_mul_r(ax, bx);
+    ret = gmx_simd_fmadd_r(ay, by, ret);
+    ret = gmx_simd_fmadd_r(az, bz, ret);
 
     return ret;
 }
 
 /* norm squared of multiple vectors */
-static gmx_inline gmx_mm_pr
-gmx_norm2_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az)
+static gmx_inline gmx_simd_real_t
+gmx_simd_norm2_r(gmx_simd_real_t ax, gmx_simd_real_t ay, gmx_simd_real_t az)
 {
-    gmx_mm_pr ret;
+    gmx_simd_real_t ret;
 
-    ret = gmx_mul_pr(ax, ax);
-    ret = gmx_madd_pr(ay, ay, ret);
-    ret = gmx_madd_pr(az, az, ret);
+    ret = gmx_simd_mul_r(ax, ax);
+    ret = gmx_simd_fmadd_r(ay, ay, ret);
+    ret = gmx_simd_fmadd_r(az, az, ret);
 
     return ret;
 }
 
 /* cross-product of multiple vectors */
 static gmx_inline void
-gmx_cprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
-             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz,
-             gmx_mm_pr *cx, gmx_mm_pr *cy, gmx_mm_pr *cz)
+gmx_simd_cprod_r(gmx_simd_real_t ax, gmx_simd_real_t ay, gmx_simd_real_t az,
+                 gmx_simd_real_t bx, gmx_simd_real_t by, gmx_simd_real_t bz,
+                 gmx_simd_real_t *cx, gmx_simd_real_t *cy, gmx_simd_real_t *cz)
 {
-    *cx = gmx_mul_pr(ay, bz);
-    *cx = gmx_nmsub_pr(az, by, *cx);
+    *cx = gmx_simd_mul_r(ay, bz);
+    *cx = gmx_simd_fnmadd_r(az, by, *cx);
 
-    *cy = gmx_mul_pr(az, bx);
-    *cy = gmx_nmsub_pr(ax, bz, *cy);
+    *cy = gmx_simd_mul_r(az, bx);
+    *cy = gmx_simd_fnmadd_r(ax, bz, *cy);
 
-    *cz = gmx_mul_pr(ax, by);
-    *cz = gmx_nmsub_pr(ay, bx, *cz);
+    *cz = gmx_simd_mul_r(ax, by);
+    *cz = gmx_simd_fnmadd_r(ay, bx, *cz);
 }
 
 /* a + b + c + d (not really a vector operation, but where else put this?) */
-static gmx_inline gmx_mm_pr
-gmx_sum4_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c, gmx_mm_pr d)
+static gmx_inline gmx_simd_real_t
+gmx_simd_sum4_r(gmx_simd_real_t a, gmx_simd_real_t b, gmx_simd_real_t c, gmx_simd_real_t d)
 {
-    return gmx_add_pr(gmx_add_pr(a, b), gmx_add_pr(c, d));
+    return gmx_simd_add_r(gmx_simd_add_r(a, b), gmx_simd_add_r(c, d));
 }
 
 
