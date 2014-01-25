@@ -129,12 +129,9 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
         /*! \brief
          * Creates a root help topic.
          *
-         * \param[in] modules  List of modules for to use for module listings.
-         *
          * Does not throw.
          */
-        explicit RootHelpTopic(const CommandLineModuleMap &modules)
-            : modules_(modules), commonOptions_(NULL)
+        RootHelpTopic() : commonOptions_(NULL)
         {
         }
 
@@ -147,9 +144,6 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
-        void printModuleList(const HelpWriterContext &context) const;
-
-        const CommandLineModuleMap &modules_;
         const Options              *commonOptions_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
@@ -172,30 +166,66 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         CommandLineHelpWriter(*commonOptions_)
             .writeHelp(cmdlineContext);
     }
-    // TODO: If/when this list becomes long, it may be better to only print
-    // "common" commands here, and have a separate topic (e.g.,
-    // "help commands") that prints the full list.
-    printModuleList(context);
-    context.writeTextBlock(
-            "For additional help on a command, use '[PROGRAM] help <command>'");
+    // TODO: Consider printing a list of "core" commands. Would require someone
+    // to determine such a set...
     writeSubTopicList(context,
-                      "\nAdditional help is available on the following topics:");
+                      "Additional help is available on the following topics:");
     context.writeTextBlock(
-            "To access the help, use '[PROGRAM] help <topic>'.");
+            "To access the help, use '[PROGRAM] help <topic>'.[BR]"
+            "For help on a command, use '[PROGRAM] help <command>'.");
 }
 
-void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
+/********************************************************************
+ * CommandsHelpTopic
+ */
+
+/*! \brief
+ * Help topic for listing the commands.
+ *
+ * \ingroup module_commandline
+ */
+class CommandsHelpTopic : public HelpTopicInterface
+{
+    public:
+        /*! \brief
+         * Creates a command list help topic.
+         *
+         * \param[in]     helpModule Help module to get module information from.
+         *
+         * Does not throw.
+         */
+        explicit CommandsHelpTopic(const CommandLineHelpModuleImpl &helpModule)
+            : helpModule_(helpModule)
+        {
+        }
+
+        virtual const char *name() const { return "commands"; }
+        virtual const char *title() const { return "List of available commands"; }
+        virtual bool hasSubTopics() const { return false; }
+        virtual const HelpTopicInterface *findSubTopic(const char * /*name*/) const
+        {
+            return NULL;
+        }
+
+        virtual void writeHelp(const HelpWriterContext &context) const;
+
+    private:
+        const CommandLineHelpModuleImpl &helpModule_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(CommandsHelpTopic);
+};
+
+void CommandsHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
         GMX_THROW(NotImplementedError(
                           "Module list is not implemented for this output format"));
     }
     int maxNameLength = 0;
-    CommandLineModuleMap::const_iterator module;
-    for (module = modules_.begin(); module != modules_.end(); ++module)
+    const CommandLineModuleMap           &modules = helpModule_.modules_;
+    CommandLineModuleMap::const_iterator  module;
+    for (module = modules.begin(); module != modules.end(); ++module)
     {
         int nameLength = static_cast<int>(module->first.length());
         if (module->second->shortDescription() != NULL
@@ -204,14 +234,15 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
             maxNameLength = nameLength;
         }
     }
+    context.writeTextBlock(
+            "Usage: [PROGRAM] [<options>] <command> [<args>][PAR]"
+            "Available commands:");
     File              &file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(NULL, maxNameLength + 1, false);
     formatter.addColumn(NULL, 72 - maxNameLength, true);
     formatter.setFirstColumnIndent(4);
-    file.writeLine();
-    file.writeLine("Available commands:");
-    for (module = modules_.begin(); module != modules_.end(); ++module)
+    for (module = modules.begin(); module != modules.end(); ++module)
     {
         const char *name        = module->first.c_str();
         const char *description = module->second->shortDescription();
@@ -223,6 +254,8 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
             file.writeString(formatter.formatRow());
         }
     }
+    context.writeTextBlock(
+            "For help on a command, use '[PROGRAM] help <command>'.");
 }
 
 /********************************************************************
@@ -621,7 +654,7 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const ProgramInfo                &programInfo,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : rootTopic_(new RootHelpTopic(modules)), programInfo_(programInfo),
+    : rootTopic_(new RootHelpTopic()), programInfo_(programInfo),
       modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false)
 {
@@ -702,6 +735,9 @@ void CommandLineHelpModule::setModuleOverride(
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
+    // Add internal topics lazily here.
+    addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)));
+
     const char *const exportFormats[] = { "man", "html", "completion" };
     std::string       exportFormat;
     Options           options(NULL, NULL);
