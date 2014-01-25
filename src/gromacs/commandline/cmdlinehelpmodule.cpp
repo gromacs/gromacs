@@ -50,6 +50,7 @@
 #include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/onlinehelp/helpformat.h"
@@ -118,7 +119,7 @@ struct RootHelpText
 const char        RootHelpText::name[]  = "";
 const char        RootHelpText::title[] = "";
 const char *const RootHelpText::text[]  = {
-    "Usage: [PROGRAM] <command> [<args>]",
+    "Usage: [PROGRAM] [<options>] <command> [<args>]",
 };
 
 /*! \brief
@@ -137,8 +138,14 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
          * Does not throw.
          */
         explicit RootHelpTopic(const CommandLineModuleMap &modules)
-            : modules_(modules)
+            : modules_(modules), commonOptions_(NULL)
         {
+        }
+
+        //! Sets the common options for the wrapper binary.
+        void setCommonOptions(const Options *options)
+        {
+            commonOptions_ = options;
         }
 
         virtual void writeHelp(const HelpWriterContext &context) const;
@@ -147,6 +154,7 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
         void printModuleList(const HelpWriterContext &context) const;
 
         const CommandLineModuleMap &modules_;
+        const Options              *commonOptions_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
@@ -161,6 +169,13 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
                           "Root help is not implemented for this output format"));
     }
     writeBasicHelpTopic(context, *this, helpText());
+    context.outputFile().writeLine();
+    {
+        CommandLineHelpContext cmdlineContext(context);
+        // TODO: Propagate the -hidden option here.
+        CommandLineHelpWriter(*commonOptions_)
+            .writeHelp(cmdlineContext);
+    }
     // TODO: If/when this list becomes long, it may be better to only print
     // "common" commands here, and have a separate topic (e.g.,
     // "help commands") that prints the full list.
@@ -740,6 +755,11 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 void CommandLineHelpModule::setShowHidden(bool bHidden)
 {
     impl_->bHidden_ = bHidden;
+}
+
+void CommandLineHelpModule::setCommonOptions(const Options *options)
+{
+    impl_->rootTopic_->setCommonOptions(options);
 }
 
 void CommandLineHelpModule::setModuleOverride(

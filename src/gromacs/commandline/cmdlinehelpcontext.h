@@ -76,6 +76,8 @@ class CommandLineHelpContext
          */
         CommandLineHelpContext(File *file, HelpOutputFormat format,
                                const HelpLinks *links);
+        //! Creates a context for a particular HelpWriterContext.
+        explicit CommandLineHelpContext(const HelpWriterContext &writerContext);
         /*! \brief
          * Creates a context for shell completion.
          */

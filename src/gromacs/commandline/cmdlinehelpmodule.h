@@ -52,6 +52,7 @@ namespace gmx
 {
 
 class CommandLineHelpContext;
+class Options;
 class ProgramInfo;
 
 class CommandLineHelpModuleImpl;
@@ -105,6 +106,8 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         void addTopic(HelpTopicPointer topic);
         //! Sets whether hidden options will be shown in help.
         void setShowHidden(bool bHidden);
+        //! Sets the common options for the wrapper binary.
+        void setCommonOptions(const Options *options);
         /*! \brief
          * Sets an override to show the help for the given module.
          *

@@ -76,6 +76,11 @@ class CommandLineHelpContext::Impl
               completionWriter_(NULL), bHidden_(false)
         {
         }
+        //! Creates an implementation class from a low-level context.
+        explicit Impl(const HelpWriterContext &writerContext)
+            : writerContext_(writerContext), bHidden_(false)
+        {
+        }
 
         //! Wrapped lower-level context.
         HelpWriterContext      writerContext_;
@@ -90,6 +95,12 @@ class CommandLineHelpContext::Impl
 CommandLineHelpContext::CommandLineHelpContext(
         File *file, HelpOutputFormat format, const HelpLinks *links)
     : impl_(new Impl(file, format, links))
+{
+}
+
+CommandLineHelpContext::CommandLineHelpContext(
+        const HelpWriterContext &writerContext)
+    : impl_(new Impl(writerContext))
 {
 }
 
