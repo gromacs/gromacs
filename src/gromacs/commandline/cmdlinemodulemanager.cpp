@@ -68,15 +68,16 @@ namespace gmx
 namespace
 {
 
+//! \addtogroup module_commandline
+//! \{
+
 /********************************************************************
  * CMainCommandLineModule
  */
 
-/*! \internal \brief
+/*! \brief
  * Implements a CommandLineModuleInterface, given a function with C/C++ main()
  * signature.
- *
- * \ingroup module_commandline
  */
 class CMainCommandLineModule : public CommandLineModuleInterface
 {
@@ -131,6 +132,88 @@ class CMainCommandLineModule : public CommandLineModuleInterface
         CMainFunction           mainFunction_;
 
 };
+
+/*! \brief
+ * Encapsulates some handling of common options to the wrapper binary.
+ */
+class CommonOptionsHolder
+{
+    public:
+        CommonOptionsHolder()
+            : options_(NULL, NULL), bHelp_(false), bHidden_(false),
+              bQuiet_(false), bVersion_(false), bCopyright_(true)
+        {
+            binaryInfoSettings_.copyright(true);
+        }
+
+        //! Initializes the common options.
+        void initOptions()
+        {
+            options_.addOption(BooleanOption("h").store(&bHelp_)
+                                   .description("Print help and quit"));
+            options_.addOption(BooleanOption("hidden").store(&bHidden_)
+                                   .hidden()
+                                   .description("Show hidden options in help"));
+            options_.addOption(BooleanOption("quiet").store(&bQuiet_)
+                                   .description("Do not print common startup info or quotes"));
+            options_.addOption(BooleanOption("version").store(&bVersion_)
+                                   .description("Print extended version information and quit"));
+            options_.addOption(BooleanOption("copyright").store(&bCopyright_)
+                                   .description("Print copyright information on startup"));
+        }
+
+        /*! \brief
+         * Finishes option parsing.
+         *
+         * \returns `false` if the wrapper binary should quit without executing
+         *     any module.
+         */
+        bool finishOptions()
+        {
+            options_.finish();
+            binaryInfoSettings_.extendedInfo(bVersion_);
+            binaryInfoSettings_.copyright(bCopyright_);
+            return !bVersion_;
+        }
+
+        //! Returns the internal Options object.
+        Options *options() { return &options_; }
+        //! Returns the settings for printing startup information.
+        const BinaryInformationSettings &binaryInfoSettings() const
+        {
+            return binaryInfoSettings_;
+        }
+
+        /*! \brief
+         * Returns `true` if common options are set such that the wrapper
+         * binary should quit, without running the actual module.
+         */
+        bool shouldIgnoreActualModule() const
+        {
+            return bHelp_ || bVersion_;
+        }
+        //! Returns whether common options specify showing help.
+        bool shouldShowHelp() const { return bHelp_; }
+        //! Returns whether common options specify showing hidden options in help.
+        bool shouldShowHidden() const { return bHidden_; }
+        //! Returns whether common options specify quiet execution.
+        bool shouldBeQuiet() const { return bQuiet_; }
+
+        //! Returns the file to which startup information should be printed.
+        FILE *startupInfoFile() const { return (bVersion_ ? stdout : stderr); }
+
+    private:
+        Options                      options_;
+        //! Settings for what to write in the startup header.
+        BinaryInformationSettings    binaryInfoSettings_;
+        bool                         bHelp_;
+        bool                         bHidden_;
+        bool                         bQuiet_;
+        bool                         bVersion_;
+        bool                         bCopyright_;
+};
+
+//! \}
 
 }   // namespace
 
@@ -201,9 +284,10 @@ class CommandLineModuleManager::Impl
         /*! \brief
          * Processes command-line options for the wrapper binary.
          *
-         * \param[in,out] argc On input, argc passed to run().
+         * \param[in,out] optionsHolder Common options.
+         * \param[in,out] argc          On input, argc passed to run().
          *     On output, argc to be passed to the module.
-         * \param[in,out] argv On input, argv passed to run().
+         * \param[in,out] argv          On input, argv passed to run().
          *     On output, argv to be passed to the module.
          * \throws    InvalidInputError if there are invalid options.
          * \returns   The module that should be run.
@@ -214,7 +298,8 @@ class CommandLineModuleManager::Impl
          * arguments that should be passed to it.
          */
         CommandLineModuleInterface *
-        processCommonOptions(int *argc, char ***argv);
+        processCommonOptions(CommonOptionsHolder *optionsHolder,
+                             int *argc, char ***argv);
 
         /*! \brief
          * Maps module names to module objects.
@@ -238,14 +323,10 @@ class CommandLineModuleManager::Impl
          * The pointed module is owned by the \a modules_ container.
          */
         CommandLineHelpModule       *helpModule_;
-        //! Settings for what to write in the startup header.
-        BinaryInformationSettings    binaryInfoSettings_;
         //! If non-NULL, run this module in single-module mode.
         CommandLineModuleInterface  *singleModule_;
         //! Whether all stderr output should be suppressed.
         bool                         bQuiet_;
-        //! Whether to write the startup information to stdout iso stderr.
-        bool                         bStdOutInfo_;
 
     private:
         GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
@@ -253,9 +334,8 @@ class CommandLineModuleManager::Impl
 
 CommandLineModuleManager::Impl::Impl(ProgramInfo *programInfo)
     : programInfo_(*programInfo), helpModule_(NULL), singleModule_(NULL),
-      bQuiet_(false), bStdOutInfo_(false)
+      bQuiet_(false)
 {
-    binaryInfoSettings_.copyright(true);
 }
 
 void CommandLineModuleManager::Impl::addModule(CommandLineModulePointer module)
@@ -307,7 +387,8 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(
 }
 
 CommandLineModuleInterface *
-CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
+CommandLineModuleManager::Impl::processCommonOptions(
+        CommonOptionsHolder *optionsHolder, int *argc, char ***argv)
 {
     // Check if we are directly invoking a certain module.
     CommandLineModuleInterface *module = singleModule_;
@@ -322,19 +403,8 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
         }
     }
 
-    bool bHelp      = false;
-    bool bHidden    = false;
-    bool bVersion   = false;
-    bool bCopyright = true;
-    // TODO: Print the common options into the help.
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
-    Options options(NULL, NULL);
-    options.addOption(BooleanOption("h").store(&bHelp));
-    options.addOption(BooleanOption("hidden").store(&bHidden));
-    options.addOption(BooleanOption("quiet").store(&bQuiet_));
-    options.addOption(BooleanOption("version").store(&bVersion));
-    options.addOption(BooleanOption("copyright").store(&bCopyright));
 
     if (module == NULL)
     {
@@ -347,10 +417,11 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
         }
         if (argcForWrapper > 1)
         {
-            CommandLineParser(&options).parse(&argcForWrapper, *argv);
+            CommandLineParser(optionsHolder->options())
+                .parse(&argcForWrapper, *argv);
         }
         // If no action requested and there is a module specified, process it.
-        if (argcForWrapper < *argc && !bHelp && !bVersion)
+        if (argcForWrapper < *argc && !optionsHolder->shouldIgnoreActualModule())
         {
             const char *moduleName = (*argv)[argcForWrapper];
             CommandLineModuleMap::const_iterator moduleIter
@@ -378,20 +449,17 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
         // Recognize the common options also after the module name.
         // TODO: It could be nicer to only recognize -h/-hidden if module is not
         // null.
-        CommandLineParser(&options).skipUnknown(true).parse(argc, *argv);
+        CommandLineParser(optionsHolder->options())
+            .skipUnknown(true).parse(argc, *argv);
     }
-    options.finish();
-    binaryInfoSettings_.extendedInfo(bVersion);
-    binaryInfoSettings_.copyright(bCopyright);
-    if (bVersion)
+    if (!optionsHolder->finishOptions())
     {
-        bQuiet_      = false;
-        bStdOutInfo_ = true;
         return NULL;
     }
+    bQuiet_ = optionsHolder->shouldBeQuiet();
     // If no module specified and no other action, show the help.
     // Also explicitly specifying -h for the wrapper binary goes here.
-    if (module == NULL || bHelp)
+    if (module == NULL || optionsHolder->shouldShowHelp())
     {
         ensureHelpModuleExists();
         if (module != NULL)
@@ -403,7 +471,8 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
     }
     if (module == helpModule_)
     {
-        helpModule_->setShowHidden(bHidden);
+        helpModule_->setShowHidden(optionsHolder->shouldShowHidden());
+        helpModule_->setCommonOptions(optionsHolder->options());
     }
     return module;
 }
@@ -466,16 +535,18 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 {
     CommandLineModuleInterface *module;
     const bool                  bMaster = (!gmx_mpi_initialized() || gmx_node_rank() == 0);
+    CommonOptionsHolder         optionsHolder;
     try
     {
-        module = impl_->processCommonOptions(&argc, &argv);
+        optionsHolder.initOptions();
+        module = impl_->processCommonOptions(&optionsHolder, &argc, &argv);
     }
     catch (const std::exception &)
     {
         if (bMaster && !impl_->bQuiet_)
         {
             printBinaryInformation(stderr, impl_->programInfo_,
-                                   impl_->binaryInfoSettings_);
+                                   optionsHolder.binaryInfoSettings());
         }
         throw;
     }
@@ -485,9 +556,9 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     }
     if (!impl_->bQuiet_)
     {
-        FILE *out = (impl_->bStdOutInfo_ ? stdout : stderr);
+        FILE *out = optionsHolder.startupInfoFile();
         printBinaryInformation(out, impl_->programInfo_,
-                               impl_->binaryInfoSettings_);
+                               optionsHolder.binaryInfoSettings());
         fprintf(out, "\n");
     }
     if (module == NULL)
