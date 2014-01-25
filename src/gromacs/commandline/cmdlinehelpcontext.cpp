@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,6 +75,11 @@ class CommandLineHelpContext::Impl
               bHidden_(false)
         {
         }
+        //! Creates an implementation class from a low-level context.
+        explicit Impl(const HelpWriterContext &writerContext)
+            : writerContext_(writerContext), bHidden_(false)
+        {
+        }
 
         //! Wrapped lower-level context.
         HelpWriterContext  writerContext_;
@@ -87,6 +92,12 @@ class CommandLineHelpContext::Impl
 CommandLineHelpContext::CommandLineHelpContext(
         File *file, HelpOutputFormat format, const HelpLinks *links)
     : impl_(new Impl(file, format, links))
+{
+}
+
+CommandLineHelpContext::CommandLineHelpContext(
+        const HelpWriterContext &writerContext)
+    : impl_(new Impl(writerContext))
 {
 }
 
