@@ -75,11 +75,17 @@ class TestFileManager::Impl
         //! Global test input data path set with setDataInputDirectory().
         static const char *s_inputDirectory;
 
-        //! Global temporary output directory for tests, set with setOutputTempDirectory().
-        static const char *s_outputTempDirectory;
+        //! Global temporary output directory for tests, set with setGlobalOutputTempDirectory().
+        static const char *s_globalOutputTempDirectory;
 
         //! Container type for names of temporary files.
         typedef std::set<std::string> FileNameList;
+
+        //! Constructor
+        //
+        // \param path Value for the outputTempDirectory, typically
+        // set by default from s_globalOutputTempDirectory
+        Impl(const char *path);
 
         /*! \brief
          * Try to remove all temporary files.
@@ -90,10 +96,15 @@ class TestFileManager::Impl
 
         //! List of unique paths returned by getTemporaryFilePath().
         FileNameList            files_;
+
+        /*! \brief Temporary output directory local to the current test, set
+         * by a test with setOutputTempDirectory() if the global
+         * default is inappropriate. */
+        const char *outputTempDirectory;
 };
 
 const char *TestFileManager::Impl::s_inputDirectory      = NULL;
-const char *TestFileManager::Impl::s_outputTempDirectory = NULL;
+const char *TestFileManager::Impl::s_globalOutputTempDirectory = NULL;
 /** Controls whether TestFileManager should delete temporary files
     after the test finishes. */
 static bool g_bDeleteFilesAfterTest = true;
@@ -121,7 +132,7 @@ void TestFileManager::Impl::removeFiles()
  */
 
 TestFileManager::TestFileManager()
-    : impl_(new Impl())
+    : impl_(new Impl(Impl::s_globalOutputTempDirectory))
 {
 }
 
@@ -173,10 +184,21 @@ const char *TestFileManager::getInputDataDirectory()
     return Impl::s_inputDirectory;
 }
 
+const char *TestFileManager::getGlobalOutputTempDirectory()
+{
+    GMX_RELEASE_ASSERT(Impl::s_globalOutputTempDirectory != NULL, "Global path for temporary output files from tests is not set");
+    return Impl::s_globalOutputTempDirectory;
+}
+
 const char *TestFileManager::getOutputTempDirectory()
 {
-    GMX_RELEASE_ASSERT(Impl::s_outputTempDirectory != NULL, "Path for temporary output files from tests is not set");
-    return Impl::s_outputTempDirectory;
+    // There could be a need to protect this with a mutex, since it is
+    // intended to be used in test fixtures, not just during setup.
+    GMX_RELEASE_ASSERT(impl_->outputTempDirectory != NULL,
+                       "Path for temporary output files from tests is not set");
+    GMX_RELEASE_ASSERT(Directory::exists(impl_->outputTempDirectory),
+                       "Directory for tests' temporary files does not exist");
+    return impl_->outputTempDirectory;
 }
 
 void TestFileManager::setInputDataDirectory(const char *path)
@@ -188,14 +210,33 @@ void TestFileManager::setInputDataDirectory(const char *path)
     Impl::s_inputDirectory = path;
 }
 
-void TestFileManager::setOutputTempDirectory(const char *path)
+void TestFileManager::setGlobalOutputTempDirectory(const char *path)
 {
     // There is no need to protect this by a mutex, as this is called in early
     // initialization of the tests.
     GMX_RELEASE_ASSERT(Directory::exists(path),
                        "Directory for tests' temporary files does not exist");
-    Impl::s_outputTempDirectory = path;
+    Impl::s_globalOutputTempDirectory = path;
 }
+
+void TestFileManager::setOutputTempDirectory(const char *path)
+{
+    // There could be a need to protect this with a mutex, since it is
+    // intended to be used in test fixtures, not just during setup.
+    GMX_RELEASE_ASSERT(Directory::exists(path),
+                       "Directory for tests' temporary files does not exist");
+    impl_->outputTempDirectory = path;
+}
+
+/********************************************************************
+ * TestFileManager
+ */
+
+TestFileManager::Impl::Impl(const char *path)
+    : outputTempDirectory(path)
+{
+}
+
 
 } // namespace test
 } // namespace gmx
