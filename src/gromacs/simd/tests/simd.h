@@ -81,13 +81,14 @@
 #include "base.h"
 
 /*! \cond internal */
-/*! \addtogroup module_simd */
-/*! \{ */
 
 namespace gmx
 {
 namespace test
 {
+
+//! \addtogroup module_simd
+//! \{
 
 /* Unfortunately we cannot keep static SIMD constants in the test fixture class.
  * The problem is that SIMD memory need to be aligned, and in particular
@@ -279,12 +280,13 @@ gmx_simd_int32_t   setSimdIntFrom1I(int value);
  */
 #define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdInt32, ref, tst)
 
-#endif // GMX_SIMD_HAVE_INT32
+#endif  // GMX_SIMD_HAVE_INT32
+
+//! \}
 
 }      // namespace
 }      // namespace
 
-/*! \} */
 /*! \endcond */
 
 #endif // GMX_SIMD_TESTS_SIMD_H

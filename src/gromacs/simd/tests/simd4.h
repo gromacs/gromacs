@@ -53,13 +53,14 @@
 #include "gromacs/simd/tests/base.h"
 
 /*! \cond internal */
-/*! \addtogroup module_simd */
-/*! \{ */
 
 namespace gmx
 {
 namespace test
 {
+
+//! \addtogroup module_simd
+//! \{
 
 #ifdef GMX_SIMD4_HAVE_REAL
 extern const gmx_simd4_real_t rSimd4_1_2_3;     //!< Generic (different) fp values.
@@ -163,12 +164,13 @@ gmx_simd4_real_t   setSimd4RealFrom1R(real value);
 /*! \brief Test if a SIMD4 real is within tolerance of reference SIMD4 value. */
 #define GMX_EXPECT_SIMD4_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimd4RealUlp, ref, tst)
 
-#endif // GMX_SIMD4_HAVE_REAL
+#endif  // GMX_SIMD4_HAVE_REAL
+
+//! \}
 
 }      // namespace
 }      // namespace
 
-/*! \} */
 /*! \endcond */
 
 #endif // GMX_SIMD_TESTS_SIMD4_H

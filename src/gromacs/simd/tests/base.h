@@ -56,8 +56,6 @@
 #include "gromacs/simd/simd.h"
 
 /*! \cond internal */
-/*! \addtogroup module_simd */
-/*! \{ */
 
 namespace gmx
 {
@@ -69,6 +67,8 @@ namespace test
  * This class contains settings that are common for SIMD and SIMD4 tests,
  * and it is thus not used directly for any tests, but derived separately
  * in simd.h and simd4.h.
+ *
+ * \ingroup module_simd
  */
 class SimdBaseTest : public ::testing::Test
 {
@@ -174,11 +174,9 @@ class SimdBaseTest : public ::testing::Test
         std::pair<real, real>  range_;        //!< Range for math function tests.
 };
 
-
 }      // namespace
 }      // namespace
 
-/*! \} */
 /*! \endcond */
 
 #endif // GMX_SIMD_TESTS_BASE_H

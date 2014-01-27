@@ -44,6 +44,8 @@
 
 #include "base.h"
 
+/*! \cond internal */
+
 namespace gmx
 {
 namespace test
@@ -63,10 +65,6 @@ GMX_TEST_OPTIONS(SimdBaseTestOptions, options)
 /*! \endcond */
 
 }       // namespace
-
-/*! \cond internal */
-/*! \addtogroup module_simd */
-/*! \{ */
 
 int  SimdBaseTest::s_nPoints    = 10000;
 
@@ -126,5 +124,4 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
 }      // namespace
 }      // namespace
 
-/*! \} */
 /*! \endcond */
