@@ -33,6 +33,8 @@ endif()
 
 # Machinery for running the external project
 set(EXTERNAL_FFTW_VERSION 3.3.2)
+set(GMX_BUILD_OWN_FFTW_URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE PATH "URL from where to download fftw, (use an absolute path when offline)")
+mark_as_advanced(GMX_BUILD_OWN_FFTW_URL)
 include(ExternalProject)
 # TODO in master branch - show this warning only on the first run
 # by using gmx_check_if_changed_result from I21b791ab8e4f3 when
@@ -42,7 +44,7 @@ message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} a
 # (ie. at least version > 2.8.11.2), consider reverting to using an
 # md5sum check to avoid needing the above warning
     ExternalProject_add(fftwBuild
-        URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
+        URL "${GMX_BUILD_OWN_FFTW_URL}"
         CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
         ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
         ${GMX_BUILD_OWN_FFTW_PREC}
