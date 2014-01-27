@@ -70,19 +70,27 @@ set(EXTERNAL_FFTW_VERSION 3.3.3)
 set(EXTERNAL_FFTW_MD5SUM 0a05ca9c7b3bfddc8278e7c40791a1c2)
 set (EXTERNAL_FFTW_BUILD_TARGET fftwBuild)
 include(ExternalProject)
-# TODO in master branch - show this warning only on the first run
-# by using gmx_check_if_changed_result from I21b791ab8e4f3 when
-# that becomes available
-message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} as requested, but it will not know the file it receives is correct. If you now use\nmake\n GROMACS will build and link to FFTW anyway, but there is a possible security risk if you execute a GROMACS tool that calls this library. Instead, you can use\nmake ${EXTERNAL_FFTW_BUILD_TARGET}\n to do just the download and build of FFTW, and then run\nmd5sum src/contrib/fftw/${EXTERNAL_FFTW_BUILD_TARGET}-prefix/src/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz\nto see if it matches ${EXTERNAL_FFTW_MD5SUM}. If so, everything is OK and you should use \nmake\n to proceed with the rest of the GROMACS build. Alternatively, you could stop using GMX_BUILD_OWN_FFTW, and instead follow the GROMACS installation instructions to build FFTW yourself.")
 # TODO if/when CMake fixes http://www.cmake.org/Bug/view.php?id=14330
 # (ie. at least version > 2.8.11.2), consider reverting to using an
 # md5sum check to avoid needing the above warning
-    ExternalProject_add(${EXTERNAL_FFTW_BUILD_TARGET}
-        URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
-        ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
-        ${GMX_BUILD_OWN_FFTW_PREC}
-        ${GMX_BUILD_OWN_FFTW_TARGET_HOST})
+if(CMAKE_VERSION VERSION_LESS 2.8.3)
+    # Can't check MD5 sum with this CMake version
+    message(WARNING "GROMACS is downloading FFTW ${EXTERNAL_FFTW_VERSION}, but your version of CMake is too old to allow GROMACS to check that the archive it receives is correct. GROMACS will build and link to FFTW anyway, but there is a security risk if you execute a GROMACS tool that calls this library. Either build your own FFTW, or update CMake to at least version 2.8.3.")
+        ExternalProject_add(${EXTERNAL_FFTW_BUILD_TARGET}
+            URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
+            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
+            ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
+            ${GMX_BUILD_OWN_FFTW_PREC}
+            ${GMX_BUILD_OWN_FFTW_TARGET_HOST})
+else()
+        ExternalProject_add(${EXTERNAL_FFTW_BUILD_TARGET}
+            URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
+            URL_MD5 ${EXTERNAL_FFTW_VERSION_MD5_SUM}
+            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
+            ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
+            ${GMX_BUILD_OWN_FFTW_PREC}
+            ${GMX_BUILD_OWN_FFTW_TARGET_HOST})
+endif()
 externalproject_get_property(${EXTERNAL_FFTW_BUILD_TARGET} INSTALL_DIR)
 
 string(TOUPPER "${FFTW}" UPPERFFTW)
