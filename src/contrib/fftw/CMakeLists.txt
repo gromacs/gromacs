@@ -66,8 +66,8 @@ if (TARGET_HOST)
 endif()
 
 # Machinery for running the external project
-set(EXTERNAL_FFTW_VERSION 3.3.2)
-set(EXTERNAL_FFTW_MD5SUM 6977ee770ed68c85698c7168ffa6e178)
+set(EXTERNAL_FFTW_VERSION 3.3.3)
+set(EXTERNAL_FFTW_MD5SUM 0a05ca9c7b3bfddc8278e7c40791a1c2)
 set (EXTERNAL_FFTW_BUILD_TARGET fftwBuild)
 include(ExternalProject)
 # TODO in master branch - show this warning only on the first run
