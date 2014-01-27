@@ -50,12 +50,19 @@ namespace test
 
 int  SimdMathTest::s_nPoints    = 10000;
 
+namespace
+{
+
+//! \cond
 GMX_TEST_OPTIONS(SimdMathTestOptions, options)
 {
     options->addOption(::gmx::IntegerOption("npoints")
                            .store(&SimdMathTest::s_nPoints)
                            .description("Number of points to test for SIMD math functions"));
 }
+//! \endcond
+
+}       // namespace
 
 #ifdef GMX_SIMD_HAVE_REAL
 

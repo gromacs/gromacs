@@ -43,6 +43,8 @@ namespace gmx
 namespace test
 {
 
+//! \cond internal
+
 /* Unfortunately we cannot keep static SIMD constants in the test fixture class.
  * The problem is that SIMD memory need to be aligned, and in particular
  * this applies to automatic storage of variables in classes. For SSE registers
@@ -346,7 +348,9 @@ SimdTest::compareSimdInt32(const char * refExpr, const char * tstExpr,
 {
     return compareSimdInt32(refExpr, tstExpr, setSimdFrom1I(ref), tst);
 }
-#endif // GMX_SIMD_HAVE_INT32
+#endif  // GMX_SIMD_HAVE_INT32
+
+//! \endcond
 
 }      // namespace
 }      // namespace

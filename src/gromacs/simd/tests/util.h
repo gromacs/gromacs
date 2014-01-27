@@ -67,6 +67,10 @@ namespace gmx
 namespace test
 {
 
+//! \cond internal
+//! \addtogroup module_simd
+//! \{
+
 /* The SIMD module is special in that it is just a (big) collection of simple
  * macros that get compiled directly (typically 1-to-1) to assembly.
  * This means that the testing needs to assess a large number of very simple
@@ -379,7 +383,10 @@ std::string       printSimdInt32(const gmx_simd_int32_t simd);
  */
 #define GMX_EXPECT_SIMD_INT_EQ(ref, tst)  EXPECT_PRED_FORMAT2(compareSimdInt32, ref, tst)
 
-#endif // GMX_SIMD_HAVE_INT32
+#endif  // GMX_SIMD_HAVE_INT32
+
+//! \}
+//! \endcond
 
 }      // namespace
 }      // namespace

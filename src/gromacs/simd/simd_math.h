@@ -60,6 +60,10 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
 
+/*! \cond libapi */
+/*! \addtogroup module_simd */
+/*! \{ */
+
 /*! \name Implementation accuracy settings
  *  \{
  */
@@ -2931,5 +2935,8 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
 /*! \} */
 
 #endif /* GMX_DOUBLE */
+
+/*! \} */
+/*! \endcond */
 
 #endif /* GMX_SIMD_SIMD_MATH_H_ */

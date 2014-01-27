@@ -48,6 +48,10 @@
 
 #include "gromacs/simd/simd.h"
 
+/*! \cond libapi */
+/*! \addtogroup module_simd */
+/*! \{ */
+
 #if (defined GMX_SIMD_HAVE_FLOAT) || (defined DOXYGEN)
 /*! \brief SIMD float inner product of multiple float vectors.
  *
@@ -321,5 +325,8 @@ gmx_simd4_norm2_d(gmx_simd4_double_t ax, gmx_simd4_double_t ay, gmx_simd4_double
 #    define gmx_simd4_calc_rsq_r  gmx_simd4_calc_rsq_f
 
 #endif /* GMX_DOUBLE */
+
+/*! \} */
+/*! \endcond */
 
 #endif /* GMX_SIMD_VECTOR_OPERATIONS_H */

@@ -33,17 +33,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \defgroup module_simd SIMD intrinsics interface (simd)
- *  \ingroup group_utilitymodules
+/*! \libinternal
+ * \defgroup module_simd SIMD intrinsics interface (simd)
+ * \ingroup group_utilitymodules
  *
- *  \brief Provides an architecture-independent way of doing SIMD coding.
+ * \brief Provides an architecture-independent way of doing SIMD coding.
  *
- *  Start by consulting the overview Doxygen SIMD module documentation which is
- *  available in the internal library documentation (but not the public API),
- *  and then the details are documented in simd.h and the reference
- *  implementation impl_reference.h.
+ * Overview of the SIMD implementation is provided in \ref page_simd.
+ * The details are documented in simd.h and the reference implementation
+ * impl_reference.h.
  *
- *  \author Erik Lindahl <erik.lindahl@scilifelab.se>
+ * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  */
 
 /*! \libinternal \file
@@ -79,6 +79,10 @@ static gmx_inline int *    gmx_simd_align_fi(int *p);
 static gmx_inline int *    gmx_simd_align_di(int *p);
 static gmx_inline float *  gmx_simd4_align_f(float *p);
 static gmx_inline double * gmx_simd4_align_d(double *p);
+
+/*! \cond libapi */
+/*! \addtogroup module_simd */
+/*! \{ */
 
 /*! \name SIMD predefined macros to describe high-level capabilities
  *
@@ -1549,5 +1553,8 @@ gmx_simd4_align_d(double *p)
 /*! \} */
 
 #endif /* GMX_DOUBLE */
+
+/*! \} */
+/*! \endcond */
 
 #endif /* GMX_SIMD_SIMD_H */
