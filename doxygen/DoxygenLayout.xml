@@ -114,6 +114,7 @@
     <sourcelink visible="yes"/>
     <detaileddescription title="Description"/>
     <memberdecl>
+      <membergroups visible="yes"/>
       <classes visible="yes" title=""/>
       <namespaces visible="no" title=""/>
       <constantgroups visible="yes" title=""/>
@@ -122,7 +123,6 @@
       <enums title=""/>
       <functions title=""/>
       <variables title=""/>
-      <membergroups visible="yes"/>
     </memberdecl>
     <memberdef>
       <inlineclasses title=""/>
@@ -143,6 +143,7 @@
     <memberdecl>
       <nestedgroups visible="yes" title=""/>
       <namespaces visible="yes" title=""/>
+      <membergroups visible="yes"/>
       <classes visible="yes" title=""/>
       <defines title=""/>
       <typedefs title=""/>
@@ -159,7 +160,6 @@
       <friends title=""/>
       <dirs visible="yes" title=""/>
       <files visible="yes" title=""/>
-      <membergroups visible="yes"/>
     </memberdecl>
     <memberdef>
       <pagedocs/>
