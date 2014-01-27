@@ -67,7 +67,7 @@ namespace test
 {
 
 /*! \libinternal \brief
- * Helper for tests that need output files.
+ * Helper for tests that need input and output files.
  *
  * To be used as a member in a test fixture class, this class provides
  * getTemporaryFilePath() method that returns a path for creating file names
@@ -81,6 +81,14 @@ namespace test
  * access data files that are located in the test source directory.
  * This is used to provide input files for the tests, and also to store test
  * reference data persistently (see TestReferenceData).
+ *
+ * Note that setInputDataDirectory and setGlobalOutputTempDirectory
+ * must be called in setup code, before creating any objects of this
+ * class that are used for accessing the paths for these respective
+ * directories. Code in tests should avoid calling
+ * setGlobalOutputTempDirectory, and instead instantiate an object and
+ * use setOutputTempDirectory, so that the global state is not
+ * changed.
  *
  * \inlibraryapi
  * \ingroup module_testutils
@@ -143,12 +151,23 @@ class TestFileManager
          */
         static const char *getInputDataDirectory();
 
-        /*! \brief
-         * Returns the path to the test output temporary directory.
+        /*! \brief Returns the path to the global test output
+         * temporary directory for future TestFileManager objects.
          *
-         * \returns Path to output temporary directory for the test executable.
+         * \returns Path to default output temporary directory for the test executable.
          */
-        static const char *getOutputTempDirectory();
+        static const char *getGlobalOutputTempDirectory();
+
+        /*! \brief Returns the path to the output temporary directory
+         * for tests which use this TestFileManager object.
+         *
+         * \returns Path to output temporary directory
+         *
+         * \p The caller should not deallocate the returned
+         * string. The caller is responsible for holding a valid mutex
+         * on the object before calling this member function.
+         */
+        const char *getOutputTempDirectory();
 
         /*! \brief
          * Sets the test input directory.
@@ -162,17 +181,31 @@ class TestFileManager
          */
         static void setInputDataDirectory(const char *path);
 
-        /*! \brief
-         * Sets the test output temporary directory.
+        /*! \brief Sets the default global test output temporary
+         * directory for future TestFileManager objects.
          *
-         * \param[in] path  Path at which test should write temporary files
+         * \param[in] path  Path at which tests should write temporary files
          *
          * \p path must name an existing directory.
          *
-         * This function is automatically called by unittest_main.cpp through
-         * initTestUtils().
+         * This function is automatically called by unittest_main.cpp
+         * through initTestUtils(). Test fixtures should call
+         * setOutputTempDirectory, rather than change the global
+         * state.
          */
-        static void setOutputTempDirectory(const char *path);
+        static void setGlobalOutputTempDirectory(const char *path);
+
+        /*! \brief Sets the output temporary directory for tests which
+         * use this TestFileManager object.
+         *
+         * \param[in] path  Path at which test should write temporary files
+         *
+         * \p path must name an existing directory. The caller is
+         * responsible for any deallocation of path. The caller is
+         * responsible for holding a valid mutex on the object before
+         * calling this member function.
+         */
+        void setOutputTempDirectory(const char *path);
 
     private:
         class Impl;
