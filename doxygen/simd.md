@@ -214,7 +214,7 @@ for single SIMD variables, and then we only get half the number of
 integers too.
 
 <dl>
-<dt>`gmx_simd_int32_t`</dt>
+<dt>`#gmx_simd_int32_t`</dt>
 <dd>
 This is used for integers when converting to/from Gromacs default "real" type.
 The corresponding routines have suffix `_i`, e.g. `gmx_simd_add_i()`.
