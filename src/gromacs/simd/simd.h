@@ -79,6 +79,10 @@ static gmx_inline int *    gmx_simd_align_di(int *p);
 static gmx_inline float *  gmx_simd4_align_f(float *p);
 static gmx_inline double * gmx_simd4_align_d(double *p);
 
+/*! \cond libapi */
+/*! \addtogroup module_simd */
+/*! \{ */
+
 /*! \name SIMD predefined macros to describe high-level capabilities
  *
  *  These macros are used to describe the features available in default
@@ -1548,5 +1552,8 @@ gmx_simd4_align_d(double *p)
 /*! \} */
 
 #endif /* GMX_DOUBLE */
+
+/*! \} */
+/*! \endcond */
 
 #endif /* GMX_SIMD_SIMD_H */
