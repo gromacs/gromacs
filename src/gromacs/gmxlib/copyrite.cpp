@@ -49,6 +49,8 @@
 #include <mkl.h>
 #endif
 
+#include <boost/version.hpp>
+
 /* This file is completely threadsafe - keep it that way! */
 
 #include "gromacs/legacyheaders/macros.h"
@@ -674,6 +676,16 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "RDTSCP usage:       disabled\n");
 #endif
+#ifdef GMX_CXX11
+    fprintf(fp, "C++11 compilation:  enabled\n");
+#else
+    fprintf(fp, "C++11 compilation:  disabled\n");
+#endif
+#ifdef GMX_USE_TNG
+    fprintf(fp, "TNG support:        enabled\n");
+#else
+    fprintf(fp, "TNG support:        disabled\n");
+#endif
 
     fprintf(fp, "Built on:           %s\n", BUILD_TIME);
     fprintf(fp, "Built by:           %s\n", BUILD_USER);
@@ -695,6 +707,14 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
             __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
 #endif
+#ifdef GMX_EXTERNAL_BOOST
+    const bool bExternalBoost = true;
+#else
+    const bool bExternalBoost = false;
+#endif
+    fprintf(fp, "Boost version:      %d.%d.%d%s\n", BOOST_VERSION / 100000,
+            BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
+            bExternalBoost ? " (external)" : " (internal)");
 #ifdef GMX_GPU
     gmx_print_version_info_gpu(fp);
 #endif
