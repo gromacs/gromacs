@@ -462,29 +462,6 @@ if(GMX_GIT_VERSION_INFO)
     endif()
 endif()
 
-# Detect boost unless GMX_EXTERNAL_BOOST is explicitly OFF
-# Used for default if GMX_EXTERNAL_BOOST is not defined (first CMake pass)
-if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
-    find_package(Boost 1.44.0)
-    if(Boost_FOUND AND Boost_VERSION VERSION_LESS "104400")
-        set(Boost_FOUND FALSE)
-    endif()
-    # Print the notification only on first run, when determining the default
-    if(NOT DEFINED GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
-        message("Boost >= 1.44 not found. Using minimal internal version. "
-                "This may cause trouble if you plan on compiling/linking other "
-                "software that uses Boost against Gromacs.")
-    endif()
-endif()
-option(GMX_EXTERNAL_BOOST "Use external Boost instead of minimal built-in version"
-       ${Boost_FOUND})
-if(GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
-    message(FATAL_ERROR
-        "Boost >= 1.44 not found. "
-        "You can set GMX_EXTERNAL_BOOST=OFF to compile against minimal "
-        "version of Boost included with Gromacs.")
-endif()
-
 option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ${HAVE_LIBXML2})
 mark_as_advanced(GMX_BUILD_UNITTESTS)
 gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
@@ -560,6 +537,11 @@ if(GMX_CXX11)
     set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
 endif()
 
+# Need to check that Boost compiles in C++11 mode, if that's what we're using
+include(gmxTestBoost)
+gmx_find_boost(HAVE_EXTERNAL_BOOST ${GMX_CXX11} "${GMX_CXX11_FLAGS}")
+option(GMX_EXTERNAL_BOOST "Use external Boost instead of minimal built-in version"
+       ${HAVE_EXTERNAL_BOOST})
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
