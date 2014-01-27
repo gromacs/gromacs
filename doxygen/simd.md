@@ -181,7 +181,7 @@ Floating-point data
 -------------------
 
 <dl>
-<dt>`gmx_simd_real_t`</dt>
+<dt>`#gmx_simd_real_t`</dt>
 <dd>
 This is the SIMD-version of \Gromacs' real type,
 which is set based on the CMake configuration and internally aliased
@@ -214,7 +214,7 @@ for single SIMD variables, and then we only get half the number of
 integers too.
 
 <dl>
-<dt>`gmx_simd_int32_t`</dt>
+<dt>`#gmx_simd_int32_t`</dt>
 <dd>
 This is used for integers when converting to/from Gromacs default "real" type.
 The corresponding routines have suffix `_i`, e.g. `gmx_simd_add_i()`.
@@ -247,7 +247,7 @@ we cannot assume the are identical either to integers, floats or double -
 some implementations use specific predicate registers for booleans.
 
 <dl>
-<dt>`gmx_simd_bool_t`</dt>
+<dt>`#gmx_simd_bool_t`</dt>
 <dd>
 Results from boolean operations involving reals, and the booleans we use
 to select between real values. The corresponding routines have suffix `_b`,
@@ -262,7 +262,7 @@ is `_fb`, like `gmx_simd_or_fb()`.
 <dd>
 Operations specifically on double. Operations have suffix `_db`: `gmx_simd_or_db()`
 </dd>
-<dt>`gmx_simd_ibool_t`</dt>
+<dt>`#gmx_simd_ibool_t`</dt>
 <dd>
 Boolean operations on integers corresponding to real (see floating-point
 descriptions above). Operations on these booleans use suffix `_ib`,
@@ -287,15 +287,15 @@ If this seems daunting, in practice you should only need to use these types
 when you start coding:
 
 <dl>
-<dt>`gmx_simd_real_t`</dt>
+<dt>`#gmx_simd_real_t`</dt>
 <dd>
 Floating-point data.
 </dd>
-<dt>`gmx_simd_bool_t`</dt>
+<dt>`#gmx_simd_bool_t`</dt>
 <dd>
 Booleans.
 </dd>
-<dt>`gmx_simd_int32_t`</dt>
+<dt>`#gmx_simd_int32_t`</dt>
 <dd>
 Integer data. Might not be supported, so you must check
 the preprocessor macros described below.

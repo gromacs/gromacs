@@ -57,6 +57,9 @@
 
 #include "gmx_fatal.h"
 
+/*! \addtogroup module_simd */
+/*! \{ */
+
 /*! SIMD float support present */
 #define GMX_SIMD_HAVE_FLOAT
 
@@ -2637,5 +2640,7 @@ gmx_simd_check_and_reset_overflow(void)
 {
     return 0;
 }
+
+/*! \} */
 
 #endif /* GMX_SIMD_IMPL_REFERENCE_H */
