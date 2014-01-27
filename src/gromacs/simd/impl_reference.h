@@ -46,7 +46,6 @@
  *
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  *
- * \inlibraryapi
  * \ingroup module_simd
  */
 
@@ -54,6 +53,10 @@
 #include <math.h>
 
 #include "gmx_fatal.h"
+
+/*! \cond libapi */
+/*! \addtogroup module_simd */
+/*! \{ */
 
 /*! \name SIMD implementation capability definitions
  *  \{
@@ -3555,5 +3558,8 @@ gmx_simd_check_and_reset_overflow(void)
 {
     return 0;
 }
+
+/*! \} */
+/*! \endcond */
 
 #endif /* GMX_SIMD_IMPL_REFERENCE_H */
