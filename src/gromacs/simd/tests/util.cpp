@@ -41,6 +41,8 @@
 namespace simdTest
 {
 
+//! \cond internal
+
 /* Unfortunately I had to remove the fixture class here after introducing it,
  * and replace it with static const variables in the simdTest namespace.
  * The problem is that SIMD memory need to be aligned, and in particular
@@ -292,5 +294,7 @@ SimdTest::compareSimdInt32(const char * refExpr, const char * tstExpr,
     return compareSimdInt32(refExpr, tstExpr, gmx_simd_set1_i(ref), tst);
 }
 #endif // GMX_SIMD_HAVE_INT32
+
+//! \endcond
 
 }      // namespace simdTest

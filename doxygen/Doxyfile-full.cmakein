@@ -1,7 +1,5 @@
 @INCLUDE               = Doxyfile-common
 
-MACRO_EXPANSION        = YES
-EXPAND_ONLY_PREDEF     = YES
 PREDEFINED            += F77_FUNC(name,NAME)=name
 
 ENABLED_SECTIONS      += libapi internal
