@@ -151,7 +151,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
         }
         if (tempPath != NULL)
         {
-            TestFileManager::setOutputTempDirectory(tempPath);
+            TestFileManager::setGlobalOutputTempDirectory(tempPath);
         }
         bool    bHelp = false;
         Options options(NULL, NULL);
