@@ -1253,8 +1253,13 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,
                     }
                     if (ed.size() > 0) 
                     {
-                        sprintf(mylbuf,"& %8.3f",ed[nexp].val_);
+                        sprintf(mylbuf, "& %8.3f", ed[nexp].val_);
                         strncat(myline,mylbuf,BLEN-strlen(myline)-1);
+                        if (ed[nexp].err_ > 0)
+                        {
+                            sprintf(mylbuf, "(%.3f)", ed[nexp].err_);
+                            strncat(myline, mylbuf,BLEN-strlen(myline)-1);
+                        }
                         if (strcmp(ed[nexp].ref_.c_str(),"Maaren2014a") == 0)
                         {
                             sprintf(mylbuf," (*)");
