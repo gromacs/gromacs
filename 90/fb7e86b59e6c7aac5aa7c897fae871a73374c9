@@ -1,0 +1,8 @@
+Code-Review+1: Rossen Apostolov <rossen@kth.se>
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Verified+2: Jenkins Buildbot
+Submitted-by: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-at: Tue, 28 Jan 2014 15:39:29 +0100
+Reviewed-on: https://gerrit.gromacs.org/3035
+Project: gromacs
+Branch: refs/heads/release-4-6
