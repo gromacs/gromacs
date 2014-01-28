@@ -43,6 +43,9 @@ enum iqmType { iqmExp, iqmBoth, iqmQM, iqmNR };
 //! Strings describing the MolPropObservable enum elements
 extern const char *mpo_name[MPO_NR];
 
+//! Strings describing the MolPropObservable enum units
+extern const char *mpo_unit[MPO_NR];
+
 /*! \brief
  * Enumerated type holding the result status of communication operations
  *

@@ -12,6 +12,11 @@ const char *mpo_name[MPO_NR] =
     "potential", "dipole", "quadrupole", "polarizability", "energy" 
 };
 
+const char *mpo_unit[MPO_NR] = 
+{ 
+    "e/nm", "D", "B", "\\AA$^3$", "kJ/mol" 
+};
+
 const char *cs_name(CommunicationStatus cs)
 {
     switch (cs) {

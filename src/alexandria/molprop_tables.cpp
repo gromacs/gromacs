@@ -258,7 +258,7 @@ static void stats_header(alexandria::LongTable &lt,
             default:
                 gmx_fatal(FARGS,"Unknown property %s",mpo_name[mpo]);
             }
-            snprintf(caption,STRLEN, "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$.",
+            snprintf(caption,STRLEN, "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
                      mpo_name[mpo],unit, ims_names[ims]);
             snprintf(label, STRLEN, "%s_rmsd", mpo_name[mpo]);
             lt.setCaption(caption);
@@ -981,6 +981,7 @@ void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
                                
 static void prop_header(alexandria::LongTable &lt,
                         const char *property,
+                        const char *unit,
                         real rel_toler,
                         real abs_toler,
                         t_qmcount *qmc,
@@ -1016,8 +1017,10 @@ static void prop_header(alexandria::LongTable &lt,
         {
             snprintf(longbuf, STRLEN, "Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %.0f%s off the experimental values are printed in bold, more than %.0f%s off in bold red.",
                      property,ims_names[ims],
-                     (abs_toler > 0) ? abs_toler   : 100*rel_toler,(abs_toler > 0) ? "" : "\\%",
-                     (abs_toler > 0) ? 2*abs_toler : 200*rel_toler,(abs_toler > 0) ? "" : "\\%");
+                     (abs_toler > 0) ? abs_toler   : 100*rel_toler, 
+                     (abs_toler > 0) ? unit : "\\%",
+                     (abs_toler > 0) ? 2*abs_toler : 200*rel_toler, 
+                     (abs_toler > 0) ? unit : "\\%");
             lt.setCaption(longbuf);
             snprintf(longbuf, STRLEN, "%s", ims_names[ims]);
             lt.setLabel(longbuf);
@@ -1148,7 +1151,8 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,
         return;
     }
     bPrintConf = false; //(mpo == MPO_DIPOLE);
-    prop_header(lt,mpo_name[mpo],rel_toler,abs_toler,qmc,
+    prop_header(lt, mpo_name[mpo], mpo_unit[mpo],
+                rel_toler,abs_toler,qmc,
                 ims,bPrintConf,bPrintBasis,bPrintMultQ);  
     for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
     {
