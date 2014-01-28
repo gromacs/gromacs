@@ -63,6 +63,7 @@
 #include "force.h"
 #include "mdrun.h"
 #include "md_support.h"
+#include "sim_util.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "mdatoms.h"
@@ -107,14 +108,9 @@ static void print_em_start(FILE                     *fplog,
                            gmx_wallcycle_t           wcycle,
                            const char               *name)
 {
-    char buf[STRLEN];
-
     walltime_accounting_start(walltime_accounting);
-
-    sprintf(buf, "Started %s", name);
-    print_date_and_time(fplog, cr->nodeid, buf, NULL);
-
     wallcycle_start(wcycle, ewcRUN);
+    print_start(fplog, cr, walltime_accounting, name);
 }
 static void em_time_end(gmx_walltime_accounting_t walltime_accounting,
                         gmx_wallcycle_t           wcycle)

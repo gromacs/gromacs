@@ -90,6 +90,10 @@ void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
 void print_date_and_time(FILE *log, int pid, const char *title,
                          const gmx_walltime_accounting_t walltime_accounting);
 
+void print_start(FILE *fplog, t_commrec *cr,
+                 const gmx_walltime_accounting_t walltime_accounting,
+                 const char *name);
+
 void finish_run(FILE *log, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
