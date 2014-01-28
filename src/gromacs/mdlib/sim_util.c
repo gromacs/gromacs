@@ -180,6 +180,16 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
     }
 }
 
+void print_start(FILE *fplog, t_commrec *cr,
+                 const gmx_walltime_accounting_t walltime_accounting,
+                 const char *name)
+{
+    char buf[STRLEN];
+
+    sprintf(buf, "Started %s", name);
+    print_date_and_time(fplog, cr->nodeid, buf, walltime_accounting);
+}
+
 static void sum_forces(int start, int end, rvec f[], rvec flr[])
 {
     int i;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -258,10 +258,8 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     /* Print to log file  */
     walltime_accounting_start(walltime_accounting);
-    print_date_and_time(fplog, cr->nodeid,
-                        "Started Test Particle Insertion",
-                        walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
+    print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */
     cg_tp = top->cgs.nr - 1;
