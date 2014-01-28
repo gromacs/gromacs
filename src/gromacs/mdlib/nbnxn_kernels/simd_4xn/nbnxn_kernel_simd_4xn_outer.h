@@ -167,11 +167,11 @@
     gmx_mm_pr  sh_invrc6_S, sh_invrc12_S;
 
     /* cppcheck-suppress unassignedVariable */
-    real       tmpsum_array[15], *tmpsum;
+    real       tmpsum_array[GMX_SIMD_WIDTH_HERE*2], *tmpsum;
 #endif
 #ifdef CALC_SHIFTFORCES
     /* cppcheck-suppress unassignedVariable */
-    real       shf_array[15], *shf;
+    real       shf_array[GMX_SIMD_WIDTH_HERE*2], *shf;
 #endif
 
     int ninner;
