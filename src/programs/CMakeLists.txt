@@ -53,7 +53,7 @@ elseif(GMX_BUILD_MDRUN_ONLY)
         COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
-         "complete -F _gmx_mdrun_compl ${BINARY_NAME}")
+         "complete -o nospace -F _gmx_mdrun_compl ${BINARY_NAME}")
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
             DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 else()
@@ -109,7 +109,7 @@ else()
         install(DIRECTORY ${COMPLETION_DIR}/
                 DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
-             "complete -F _gmx_compl ${BINARY_NAME}")
+             "complete -o nospace -F _gmx_compl ${BINARY_NAME}")
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
                 DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
     endif()
