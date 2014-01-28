@@ -60,8 +60,14 @@ static void pr_fopts(FILE *fp, int nf, const t_filenm tfn[])
 {
     for (int i = 0; i < nf; i++)
     {
-        fprintf(fp, "%s) COMPREPLY=( $(compgen -X '!*.", tfn[i].opt);
         const int ftp          = tfn[i].ftp;
+        if (ftp == efRND)
+        {
+            fprintf(fp, "%s) COMPREPLY=( $(compgen -S ' ' -X '.*' -d $c) );;\n",
+                    tfn[i].opt);
+            continue;
+        }
+        fprintf(fp, "%s) COMPREPLY=( $(compgen -S ' ' -X '!*.", tfn[i].opt);
         const int genericCount = ftp2generic_count(ftp);
         if (genericCount > 0)
         {
@@ -98,21 +104,24 @@ static void pr_opts(FILE *fp,
                     int nfile,  t_filenm *fnm,
                     int npargs, t_pargs pa[])
 {
-    fprintf(fp, "if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W '");
+    fprintf(fp, "if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen -S ' '  -W $'");
+    const char *sep = "";
     for (int i = 0; i < nfile; i++)
     {
-        fprintf(fp, " -%s", fnm[i].opt+1);
+        fprintf(fp, "%s-%s", sep, fnm[i].opt+1);
+        sep = "\\n";
     }
     for (int i = 0; i < npargs; i++)
     {
         if (pa[i].type == etBOOL && *(pa[i].u.b))
         {
-            fprintf(fp, " -no%s", pa[i].option+1);
+            fprintf(fp, "%s-no%s", sep, pa[i].option + 1);
         }
         else
         {
-            fprintf(fp, " -%s", pa[i].option+1);
+            fprintf(fp, "%s-%s", sep, pa[i].option + 1);
         }
+        sep = "\\n";
     }
     fprintf(fp, "' -- $c)); return 0; fi\n");
 }
@@ -123,12 +132,12 @@ static void pr_enums(FILE *fp, int npargs, t_pargs pa[])
     {
         if (pa[i].type == etENUM)
         {
-            fprintf(fp, "%s) COMPREPLY=( $(compgen -W '", pa[i].option);
+            fprintf(fp, "%s) COMPREPLY=( $(compgen -S ' ' -W $'", pa[i].option);
             for (int j = 1; pa[i].u.c[j]; j++)
             {
-                fprintf(fp, " %s", pa[i].u.c[j]);
+                fprintf(fp, "%s%s", (j == 1 ? "" : "\\n"), pa[i].u.c[j]);
             }
-            fprintf(fp, " ' -- $c ));;\n");
+            fprintf(fp, "' -- $c ));;\n");
         }
     }
 }
@@ -143,6 +152,7 @@ static void write_bashcompl(FILE *out,
      */
     fprintf(out, "%s() {\n", funcName);
     fprintf(out, "local p c\n");
+    fprintf(out, "local IFS=$'\\n'\n");
     fprintf(out, "COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}\n");
     pr_opts(out, nfile, fnm, npargs, pa);
     fprintf(out, "case \"$p\" in\n");
@@ -235,6 +245,7 @@ void ShellCompletionWriter::writeWrapperCompletions(
 {
     impl_->file_->writeLine("_" + impl_->binaryName_ + "_compl() {");
     impl_->file_->writeLine("local i c m");
+    impl_->file_->writeLine("local IFS=$'\\n'\n");
     impl_->file_->writeLine("COMPREPLY=()");
     impl_->file_->writeLine("unset COMP_WORDS[0]");
     impl_->file_->writeLine("for ((i=1;i<COMP_CWORD;++i)) ; do");
@@ -244,14 +255,14 @@ void ShellCompletionWriter::writeWrapperCompletions(
     impl_->file_->writeLine("if (( i == COMP_CWORD )); then");
     impl_->file_->writeLine("c=${COMP_WORDS[COMP_CWORD]}");
     // TODO: Get rid of these hard-coded options.
-    std::string completions("-h -quiet -version -nocopyright");
+    std::string completions("-h\\n-quiet\\n-version\\n-nocopyright");
     for (ModuleNameList::const_iterator i = modules.begin();
          i != modules.end(); ++i)
     {
-        completions.append(" ");
+        completions.append("\\n");
         completions.append(*i);
     }
-    impl_->file_->writeLine("COMPREPLY=( $(compgen -W '" + completions + "' -- $c) )");
+    impl_->file_->writeLine("COMPREPLY=( $(compgen -S ' ' -W $'" + completions + "' -- $c) )");
     impl_->file_->writeLine("return 0");
     impl_->file_->writeLine("fi");
     impl_->file_->writeLine("m=${COMP_WORDS[i]}");
