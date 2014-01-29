@@ -1,17 +1,13 @@
-#ifndef BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_GCC_PPC_HPP_INCLUDED
-#define BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_GCC_PPC_HPP_INCLUDED
-
-// MS compatible compilers support #pragma once
-
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
-# pragma once
-#endif
+#ifndef BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_AIX_HPP_INCLUDED
+#define BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_AIX_HPP_INCLUDED
 
 //
-//  detail/sp_counted_base_gcc_ppc.hpp - g++ on PowerPC
+//  detail/sp_counted_base_aix.hpp
+//   based on: detail/sp_counted_base_w32.hpp
 //
 //  Copyright (c) 2001, 2002, 2003 Peter Dimov and Multi Media Ltd.
 //  Copyright 2004-2005 Peter Dimov
+//  Copyright 2006 Michael van der Westhuizen
 //
 //  Distributed under the Boost Software License, Version 1.0. (See
 //  accompanying file LICENSE_1_0.txt or copy at
@@ -25,6 +21,8 @@
 //
 
 #include <boost/detail/sp_typeinfo.hpp>
+#include <builtins.h>
+#include <sys/atomic_op.h>
 
 namespace boost
 {
@@ -32,74 +30,37 @@ namespace boost
 namespace detail
 {
 
-inline void atomic_increment( int * pw )
+inline void atomic_increment( int32_t* pw )
 {
     // ++*pw;
 
-    int tmp;
-
-    __asm__
-    (
-        "0:\n\t"
-        "lwarx %1, 0, %2\n\t"
-        "addi %1, %1, 1\n\t"
-        "stwcx. %1, 0, %2\n\t"
-        "bne- 0b":
-
-        "=m"( *pw ), "=&b"( tmp ):
-        "r"( pw ), "m"( *pw ):
-        "cc"
-    );
+    fetch_and_add( pw, 1 );
 }
 
-inline int atomic_decrement( int * pw )
+inline int32_t atomic_decrement( int32_t * pw )
 {
     // return --*pw;
 
-    int rv;
+    int32_t originalValue;
 
-    __asm__ __volatile__
-    (
-        "sync\n\t"
-        "0:\n\t"
-        "lwarx %1, 0, %2\n\t"
-        "addi %1, %1, -1\n\t"
-        "stwcx. %1, 0, %2\n\t"
-        "bne- 0b\n\t"
-        "isync":
+    __lwsync();
+    originalValue = fetch_and_add( pw, -1 );
+    __isync();
 
-        "=m"( *pw ), "=&b"( rv ):
-        "r"( pw ), "m"( *pw ):
-        "memory", "cc"
-    );
-
-    return rv;
+    return (originalValue - 1);
 }
 
-inline int atomic_conditional_increment( int * pw )
+inline int32_t atomic_conditional_increment( int32_t * pw )
 {
     // if( *pw != 0 ) ++*pw;
     // return *pw;
 
-    int rv;
-
-    __asm__
-    (
-        "0:\n\t"
-        "lwarx %1, 0, %2\n\t"
-        "cmpwi %1, 0\n\t"
-        "beq 1f\n\t"
-        "addi %1, %1, 1\n\t"
-        "1:\n\t"
-        "stwcx. %1, 0, %2\n\t"
-        "bne- 0b":
-
-        "=m"( *pw ), "=&b"( rv ):
-        "r"( pw ), "m"( *pw ):
-        "cc"
-    );
-
-    return rv;
+    int32_t tmp = fetch_and_add( pw, 0 );
+    for( ;; )
+    {
+        if( tmp == 0 ) return 0;
+        if( compare_and_swap( pw, &tmp, tmp + 1 ) ) return (tmp + 1);
+    }
 }
 
 class sp_counted_base
@@ -109,8 +70,8 @@ private:
     sp_counted_base( sp_counted_base const & );
     sp_counted_base & operator= ( sp_counted_base const & );
 
-    int use_count_;        // #shared
-    int weak_count_;       // #weak + (#shared != 0)
+    int32_t use_count_;        // #shared
+    int32_t weak_count_;       // #weak + (#shared != 0)
 
 public:
 
@@ -171,7 +132,7 @@ public:
 
     long use_count() const // nothrow
     {
-        return static_cast<int const volatile &>( use_count_ );
+        return fetch_and_add( const_cast<int32_t*>(&use_count_), 0 );
     }
 };
 
@@ -179,4 +140,4 @@ public:
 
 } // namespace boost
 
-#endif  // #ifndef BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_GCC_PPC_HPP_INCLUDED
+#endif  // #ifndef BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_AIX_HPP_INCLUDED
