@@ -85,10 +85,6 @@ int
                                gmx_bool                  bReproducible,
                                int                       nthreads);
 
-
-
-
-
 /*! \brief Get direct space grid index limits
  */
 int
@@ -107,13 +103,14 @@ gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
                                   ivec                      local_offset,
                                   ivec                      local_size);
 
-
 int
-gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
+gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup1,
+                           gmx_parallel_3dfft_t    pfft_setup2,
                            enum gmx_fft_direction  dir,
+                           gmx_bool                bDoFFT1,
+                           gmx_bool                bDoFFT2,
                            int                     thread,
                            gmx_wallcycle_t         wcycle);
-
 
 /*! \brief Release all data in parallel fft setup
  *
