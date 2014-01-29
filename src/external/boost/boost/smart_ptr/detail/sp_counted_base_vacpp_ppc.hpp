@@ -1,17 +1,14 @@
-#ifndef BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_GCC_X86_HPP_INCLUDED
-#define BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_GCC_X86_HPP_INCLUDED
-
-// MS compatible compilers support #pragma once
-
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
-# pragma once
-#endif
+#ifndef BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_VACPP_PPC_HPP_INCLUDED
+#define BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_VACPP_PPC_HPP_INCLUDED
 
 //
-//  detail/sp_counted_base_gcc_x86.hpp - g++ on 486+ or AMD64
+//  detail/sp_counted_base_vacpp_ppc.hpp - xlC(vacpp) on POWER
+//   based on: detail/sp_counted_base_w32.hpp
 //
 //  Copyright (c) 2001, 2002, 2003 Peter Dimov and Multi Media Ltd.
 //  Copyright 2004-2005 Peter Dimov
+//  Copyright 2006 Michael van der Westhuizen
+//  Copyright 2012 IBM Corp.
 //
 //  Distributed under the Boost Software License, Version 1.0. (See
 //  accompanying file LICENSE_1_0.txt or copy at
@@ -26,72 +23,51 @@
 
 #include <boost/detail/sp_typeinfo.hpp>
 
+extern "builtin" void __lwsync(void);
+extern "builtin" void __isync(void);
+extern "builtin" int __fetch_and_add(volatile int* addr, int val);
+extern "builtin" int __compare_and_swap(volatile int*, int*, int);
+
 namespace boost
 {
 
 namespace detail
 {
 
-inline int atomic_exchange_and_add( int * pw, int dv )
+inline void atomic_increment( int *pw )
 {
-    // int r = *pw;
-    // *pw += dv;
-    // return r;
+   // ++*pw;
+   __lwsync();
+   __fetch_and_add(pw, 1);
+   __isync();
+} 
 
-    int r;
+inline int atomic_decrement( int *pw )
+{
+   // return --*pw;
+   __lwsync();
+   int originalValue = __fetch_and_add(pw, -1);
+   __isync();
 
-    __asm__ __volatile__
-    (
-        "lock\n\t"
-        "xadd %1, %0":
-        "=m"( *pw ), "=r"( r ): // outputs (%0, %1)
-        "m"( *pw ), "1"( dv ): // inputs (%2, %3 == %1)
-        "memory", "cc" // clobbers
-    );
-
-    return r;
+   return (originalValue - 1);
 }
 
-inline void atomic_increment( int * pw )
+inline int atomic_conditional_increment( int *pw )
 {
-    //atomic_exchange_and_add( pw, 1 );
+   // if( *pw != 0 ) ++*pw;
+   // return *pw;
 
-    __asm__
-    (
-        "lock\n\t"
-        "incl %0":
-        "=m"( *pw ): // output (%0)
-        "m"( *pw ): // input (%1)
-        "cc" // clobbers
-    );
-}
-
-inline int atomic_conditional_increment( int * pw )
-{
-    // int rv = *pw;
-    // if( rv != 0 ) ++*pw;
-    // return rv;
-
-    int rv, tmp;
-
-    __asm__
-    (
-        "movl %0, %%eax\n\t"
-        "0:\n\t"
-        "test %%eax, %%eax\n\t"
-        "je 1f\n\t"
-        "movl %%eax, %2\n\t"
-        "incl %2\n\t"
-        "lock\n\t"
-        "cmpxchgl %2, %0\n\t"
-        "jne 0b\n\t"
-        "1:":
-        "=m"( *pw ), "=&a"( rv ), "=&r"( tmp ): // outputs (%0, %1, %2)
-        "m"( *pw ): // input (%3)
-        "cc" // clobbers
-    );
-
-    return rv;
+   __lwsync();
+   int v = *const_cast<volatile int*>(pw);
+   for (;;)
+   // loop until state is known
+   {
+      if (v == 0) return 0;
+      if (__compare_and_swap(pw, &v, v + 1))
+      {
+         __isync(); return (v + 1);
+      }
+   }
 }
 
 class sp_counted_base
@@ -103,7 +79,8 @@ private:
 
     int use_count_;        // #shared
     int weak_count_;       // #weak + (#shared != 0)
-
+    char pad[64] __attribute__((__aligned__(64)));
+            // pad to prevent false sharing
 public:
 
     sp_counted_base(): use_count_( 1 ), weak_count_( 1 )
@@ -141,7 +118,7 @@ public:
 
     void release() // nothrow
     {
-        if( atomic_exchange_and_add( &use_count_, -1 ) == 1 )
+        if( atomic_decrement( &use_count_ ) == 0 )
         {
             dispose();
             weak_release();
@@ -155,7 +132,7 @@ public:
 
     void weak_release() // nothrow
     {
-        if( atomic_exchange_and_add( &weak_count_, -1 ) == 1 )
+        if( atomic_decrement( &weak_count_ ) == 0 )
         {
             destroy();
         }
@@ -163,7 +140,7 @@ public:
 
     long use_count() const // nothrow
     {
-        return static_cast<int const volatile &>( use_count_ );
+        return *const_cast<volatile int*>(&use_count_); 
     }
 };
 
@@ -171,4 +148,4 @@ public:
 
 } // namespace boost
 
-#endif  // #ifndef BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_GCC_X86_HPP_INCLUDED
+#endif  // #ifndef BOOST_SMART_PTR_DETAIL_SP_COUNTED_BASE_VACPP_PPC_HPP_INCLUDED
