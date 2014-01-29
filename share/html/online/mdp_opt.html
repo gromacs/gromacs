@@ -820,7 +820,8 @@ and the diffusion between neighbor-list updates.
 Without user defined potential the same table length is used
 for the lookup tables for the 1-4 interactions,
 which are always tabulated irrespective of the use of
-tables for the non-bonded interactions. </dd>
+tables for the non-bonded interactions. The value of <b>table-extension</b> in no way
+affects the values of <b>rlist</b>, <b>rcoulomb</b>, or <b>rvdw</b>. </dd>
 
 <dt><b>energygrp-table:</b></dt>
 <dd>When user tables are used for electrostatics and/or VdW,
