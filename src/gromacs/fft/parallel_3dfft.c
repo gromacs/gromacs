@@ -68,7 +68,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
     int        flags   = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */
     MPI_Comm   rcomm[] = {comm[1], comm[0]};
     int        Nb, Mb, Kb;                                   /* dimension for backtransform (in starting order) */
-    t_complex *buf1, *buf2;                                  /*intermediate buffers - used internally.*/
+    t_complex *buf1, *buf2, *commgridbuf, *recvgridbuf;      /*intermediate buffers - used internally.*/
 
     snew(*pfft_setup, 1);
     if (bReproducible)
@@ -85,10 +85,10 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
         Nb = K; Mb = rN; Kb = M;  /* currently always true because ORDER_YZ always set */
     }
 
-    (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data, complex_data, &buf1, &buf2, nthreads);
+    (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data, complex_data, &buf1, &buf2, &commgridbuf, &recvgridbuf, nthreads);
 
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb, Mb, Kb, rcomm,
-                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, nthreads);
+                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, &commgridbuf, &recvgridbuf, nthreads);
 
     return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 != 0;
 }
@@ -164,24 +164,38 @@ gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
     return ret;
 }
 
-
 int
-gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
+gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup1,
+                           gmx_parallel_3dfft_t    pfft_setup2,
                            enum gmx_fft_direction  dir,
+                           gmx_bool                bDoFFT1,
+                           gmx_bool                bDoFFT2,
                            int                     thread,
                            gmx_wallcycle_t         wcycle)
 {
-    if ((!(pfft_setup->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
+    if (bDoFFT1)
     {
-        gmx_fatal(FARGS, "Invalid transform. Plan and execution don't match regarding reel/complex");
+        if ((!(pfft_setup1->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
+        {
+            gmx_fatal(FARGS, "Invalid transform. Plan and execution don't match regarding reel/complex for transform 1");
+        }
     }
+
+    if (bDoFFT2)
+    {
+        if ((!(pfft_setup2->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
+        {
+            gmx_fatal(FARGS, "Invalid transform. Plan and execution don't match regarding reel/complex for transform 2");
+        }
+    }
+
     if (dir == GMX_FFT_FORWARD || dir == GMX_FFT_REAL_TO_COMPLEX)
     {
-        fft5d_execute(pfft_setup->p1, thread, wcycle);
+        fft5d_execute(pfft_setup1->p1, bDoFFT2 ? pfft_setup2->p1 : NULL, (bDoFFT1 && bDoFFT2), thread, wcycle);
     }
     else
     {
-        fft5d_execute(pfft_setup->p2, thread, wcycle);
+        fft5d_execute(pfft_setup1->p2, bDoFFT2 ? pfft_setup2->p2 : NULL, (bDoFFT1 && bDoFFT2), thread, wcycle);
     }
     return 0;
 }
