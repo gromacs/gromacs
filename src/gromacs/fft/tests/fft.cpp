@@ -266,13 +266,13 @@ TEST_F(FFFTest3D, Real5_6_9)
     int size = csize[0]*csize[1]*csize[2];
 
     memcpy(rdata, inputdata, size*sizeof(t_complex));
-    gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, NULL);
+    gmx_parallel_3dfft_execute(fft_, NULL, GMX_FFT_REAL_TO_COMPLEX, TRUE, FALSE, 0, NULL);
     //TODO use std::complex and add checkComplex for it
     checker_.checkSequenceArray(size*2,
                                 reinterpret_cast<real*>(cdata), "forward");
 
     memcpy(cdata, inputdata, size*sizeof(t_complex));
-    gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, NULL);
+    gmx_parallel_3dfft_execute(fft_, NULL, GMX_FFT_COMPLEX_TO_REAL, TRUE, FALSE, 0, NULL);
     for (int i = 0; i < ndata[0]*ndata[1]; i++) //check sequence but skip unused data
     {
         checker_.checkSequenceArray(ndata[2], rdata+i*rsize[2],
