@@ -297,7 +297,6 @@ void pr_rvecs(FILE *fp, int indent, const char *title, rvec vec[], int n)
     }
 }
 
-
 void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, rvec vec[], int n, int dim)
 {
     const char *fshort = "%12.5e";
@@ -350,22 +349,6 @@ void pr_reals(FILE *fp, int indent, const char *title, real *vec, int n)
     }
 }
 
-void pr_doubles(FILE *fp, int indent, const char *title, double *vec, int n)
-{
-    int i;
-
-    if (available(fp, vec, indent, title))
-    {
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "%s:\t", title);
-        for (i = 0; i < n; i++)
-        {
-            fprintf(fp, "  %10g", vec[i]);
-        }
-        (void) fprintf(fp, "\n");
-    }
-}
-
 void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, int dim)
 {
     int         i, j;
@@ -399,6 +382,21 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, 
             }
             (void) fprintf(fp, "}\n");
         }
+    }
+}
+void pr_doubles(FILE *fp, int indent, const char *title, double *vec, int n)
+{
+    int i;
+
+    if (available(fp, vec, indent, title))
+    {
+        (void) pr_indent(fp, indent);
+        (void) fprintf(fp, "%s:\t", title);
+        for (i = 0; i < n; i++)
+        {
+            fprintf(fp, "  %10g", vec[i]);
+        }
+        (void) fprintf(fp, "\n");
     }
 }
 
@@ -808,7 +806,6 @@ static void pr_rot(FILE *fp, int indent, t_rot *rot)
     }
 }
 
-
 static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
 {
     int  i, j;
@@ -841,7 +838,6 @@ static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
     PR("cyl1_upper", swap->cyl1u);
     PR("cyl1_lower", swap->cyl1l);
 }
-
 
 void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
                  gmx_bool bMDPformat)
@@ -1306,6 +1302,26 @@ void pr_iparams(FILE *fp, t_functype ftype, t_iparams *iparams)
             break;
         case F_CMAP:
             fprintf(fp, "cmapA=%1d, cmapB=%1d\n", iparams->cmap.cmapA, iparams->cmap.cmapB);
+            break;
+        case  F_RESTRANGLES:
+            pr_harm(fp,iparams,"ktheta","costheta0");
+            break;
+        case  F_RESTRDIHS:
+            fprintf(fp,"phiA=%15.8e, cpA=%15.8e",
+            iparams->pdihs.phiA,iparams->pdihs.cpA);
+            break;
+        case  F_CBTDIHS:
+            fprintf(fp,"kphi=%15.8e",iparams->cbtdihs.cbtcA[0]);
+            for (i=1; i<NR_CBTDIHS; i++)
+            {
+                fprintf(fp,", cbtcA[%d]=%15.8e",i-1,iparams->cbtdihs.cbtcA[i]);
+            }
+            fprintf(fp,"\n");
+            for (i=0; i<NR_CBTDIHS; i++)
+            {
+                fprintf(fp,"%scbtccB[%d]=%15.8e",(i==0) ? "" : ", ",i,iparams->cbtdihs.cbtcB[i]);
+            }
+            fprintf(fp,"\n");
             break;
         default:
             gmx_fatal(FARGS, "unknown function type %d (%s) in %s line %d",
