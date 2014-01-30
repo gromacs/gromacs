@@ -490,6 +490,8 @@ int mmslave_calc_energy(gmx_mmslave_t gms,
                         FILE         *fplog,
                         const rvec   *x,
                         rvec         *f,
+                        rvec         *A,
+                        real         *phi,
                         double       *energy)
 {
     if (gms->mms->calcEnergy(fplog, x, f, energy))

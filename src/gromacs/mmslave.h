@@ -177,6 +177,8 @@ extern int mmslave_get_group_id(gmx_mmslave_t gms,
  * \param[in]  fplog  a File pointer for (debug) output. May be NULL, or stdout.
  * \param[in]  x      the atomic coordinates for the whole system (MM+QM)
  * \param[out] f      the forces on all atoms
+ * \param[out] A      the electric field on all atoms
+ * \param[out] phi    the electrostatic potential on all atoms
  * \param[out] energy the total MM energy
  * \return 1 if successful, 0 otherwise
  */
@@ -184,6 +186,8 @@ extern int mmslave_calc_energy(gmx_mmslave_t gms,
                                FILE         *fplog,
                                const rvec   *x,
                                rvec         *f,
+                               rvec         *A,
+                               real         *phi,
                                double       *energy);
 
 

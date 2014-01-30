@@ -7,7 +7,8 @@ int main(int argc, char *argv[])
 {
     t_commrec *cr;
     int natoms, ngroups;
-    rvec *x, *v, *f;
+    rvec *x, *v, *f, *A;
+    real *phi;
     gmx_mmslave_t gms;
     double e0, e1;
     int i;
@@ -28,6 +29,9 @@ int main(int argc, char *argv[])
             x = (rvec *)calloc(natoms, sizeof(rvec));
             v = (rvec *)calloc(natoms, sizeof(rvec));
             f = (rvec *)calloc(natoms, sizeof(rvec));
+            A = (rvec *)calloc(natoms, sizeof(rvec));
+            phi = (real *)calloc(natoms, sizeof(real));
+
             bOK = mmslave_copyX(gms, natoms, x);
             if ( 0 ) 
             {
@@ -46,7 +50,7 @@ int main(int argc, char *argv[])
         
         if (bOK)
         {
-            bOK = mmslave_calc_energy(gms, stdout, x, f, &e0);
+            bOK = mmslave_calc_energy(gms, stdout, x, f, A, phi, &e0);
         }
         else
         {
@@ -57,7 +61,7 @@ int main(int argc, char *argv[])
         {
             printf("The energy is %lf\n", e0);
             x[0][0] += 0.01;
-            bOK = mmslave_calc_energy(gms, stdout, x, f, &e1);
+            bOK = mmslave_calc_energy(gms, stdout, x, f, A, phi, &e1);
         }
         else
         {
