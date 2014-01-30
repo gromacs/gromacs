@@ -1239,6 +1239,7 @@ cross bond-angle                   & {\tts angles}                  & 3     & 4 
 Urey-Bradley                       & {\tts angles}\fnm{5}           & 3     & 5     & $\theta_0$ (deg); $k_\theta$ (\kJmolrad{-2}); $r_{13}$ (nm); $k_{UB}$ (\kJmolnm{-2}) & all & \ssecref{Urey-Bradley} \\
 quartic angle                      & {\tts angles}\fnm{5}           & 3     & 6     & $\theta_0$ (deg); $C_{i=0,1,2,3,4}$ (\kJmolrad{-i})   &            & \ssecref{quarticangle} \\
 tabulated angle                    & {\tts angles}                  & 3     & 8     & table number ($\geq 0$); $k$ (\kJmol)                 & $k$        & \ssecref{tabulatedinteraction} \\
+restricted bending potential  & {\tts angles}                  & 3     & 10    & $\theta_0$ (deg); $k_\theta$ (\kJmol)                 &        & \ssecref{ReB} \\
 proper dihedral                    & {\tts dihedrals}               & 4     & 1     & $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity       & $\phi,k$   & \ssecref{properdihedral} \\
 improper dihedral                  & {\tts dihedrals}               & 4     & 2     & $\xi_0$ (deg); $k_\xi$ (\kJmolrad{-2})                & all        & \ssecref{harmonicimproperdihedral} \\
 Ryckaert-Bellemans dihedral        & {\tts dihedrals}               & 4     & 3     & $C_0$, $C_1$, $C_2$, $C_3$, $C_4$, $C_5$ (\kJmol)     & all        & \ssecref{RBdihedral} \\
@@ -1246,6 +1247,8 @@ periodic improper dihedral         & {\tts dihedrals}               & 4     & 4 
 Fourier dihedral                   & {\tts dihedrals}               & 4     & 5     & $C_1$, $C_2$, $C_3$, $C_4$ (\kJmol)                   & all        & \ssecref{Fourierdihedral} \\
 tabulated dihedral                 & {\tts dihedrals}               & 4     & 8     & table number ($\geq 0$); $k$ (\kJmol)                 & $k$        & \ssecref{tabulatedinteraction} \\
 proper dihedral (multiple)         & {\tts dihedrals}               & 4     & 9     & $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity       & $\phi,k$   & \ssecref{properdihedral} \\
+restricted dihedral                    & {\tts dihedrals}              & 4     & 11    & $\phi_0$ (deg); $k_\phi$ (\kJmol)                         &               & \ssecref{ReT} \\
+combined bending-torsion potential   & {\tts dihedrals}      & 4     & 10     & $a_0$, $a_1$, $a_2$, $a_3$, $a_4$ (\kJmol)       &               & \ssecref{CBT} \\
 exclusions                         & {\tts exclusions}              & 1     &       & one or more atom indices                              &            & \tsecref{excl} \\
 constraint                         & {\tts constraints}\fnm{4}      & 2     & 1     & $b_0$ (nm)                                            & all        & \sssecref{constraints},\tsecref{constraints} \\
 constraint\fnm{6}                  & {\tts constraints}             & 2     & 2     & $b_0$ (nm)                                            & all        & \sssecref{constraints},\tsecref{constraints},\tsecref{excl} \\
