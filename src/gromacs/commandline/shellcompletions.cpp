@@ -60,14 +60,20 @@ static void pr_fopts(FILE *fp, int nf, const t_filenm tfn[])
 {
     for (int i = 0; i < nf; i++)
     {
-        const int ftp          = tfn[i].ftp;
+        const int   ftp          = tfn[i].ftp;
+        const char *multiplicity = "(( $n == 1 )) && ";
+        if (tfn[i].flag & ffMULT)
+        {
+            multiplicity = "";
+        }
         if (ftp == efRND)
         {
-            fprintf(fp, "%s) COMPREPLY=( $(compgen -S ' ' -d $c) );;\n",
-                    tfn[i].opt);
+            fprintf(fp, "%s) %sCOMPREPLY=( $(compgen -S ' ' -d $c) );;\n",
+                    tfn[i].opt, multiplicity);
             continue;
         }
-        fprintf(fp, "%s) COMPREPLY=( $(compgen -S ' ' -X '!*.", tfn[i].opt);
+        fprintf(fp, "%s) %sCOMPREPLY=( $(compgen -S ' ' -X '!*.",
+                tfn[i].opt, multiplicity);
         const int genericCount = ftp2generic_count(ftp);
         if (genericCount > 0)
         {
@@ -132,7 +138,7 @@ static void pr_enums(FILE *fp, int npargs, t_pargs pa[])
     {
         if (pa[i].type == etENUM)
         {
-            fprintf(fp, "%s) COMPREPLY=( $(compgen -S ' ' -W $'", pa[i].option);
+            fprintf(fp, "%s) (( $n == 1 )) && COMPREPLY=( $(compgen -S ' ' -W $'", pa[i].option);
             for (int j = 1; pa[i].u.c[j]; j++)
             {
                 fprintf(fp, "%s%s", (j == 1 ? "" : "\\n"), pa[i].u.c[j]);
@@ -151,9 +157,13 @@ static void write_bashcompl(FILE *out,
      * p and c hold the previous and current word on the command line.
      */
     fprintf(out, "%s() {\n", funcName);
-    fprintf(out, "local p c\n");
     fprintf(out, "local IFS=$'\\n'\n");
-    fprintf(out, "COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}\n");
+    fprintf(out, "local c=${COMP_WORDS[COMP_CWORD]}\n");
+    fprintf(out, "local n\n");
+    fprintf(out, "for ((n=1;n<COMP_CWORD;++n)) ; do [[ \"${COMP_WORDS[COMP_CWORD-n]}\" == -* ]] && break ; done\n");
+    fprintf(out, "local p=${COMP_WORDS[COMP_CWORD-n]}\n");
+    fprintf(out, "COMPREPLY=()\n");
+
     pr_opts(out, nfile, fnm, npargs, pa);
     fprintf(out, "case \"$p\" in\n");
 
@@ -249,7 +259,7 @@ void ShellCompletionWriter::writeWrapperCompletions(
     impl_->file_->writeLine("COMPREPLY=()");
     impl_->file_->writeLine("unset COMP_WORDS[0]");
     impl_->file_->writeLine("for ((i=1;i<COMP_CWORD;++i)) ; do");
-    impl_->file_->writeLine("if [[ \"${COMP_WORDS[i]}\" != -* ]]; then break ; fi");
+    impl_->file_->writeLine("[[ \"${COMP_WORDS[i]}\" != -* ]] && break");
     impl_->file_->writeLine("unset COMP_WORDS[i]");
     impl_->file_->writeLine("done");
     impl_->file_->writeLine("if (( i == COMP_CWORD )); then");
