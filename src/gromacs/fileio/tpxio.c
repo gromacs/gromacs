@@ -70,15 +70,15 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
 
 
 /* The tpx_version number should be increased whenever the file format changes!
- *
- * The following comment section helps to keep track of which feature has been
- * added in which version.
- *
- * version  feature added
- *    96    support for ion/water position swaps (computational electrophysiology)
- */
-static const int tpx_version = 96;
-
+*
+* The following comment section helps to keep track of which feature has been
+* added in which version.
+*
+* version  feature added
+*    96    support for ion/water position swaps (computational electrophysiology)
+*    97    support for restricted and CBT potentials
+*/
+static const int tpx_version = 97;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -142,12 +142,15 @@ static const t_ftupd ftupd[] = {
     { 43, F_TABBONDS          },
     { 43, F_TABBONDSNC        },
     { 70, F_RESTRBONDS        },
+    { 97, F_RESTRANGLES       },
     { 76, F_LINEAR_ANGLES     },
     { 30, F_CROSS_BOND_BONDS  },
     { 30, F_CROSS_BOND_ANGLES },
     { 30, F_UREY_BRADLEY      },
     { 34, F_QUARTIC_ANGLES    },
     { 43, F_TABANGLES         },
+    { 97, F_RESTRDIHS         },
+    { 97, F_CBTDIHS           },
     { 26, F_FOURDIHS          },
     { 26, F_PIDIHS            },
     { 43, F_TABDIHS           },
@@ -1769,6 +1772,9 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 iparams->pdihs.cpB  = iparams->pdihs.cpA;
             }
             break;
+        case F_RESTRANGLES:
+            do_harm(fio,iparams);
+        break;
         case F_LINEAR_ANGLES:
             gmx_fio_do_real(fio, iparams->linangle.klinA);
             gmx_fio_do_real(fio, iparams->linangle.aA);
@@ -1779,6 +1785,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fene.bm);
             gmx_fio_do_real(fio, iparams->fene.kb);
             break;
+
         case F_RESTRBONDS:
             gmx_fio_do_real(fio, iparams->restraint.lowA);
             gmx_fio_do_real(fio, iparams->restraint.up1A);
@@ -1931,6 +1938,12 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 gmx_fio_do_int(fio, iparams->pdihs.mult);
             }
             break;
+        case F_RESTRDIHS:
+            gmx_fio_do_real(fio,iparams->pdihs.phiA);
+            gmx_fio_do_real(fio,iparams->pdihs.cpA);
+            gmx_fio_do_real(fio,iparams->pdihs.phiB);
+            gmx_fio_do_real(fio,iparams->pdihs.cpB);
+            break;
         case F_DISRES:
             gmx_fio_do_int(fio, iparams->disres.label);
             gmx_fio_do_int(fio, iparams->disres.type);
@@ -1989,6 +2002,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fbposres.r);
             gmx_fio_do_real(fio, iparams->fbposres.k);
             break;
+        case F_CBTDIHS:
+            gmx_fio_ndo_real(fio, iparams->cbtdihs.cbtcA, NR_CBTDIHS);
+            gmx_fio_ndo_real(fio, iparams->cbtdihs.cbtcB, NR_CBTDIHS);
+        break;
         case F_RBDIHS:
             gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
             if (file_version >= 25)
