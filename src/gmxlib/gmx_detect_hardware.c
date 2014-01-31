@@ -45,6 +45,8 @@
 #include "types/commrec.h"
 #include "gmx_fatal.h"
 #include "gmx_fatal_collective.h"
+#include "md_logging.h"
+#include "gmx_cpuid.h"
 #include "smalloc.h"
 #include "gpu_utils.h"
 #include "statutil.h"
@@ -210,6 +212,40 @@ static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
     gmx_incons("Not implemented yet");
 }
 
+/* Give a suitable fatal error or warning if the build configuration
+   and runtime CPU do not match. */
+static void
+check_use_of_rdtscp_on_this_cpu(FILE                *fplog,
+                                const t_commrec     *cr,
+                                const gmx_hw_info_t *hwinfo)
+{
+    gmx_bool bCpuHasRdtscp, bBinaryUsesRdtscp;
+#ifdef HAVE_RDTSCP
+    bBinaryUsesRdtscp = TRUE;
+#else
+    bBinaryUsesRdtscp = FALSE;
+#endif
+
+    bCpuHasRdtscp = gmx_cpuid_feature(hwinfo->cpuid_info, GMX_CPUID_FEATURE_X86_RDTSCP);
+
+    if (!bCpuHasRdtscp && bBinaryUsesRdtscp)
+    {
+        gmx_fatal(FARGS, "The %s executable was compiled to use the rdtscp CPU instruction. "
+                  "However, this is not supported by the current hardware and continuing would lead to a crash. "
+                  "Please rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake option.",
+                  ShortProgram());
+    }
+
+    if (bCpuHasRdtscp && !bBinaryUsesRdtscp)
+    {
+        md_print_warn(cr, fplog, "The current CPU can measure timings more accurately than the code in\n"
+                      "%s was configured to use. This might affect your simulation\n"
+                      "speed as accurate timings are needed for load-balancing.\n"
+                      "Please consider rebuilding %s with the GMX_USE_RDTSCP=OFF CMake option.\n",
+                      ShortProgram(), ShortProgram());
+    }
+}
+
 void gmx_check_hw_runconf_consistency(FILE *fplog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec *cr,
@@ -251,6 +287,8 @@ void gmx_check_hw_runconf_consistency(FILE *fplog,
     /* TODO: Here we assume homogeneous hardware which is not necessarily
              the case! Might not hurt to add an extra check over MPI. */
     gmx_cpuid_acceleration_check(hwinfo->cpuid_info, fplog, SIMMASTER(cr));
+
+    check_use_of_rdtscp_on_this_cpu(fplog, cr, hwinfo);
 
     /* NOTE: this print is only for and on one physical node */
     print_gpu_detection_stats(fplog, &hwinfo->gpu_info, cr);
