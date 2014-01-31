@@ -610,10 +610,17 @@ gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
 include(gmxSetBuildInformation)
 gmx_set_build_information()
-if(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
+if (BUILD_CPU_FEATURES MATCHES "rdtscp")
+    set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
+else()
+    set(GMX_USE_RDTSCP_DEFAULT_VALUE OFF)
+endif()
+option(GMX_USE_RDTSCP "Use RDTSCP for better CPU-based timers (available on recent x86 CPUs; might need to be off when compiling for heterogeneous environments)" ${GMX_USE_RDTSCP_DEFAULT_VALUE})
+mark_as_advanced(GMX_USE_RDTSCP)
+if(GMX_USE_RDTSCP)
     # The timestep counter headers do not include config.h
     add_definitions(-DHAVE_RDTSCP)
-endif(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
+endif()
 
 include(gmxTestFloatFormat)
 gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754 
