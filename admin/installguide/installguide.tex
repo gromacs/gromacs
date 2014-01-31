@@ -406,6 +406,20 @@ toggling the advanced mode in \verb+ccmake+ on and off with
 '\verb+t+'. Even there, most of the variables that you might want to
 change have a '\verb+CMAKE_+' or '\verb+GMX_+' prefix.
 
+\subsubsection{Making a more portable mdrun binary}
+Generally, we discourage attempts to use a single \gromacs{}
+installation when the execution environment is heterogeneous, such as
+a mix of \avx{} and earlier hardware, because either that is slow on
+the new hardware or broken on the old hardware. Doing two
+installations and locally managing how to call the correct one is the
+recommended approach. If this is impossible, then a binary that is
+portable across recent x86 processors can be built by choosing the
+least common denominator of SIMD support, and ensuring the \cmake{}
+option \verb+GMX_USE_RDTSCP+ is off. That option defaults to off
+unless \avx{} is in use. This might be necessary if the build host is
+different from that used at runtime. mdrun will check for problems
+before they arise.
+
 \subsection{Helping CMake find the right libraries/headers/programs}
 
 If libraries are installed in non-default locations their location can

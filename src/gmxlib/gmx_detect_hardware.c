@@ -45,6 +45,8 @@
 #include "types/commrec.h"
 #include "gmx_fatal.h"
 #include "gmx_fatal_collective.h"
+#include "md_logging.h"
+#include "gmx_cpuid.h"
 #include "smalloc.h"
 #include "gpu_utils.h"
 #include "statutil.h"
@@ -210,6 +212,32 @@ static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
     gmx_incons("Not implemented yet");
 }
 
+/* Give a suitable fatal error or warning if the build configuration
+   and runtime CPU do not match. */
+static void
+check_use_of_rdtscp_on_this_cpu(FILE                *fplog,
+                                const t_commrec     *cr,
+                                const gmx_hw_info_t *hwinfo)
+{
+    gmx_bool bCpuHasRdtscp;
+
+    bCpuHasRdtscp = gmx_cpuid_feature(hwinfo->cpuid_info, GMX_CPUID_FEATURE_X86_RDTSCP);
+#ifdef HAVE_RDTSCP
+    if (!bCpuHasRdtscp)
+    {
+        gmx_fatal(FARGS, "This executable was compiled to use code that cannot execute on this hardware. Please either configure for this hardware on a machine that matches it, or consider turning the CMake option GMX_USE_RDTSCP=OFF.");
+    }
+#else
+    if (bCpuHasRdtscp)
+    {
+        md_print_warn(cr, fplog,
+                      "The CPU can measure timings more accurately than the code in\n"
+                      "mdrun was configured to use. This might affect your simulation\n"
+                      "speed. Please consider configuring GROMACS to match your CPU.\n");
+    }
+#endif
+}
+
 void gmx_check_hw_runconf_consistency(FILE *fplog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec *cr,
@@ -251,6 +279,8 @@ void gmx_check_hw_runconf_consistency(FILE *fplog,
     /* TODO: Here we assume homogeneous hardware which is not necessarily
              the case! Might not hurt to add an extra check over MPI. */
     gmx_cpuid_acceleration_check(hwinfo->cpuid_info, fplog, SIMMASTER(cr));
+
+    check_use_of_rdtscp_on_this_cpu(fplog, cr, hwinfo);
 
     /* NOTE: this print is only for and on one physical node */
     print_gpu_detection_stats(fplog, &hwinfo->gpu_info, cr);
