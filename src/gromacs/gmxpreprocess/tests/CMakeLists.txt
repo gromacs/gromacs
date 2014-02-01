@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,10 +32,18 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB GMXPREPROCESS_SOURCES *.c *.cpp)
+set(testname "PreprocessingTests")
+set(exename "preprocessing-tools-test")
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXPREPROCESS_SOURCES} PARENT_SCOPE)
+#include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif(BUILD_TESTING)
+gmx_build_unit_test(
+    ${testname}
+    ${exename}
+    # files with code for test fixtures
+    genbox.cpp
+    )
+gmx_register_integration_test(
+    ${testname}
+    ${exename}
+    )
