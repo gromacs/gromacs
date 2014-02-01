@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,6 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(gmxOptionUtilities)
+
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
     # This logic closely follows that found in FindDoxygen.cmake for dot,
@@ -45,6 +47,13 @@ if (DOXYGEN_FOUND)
     endif (DOXYGEN_MSCGEN_EXECUTABLE)
     mark_as_advanced(DOXYGEN_MSCGEN_EXECUTABLE)
 endif (DOXYGEN_FOUND)
+
+gmx_dependent_option(
+    GMX_COMPACT_DOXYGEN
+    "Skip parts of Doxygen documentation (in particular, many graphs) to save disk space and time"
+    OFF
+    DOXYGEN_FOUND)
+mark_as_advanced(GMX_COMPACT_DOXYGEN)
 
 ########################################################################
 # Doxygen configuration
@@ -63,6 +72,11 @@ if (DOXYGEN_FOUND)
     CONFIGURE_FILE(Doxyfile-full.cmakein Doxyfile-full)
     CONFIGURE_FILE(Doxyfile-lib.cmakein Doxyfile-lib)
     CONFIGURE_FILE(Doxyfile-user.cmakein Doxyfile-user)
+
+    if (GMX_COMPACT_DOXYGEN)
+        FILE(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
+             "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact\n")
+    endif()
 
     FILE(COPY index.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     configure_file(RunDoxygen.cmake.cmakein RunDoxygen.cmake @ONLY)
