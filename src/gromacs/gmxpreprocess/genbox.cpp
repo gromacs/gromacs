@@ -1002,7 +1002,7 @@ int gmx_genbox(int argc, char *argv[])
     const char     *enum_rot_string[] = {NULL, "xyz", "z", "none", NULL};
     t_pargs         pa[]              = {
         { "-box",    FALSE, etRVEC, {new_box},
-          "Box size" },
+          "Box size (in nm)" },
         { "-nmol",   FALSE, etINT, {&nmol_ins},
           "Number of extra molecules to insert" },
         { "-try",    FALSE, etINT, {&nmol_try},
