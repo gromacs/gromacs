@@ -71,7 +71,7 @@
 #include "ns.h"
 #include "mtop_util.h"
 #include "pme.h"
-#include "gbutil.h"
+#include "conformation-utilities.h"
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"

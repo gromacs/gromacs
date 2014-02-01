@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "genbox.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -56,15 +58,14 @@
 #include "gmx_fatal.h"
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
-#include "gbutil.h"
-#include "addconf.h"
+#include "conformation-utilities.h"
+#include "genbox-addconf.h"
 #include "gromacs/fileio/pdbio.h"
 #include "pbc.h"
-#include "gmx_ana.h"
 #include "xvgr.h"
 
 #ifdef DEBUG
-void print_stat(rvec *x, int natoms, matrix box)
+static void print_stat(rvec *x, int natoms, matrix box)
 {
     int  i, m;
     rvec xmin, xmax;
@@ -132,7 +133,7 @@ typedef struct {
     int   res0;
 } t_moltypes;
 
-void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
+static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
 {
     int         atnr, i, j, moltp = 0, nrmoltypes, resi_o, resi_n, resnr;
     t_moltypes *moltypes;
@@ -291,7 +292,7 @@ void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
     sfree(moltypes);
 }
 
-void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
+static void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
 {
     int  i, start, n, d, nat;
     rvec xcg;
@@ -343,11 +344,11 @@ void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
     }
 }
 
-/* This is a (maybe) slow workaround to avoid the neighbor searching in addconf.c, which
- * leaks memory (May 2012). The function could be deleted as soon as the momory leaks
- * in addconf.c are fixed.
+/* This is a (maybe) slow workaround to avoid the neighbor searching in genbox_addconf.c, which
+ * leaks memory (May 2012). The function could be deleted as soon as the memory leaks
+ * there are fixed.
  * However, when inserting a small molecule in a system containing not too many atoms,
- * allPairsDistOk is probably even faster than addconf.c
+ * allPairsDistOk is probably even faster than the other code.
  */
 static gmx_bool
 allPairsDistOk(t_atoms *atoms, rvec *x, real *r,
@@ -483,7 +484,7 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
             offset_x[XX] = box[XX][XX] * gmx_rng_uniform_real(rng);
             offset_x[YY] = box[YY][YY] * gmx_rng_uniform_real(rng);
             offset_x[ZZ] = box[ZZ][ZZ] * gmx_rng_uniform_real(rng);
-            gen_box(0, atoms_insrt.nr, x_n, box_insrt, offset_x, TRUE);
+            make_new_box(0, atoms_insrt.nr, x_n, box_insrt, offset_x, TRUE);
             if (!in_box(&pbc, x_n[0]) || !in_box(&pbc, x_n[atoms_insrt.nr-1]))
             {
                 continue;
@@ -617,7 +618,7 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     srenew(r_solvt, atoms_solvt->nr*nmol);
 
     /* generate a new solvent configuration */
-    genconf(atoms_solvt, x_solvt, v_solvt, r_solvt, box_solvt, n_box);
+    make_new_conformation(atoms_solvt, x_solvt, v_solvt, r_solvt, box_solvt, n_box);
 
 #ifdef DEBUG
     print_stat(x_solvt, atoms_solvt->nr, box_solvt);

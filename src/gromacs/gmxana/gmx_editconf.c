@@ -52,7 +52,7 @@
 #include "index.h"
 #include "vec.h"
 #include "typedefs.h"
-#include "gbutil.h"
+#include "conformation-utilities.h"
 #include "physics.h"
 #include "atomprop.h"
 #include "gromacs/fileio/tpxio.h"

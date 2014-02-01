@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,9 +122,6 @@ gmx_lie(int argc, char *argv[]);
 
 int
 gmx_filter(int argc, char *argv[]);
-
-int
-gmx_genbox(int argc, char *argv[]);
 
 int
 gmx_genconf(int argc, char *argv[]);
