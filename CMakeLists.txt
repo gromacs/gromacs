@@ -971,6 +971,7 @@ install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
 
 if(GMX_EXTERNAL_BOOST)
     include_directories(${Boost_INCLUDE_DIRS})
+    set(PKG_CFLAGS "${PKG_CFLAGS} -I${Boost_INCLUDE_DIRS}")
 else()
     include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
     # typeid not supported for minimal internal version
