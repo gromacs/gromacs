@@ -46,6 +46,7 @@
 
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/gmxpreprocess/genbox.h"
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
 #include "gromacs/gmxpreprocess/protonate.h"
 #include "gromacs/gmxpreprocess/x2top.h"
