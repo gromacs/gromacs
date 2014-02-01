@@ -63,7 +63,7 @@
 #include "resall.h"
 #include "pdb2top.h"
 #include "ter_db.h"
-#include "gbutil.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
 #include "genhydro.h"
 #include "readinp.h"
 #include "atomprop.h"
@@ -2215,7 +2215,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     clear_rvec(box_space);
     if (box[0][0] == 0)
     {
-        gen_box(0, atoms->nr, x, box, box_space, FALSE);
+        make_new_box(atoms->nr, x, box, box_space, FALSE);
     }
     write_sto_conf(ftp2fn(efSTO, NFILE, fnm), title, atoms, x, NULL, ePBC, box);
 
