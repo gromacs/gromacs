@@ -45,3 +45,6 @@ GENERATE_LATEX         = NO
 EXTRACT_LOCAL_CLASSES  = NO
 
 ALIASES               += Gromacs=GROMACS
+
+DOT_IMAGE_FORMAT       = svg
+DOT_MULTI_TARGETS      = YES
