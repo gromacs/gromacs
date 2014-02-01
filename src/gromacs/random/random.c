@@ -209,7 +209,20 @@ gmx_rng_make_seed(void)
     long         my_pid;
 
 #ifdef HAVE_UNISTD_H
-    fp = fopen("/dev/random", "rb"); /* will return NULL if it is not present */
+    /* We never want Gromacs execution to halt 10-20 seconds while
+     * waiting for enough entropy in the random number generator.
+     * For this reason we should NOT use /dev/random, which will
+     * block in cases like that. That will cause all sorts of
+     * Gromacs programs to block ~20 seconds while waiting for a
+     * super-random-number to generate cool quotes. Apart from the
+     * minor irritation, it is really bad behavior of a program
+     * to abuse the system random numbers like that - other programs
+     * need them too.
+     * For this reason, we ONLY try to get random numbers from
+     * the pseudo-random stream /dev/urandom, and use other means
+     * if it is not present (in this case fopen() returns NULL).
+     */
+    fp = fopen("/dev/urandom", "rb");
 #else
     fp = NULL;
 #endif
