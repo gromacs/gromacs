@@ -35,9 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \file groupcoord.h
- *
- *  @brief Assemble atomic positions of a (small) subset of atoms and distribute to all nodes.
+/*! \libinternal \file
+ * \brief Assemble atomic positions of a (small) subset of atoms and distribute to all nodes.
  *
  *  This file contains functions to assemble the positions of a subset of the
  *  atoms and to do operations on it like determining the center of mass, or

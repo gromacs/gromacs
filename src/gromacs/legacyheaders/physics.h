@@ -44,7 +44,7 @@
  * be anywhere else in the code.
  */
 
-#include "gromacs/math/utilities.h"
+#include "../math/utilities.h"
 
 #ifdef __cplusplus
 extern "C" {

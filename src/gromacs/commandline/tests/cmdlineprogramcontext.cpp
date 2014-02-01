@@ -37,7 +37,7 @@
  * Tests for gmx::CommandLineProgramContext.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_utility
+ * \ingroup module_commandline
  */
 #include <string>
 #include <vector>

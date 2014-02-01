@@ -33,7 +33,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 /*! \defgroup module_swap "Computational Electrophysiology" position swapping (swap)
  * \ingroup group_mdrun
  * \brief
@@ -41,13 +40,14 @@
  *
  * \author Carsten Kutzner <ckutzne@gwdg.de>
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * The "Computational Electrophysiology" protocol for ion/water position swapping.
  *
- * \ingroup group_mdrun
+ * \author Carsten Kutzner <ckutzne@gwdg.de>
+ * \inlibraryapi
+ * \ingroup module_swap
  */
-
 #ifndef GMX_SWAP_SWAPCOORDS_H
 #define GMX_SWAP_SWAPCOORDS_H
 
