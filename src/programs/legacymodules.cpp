@@ -46,7 +46,8 @@
 
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/gmxpreprocess/genbox.h"
+#include "gromacs/gmxpreprocess/generate-solvent.h"
+#include "gromacs/gmxpreprocess/insert-molecules.h"
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
 #include "gromacs/gmxpreprocess/protonate.h"
 #include "gromacs/gmxpreprocess/x2top.h"
@@ -167,8 +168,11 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Convert and manipulates structure files");
     registerModule(manager, &gmx_eneconv, "eneconv",
                    "Convert energy files");
-    registerModule(manager, &gmx_genbox, "genbox",
+    registerModule(manager, &gmx_generate_solvent, "generate-solvent",
                    "Solvate a system");
+    registerModule(manager, &gmx_insert_molecules, "insert-molecules",
+                   "Insert molecules into existing vacancies");
+    registerObsoleteTool(manager, "genbox");
     registerModule(manager, &gmx_genconf, "genconf",
                    "Multiply a conformation in 'random' orientations");
     registerModule(manager, &gmx_genion, "genion",
@@ -338,7 +342,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModuleWithDescription("editconf", "Edit the box and write subgroups");
         group.addModule("protonate");
         group.addModule("x2top");
-        group.addModule("genbox");
+        group.addModule("generate-solvent");
+        group.addModule("insert-molecules");
         group.addModule("genconf");
         group.addModule("genion");
         group.addModule("genrestr");

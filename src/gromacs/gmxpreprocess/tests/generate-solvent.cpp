@@ -39,7 +39,7 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
 
-#include "../genbox.h"
+#include "../generate-solvent.h"
 #include "testutils/integrationtests.h"
 #include "testutils/cmdlinetest.h"
 #include "gromacs/fileio/futil.h"
@@ -47,51 +47,54 @@
 namespace
 {
 
-//! Test fixture for genbox
-class Genbox : public gmx::test::IntegrationTestFixture
+//! Helper typedef
+typedef int (*CMainFunction)(int argc, char *argv[]);
+
+//! Test fixture for gmx generate-solvent
+class GenerateSolvent : public gmx::test::IntegrationTestFixture
 {
     public:
         //! Constructor
-        Genbox()
+        GenerateSolvent()
             : cpFileName(fileManager_.getInputFilePath("spc-and-methanol.gro")),
-              ciFileName(fileManager_.getInputFilePath("x.gro")),
               topFileName(fileManager_.getInputFilePath("spc-and-methanol.top")),
-              outputFileName(fileManager_.getTemporaryFilePath("out.gro"))
+              outputFileName(fileManager_.getTemporaryFilePath("out.gro")),
+              theFunction(gmx_generate_solvent)
         {
-            caller.append("genbox");
+            caller.append("generate-solvent");
             caller.addOption("-o", outputFileName);
         }
 
     public:
         //! Name of file to use for -cp
         std::string            cpFileName;
-        //! Name of file to use for -ci
-        std::string            ciFileName;
         //! Name of input file to use for -p (if used)
         std::string            topFileName;
         //! Name of output file to use for -o
         std::string            outputFileName;
-        //! Helper object for managing the call to gmx_genbox
+        //! Helper object for managing the call to gmx_generate_solvent
         gmx::test::CommandLine caller;
+        //! Points to the function to be tested
+        CMainFunction          theFunction;
 };
 
-TEST_F(Genbox, cs_box_Works)
+TEST_F(GenerateSolvent, cs_box_Works)
 {
     caller.append("-cs"); // use default solvent box
     caller.addOption("-box", "1.1");
 
-    ASSERT_EQ(0, gmx_genbox(caller.argc(), caller.argv()));
+    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
 }
 
-TEST_F(Genbox, cs_cp_Works)
+TEST_F(GenerateSolvent, cs_cp_Works)
 {
     caller.append("-cs"); // use default solvent box
     caller.addOption("-cp", cpFileName);
 
-    ASSERT_EQ(0, gmx_genbox(caller.argc(), caller.argv()));
+    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
 }
 
-TEST_F(Genbox, cs_cp_p_Works)
+TEST_F(GenerateSolvent, cs_cp_p_Works)
 {
     caller.append("-cs"); // use default solvent box
     caller.addOption("-cp", cpFileName);
@@ -100,20 +103,7 @@ TEST_F(Genbox, cs_cp_p_Works)
     gmx_file_copy(topFileName.c_str(), modifiableTopFileName.c_str(), true);
     caller.addOption("-p", modifiableTopFileName);
 
-    ASSERT_EQ(0, gmx_genbox(caller.argc(), caller.argv()));
+    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
 }
-
-TEST_F(Genbox, ci_Works)
-{
-    caller.addOption("-cp", fileManager_.getInputFilePath("spc216.gro"));
-    caller.addOption("-nmol", "2");
-    caller.addOption("-ci", ciFileName);
-    caller.addOption("-vdwd", "0.01"); // Make sure insertions happen
-
-    ASSERT_EQ(0, gmx_genbox(caller.argc(), caller.argv()));
-}
-
-// TODO Someone who knows what -ip is good for should write something
-// to test it
 
 } // namespace

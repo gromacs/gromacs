@@ -41,7 +41,8 @@ gmx_build_unit_test(
     ${testname}
     ${exename}
     # files with code for test fixtures
-    genbox.cpp
+    generate-solvent.cpp
+    insert-molecules.cpp
     )
 gmx_register_integration_test(
     ${testname}
