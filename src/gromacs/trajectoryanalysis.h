@@ -284,7 +284,7 @@
 #include "trajectoryanalysis/analysismodule.h"
 #include "trajectoryanalysis/analysissettings.h"
 #include "trajectoryanalysis/cmdlinerunner.h"
+#include "utility/arrayref.h"
 #include "utility/exceptions.h"
-#include "utility/stringutil.h"
 
 #endif

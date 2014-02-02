@@ -59,8 +59,8 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -194,7 +194,7 @@ FreeVolume::initOptions(Options                    *options,
     };
 
     // Add the descriptive text (program help text) to the options
-    options->setDescription(concatenateStrings(desc));
+    options->setDescription(desc);
 
     // Add option for optional output file
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
