@@ -359,7 +359,7 @@ int gmx_genion(int argc, char *argv[])
         "either by hand or with [TT]-p[tt]. Do not use an atom name instead!",
         "[PAR]Ions which can have multiple charge states get the multiplicity",
         "added, without sign, for the uncommon states only.[PAR]",
-        "For larger ions, e.g. sulfate we recommended using [gmx-genbox]."
+        "For larger ions, e.g. sulfate we recommended using [gmx-insert-molecules]."
     };
     const char        *bugs[] = {
         "If you specify a salt concentration existing ions are not taken into "
