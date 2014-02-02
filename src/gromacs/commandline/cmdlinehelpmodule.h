@@ -52,6 +52,7 @@ namespace gmx
 {
 
 class CommandLineHelpContext;
+class File;
 class Options;
 class ProgramContextInterface;
 
@@ -115,6 +116,14 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * module when called, skipping any other processing.
          */
         void setModuleOverride(const CommandLineModuleInterface &module);
+
+        /*! \brief
+         * Overrides the file to which help output is written.
+         *
+         * Used for unit testing; see
+         * CommandLineModuleManager::setOutputRedirect().
+         */
+        void setOutputRedirect(File *file);
 
         virtual const char *name() const { return "help"; }
         virtual const char *shortDescription() const
