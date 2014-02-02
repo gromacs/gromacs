@@ -52,10 +52,12 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/utility/file.h"
 
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 namespace
 {
@@ -133,9 +135,13 @@ class CommandLineModuleManagerTest : public ::testing::Test
 
         gmx::CommandLineModuleManager &manager() { return *manager_; }
 
+        void ignoreManagerOutput();
+
     private:
         boost::scoped_ptr<gmx::CommandLineProgramContext> programContext_;
         boost::scoped_ptr<gmx::CommandLineModuleManager>  manager_;
+        gmx::test::TestFileManager                        fileManager_;
+        boost::scoped_ptr<gmx::File>                      outputFile_;
 };
 
 void CommandLineModuleManagerTest::initManager(
@@ -165,9 +171,31 @@ CommandLineModuleManagerTest::addHelpTopic(const char *name, const char *title)
     return *topic;
 }
 
+void CommandLineModuleManagerTest::ignoreManagerOutput()
+{
+    outputFile_.reset(
+            new gmx::File(fileManager_.getTemporaryFilePath("out.txt"), "w"));
+    manager().setOutputRedirect(outputFile_.get());
+}
+
 /********************************************************************
  * Actual tests
  */
+
+TEST_F(CommandLineModuleManagerTest, RunsGeneralHelp)
+{
+    const char *const cmdline[] = {
+        "test"
+    };
+    CommandLine       args(cmdline);
+    initManager(args, "test");
+    ignoreManagerOutput();
+    addModule("module", "First module");
+    addModule("other", "Second module");
+    int rc = 0;
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
 
 TEST_F(CommandLineModuleManagerTest, RunsModule)
 {

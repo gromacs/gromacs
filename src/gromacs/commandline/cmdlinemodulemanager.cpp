@@ -516,6 +516,12 @@ void CommandLineModuleManager::setQuiet(bool bQuiet)
     impl_->bQuiet_ = bQuiet;
 }
 
+void CommandLineModuleManager::setOutputRedirect(File *output)
+{
+    impl_->ensureHelpModuleExists();
+    impl_->helpModule_->setOutputRedirect(output);
+}
+
 void CommandLineModuleManager::setSingleModule(CommandLineModuleInterface *module)
 {
     impl_->singleModule_ = module;

@@ -98,6 +98,8 @@ class CommandLineHelpModuleImpl
         const CommandLineModuleInterface *moduleOverride_;
         bool                              bHidden_;
 
+        File                             *outputOverride_;
+
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModuleImpl);
 };
 
@@ -723,7 +725,8 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const CommandLineModuleGroupList &groups)
     : rootTopic_(new RootHelpTopic), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
-      context_(NULL), moduleOverride_(NULL), bHidden_(false)
+      context_(NULL), moduleOverride_(NULL), bHidden_(false),
+      outputOverride_(NULL)
 {
 }
 
@@ -801,6 +804,11 @@ void CommandLineHelpModule::setModuleOverride(
     impl_->moduleOverride_ = &module;
 }
 
+void CommandLineHelpModule::setOutputRedirect(File *output)
+{
+    impl_->outputOverride_ = output;
+}
+
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
     // Add internal topics lazily here.
@@ -835,10 +843,15 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         return 0;
     }
 
+    File *outputFile = &File::standardOutput();
+    if (impl_->outputOverride_ != NULL)
+    {
+        outputFile = impl_->outputOverride_;
+    }
     HelpLinks                                 links(eHelpOutputFormat_Console);
     initProgramLinks(&links, *impl_);
     boost::scoped_ptr<CommandLineHelpContext> context(
-            new CommandLineHelpContext(&File::standardOutput(),
+            new CommandLineHelpContext(outputFile,
                                        eHelpOutputFormat_Console, &links));
     context->setShowHidden(impl_->bHidden_);
     if (impl_->moduleOverride_ != NULL)
