@@ -151,6 +151,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Convert coordinate files to topology and FF-compliant coordinate files");
     registerModule(manager, &gmx_convert_tpr, "convert-tpr",
                    "Make a modifed run-input file");
+    registerObsoleteTool(manager, "tpbconv");
 
     registerModule(manager, &gmx_protonate, "protonate",
                    "Protonate structures");
