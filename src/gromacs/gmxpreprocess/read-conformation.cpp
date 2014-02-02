@@ -32,20 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXPREPROCESS_GENBOX_H
-#define GMX_GMXPREPROCESS_GENBOX_H
+#include "read-conformation.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
+#include "gromacs/fileio/confio.h"
+#include "atomprop.h"
+#include "types/simple.h"
+#include "types/atoms.h"
+#include "smalloc.h"
+
+void mk_vdw(t_atoms *a, real rvdw[], gmx_atomprop_t aps,
+            real r_distance, real r_scale)
+{
+    int i;
+
+    /* initialise van der waals arrays of configuration */
+    fprintf(stderr, "Initialising van der waals distances...\n");
+    for (i = 0; (i < a->nr); i++)
+    {
+        if (!gmx_atomprop_query(aps, epropVDW,
+                                *(a->resinfo[a->atom[i].resind].name),
+                                *(a->atomname[i]), &(rvdw[i])))
+        {
+            rvdw[i] = r_distance;
+        }
+        else
+        {
+            rvdw[i] *= r_scale;
+        }
+    }
 }
-#endif
 
-int gmx_genbox(int argc, char *argv[]);
+char *read_conformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
+                        real **r, int *ePBC, matrix box, gmx_atomprop_t aps,
+                        real r_distance, real r_scale)
+{
+    char *title;
+    int   natoms;
 
-#ifdef __cplusplus
+    snew(title, STRLEN);
+    get_stx_coordnum(confin, &natoms);
+
+    /* allocate memory for atom coordinates of configuration */
+    snew(*x, natoms);
+    if (v)
+    {
+        snew(*v, natoms);
+    }
+    snew(*r, natoms);
+    init_t_atoms(atoms, natoms, FALSE);
+
+    /* read residue number, residue names, atomnames, coordinates etc. */
+    fprintf(stderr, "Reading solute configuration%s\n", v ? " and velocities" : "");
+    read_stx_conf(confin, title, atoms, *x, v ? *v : NULL, ePBC, box);
+    fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
+            title, atoms->nr, atoms->nres);
+
+    mk_vdw(atoms, *r, aps, r_distance, r_scale);
+
+    return title;
 }
-#endif
-
-#endif
