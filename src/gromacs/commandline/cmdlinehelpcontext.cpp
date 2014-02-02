@@ -78,7 +78,8 @@ class CommandLineHelpContext::Impl
         }
         //! Creates an implementation class from a low-level context.
         explicit Impl(const HelpWriterContext &writerContext)
-            : writerContext_(writerContext), bHidden_(false)
+            : writerContext_(writerContext),
+              completionWriter_(NULL), bHidden_(false)
         {
         }
 

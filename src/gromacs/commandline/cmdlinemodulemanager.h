@@ -54,6 +54,7 @@ class CommandLineModuleGroup;
 class CommandLineModuleGroupData;
 class CommandLineModuleInterface;
 class CommandLineProgramContext;
+class File;
 
 //! \addtogroup module_commandline
 //! \{
@@ -182,12 +183,26 @@ class CommandLineModuleManager
          *
          * \param[in] bQuiet  Whether the module manager should remain silent.
          *
-         * Normally, the module manager prints out some information to stderr
+         * Normally, the module manager prints out some information to `stderr`
          * before it starts the module and after it finishes.  This removes
          * that output, which is useful in particular for unit tests so that
-         * they don't spam stderr.
+         * they don't spam `stderr`.
          */
         void setQuiet(bool bQuiet);
+        /*! \brief
+         * Redirects the output of the module manager to a file.
+         *
+         * \param[in] output  File to write the output to.
+         *
+         * Normally, the module manager prints explicitly requested text such
+         * as help output to `stdout`, but this method can be used to redirect
+         * that output to a file.  This is used for unit tests, either to keep
+         * them quiet or to verify that output.  To keep implementation options
+         * open, behavior with `output == NULL` is undefined and should not be
+         * relied on.  For tests, there should only be need to call this a
+         * single time, right after creating the manager.
+         */
+        void setOutputRedirect(File *output);
 
         /*! \brief
          * Makes the manager always run a single module.
