@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "genbox-addconf.h"
+#include "addconf.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -396,7 +396,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
         fprintf(stderr, "Removed %d atoms that were outside the box\n", nremove);
     }
 
-    /* Define grid stuff for genbox */
+    /* Define grid stuff */
     /* Largest VDW radius */
     snew(r_all, natoms_prot+natoms_solvt);
     for (i = j = 0; i < natoms_prot; i++, j++)
