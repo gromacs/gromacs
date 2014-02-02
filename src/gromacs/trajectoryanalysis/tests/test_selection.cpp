@@ -44,8 +44,8 @@
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -103,7 +103,7 @@ SelectionTester::initOptions(Options                   *options,
         "This is a test program for selections."
     };
 
-    options->setDescription(concatenateStrings(desc));
+    options->setDescription(desc);
 
     options->addOption(SelectionOption("select").storeVector(&selections_)
                            .required().multiValue()
