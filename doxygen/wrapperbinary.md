@@ -10,14 +10,14 @@ understand the overall implementation without reading extensive documentation.
 ======================
 
 The %main() method for the wrapper binary is implemented in
-`src/programs/gmx/gmx.cpp`.  This is a very simple code that does these basic
+`src/programs/gmx.cpp`.  This is a very simple code that does these basic
 tasks:
  1. Initializes \Gromacs using gmx::initForCommandLine()
     (see \ref page_usinglibrary).
  2. Creates a gmx::CommandLineModuleManager instance for the wrapper binary.
  3. Calls various methods to add modules to the manager and initialize it
     otherwise.  Many of the pre-5.0 binaries are added from
-    `src/programs/gmx/legacymodules.cpp`.  New C++ tools are added from
+    `src/programs/legacymodules.cpp`.  New C++ tools are added from
     `src/gromacs/trajectoryanalysis/modules.cpp`.
  4. Passes control to the manager (see below).
  5. On successful return, deinitializes \Gromacs and returns the exit code from
