@@ -57,7 +57,7 @@ elseif(GMX_BUILD_MDRUN_ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmx-completion-${BINARY_NAME}.bash
             DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 else()
-    file(GLOB GMX_MAIN_SOURCES gmx/gmx.cpp gmx/legacymodules.cpp)
+    file(GLOB GMX_MAIN_SOURCES gmx.cpp legacymodules.cpp)
     if(GMX_X11)
         file(GLOB VIEW_SOURCES view/*.cpp)
     else()

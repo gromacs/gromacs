@@ -116,7 +116,17 @@ Doxygen documentation file for directories in the source tree.
 /*!
 \libinternal
 \dir src/programs
-\brief Source code for building executables.
+\brief Source code for building executables, see \ref page_wrapperbinary.
+ */
+/*!
+\libinternal
+\dir src/programs/mdrun
+\brief Source code specific to `mdrun`.
+ */
+/*!
+\libinternal
+\dir src/programs/view
+\brief Source code specific to `gmx view`, including all X11-dependent code.
  */
 
 /*!
