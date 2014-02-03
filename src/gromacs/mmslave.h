@@ -146,10 +146,12 @@ extern int mmslave_set_q(gmx_mmslave_t gms,
  * data structure
  * \param[in] gms    the data structure to be returned
  * \param[in] id     the atom id
- * \return the charge
+ * \param[out] q     the charge of the atom
+ * \return 1 on success 0 otherwise
  */
-extern double mmslave_get_q(gmx_mmslave_t gms,
-                            atom_id       id);
+extern int mmslave_get_q(gmx_mmslave_t  gms,
+                         atom_id        id,
+                         double        *q);
 
 /*! \brief
  * Function to retrieve the atom number of an atom
@@ -187,7 +189,7 @@ extern int mmslave_calc_energy(gmx_mmslave_t gms,
                                const rvec   *x,
                                rvec         *f,
                                rvec         *A,
-                               real         *phi,
+                               real          phi[],
                                double       *energy);
 
 
