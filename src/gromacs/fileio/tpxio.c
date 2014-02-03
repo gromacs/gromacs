@@ -76,8 +76,9 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  *
  * version  feature added
  *    96    support for ion/water position swaps (computational electrophysiology)
+ *    97    switch ld_seed from int to gmx_int64_t
  */
-static const int tpx_version = 96;
+static const int tpx_version = 97;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -1408,7 +1409,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, bd_temp);
     }
     gmx_fio_do_real(fio, ir->bd_fric);
-    gmx_fio_do_int(fio, ir->ld_seed);
+    if (file_version >= 97)
+    {
+        gmx_fio_do_int64(fio, ir->ld_seed);
+    }
+    else
+    {
+        gmx_fio_do_int(fio, idum);
+        ir->ld_seed = idum;
+    }
     if (file_version >= 33)
     {
         for (i = 0; i < DIM; i++)

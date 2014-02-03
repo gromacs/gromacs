@@ -429,7 +429,7 @@ typedef struct {
     int             nLincsIter;              /* Number of iterations in the final Lincs step */
     gmx_bool        bShakeSOR;               /* Use successive overrelaxation for shake      */
     real            bd_fric;                 /* Friction coefficient for BD (amu/ps)         */
-    int             ld_seed;                 /* Random seed for SD and BD                    */
+    gmx_int64_t     ld_seed;                 /* Random seed for SD and BD                    */
     int             nwall;                   /* The number of walls                          */
     int             wall_type;               /* The type of walls                            */
     real            wall_r_linpot;           /* The potentail is linear for r<=wall_r_linpot */
