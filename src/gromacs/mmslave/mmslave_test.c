@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#ifdef GMX_MPI
+#include <mpi.h>
+#endif
 #include "gromacs/mmslave.h"
 
 int main(int argc, char *argv[])
@@ -13,7 +15,9 @@ int main(int argc, char *argv[])
     double e0, e1;
     int i;
     
+#ifdef GMX_MPI
     (void) MPI_Init(&argc, &argv);
+#endif
     cr = init_commrec();
     gms = mmslave_init(cr);
     if (argc > 1) 
@@ -50,7 +54,7 @@ int main(int argc, char *argv[])
         
         if (bOK)
         {
-            bOK = mmslave_calc_energy(gms, stdout, x, f, A, phi, &e0);
+            bOK = mmslave_calc_energy(gms, stdout, (const rvec *)x, f, A, phi, &e0);
         }
         else
         {
@@ -61,7 +65,7 @@ int main(int argc, char *argv[])
         {
             printf("The energy is %lf\n", e0);
             x[0][0] += 0.01;
-            bOK = mmslave_calc_energy(gms, stdout, x, f, A, phi, &e1);
+            bOK = mmslave_calc_energy(gms, stdout, (const rvec *)x, f, A, phi, &e1);
         }
         else
         {
@@ -79,6 +83,9 @@ int main(int argc, char *argv[])
     }
         
     mmslave_done(gms);
-    
+
+#ifdef GMX_MPI
+    MPI_Finalize();
+#endif    
     return 0;
 }
