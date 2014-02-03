@@ -741,9 +741,10 @@ include(gmxManageSuffixes)
 # Shared library settings
 ##################################################################
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set(CMAKE_SKIP_BUILD_RPATH  FALSE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
+    if(GMX_LIB_INSTALL_DIR STREQUAL "lib")
+        set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    endif()
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 else()
     if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) #rpath supported for >10.4
