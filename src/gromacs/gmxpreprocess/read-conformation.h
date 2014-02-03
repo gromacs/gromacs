@@ -43,19 +43,22 @@
 extern "C" {
 #endif
 
-/*! Helper function reading VDW radii
+/*! \brief Allocate and fill an array of inter-atomic half distances
  *
- * Used directly and indirectly by generate-velocities and
- * insert-molecules. */
-void mk_vdw(t_atoms *a, real rvdw[], gmx_atomprop_t aps,
-            real r_distance, real r_scale);
+ * These are either scaled VDW radii taken from vdwradii.dat, or the
+ * default value. Used directly and indirectly by solvate and
+ * insert-molecules for deciding whether molecules clash. The return
+ * pointer should be freed by the caller. */
+real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
+                             real defaultDistance, real scaleFactor);
 
-/*! Helper function to read a conformation from a file.
+/*! \brief Read a conformation from a file, allocate and fill data structures.
  *
- * Used by generate-velocities and insert-molecules. */
-char *read_conformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
-                        real **r, int *ePBC, matrix box, gmx_atomprop_t aps,
-                        real r_distance, real r_scale);
+ * Used by solvate and insert-molecules. The returned pointers *x and
+ * *v should be freed by the caller. atoms should have its destructor
+ * called. */
+char *readConformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
+                       int *ePBC, matrix box);
 
 #ifdef __cplusplus
 }
