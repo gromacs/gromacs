@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@ extern "C" {
 #define MAXATOMLIST 6
 #define MAXFORCEPARAM   12
 #define NR_RBDIHS   6
+#define NR_CBTDIHS   6
 #define NR_FOURDIHS     4
 
 typedef atom_id t_iatom;
@@ -69,6 +70,7 @@ enum {
     F_RESTRBONDS,
     F_ANGLES,
     F_G96ANGLES,
+    F_RESTRANGLES,
     F_LINEAR_ANGLES,
     F_CROSS_BOND_BONDS,
     F_CROSS_BOND_ANGLES,
@@ -77,6 +79,8 @@ enum {
     F_TABANGLES,
     F_PDIHS,
     F_RBDIHS,
+    F_RESTRDIHS,
+    F_CBTDIHS,
     F_FOURDIHS,
     F_IDIHS,
     F_PIDIHS,
@@ -247,6 +251,9 @@ typedef union
     struct {
         real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];
     } rbdihs;
+    struct {
+        real cbtcA[NR_CBTDIHS], cbtcB[NR_CBTDIHS];
+    } cbtdihs;
     struct {
         real a, b, c, d, e, f;
     } vsite;
