@@ -1021,7 +1021,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PR("lincs-warnangle", ir->LincsWarnAngle);
         PI("lincs-iter", ir->nLincsIter);
         PR("bd-fric", ir->bd_fric);
-        PI("ld-seed", ir->ld_seed);
+        PSTEP("ld-seed", ir->ld_seed);
         PR("cos-accel", ir->cos_accel);
         pr_matrix(fp, indent, "deform", ir->deform, bMDPformat);
 
