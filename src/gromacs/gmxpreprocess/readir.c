@@ -1783,7 +1783,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
     CTYPE ("Friction coefficient (amu/ps) and random seed");
     RTYPE ("bd-fric",     ir->bd_fric,    0.0);
-    ITYPE ("ld-seed",     ir->ld_seed,    -1);
+    STEPTYPE ("ld-seed",  ir->ld_seed,    -1);
 
     /* Em stuff */
     CCTYPE ("ENERGY MINIMIZATION OPTIONS");

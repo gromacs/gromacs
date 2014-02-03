@@ -1550,8 +1550,8 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->ld_seed == -1)
     {
-        ir->ld_seed = (int)gmx_rng_make_seed();
-        fprintf(stderr, "Setting the LD random seed to %d\n", ir->ld_seed);
+        ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+        fprintf(stderr, "Setting the LD random seed to %li\n", ir->ld_seed);
     }
 
     if (ir->expandedvals->lmc_seed == -1)

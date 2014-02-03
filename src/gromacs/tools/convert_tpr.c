@@ -56,6 +56,7 @@
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/futil.h"
+#include "gromacs/random/random.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
 
@@ -461,6 +462,13 @@ int gmx_convert_tpr(int argc, char *argv[])
             fprintf(stderr, "NOTE: The simulation uses pressure coupling and/or stochastic dynamics.\n"
                     "gmx convert-tpr can not provide binary identical continuation.\n"
                     "If you want that, supply a checkpoint file to mdrun\n\n");
+        }
+
+        if (EI_SD(ir->eI) || ir->eI == eiBD)
+        {
+            fprintf(stderr, "\nChanging ld-seed from %"GMX_PRId64" ", ir->ld_seed);
+            ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+            fprintf(stderr, "to %"GMX_PRId64"\n\n", ir->ld_seed);
         }
 
         frame_fn = ftp2fn(efTRN, NFILE, fnm);
