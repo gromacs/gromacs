@@ -1,0 +1,11 @@
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Verified+1: Roland Schulz <roland@rschulz.eu>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Verified+1: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Verified+2: Jenkins Buildbot
+Submitted-by: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-at: Mon, 03 Feb 2014 20:44:12 +0100
+Reviewed-on: https://gerrit.gromacs.org/3070
+Project: gromacs
+Branch: refs/heads/release-4-6
