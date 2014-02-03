@@ -33,7 +33,8 @@ endif()
 
 # Machinery for running the external project
 set(EXTERNAL_FFTW_VERSION 3.3.2)
-set(GMX_BUILD_OWN_FFTW_URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE PATH "URL from where to download fftw, (use an absolute path when offline)")
+# cmake make eats slashes //// -> //
+set(GMX_BUILD_OWN_FFTW_URL "http:////www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE PATH "URL from where to download fftw, (use an absolute path when offline)")
 mark_as_advanced(GMX_BUILD_OWN_FFTW_URL)
 include(ExternalProject)
 # TODO in master branch - show this warning only on the first run
