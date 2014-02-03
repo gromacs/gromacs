@@ -466,9 +466,9 @@ int gmx_convert_tpr(int argc, char *argv[])
 
         if (EI_SD(ir->eI) || ir->eI == eiBD)
         {
-            fprintf(stderr, "\nChanging ld-seed from %d ", ir->ld_seed);
-            ir->ld_seed = (int)gmx_rng_make_seed();
-            fprintf(stderr, "to %d\n\n", ir->ld_seed);
+            fprintf(stderr, "\nChanging ld-seed from %"GMX_PRId64" ", ir->ld_seed);
+            ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+            fprintf(stderr, "to %"GMX_PRId64"\n\n", ir->ld_seed);
         }
 
         frame_fn = ftp2fn(efTRN, NFILE, fnm);
