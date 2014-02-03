@@ -369,10 +369,10 @@ static void make_new_conformation(t_atoms *atoms, rvec *x, rvec *v, real *r, mat
     }
 }
 
-static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **r,
+static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **exclusionDistances,
                      int ePBC, matrix box,
                      gmx_atomprop_t aps,
-                     real r_distance, real r_scale, int *atoms_added,
+                     real defaultDistance, real scaleFactor, int *atoms_added,
                      int *residues_added, real rshell, int max_sol,
                      const output_env_t oenv)
 {
@@ -382,7 +382,7 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     char     title_solvt[STRLEN];
     t_atoms *atoms_solvt;
     rvec    *x_solvt, *v_solvt = NULL;
-    real    *r_solvt;
+    real    *exclusionDistances_solvt;
     int      ePBC_solvt;
     matrix   box_solvt;
     int      onr, onres;
@@ -391,18 +391,22 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     lfn = gmxlibfn(fn);
     strncpy(filename, lfn, STRLEN);
     sfree(lfn);
-    snew(atoms_solvt, 1);
-    get_stx_coordnum(filename, &(atoms_solvt->nr));
-    if (atoms_solvt->nr == 0)
     {
-        gmx_fatal(FARGS, "No solvent in %s, please check your input\n", filename);
+        int natoms;
+        get_stx_coordnum(filename, &natoms);
+        if (0 == natoms)
+        {
+            gmx_fatal(FARGS, "No solvent in %s, please check your input\n", filename);
+        }
+        snew(atoms_solvt, 1);
+        init_t_atoms(atoms_solvt, natoms, FALSE);
     }
     snew(x_solvt, atoms_solvt->nr);
     if (v)
     {
         snew(v_solvt, atoms_solvt->nr);
     }
-    snew(r_solvt, atoms_solvt->nr);
+    snew(exclusionDistances_solvt, atoms_solvt->nr);
     snew(atoms_solvt->resinfo, atoms_solvt->nr);
     snew(atoms_solvt->atomname, atoms_solvt->nr);
     snew(atoms_solvt->atom, atoms_solvt->nr);
@@ -419,8 +423,8 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     /* apply pbc for solvent configuration for whole molecules */
     rm_res_pbc(atoms_solvt, x_solvt, box_solvt);
 
-    /* initialise van der waals arrays for solvent configuration */
-    mk_vdw(atoms_solvt, r_solvt, aps, r_distance, r_scale);
+    /* initialise distance arrays for solvent configuration */
+    exclusionDistances_solvt = makeExclusionDistances(atoms_solvt, aps, defaultDistance, scaleFactor);
 
     /* calculate the box multiplication factors n_box[0...DIM] */
     nmol = 1;
@@ -445,10 +449,10 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     {
         srenew(v_solvt, atoms_solvt->nr*nmol);
     }
-    srenew(r_solvt, atoms_solvt->nr*nmol);
+    srenew(exclusionDistances_solvt, atoms_solvt->nr*nmol);
 
     /* generate a new solvent configuration */
-    make_new_conformation(atoms_solvt, x_solvt, v_solvt, r_solvt, box_solvt, n_box);
+    make_new_conformation(atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, box_solvt, n_box);
 
 #ifdef DEBUG
     print_stat(x_solvt, atoms_solvt->nr, box_solvt);
@@ -458,18 +462,20 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     print_stat(x_solvt, atoms_solvt->nr, box_solvt);
 #endif
     /* Sort the solvent mixture, not the protein... */
-    sort_molecule(&atoms_solvt, x_solvt, v_solvt, r_solvt);
+    sort_molecule(&atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt);
 
     /* add the two configurations */
     onr   = atoms->nr;
     onres = atoms->nres;
-    add_conf(atoms, x, v, r, TRUE, ePBC, box, FALSE,
-             atoms_solvt, x_solvt, v_solvt, r_solvt, TRUE, rshell, max_sol, oenv);
+    add_conf(atoms, x, v, exclusionDistances, TRUE, ePBC, box, FALSE,
+             atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, TRUE, rshell, max_sol, oenv);
     *atoms_added    = atoms->nr-onr;
     *residues_added = atoms->nres-onres;
 
     sfree(x_solvt);
-    sfree(r_solvt);
+    sfree(exclusionDistances_solvt);
+    done_atom(atoms_solvt);
+    sfree(atoms_solvt);
 
     fprintf(stderr, "Generated solvent containing %d atoms in %d residues\n",
             *atoms_added, *residues_added);
@@ -623,13 +629,11 @@ int gmx_solvate(int argc, char *argv[])
         "to change the box dimensions and center the solute.",
         "Solvent molecules are removed from the box where the ",
         "distance between any atom of the solute molecule(s) and any atom of ",
-        "the solvent molecule is less than the sum of the van der Waals radii of ",
-        "both atoms. A database ([TT]vdwradii.dat[tt]) of van der Waals radii is ",
-        "read by the program, and atoms not in the database are ",
-        "assigned a default distance [TT]-vdwd[tt].",
-        "Note that this option will also influence the distances between",
-        "solvent molecules if they contain atoms that are not in the database.",
-        "[PAR]",
+        "the solvent molecule is less than the sum of the scaled van der Waals",
+        "radii of both atoms. A database ([TT]vdwradii.dat[tt]) of van der",
+        "Waals radii is read by the program, and the resulting radii scaled",
+        "by [TT]-scale[tt]. If radii are not found in the database, those"
+        "atoms are assigned the (pre-scaled) distance [TT]-radius[tt].[PAR]",
 
         "The default solvent is Simple Point Charge water (SPC), with coordinates ",
         "from [TT]$GMXLIB/spc216.gro[tt]. These coordinates can also be used",
@@ -675,13 +679,13 @@ int gmx_solvate(int argc, char *argv[])
     /* parameter data */
     gmx_bool       bProt, bBox;
     const char    *conf_prot, *confout;
-    real          *r;
+    real          *exclusionDistances = NULL;
     gmx_atomprop_t aps;
 
     /* protein configuration data */
     char    *title = NULL;
-    t_atoms  atoms;
-    rvec    *x, *v = NULL;
+    t_atoms *atoms;
+    rvec    *x    = NULL, *v = NULL;
     int      ePBC = -1;
     matrix   box;
 
@@ -696,18 +700,18 @@ int gmx_solvate(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    static real     r_distance = 0.105, r_shell = 0, r_scale = 0.57;
-    static rvec     new_box    = {0.0, 0.0, 0.0};
-    static gmx_bool bReadV     = FALSE;
-    static int      max_sol    = 0;
+    static real     defaultDistance = 0.105, r_shell = 0, scaleFactor = 0.57;
+    static rvec     new_box         = {0.0, 0.0, 0.0};
+    static gmx_bool bReadV          = FALSE;
+    static int      max_sol         = 0;
     output_env_t    oenv;
     t_pargs         pa[]              = {
         { "-box",    FALSE, etRVEC, {new_box},
           "Box size (in nm)" },
-        { "-vdwd",   FALSE, etREAL, {&r_distance},
+        { "-radius",   FALSE, etREAL, {&defaultDistance},
           "Default van der Waals distance"},
-        { "-vdwscale", FALSE, etREAL, {&r_scale},
-          "HIDDENScale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water." },
+        { "-scale", FALSE, etREAL, {&scaleFactor},
+          "Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water." },
         { "-shell",  FALSE, etREAL, {&r_shell},
           "Thickness of optional water layer around solute" },
         { "-maxsol", FALSE, etINT,  {&max_sol},
@@ -735,32 +739,25 @@ int gmx_solvate(int argc, char *argv[])
 
     aps = gmx_atomprop_init();
 
+    snew(atoms, 1);
+    init_t_atoms(atoms, 0, FALSE);
     if (bProt)
     {
         /* Generate a solute configuration */
         conf_prot = opt2fn("-cp", NFILE, fnm);
-        title     = read_conformation(conf_prot, &atoms, &x, bReadV ? &v : NULL, &r, &ePBC, box,
-                                      aps, r_distance, r_scale);
+        title     = readConformation(conf_prot, atoms, &x,
+                                     bReadV ? &v : NULL, &ePBC, box);
+        exclusionDistances = makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor);
+
         if (bReadV && !v)
         {
             fprintf(stderr, "Note: no velocities found\n");
         }
-        if (atoms.nr == 0)
+        if (atoms->nr == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", conf_prot);
             bProt = FALSE;
         }
-    }
-    else
-    {
-        atoms.nr       = 0;
-        atoms.nres     = 0;
-        atoms.resinfo  = NULL;
-        atoms.atomname = NULL;
-        atoms.atom     = NULL;
-        atoms.pdbinfo  = NULL;
-        x              = NULL;
-        r              = NULL;
     }
     if (bBox)
     {
@@ -776,8 +773,8 @@ int gmx_solvate(int argc, char *argv[])
                   "or give explicit -box command line option");
     }
 
-    add_solv(solventFileName, &atoms, &x, v ? &v : NULL, &r, ePBC, box,
-             aps, r_distance, r_scale, &atoms_added, &residues_added, r_shell, max_sol,
+    add_solv(solventFileName, atoms, &x, v ? &v : NULL, &exclusionDistances, ePBC, box,
+             aps, defaultDistance, scaleFactor, &atoms_added, &residues_added, r_shell, max_sol,
              oenv);
 
     /* write new configuration 1 to file confout */
@@ -785,21 +782,26 @@ int gmx_solvate(int argc, char *argv[])
     fprintf(stderr, "Writing generated configuration to %s\n", confout);
     if (bProt)
     {
-        write_sto_conf(confout, title, &atoms, x, v, ePBC, box);
+        write_sto_conf(confout, title, atoms, x, v, ePBC, box);
         /* print box sizes and box type to stderr */
         fprintf(stderr, "%s\n", title);
     }
     else
     {
-        write_sto_conf(confout, "Generated by gmx solvate", &atoms, x, v, ePBC, box);
+        write_sto_conf(confout, "Generated by gmx solvate", atoms, x, v, ePBC, box);
     }
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
-            atoms.nr, atoms.nres);
-    update_top(&atoms, box, NFILE, fnm, aps);
+            atoms->nr, atoms->nres);
+    update_top(atoms, box, NFILE, fnm, aps);
 
     gmx_atomprop_destroy(aps);
+    sfree(exclusionDistances);
+    sfree(x);
+    sfree(v);
+    done_atom(atoms);
+    sfree(atoms);
 
     return 0;
 }
