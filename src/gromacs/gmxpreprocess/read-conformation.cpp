@@ -40,31 +40,34 @@
 #include "types/atoms.h"
 #include "smalloc.h"
 
-void mk_vdw(t_atoms *a, real rvdw[], gmx_atomprop_t aps,
-            real r_distance, real r_scale)
+real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
+                             real defaultDistance, real scaleFactor)
 {
-    int i;
+    int   i;
+    real *exclusionDistances;
 
-    /* initialise van der waals arrays of configuration */
-    fprintf(stderr, "Initialising van der waals distances...\n");
+    snew(exclusionDistances, a->nr);
+    /* initialise arrays with distances usually based on van der Waals
+       radii */
+    fprintf(stderr, "Initialising inter-atomic distances...\n");
     for (i = 0; (i < a->nr); i++)
     {
         if (!gmx_atomprop_query(aps, epropVDW,
                                 *(a->resinfo[a->atom[i].resind].name),
-                                *(a->atomname[i]), &(rvdw[i])))
+                                *(a->atomname[i]), &(exclusionDistances[i])))
         {
-            rvdw[i] = r_distance;
+            exclusionDistances[i] = defaultDistance;
         }
         else
         {
-            rvdw[i] *= r_scale;
+            exclusionDistances[i] *= scaleFactor;
         }
     }
+    return exclusionDistances;
 }
 
-char *read_conformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
-                        real **r, int *ePBC, matrix box, gmx_atomprop_t aps,
-                        real r_distance, real r_scale)
+char *readConformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
+                       int *ePBC, matrix box)
 {
     char *title;
     int   natoms;
@@ -78,7 +81,6 @@ char *read_conformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
     {
         snew(*v, natoms);
     }
-    snew(*r, natoms);
     init_t_atoms(atoms, natoms, FALSE);
 
     /* read residue number, residue names, atomnames, coordinates etc. */
@@ -86,8 +88,6 @@ char *read_conformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
     read_stx_conf(confin, title, atoms, *x, v ? *v : NULL, ePBC, box);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
             title, atoms->nr, atoms->nres);
-
-    mk_vdw(atoms, *r, aps, r_distance, r_scale);
 
     return title;
 }
