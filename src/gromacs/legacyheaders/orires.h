@@ -48,9 +48,12 @@ extern "C" {
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec x[],
                  const t_inputrec *ir,
-                 const gmx_multisim_t *ms, t_oriresdata *od,
-                 t_state *state);
-/* Initializes all the orientation restraint stuff in *od */
+                 const t_commrec *cr, t_oriresdata *od,
+                 t_state *state,
+                 gmx_bool bIsParticleDecomposition);
+/* Decides whether orientation restraints can work, and initializes
+   all the orientation restraint stuff in *od (and assumes *od is
+   already allocated. */
 
 real calc_orires_dev(const gmx_multisim_t *ms,
                      int nfa, const t_iatom fa[], const t_iparams ip[],

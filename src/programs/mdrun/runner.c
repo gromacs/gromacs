@@ -1358,19 +1358,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* This needs to be called before read_checkpoint to extend the state */
     init_disres(fplog, mtop, inputrec, cr, Flags & MD_PARTDEC, fcd, state, repl_ex_nst > 0);
 
-    if (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0)
-    {
-        if (PAR(cr) && !(Flags & MD_PARTDEC))
-        {
-            gmx_fatal(FARGS, "Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
-        }
-        /* Orientation restraints */
-        if (MASTER(cr))
-        {
-            init_orires(fplog, mtop, state->x, inputrec, cr->ms, &(fcd->orires),
-                        state);
-        }
-    }
+    init_orires(fplog, mtop, state->x, inputrec, cr, &(fcd->orires),
+                state, Flags & MD_PARTDEC);
 
     if (DEFORM(*inputrec))
     {

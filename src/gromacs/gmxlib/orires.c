@@ -53,30 +53,43 @@
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec xref[],
                  const t_inputrec *ir,
-                 const gmx_multisim_t *ms, t_oriresdata *od,
-                 t_state *state)
+                 const t_commrec *cr, t_oriresdata *od,
+                 t_state *state, gmx_bool bIsParticleDecomposition)
 {
-    int                     i, j, d, ex, nmol, nr, *nr_ex;
+    int                     i, j, d, ex, nmol, *nr_ex;
     double                  mtot;
     rvec                    com;
     gmx_mtop_ilistloop_t    iloop;
     t_ilist                *il;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
+    const gmx_multisim_t   *ms;
+
+    od->nr = gmx_mtop_ftype_count(mtop, F_ORIRES);
+    if (0 == od->nr)
+    {
+        /* Not doing orientation restraints */
+        return;
+    }
+
+    if (PAR(cr) && !bIsParticleDecomposition)
+    {
+        gmx_fatal(FARGS, "Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+    }
+    /* Orientation restraints */
+    if (!MASTER(cr))
+    {
+        /* Nothing to do */
+        return;
+    }
+    ms = cr->ms;
 
     od->fc  = ir->orires_fc;
     od->nex = 0;
     od->S   = NULL;
-
     od->M   = NULL;
     od->eig = NULL;
     od->v   = NULL;
-
-    od->nr = gmx_mtop_ftype_count(mtop, F_ORIRES);
-    if (od->nr == 0)
-    {
-        return;
-    }
 
     nr_ex = NULL;
 
