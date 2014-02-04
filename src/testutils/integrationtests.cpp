@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,12 +61,14 @@ namespace test
 
 std::string IntegrationTestFixture::s_maxBackup("-1");
 
+//! \cond
 GMX_TEST_OPTIONS(IntegrationTestOptions, options)
 {
     options->addOption(StringOption("max-backup")
                            .store(&IntegrationTestFixture::s_maxBackup)
                            .description("Maximum number of backup files of old test output to write (-1 prevents backups being created)"));
 }
+//! \endcond
 
 IntegrationTestFixture::IntegrationTestFixture()
 {

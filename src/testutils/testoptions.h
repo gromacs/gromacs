@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@ namespace test
  * Provides additional options for the test executable.
  *
  * Typically not used directly in test code, but through the
- * GMX_TEST_OPTIONS macro.
+ * #GMX_TEST_OPTIONS macro.
  *
  * \inlibraryapi
  * \ingroup module_testutils
@@ -87,7 +87,7 @@ class TestOptionsProvider
  * \throws  tMPI::system_error on mutex failures.
  *
  * Typically not used directly in test code, but through the
- * GMX_TEST_OPTIONS macro.
+ * #GMX_TEST_OPTIONS macro.
  *
  * This gets called from constructors for global variables, so ideally
  * it would not throw to avoid unhandled exceptions.  But since this
@@ -98,24 +98,49 @@ class TestOptionsProvider
  */
 void registerTestOptions(const char *name, TestOptionsProvider *provider);
 
+// Uncrustify screws up the indentation for the example otherwise.
+/* *INDENT-OFF* */
 /*! \libinternal \brief
  * Macro to add additional command-line options for the test binary.
  *
+ * \param  name    Unique name for the set of options.
+ * \param  options Placeholder name for an gmx::Options object for adding options.
+ *
+ * The macro should be followed by a block that adds the desired command-line
+ * options to `options` using gmx::Options::addOption().  \ref module_options
+ * provides an overview of the options machinery.
+ *
+ * `name` must be unique within the executable to which the options are added.
+ * If the macro is within an unnamed namespace, then it is sufficient that it
+ * is unique within the file.
+ *
  * Typical usage:
  * \code
+   #include "gromacs/options/basicoptions.h"
+   #include "gromacs/options/options.h"
+   #include "testutils/testoptions.h"
+
+   namespace gmx
+   {
    namespace
    {
 
    bool g_optionValue = false;
 
+   //! \cond
    GMX_TEST_OPTIONS(MyTestOptions, options)
    {
-       options->addOption(BooleanOption("-flag").store(g_optionValue)
+       options->addOption(BooleanOption("flag").store(&g_optionValue)
                               .description("My description"));
    }
+   //! \endcond
 
    } // namespace
- * \endcode
+   } // namespace gmx
+   \endcode
+ *
+ * \c \\cond and \c \\endcond statements are necessary around the macro to avoid
+ * Doxygen warnings.
  *
  * One macro invocation per an added option, with more of the implementation
  * details hidden inside the macro, could be nicer.  But that requires more
@@ -123,7 +148,9 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
  * complexity.
  *
  * \ingroup module_testutils
+ * \hideinitializer
  */
+/* *INDENT-ON* */
 #define GMX_TEST_OPTIONS(name, options) \
     class name : public ::gmx::test::TestOptionsProvider \
     { \

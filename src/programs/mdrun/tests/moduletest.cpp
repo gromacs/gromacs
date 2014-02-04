@@ -65,27 +65,28 @@ namespace test
  * MdrunTestFixture
  */
 
-
-/*! /brief Number of tMPI threads for child mdrun call */
-static int gmx_unused numThreads = 1;
-/*! /brief Number of OpenMP threads for child mdrun call */
-static int gmx_unused numOpenMPThreads = 1;
-
 namespace
 {
 
+//! Number of tMPI threads for child mdrun call.
+int gmx_unused g_numThreads = 1;
+//! Number of OpenMP threads for child mdrun call.
+int gmx_unused g_numOpenMPThreads = 1;
+
+//! \cond
 GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
 #ifdef GMX_THREAD_MPI
-    options->addOption(IntegerOption("nt").store(&numThreads)
+    options->addOption(IntegerOption("nt").store(&g_numThreads)
                            .description("Number of thread-MPI threads/ranks for child mdrun call"));
 #endif
 #ifdef GMX_OPENMP
-    options->addOption(IntegerOption("nt_omp").store(&numOpenMPThreads)
+    options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
                            .description("Number of OpenMP threads for child mdrun call"));
 #endif
 }
+//! \endcond
 
 }
 
@@ -193,10 +194,10 @@ MdrunTestFixture::callMdrun(const CommandLine &callerRef)
     }
 
 #ifdef GMX_THREAD_MPI
-    caller.addOption("-nt", numThreads);
+    caller.addOption("-nt", g_numThreads);
 #endif
 #ifdef GMX_OPENMP
-    caller.addOption("-ntomp", numOpenMPThreads);
+    caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
     return gmx_mdrun(caller.argc(), caller.argv());
