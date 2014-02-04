@@ -230,7 +230,8 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     }
 }
 
-gmx_shellfc_t init_shell_flexcon(FILE *fplog,
+gmx_shellfc_t init_shell_flexcon(FILE *fplog, const t_commrec *cr,
+                                 gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x)
 {
@@ -280,7 +281,18 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 
     if (nshell == 0 && nflexcon == 0)
     {
+        /* We're not doing shells or flexible constraints */
         return NULL;
+    }
+
+    if (DOMAINDECOMP(cr))
+    {
+        gmx_fatal(FARGS, "The shell code does not work with domain decomposition. Use particle decomposition, or only one MPI rank.\n");
+        /* The problem is probably not severe. See Redmine #1429. */
+    }
+    if (bCutoffSchemeIsVerlet)
+    {
+        gmx_fatal(FARGS, "The shell code does not work with the Verlet cut-off scheme.\n");
     }
 
     snew(shfc, 1);
