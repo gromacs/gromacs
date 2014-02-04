@@ -74,6 +74,11 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
                        GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_NOINLINE "-fno-inline" GMXC_CFLAGS_DEBUG)
+        # gcc version 4.8 and greater emits lots of false warnings about uninitialized variables and array bounds
+        # when the index/variable is set in a subroutine.
+        if(CMAKE_C_COMPILER_VERSION VERSION_GREATER "4.7.999")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized -Wno-array-bounds")
+        endif()
     endif()
     # g++
     if(CMAKE_COMPILER_IS_GNUCXX)
@@ -89,6 +94,11 @@ MACRO(gmx_c_flags)
         GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
                          GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_NOINLINE "-fno-inline" GMXC_CXXFLAGS_DEBUG)
+        # gcc version 4.8 and greater emits lots of false warnings about uninitialized variables and array bounds
+        # when the index/variable is set in a subroutine.
+        if(CMAKE_C_COMPILER_VERSION VERSION_GREATER "4.7.999")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized -Wno-array-bounds")
+        endif()
     endif()
 
     # icc
