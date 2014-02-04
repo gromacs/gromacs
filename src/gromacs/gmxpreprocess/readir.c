@@ -1776,7 +1776,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
     CTYPE ("Friction coefficient (amu/ps) and random seed");
     RTYPE ("bd-fric",     ir->bd_fric,    0.0);
-    ITYPE ("ld-seed",     ir->ld_seed,    1993);
+    ITYPE ("ld-seed",     ir->ld_seed,    -1);
 
     /* Em stuff */
     CCTYPE ("ENERGY MINIMIZATION OPTIONS");
@@ -1967,7 +1967,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
     EETYPE("gen-vel",     opts->bGenVel,  yesno_names);
     RTYPE ("gen-temp",    opts->tempi,    300.0);
-    ITYPE ("gen-seed",    opts->seed,     173529);
+    ITYPE ("gen-seed",    opts->seed,     -1);
 
     /* Shake stuff */
     CCTYPE ("OPTIONS FOR BONDS");
