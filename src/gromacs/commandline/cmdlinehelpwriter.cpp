@@ -41,6 +41,9 @@
  */
 #include "cmdlinehelpwriter.h"
 
+#include <cstring>
+
+#include <algorithm>
 #include <string>
 
 #include <boost/scoped_ptr.hpp>
@@ -359,6 +362,103 @@ descriptionWithOptionDetails(const CommonFormatterData &common,
 }
 
 /********************************************************************
+ * OptionsSynopsisFormatter
+ */
+
+/*! \brief
+ * Formatter implementation for synopsis.
+ */
+class SynopsisFormatter : public OptionsFormatterInterface
+{
+    public:
+        //! Creates a helper object for formatting the synopsis.
+        explicit SynopsisFormatter(const HelpWriterContext &context)
+            : context_(context), lineLength_(0), indent_(0), currentLength_(0)
+        {
+        }
+
+        //! Starts formatting the synopsis.
+        void start(const char *name);
+        //! Finishes formatting the synopsis.
+        void finish();
+
+        virtual void formatOption(const OptionInfo &option);
+
+    private:
+        const HelpWriterContext &context_;
+        int                      lineLength_;
+        int                      indent_;
+        int                      currentLength_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(SynopsisFormatter);
+};
+
+void SynopsisFormatter::start(const char *name)
+{
+    currentLength_ = std::strlen(name) + 1;
+    indent_        = std::min(currentLength_, 13);
+    File &file = context_.outputFile();
+    switch (context_.outputFormat())
+    {
+        case eHelpOutputFormat_Console:
+            lineLength_ = 78;
+            file.writeString(name);
+            break;
+        case eHelpOutputFormat_Man:
+            lineLength_ = 70;
+            file.writeString(name);
+            break;
+        case eHelpOutputFormat_Html:
+            lineLength_ = 78;
+            file.writeLine("<pre>");
+            file.writeString(name);
+            break;
+        default:
+            GMX_THROW(NotImplementedError("Synopsis formatting not implemented for this output format"));
+    }
+}
+
+void SynopsisFormatter::finish()
+{
+    File &file = context_.outputFile();
+    file.writeLine();
+    if (context_.outputFormat() == eHelpOutputFormat_Html)
+    {
+        file.writeLine("</pre>");
+    }
+    file.writeLine();
+}
+
+void SynopsisFormatter::formatOption(const OptionInfo &option)
+{
+    std::string name, value;
+    formatOptionNameAndValue(option, &name, &value);
+    std::string fullOptionText(" [-" + name);
+    if (!value.empty())
+    {
+        fullOptionText.append(" ");
+        fullOptionText.append(value);
+    }
+    fullOptionText.append("]");
+    const int   totalLength = fullOptionText.size();
+
+    if (context_.outputFormat() == eHelpOutputFormat_Html)
+    {
+        value = replaceAll(value, "<", "&lt;");
+        value = replaceAll(value, ">", "&gt;");
+    }
+
+    File &file = context_.outputFile();
+    currentLength_ += totalLength;
+    if (currentLength_ >= lineLength_)
+    {
+        file.writeString(formatString("\n%*c", indent_ - 1, ' '));
+        currentLength_ = indent_ - 1 + totalLength;
+    }
+    file.writeString(fullOptionText);
+}
+
+/********************************************************************
  * OptionsListFormatter
  */
 
@@ -551,13 +651,15 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
     OptionsFilter            filter;
     filter.setShowHidden(context.showHidden());
 
-    File &file = writerContext.outputFile();
-    if (!bConsole)
     {
-        // TODO: Write a proper synopsis, with all the options.
         writerContext.writeTitle("Synopsis");
-        writerContext.writeTextBlock(context.moduleDisplayName());
-        file.writeLine("\n\n");
+        SynopsisFormatter synopsisFormatter(writerContext);
+        synopsisFormatter.start(context.moduleDisplayName());
+        filter.formatSelected(OptionsFilter::eSelectFileOptions,
+                              &synopsisFormatter, impl_->options_);
+        filter.formatSelected(OptionsFilter::eSelectOtherOptions,
+                              &synopsisFormatter, impl_->options_);
+        synopsisFormatter.finish();
     }
 
     if (impl_->bShowDescriptions_)
