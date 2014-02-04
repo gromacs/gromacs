@@ -92,12 +92,20 @@ class SelectionCollectionTest : public ::testing::Test
 
 int SelectionCollectionTest::s_debugLevel = 0;
 
+// Ugly hack to avoid tripping the Doxygen 1.8.5 parser.
+namespace
+{
+
+//! \cond
 GMX_TEST_OPTIONS(SelectionCollectionTestOptions, options)
 {
     options->addOption(gmx::IntegerOption("seldebug")
                            .store(&SelectionCollectionTest::s_debugLevel)
                            .description("Set selection debug level"));
 }
+//! \endcond
+
+}   // namespace
 
 SelectionCollectionTest::SelectionCollectionTest()
     : top_(NULL), frame_(NULL), grps_(NULL)
