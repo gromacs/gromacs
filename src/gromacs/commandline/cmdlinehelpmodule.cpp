@@ -120,9 +120,7 @@ struct RootHelpText
 // The first two are not used.
 const char        RootHelpText::name[]  = "";
 const char        RootHelpText::title[] = "";
-const char *const RootHelpText::text[]  = {
-    "Usage: [PROGRAM] [<options>] <command> [<args>]",
-};
+const char *const RootHelpText::text[]  = { "" };
 
 /*! \brief
  * Help topic that forms the root of the help tree for the help subcommand.
@@ -137,7 +135,8 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
          *
          * Does not throw.
          */
-        RootHelpTopic() : commonOptions_(NULL)
+        explicit RootHelpTopic(const std::string &binaryName)
+            : binaryName_(binaryName), commonOptions_(NULL)
         {
         }
 
@@ -150,6 +149,7 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
+        std::string                 binaryName_;
         const Options              *commonOptions_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
@@ -164,10 +164,10 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         GMX_THROW(NotImplementedError(
                           "Root help is not implemented for this output format"));
     }
-    writeBasicHelpTopic(context, *this, helpText());
-    context.outputFile().writeLine();
     {
         CommandLineHelpContext cmdlineContext(context);
+        cmdlineContext.setModuleDisplayName(binaryName_);
+        // TODO: Add <command> [<args>] into the synopsis.
         // TODO: Propagate the -hidden option here.
         CommandLineHelpWriter(*commonOptions_)
             .writeHelp(cmdlineContext);
@@ -723,7 +723,7 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : rootTopic_(new RootHelpTopic), programContext_(programContext),
+    : rootTopic_(new RootHelpTopic(binaryName)), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false),
       outputOverride_(NULL)
