@@ -74,7 +74,7 @@ namespace
 {
 
 /*! \brief
- * Singleton registry for test options added with GMX_TEST_OPTIONS.
+ * Singleton registry for test options added with #GMX_TEST_OPTIONS.
  *
  * \ingroup module_testutils
  */
