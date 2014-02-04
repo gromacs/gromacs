@@ -2,6 +2,10 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-sub1 <int>] [-sub2 <int>] [-main <int>]
+
 DESCRIPTION
 
 Description for main section.

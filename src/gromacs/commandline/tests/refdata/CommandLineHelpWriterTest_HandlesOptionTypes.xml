@@ -2,6 +2,13 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-f <.xtc/.trr/...>] [-mult [<.xtc/.trr/...> [...]]] [-lib [<.dat>]]
+    [-io [<.dat>]] [-o <.xvg>] [-[no]bool] [-[no]hidden] [-int <int>]
+    [-ivec <vector>] [-double <real>] [-dvec <vector>] [-time <time>]
+    [-string <string>] [-enum <enum>]
+
 FILE OPTIONS
 
  -f     <.xtc/.trr/...> (traj.xtc) (Input)

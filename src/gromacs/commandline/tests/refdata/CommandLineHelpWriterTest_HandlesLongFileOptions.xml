@@ -2,6 +2,11 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-f <.xtc/.trr/...>] [-f2 <.xtc/.trr/...>] [-lib [<.xtc/.trr/...>]]
+    [-longfileopt [<.dat>]] [-longfileopt2 [<.dat>]]
+
 FILE OPTIONS
 
  -f     <.xtc/.trr/...> (path/to/long/trajectory/name.xtc) (Input)
