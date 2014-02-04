@@ -230,7 +230,8 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     }
 }
 
-gmx_shellfc_t init_shell_flexcon(FILE *fplog,
+gmx_shellfc_t init_shell_flexcon(FILE *fplog, const t_commrec *cr,
+                                 gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x)
 {
@@ -251,6 +252,15 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
     gmx_molblock_t           *molb;
     gmx_moltype_t            *molt;
     t_block                  *cgs;
+
+    if (DOMAINDECOMP(cr) && cr->nnodes > 1)
+    {
+        gmx_fatal(FARGS, "The shell code does not work with domain decompsition and more than 1 domain.\n");
+    }
+    if (bCutoffSchemeIsVerlet)
+    {
+        gmx_fatal(FARGS, "The shell code does not work with the Verlet cut-off scheme.\n");
+    }
 
     /* Count number of shells, and find their indices */
     for (i = 0; (i < eptNR); i++)
