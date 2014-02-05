@@ -54,6 +54,9 @@ main(int argc, char *argv[])
         gmx::CommandLineModuleManager manager("alexandria", &context);
         registerAlexandriaModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
+        manager.setQuiet(true);
+        printf("\n                   Welcome to Alexandria\n\n");
+        printf("Copyright (c) 2014, David van der Spoel and Paul J. van Maaren\n\n");
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
         return rc;
