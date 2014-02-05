@@ -86,7 +86,7 @@ if(MANUAL_BUILD_IS_POSSIBLE)
     ADD_LATEX_DOCUMENT(gromacs.tex
         # Normal LaTeX \included files
         INPUTS algorithms.tex  defunits.tex    implement.tex  macros.tex     special.tex
-        analyse.tex     files.tex       gmxpar.tex     install.tex    topology.tex
+        analyse.tex     files.tex       install.tex    topology.tex
         averages.tex    forcefield.tex  gromacs.tex    intro.tex      programs.tex
 
         # CMake does variable replacement in these files
