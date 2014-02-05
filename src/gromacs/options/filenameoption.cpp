@@ -273,15 +273,12 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
 {
     if (settings.defaultBasename_ != NULL)
     {
+        std::string defaultValue =
+            completeFileName(settings.defaultBasename_, filetype_, false);
+        setDefaultValueIfSet(defaultValue);
         if (isRequired())
         {
-            setDefaultValue(completeFileName(settings.defaultBasename_,
-                                             filetype_, false));
-        }
-        else
-        {
-            setDefaultValueIfSet(completeFileName(settings.defaultBasename_,
-                                                  filetype_, false));
+            setDefaultValue(defaultValue);
         }
     }
 }
