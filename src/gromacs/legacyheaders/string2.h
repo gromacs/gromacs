@@ -214,18 +214,12 @@ extern char *gmx_ftoa(double f);
 extern char *gmx_itoa(int f);
 
 /*! \brief
- * Convert a string to gmx_large_int_t.
+ * Convert a string to gmx_int64_t.
  *
  * This method works as the standard library function strtol(), except that it
  * does not support different bases.
- *
- * \attention
- * The following differences are present from the standard behavior:
- *  - \p endptr cannot be NULL.
- *  - If an overflow occurs, returns zero and \p *endptr will equal \p str.
- *    errno is still set to ERANGE.
  */
-gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
+gmx_int64_t str_to_int64_t(const char *str, char **endptr);
 
 #ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf

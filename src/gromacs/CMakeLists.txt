@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,18 +51,25 @@ add_subdirectory(gmxpreprocess)
 add_subdirectory(commandline)
 add_subdirectory(fft)
 add_subdirectory(linearalgebra)
+add_subdirectory(math)
+add_subdirectory(random)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
 add_subdirectory(timing)
 add_subdirectory(utility)
 add_subdirectory(coulombintegrals)
 add_subdirectory(fileio)
+add_subdirectory(swap)
+add_subdirectory(essentialdynamics)
+add_subdirectory(pulling)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
+    add_subdirectory(statistics)
     add_subdirectory(analysisdata)
     add_subdirectory(selection)
     add_subdirectory(trajectoryanalysis)
+    add_subdirectory(tools)
 endif ()
 
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
@@ -126,12 +133,14 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
+                      ${GMX_TNG_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES} ${GSL_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
-                      SOVERSION ${SOVERSION}
+                      SOVERSION ${LIBRARY_SOVERSION}
+                      VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 # Only install the library in mdrun-only mode if it is actually necessary

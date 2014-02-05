@@ -4,7 +4,7 @@
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
 
-#include <types/simple.h>
+#include "types/simple.h"
 
 void
 F77_FUNC(dbdsdc,DBDSDC)(const char *uplo, 

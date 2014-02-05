@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,17 +46,9 @@
 
 /* NOTE: SSE2 acceleration does not include floor or blendv */
 
-
-/* Uncomment the next line, without other SIMD active, for testing plain-C */
-/* #define GMX_SIMD_REFERENCE_PLAIN_C */
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
 /* Plain C SIMD reference implementation, also serves as documentation */
 #define GMX_HAVE_SIMD_MACROS
-
-/* In general the reference SIMD supports any SIMD width, including 1.
- * See types/nb_verlet.h for details
- */
-#define GMX_SIMD_REF_WIDTH  4
 
 /* Include plain-C reference implementation, also serves as documentation */
 #include "gromacs/simd/macros_ref.h"
@@ -158,14 +150,14 @@
 
 
 #ifdef GMX_USE_HALF_WIDTH_SIMD_HERE
-#if defined GMX_X86_AVX_256
+#if defined GMX_X86_AVX_256 || defined __MIC__
 /* We have half SIMD width support, continue */
 #else
 #error "half SIMD width intrinsics are not supported"
 #endif
 #endif
 
-#ifdef GMX_TARGET_X86
+#if defined GMX_TARGET_X86 && !defined __MIC__
 
 #ifdef GMX_X86_SSE2
 /* This is for general x86 SIMD instruction sets that also support SSE2 */
@@ -212,6 +204,7 @@
 
 /* exp and trigonometric functions are included above */
 #define GMX_SIMD_HAVE_EXP
+#define GMX_SIMD_HAVE_ERFC
 #define GMX_SIMD_HAVE_TRIGONOMETRIC
 
 #if !defined GMX_X86_AVX_256 || defined GMX_USE_HALF_WIDTH_SIMD_HERE
@@ -755,12 +748,13 @@ static gmx_inline gmx_mm_pr gmx_always_inline gmx_atan2_pr(gmx_mm_pr a, gmx_mm_p
 #endif
 }
 
+#define GMX_SIMD_HAVE_ERFC
 static gmx_inline gmx_mm_pr gmx_always_inline gmx_erfc_pr(gmx_mm_pr a)
 {
-  /* The BG/Q qpxmath.h vector math library intended for use with
-     bgclang does not have erfc, so we need to use a function from
-     mass_simd.h. If this changes, then the #include <mass_simd.h> can
-     become conditional. */ 
+    /* The BG/Q qpxmath.h vector math library intended for use with
+       bgclang does not have erfc, so we need to use a function from
+       mass_simd.h. If this changes, then the #include <mass_simd.h> can
+       become conditional. */
 #ifndef GMX_DOUBLE
     return erfcf4(a);
 #else
@@ -799,6 +793,10 @@ gmx_anytrue_pb(gmx_mm_pb a)
 #undef gmx_always_inline
 
 #endif /* GMX_CPU_ACCELERATION_IBM_QPX */
+
+#ifdef __MIC__
+#include "general_x86_mic.h"
+#endif
 
 #ifdef GMX_HAVE_SIMD_MACROS
 /* Generic functions to extract a SIMD aligned pointer from a pointer x.

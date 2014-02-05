@@ -116,7 +116,7 @@ typedef struct gmx_pme_comm_n_box {
     real            lambda_q;
     real            lambda_lj;
     int             flags;
-    gmx_large_int_t step;
+    gmx_int64_t     step;
     ivec            grid_size;    /* For PME grid tuning */
     real            ewaldcoeff_q; /* For PME grid tuning */
     real            ewaldcoeff_lj;
@@ -178,7 +178,7 @@ static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
                                        matrix box, rvec gmx_unused *x,
                                        real lambda_q, real lambda_lj,
                                        int maxshift_x, int maxshift_y,
-                                       gmx_large_int_t step)
+                                       gmx_int64_t step)
 {
     gmx_domdec_t         *dd;
     gmx_pme_comm_n_box_t *cnb;
@@ -317,7 +317,7 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
                               gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir, int pme_flags,
-                              gmx_large_int_t step)
+                              gmx_int64_t step)
 {
     int flags;
 
@@ -370,7 +370,7 @@ void gmx_pme_send_switchgrid(t_commrec gmx_unused *cr,
 #endif
 }
 
-void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_large_int_t gmx_unused step)
+void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_int64_t gmx_unused step)
 {
 #ifdef GMX_MPI
     gmx_pme_comm_n_box_t cnb;
@@ -407,7 +407,7 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
                                real gmx_unused            *lambda_lj,
                                gmx_bool gmx_unused        *bEnerVir,
                                int                        *pme_flags,
-                               gmx_large_int_t gmx_unused *step,
+                               gmx_int64_t gmx_unused     *step,
                                ivec gmx_unused             grid_size,
                                real gmx_unused            *ewaldcoeff_q,
                                real gmx_unused            *ewaldcoeff_lj)

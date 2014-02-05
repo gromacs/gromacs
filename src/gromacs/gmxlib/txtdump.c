@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -298,6 +298,42 @@ void pr_rvecs(FILE *fp, int indent, const char *title, rvec vec[], int n)
 }
 
 
+void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, rvec vec[], int n, int dim)
+{
+    const char *fshort = "%12.5e";
+    const char *flong  = "%15.8e";
+    const char *format;
+    int         i, j;
+
+    if (getenv("LONGFORMAT") != NULL)
+    {
+        format = flong;
+    }
+    else
+    {
+        format = fshort;
+    }
+
+    if (available(fp, vec, indent, title))
+    {
+        indent = pr_title_nxn(fp, indent, title, n, dim);
+        for (i = 0; i < n; i++)
+        {
+            (void) pr_indent(fp, indent);
+            (void) fprintf(fp, "%s[%5d]={", title, i);
+            for (j = 0; j < dim; j++)
+            {
+                if (j != 0)
+                {
+                    (void) fprintf(fp, ", ");
+                }
+                (void) fprintf(fp, format, vec[i][j]);
+            }
+            (void) fprintf(fp, "}\n");
+        }
+    }
+}
+
 void pr_reals(FILE *fp, int indent, const char *title, real *vec, int n)
 {
     int i;
@@ -330,13 +366,49 @@ void pr_doubles(FILE *fp, int indent, const char *title, double *vec, int n)
     }
 }
 
+void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, int dim)
+{
+    int         i, j;
+    const char *fshort = "%12.5e";
+    const char *flong  = "%15.8e";
+    const char *format;
+
+    if (getenv("LONGFORMAT") != NULL)
+    {
+        format = flong;
+    }
+    else
+    {
+        format = fshort;
+    }
+
+    if (available(fp, vec, indent, title))
+    {
+        indent = pr_title_nxn(fp, indent, title, n, dim);
+        for (i = 0; i < n; i++)
+        {
+            (void) pr_indent(fp, indent);
+            (void) fprintf(fp, "%s[%5d]={", title, i);
+            for (j = 0; j < dim; j++)
+            {
+                if (j != 0)
+                {
+                    (void) fprintf(fp, ", ");
+                }
+                (void) fprintf(fp, format, vec[i * dim  + j]);
+            }
+            (void) fprintf(fp, "}\n");
+        }
+    }
+}
+
 static void pr_int(FILE *fp, int indent, const char *title, int i)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%-20s = %d\n", title, i);
 }
 
-static void pr_gmx_large_int(FILE *fp, int indent, const char *title, gmx_large_int_t i)
+static void pr_int64(FILE *fp, int indent, const char *title, gmx_int64_t i)
 {
     char buf[STEPSTRSIZE];
 
@@ -541,7 +613,7 @@ static void pr_cosine(FILE *fp, int indent, const char *title, t_cosines *cos,
 
 #define PS(t, s) pr_str(fp, indent, t, s)
 #define PI(t, s) pr_int(fp, indent, t, s)
-#define PSTEP(t, s) pr_gmx_large_int(fp, indent, t, s)
+#define PSTEP(t, s) pr_int64(fp, indent, t, s)
 #define PR(t, s) pr_real(fp, indent, t, s)
 #define PD(t, s) pr_double(fp, indent, t, s)
 
@@ -736,6 +808,41 @@ static void pr_rot(FILE *fp, int indent, t_rot *rot)
     }
 }
 
+
+static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
+{
+    int  i, j;
+    char str[STRLEN];
+
+
+    PI("frequency", swap->nstswap);
+    for (j = 0; j < 2; j++)
+    {
+        sprintf(str, "nanions%c", j+'A');
+        PI(str, swap->nanions[j]);
+        sprintf(str, "ncations%c", j+'A');
+        PI(str, swap->ncations[j]);
+    }
+    PI("coupling_steps", swap->nAverage);
+    PR("threshold", swap->threshold);
+    for (j = 0; j < 2; j++)
+    {
+        sprintf(str, "splitgroup%d_massw", j);
+        PS(str, EBOOL(swap->massw_split[j]));
+        sprintf(str, "split atoms group %d", j);
+        pr_ivec_block(fp, indent, str, swap->ind_split[j], swap->nat_split[j], TRUE);
+    }
+    pr_ivec_block(fp, indent, "swap atoms", swap->ind, swap->nat, TRUE);
+    pr_ivec_block(fp, indent, "solvent atoms", swap->ind_sol, swap->nat_sol, TRUE);
+    PR("cyl0_radius", swap->cyl0r);
+    PR("cyl0_upper", swap->cyl0u);
+    PR("cyl0_lower", swap->cyl0l);
+    PR("cyl1_radius", swap->cyl1r);
+    PR("cyl1_upper", swap->cyl1u);
+    PR("cyl1_lower", swap->cyl1l);
+}
+
+
 void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
                  gmx_bool bMDPformat)
 {
@@ -763,11 +870,11 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PI("nstfout", ir->nstfout);
         PI("nstcalcenergy", ir->nstcalcenergy);
         PI("nstenergy", ir->nstenergy);
-        PI("nstxtcout", ir->nstxtcout);
+        PI("nstxout_compressed", ir->nstxout_compressed);
         PR("init-t", ir->init_t);
         PR("delta-t", ir->delta_t);
 
-        PR("xtcprec", ir->xtcprec);
+        PR("x_compression_precision", ir->x_compression_precision);
         PR("fourierspacing", ir->fourier_spacing);
         PI("nkx", ir->nkx);
         PI("nky", ir->nky);
@@ -947,6 +1054,11 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         pr_cosine(fp, indent, "efield-yt", &(ir->et[YY]), bMDPformat);
         pr_cosine(fp, indent, "efield-z", &(ir->ex[ZZ]), bMDPformat);
         pr_cosine(fp, indent, "efield-zt", &(ir->et[ZZ]), bMDPformat);
+        PS("eSwapCoords", ESWAPTYPE(ir->eSwapCoords));
+        if (ir->eSwapCoords != eswapNO)
+        {
+            pr_swap(fp, indent, ir->swap);
+        }
         PS("bQMMM", EBOOL(ir->bQMMM));
         PI("QMconstraints", ir->QMconstraints);
         PI("QMMMscheme", ir->QMMMscheme);

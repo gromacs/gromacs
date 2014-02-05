@@ -1,37 +1,38 @@
-/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -47,7 +48,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "gromacs/fileio/enxio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "names.h"
 #include "copyrite.h"
 #include "macros.h"
@@ -79,8 +80,8 @@ typedef struct {
 } enerdat_t;
 
 typedef struct {
-    gmx_large_int_t  nsteps;
-    gmx_large_int_t  npoints;
+    gmx_int64_t      nsteps;
+    gmx_int64_t      npoints;
     int              nframes;
     int             *step;
     int             *steps;
@@ -633,7 +634,7 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
 }
 
 typedef struct {
-    gmx_large_int_t np;
+    gmx_int64_t     np;
     double          sum;
     double          sav;
     double          sav2;
@@ -642,8 +643,8 @@ typedef struct {
 typedef struct {
     int             b;
     ee_sum_t        sum;
-    gmx_large_int_t nst;
-    gmx_large_int_t nst_min;
+    gmx_int64_t     nst;
+    gmx_int64_t     nst_min;
 } ener_ee_t;
 
 static void clear_ee_sum(ee_sum_t *ees)
@@ -697,7 +698,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
 {
     int             nb, i, f, nee;
     double          sum, sum2, sump, see2;
-    gmx_large_int_t steps, np, p, bound_nb;
+    gmx_int64_t     steps, np, p, bound_nb;
     enerdat_t      *ed;
     exactsum_t     *es;
     gmx_bool        bAllZero;
@@ -979,7 +980,7 @@ static void calc_fluctuation_props(FILE *fp,
                                    int nbmin, int nbmax)
 {
     int    i, j;
-    double vvhh, vv, v, h, hh2, vv2, varv, hh, varh, tt, cv, cp, alpha, kappa, dcp, et, varet;
+    double vv, v, h, varv, hh, varh, tt, cv, cp, alpha, kappa, dcp, et, varet;
     double NANO3;
     enum {
         eVol, eEnth, eTemp, eEtot, eNR
@@ -1009,7 +1010,7 @@ static void calc_fluctuation_props(FILE *fp,
             fprintf(fp,"Found %s data.\n",my_ener[i]);
  */ }
     /* Compute it all! */
-    vvhh = alpha = kappa = cp = dcp = cv = NOTSET;
+    alpha = kappa = cp = dcp = cv = NOTSET;
 
     /* Temperature */
     tt = NOTSET;
@@ -1047,16 +1048,21 @@ static void calc_fluctuation_props(FILE *fp,
     /* Alpha, dcp */
     if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
     {
-        vvhh = 0;
+        double v_sum, h_sum, vh_sum, v_aver, h_aver, vh_aver;
+        vh_sum = v_sum = h_sum = 0;
         for (j = 0; (j < edat->nframes); j++)
         {
-            v     = edat->s[ii[eVol]].ener[j]*NANO3;
-            h     = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
-            vvhh += (v*h);
+            v       = edat->s[ii[eVol]].ener[j]*NANO3;
+            h       = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
+            v_sum  += v;
+            h_sum  += h;
+            vh_sum += (v*h);
         }
-        vvhh /= edat->nframes;
-        alpha = (vvhh-vv*hh)/(vv*BOLTZMANN*tt*tt);
-        dcp   = (vv*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
+        vh_aver = vh_sum / edat->nframes;
+        v_aver  = v_sum  / edat->nframes;
+        h_aver  = h_sum  / edat->nframes;
+        alpha   = (vh_aver-v_aver*h_aver)/(v_aver*BOLTZMANN*tt*tt);
+        dcp     = (v_aver*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
     }
 
     if (tt != NOTSET)
@@ -1078,10 +1084,6 @@ static void calc_fluctuation_props(FILE *fp,
             if (varv != NOTSET)
             {
                 fprintf(fp, "varv  =  %10g (m^6)\n", varv*AVOGADRO/nmol);
-            }
-            if (vvhh != NOTSET)
-            {
-                fprintf(fp, "vvhh  =  %10g (m^3 J)\n", vvhh);
             }
         }
         if (vv != NOTSET)
@@ -1132,8 +1134,8 @@ static void calc_fluctuation_props(FILE *fp,
 static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                          gmx_bool bFee, gmx_bool bSum, gmx_bool bFluct,
                          gmx_bool bVisco, const char *visfn, int nmol,
-                         gmx_large_int_t start_step, double start_t,
-                         gmx_large_int_t step, double t,
+                         gmx_int64_t start_step, double start_t,
+                         gmx_int64_t step, double t,
                          double time[], real reftemp,
                          enerdata_t *edat,
                          int nset, int set[], gmx_bool *bIsEner,
@@ -1149,7 +1151,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
     real            xxx, integral, intBulk, Temp = 0, Pres = 0;
     real            sfrac, oldfrac, diffsum, diffav, fstep, pr_aver, pr_stddev, pr_errest;
     double          beta = 0, expE, expEtot, *fee = NULL;
-    gmx_large_int_t nsteps;
+    gmx_int64_t     nsteps;
     int             nexact, nnotexact;
     double          x1m, x1mk;
     int             i, j, k, nout;
@@ -1695,7 +1697,7 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
     /* write the data */
     if (nblock_hist > 0)
     {
-        gmx_large_int_t sum = 0;
+        gmx_int64_t sum = 0;
         /* histograms */
         for (i = 0; i < fr->nblock; i++)
         {
@@ -1703,13 +1705,13 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
             if (blk->id == enxDHHIST)
             {
                 double          foreign_lambda, dx;
-                gmx_large_int_t x0;
+                gmx_int64_t     x0;
                 int             nhist, derivative;
 
                 /* check the block types etc. */
                 if ( (blk->nsub < 2) ||
                      (blk->sub[0].type != xdr_datatype_double) ||
-                     (blk->sub[1].type != xdr_datatype_large_int) ||
+                     (blk->sub[1].type != xdr_datatype_int64) ||
                      (blk->sub[0].nr < 2)  ||
                      (blk->sub[1].nr < 2) )
                 {
@@ -1985,7 +1987,7 @@ int gmx_energy(int argc, char *argv[])
     int                cur = 0;
 #define NEXT (1-cur)
     int                nre, teller, teller_disre, nfr;
-    gmx_large_int_t    start_step;
+    gmx_int64_t        start_step;
     int                nor = 0, nex = 0, norfr = 0, enx_i = 0;
     real               start_t;
     real              *bounds  = NULL, *violaver = NULL, *oobs = NULL, *orient = NULL, *odrms = NULL;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,9 @@
 
 #include <string>
 
+// arrayref.h is not strictly necessary for this header, but nearly all
+// callers will need it to use the constructor that takes ConstArrayRef.
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/common.h"
 
 namespace gmx
@@ -56,9 +59,11 @@ namespace test
  * Helper class for tests that check command-line handling.
  *
  * This class helps in writing tests for command-line handling.
- * The create() method takes an array of const char pointers, specifying the
- * command-line arguments, each as one array element.
- * The argc() and argv() methods can then be used to obtain the argc and argv
+ * The constructor method takes an array of const char pointers, specifying the
+ * command-line arguments, each as one array element.  It is also possible to
+ * construct the command line by adding individual arguments with append() and
+ * addOption().
+ * The argc() and argv() methods can then be used to obtain `argc` and `argv`
  * (non-const char pointers) arrays for passing into methods that expect these.
  *
  * Note that although the interface allows passing the argc and argv pointers
@@ -76,39 +81,38 @@ namespace test
 class CommandLine
 {
     public:
-        /*! \brief
-         * Initializes a command-line object from a const C array.
-         *
-         * \param[in] cmdline  Array of command-line arguments.
-         * \tparam    count    Deduced number of elements in \p cmdline.
-         *
-         * \p cmdline should include the binary name as the first element if
-         * that is desired in the output.
-         *
-         * This is not a constructor, because template constructors are not
-         * possible with a private implementation class.
-         */
-        template <size_t count> static
-        CommandLine create(const char *const (&cmdline)[count])
-        {
-            return CommandLine(cmdline, count);
-        }
-
         //! Initializes an empty command-line object.
         CommandLine();
         /*! \brief
-         * Initializes a command-line object.
+         * Initializes a command-line object from an array.
          *
          * \param[in] cmdline  Array of command-line arguments.
-         * \param[in] count    Number of elements in \p cmdline.
          *
          * \p cmdline should include the binary name as the first element if
          * that is desired in the output.
+         *
+         * This constructor is not explicit to make it possible to create a
+         * CommandLine object directly from a C array.
          */
-        CommandLine(const char *const cmdline[], size_t count);
+        CommandLine(const ConstArrayRef<const char *> &cmdline);
         //! Creates a deep copy of a command-line object.
         CommandLine(const CommandLine &other);
         ~CommandLine();
+
+        /*! \brief
+         * Initializes a command-line object in-place from an array.
+         *
+         * \param[in] cmdline  Array of command-line arguments.
+         *
+         * \p cmdline should include the binary name as the first element if
+         * that is desired in the output.
+         *
+         * This function does the same as the constructor that takes a
+         * ConstArrayRef.  Any earlier contents of the object are discarded.
+         *
+         * Strong exception safety.
+         */
+        void initFromArray(const ConstArrayRef<const char *> &cmdline);
 
         /*! \brief
          * Append an argument to the command line.

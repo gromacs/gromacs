@@ -79,7 +79,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     float           fvec[DIM];
     double          dvec[DIM];
     int             j, m, *iptr, idum;
-    gmx_large_int_t sdum;
+    gmx_int64_t     sdum;
     real           *ptr;
     unsigned short  us;
     double          d = 0;
@@ -147,18 +147,15 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                 *(int *) item = idum;
             }
             break;
-        case eioGMX_LARGE_INT:
-            /* do_xdr will not generate a warning when a 64bit gmx_large_int_t
-             * value that is out of 32bit range is read into a 32bit gmx_large_int_t.
-             */
+        case eioINT64:
             if (item && !fio->bRead)
             {
-                sdum = *(gmx_large_int_t *) item;
+                sdum = *(gmx_int64_t *) item;
             }
-            res = xdr_gmx_large_int(fio->xdr, &sdum);
+            res = xdr_int64(fio->xdr, &sdum);
             if (item)
             {
-                *(gmx_large_int_t *) item = sdum;
+                *(gmx_int64_t *) item = sdum;
             }
             break;
         case eioUCHAR:

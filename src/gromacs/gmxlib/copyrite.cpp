@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "copyrite.h"
 
@@ -47,20 +49,22 @@
 #include <mkl.h>
 #endif
 
+#include <boost/version.hpp>
+
 /* This file is completely threadsafe - keep it that way! */
 
-#include "gromacs/fileio/futil.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/random.h"
+#include "gromacs/random/random.h"
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/statutil.h"
-#include "gromacs/legacyheaders/strdb.h"
 #include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/programcontext.h"
 
 #include "buildinfo.h"
 
@@ -81,18 +85,19 @@ static gmx_bool be_cool(void)
 static void pukeit(const char *db, const char *defstring, char *retstring,
                    int retsize, int *cqnum)
 {
-    FILE  *fp;
-    char **help;
-    int    i, nhlp;
-    int    seed;
+    FILE     *fp;
+    char    **help;
+    int       i, nhlp;
+    gmx_rng_t rng;
 
     if (be_cool() && ((fp = low_libopen(db, FALSE)) != NULL))
     {
         nhlp = fget_lines(fp, &help);
         /* for libraries we can use the low-level close routines */
         ffclose(fp);
-        seed   = time(NULL);
-        *cqnum = static_cast<int>(nhlp*rando(&seed));
+        rng    = gmx_rng_init(gmx_rng_make_seed());
+        *cqnum = static_cast<int>(nhlp*gmx_rng_uniform_real(rng));
+        gmx_rng_destroy(rng);
         if (strlen(help[*cqnum]) >= STRLEN)
         {
             help[*cqnum][STRLEN-1] = '\0';
@@ -155,22 +160,42 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
 
 static void printCopyright(FILE *fp)
 {
+    static const char * const Contributors[] = {
+        "Emile Apol",
+        "Rossen Apostolov",
+        "Herman J.C. Berendsen",
+        "Par Bjelkmar",
+        "Aldert van Buuren",
+        "Rudi van Drunen",
+        "Anton Feenstra",
+        "Sebastian Fritsch",
+        "Gerrit Groenhof",
+        "Christoph Junghans",
+        "Peter Kasson",
+        "Carsten Kutzner",
+        "Per Larsson",
+        "Justin A. Lemkul",
+        "Magnus Lundborg",
+        "Pieter Meulenhoff",
+        "Erik Marklund",
+        "Teemu Murtola",
+        "Szilard Pall",
+        "Sander Pronk",
+        "Roland Schulz",
+        "Alexey Shvetsov",
+        "Michael Shirts",
+        "Alfons Sijbers",
+        "Peter Tieleman",
+        "Christian Wennberg",
+        "Maarten Wolf"
+    };
     static const char * const CopyrightText[] = {
-        "GROMACS is written by:",
-        "Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
-        "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra,",
-        "Gerrit Groenhof, Peter Kasson, Per Larsson,"
-        "Magnus Lundborg, Pieter Meulenhoff, Teemu Murtola,",
-        "Szilard Pall, Sander Pronk, Roland Schulz,",
-        "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
-        "Christian Wennberg, Mark Abraham\n",
-        "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-        "Copyright (c) 2001-2013, The GROMACS development team at",
-        "Uppsala University & The Royal Institute of Technology, Sweden.",
+        "Copyright (c) 2001-2014, The GROMACS development team at",
+        "Uppsala University, Stockholm University and",
+        "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
     };
-
     static const char * const LicenseText[] = {
         "GROMACS is free software; you can redistribute it and/or modify it",
         "under the terms of the GNU Lesser General Public License",
@@ -178,7 +203,9 @@ static void printCopyright(FILE *fp)
         "of the License, or (at your option) any later version."
     };
 
+#define NCONTRIBUTORS (int)asize(Contributors)
 #define NCR (int)asize(CopyrightText)
+
 // FAH has an exception permission from LGPL to allow digital signatures in Gromacs.
 #ifdef GMX_FAHCORE
 #define NLICENSE 0
@@ -186,6 +213,18 @@ static void printCopyright(FILE *fp)
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
+    fprintf(fp, "GROMACS is written by:\n");
+    for (int i = 0; i < NCONTRIBUTORS; )
+    {
+        for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
+        {
+            fprintf(fp, "%-18s ", Contributors[i]);
+        }
+        fprintf(fp, "\n");
+    }
+    fprintf(fp, "and the project leaders:\n");
+    fprintf(fp, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel\n");
+    fprintf(fp, "\n");
     for (int i = 0; i < NCR; ++i)
     {
         fprintf(fp, "%s\n", CopyrightText[i]);
@@ -512,7 +551,12 @@ void please_cite(FILE *fp, const char *key)
           "Garmay Yu, Shvetsov A, Karelov D, Lebedev D, Radulescu A, Petukhov M, Isaev-Ivanov V",
           "Correlated motion of protein subdomains and large-scale conformational flexibility of RecA protein filament",
           "Journal of Physics: Conference Series",
-          340, 2012, "012094" }
+          340, 2012, "012094" },
+        { "Kutzner2011b",
+          "C. Kutzner, H. Grubmuller, B. L. de Groot, and U. Zachariae",
+          "Computational Electrophysiology: The Molecular Dynamics of Ion Channel Permeation and Selectivity in Atomistic Detail",
+          "Biophys. J.",
+          101, 2011, "809-817"}
     };
 #define NSTR (int)asize(citedb)
 
@@ -565,6 +609,26 @@ const char *GromacsVersion()
     return _gmx_ver_string;
 }
 
+const char *ShortProgram(void)
+{
+    try
+    {
+        // TODO: Use the display name once it doesn't break anything.
+        return gmx::getProgramContext().programName();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+}
+
+const char *Program(void)
+{
+    try
+    {
+        return gmx::getProgramContext().fullBinaryPath();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+}
+
+
 extern void gmx_print_version_info_gpu(FILE *fp);
 
 static void gmx_print_version_info(FILE *fp)
@@ -587,7 +651,7 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "Precision:          single\n");
 #endif
-    fprintf(fp, "Memory model:       %lu bit\n", 8*sizeof(void *));
+    fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
 
 #ifdef GMX_THREAD_MPI
     fprintf(fp, "MPI library:        thread_mpi\n");
@@ -613,15 +677,20 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "CPU acceleration:   %s\n", GMX_CPU_ACCELERATION_STRING);
 
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
-#ifdef GMX_LARGEFILES
-    fprintf(fp, "Large file support: enabled\n");
-#else
-    fprintf(fp, "Large file support: disabled\n");
-#endif
 #ifdef HAVE_RDTSCP
     fprintf(fp, "RDTSCP usage:       enabled\n");
 #else
     fprintf(fp, "RDTSCP usage:       disabled\n");
+#endif
+#ifdef GMX_CXX11
+    fprintf(fp, "C++11 compilation:  enabled\n");
+#else
+    fprintf(fp, "C++11 compilation:  disabled\n");
+#endif
+#ifdef GMX_USE_TNG
+    fprintf(fp, "TNG support:        enabled\n");
+#else
+    fprintf(fp, "TNG support:        disabled\n");
 #endif
 
     fprintf(fp, "Built on:           %s\n", BUILD_TIME);
@@ -644,6 +713,14 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
             __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
 #endif
+#ifdef GMX_EXTERNAL_BOOST
+    const bool bExternalBoost = true;
+#else
+    const bool bExternalBoost = false;
+#endif
+    fprintf(fp, "Boost version:      %d.%d.%d%s\n", BOOST_VERSION / 100000,
+            BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
+            bExternalBoost ? " (external)" : " (internal)");
 #ifdef GMX_GPU
     gmx_print_version_info_gpu(fp);
 #endif
@@ -658,12 +735,14 @@ BinaryInformationSettings::BinaryInformationSettings()
 {
 }
 
-void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo)
+void printBinaryInformation(FILE                          *fp,
+                            const ProgramContextInterface &programContext)
 {
-    printBinaryInformation(fp, programInfo, BinaryInformationSettings());
+    printBinaryInformation(fp, programContext, BinaryInformationSettings());
 }
 
-void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
+void printBinaryInformation(FILE                            *fp,
+                            const ProgramContextInterface   &programContext,
                             const BinaryInformationSettings &settings)
 {
     const char *prefix          = settings.prefix_;
@@ -672,7 +751,7 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
 #ifdef GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
-    const std::string &name = programInfo.displayName();
+    const char *const name = programContext.displayName();
     if (settings.bGeneratedByHeader_)
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
@@ -689,18 +768,25 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
         // TODO: It would be nice to know here whether we are really running a
         // Gromacs binary or some other binary that is calling Gromacs; we
         // could then print "%s is part of GROMACS" or some alternative text.
-        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
+        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
                 GromacsVersion(), precisionString, suffix);
         fprintf(fp, "\n");
         printCopyright(fp);
         fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
+    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
             GromacsVersion(), precisionString, suffix);
-    fprintf(fp, "%sExecutable: %s%s\n", prefix,
-            programInfo.fullBinaryPath().c_str(), suffix);
-    fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
-            prefix, suffix, prefix, programInfo.commandLine().c_str(), suffix);
+    const char *const binaryPath = programContext.fullBinaryPath();
+    if (binaryPath != NULL && binaryPath[0] != '\0')
+    {
+        fprintf(fp, "%sExecutable: %s%s\n", prefix, binaryPath, suffix);
+    }
+    const char *const commandLine = programContext.commandLine();
+    if (commandLine != NULL && commandLine[0] != '\0')
+    {
+        fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
+                prefix, suffix, prefix, commandLine, suffix);
+    }
     if (settings.bExtendedInfo_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -167,11 +167,11 @@
     gmx_mm_pr  sh_invrc6_S, sh_invrc12_S;
 
     /* cppcheck-suppress unassignedVariable */
-    real       tmpsum_array[15], *tmpsum;
+    real       tmpsum_array[GMX_SIMD_WIDTH_HERE*2], *tmpsum;
 #endif
 #ifdef CALC_SHIFTFORCES
     /* cppcheck-suppress unassignedVariable */
-    real       shf_array[15], *shf;
+    real       shf_array[GMX_SIMD_WIDTH_HERE*2], *shf;
 #endif
 
     int ninner;

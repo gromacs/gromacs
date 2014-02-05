@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,14 +48,12 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "statutil.h"
+#include "copyrite.h"
 #include "force.h"
 #include "mdrun.h"
 #include "md_logging.h"
 #include "md_support.h"
 #include "network.h"
-#include "pull.h"
-#include "pull_rotation.h"
 #include "names.h"
 #include "disre.h"
 #include "orires.h"
@@ -74,7 +72,6 @@
 #include "txtdump.h"
 #include "gmx_detect_hardware.h"
 #include "gmx_omp_nthreads.h"
-#include "pull_rotation.h"
 #include "calc_verletbuf.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
@@ -87,6 +84,10 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/swap/swapcoords.h"
+#include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_rotation.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -102,7 +103,7 @@ typedef struct {
 /* The array should match the eI array in include/types/enums.h */
 const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
 
-gmx_large_int_t     deform_init_init_step_tpx;
+gmx_int64_t         deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
@@ -130,7 +131,7 @@ struct mdrunner_arglist
     const char     *ddcsz;
     const char     *nbpu_opt;
     int             nstlist_cmdline;
-    gmx_large_int_t nsteps_cmdline;
+    gmx_int64_t     nsteps_cmdline;
     int             nstepout;
     int             resetstep;
     int             nmultisim;
@@ -192,7 +193,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
                                          const char *nbpu_opt, int nstlist_cmdline,
-                                         gmx_large_int_t nsteps_cmdline,
+                                         gmx_int64_t nsteps_cmdline,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                          real pforce, real cpt_period, real max_hours,
@@ -215,40 +216,40 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 
     /* fill the data structure to pass as void pointer to thread start fn */
     /* hw_opt contains pointers, which should all be NULL at this stage */
-    mda->hw_opt         = *hw_opt;
-    mda->fplog          = fplog;
-    mda->cr             = cr;
-    mda->nfile          = nfile;
-    mda->fnm            = fnmn;
-    mda->oenv           = oenv;
-    mda->bVerbose       = bVerbose;
-    mda->bCompact       = bCompact;
-    mda->nstglobalcomm  = nstglobalcomm;
-    mda->ddxyz[XX]      = ddxyz[XX];
-    mda->ddxyz[YY]      = ddxyz[YY];
-    mda->ddxyz[ZZ]      = ddxyz[ZZ];
-    mda->dd_node_order  = dd_node_order;
-    mda->rdd            = rdd;
-    mda->rconstr        = rconstr;
-    mda->dddlb_opt      = dddlb_opt;
-    mda->dlb_scale      = dlb_scale;
-    mda->ddcsx          = ddcsx;
-    mda->ddcsy          = ddcsy;
-    mda->ddcsz          = ddcsz;
-    mda->nbpu_opt       = nbpu_opt;
-    mda->nstlist_cmdline= nstlist_cmdline;
-    mda->nsteps_cmdline = nsteps_cmdline;
-    mda->nstepout       = nstepout;
-    mda->resetstep      = resetstep;
-    mda->nmultisim      = nmultisim;
-    mda->repl_ex_nst    = repl_ex_nst;
-    mda->repl_ex_nex    = repl_ex_nex;
-    mda->repl_ex_seed   = repl_ex_seed;
-    mda->pforce         = pforce;
-    mda->cpt_period     = cpt_period;
-    mda->max_hours      = max_hours;
-    mda->deviceOptions  = deviceOptions;
-    mda->Flags          = Flags;
+    mda->hw_opt          = *hw_opt;
+    mda->fplog           = fplog;
+    mda->cr              = cr;
+    mda->nfile           = nfile;
+    mda->fnm             = fnmn;
+    mda->oenv            = oenv;
+    mda->bVerbose        = bVerbose;
+    mda->bCompact        = bCompact;
+    mda->nstglobalcomm   = nstglobalcomm;
+    mda->ddxyz[XX]       = ddxyz[XX];
+    mda->ddxyz[YY]       = ddxyz[YY];
+    mda->ddxyz[ZZ]       = ddxyz[ZZ];
+    mda->dd_node_order   = dd_node_order;
+    mda->rdd             = rdd;
+    mda->rconstr         = rconstr;
+    mda->dddlb_opt       = dddlb_opt;
+    mda->dlb_scale       = dlb_scale;
+    mda->ddcsx           = ddcsx;
+    mda->ddcsy           = ddcsy;
+    mda->ddcsz           = ddcsz;
+    mda->nbpu_opt        = nbpu_opt;
+    mda->nstlist_cmdline = nstlist_cmdline;
+    mda->nsteps_cmdline  = nsteps_cmdline;
+    mda->nstepout        = nstepout;
+    mda->resetstep       = resetstep;
+    mda->nmultisim       = nmultisim;
+    mda->repl_ex_nst     = repl_ex_nst;
+    mda->repl_ex_nex     = repl_ex_nex;
+    mda->repl_ex_seed    = repl_ex_seed;
+    mda->pforce          = pforce;
+    mda->cpt_period      = cpt_period;
+    mda->max_hours       = max_hours;
+    mda->deviceOptions   = deviceOptions;
+    mda->Flags           = Flags;
 
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
@@ -474,7 +475,7 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
  */
 static const int    nbnxn_reference_nstlist = 10;
 /* The values to try when switching  */
-const int nstlist_try[] = { 20, 25, 40 };
+const int           nstlist_try[] = { 20, 25, 40 };
 #define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
 /* Increase nstlist until the non-bonded cost increases more than listfac_ok,
  * but never more than listfac_max.
@@ -507,6 +508,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     t_state                state_tmp;
     gmx_bool               bBox, bDD, bCont;
     const char            *nstl_gpu = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
+    const char            *nve_err  = "Can not increase nstlist because an NVE ensemble is used";
     const char            *vbd_err  = "Can not increase nstlist because verlet-buffer-tolerance is not set or used";
     const char            *box_err  = "Can not increase nstlist because the box is too small";
     const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
@@ -528,6 +530,20 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             /* There are no larger nstlist value to try */
             return;
         }
+    }
+
+    if (EI_MD(ir->eI) && ir->etc == etcNO)
+    {
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "%s\n", nve_err);
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp, "%s\n", nve_err);
+        }
+
+        return;
     }
 
     if (ir->verletbuf_tol == 0 && bGPU)
@@ -578,7 +594,8 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
      */
     nstlist_prev = ir->nstlist;
     ir->nstlist  = 10;
-    calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_nstlist10);
+    calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL,
+                            &rlist_nstlist10);
     ir->nstlist  = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
@@ -602,7 +619,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         }
 
         /* Set the pair-list buffer size in ir */
-        calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_new);
+        calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL, &rlist_new);
 
         /* Does rlist fit in the box? */
         bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC, box));
@@ -684,7 +701,8 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                                   matrix                          box,
                                   gmx_bool                        bUseGPU)
 {
-    if (ir->verletbuf_tol > 0)
+    /* For NVE simulations, we will retain the initial list buffer */
+    if (ir->verletbuf_tol > 0 && !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
         /* Update the Verlet buffer size for the current run setup */
         verletbuf_list_setup_t ls;
@@ -696,7 +714,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
          */
         verletbuf_get_list_setup(bUseGPU, &ls);
 
-        calc_verlet_buffer_size(mtop, det(box), ir, &ls, NULL, &rlist_new);
+        calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL, &rlist_new);
 
         if (rlist_new != ir->rlist)
         {
@@ -789,12 +807,22 @@ static void convert_to_verlet_scheme(FILE *fplog,
         verletbuf_list_setup_t ls;
 
         verletbuf_get_list_setup(FALSE, &ls);
-        calc_verlet_buffer_size(mtop, box_vol, ir, &ls, NULL, &ir->rlist);
+        calc_verlet_buffer_size(mtop, box_vol, ir, -1, &ls, NULL, &ir->rlist);
     }
     else
     {
-        ir->verletbuf_tol = -1;
-        ir->rlist           = 1.05*max(ir->rvdw, ir->rcoulomb);
+        real rlist_fac;
+
+        if (EI_MD(ir->eI))
+        {
+            rlist_fac       = 1 + verlet_buffer_ratio_NVE_T0;
+        }
+        else
+        {
+            rlist_fac       = 1 + verlet_buffer_ratio_nodynamics;
+        }
+        ir->verletbuf_tol   = -1;
+        ir->rlist           = rlist_fac*max(ir->rvdw, ir->rcoulomb);
     }
 
     gmx_mtop_remove_chargegroups(mtop);
@@ -957,7 +985,7 @@ static void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
 
 /* Override the value in inputrec with value passed on the command line (if any) */
 static void override_nsteps_cmdline(FILE            *fplog,
-                                    gmx_large_int_t  nsteps_cmdline,
+                                    gmx_int64_t      nsteps_cmdline,
                                     t_inputrec      *ir,
                                     const t_commrec *cr)
 {
@@ -994,8 +1022,7 @@ static void override_nsteps_cmdline(FILE            *fplog,
  * in this run because the PME ranks have no knowledge of whether GPUs
  * are used or not, but all ranks need to enter the barrier below.
  */
-static void free_gpu_resources(FILE             *fplog,
-                               const t_forcerec *fr,
+static void free_gpu_resources(const t_forcerec *fr,
                                const t_commrec  *cr)
 {
     gmx_bool bIsPPrankUsingGPU;
@@ -1006,7 +1033,7 @@ static void free_gpu_resources(FILE             *fplog,
     if (bIsPPrankUsingGPU)
     {
         /* free nbnxn data in GPU memory */
-        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
+        nbnxn_cuda_free(fr->nbv->cu_nbv);
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
          * destroying the context in free_gpu() as some ranks may be sharing
@@ -1038,7 +1065,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,
-             gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
+             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags)
@@ -1068,7 +1095,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       list;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
-    gmx_large_int_t           reset_counters;
+    gmx_int64_t               reset_counters;
     gmx_edsam_t               ed           = NULL;
     t_commrec                *cr_old       = cr;
     int                       nthreads_pme = 1;
@@ -1313,7 +1340,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
 #ifdef GMX_FAHCORE
-    fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
+    if (MASTER(cr))
+    {
+        fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
+    }
 #endif
 
     /* NMR restraints must be initialized before load_checkpoint,
@@ -1726,6 +1756,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                      bVerbose, Flags);
         }
 
+        if (inputrec->eSwapCoords != eswapNO)
+        {
+            /* Initialize ion swapping code */
+            init_swapcoords(fplog, bVerbose, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
+                            mtop, state->x, state->box, &state->swapstate, cr, oenv, Flags);
+        }
+
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
 
         if (DOMAINDECOMP(cr))
@@ -1784,7 +1821,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
 
     /* Free GPU memory and context */
-    free_gpu_resources(fplog, fr, cr);
+    free_gpu_resources(fr, cr);
 
     if (opt2bSet("-membed", nfile, fnm))
     {

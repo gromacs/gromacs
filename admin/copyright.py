@@ -243,37 +243,47 @@ class CommentHandlerC(object):
         output.append(' */')
         return output
 
-class CommentHandlerSh(object):
+class CommentHandlerSimple(object):
 
-    """Handler for extracting and creating sh-style comments."""
+    """Handler for extracting and creating sh-style comments.
+
+    Also other comments of the same type, but with a different comment
+    character are supported."""
+
+    def __init__(self, comment_char):
+        self._comment_char = comment_char
 
     def extract_first_comment_block(self, content_lines):
-        if not content_lines or not content_lines[0].startswith('#'):
+        if not content_lines or not content_lines[0].startswith(self._comment_char):
             return ([], 0)
         comment_block = []
         line_index = 0
         while line_index < len(content_lines):
             line = content_lines[line_index]
-            if not line.startswith('#'):
+            if not line.startswith(self._comment_char):
                 break
-            comment_block.append(line.lstrip('# ').rstrip())
+            comment_block.append(line.lstrip(self._comment_char + ' ').rstrip())
             line_index += 1
-            if line == '# the research papers on the package. Check out http://www.gromacs.org.':
+            if line == self._comment_char + ' the research papers on the package. Check out http://www.gromacs.org.':
                 break
         while line_index < len(content_lines):
             line = content_lines[line_index].rstrip()
-            if len(line) > 0 and line != '#':
+            if len(line) > 0 and line != self._comment_char:
                 break
             line_index += 1
         return (comment_block, line_index)
 
     def create_comment_block(self, lines):
         output = []
-        output.extend([('# ' + x).rstrip() for x in lines])
+        output.extend([(self._comment_char + ' ' + x).rstrip() for x in lines])
         output.append('')
         return output
 
-comment_handlers = {'c': CommentHandlerC(), 'sh': CommentHandlerSh()}
+comment_handlers = {
+        'c': CommentHandlerC(),
+        'tex': CommentHandlerSimple('%'),
+        'sh': CommentHandlerSimple('#')
+        }
 
 def select_comment_handler(override, filename):
     """Select comment handler for a file based on file name and input options."""
@@ -285,8 +295,10 @@ def select_comment_handler(override, filename):
             dummy, ext2 = os.path.splitext(root)
             if ext2:
                 ext = ext2
-        if ext in ('.c', '.cpp', '.h', '.y', '.l', '.pre'):
+        if ext in ('.c', '.cu', '.cpp', '.h', '.cuh', '.y', '.l', '.pre', '.bm'):
             filetype = 'c'
+        elif ext in ('.tex',):
+            filetype = 'tex'
         elif basename in ('CMakeLists.txt', 'GMXRC', 'git-pre-commit') or \
                 ext in ('.cmake', '.cmakein', '.py', '.sh', '.bash', '.csh', '.zsh'):
             filetype = 'sh'
@@ -331,6 +343,8 @@ def process_options():
                       help='Update the copyright header if outdated')
     parser.add_option('--replace-header', action='store_true',
                       help='Replace any copyright header with the current one')
+    parser.add_option('--remove-old-copyrights', action='store_true',
+                      help='Remove copyright statements not in the new format')
     parser.add_option('--add-missing', action='store_true',
                       help='Add missing copyright headers')
     options, args = parser.parse_args()
@@ -391,6 +405,10 @@ def main():
         comment_block, line_count = comment_handler.extract_first_comment_block(contents)
         state = checker.check_copyright(comment_block)
         need_update, file_years = checker.process_copyright(state, options, years, reporter)
+        if state.other_copyrights and options.remove_old_copyrights:
+            need_update = True
+            state.other_copyrights = []
+            reporter.report('old copyrights removed')
 
         if need_update:
             # Remove the original comment if it was a copyright comment.

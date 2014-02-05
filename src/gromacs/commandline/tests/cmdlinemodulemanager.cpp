@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,11 +51,13 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/utility/file.h"
 
+#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/cmdlinetest.h"
-#include "testutils/mock_helptopic.h"
 #include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 namespace
 {
@@ -133,17 +135,23 @@ class CommandLineModuleManagerTest : public ::testing::Test
 
         gmx::CommandLineModuleManager &manager() { return *manager_; }
 
+        void ignoreManagerOutput();
+
     private:
-        boost::scoped_ptr<gmx::ProgramInfo>              programInfo_;
-        boost::scoped_ptr<gmx::CommandLineModuleManager> manager_;
+        boost::scoped_ptr<gmx::CommandLineProgramContext> programContext_;
+        boost::scoped_ptr<gmx::CommandLineModuleManager>  manager_;
+        gmx::test::TestFileManager                        fileManager_;
+        boost::scoped_ptr<gmx::File>                      outputFile_;
 };
 
 void CommandLineModuleManagerTest::initManager(
         const CommandLine &args, const char *realBinaryName)
 {
     manager_.reset();
-    programInfo_.reset(new gmx::ProgramInfo(realBinaryName, args.argc(), args.argv()));
-    manager_.reset(new gmx::CommandLineModuleManager(programInfo_.get()));
+    programContext_.reset(
+            new gmx::CommandLineProgramContext(args.argc(), args.argv()));
+    manager_.reset(new gmx::CommandLineModuleManager(realBinaryName,
+                                                     programContext_.get()));
     manager_->setQuiet(true);
 }
 
@@ -163,16 +171,38 @@ CommandLineModuleManagerTest::addHelpTopic(const char *name, const char *title)
     return *topic;
 }
 
+void CommandLineModuleManagerTest::ignoreManagerOutput()
+{
+    outputFile_.reset(
+            new gmx::File(fileManager_.getTemporaryFilePath("out.txt"), "w"));
+    manager().setOutputRedirect(outputFile_.get());
+}
+
 /********************************************************************
  * Actual tests
  */
+
+TEST_F(CommandLineModuleManagerTest, RunsGeneralHelp)
+{
+    const char *const cmdline[] = {
+        "test"
+    };
+    CommandLine       args(cmdline);
+    initManager(args, "test");
+    ignoreManagerOutput();
+    addModule("module", "First module");
+    addModule("other", "Second module");
+    int rc = 0;
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
 
 TEST_F(CommandLineModuleManagerTest, RunsModule)
 {
     const char *const cmdline[] = {
         "test", "module", "-flag", "yes"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -191,7 +221,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
     const char *const cmdline[] = {
         "test", "help", "module"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -208,7 +238,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
     const char *const cmdline[] = {
         "test", "module", "-h"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -225,7 +255,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSymLink)
     const char *const cmdline[] = {
         "g_module", "-h"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -242,7 +272,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
     const char *const cmdline[] = {
         "g_module", "-h"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "g_module");
     MockModule        mod(NULL, NULL);
     manager().setSingleModule(&mod);
@@ -259,7 +289,7 @@ TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
     const char *const cmdline[] = {
         "test", "help", "topic"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "test");
     addModule("module", "First module");
     MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
@@ -275,7 +305,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
     const char *const cmdline[] = {
         "g_module", "-flag", "yes"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -294,7 +324,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
     const char *const cmdline[] = {
         "/usr/local/gromacs/bin/g_module" GMX_BINARY_SUFFIX ".exe", "-flag", "yes"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -313,7 +343,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     const char *const cmdline[] = {
         "test", "test", "-flag", "yes"
     };
-    CommandLine       args(CommandLine::create(cmdline));
+    CommandLine       args(cmdline);
     initManager(args, "test");
     MockModule       &mod1 = addModule("test", "Test module");
     addModule("other", "Second module");

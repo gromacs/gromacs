@@ -89,8 +89,8 @@ static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
         case eioINT:
             size = sizeof(int);
             break;
-        case eioGMX_LARGE_INT:
-            size = sizeof(gmx_large_int_t);
+        case eioINT64:
+            size = sizeof(gmx_int64_t);
             break;
         case eioUCHAR:
             size = sizeof(unsigned char);
@@ -159,8 +159,8 @@ static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
         case eioINT:
             size = sizeof(int);
             break;
-        case eioGMX_LARGE_INT:
-            size = sizeof(gmx_large_int_t);
+        case eioINT64:
+            size = sizeof(gmx_int64_t);
             break;
         case eioUCHAR:
             size = sizeof(unsigned char);

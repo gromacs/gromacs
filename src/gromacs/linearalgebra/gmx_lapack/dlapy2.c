@@ -1,7 +1,7 @@
 #include <math.h>
 #include "../gmx_lapack.h"
 
-#include <types/simple.h>
+#include "types/simple.h"
 
 double
 F77_FUNC(dlapy2,DLAPY2)(double * x, double * y)

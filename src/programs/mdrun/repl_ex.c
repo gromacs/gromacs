@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #include <math.h>
 #include "repl_ex.h"
 #include "network.h"
-#include "random.h"
+#include "gromacs/random/random.h"
 #include "smalloc.h"
 #include "physics.h"
 #include "copyrite.h"
@@ -66,22 +66,23 @@ const char *erename[ereNR] = { "temperature", "lambda", "end_single_marker", "te
 
 typedef struct gmx_repl_ex
 {
-    int      repl;
-    int      nrepl;
-    real     temp;
-    int      type;
-    real   **q;
-    gmx_bool bNPT;
-    real    *pres;
-    int     *ind;
-    int     *allswaps;
-    int      nst;
-    int      nex;
-    int      seed;
-    int      nattempt[2];
-    real    *prob_sum;
-    int    **nmoves;
-    int     *nexchange;
+    int       repl;
+    int       nrepl;
+    real      temp;
+    int       type;
+    real    **q;
+    gmx_bool  bNPT;
+    real     *pres;
+    int      *ind;
+    int      *allswaps;
+    int       nst;
+    int       nex;
+    int       seed;
+    int       nattempt[2];
+    real     *prob_sum;
+    int     **nmoves;
+    int      *nexchange;
+    gmx_rng_t rng;
 
     /* these are helper arrays for replica exchange; allocated here so they
        don't have to be allocated each time */
@@ -165,9 +166,9 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     check_multi_int(fplog, ms, state->natoms, "the number of atoms", FALSE);
     check_multi_int(fplog, ms, ir->eI, "the integrator", FALSE);
-    check_multi_large_int(fplog, ms, ir->init_step+ir->nsteps, "init_step+nsteps", FALSE);
-    check_multi_large_int(fplog, ms, (ir->init_step+nst-1)/nst,
-                          "first exchange step: init_step/-replex", FALSE);
+    check_multi_int64(fplog, ms, ir->init_step+ir->nsteps, "init_step+nsteps", FALSE);
+    check_multi_int64(fplog, ms, (ir->init_step+nst-1)/nst,
+                      "first exchange step: init_step/-replex", FALSE);
     check_multi_int(fplog, ms, ir->etc, "the temperature coupling", FALSE);
     check_multi_int(fplog, ms, ir->opts.ngtc,
                     "the number of temperature coupling groups", FALSE);
@@ -340,7 +341,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     {
         if (MASTERSIM(ms))
         {
-            re->seed = make_seed();
+            re->seed = (int)gmx_rng_make_seed();
         }
         else
         {
@@ -354,6 +355,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     }
     fprintf(fplog, "\nReplica exchange interval: %d\n", re->nst);
     fprintf(fplog, "\nReplica random seed: %d\n", re->seed);
+    re->rng = gmx_rng_init(re->seed);
 
     re->nattempt[0] = 0;
     re->nattempt[1] = 0;
@@ -889,7 +891,7 @@ test_for_replica_exchange(FILE                 *fplog,
                           struct gmx_repl_ex   *re,
                           gmx_enerdata_t       *enerd,
                           real                  vol,
-                          gmx_large_int_t       step,
+                          gmx_int64_t           step,
                           real                  time)
 {
     int       m, i, j, a, b, ap, bp, i0, i1, tmp;
@@ -901,9 +903,10 @@ test_for_replica_exchange(FILE                 *fplog,
     gmx_bool  bEpot    = FALSE;
     gmx_bool  bDLambda = FALSE;
     gmx_bool  bVol     = FALSE;
+    gmx_rng_t rng;
 
     bMultiEx = (re->nex > 1);  /* multiple exchanges at each state */
-    fprintf(fplog, "Replica exchange at step " gmx_large_int_pfmt " time %g\n", step, time);
+    fprintf(fplog, "Replica exchange at step " "%"GMX_PRId64 " time %g\n", step, time);
 
     if (re->bNPT)
     {
@@ -987,8 +990,8 @@ test_for_replica_exchange(FILE                 *fplog,
                probability of occurring (log p > -100) and only operate on those switches */
             /* find out which state it is from, and what label that state currently has. Likely
                more work that useful. */
-            i0 = (int)(re->nrepl*rando(&(re->seed)));
-            i1 = (int)(re->nrepl*rando(&(re->seed)));
+            i0 = (int)(re->nrepl*gmx_rng_uniform_real(re->rng));
+            i1 = (int)(re->nrepl*gmx_rng_uniform_real(re->rng));
             if (i0 == i1)
             {
                 i--;
@@ -1027,7 +1030,7 @@ test_for_replica_exchange(FILE                 *fplog,
                     prob[0] = exp(-delta);
                 }
                 /* roll a number to determine if accepted */
-                bEx[0] = (rando(&(re->seed)) < prob[0]);
+                bEx[0] = (gmx_rng_uniform_real(re->rng) < prob[0]);
             }
             re->prob_sum[0] += prob[0];
 
@@ -1072,7 +1075,7 @@ test_for_replica_exchange(FILE                 *fplog,
                         prob[i] = exp(-delta);
                     }
                     /* roll a number to determine if accepted */
-                    bEx[i] = (rando(&(re->seed)) < prob[i]);
+                    bEx[i] = (gmx_rng_uniform_real(re->rng) < prob[i]);
                 }
                 re->prob_sum[i] += prob[i];
 
@@ -1294,7 +1297,7 @@ prepare_to_do_exchange(FILE      *fplog,
 
 gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *re,
                           t_state *state, gmx_enerdata_t *enerd,
-                          t_state *state_local, gmx_large_int_t step, real time)
+                          t_state *state_local, gmx_int64_t step, real time)
 {
     int i, j;
     int replica_id = 0;

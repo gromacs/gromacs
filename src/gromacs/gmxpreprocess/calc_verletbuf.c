@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -714,6 +712,7 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
 
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              const t_inputrec *ir,
+                             real reference_temperature,
                              const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist)
@@ -733,6 +732,29 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     int                   ib0, ib1, ib;
     real                  rb, rl;
     real                  drift;
+
+    if (reference_temperature < 0)
+    {
+        if (EI_MD(ir->eI) && ir->etc == etcNO)
+        {
+            /* This case should be handled outside calc_verlet_buffer_size */
+            gmx_incons("calc_verlet_buffer_size called with an NVE ensemble and reference_temperature < 0");
+        }
+
+        /* We use the maximum temperature with multiple T-coupl groups.
+         * We could use a per particle temperature, but since particles
+         * interact, this might underestimate the buffer size.
+         */
+        reference_temperature = 0;
+        for (i = 0; i < ir->opts.ngtc; i++)
+        {
+            if (ir->opts.tau_t[i] >= 0)
+            {
+                reference_temperature = max(reference_temperature,
+                                            ir->opts.ref_t[i]);
+            }
+        }
+    }
 
     /* Resolution of the buffer size */
     resolution = 0.001;
@@ -870,7 +892,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          * should be negligible (unless nstlist is extremely large, which
          * you wouldn't do anyhow).
          */
-        kT_fac = 2*BOLTZ*ir->opts.ref_t[0]*(ir->nstlist-1)*ir->delta_t;
+        kT_fac = 2*BOLTZ*reference_temperature*(ir->nstlist-1)*ir->delta_t;
         if (ir->bd_fric > 0)
         {
             /* This is directly sigma^2 of the displacement */
@@ -901,7 +923,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     }
     else
     {
-        kT_fac = BOLTZ*ir->opts.ref_t[0]*sqr((ir->nstlist-1)*ir->delta_t);
+        kT_fac = BOLTZ*reference_temperature*sqr((ir->nstlist-1)*ir->delta_t);
     }
 
     mass_min = att[0].prop.mass;

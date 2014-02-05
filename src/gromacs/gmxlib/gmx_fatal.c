@@ -1,49 +1,48 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <sysstuff.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
-#include "gromacs/fileio/futil.h"
-#include "statutil.h"
+
 #include "main.h"
 #include "network.h"
 #include "gmx_fatal.h"
@@ -51,15 +50,16 @@
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "gromacs/fileio/gmxfio.h"
 
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "gromacs/legacyheaders/thread_mpi/threads.h"
 
-static gmx_bool bDebug         = FALSE;
-static char    *fatal_tmp_file = NULL;
-static FILE    *log_file       = NULL;
+static gmx_bool            bDebug         = FALSE;
+static char               *fatal_tmp_file = NULL;
+static FILE               *log_file       = NULL;
 
 static tMPI_Thread_mutex_t debug_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -125,87 +125,6 @@ void _where(const char *file, int line)
         nwhere++;
     }
 }
-
-static void bputc(char *msg, int *len, char ch)
-{
-    msg[(*len)++] = ch;
-}
-
-static void bputs(char *msg, int *len, const char *s, int fld)
-{
-    for (fld -= (int)strlen(s); fld > 0; fld--)
-    {
-        bputc(msg, len, ' ');
-    }
-    while (*s)
-    {
-        bputc(msg, len, *(s++));
-    }
-}
-
-static void bputd(char *msg, int *len, int d)
-{
-    if (d < 10)
-    {
-        bputc(msg, len, d+'0');
-    }
-    else
-    {
-        bputc(msg, len, d-10+'a');
-    }
-}
-
-static void bputi(char *msg, int *len, int val, int radix, int fld, gmx_bool bNeg)
-{
-    int fmax = 0;
-
-    if (bNeg)
-    {
-        fmax = 1;
-    }
-
-    if (val < radix)
-    {
-        for (fld--; fld > fmax; fld--)
-        {
-            bputc(msg, len, ' ');
-        }
-        if (bNeg)
-        {
-            bputc(msg, len, '-');
-        }
-        bputd(msg, len, val);
-    }
-    else
-    {
-        if (bNeg)
-        {
-            bputc(msg, len, '-');
-        }
-        bputi(msg, len, val/radix, radix, fld-1, FALSE);
-        bputd(msg, len, val%radix);
-    }
-}
-
-static int getfld(const char **p)
-{
-    int fld;
-
-    fld = 0;
-    while (isdigit(**p))
-    {
-        fld = (fld*10)+((*((*p)++))-'0');
-    }
-    return fld;
-}
-
-/*static void _halt(char *file,int line,char *reason)
-   {
-   fprintf(stderr,"\nHALT in file %s line %d because:\n\t%s\n",
-      file,line,reason);
-   exit(1);
-   }
- */
 
 static int fatal_errno = 0;
 
@@ -357,108 +276,15 @@ static void clean_fatal_tmp_file()
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 }
 
-static void parse_printf_args(const char *fmt, va_list *ap, char *msg)
-{
-    int     len;
-    const char *p;
-    char    cval, *sval;
-    char    ibuf[64], ifmt[64];
-    int     index, ival, fld;
-    double  dval;
-
-    len = 0;
-    for (p = fmt; *p; p++)
-    {
-        if (*p != '%')
-        {
-            bputc(msg, &len, *p);
-        }
-        else
-        {
-            p++;
-            fld = getfld(&p);
-            switch (*p)
-            {
-                case 'x':
-                    ival = va_arg(*ap, int);
-                    sprintf(ifmt, "0x%%%dx", fld);
-                    sprintf(ibuf, ifmt, (unsigned int)ival);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'd':
-                    ival = va_arg(*ap, int);
-                    sprintf(ifmt, "%%%dd", fld);
-                    sprintf(ibuf, ifmt, ival);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'u':
-                    ival = va_arg(*ap, unsigned);
-                    sprintf(ifmt, "%%%du", fld);
-                    sprintf(ibuf, ifmt, ival);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'f':
-                    dval = va_arg(*ap, double);
-                    sprintf(ifmt, "%%%df", fld);
-                    sprintf(ibuf, ifmt, dval);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'g':
-                    dval = va_arg(*ap, double);
-                    sprintf(ifmt, "%%%dg", fld);
-                    sprintf(ibuf, ifmt, dval);
-                    for (index = 0; (index < (int)strlen(ibuf)); index++)
-                    {
-                        bputc(msg, &len, ibuf[index]);
-                    }
-                    break;
-                case 'c':
-                    cval = (char) va_arg(*ap, int); /* char is promoted to int */
-                    bputc(msg, &len, cval);
-                    break;
-                case 's':
-                    sval = va_arg(*ap, char *);
-                    if (sval == NULL)
-                    {
-                        sval = strdup("(null)");
-                    }
-                    bputs(msg, &len, sval, fld);
-                    break;
-                case '%':
-                    bputc(msg, &len, *p);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    bputc(msg, &len, '\0');
-}
-
 void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
 {
     va_list ap;
     char    msg[STRLEN];
 
-    va_start(ap, fmt);
-
     clean_fatal_tmp_file();
 
-    parse_printf_args(fmt, &ap, msg);
-
+    va_start(ap, fmt);
+    vsprintf(msg, fmt, ap);
     va_end(ap);
 
     tMPI_Thread_mutex_lock(&debug_mutex);
@@ -473,10 +299,10 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
                           const char *fmt, ...)
 {
     gmx_bool    bFinalize;
-    va_list ap;
-    char    msg[STRLEN];
+    va_list     ap;
+    char        msg[STRLEN];
 #ifdef GMX_MPI
-    int     result;
+    int         result;
 #endif
 
     bFinalize = TRUE;
@@ -498,12 +324,10 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
     if ((cr != NULL && MASTER(cr)  ) ||
         (dd != NULL && DDMASTER(dd)))
     {
-        va_start(ap, fmt);
-
         clean_fatal_tmp_file();
 
-        parse_printf_args(fmt, &ap, msg);
-
+        va_start(ap, fmt);
+        vsprintf(msg, fmt, ap);
         va_end(ap);
 
         tMPI_Thread_mutex_lock(&debug_mutex);
@@ -564,8 +388,8 @@ void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline)
  * 0 to 3 of these filed are redirected to /dev/null
  *
  */
-FILE *debug           = NULL;
-gmx_bool gmx_debug_at = FALSE;
+FILE    *debug           = NULL;
+gmx_bool gmx_debug_at    = FALSE;
 
 void init_debug(const int dbglevel, const char *dbgfile)
 {
@@ -630,7 +454,7 @@ void doexceptions(void)
 
 static const char *gmxuser = "Please report this to the mailing list (gmx-users@gromacs.org)";
 
-static void (*gmx_error_handler)(const char *msg) = quit_gmx;
+static void        (*gmx_error_handler)(const char *msg) = quit_gmx;
 
 void set_gmx_error_handler(void (*func)(const char *msg))
 {
@@ -659,8 +483,8 @@ char *gmx_strerror(const char *key)
         { "range",  "Range checking error" }
     };
 #define NMSG asize(msg)
-    char buf[1024];
-    size_t i;
+    char        buf[1024];
+    size_t      i;
 
     if (key == NULL)
     {
@@ -690,10 +514,9 @@ char *gmx_strerror(const char *key)
 
 void _gmx_error(const char *key, const char *msg, const char *file, int line)
 {
-    char buf[10240], tmpbuf[1024], errerrbuf[1024];
-    int  cqnum;
+    char        buf[10240], errerrbuf[1024];
     const char *llines = "-------------------------------------------------------";
-    char *strerr;
+    char       *strerr;
 
     /* protect the audience from suggestive discussions */
 
@@ -702,14 +525,13 @@ void _gmx_error(const char *key, const char *msg, const char *file, int line)
         sprintf(errerrbuf, "Empty fatal_error message. %s", gmxuser);
     }
 
-    cool_quote(tmpbuf, 1023, &cqnum);
     strerr = gmx_strerror(key);
     sprintf(buf, "\n%s\nProgram %s, %s\n"
             "Source code file: %s, line: %d\n\n"
             "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
-            "website at http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
+            "website at http://www.gromacs.org/Documentation/Errors\n%s\n",
             llines, ShortProgram(), GromacsVersion(), file, line,
-            strerr, msg ? msg : errerrbuf, llines, tmpbuf);
+            strerr, msg ? msg : errerrbuf, llines);
     free(strerr);
 
     gmx_error_handler(buf);
@@ -742,12 +564,10 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
 void gmx_warning(const char *fmt, ...)
 {
     va_list ap;
-    char msg[STRLEN];
+    char    msg[STRLEN];
 
     va_start(ap, fmt);
-
-    parse_printf_args(fmt, &ap, msg);
-
+    vsprintf(msg, fmt, ap);
     va_end(ap);
 
     fprintf(stderr, "\nWARNING: %s\n\n", msg);

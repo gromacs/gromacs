@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GRoups of Organic Molecules in ACtion for Science
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifndef _simple_h
@@ -51,6 +53,12 @@
 
 /* Information about integer data type sizes */
 #include <limits.h>
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+#ifndef _MSC_VER
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,68 +162,51 @@ typedef int             ivec[DIM];
 
 typedef int             imatrix[DIM][DIM];
 
+#ifdef _MSC_VER
+typedef __int32 gmx_int32_t;
+#define GMX_PRId32 "I32d"
+#define GMX_SCNd32 "I32d"
 
-/* For the step count type gmx_large_int_t we aim for 8 bytes (64bit),
- * but we might only be able to get 4 bytes (32bit).
- *
- * We first try to find a type without reyling on any SIZEOF_XXX defines.
- *
- * Avoid using "long int" if we can. This type is really dangerous,
- * since the width frequently depends on compiler options, and they
- * might not be set correctly when (buggy) Cmake is detecting things.
- * Instead, start by looking for "long long", and just go down if we
- * have to (rarely on new systems). /EL 20100810
- */
-#if ( (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT == 8) || (defined LLONG_MAX && LLONG_MAX == 9223372036854775807LL) )
+typedef __int64 gmx_int64_t;
+#define GMX_PRId64 "I64d"
+#define GMX_SCNd64 "I64d"
 
-/* Long long int is 64 bit */
-typedef long long int gmx_large_int_t;
-#define gmx_large_int_fmt   "lld"
-#define gmx_large_int_pfmt "%lld"
-#define SIZEOF_GMX_LARGE_INT  8
-#define GMX_LARGE_INT_MAX     9223372036854775807LL
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
-#define GMX_MPI_LARGE_INT MPI_LONG_LONG_INT
+typedef unsigned __int32 gmx_uint32_t;
+#define GMX_PRIu32 "U32d"
+#define GMX_SCNu32 "U32d"
 
-#elif ( (defined SIZEOF_LONG_INT && SIZEOF_LONG_INT == 8) || (defined LONG_MAX && LONG_MAX == 9223372036854775807L) )
-
-/* Long int is 64 bit */
-typedef long int gmx_large_int_t;
-#define gmx_large_int_fmt   "ld"
-#define gmx_large_int_pfmt "%ld"
-#define SIZEOF_GMX_LARGE_INT  8
-#define GMX_LARGE_INT_MAX     9223372036854775807LL
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
-#define GMX_MPI_LARGE_INT MPI_LONG_INT
-
-#elif ( (defined SIZEOF_INT && SIZEOF_INT == 8) || (defined INT_MAX && INT_MAX == 9223372036854775807L) )
-
-/* int is 64 bit */
-typedef int gmx_large_int_t;
-#define gmx_large_int_fmt   "d"
-#define gmx_large_int_pfmt  "%d"
-#define SIZEOF_GMX_LARGE_INT  8
-#define GMX_LARGE_INT_MAX     9223372036854775807LL
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1LL)
-#define GMX_MPI_LARGE_INT MPI_INT
-
-#elif ( (defined INT_MAX && INT_MAX == 2147483647) || (defined SIZEOF_INT && SIZEOF_INT == 4) )
-
-/* None of the above worked, try a 32 bit integer */
-typedef int gmx_large_int_t;
-#define gmx_large_int_fmt   "d"
-#define gmx_large_int_pfmt "%d"
-#define SIZEOF_GMX_LARGE_INT  4
-#define GMX_LARGE_INT_MAX     2147483647
-#define GMX_LARGE_INT_MIN     (-GMX_LARGE_INT_MAX - 1)
-#define GMX_MPI_LARGE_INT MPI_INT
-
+typedef unsigned __int64 gmx_uint64_t;
+#define GMX_PRIu64 "U64d"
+#define GMX_SCNu64 "U64d"
 #else
+typedef int32_t gmx_int32_t;
+#define GMX_PRId32 PRId32
+#define GMX_SCNd32 SCNd32
 
-#error "Cannot find any 32 or 64 bit integer data type. Please extend the gromacs simple.h file!"
+typedef int64_t gmx_int64_t;
+#define GMX_PRId64 PRId64
+#define GMX_SCNd64 SCNd64
 
+typedef uint32_t gmx_uint32_t;
+#define GMX_PRIu32 PRIu32
+#define GMX_SCNu32 SCNu32
+
+typedef uint64_t gmx_uint64_t;
+#define GMX_PRIu64 PRIu64
+#define GMX_SCNu64 SCNu64
 #endif
 
+#define GMX_INT32_MAX INT32_MAX
+#define GMX_INT32_MIN INT32_MIN
+
+#define GMX_INT64_MAX INT64_MAX
+#define GMX_INT64_MIN INT64_MIN
+
+#define GMX_UINT32_MAX UINT32_MAX
+#define GMX_UINT32_MIN UINT32_MIN
+
+#define GMX_UINT64_MAX UINT64_MAX
+#define GMX_UINT64_MIN UINT64_MIN
 
 #ifndef gmx_inline
 /* config.h tests for inline definitions and should work on a much wider range

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,10 +33,11 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 set(OUTPUT_DIR final)
+set(HTML_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${OUTPUT_DIR})
 
 if(SOURCE_IS_SOURCE_DISTRIBUTION)
     # Make sure source package contains HTML pages.
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/online.html")
+    if(NOT EXISTS "${HTML_PAGE_DIR}/online.html")
         message(FATAL_ERROR "Online HTML pages are missing from source package.")
     endif()
 endif()
@@ -56,16 +57,15 @@ add_custom_target(html
     COMMENT "Generating HTML help"
     VERBATIM)
 
-set(HTML_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 if (GMX_BUILD_HELP)
     set_target_properties(html PROPERTIES EXCLUDE_FROM_ALL OFF)
     set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.processed.html")
+        ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.html")
     set(HTML_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_DIR})
 endif()
 
 if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
-    install(DIRECTORY ${HTML_PAGE_DIR}
-        DESTINATION ${DATA_INSTALL_DIR}
+    install(DIRECTORY ${HTML_PAGE_DIR}/
+        DESTINATION ${DATA_INSTALL_DIR}/html
         COMPONENT html)
 endif()

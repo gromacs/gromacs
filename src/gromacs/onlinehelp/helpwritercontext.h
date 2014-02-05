@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,7 @@ enum HelpOutputFormat
     eHelpOutputFormat_Console,  //!< Plain text directly on the console.
     eHelpOutputFormat_Man,      //!< Man page.
     eHelpOutputFormat_Html,     //!< Html output for online manual.
+    eHelpOutputFormat_Other,    //!< Used for extensions in other modules.
     eHelpOutputFormat_NR        //!< Used for the number of output formats.
 };
 //! \endcond
@@ -233,18 +234,29 @@ class HelpWriterContext
          */
         void writeTextBlock(const std::string &text) const;
         /*! \brief
-         * Writes a formatted text block into the output.
+         * Starts writing a list of options.
          *
-         * \param[in] settings Line wrapper settings.
-         * \param[in] text     Text to format.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Convenience function that calls substituteMarkupAndWrapToString()
-         * and writes the result directly to the output file.
+         * Prints any necessary headers for a list of options formatted with
+         * writeOptionItem().
          */
-        void writeTextBlock(const TextLineWrapperSettings &settings,
-                            const std::string             &text) const;
+        void writeOptionListStart() const;
+        /*! \brief
+         * Writes an entry for a single option into the output.
+         *
+         * \param[in] name  Name of the option.
+         * \param[in] args  Placeholder for values and other information about
+         *     the option (placed after \p name).
+         * \param[in] description  Full description of the option.
+         */
+        void writeOptionItem(const std::string &name, const std::string &args,
+                             const std::string &description) const;
+        /*! \brief
+         * Finishes writing a list of options.
+         *
+         * Prints any necessary footers for a list of options formatted with
+         * writeOptionItem().
+         */
+        void writeOptionListEnd() const;
 
     private:
         class Impl;

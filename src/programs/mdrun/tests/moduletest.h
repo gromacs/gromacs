@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #include "testutils/integrationtests.h"
 
 #include <gtest/gtest.h>
+#include "testutils/cmdlinetest.h"
 
 namespace gmx
 {
@@ -88,13 +89,22 @@ class MdrunTestFixture : public IntegrationTestFixture
 
         //! Use an empty .mdp file as input to grompp
         void useEmptyMdpFile();
-        //! Use an empty .mdp file as input to grompp
+        //! Use a string as -f input to grompp
         void useStringAsMdpFile(const char *mdpString);
+        //! Use a string as -f input to grompp
+        void useStringAsMdpFile(const std::string &mdpString);
+        //! Use a string as -n input to grompp
+        void useStringAsNdxFile(const char *ndxString);
         //! Use a standard .top and .gro file as input to grompp
-        void useTopAndGroFromDatabase(const char *name);
+        void useTopGroAndNdxFromDatabase(const char *name);
         //! Calls grompp to prepare for the mdrun test
         int callGrompp();
-        //! Calls mdrun for testing
+        //! Calls grompp (on this rank) to prepare for the mdrun test
+        int callGromppOnThisRank();
+        //! Calls mdrun for testing with a customized command line
+        int callMdrun(const CommandLine &callerRef);
+        /*! \brief Convenience wrapper for calling mdrun for testing
+         * with default command line */
         int callMdrun();
 
         //@{
@@ -110,14 +120,18 @@ class MdrunTestFixture : public IntegrationTestFixture
          */
         std::string topFileName;
         std::string groFileName;
-        std::string trrFileName;
-        std::string xtcFileName;
-        std::string rerunFileName;
+        std::string fullPrecisionTrajectoryFileName;
+        std::string reducedPrecisionTrajectoryFileName;
+        std::string groOutputFileName;
+        std::string ndxFileName;
         std::string mdpInputFileName;
         std::string mdpOutputFileName;
         std::string tprFileName;
         std::string logFileName;
         std::string edrFileName;
+        std::string cptFileName;
+        std::string swapFileName;
+        int         nsteps;
         //@}
 };
 

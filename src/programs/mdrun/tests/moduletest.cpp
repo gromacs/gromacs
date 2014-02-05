@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,8 +53,8 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "programs/mdrun/mdrun_main.h"
-#include "programs/gmx/legacycmainfunctions.h"
 
 namespace gmx
 {
@@ -92,12 +92,14 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 MdrunTestFixture::MdrunTestFixture() :
     topFileName(),
     groFileName(),
-    trrFileName(),
+    fullPrecisionTrajectoryFileName(),
+    ndxFileName(),
     mdpInputFileName(fileManager_.getTemporaryFilePath("input.mdp")),
     mdpOutputFileName(fileManager_.getTemporaryFilePath("output.mdp")),
     tprFileName(fileManager_.getTemporaryFilePath(".tpr")),
     logFileName(fileManager_.getTemporaryFilePath(".log")),
-    edrFileName(fileManager_.getTemporaryFilePath(".edr"))
+    edrFileName(fileManager_.getTemporaryFilePath(".edr")),
+    nsteps(-2)
 {
 #ifdef GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
@@ -121,14 +123,27 @@ MdrunTestFixture::useEmptyMdpFile()
 void
 MdrunTestFixture::useStringAsMdpFile(const char *mdpString)
 {
+    useStringAsMdpFile(std::string(mdpString));
+}
+
+void
+MdrunTestFixture::useStringAsMdpFile(const std::string &mdpString)
+{
     gmx::File::writeFileFromString(mdpInputFileName, mdpString);
 }
 
 void
-MdrunTestFixture::useTopAndGroFromDatabase(const char *name)
+MdrunTestFixture::useStringAsNdxFile(const char *ndxString)
+{
+    gmx::File::writeFileFromString(ndxFileName, ndxString);
+}
+
+void
+MdrunTestFixture::useTopGroAndNdxFromDatabase(const char *name)
 {
     topFileName = fileManager_.getInputFilePath((std::string(name) + ".top").c_str());
     groFileName = fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
+    ndxFileName = fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
 }
 
 int
@@ -145,6 +160,7 @@ MdrunTestFixture::callGrompp()
     CommandLine caller;
     caller.append("grompp");
     caller.addOption("-f", mdpInputFileName);
+    caller.addOption("-n", ndxFileName);
     caller.addOption("-p", topFileName);
     caller.addOption("-c", groFileName);
 
@@ -155,18 +171,26 @@ MdrunTestFixture::callGrompp()
 }
 
 int
-MdrunTestFixture::callMdrun()
+MdrunTestFixture::callMdrun(const CommandLine &callerRef)
 {
-    CommandLine caller;
-    caller.append("mdrun");
-
+    /* Conforming to style guide by not passing a non-const reference
+       to this function. Passing a non-const reference might make it
+       easier to write code that incorrectly re-uses callerRef after
+       the call to this function. */
+    CommandLine caller(callerRef);
     caller.addOption("-s", tprFileName);
-    caller.addOption("-rerun", rerunFileName);
 
     caller.addOption("-g", logFileName);
     caller.addOption("-e", edrFileName);
-    caller.addOption("-o", trrFileName);
-    caller.addOption("-x", xtcFileName);
+    caller.addOption("-o", fullPrecisionTrajectoryFileName);
+    caller.addOption("-x", reducedPrecisionTrajectoryFileName);
+
+    caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
+
+    if (nsteps > -2)
+    {
+        caller.addOption("-nsteps", nsteps);
+    }
 
 #ifdef GMX_THREAD_MPI
     caller.addOption("-nt", numThreads);
@@ -176,6 +200,14 @@ MdrunTestFixture::callMdrun()
 #endif
 
     return gmx_mdrun(caller.argc(), caller.argv());
+}
+
+int
+MdrunTestFixture::callMdrun()
+{
+    CommandLine caller;
+    caller.append("mdrun");
+    return callMdrun(caller);
 }
 
 } // namespace test

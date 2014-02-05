@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -441,22 +441,27 @@ class OptionInfo
         bool isHidden() const;
         //! Returns true if the option is required.
         bool isRequired() const;
+        //! Returns the minimum number of values that this option accepts.
+        int minValueCount() const;
+        //! Returns the maximum number of values that this option accepts.
+        int maxValueCount() const;
         //! Returns the name of the option.
         const std::string &name() const;
-        //! Returns the description of the option.
-        const std::string &description() const;
         //! Returns the type of the option as a string.
-        const char *type() const;
-        //! Returns the number of values given for the option.
-        int valueCount() const;
-        //! Returns the i'th value of the option as a string.
-        std::string formatValue(int i) const;
+        std::string type() const;
+        //! Returns the description of the option.
+        std::string formatDescription() const;
         /*! \brief
          * Returns the default value if set for the option as a string.
          *
          * \see OptionTemplate::defaultValueIfSet()
          */
         std::string formatDefaultValueIfSet() const;
+
+        //! Returns the number of values given for the option.
+        int valueCount() const;
+        //! Returns the i'th value of the option as a string.
+        std::string formatValue(int i) const;
 
     protected:
         /*! \cond libapi */

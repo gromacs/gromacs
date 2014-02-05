@@ -50,12 +50,11 @@
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/rmpbc.h"
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/statutil.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/fileio/timecontrol.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
@@ -187,7 +186,6 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
                            .store(&impl_->ndxfile_)
                            .defaultBasename("index")
                            .description("Extra index groups"));
-    options->addOption(SelectionFileOption("sf"));
 
     // Add options for trajectory time control.
     options->addOption(DoubleOption("b").store(&impl_->startTime_).timeValue()
@@ -214,6 +212,8 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
         options->addOption(BooleanOption("pbc").store(&settings.impl_->bPBC)
                                .description("Use periodic boundary conditions for distance calculation"));
     }
+
+    options->addOption(SelectionFileOption("sf"));
 }
 
 
@@ -251,18 +251,22 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
 
 
 void
-TrajectoryAnalysisRunnerCommon::initIndexGroups(SelectionCollection *selections)
+TrajectoryAnalysisRunnerCommon::initIndexGroups(SelectionCollection *selections,
+                                                bool                 bUseDefaults)
 {
     if (impl_->ndxfile_.empty())
     {
-        // TODO: Initialize default selections
-        selections->setIndexGroups(NULL);
+        if (!bUseDefaults)
+        {
+            selections->setIndexGroups(NULL);
+            return;
+        }
+        initTopology(selections);
     }
-    else
-    {
-        gmx_ana_indexgrps_init(&impl_->grps_, NULL, impl_->ndxfile_.c_str());
-        selections->setIndexGroups(impl_->grps_);
-    }
+    const char *const ndxfile
+        = (!impl_->ndxfile_.empty() ? impl_->ndxfile_.c_str() : NULL);
+    gmx_ana_indexgrps_init(&impl_->grps_, impl_->topInfo_.topology(), ndxfile);
+    selections->setIndexGroups(impl_->grps_);
 }
 
 
@@ -281,8 +285,14 @@ TrajectoryAnalysisRunnerCommon::doneIndexGroups(SelectionCollection *selections)
 void
 TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
 {
+    // Return immediately if the topology has already been loaded.
+    if (impl_->topInfo_.hasTopology())
+    {
+        return;
+    }
+
     const TrajectoryAnalysisSettings &settings = impl_->settings_;
-    bool bRequireTop
+    const bool bRequireTop
         = settings.hasFlag(TrajectoryAnalysisSettings::efRequireTop)
             || selections->requiresTopology();
     if (bRequireTop && impl_->topfile_.empty())

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,6 @@
 #include "typedefs.h"
 #include "txtdump.h"
 #include "vec.h"
-#include "gmxcomplex.h"
 #include "smalloc.h"
 #include "coulomb.h"
 #include "gmx_fatal.h"
@@ -81,6 +80,7 @@
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/math/gmxcomplex.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -88,9 +88,9 @@
 
 /* Include the SIMD macro file and then check for support */
 #include "gromacs/simd/macros.h"
-#if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
+#if defined GMX_HAVE_SIMD_MACROS
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
-#define PME_SIMD
+#define PME_SIMD_SOLVE
 #endif
 
 #define PME_GRID_QA    0 /* Gridindex for A-state for Q */
@@ -1876,7 +1876,7 @@ static void realloc_work(pme_work_t *work, int nkx)
         /* Allocate an aligned pointer for SIMD operations, including extra
          * elements at the end for padding.
          */
-#ifdef PME_SIMD
+#ifdef PME_SIMD_SOLVE
         simd_width = GMX_SIMD_WIDTH_HERE;
 #else
         /* We can use any alignment, apart from 0, so we use 4 */
@@ -1909,7 +1909,7 @@ static void free_work(pme_work_t *work)
 }
 
 
-#ifdef PME_SIMD
+#if defined PME_SIMD_SOLVE && defined GMX_SIMD_HAVE_EXP
 /* Calculate exponentials through SIMD */
 inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
@@ -1954,7 +1954,7 @@ inline static void calc_exponentials_q(int start, int end, real f, real *d, real
 }
 #endif
 
-#ifdef PME_SIMD
+#if defined PME_SIMD_SOLVE && defined GMX_SIMD_HAVE_ERFC
 /* Calculate exponentials through SIMD */
 inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
 {
@@ -4546,7 +4546,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
                                    t_nrnb *nrnb, t_inputrec *ir,
-                                   gmx_large_int_t step)
+                                   gmx_int64_t step)
 {
     /* Reset all the counters related to performance over the run */
     wallcycle_stop(wcycle, ewcRUN);
@@ -4622,7 +4622,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     int  count;
     gmx_bool bEnerVir;
     int pme_flags;
-    gmx_large_int_t step, step_rel;
+    gmx_int64_t step, step_rel;
     ivec grid_switch;
 
     /* This data will only use with PME tuning, i.e. switching PME grids */

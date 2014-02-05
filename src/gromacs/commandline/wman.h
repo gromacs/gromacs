@@ -37,11 +37,15 @@
 #ifndef GMX_COMMANDLINE_WMAN_H
 #define GMX_COMMANDLINE_WMAN_H
 
-#include "gromacs/legacyheaders/readinp.h"
-
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
 
-void write_man(const char *mantp, const char *program,
+namespace gmx
+{
+class CommandLineHelpContext;
+} // namespace gmx
+
+void write_man(const gmx::CommandLineHelpContext &context,
                int nldesc, const char **desc,
                int nfile, t_filenm *fnm,
                int npargs, t_pargs *pa,

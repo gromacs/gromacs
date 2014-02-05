@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,7 @@
 #include "gromacs/simd/vector_operations.h"
 #include "../../nbnxn_consts.h"
 #ifdef CALC_COUL_EWALD
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #endif
 
 #ifndef GMX_SIMD_J_UNROLL_SIZE
@@ -68,7 +68,7 @@ gmx_load_simd_4xn_interactions(int                    excl,
                                gmx_mm_pb             *interact_S2,
                                gmx_mm_pb             *interact_S3)
 {
-#ifdef GMX_X86_SSE2
+#if defined GMX_X86_SSE2 || defined GMX_SIMD_REFERENCE_PLAIN_C
     /* Load integer interaction mask */
     gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
     *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);

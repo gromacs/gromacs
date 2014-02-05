@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -56,14 +57,14 @@ gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
 
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */
-gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
-                                    gmx_large_int_t  nsteps)
+gmx_int64_t get_multisim_nsteps(const t_commrec *cr,
+                                gmx_int64_t      nsteps)
 {
-    gmx_large_int_t steps_out;
+    gmx_int64_t steps_out;
 
-    if MASTER(cr)
+    if (MASTER(cr))
     {
-        gmx_large_int_t *buf;
+        gmx_int64_t     *buf;
         int              s;
 
         snew(buf, cr->ms->nsim);
@@ -86,12 +87,12 @@ gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
         if (steps_out >= 0 && steps_out < nsteps)
         {
             char strbuf[255];
-            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", gmx_large_int_pfmt);
+            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", "%"GMX_PRId64);
             fprintf(stderr, strbuf, cr->ms->sim, steps_out);
         }
     }
     /* broadcast to non-masters */
-    gmx_bcast(sizeof(gmx_large_int_t), &steps_out, cr);
+    gmx_bcast(sizeof(gmx_int64_t), &steps_out, cr);
     return steps_out;
 }
 
@@ -507,7 +508,7 @@ void check_nst_param(FILE *fplog, t_commrec *cr,
     }
 }
 
-void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bRerunMD,
+void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
                          t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[])
 /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
    requiring different logic. */
@@ -518,7 +519,7 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
     {
         if (rerun_fr->bLambda)
         {
-            if (fepvals->delta_lambda==0)
+            if (fepvals->delta_lambda == 0)
             {
                 state_global->lambda[efptFEP] = rerun_fr->lambda;
                 for (i = 0; i < efptNR; i++)
@@ -581,7 +582,8 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
         }
         else
         {
-            if (state->fep_state > 0) {
+            if (state->fep_state > 0)
+            {
                 state_global->fep_state = state->fep_state; /* state->fep is the one updated by bExpanded */
                 for (i = 0; i < efptNR; i++)
                 {

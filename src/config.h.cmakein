@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,6 +151,9 @@
 /* Use our own instead of system XDR libraries */
 #cmakedefine GMX_INTERNAL_XDR
 
+/* Compile to use TNG library */
+#cmakedefine GMX_USE_TNG
+
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
 
@@ -169,6 +172,9 @@
 
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
+
+/* Use if can't rename checkpoints */
+#cmakedefine GMX_NO_RENAME
 
 /* Ignore calls to system(3) */
 #cmakedefine GMX_NO_SYSTEM
@@ -356,21 +362,6 @@
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
 
-/* The size of int, as computed by sizeof. */
-#cmakedefine SIZEOF_INT @SIZEOF_INT@
-
-/* The size of long int, as computed by sizeof. */
-#cmakedefine SIZEOF_LONG_INT @SIZEOF_LONG_INT@
-
-/* The size of long long int, as computed by sizeof. */
-#cmakedefine SIZEOF_LONG_LONG_INT @SIZEOF_LONG_LONG_INT@
-
-/* The size of off_t, as computed by sizeof. */
-#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
-
-/* The size of void*, as computed by sizeof. */
-#cmakedefine SIZEOF_VOIDP @SIZEOF_VOIDP@
-
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 #cmakedefine _LARGEFILE_SOURCE
 
@@ -415,17 +406,5 @@
 
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
-
-/* Catch stupid CMake problems on OS X */
-#ifdef __APPLE__
-#  if ((defined(__LP64__) && __LP64__ && defined(SIZEOF_VOIDP) && SIZEOF_VOIDP<8) || ( (!defined(__LP64__) || __LP64__==0) && (defined(SIZEOF_VOIDP) && SIZEOF_VOIDP>4)))
-#    error "Inconsistency between current OS X architecture and the one used to generate original" 
-#    error "CMake configuration. This is probably caused by starting CMake with the default value"
-#    error "for CMAKE_OSX_ARCHITECTURES (blank), and then changing it. In this case all the tests"
-#    error "will have been performed with the original (now incorrect) architecture."
-#    error "To fix this, set CMAKE_OSX_ARCHITECTURES on the _command_line_ before starting CMake,"
-#    error "or create a new such entry with your choice in the GUI _before_ hitting 'configure'."
-#  endif
-#endif
 
 /*! \endcond */

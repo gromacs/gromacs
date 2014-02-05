@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,10 +54,6 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionfileoption.h"
-#include "gromacs/selection/selectionoption.h"
-#include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/file.h"
 
 #include "testutils/stringtest.h"
@@ -130,6 +126,10 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
                           .description("Input file description")
                           .filetype(eftTrajectory).inputFile().required()
                           .defaultBasename("traj"));
+    options.addOption(FileNameOption("mult")
+                          .description("Multiple file description")
+                          .filetype(eftTrajectory).inputFile().multiValue()
+                          .defaultBasename("traj"));
     options.addOption(FileNameOption("lib")
                           .description("Library file description")
                           .filetype(eftGenericData).inputFile().libraryFile()
@@ -142,9 +142,6 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     options.addOption(FileNameOption("o")
                           .description("Output file description")
                           .filetype(eftPlot).outputFile());
-
-    options.addOption(SelectionFileOption("sf"));
-    options.addOption(SelectionOption("sel").description("Selection option"));
 
     CommandLineHelpWriter writer(options);
     bHidden_ = true;
@@ -217,9 +214,11 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongOptions)
     checkHelp(&writer);
 }
 
-/*
+/* TODO: Add corresponding tests to either the selection module, or as part of
+ * trajectoryanalysis tests.
  * Tests help printing with selection options with values.
  */
+#if 0
 TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
 {
     using gmx::SelectionFileOption;
@@ -244,6 +243,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
     gmx::CommandLineHelpWriter writer(options);
     checkHelp(&writer);
 }
+#endif
 
 /*
  * Tests help printing for multiple sections.

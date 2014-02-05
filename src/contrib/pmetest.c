@@ -44,7 +44,7 @@
 #include "nrnb.h"
 #include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "vec.h"
@@ -271,7 +271,7 @@ int main(int argc,char *argv[])
    * init_par (see above)
    */
   parse_common_args(&argc,argv,
-		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
+		    PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   

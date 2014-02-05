@@ -2,7 +2,7 @@
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
 
-#include <types/simple.h>
+#include "types/simple.h"
 
 void
 F77_FUNC(ssterf,SSTERF)(int *n, 

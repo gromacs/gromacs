@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,9 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "typedefs.h"
-#include "maths.h"
 #include "mdatoms.h"
 #include "smalloc.h"
 #include "main.h"
@@ -117,7 +118,6 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
     gmx_mtop_atomlookup_t alook;
     int                   i;
     t_grpopts            *opts;
-    real                  c6, c12;
     gmx_groups_t         *groups;
     gmx_molblock_t       *molblock;
 
@@ -229,6 +229,7 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
     {
         int      g, ag, molb;
         real     mA, mB, fac;
+        real     c6, c12;
         t_atom  *atom;
 
         if (index == NULL)

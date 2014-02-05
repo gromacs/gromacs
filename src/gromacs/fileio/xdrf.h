@@ -71,10 +71,8 @@ int xdr_real(XDR *xdrs, real *r);
 int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision);
 
 
-int xdr_gmx_large_int(XDR *xdrs, gmx_large_int_t *i);
-/* Read or write a gmx_large_int_t value.
- * 32bit code reading a 64bit gmx_large_int_t value from xdrs could
- * lead to values out of int range.
+int xdr_int64(XDR *xdrs, gmx_int64_t *i);
+/* Read or write a gmx_int64_t value.
  * When warn!=NULL a warning will be written to stderr
  * when a value does not fit,
  * the first line is:

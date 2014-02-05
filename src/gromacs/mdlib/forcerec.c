@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "vec.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -72,7 +72,6 @@
 #include "nbnxn_search.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_consts.h"
-#include "statutil.h"
 #include "gmx_omp_nthreads.h"
 #include "gmx_detect_hardware.h"
 
@@ -948,11 +947,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
     const t_atoms  *atoms, *atoms_tpi;
     const t_blocka *excl;
     int             mb, nmol, nmolc, i, j, tpi, tpj, j1, j2, k, n, nexcl, q;
-#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)
-    long long int   npair, npair_ij, tmpi, tmpj;
-#else
-    double          npair, npair_ij, tmpi, tmpj;
-#endif
+    gmx_int64_t     npair, npair_ij, tmpi, tmpj;
     double          csix, ctwelve;
     int             ntp, *typecount;
     gmx_bool        bBHAM;
@@ -1583,7 +1578,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * of precision. In single precision, this is faster on
          * Bulldozer, and slightly faster on Sandy Bridge.
          */
-#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256 || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)

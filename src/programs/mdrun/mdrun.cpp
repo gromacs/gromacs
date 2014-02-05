@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,15 +44,16 @@
 
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/typedefs.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filenm.h"
 
 int gmx_mdrun(int argc, char *argv[])
 {
@@ -96,10 +97,16 @@ int gmx_mdrun(int argc, char *argv[])
         "With thread-MPI there are additional options [TT]-nt[tt], which sets",
         "the total number of threads, and [TT]-ntmpi[tt], which sets the number",
         "of thread-MPI threads.",
-        "Note that using combined MPI+OpenMP parallelization is almost always",
-        "slower than single parallelization, except at the scaling limit, where",
-        "especially OpenMP parallelization of PME reduces the communication cost.",
-        "OpenMP-only parallelization is much faster than MPI-only parallelization",
+        "The number of OpenMP threads used by [TT]mdrun[tt] can also be set with",
+        "the standard environment variable, [TT]OMP_NUM_THREADS[tt].",
+        "The [TT]GMX_PME_NUM_THREADS[tt] environment variable can be used to specify",
+        "the number of threads used by the PME-only processes.[PAR]",
+        "Note that combined MPI+OpenMP parallelization is in many cases",
+        "slower than either on its own. However, at high parallelization, using the",
+        "combination is often beneficial as it reduces the number of domains and/or",
+        "the number of MPI ranks. (Less and larger domains can improve scaling,",
+        "with separate PME processes fewer MPI ranks reduces communication cost.)",
+        "OpenMP-only parallelization is typically faster than MPI-only parallelization",
         "on a single CPU(-die). Since we currently don't have proper hardware",
         "topology detection, [TT]mdrun[tt] compiled with thread-MPI will only",
         "automatically use OpenMP-only parallelization when you use up to 4",
@@ -381,7 +388,7 @@ int gmx_mdrun(int argc, char *argv[])
     t_filenm      fnm[] = {
         { efTPX, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
-        { efXTC, "-x",      NULL,       ffOPTWR },
+        { efCOMPRESSED, "-x", NULL,     ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },
         { efCPT, "-cpo",    NULL,       ffOPTWR },
         { efSTO, "-c",      "confout",  ffWRITE },
@@ -411,7 +418,8 @@ int gmx_mdrun(int argc, char *argv[])
         { efRND, "-multidir", NULL,      ffOPTRDMULT},
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
-        { efNDX, "-mn",     "membed",   ffOPTRD }
+        { efNDX, "-mn",     "membed",   ffOPTRD },
+        { efXVG, "-swap",   "swapions", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -437,7 +445,7 @@ int gmx_mdrun(int argc, char *argv[])
     int             repl_ex_nex   = 0;
     int             nstepout      = 100;
     int             resetstep     = -1;
-    gmx_large_int_t nsteps        = -2; /* the value -2 means that the mdp option will be used */
+    gmx_int64_t     nsteps        = -2; /* the value -2 means that the mdp option will be used */
 
     rvec            realddxyz          = {0, 0, 0};
     const char     *ddno_opt[ddnoNR+1] =
@@ -536,7 +544,7 @@ int gmx_mdrun(int argc, char *argv[])
           "Keep and number checkpoint files" },
         { "-append",  FALSE, etBOOL, {&bAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-        { "-nsteps",  FALSE, etGMX_LARGE_INT, {&nsteps},
+        { "-nsteps",  FALSE, etINT64, {&nsteps},
           "Run this number of steps, overrides .mdp file option" },
         { "-maxh",   FALSE, etREAL, {&max_hours},
           "Terminate after 0.99 times this time (hours)" },

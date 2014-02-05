@@ -1,36 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -63,7 +63,7 @@
 #include "calcmu.h"
 #include "constr.h"
 #include "xvgr.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "macros.h"
@@ -93,7 +93,7 @@ extern void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rn
     *mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
     if (!bStateFromCP)
     {
-        init_df_history_weights(dfhist,ir->expandedvals,ir->fepvals->n_lambda);
+        init_df_history_weights(dfhist, ir->expandedvals, ir->fepvals->n_lambda);
     }
 }
 
@@ -261,7 +261,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio)
     return bIfFlat;
 }
 
-static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, gmx_large_int_t step)
+static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_history_t *dfhist, gmx_int64_t step)
 {
 
     int      i, totalsamples;
@@ -363,7 +363,7 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, t_expanded *expand, df_histor
 }
 
 static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist,
-                              int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_large_int_t step)
+                              int fep_state, real *scaled_lamee, real *weighted_lamee, gmx_int64_t step)
 {
     real     maxdiff = 0.000000001;
     gmx_bool bSufficientSamples;
@@ -376,7 +376,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     real     clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
     real    *lam_weights, *lam_minvar_corr, *lam_variance, *lam_dg;
     double  *p_k;
-    double  pks = 0;
+    double   pks = 0;
     real    *numweighted_lamee, *logfrac;
     int     *nonzero;
     real     chi_m1_0, chi_p1_0, chi_m2_0, chi_p2_0, chi_p1_m1, chi_p2_m1, chi_m1_p1, chi_m2_p1;
@@ -922,7 +922,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
             if (lamnew > maxfep)
             {
                 /* it's possible some rounding is failing */
-                if (gmx_within_tol(remainder[fep_state],0,50*GMX_DOUBLE_EPS))
+                if (gmx_within_tol(remainder[fep_state], 0, 50*GMX_DOUBLE_EPS))
                 {
                     /* numerical rounding error -- no state other than the original has weight */
                     lamnew = fep_state;
@@ -1027,7 +1027,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 
 /* print out the weights to the log, along with current state */
 extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                                      int fep_state, int frequency, gmx_large_int_t step)
+                                      int fep_state, int frequency, gmx_int64_t step)
 {
     int         nlim, i, ifep, jfep;
     real        dw, dg, dv, dm, Tprint;
@@ -1209,7 +1209,7 @@ extern void set_mc_state(gmx_rng_t rng, t_state *state)
 
 extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
                                     t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
-                                    gmx_large_int_t step, gmx_rng_t mcrng,
+                                    gmx_int64_t step, gmx_rng_t mcrng,
                                     rvec *v, t_mdatoms *mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */

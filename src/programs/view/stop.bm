@@ -1,13 +1,11 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2001
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
- * University of Groningen, The Netherlands
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 1991-2001, University of Groningen, The Netherlands.
+ * Copyright (c) 2002,2009,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -35,15 +33,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef	_stop_bm
-#define	_stop_bm
-
+#ifndef GMX_VIEW_STOP_BM
+#define GMX_VIEW_STOP_BM
 
 #define stop_width 48
 #define stop_height 48
-#define stop_x_hot -1
-#define stop_y_hot -1
 static unsigned char stop_bits[] = {
    0x00, 0xf0, 0xff, 0xff, 0x0f, 0x00, 0x00, 0xf8, 0xff, 0xff, 0x1f, 0x00,
    0x00, 0x1c, 0x00, 0x00, 0x38, 0x00, 0x00, 0xee, 0xff, 0xff, 0x77, 0x00,
@@ -69,4 +63,5 @@ static unsigned char stop_bits[] = {
    0x00, 0xf7, 0xff, 0xff, 0xef, 0x00, 0x00, 0xee, 0xff, 0xff, 0x77, 0x00,
    0x00, 0xdc, 0xff, 0xff, 0x3b, 0x00, 0x00, 0x38, 0x00, 0x00, 0x1c, 0x00,
    0x00, 0xf0, 0xff, 0xff, 0x0f, 0x00, 0x00, 0xe0, 0xff, 0xff, 0x07, 0x00};
-#endif	/* _stop_bm */
+
+#endif

@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -1074,16 +1076,16 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     for (j = 0; j < NMASS; j++)
     {
         sprintf(name, "MW%d", j+1);
-        (*newatomname)  [atM[j]]        = put_symtab(symtab, name);
-        (*newatom)      [atM[j]].m      = (*newatom)[atM[j]].mB    = mM[j];
-        (*newatom)      [atM[j]].q      = (*newatom)[atM[j]].qB    = 0.0;
-        (*newatom)      [atM[j]].type   = (*newatom)[atM[j]].typeB = tpM;
-        (*newatom)      [atM[j]].ptype  = eptAtom;
-        (*newatom)      [atM[j]].resind = at->atom[i0].resind;
+        (*newatomname)  [atM[j]]         = put_symtab(symtab, name);
+        (*newatom)      [atM[j]].m       = (*newatom)[atM[j]].mB    = mM[j];
+        (*newatom)      [atM[j]].q       = (*newatom)[atM[j]].qB    = 0.0;
+        (*newatom)      [atM[j]].type    = (*newatom)[atM[j]].typeB = tpM;
+        (*newatom)      [atM[j]].ptype   = eptAtom;
+        (*newatom)      [atM[j]].resind  = at->atom[i0].resind;
         (*newatom)      [atM[j]].elem[0] = 'M';
         (*newatom)      [atM[j]].elem[1] = '\0';
-        (*newvsite_type)[atM[j]]        = NOTSET;
-        (*newcgnr)      [atM[j]]        = (*cgnr)[i0];
+        (*newvsite_type)[atM[j]]         = NOTSET;
+        (*newcgnr)      [atM[j]]         = (*cgnr)[i0];
     }
     /* renumber cgnr: */
     for (i = i0; i < at->nr; i++)
@@ -1258,16 +1260,16 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     rvec_add(r1, x[ats[atHH]], (*newx)[atM]);
 
     strcpy(name, "MW1");
-    (*newatomname)  [atM]        = put_symtab(symtab, name);
-    (*newatom)      [atM].m      = (*newatom)[atM].mB    = mM;
-    (*newatom)      [atM].q      = (*newatom)[atM].qB    = 0.0;
-    (*newatom)      [atM].type   = (*newatom)[atM].typeB = tpM;
-    (*newatom)      [atM].ptype  = eptAtom;
-    (*newatom)      [atM].resind = at->atom[i0].resind;
+    (*newatomname)  [atM]         = put_symtab(symtab, name);
+    (*newatom)      [atM].m       = (*newatom)[atM].mB    = mM;
+    (*newatom)      [atM].q       = (*newatom)[atM].qB    = 0.0;
+    (*newatom)      [atM].type    = (*newatom)[atM].typeB = tpM;
+    (*newatom)      [atM].ptype   = eptAtom;
+    (*newatom)      [atM].resind  = at->atom[i0].resind;
     (*newatom)      [atM].elem[0] = 'M';
     (*newatom)      [atM].elem[1] = '\0';
-    (*newvsite_type)[atM]        = NOTSET;
-    (*newcgnr)      [atM]        = (*cgnr)[i0];
+    (*newvsite_type)[atM]         = NOTSET;
+    (*newcgnr)      [atM]         = (*cgnr)[i0];
     /* renumber cgnr: */
     for (i = i0; i < at->nr; i++)
     {
@@ -1986,18 +1988,18 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                         {
                             name[k+1] = (*at->atomname[Heavy])[k];
                         }
-                        name[k+1]             = atomnamesuffix[j];
-                        name[k+2]             = '\0';
-                        newatomname[ni0+j]    = put_symtab(symtab, name);
-                        newatom[ni0+j].m      = newatom[ni0+j].mB    = mtot/NMASS;
-                        newatom[ni0+j].q      = newatom[ni0+j].qB    = 0.0;
-                        newatom[ni0+j].type   = newatom[ni0+j].typeB = tpM;
-                        newatom[ni0+j].ptype  = eptAtom;
-                        newatom[ni0+j].resind = at->atom[i0].resind;
+                        name[k+1]              = atomnamesuffix[j];
+                        name[k+2]              = '\0';
+                        newatomname[ni0+j]     = put_symtab(symtab, name);
+                        newatom[ni0+j].m       = newatom[ni0+j].mB    = mtot/NMASS;
+                        newatom[ni0+j].q       = newatom[ni0+j].qB    = 0.0;
+                        newatom[ni0+j].type    = newatom[ni0+j].typeB = tpM;
+                        newatom[ni0+j].ptype   = eptAtom;
+                        newatom[ni0+j].resind  = at->atom[i0].resind;
                         newatom[ni0+j].elem[0] = 'M';
                         newatom[ni0+j].elem[1] = '\0';
-                        newvsite_type[ni0+j]  = NOTSET;
-                        newcgnr[ni0+j]        = (*cgnr)[i0];
+                        newvsite_type[ni0+j]   = NOTSET;
+                        newcgnr[ni0+j]         = (*cgnr)[i0];
                     }
                     /* add constraints between dummy masses and to heavies[0] */
                     /* 'add_shift' says which atoms won't be renumbered afterwards */

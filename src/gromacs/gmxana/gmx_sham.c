@@ -1,43 +1,45 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 #include <math.h>
 #include <string.h>
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -46,7 +48,6 @@
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
 #include "readinp.h"
-#include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
 #include "xvgr.h"
@@ -66,9 +67,9 @@ static int index3(int *ibox, int x, int y, int z)
     return (ibox[2]*(ibox[1]*x+y)+z);
 }
 
-static gmx_large_int_t indexn(int ndim, const int *ibox, const int *nxyz)
+static gmx_int64_t indexn(int ndim, const int *ibox, const int *nxyz)
 {
-    gmx_large_int_t d, dd;
+    gmx_int64_t     d, dd;
     int             k, kk;
 
     /* Compute index in 1-D array */
@@ -201,7 +202,7 @@ static void normalize_p_e(int len, double *P, int *nbin, real *E, real pmin)
 }
 
 typedef struct {
-    gmx_large_int_t index;
+    gmx_int64_t     index;
     real            ener;
 } t_minimum;
 
@@ -228,7 +229,7 @@ static inline
 void print_minimum(FILE *fp, int num, const t_minimum *min)
 {
     fprintf(fp,
-            "Minimum %d at index " gmx_large_int_pfmt " energy %10.3f\n",
+            "Minimum %d at index " "%"GMX_PRId64 " energy %10.3f\n",
             num, min->index, min->ener);
 }
 
@@ -1024,7 +1025,7 @@ int gmx_sham(int argc, char *argv[])
     double         *av, *sig, cum1, cum2, cum3, cum4, db;
     const char     *fn_ge, *fn_ene;
     output_env_t    oenv;
-    gmx_large_int_t num_grid_points;
+    gmx_int64_t     num_grid_points;
 
     t_filenm        fnm[] = {
         { efXVG, "-f",    "graph",    ffREAD   },
@@ -1143,17 +1144,15 @@ int gmx_sham(int argc, char *argv[])
     num_grid_points = ibox[0];
     for (i = 1; i < nset; i++)
     {
-        gmx_large_int_t result;
+        gmx_int64_t result;
         if (!check_int_multiply_for_overflow(num_grid_points, ibox[i], &result))
         {
             gmx_fatal(FARGS,
-                      "The number of dimensions and grid points is too large for this tool\n"
-                      "to handle with what it knows about the architecture upon which it\n"
-                      "is running. Use a different machine or consult the GROMACS mailing list.");
+                      "The number of dimensions and grid points is too large for this tool.\n");
         }
         num_grid_points = result;
     }
-    /* The number of grid points fits in a gmx_large_int_t. */
+    /* The number of grid points fits in a gmx_int64_t. */
 
     do_sham(opt2fn("-dist", NFILE, fnm), opt2fn("-bin", NFILE, fnm),
             opt2fn("-lp", NFILE, fnm),

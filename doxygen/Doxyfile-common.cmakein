@@ -41,7 +41,15 @@ SORT_BY_SCOPE_NAME     = YES
 ALPHABETICAL_INDEX     = YES
 HTML_DYNAMIC_SECTIONS  = YES
 GENERATE_LATEX         = NO
+# Setting this to NO has a side effect to hide undocumented headers from the
+# file list, which makes it generally look nicer.
+VERBATIM_HEADERS       = NO
 
 EXTRACT_LOCAL_CLASSES  = NO
 
 ALIASES               += Gromacs=GROMACS
+
+DOT_IMAGE_FORMAT       = svg
+DOT_MULTI_TARGETS      = YES
+# According to Doxygen docs, this is required for svg support on IE
+HTML_FILE_EXTENSION    = .xhtml

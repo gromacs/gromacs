@@ -1,9 +1,10 @@
+%
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
-% David van der Spoel, Berk Hess, Erik Lindahl, and including many
-% others, as listed in the AUTHORS file in the top-level source
-% directory and at http://www.gromacs.org.
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
 %
 % GROMACS is free software; you can redistribute it and/or
 % modify it under the terms of the GNU Lesser General Public License
@@ -12,7 +13,7 @@
 %
 % GROMACS is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 % Lesser General Public License for more details.
 %
 % You should have received a copy of the GNU Lesser General Public
@@ -29,7 +30,7 @@
 % official version at http://www.gromacs.org.
 %
 % To help us fund GROMACS development, we humbly ask that you cite
-% the research papers on the package. Check out http://www.gromacs.org
+% the research papers on the package. Check out http://www.gromacs.org.
 
 \chapter{Technical Details}
 \label{ch:install}
@@ -191,7 +192,10 @@ you should consult your local documentation for details.
 \item   {\tt LOGO}: set display color for logo in {\tt \normindex{ngmx}}.
 \item   {\tt LONGFORMAT}: use long float format when printing
         decimal values.
-
+\item   {\tt GMX_COMPELDUMP}: Applies for computational electrophysiology setups
+        only (see section \ref{sec:compel}). The initial structure gets dumped to 
+        {\tt .pdb} file, which allows to check whether multimeric channels have 
+        the correct PBC representation. 
 \end{enumerate}
 
 
@@ -340,6 +344,8 @@ you should consult your local documentation for details.
 \item   {\tt MDRUN}: the {\tt \normindex{mdrun}} command used by {\tt \normindex{g_tune_pme}}.
 \item   {\tt GMX_NSTLIST}: sets the default value for {\tt nstlist}, preventing it from being tuned during
         {\tt \normindex{mdrun}} startup when using the Verlet cutoff scheme.
+\item   {\tt GMX_USE_TREEREDUCE}: use tree reduction for nbnxn force reduction. Potentially faster for large number of 
+        OpenMP threads (if memory locality is important).
 
 \end{enumerate}
 

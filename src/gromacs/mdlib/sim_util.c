@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,8 +70,7 @@
 #include "constr.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "pull_rotation.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "genborn.h"
@@ -85,6 +84,9 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_rotation.h"
 
 #include "adress.h"
 #include "qmmm.h"
@@ -94,7 +96,7 @@
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
-                gmx_large_int_t           step,
+                gmx_int64_t               step,
                 t_inputrec               *ir,
                 t_commrec gmx_unused     *cr)
 {
@@ -176,6 +178,16 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
 
         fprintf(fplog, "%s on node %d %s\n", title, nodeid, time_string);
     }
+}
+
+void print_start(FILE *fplog, t_commrec *cr,
+                 gmx_walltime_accounting_t walltime_accounting,
+                 const char *name)
+{
+    char buf[STRLEN];
+
+    sprintf(buf, "Started %s", name);
+    print_date_and_time(fplog, cr->nodeid, buf, walltime_accounting);
 }
 
 static void sum_forces(int start, int end, rvec f[], rvec flr[])
@@ -351,6 +363,27 @@ static void posres_wrapper(FILE *fplog,
     }
 }
 
+static void fbposres_wrapper(t_inputrec *ir,
+                             t_nrnb *nrnb,
+                             gmx_localtop_t *top,
+                             matrix box, rvec x[],
+                             gmx_enerdata_t *enerd,
+                             t_forcerec *fr)
+{
+    t_pbc pbc;
+    real  v;
+
+    /* Flat-bottomed position restraints always require full pbc */
+    set_pbc(&pbc, ir->ePBC, box);
+    v = fbposres(top->idef.il[F_FBPOSRES].nr, top->idef.il[F_FBPOSRES].iatoms,
+                 top->idef.iparams_fbposres,
+                 (const rvec*)x, fr->f_novirsum, fr->vir_diag_posres,
+                 ir->ePBC == epbcNONE ? NULL : &pbc,
+                 fr->rc_scaling, fr->ePBC, fr->posres_com);
+    enerd->term[F_FBPOSRES] += v;
+    inc_nrnb(nrnb, eNR_FBPOSRES, top->idef.il[F_FBPOSRES].nr/2);
+}
+
 static void pull_potential_wrapper(FILE *fplog,
                                    gmx_bool bSepDVDL,
                                    t_commrec *cr,
@@ -423,7 +456,7 @@ static void pme_receive_force_ener(FILE           *fplog,
 }
 
 static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
-                               gmx_large_int_t step, real pforce, rvec *x, rvec *f)
+                               gmx_int64_t step, real pforce, rvec *x, rvec *f)
 {
     int  i;
     real pf2, fn2;
@@ -444,7 +477,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
 }
 
 static void post_process_forces(t_commrec *cr,
-                                gmx_large_int_t step,
+                                gmx_int64_t step,
                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                 gmx_localtop_t *top,
                                 matrix box, rvec x[],
@@ -638,7 +671,7 @@ static void do_nb_verlet(t_forcerec *fr,
 
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
-                         gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                         gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                          gmx_localtop_t *top,
                          gmx_groups_t gmx_unused *groups,
                          matrix box, rvec x[], history_t *hist,
@@ -1158,6 +1191,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                        enerd, lambda, fr);
     }
 
+    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_FBPOSRES].nr > 0)
+    {
+        fbposres_wrapper(inputrec, nrnb, top, box, x, enerd, fr);
+    }
+
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
@@ -1382,7 +1420,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
 void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         t_inputrec *inputrec,
-                        gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                        gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                         gmx_localtop_t *top,
                         gmx_groups_t *groups,
                         matrix box, rvec x[], history_t *hist,
@@ -1733,18 +1771,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_FBPOSRES].nr > 0)
     {
-        /* Flat-bottomed position restraints always require full pbc */
-        if (!(bStateChanged && bDoAdressWF))
-        {
-            set_pbc(&pbc, inputrec->ePBC, box);
-        }
-        v = fbposres(top->idef.il[F_FBPOSRES].nr, top->idef.il[F_FBPOSRES].iatoms,
-                     top->idef.iparams_fbposres,
-                     (const rvec*)x, fr->f_novirsum, fr->vir_diag_posres,
-                     inputrec->ePBC == epbcNONE ? NULL : &pbc,
-                     fr->rc_scaling, fr->ePBC, fr->posres_com);
-        enerd->term[F_FBPOSRES] += v;
-        inc_nrnb(nrnb, eNR_FBPOSRES, top->idef.il[F_FBPOSRES].nr/2);
+        fbposres_wrapper(inputrec, nrnb, top, box, x, enerd, fr);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
@@ -1903,7 +1930,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
 void do_force(FILE *fplog, t_commrec *cr,
               t_inputrec *inputrec,
-              gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+              gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
               gmx_groups_t *groups,
               matrix box, rvec x[], history_t *hist,
@@ -1969,7 +1996,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                         t_forcerec *fr, gmx_localtop_t *top)
 {
     int             i, m, start, end;
-    gmx_large_int_t step;
+    gmx_int64_t     step;
     real            dt = ir->delta_t;
     real            dvdl_dum;
     rvec           *savex;
@@ -2279,7 +2306,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
-                   gmx_large_int_t step, int natoms,
+                   gmx_int64_t step, int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
@@ -2688,7 +2715,7 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile, const t_filenm fnm[],
-             gmx_mdoutf_t **outf, t_mdebin **mdebin,
+             gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir, rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags)
 {
@@ -2742,10 +2769,10 @@ void init_md(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf = init_mdoutf(nfile, fnm, Flags, cr, ir, oenv);
+        *outf = init_mdoutf(nfile, fnm, Flags, cr, ir, mtop, oenv);
 
-        *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
-                              mtop, ir, (*outf)->fp_dhdl);
+        *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : mdoutf_get_fp_ene(*outf),
+                              mtop, ir, mdoutf_get_fp_dhdl(*outf));
     }
 
     if (ir->bAdress)

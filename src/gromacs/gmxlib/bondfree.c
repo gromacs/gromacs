@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -41,7 +42,7 @@
 #include <assert.h>
 #include "physics.h"
 #include "vec.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "txtdump.h"
 #include "bondf.h"
 #include "smalloc.h"
@@ -3795,7 +3796,7 @@ static gmx_inline gmx_bool ftype_is_bonded_potential(int ftype)
 {
     return
         (interaction_function[ftype].flags & IF_BOND) &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES) &&
+        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES) &&
         (ftype < F_GB12 || ftype > F_GB14);
 }
 
@@ -4189,10 +4190,10 @@ static real calc_one_bond(FILE *fplog, int thread,
             pdihs_noener_simd
 #endif
                 (nbn, idef->il[ftype].iatoms+nb0,
-                 idef->iparams,
-                 (const rvec*)x, f,
-                 pbc, g, lambda[efptFTYPE], md, fcd,
-                 global_atom_index);
+                idef->iparams,
+                (const rvec*)x, f,
+                pbc, g, lambda[efptFTYPE], md, fcd,
+                global_atom_index);
             v = 0;
         }
         else
@@ -4214,7 +4215,7 @@ static real calc_one_bond(FILE *fplog, int thread,
     {
         v = do_nonbonded_listed(ftype, nbn, iatoms+nb0, idef->iparams, (const rvec*)x, f, fshift,
                                 pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
-        
+
         if (bPrintSepPot)
         {
             fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
@@ -4245,7 +4246,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
                 t_fcdata *fcd, int *global_atom_index,
                 t_atomtypes gmx_unused *atype, gmx_genborn_t gmx_unused *born,
                 int force_flags,
-                gmx_bool bPrintSepPot, gmx_large_int_t step)
+                gmx_bool bPrintSepPot, gmx_int64_t step)
 {
     gmx_bool      bCalcEnerVir;
     int           i;
@@ -4391,7 +4392,7 @@ void calc_bonds_lambda(FILE *fplog,
     real          dvdl_dum[efptNR];
     rvec         *f, *fshift;
     const  t_pbc *pbc_null;
-    t_idef       idef_fe;
+    t_idef        idef_fe;
 
     if (fr->bMolPBC)
     {

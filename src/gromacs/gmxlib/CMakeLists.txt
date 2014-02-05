@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2012, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2012,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@ add_subdirectory(nonbonded)
 
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
-file(GLOB GMXLIB_SOURCES *.c *.cpp statistics/*.c)
+file(GLOB GMXLIB_SOURCES *.c *.cpp)
 
 # This would be the standard way to include thread_mpi, but we want libgmx
 # to link the functions directly

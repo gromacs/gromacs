@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,8 +106,16 @@ class AbstractOptionStorage
         bool isVector() const { return hasFlag(efOption_Vector); }
         //! Returns the name of the option.
         const std::string &name() const { return name_; }
-        //! Returns the description of the option.
+        //! Returns the description of the option set by the calling code.
         const std::string &description() const { return descr_; }
+
+        //! Returns true if defaultValueIfSet() value is specified.
+        bool defaultValueIfSetExists() const
+        { return hasFlag(efOption_DefaultValueIfSetExists); }
+        //! Returns the minimum number of values required in one set.
+        int minValueCount() const { return minValueCount_; }
+        //! Returns the maximum allowed number of values in one set (-1 = no limit).
+        int maxValueCount() const { return maxValueCount_; }
 
         /*! \brief
          * Returns an option info object corresponding to this option.
@@ -115,10 +123,17 @@ class AbstractOptionStorage
         virtual OptionInfo &optionInfo() = 0;
         /*! \brief
          * Returns a short string describing the type of the option.
-         *
-         * The caller is free to discard the returned string.
          */
-        virtual const char *typeString() const = 0;
+        virtual std::string typeString() const = 0;
+        /*! \brief
+         * Formats additional description for the option.
+         *
+         * If this method returns a non-empty string, it is appended to the
+         * plain description when printing help texts.
+         * The default implementation returns an empty string.
+         */
+        virtual std::string formatExtraDescription() const
+        { return std::string(); }
         /*! \brief
          * Returns the number of option values added so far.
          */
@@ -214,10 +229,6 @@ class AbstractOptionStorage
         //! Clears the given flag.
         void clearFlag(OptionFlag flag) { return flags_.clear(flag); }
 
-        //! Returns the minimum number of values required in one set.
-        int minValueCount() const { return minValueCount_; }
-        //! Returns the maximum allowed number of values in one set (-1 = no limit).
-        int maxValueCount() const { return maxValueCount_; }
         /*! \brief
          * Sets a new minimum number of values required in one set.
          *

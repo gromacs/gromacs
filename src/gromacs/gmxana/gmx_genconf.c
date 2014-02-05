@@ -1,51 +1,53 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "gromacs/fileio/confio.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "vec.h"
-#include "random.h"
-#include "3dview.h"
+#include "gromacs/random/random.h"
+#include "gromacs/math/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
@@ -54,7 +56,7 @@
 #include "gromacs/fileio/trxio.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
-                     int *seed, rvec max_rot)
+                     gmx_rng_t rng, rvec max_rot)
 {
     mat4 mt1, mt2, mr[DIM], mtemp1, mtemp2, mtemp3, mxtot, mvtot;
     rvec xcm;
@@ -74,7 +76,7 @@ static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
     translate(-xcm[XX], -xcm[YY], -xcm[ZZ], mt1); /* move c.o.ma to origin */
     for (m = 0; (m < DIM); m++)
     {
-        phi = M_PI*max_rot[m]*(2*rando(seed) - 1)/180;
+        phi = M_PI*max_rot[m]*(2*gmx_rng_uniform_real(rng) - 1)/180;
         rotate(m, phi, mr[m]);
     }
     translate(xcm[XX], xcm[YY], xcm[ZZ], mt2);
@@ -157,6 +159,7 @@ int gmx_genconf(int argc, char *argv[])
     t_trxstatus    *status;
     gmx_bool        bTRX;
     output_env_t    oenv;
+    gmx_rng_t       rng;
 
     t_filenm        fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
@@ -197,9 +200,13 @@ int gmx_genconf(int argc, char *argv[])
         return 0;
     }
 
-    if (bRandom && (seed == 0))
+    if (seed == 0)
     {
-        seed = make_seed();
+        rng = gmx_rng_init(gmx_rng_make_seed());
+    }
+    else
+    {
+        rng = gmx_rng_init(seed);
     }
 
     bTRX = ftp2bSet(efTRX, NFILE, fnm);
@@ -270,7 +277,7 @@ int gmx_genconf(int argc, char *argv[])
                 /* Random rotation on input coords */
                 if (bRandom)
                 {
-                    rand_rot(natoms, xx, v, xrot, vrot, &seed, max_rot);
+                    rand_rot(natoms, xx, v, xrot, vrot, rng, max_rot);
                 }
 
                 for (l = 0; (l < natoms); l++)
@@ -360,7 +367,7 @@ int gmx_genconf(int argc, char *argv[])
 
     if (bShuffle)
     {
-        randwater(0, atoms->nr/nmolat, nmolat, x, v, &seed);
+        randwater(0, atoms->nr/nmolat, nmolat, x, v, rng);
     }
     else if (bSort)
     {
@@ -370,6 +377,7 @@ int gmx_genconf(int argc, char *argv[])
     {
         mkcompact(0, atoms->nr/nmolat, nmolat, x, v, nblock, box);
     }
+    gmx_rng_destroy(rng);
 
     write_sto_conf(opt2fn("-o", NFILE, fnm), title, atoms, x, v, ePBC, box);
 

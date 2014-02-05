@@ -102,7 +102,7 @@ typedef struct
     float*             fval;
     double*            dval;
     int*               ival;
-    gmx_large_int_t*   lval;
+    gmx_int64_t*       lval;
     unsigned char*     cval;
     char**             sval;
 
@@ -130,8 +130,8 @@ typedef struct t_enxblock{
 /* The frames that are read/written */
 typedef struct {
     double          t;            /* Timestamp of this frame	                     */
-    gmx_large_int_t step;         /* MD step	                             */
-    gmx_large_int_t nsteps;       /* The number of steps between frames            */
+    gmx_int64_t     step;         /* MD step	                             */
+    gmx_int64_t     nsteps;       /* The number of steps between frames            */
     double          dt;           /* The MD time step                              */
     int             nsum;         /* The number of terms for the sums in ener      */
     int             nre;          /* Number of energies			     */

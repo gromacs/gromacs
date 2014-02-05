@@ -117,14 +117,14 @@
     for (ithx = 0; (ithx < 4); ithx++)
     {
         index_x  = (i0+ithx)*pny*pnz;
-        tx_S   = gmx_simd4_set1_pr(thx[ithx]);
-        dx_S   = gmx_simd4_set1_pr(dthx[ithx]);
+        tx_S     = gmx_simd4_set1_pr(thx[ithx]);
+        dx_S     = gmx_simd4_set1_pr(dthx[ithx]);
 
         for (ithy = 0; (ithy < 4); ithy++)
         {
             index_xy = index_x+(j0+ithy)*pnz;
-            ty_S   = gmx_simd4_set1_pr(thy[ithy]);
-            dy_S   = gmx_simd4_set1_pr(dthy[ithy]);
+            ty_S     = gmx_simd4_set1_pr(thy[ithy]);
+            dy_S     = gmx_simd4_set1_pr(dthy[ithy]);
 
             gval_S = gmx_simd4_loadu_pr(grid+index_xy+k0);
 
@@ -155,8 +155,8 @@
  * This code supports pme_order <= 5.
  */
 {
-    int    offset;
-    int    index;
+    int          offset;
+    int          index;
     gmx_simd4_pr ty_S0, ty_S1, ty_S2, ty_S3, ty_S4;
     gmx_simd4_pr tz_S0;
     gmx_simd4_pr tz_S1;
@@ -263,7 +263,7 @@
  * This code supports pme_order <= 5.
  */
 {
-    int    offset;
+    int          offset;
 
     real         fx_tmp[4], fy_tmp[4], fz_tmp[4];
 
@@ -316,14 +316,14 @@
     for (ithx = 0; (ithx < PME_ORDER); ithx++)
     {
         index_x  = (i0+ithx)*pny*pnz;
-        tx_S   = gmx_simd4_set1_pr(thx[ithx]);
-        dx_S   = gmx_simd4_set1_pr(dthx[ithx]);
+        tx_S     = gmx_simd4_set1_pr(thx[ithx]);
+        dx_S     = gmx_simd4_set1_pr(dthx[ithx]);
 
         for (ithy = 0; (ithy < PME_ORDER); ithy++)
         {
             index_xy = index_x+(j0+ithy)*pnz;
-            ty_S   = gmx_simd4_set1_pr(thy[ithy]);
-            dy_S   = gmx_simd4_set1_pr(dthy[ithy]);
+            ty_S     = gmx_simd4_set1_pr(thy[ithy]);
+            dy_S     = gmx_simd4_set1_pr(dthy[ithy]);
 
             gval_S0 = gmx_simd4_load_pr(grid+index_xy+k0-offset);
             gval_S1 = gmx_simd4_load_pr(grid+index_xy+k0-offset+4);

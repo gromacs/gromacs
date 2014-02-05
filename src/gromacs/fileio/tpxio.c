@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,6 @@
 #include "futil.h"
 #include "filenm.h"
 #include "gmxfio.h"
-#include "topsort.h"
 #include "tpxio.h"
 #include "txtdump.h"
 #include "confio.h"
@@ -69,8 +68,17 @@
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
-/* This number should be increased whenever the file format changes! */
-static const int tpx_version = 95;
+
+/* The tpx_version number should be increased whenever the file format changes!
+ *
+ * The following comment section helps to keep track of which feature has been
+ * added in which version.
+ *
+ * version  feature added
+ *    96    support for ion/water position swaps (computational electrophysiology)
+ */
+static const int tpx_version = 96;
+
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -233,11 +241,11 @@ static void _do_section(t_fileio *fio, int key, gmx_bool bRead, const char *src,
  * Now the higer level routines that do io of the structures and arrays
  *
  **************************************************************/
-static void do_pullgrp_tpx_pre95(t_fileio *fio,
+static void do_pullgrp_tpx_pre95(t_fileio     *fio,
                                  t_pull_group *pgrp,
                                  t_pull_coord *pcrd,
-                                 gmx_bool bRead,
-                                 int file_version)
+                                 gmx_bool      bRead,
+                                 int           file_version)
 {
     int  i;
     rvec tmp;
@@ -640,7 +648,7 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
         for (g = 0; g < pull->ngroup; g++)
         {
             /* We read and ignore a pull coordinate for group 0 */
-            do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[max(g-1,0)],
+            do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[max(g-1, 0)],
                                  bRead, file_version);
             if (g > 0)
             {
@@ -712,6 +720,54 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
 }
 
 
+static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
+{
+    int i, j;
+
+
+    gmx_fio_do_int(fio, swap->nat);
+    gmx_fio_do_int(fio, swap->nat_sol);
+    for (j = 0; j < 2; j++)
+    {
+        gmx_fio_do_int(fio, swap->nat_split[j]);
+        gmx_fio_do_int(fio, swap->massw_split[j]);
+    }
+    gmx_fio_do_int(fio, swap->nstswap);
+    gmx_fio_do_int(fio, swap->nAverage);
+    gmx_fio_do_real(fio, swap->threshold);
+    gmx_fio_do_real(fio, swap->cyl0r);
+    gmx_fio_do_real(fio, swap->cyl0u);
+    gmx_fio_do_real(fio, swap->cyl0l);
+    gmx_fio_do_real(fio, swap->cyl1r);
+    gmx_fio_do_real(fio, swap->cyl1u);
+    gmx_fio_do_real(fio, swap->cyl1l);
+
+    if (bRead)
+    {
+        snew(swap->ind, swap->nat);
+        snew(swap->ind_sol, swap->nat_sol);
+        for (j = 0; j < 2; j++)
+        {
+            snew(swap->ind_split[j], swap->nat_split[j]);
+        }
+    }
+
+    gmx_fio_ndo_int(fio, swap->ind, swap->nat);
+    gmx_fio_ndo_int(fio, swap->ind_sol, swap->nat_sol);
+    for (j = 0; j < 2; j++)
+    {
+        gmx_fio_ndo_int(fio, swap->ind_split[j], swap->nat_split[j]);
+    }
+
+    for (j = 0; j < eCompNR; j++)
+    {
+        gmx_fio_do_int(fio, swap->nanions[j]);
+        gmx_fio_do_int(fio, swap->ncations[j]);
+    }
+
+}
+
+
 static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
                         int file_version, real *fudgeQQ)
 {
@@ -742,7 +798,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->eI);
     if (file_version >= 62)
     {
-        gmx_fio_do_gmx_large_int(fio, ir->nsteps);
+        gmx_fio_do_int64(fio, ir->nsteps);
     }
     else
     {
@@ -753,7 +809,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         if (file_version >= 62)
         {
-            gmx_fio_do_gmx_large_int(fio, ir->init_step);
+            gmx_fio_do_int64(fio, ir->init_step);
         }
         else
         {
@@ -878,7 +934,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->nstvout);
     gmx_fio_do_int(fio, ir->nstfout);
     gmx_fio_do_int(fio, ir->nstenergy);
-    gmx_fio_do_int(fio, ir->nstxtcout);
+    gmx_fio_do_int(fio, ir->nstxout_compressed);
     if (file_version >= 59)
     {
         gmx_fio_do_double(fio, ir->init_t);
@@ -891,7 +947,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, rdum);
         ir->delta_t = rdum;
     }
-    gmx_fio_do_real(fio, ir->xtcprec);
+    gmx_fio_do_real(fio, ir->x_compression_precision);
     if (file_version < 19)
     {
         gmx_fio_do_int(fio, idum);
@@ -1621,6 +1677,20 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_ndo_real(fio, ir->ex[j].phi, ir->ex[j].n);
         gmx_fio_ndo_real(fio, ir->et[j].a,  ir->et[j].n);
         gmx_fio_ndo_real(fio, ir->et[j].phi, ir->et[j].n);
+    }
+
+    /* Swap ions */
+    if (file_version >= 96)
+    {
+        gmx_fio_do_int(fio, ir->eSwapCoords);
+        if (ir->eSwapCoords != eswapNO)
+        {
+            if (bRead)
+            {
+                snew(ir->swap, 1);
+            }
+            do_swapcoords(fio, ir->swap, bRead);
+        }
     }
 
     /* QMMM stuff */

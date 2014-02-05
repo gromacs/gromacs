@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,44 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_commandline Command Line Parsing and Help (commandline)
+/*! \defgroup module_commandline Command Line Program Management (commandline)
  * \ingroup group_utilitymodules
  * \brief
- * Provides functionality for parsing command-line arguments and writing help.
+ * Provides functionality for managing command line programs.
  *
- * This module implements gmx::CommandLineParser that assigns values to
- * gmx::Options (see \ref module_options) based on command-line arguments.
- * gmx::CommandLineHelpWriter is also provided to write help text for a program
- * that uses the parser.
+ * This module provides utility classes and functions for implementing command
+ * line programs.  They are mainly used within \Gromacs, but can also be used
+ * from external programs if they want to get a similar user experience to
+ * \Gromacs tools.
+ *
+ * The classes exposed from this module can be roughly divided into two groups:
+ *
+ *  - Helper classes/functions for implementing the %main() function.
+ *    See \ref page_usinglibrary for an overview of those available for user
+ *    programs.  These are declared in cmdlineinit.h
+ *    (gmx::CommandLineModuleInterface is declared in cmdlinemodule.h).
+ *    \if libapi
+ *
+ *    Additionally, for internal \Gromacs use, gmx::CommandLineModuleManager
+ *    provides the functionality to implement the `gmx` wrapper binary, as well
+ *    as command line options common to all \Gromacs programs (such as
+ *    `-version`).
+ *    This is described in more detail at \ref page_wrapperbinary.
+ *    \endif
+ *
+ *  - Helper classes for particular command line tasks:
+ *     - gmx::CommandLineParser implements command line parsing to assign
+ *       values to gmx::Options (see \ref module_options).
+ *     - gmx::CommandLineHelpWriter writes help text for a program that uses
+ *       the parser.
+ *     - parse_common_args() is an old interface to \Gromacs command line
+ *       parsing.  This is still used by many parts of \Gromacs.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \file
  * \brief
- * Public API convenience header for handling command-line parameters.
+ * Public API convenience header for managing command line programs.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -56,6 +79,9 @@
 #define GMX_COMMANDLINE_H
 
 #include "commandline/cmdlinehelpwriter.h"
+#include "commandline/cmdlineinit.h"
+#include "commandline/cmdlinemodule.h"
 #include "commandline/cmdlineparser.h"
+#include "commandline/pargs.h"
 
 #endif

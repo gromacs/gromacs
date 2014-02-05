@@ -1,19 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- * This file is part of Gromacs        Copyright (c) 1991-2008
- * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 /* The source code in this file should be thread-safe.
@@ -41,15 +58,16 @@
 #include <sys/locking.h>
 #endif
 
+#include "copyrite.h"
 #include "names.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "statutil.h"
 #include "txtdump.h"
 #include "vec.h"
 #include "network.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "checkpoint.h"
+#include "main.h"
 #include "string2.h"
 #include <fcntl.h>
 
@@ -81,7 +99,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 15;
+static const int cpt_version = 16;
 
 
 const char *est_names[estNR] =
@@ -273,12 +291,12 @@ static void do_cpt_int_err(XDR *xd, const char *desc, int *i, FILE *list)
     }
 }
 
-static void do_cpt_step_err(XDR *xd, const char *desc, gmx_large_int_t *i, FILE *list)
+static void do_cpt_step_err(XDR *xd, const char *desc, gmx_int64_t *i, FILE *list)
 {
     bool_t res = 0;
     char   buf[STEPSTRSIZE];
 
-    res = xdr_gmx_large_int(xd, i);
+    res = xdr_int64(xd, i);
     if (res == 0)
     {
         cp_error();
@@ -787,12 +805,12 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
                           int *double_prec,
                           char **fprog, char **ftime,
                           int *eIntegrator, int *simulation_part,
-                          gmx_large_int_t *step, double *t,
+                          gmx_int64_t *step, double *t,
                           int *nnodes, int *dd_nc, int *npme,
                           int *natoms, int *ngtc, int *nnhpres, int *nhchainlength,
                           int *nlambda, int *flags_state,
                           int *flags_eks, int *flags_enh, int *flags_dfh,
-                          int *nED,
+                          int *nED, int *eSwapCoords,
                           FILE *list)
 {
     bool_t res = 0;
@@ -823,14 +841,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     if (!bRead)
     {
         snew(fhost, 255);
-#ifdef HAVE_UNISTD_H
-        if (gethostname(fhost, 255) != 0)
-        {
-            sprintf(fhost, "unknown");
-        }
-#else
-        sprintf(fhost, "unknown");
-#endif
+        gmx_gethostname(fhost, 255);
     }
     do_cpt_string_err(xd, bRead, "GROMACS version", version, list);
     do_cpt_string_err(xd, bRead, "GROMACS build time", btime, list);
@@ -942,6 +953,10 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     {
         *nED = 0;
     }
+    if (*file_version >= 16)
+    {
+        do_cpt_int_err(xd, "swap", eSwapCoords, list);
+    }
 }
 
 static int do_cpt_footer(XDR *xd, int file_version)
@@ -995,7 +1010,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
 
     if (bRead) /* we need to allocate space for dfhist if we are reading */
     {
-        init_df_history(&state->dfhist,state->dfhist.nlambda);
+        init_df_history(&state->dfhist, state->dfhist.nlambda);
     }
 
     /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */
@@ -1073,6 +1088,123 @@ static int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
                               "You are probably reading a new checkpoint file with old code", i);
             }
         }
+    }
+
+    return ret;
+}
+
+
+static int do_cpt_swapstate(XDR *xd, gmx_bool bRead, swapstate_t *swapstate, FILE *list)
+{
+    int ii, ic, j;
+    int ret              = 0;
+    int swap_cpt_version = 1;
+
+
+    if (eswapNO == swapstate->eSwapCoords)
+    {
+        return ret;
+    }
+
+    swapstate->bFromCpt = bRead;
+
+    do_cpt_int_err(xd, "swap checkpoint version", &swap_cpt_version, list);
+    do_cpt_int_err(xd, "swap coupling steps", &swapstate->nAverage, list);
+
+    /* When reading, init_swapcoords has not been called yet,
+     * so we have to allocate memory first. */
+
+    for (ic = 0; ic < eCompNR; ic++)
+    {
+        for (ii = 0; ii < eIonNR; ii++)
+        {
+            if (bRead)
+            {
+                do_cpt_int_err(xd, "swap requested atoms", &swapstate->nat_req[ic][ii], list);
+            }
+            else
+            {
+                do_cpt_int_err(xd, "swap requested atoms p", swapstate->nat_req_p[ic][ii], list);
+            }
+
+            if (bRead)
+            {
+                do_cpt_int_err(xd, "swap influx netto", &swapstate->inflow_netto[ic][ii], list);
+            }
+            else
+            {
+                do_cpt_int_err(xd, "swap influx netto p", swapstate->inflow_netto_p[ic][ii], list);
+            }
+
+            if (bRead && (NULL == swapstate->nat_past[ic][ii]) )
+            {
+                snew(swapstate->nat_past[ic][ii], swapstate->nAverage);
+            }
+
+            for (j = 0; j < swapstate->nAverage; j++)
+            {
+                if (bRead)
+                {
+                    do_cpt_int_err(xd, "swap past atom counts", &swapstate->nat_past[ic][ii][j], list);
+                }
+                else
+                {
+                    do_cpt_int_err(xd, "swap past atom counts p", &swapstate->nat_past_p[ic][ii][j], list);
+                }
+            }
+        }
+    }
+
+    /* Ion flux per channel */
+    for (ic = 0; ic < eChanNR; ic++)
+    {
+        for (ii = 0; ii < eIonNR; ii++)
+        {
+            if (bRead)
+            {
+                do_cpt_int_err(xd, "channel flux", &swapstate->fluxfromAtoB[ic][ii], list);
+            }
+            else
+            {
+                do_cpt_int_err(xd, "channel flux p", swapstate->fluxfromAtoB_p[ic][ii], list);
+            }
+        }
+    }
+
+    /* Ion flux leakage */
+    if (bRead)
+    {
+        snew(swapstate->fluxleak, 1);
+    }
+    do_cpt_int_err(xd, "flux leakage", swapstate->fluxleak, list);
+
+    /* Ion history */
+    do_cpt_int_err(xd, "number of ions", &swapstate->nions, list);
+
+    if (bRead)
+    {
+        snew(swapstate->channel_label, swapstate->nions);
+        snew(swapstate->comp_from, swapstate->nions);
+    }
+
+    do_cpt_u_chars(xd, "channel history", swapstate->nions, swapstate->channel_label, list);
+    do_cpt_u_chars(xd, "domain history", swapstate->nions, swapstate->comp_from, list);
+
+    /* Save the last known whole positions to checkpoint
+     * file to be able to also make multimeric channels whole in PBC */
+    do_cpt_int_err(xd, "Ch0 atoms", &swapstate->nat[eChan0], list);
+    do_cpt_int_err(xd, "Ch1 atoms", &swapstate->nat[eChan1], list);
+    if (bRead)
+    {
+        snew(swapstate->xc_old_whole[eChan0], swapstate->nat[eChan0]);
+        snew(swapstate->xc_old_whole[eChan1], swapstate->nat[eChan1]);
+        do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], swapstate->xc_old_whole[eChan0], list);
+        do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], swapstate->xc_old_whole[eChan1], list);
+    }
+    else
+    {
+        do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], *swapstate->xc_old_whole_p[eChan0], list);
+        do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], *swapstate->xc_old_whole_p[eChan1], list);
     }
 
     return ret;
@@ -1325,11 +1457,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
             {
                 return -1;
             }
-#if (SIZEOF_GMX_OFF_T > 4)
             outputfiles[i].offset = ( ((gmx_off_t) offset_high) << 32 ) | ( (gmx_off_t) offset_low & mask );
-#else
-            outputfiles[i].offset = offset_low;
-#endif
         }
         else
         {
@@ -1344,13 +1472,8 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
             }
             else
             {
-#if (SIZEOF_GMX_OFF_T > 4)
                 offset_low  = (int) (offset & mask);
                 offset_high = (int) ((offset >> 32) & mask);
-#else
-                offset_low  = offset;
-                offset_high = 0;
-#endif
             }
             if (do_cpt_int(xd, "file_offset_high", &offset_high, list) != 0)
             {
@@ -1386,7 +1509,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       FILE *fplog, t_commrec *cr,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
-                      gmx_large_int_t step, double t, t_state *state)
+                      gmx_int64_t step, double t, t_state *state)
 {
     t_fileio            *fp;
     int                  file_version;
@@ -1426,6 +1549,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         npmenodes = 0;
     }
 
+#ifndef GMX_NO_RENAME
     /* make the new temporary filename */
     snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
     strcpy(fntemp, fn);
@@ -1433,7 +1557,13 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     sprintf(suffix, "_%s%s", "step", gmx_step_str(step, sbuf));
     strcat(fntemp, suffix);
     strcat(fntemp, fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
-
+#else
+    /* if we can't rename, we just overwrite the cpt file.
+     * dangerous if interrupted.
+     */
+    snew(fntemp, strlen(fn));
+    strcpy(fntemp, fn);
+#endif
     time(&now);
     gmx_ctime_r(&now, timebuf, STRLEN);
 
@@ -1523,7 +1653,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL, &npmenodes,
                   &state->natoms, &state->ngtc, &state->nnhpres,
                   &state->nhchainlength, &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
-                  &state->edsamstate.nED,
+                  &state->edsamstate.nED, &state->swapstate.eSwapCoords,
                   NULL);
 
     sfree(version);
@@ -1537,6 +1667,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, &state->enerhist, NULL) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, &state->edsamstate, NULL) < 0)      ||
+        (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, &state->swapstate, NULL) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, &noutputfiles, NULL,
                       file_version) < 0))
     {
@@ -1575,6 +1706,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     /* we don't move the checkpoint if the user specified they didn't want it,
        or if the fsyncs failed */
+#ifndef GMX_NO_RENAME
     if (!bNumberAndKeep && !ret)
     {
         if (gmx_fexist(fn))
@@ -1603,6 +1735,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
             gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");
         }
     }
+#endif  /* GMX_NO_RENAME */
 
     sfree(outputfiles);
     sfree(fntemp);
@@ -1727,7 +1860,7 @@ static void check_match(FILE *fplog,
 
 static void read_checkpoint(const char *fn, FILE **pfplog,
                             t_commrec *cr, gmx_bool bPartDecomp, ivec dd_nc,
-                            int eIntegrator, int *init_fep_state, gmx_large_int_t *step, double *t,
+                            int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadRNG, gmx_bool *bReadEkin,
                             int *simulation_part,
                             gmx_bool bAppendOutputFiles, gmx_bool bForceAppend)
@@ -1748,7 +1881,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
     unsigned char        digest[16];
-#ifndef GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
     struct flock         fl; /* don't initialize here: the struct order is OS
                                 dependent! */
 #endif
@@ -1761,7 +1894,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
 
-#ifndef GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
     fl.l_type   = F_WRLCK;
     fl.l_whence = SEEK_SET;
     fl.l_start  = 0;
@@ -1782,7 +1915,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   &nppnodes_f, dd_nc_f, &npmenodes_f,
                   &natoms, &ngtc, &nnhpres, &nhchainlength, &nlambda,
                   &fflags, &flags_eks, &flags_enh, &flags_dfh,
-                  &state->edsamstate.nED, NULL);
+                  &state->edsamstate.nED, &state->swapstate.eSwapCoords, NULL);
 
     if (bAppendOutputFiles &&
         file_version >= 13 && double_prec != GMX_CPT_BUILD_DP)
@@ -1970,12 +2103,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
-    if (ret)
-    {
-        cp_error();
-    }
-
     if (file_version < 6)
     {
         const char *warn = "Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the averages stored in the energy file will be incorrect.";
@@ -1990,6 +2117,18 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     }
 
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2056,11 +2195,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                  * will succeed, but a second process can also lock the file.
                  * We should probably try to detect this.
                  */
-#ifndef GMX_NATIVE_WINDOWS
-                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
-                    == -1)
-#else
+#if defined __native_client__
+                errno = ENOSYS;
+                if (1)
+
+#elif defined GMX_NATIVE_WINDOWS
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
+#else
+                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
 #endif
                 {
                     if (errno == ENOSYS)
@@ -2165,7 +2307,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
                      gmx_bool *bReadRNG, gmx_bool *bReadEkin,
                      gmx_bool bAppend, gmx_bool bForceAppend)
 {
-    gmx_large_int_t step;
+    gmx_int64_t     step;
     double          t;
 
     if (SIMMASTER(cr))
@@ -2194,7 +2336,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
 }
 
 static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
-                                 gmx_large_int_t *step, double *t, t_state *state,
+                                 gmx_int64_t *step, double *t, t_state *state,
                                  gmx_bool bReadRNG,
                                  int *nfiles, gmx_file_position_t **outputfiles)
 {
@@ -2214,7 +2356,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                   &eIntegrator, simulation_part, step, t, &nppnodes, dd_nc, &npme,
                   &state->natoms, &state->ngtc, &state->nnhpres, &state->nhchainlength,
                   &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
-                  &state->edsamstate.nED, NULL);
+                  &state->edsamstate.nED, &state->swapstate.eSwapCoords, NULL);
     ret =
         do_cpt_state(gmx_fio_getxdr(fp), TRUE, state->flags, state, bReadRNG, NULL);
     if (ret)
@@ -2239,6 +2381,12 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     }
 
     ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2273,7 +2421,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
 
 void
 read_checkpoint_state(const char *fn, int *simulation_part,
-                      gmx_large_int_t *step, double *t, t_state *state)
+                      gmx_int64_t *step, double *t, t_state *state)
 {
     t_fileio *fp;
 
@@ -2293,7 +2441,7 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
      * this will all go away for 5.0. */
     t_state         state;
     int             simulation_part;
-    gmx_large_int_t step;
+    gmx_int64_t     step;
     double          t;
 
     init_state(&state, 0, 0, 0, 0, 0);
@@ -2303,8 +2451,8 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
     fr->natoms  = state.natoms;
     fr->bTitle  = FALSE;
     fr->bStep   = TRUE;
-    fr->step    = gmx_large_int_to_int(step,
-                                       "conversion of checkpoint to trajectory");
+    fr->step    = gmx_int64_to_int(step,
+                                   "conversion of checkpoint to trajectory");
     fr->bTime      = TRUE;
     fr->time       = t;
     fr->bLambda    = TRUE;
@@ -2339,7 +2487,7 @@ void list_checkpoint(const char *fn, FILE *out)
     char                *version, *btime, *buser, *bhost, *fprog, *ftime;
     int                  double_prec;
     int                  eIntegrator, simulation_part, nppnodes, npme;
-    gmx_large_int_t      step;
+    gmx_int64_t          step;
     double               t;
     ivec                 dd_nc;
     t_state              state;
@@ -2358,7 +2506,8 @@ void list_checkpoint(const char *fn, FILE *out)
                   &eIntegrator, &simulation_part, &step, &t, &nppnodes, dd_nc, &npme,
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
                   &(state.dfhist.nlambda), &state.flags,
-                  &flags_eks, &flags_enh, &flags_dfh, &state.edsamstate.nED, out);
+                  &flags_eks, &flags_enh, &flags_dfh, &state.edsamstate.nED,
+                  &state.swapstate.eSwapCoords, out);
     ret = do_cpt_state(gmx_fio_getxdr(fp), TRUE, state.flags, &state, TRUE, out);
     if (ret)
     {
@@ -2381,6 +2530,11 @@ void list_checkpoint(const char *fn, FILE *out)
     if (ret == 0)
     {
         ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state.edsamstate, out);
+    }
+
+    if (ret == 0)
+    {
+        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state.swapstate, out);
     }
 
     if (ret == 0)
@@ -2425,13 +2579,13 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         gmx_large_int_t *cpt_step, t_commrec *cr,
+                                         gmx_int64_t *cpt_step, t_commrec *cr,
                                          gmx_bool bAppendReq,
                                          int nfile, const t_filenm fnm[],
                                          const char *part_suffix, gmx_bool *bAddPart)
 {
     t_fileio            *fp;
-    gmx_large_int_t      step = 0;
+    gmx_int64_t          step = 0;
     double               t;
     /* This next line is nasty because the sub-structures of t_state
      * cannot be assumed to be zeroed (or even initialized in ways the

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,19 @@
  * and omp.h should never be directly included.  Instead, this header should be
  * used whenever OpenMP API functions are needed.
  *
+ * \inlibraryapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_OMP_H
 #define GMX_UTILITY_OMP_H
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef GMX_X86_SSE2
+#include <xmmintrin.h>
+#endif
 
 #include "types/commrec.h"
 #include "mdrun.h"
@@ -97,6 +106,21 @@ void gmx_omp_set_num_threads(int num_threads);
  */
 void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
                                    gmx_hw_opt_t *hw_opt);
+
+/*! \brief
+ * Pause for use in a spin-wait loop.
+ */
+static gmx_inline void gmx_pause()
+{
+    /* Replace with tbb::internal::atomic_backoff when/if we use TBB */
+#if defined GMX_X86_SSE2
+    _mm_pause();
+#elif defined __MIC__
+    _mm_delay_32(32);
+#else
+    /* No wait for unknown architecture */
+#endif
+}
 
 /*! \} */
 

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
  *  We also provide our own multi-dimensional transform setups even when
  *  the underlying library does not support it directly.
  *
+ * \inpublicapi
  * \ingroup module_fft
  */
 #ifndef GMX_FFT_FFT_H
@@ -54,7 +55,7 @@
 #include <stdio.h>
 
 #include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/gmxcomplex.h"
+#include "../math/gmxcomplex.h"
 
 #ifdef __cplusplus
 extern "C" {

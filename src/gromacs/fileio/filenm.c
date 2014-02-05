@@ -40,20 +40,17 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "sysstuff.h"
-#include "typedefs.h"
+
+#include "futil.h"
+#include "gmx_fatal.h"
+#include "macros.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "gmx_fatal.h"
-#include "futil.h"
-#include "xdrf.h"
-#include "macros.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
-
-/* NOTE: this was a cesspool of thread-unsafe code, has now been
-   properly proteced by mutexes (hopefully). */
+#include "types/simple.h"
+#include "types/commrec.h"
 
 /* XDR should be available on all platforms now,
  * but we keep the possibility of turning it off...
@@ -69,7 +66,7 @@
 
 enum
 {
-    eftASC, eftBIN, eftXDR, eftGEN, eftNR
+    eftASC, eftBIN, eftXDR, eftTNG, eftGEN, eftNR
 };
 
 /* To support multiple file types with one general (eg TRX) we have
@@ -80,16 +77,25 @@ static const int trxs[] =
 #ifdef USE_XDR
     efXTC, efTRR, efCPT,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87
+    efTRJ, efGRO, efG96, efPDB, efG87, efTNG
 };
 #define NTRXS asize(trxs)
+
+static const int trcompressed[] =
+{
+#ifdef USE_XDR
+    efXTC,
+#endif
+    efTNG
+};
+#define NTRCOMPRESSED asize(trcompressed)
 
 static const int tros[] =
 {
 #ifdef USE_XDR
     efXTC, efTRR,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87
+    efTRJ, efGRO, efG96, efPDB, efG87, efTNG
 };
 #define NTROS asize(tros)
 
@@ -98,7 +104,7 @@ static const int trns[] =
 #ifdef USE_XDR
     efTRR, efCPT,
 #endif
-    efTRJ
+    efTRJ, efTNG
 };
 #define NTRNS asize(trns)
 
@@ -151,15 +157,19 @@ static const t_deffile
 {
     { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters" },
     { eftGEN, ".???", "traj", "-f",
-      "Trajectory: xtc trr trj gro g96 pdb cpt", NTRXS, trxs },
+      "Trajectory: tng xtc trr trj gro g96 pdb cpt", NTRXS, trxs },
     { eftGEN, ".???", "trajout", "-f",
-      "Trajectory: xtc trr trj gro g96 pdb", NTROS, tros },
+      "Trajectory: tng xtc trr trj gro g96 pdb", NTROS, tros },
     { eftGEN, ".???", "traj", NULL,
-      "Full precision trajectory: trr trj cpt", NTRNS, trns },
+      "Full precision trajectory: tng trr trj cpt", NTRNS, trns },
     { eftXDR, ".trr", "traj", NULL, "Trajectory in portable xdr format" },
     { eftBIN, ".trj", "traj", NULL, "Trajectory file (architecture specific)" },
+    { eftGEN, ".???", "traj_comp", NULL,
+      "Compressed trajectory (tng format or portable xdr format): tng xtc", NTRCOMPRESSED, trcompressed},
     { eftXDR, ".xtc", "traj", NULL,
-      "Compressed trajectory (portable xdr format)" },
+      "Compressed trajectory (portable xdr format): xtc" },
+    { eftTNG, ".tng", "traj", NULL,
+      "Trajectory file (tng format)" },
     { eftASC, ".g87", "gtraj", NULL, "Gromos-87 ASCII trajectory format" },
     { eftXDR, ".edr", "ener",   NULL, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file: gro g96 pdb tpr etc.",
@@ -205,20 +215,9 @@ static const t_deffile
     { eftASC, "", "rundir", NULL, "Run directory" }
 };
 
-static char *default_file_name = NULL;
-
-static tMPI_Thread_mutex_t filenm_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
 #define NZEXT 2
 static const char *z_ext[NZEXT] =
 { ".gz", ".Z" };
-
-void set_default_file_name(const char *name)
-{
-    tMPI_Thread_mutex_lock(&filenm_mutex);
-    default_file_name = strdup(name);
-    tMPI_Thread_mutex_unlock(&filenm_mutex);
-}
 
 const char *ftp2ext(int ftp)
 {
@@ -320,6 +319,8 @@ const char *ftp2ftype(int ftp)
                 return "Binary";
             case eftXDR:
                 return "XDR portable";
+            case eftTNG:
+                return "TNG";
             case eftGEN:
                 return "";
             default:
@@ -332,25 +333,14 @@ const char *ftp2ftype(int ftp)
 
 const char *ftp2defnm(int ftp)
 {
-    const char *buf = NULL;
-
-    tMPI_Thread_mutex_lock(&filenm_mutex);
-
-    if (default_file_name)
+    if ((0 <= ftp) && (ftp < efNR))
     {
-        buf = default_file_name;
+        return deffile[ftp].defnm;
     }
     else
     {
-        if ((0 <= ftp) && (ftp < efNR))
-        {
-            buf = deffile[ftp].defnm;
-        }
+        return NULL;
     }
-
-    tMPI_Thread_mutex_unlock(&filenm_mutex);
-
-    return buf;
 }
 
 static void check_opts(int nf, t_filenm fnm[])
@@ -433,7 +423,7 @@ static void add_filenm(t_filenm *fnm, const char *filenm)
     fnm->nfiles++;
 }
 
-static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride)
+static void set_grpfnm(t_filenm *fnm, const char *name, const char *deffnm)
 {
     char       buf[256], buf2[256];
     int        i, type;
@@ -449,7 +439,7 @@ static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
     }
 
     bValidExt = FALSE;
-    if (name && (bCanNotOverride || (default_file_name == NULL)))
+    if (name && deffnm == NULL)
     {
         strcpy(buf, name);
         /* First check whether we have a valid filename already */
@@ -466,6 +456,10 @@ static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
                 bValidExt = TRUE;
             }
         }
+    }
+    else if (deffnm != NULL)
+    {
+        strcpy(buf, deffnm);
     }
     else
     {
@@ -498,7 +492,7 @@ static void set_grpfnm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
     add_filenm(fnm, buf);
 }
 
-static void set_filenm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride,
+static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm,
                        gmx_bool bReadNode)
 {
     /* Set the default filename, extension and option for those fields that
@@ -542,14 +536,20 @@ static void set_filenm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
 
     if (deffile[fnm->ftp].ntps)
     {
-        set_grpfnm(fnm, name ? buf : NULL, bCanNotOverride);
+        set_grpfnm(fnm, name ? buf : NULL, deffnm);
     }
     else
     {
-        if ((name == NULL) || !(bCanNotOverride || (default_file_name == NULL)))
+        if (name == NULL || deffnm != NULL)
         {
-            const char *defnm = ftp2defnm(fnm->ftp);
-            strcpy(buf, defnm);
+            if (deffnm != NULL)
+            {
+                strcpy(buf, deffnm);
+            }
+            else
+            {
+                strcpy(buf, ftp2defnm(fnm->ftp));
+            }
         }
         set_extension(buf, fnm->ftp);
 
@@ -557,7 +557,7 @@ static void set_filenm(t_filenm *fnm, const char *name, gmx_bool bCanNotOverride
     }
 }
 
-static void set_filenms(int nf, t_filenm fnm[], gmx_bool bReadNode)
+static void set_filenms(int nf, t_filenm fnm[], const char *deffnm, gmx_bool bReadNode)
 {
     int i;
 
@@ -565,13 +565,13 @@ static void set_filenms(int nf, t_filenm fnm[], gmx_bool bReadNode)
     {
         if (!IS_SET(fnm[i]))
         {
-            set_filenm(&(fnm[i]), fnm[i].fn, FALSE, bReadNode);
+            set_filenm(&(fnm[i]), fnm[i].fn, deffnm, bReadNode);
         }
     }
 }
 
 void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     gmx_bool bKeep, gmx_bool bReadNode)
+                     const char *deffnm, gmx_bool bReadNode)
 {
     int       i, j;
     gmx_bool *bRemove;
@@ -599,12 +599,12 @@ void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
                     /* check if we are out of arguments for this option */
                     if ((i >= *argc) || (argv[i][0] == '-'))
                     {
-                        set_filenm(&fnm[j], fnm[j].fn, FALSE, bReadNode);
+                        set_filenm(&fnm[j], fnm[j].fn, deffnm, bReadNode);
                     }
                     /* sweep up all file arguments for this option */
                     while ((i < *argc) && (argv[i][0] != '-'))
                     {
-                        set_filenm(&fnm[j], argv[i], TRUE, bReadNode);
+                        set_filenm(&fnm[j], argv[i], NULL, bReadNode);
                         bRemove[i] = TRUE;
                         i++;
                         /* only repeat for 'multiple' file options: */
@@ -625,22 +625,19 @@ void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
         }
         while (i < *argc);
 
-        if (!bKeep)
+        /* Remove used entries */
+        for (i = j = 0; (i <= *argc); i++)
         {
-            /* Remove used entries */
-            for (i = j = 0; (i <= *argc); i++)
+            if (!bRemove[i])
             {
-                if (!bRemove[i])
-                {
-                    argv[j++] = argv[i];
-                }
+                argv[j++] = argv[i];
             }
-            (*argc) = j - 1;
         }
+        (*argc) = j - 1;
         sfree(bRemove);
     }
 
-    set_filenms(nf, fnm, bReadNode);
+    set_filenms(nf, fnm, deffnm, bReadNode);
 
 }
 

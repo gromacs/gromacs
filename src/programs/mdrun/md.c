@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,6 @@
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "vec.h"
-#include "statutil.h"
 #include "vcm.h"
 #include "mdebin.h"
 #include "nrnb.h"
@@ -55,7 +54,6 @@
 #include "md_support.h"
 #include "md_logging.h"
 #include "network.h"
-#include "pull.h"
 #include "xvgr.h"
 #include "physics.h"
 #include "names.h"
@@ -69,7 +67,6 @@
 #include "domdec.h"
 #include "domdec_network.h"
 #include "partdec.h"
-#include "topsort.h"
 #include "coulomb.h"
 #include "constr.h"
 #include "shellfc.h"
@@ -95,14 +92,16 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/swap/swapcoords.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
 
 static void reset_all_counters(FILE *fplog, t_commrec *cr,
-                               gmx_large_int_t step,
-                               gmx_large_int_t *step_rel, t_inputrec *ir,
+                               gmx_int64_t step,
+                               gmx_int64_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
                                gmx_walltime_accounting_t walltime_accounting,
                                nbnxn_cuda_ptr_t cu_nbv)
@@ -150,8 +149,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              unsigned long Flags,
              gmx_walltime_accounting_t walltime_accounting)
 {
-    gmx_mdoutf_t   *outf;
-    gmx_large_int_t step, step_rel;
+    gmx_mdoutf_t    outf = NULL;
+    gmx_int64_t     step, step_rel;
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
@@ -191,7 +190,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int               count, nconverged = 0;
     real              timestep   = 0;
     double            tcount     = 0;
-    gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
+    gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged, bNeedRepartition;
     gmx_bool          bAppend;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
@@ -214,9 +213,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
     int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t     iterate;
-    gmx_large_int_t   multisim_nsteps = -1;                        /* number of steps to do  before first multisim
-                                                                      simulation stops. If equal to zero, don't
-                                                                      communicate any more between multisims.*/
+    gmx_int64_t       multisim_nsteps = -1;                        /* number of steps to do  before first multisim
+                                                                          simulation stops. If equal to zero, don't
+                                                                          communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
@@ -287,7 +286,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (bRerunMD)
     {
-        ir->nstxtcout = 0;
+        ir->nstxout_compressed = 0;
     }
     groups = &top_global->groups;
 
@@ -669,14 +668,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         fprintf(fplog, "\n");
     }
 
-    /* Set and write start time */
     walltime_accounting_start(walltime_accounting);
-    print_date_and_time(fplog, cr->nodeid, "Started mdrun", walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
-    if (fplog)
-    {
-        fprintf(fplog, "\n");
-    }
+    print_start(fplog, cr, walltime_accounting, "mdrun");
 
     /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
 #ifdef GMX_FAHCORE
@@ -752,6 +746,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     bLastStep        = FALSE;
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
+    bNeedRepartition = FALSE;
 
     init_global_signals(&gs, cr, ir, repl_ex_nst);
 
@@ -889,12 +884,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* Determine whether or not to do Neighbour Searching and LR */
             bNStList = (ir->nstlist > 0  && step % ir->nstlist == 0);
 
-            bNS = (bFirstStep || bExchanged || bNStList || bDoFEP ||
+            bNS = (bFirstStep || bExchanged || bNeedRepartition || bNStList || bDoFEP ||
                    (ir->nstlist == -1 && nlh.nabnsb > 0));
 
             if (bNS && ir->nstlist == -1)
             {
-                set_nlistheuristics(&nlh, bFirstStep || bExchanged || bDoFEP, step);
+                set_nlistheuristics(&nlh, bFirstStep || bExchanged || bNeedRepartition || bDoFEP, step);
             }
         }
 
@@ -1081,7 +1076,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         nrnb, wcycle, graph, groups,
                                         shellfc, fr, bBornRadii, t, mu_tot,
                                         &bConverged, vsite,
-                                        outf->fp_field);
+                                        mdoutf_get_fp_field(outf));
             tcount += count;
 
             if (bConverged)
@@ -1100,7 +1095,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
+                     fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
@@ -1325,12 +1320,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * coordinates at time t. We must output all of this before
          * the update.
          */
-        do_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
-                              ir, state, state_global, top_global, fr, upd,
-                              outf, mdebin, ekind, f, f_global,
-                              wcycle, mcrng, &nchkpt,
-                              bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
-                              bSumEkinhOld);
+        do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
+                                 ir, state, state_global, top_global, fr, upd,
+                                 outf, mdebin, ekind, f, f_global,
+                                 wcycle, mcrng, &nchkpt,
+                                 bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
+                                 bSumEkinhOld);
 
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV)
@@ -1761,7 +1756,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 do_dr  = do_per_step(step, ir->nstdisreout);
                 do_or  = do_per_step(step, ir->nstorireout);
 
-                print_ebin(outf->fp_ene, do_ene, do_dr, do_or, do_log ? fplog : NULL,
+                print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
                            step, t,
                            eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
             }
@@ -1794,6 +1789,24 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             print_time(stderr, walltime_accounting, step, ir, cr);
         }
 
+        /* Ion/water position swapping.
+         * Not done in last step since trajectory writing happens before this call
+         * in the MD loop and exchanges would be lost anyway. */
+        bNeedRepartition = FALSE;
+        if ((ir->eSwapCoords != eswapNO) && (step > 0) && !bLastStep &&
+            do_per_step(step, ir->swap->nstswap))
+        {
+            bNeedRepartition = do_swapcoords(cr, step, t, ir, wcycle,
+                                             bRerunMD ? rerun_fr.x   : state->x,
+                                             bRerunMD ? rerun_fr.box : state->box,
+                                             top_global, MASTER(cr) && bVerbose, bRerunMD);
+
+            if (bNeedRepartition && DOMAINDECOMP(cr))
+            {
+                dd_collect_state(cr->dd, state, state_global);
+            }
+        }
+
         /* Replica exchange */
         bExchanged = FALSE;
         if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
@@ -1802,15 +1815,15 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bExchanged = replica_exchange(fplog, cr, repl_ex,
                                           state_global, enerd,
                                           state, step, t);
+        }
 
-            if (bExchanged && DOMAINDECOMP(cr))
-            {
-                dd_partition_system(fplog, step, cr, TRUE, 1,
-                                    state_global, top_global, ir,
-                                    state, &f, mdatoms, top, fr,
-                                    vsite, shellfc, constr,
-                                    nrnb, wcycle, FALSE);
-            }
+        if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
+        {
+            dd_partition_system(fplog, step, cr, TRUE, 1,
+                                state_global, top_global, ir,
+                                state, &f, mdatoms, top, fr,
+                                vsite, shellfc, constr,
+                                nrnb, wcycle, FALSE);
         }
 
         bFirstStep       = FALSE;
@@ -1954,13 +1967,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         if (ir->nstcalcenergy > 0 && !bRerunMD)
         {
-            print_ebin(outf->fp_ene, FALSE, FALSE, FALSE, fplog, step, t,
+            print_ebin(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE, fplog, step, t,
                        eprAVER, FALSE, mdebin, fcd, groups, &(ir->opts));
         }
     }
 
     done_mdoutf(outf);
-
     debug_gmx();
 
     if (ir->nstlist == -1 && nlh.nns > 0 && fplog)

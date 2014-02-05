@@ -1,8 +1,6 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team.
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -99,8 +97,7 @@ void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t gmx_unused cu_nb,
 
 /*! Frees all GPU resources used for the nonbonded calculations. */
 FUNC_QUALIFIER
-void nbnxn_cuda_free(FILE             gmx_unused *fplog,
-                     nbnxn_cuda_ptr_t gmx_unused  cu_nb) FUNC_TERM
+void nbnxn_cuda_free(nbnxn_cuda_ptr_t gmx_unused  cu_nb) FUNC_TERM
 
 /*! Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
 FUNC_QUALIFIER

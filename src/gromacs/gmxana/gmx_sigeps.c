@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gromacs/fileio/pdbio.h"

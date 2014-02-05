@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -51,7 +52,7 @@
 #include "vec.h"
 #include "main.h"
 #include "update.h"
-#include "gmx_random.h"
+#include "gromacs/random/random.h"
 #include "mshift.h"
 #include "tgroup.h"
 #include "force.h"
@@ -59,8 +60,6 @@
 #include "txtdump.h"
 #include "mdrun.h"
 #include "constr.h"
-#include "edsam.h"
-#include "pull.h"
 #include "disre.h"
 #include "orires.h"
 #include "gmx_omp_nthreads.h"
@@ -69,6 +68,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/pulling/pull.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -122,7 +122,7 @@ typedef struct gmx_update
     gmx_bool  randatom_list_init;
 
     /* Variables for the deform algorithm */
-    gmx_large_int_t deformref_step;
+    gmx_int64_t     deformref_step;
     matrix          deformref_box;
 } t_gmx_update;
 
@@ -1265,7 +1265,7 @@ void restore_ekinstate_from_state(t_commrec *cr,
     }
 }
 
-void set_deform_reference_box(gmx_update_t upd, gmx_large_int_t step, matrix box)
+void set_deform_reference_box(gmx_update_t upd, gmx_int64_t step, matrix box)
 {
     upd->deformref_step = step;
     copy_mat(box, upd->deformref_box);
@@ -1273,7 +1273,7 @@ void set_deform_reference_box(gmx_update_t upd, gmx_large_int_t step, matrix box
 
 static void deform(gmx_update_t upd,
                    int start, int homenr, rvec x[], matrix box, matrix *scale_tot,
-                   const t_inputrec *ir, gmx_large_int_t step)
+                   const t_inputrec *ir, gmx_int64_t step)
 {
     matrix bnew, invbox, mu;
     real   elapsed_time;
@@ -1333,7 +1333,7 @@ static void combine_forces(int nstcalclr,
                            gmx_constr_t constr,
                            t_inputrec *ir, t_mdatoms *md, t_idef *idef,
                            t_commrec *cr,
-                           gmx_large_int_t step,
+                           gmx_int64_t step,
                            t_state *state, gmx_bool bMolPBC,
                            int start, int nrend,
                            rvec f[], rvec f_lr[],
@@ -1372,7 +1372,7 @@ static void combine_forces(int nstcalclr,
     }
 }
 
-void update_tcouple(gmx_large_int_t   step,
+void update_tcouple(gmx_int64_t       step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
@@ -1442,7 +1442,7 @@ void update_tcouple(gmx_large_int_t   step,
 }
 
 void update_pcouple(FILE             *fplog,
-                    gmx_large_int_t   step,
+                    gmx_int64_t       step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     matrix            pcoupl_mu,
@@ -1512,7 +1512,7 @@ static rvec *get_xprime(const t_state *state, gmx_update_t upd)
 }
 
 void update_constraints(FILE             *fplog,
-                        gmx_large_int_t   step,
+                        gmx_int64_t       step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
                         gmx_ekindata_t   *ekind,
@@ -1710,7 +1710,7 @@ void update_constraints(FILE             *fplog,
 }
 
 void update_box(FILE             *fplog,
-                gmx_large_int_t   step,
+                gmx_int64_t       step,
                 t_inputrec       *inputrec,  /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
@@ -1815,7 +1815,7 @@ void update_box(FILE             *fplog,
 }
 
 void update_coords(FILE             *fplog,
-                   gmx_large_int_t   step,
+                   gmx_int64_t       step,
                    t_inputrec       *inputrec,  /* input record and box stuff	*/
                    t_mdatoms        *md,
                    t_state          *state,
@@ -2066,7 +2066,7 @@ void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[]
             mv[XX], mv[YY], mv[ZZ]);
 }
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr)
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr)
 {
 
     int  i;

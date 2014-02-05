@@ -40,10 +40,10 @@
 
 /* List of kernels for this architecture with metadata about them */
 extern nb_kernel_info_t
-kernellist_sparc64_hpc_ace_double[];
+    kernellist_sparc64_hpc_ace_double[];
 
 /* Length of kernellist_c */
 extern int
-kernellist_sparc64_hpc_ace_double_size;
+    kernellist_sparc64_hpc_ace_double_size;
 
 #endif

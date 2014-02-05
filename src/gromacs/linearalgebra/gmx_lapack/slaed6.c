@@ -2,7 +2,7 @@
 
 #include "../gmx_lapack.h"
 
-#include <types/simple.h>
+#include "types/simple.h"
 
 void
 F77_FUNC(slaed6,SLAED6)(int *kniter, 

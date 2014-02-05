@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,6 @@
 
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/rmpbc.h"
-#include "gromacs/legacyheaders/statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
@@ -64,7 +63,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {
@@ -81,19 +79,20 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         Impl(TrajectoryAnalysisModule *module);
         ~Impl();
 
-        bool parseOptions(TrajectoryAnalysisSettings *settings,
+        void parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
                           SelectionCollection *selections,
                           int *argc, char *argv[]);
 
         TrajectoryAnalysisModule *module_;
+        bool                      bUseDefaultGroups_;
         int                       debugLevel_;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
         TrajectoryAnalysisModule *module)
-    : module_(module), debugLevel_(0)
+    : module_(module), bUseDefaultGroups_(true), debugLevel_(0)
 {
 }
 
@@ -103,7 +102,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 }
 
 
-bool
+void
 TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         TrajectoryAnalysisSettings *settings,
         TrajectoryAnalysisRunnerCommon *common,
@@ -137,14 +136,15 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     common->optionsFinished(&commonOptions);
     module_->optionsFinished(&moduleOptions, settings);
 
-    common->initIndexGroups(selections);
+    common->initIndexGroups(selections, bUseDefaultGroups_);
 
     // TODO: Check whether the input is a pipe.
-    bool bInteractive = true;
+    const bool bInteractive = true;
     seloptManager.parseRequestedFromStdin(bInteractive);
     common->doneIndexGroups(selections);
 
-    return true;
+    common->initTopology(selections);
+    selections->compile();
 }
 
 
@@ -161,6 +161,13 @@ TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
 
 TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 {
+}
+
+
+void
+TrajectoryAnalysisCommandLineRunner::setUseDefaultGroups(bool bUseDefaults)
+{
+    impl_->bUseDefaultGroups_ = bUseDefaults;
 }
 
 
@@ -182,13 +189,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     TrajectoryAnalysisSettings      settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
-    if (!impl_->parseOptions(&settings, &common, &selections, &argc, argv))
-    {
-        return 0;
-    }
-
-    common.initTopology(&selections);
-    selections.compile();
+    impl_->parseOptions(&settings, &common, &selections, &argc, argv);
 
     const TopologyInformation &topology = common.topologyInformation();
     module->initAnalysis(settings, topology);
@@ -328,11 +329,6 @@ int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
 void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHelp(
         const CommandLineHelpContext &context) const
 {
-    // TODO: Implement #969.
-    if (context.writerContext().outputFormat() != eHelpOutputFormat_Console)
-    {
-        return;
-    }
     TrajectoryAnalysisModulePointer     module(factory_());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     runner.writeHelp(context);

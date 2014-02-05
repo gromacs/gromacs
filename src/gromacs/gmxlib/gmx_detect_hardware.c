@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,15 +52,16 @@
 #include "gmx_fatal_collective.h"
 #include "smalloc.h"
 #include "gpu_utils.h"
-#include "statutil.h"
+#include "copyrite.h"
 #include "gmx_detect_hardware.h"
 #include "main.h"
 #include "md_logging.h"
+#include "gromacs/utility/gmxomp.h"
 
 #include "thread_mpi/threads.h"
 
-#if ((defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !(defined (__CYGWIN__) || defined (__CYGWIN32__)))
-#include "windows.h"
+#ifdef GMX_NATIVE_WINDOWS
+#include <windows.h>
 #endif
 
 #ifdef GMX_GPU
@@ -306,7 +307,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         ngpu_comp = hwinfo->gpu_info.ncuda_dev_compatible;
         ngpu_use  = hw_opt->gpu_opt.ncuda_dev_use;
 
-        sprintf(gpu_comp_plural, "%s", (ngpu_comp> 1) ? "s" : "");
+        sprintf(gpu_comp_plural, "%s", (ngpu_comp > 1) ? "s" : "");
         sprintf(gpu_use_plural,  "%s", (ngpu_use > 1) ? "s" : "");
 
         /* number of tMPI threads auto-adjusted */
@@ -481,7 +482,7 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
  * We assume that this is equal with the number of CPUs reported to be
  * online by the OS at the time of the call.
  */
-static int get_nthreads_hw_avail(const t_commrec gmx_unused *cr)
+static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
 {
     int ret = 0;
 
@@ -517,7 +518,7 @@ static int get_nthreads_hw_avail(const t_commrec gmx_unused *cr)
                 "of supported hardware threads.\n", ret);
     }
 
-#ifdef GMX_OMPENMP
+#ifdef GMX_OPENMP
     if (ret != gmx_omp_get_num_procs())
     {
         md_print_warn(cr, fplog,
@@ -563,7 +564,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 
     if (rank_local == 0)
     {
-        char detection_error[STRLEN], sbuf[STRLEN];
+        char detection_error[STRLEN] = "", sbuf[STRLEN];
 
         if (detect_cuda_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
         {
@@ -633,7 +634,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         }
 
         /* detect number of hardware threads */
-        hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(cr);
+        hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
 
         /* detect GPUs */
         hwinfo_g->gpu_info.ncuda_dev            = 0;

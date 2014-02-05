@@ -17,7 +17,7 @@ implementation purposes.
 The main audience for this level of detail are people who want to understand
 detailed implementation of some area, or try to find some specific function
 within the library.  If you are overwhelmed by the amount of details, the
-[library API documentation](../html-lib/index.html) skips functions not meant
+[library API documentation](../html-lib/index.xhtml) skips functions not meant
 to be used outside a single module.
 \elseif libapi
 documentation of functions in the library intended for reuse within the
@@ -26,10 +26,10 @@ library (a subset of these functions is also exposed as a public API).
 The main audience for this level of detail are users and developers who want to
 understand the \Gromacs code in general.
 If you only want to call \Gromacs, but not modify it, the
-[public API documentation](../html-user/index.html) provides a cleaner entry
+[public API documentation](../html-user/index.xhtml) provides a cleaner entry
 point.
 If you are interested in internal implementation details not described here,
-you can try searching the [full documentation](../html-full/index.html).
+you can try searching the [full documentation](../html-full/index.xhtml).
 \else
 documentation of functions exposed through installed headers and intended as
 part of a public API.  Note that definition of the public API is very
@@ -39,8 +39,8 @@ The main audience for this level of detail are users of \Gromacs who are
 interested in writing their own analysis tools that use \Gromacs as a library,
 as well as other developers who want to link against \Gromacs.
 To understand the inner workings of \Gromacs, see the more detailed
-[library API documentation](../html-lib/index.html) or
-[full documentation](../html-full/index.html).
+[library API documentation](../html-lib/index.xhtml) or
+[full documentation](../html-full/index.xhtml).
 \endif
 
 Currently, only parts of the code are documented here.  The following pages
@@ -52,7 +52,14 @@ give an overview of some of the topics that are documented:
  - \subpage page_analysisframework <br/>
    Provides an overview of the framework that the \Gromacs library provides for
    writing (trajectory) analysis tools.
+ - \subpage page_usinglibrary <br/>
+   Provides general guidance for writing software that uses the \Gromacs
+   library.
 \if libapi
+ - \subpage page_unittesting <br/>
+   Provides an overview of unit testing in \Gromacs.
+ - \subpage page_wrapperbinary <br/>
+   Provides an overview of how the `gmx` wrapper binary is implemented.
  - \subpage thread_mpi <br/>
    This code is used internally for threading support, and also provides a
    (partial) MPI implementation that allows compiling a "thread-MPI" version of

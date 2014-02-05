@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,23 +43,56 @@
 #include <gtest/gtest.h>
 #include "moduletest.h"
 #include "gromacs/options/filenameoption.h"
+#include "testutils/cmdlinetest.h"
 
 namespace
 {
 
 //! Test fixture for mdrun -rerun
-typedef gmx::test::MdrunTestFixture RerunTest;
+class MdrunRerun : public gmx::test::MdrunTestFixture,
+                   public ::testing::WithParamInterface<const char *>
+{
+};
 
 /* Among other things, this test ensures mdrun can read a trajectory. */
-TEST_F(RerunTest, RerunExitsNormally)
+TEST_P(MdrunRerun, WithDifferentInputFormats)
 {
     useEmptyMdpFile();
-    useTopAndGroFromDatabase("spc2");
+    useTopGroAndNdxFromDatabase("spc2");
     EXPECT_EQ(0, callGrompp());
 
-    rerunFileName = fileManager_.getInputFilePath("spc2.trr");
-    ASSERT_EQ(0, callMdrun());
+    std::string rerunFileName = fileManager_.getInputFilePath(GetParam());
+
+    ::gmx::test::CommandLine rerunCaller;
+    rerunCaller.append("mdrun");
+    rerunCaller.addOption("-rerun", rerunFileName);
+    ASSERT_EQ(0, callMdrun(rerunCaller));
 }
+
+/*! \brief Helper array of input files present in the source repo
+ * database. These all have two identical frames of two SPC water
+ * molecules, which were generated via trjconv from the .gro
+ * version. */
+const char *trajectoryFileNames[] = {
+    "../../../gromacs/gmxana/legacytests/spc2-traj.trr",
+#ifdef GMX_USE_TNG
+    "../../../gromacs/gmxana/legacytests/spc2-traj.tng",
+#endif
+    "../../../gromacs/gmxana/legacytests/spc2-traj.xtc",
+    "../../../gromacs/gmxana/legacytests/spc2-traj.gro",
+    "../../../gromacs/gmxana/legacytests/spc2-traj.pdb",
+    "../../../gromacs/gmxana/legacytests/spc2-traj.g96"
+};
+// TODO later. Find a better way to manage this file database and
+// these string arrays that index it
+
+#ifdef __INTEL_COMPILER
+#pragma warning( disable : 177 )
+#endif
+
+INSTANTIATE_TEST_CASE_P(NoFatalErrorFrom,
+                        MdrunRerun,
+                            ::testing::ValuesIn(gmx::ArrayRef<const char*>(trajectoryFileNames)));
 
 /*! \todo Add other tests for mdrun -rerun, e.g.
  *

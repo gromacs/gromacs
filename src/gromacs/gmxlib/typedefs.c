@@ -1,37 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
@@ -52,7 +53,7 @@
 
 
 
-static gmx_bool            bOverAllocDD = FALSE;
+static gmx_bool            bOverAllocDD     = FALSE;
 static tMPI_Thread_mutex_t over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 
@@ -77,7 +78,7 @@ int over_alloc_dd(int n)
     }
 }
 
-int gmx_large_int_to_int(gmx_large_int_t step, const char *warn)
+int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 {
     int i;
 
@@ -87,16 +88,16 @@ int gmx_large_int_to_int(gmx_large_int_t step, const char *warn)
     {
         fprintf(stderr, "\nWARNING during %s:\n", warn);
         fprintf(stderr, "step value ");
-        fprintf(stderr, gmx_large_int_pfmt, step);
+        fprintf(stderr, "%"GMX_PRId64, step);
         fprintf(stderr, " does not fit in int, converted to %d\n\n", i);
     }
 
     return i;
 }
 
-char *gmx_step_str(gmx_large_int_t i, char *buf)
+char *gmx_step_str(gmx_int64_t i, char *buf)
 {
-    sprintf(buf, gmx_large_int_pfmt, i);
+    sprintf(buf, "%"GMX_PRId64, i);
 
     return buf;
 }
@@ -464,12 +465,12 @@ void done_inputrec(t_inputrec *ir)
 
 static void zero_history(history_t *hist)
 {
-    hist->disre_initf = 0;
-    hist->ndisrepairs = 0;
+    hist->disre_initf  = 0;
+    hist->ndisrepairs  = 0;
     hist->disre_rm3tav = NULL;
-    hist->orire_initf = 0;
-    hist->norire_Dtav = 0;
-    hist->orire_Dtav = NULL;
+    hist->orire_initf  = 0;
+    hist->norire_Dtav  = 0;
+    hist->orire_Dtav   = NULL;
 }
 
 static void zero_ekinstate(ekinstate_t *eks)
@@ -483,6 +484,41 @@ static void zero_ekinstate(ekinstate_t *eks)
     eks->vscale_nhc     = NULL;
     eks->dekindl        = 0;
     eks->mvcos          = 0;
+}
+
+static void init_swapstate(swapstate_t *swapstate)
+{
+    int ii, ic;
+
+    swapstate->eSwapCoords = 0;
+    swapstate->nAverage    = 0;
+
+    /* Ion/water position swapping */
+    for (ic = 0; ic < eCompNR; ic++)
+    {
+        for (ii = 0; ii < eIonNR; ii++)
+        {
+            swapstate->nat_req[ic][ii]        = 0;
+            swapstate->nat_req_p[ic][ii]      = NULL;
+            swapstate->inflow_netto[ic][ii]   = 0;
+            swapstate->inflow_netto_p[ic][ii] = NULL;
+            swapstate->nat_past[ic][ii]       = NULL;
+            swapstate->nat_past_p[ic][ii]     = NULL;
+            swapstate->fluxfromAtoB[ic][ii]   = 0;
+            swapstate->fluxfromAtoB_p[ic][ii] = NULL;
+        }
+    }
+    swapstate->fluxleak               = NULL;
+    swapstate->nions                  = 0;
+    swapstate->comp_from              = NULL;
+    swapstate->channel_label          = NULL;
+    swapstate->bFromCpt               = 0;
+    swapstate->nat[eChan0]            = 0;
+    swapstate->nat[eChan1]            = 0;
+    swapstate->xc_old_whole[eChan0]   = NULL;
+    swapstate->xc_old_whole[eChan1]   = NULL;
+    swapstate->xc_old_whole_p[eChan0] = NULL;
+    swapstate->xc_old_whole_p[eChan1] = NULL;
 }
 
 void init_energyhistory(energyhistory_t * enerhist)
@@ -617,7 +653,8 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     zero_history(&state->hist);
     zero_ekinstate(&state->ekinstate);
     init_energyhistory(&state->enerhist);
-    init_df_history(&state->dfhist,nlambda);
+    init_df_history(&state->dfhist, nlambda);
+    init_swapstate(&state->swapstate);
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;
     state->cg_gl           = NULL;
@@ -964,8 +1001,8 @@ extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
 
     /* Currently, there should not be any difference in nlambda between the two,
        but this is included for completeness for potential later functionality */
-    df_dest->nlambda = df_source->nlambda;
-    df_dest->bEquil  = df_source->bEquil;
+    df_dest->nlambda  = df_source->nlambda;
+    df_dest->bEquil   = df_source->bEquil;
     df_dest->wl_delta = df_source->wl_delta;
 
     for (i = 0; i < df_dest->nlambda; i++)
@@ -982,10 +1019,10 @@ extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
     {
         for (j = 0; j < df_dest->nlambda; j++)
         {
-            df_dest->accum_p[i][j]      = df_source->accum_p[i][j];
-            df_dest->accum_m[i][j]      = df_source->accum_m[i][j];
-            df_dest->accum_p2[i][j]     = df_source->accum_p2[i][j];
-            df_dest->accum_m2[i][j]     = df_source->accum_m2[i][j];
+            df_dest->accum_p[i][j]        = df_source->accum_p[i][j];
+            df_dest->accum_m[i][j]        = df_source->accum_m[i][j];
+            df_dest->accum_p2[i][j]       = df_source->accum_p2[i][j];
+            df_dest->accum_m2[i][j]       = df_source->accum_m2[i][j];
             df_dest->Tij[i][j]            = df_source->Tij[i][j];
             df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
         }
@@ -1005,7 +1042,7 @@ void done_df_history(df_history_t *dfhist)
         sfree(dfhist->sum_minvar);
         sfree(dfhist->sum_variance);
 
-        for (i=0;i<dfhist->nlambda;i++)
+        for (i = 0; i < dfhist->nlambda; i++)
         {
             sfree(dfhist->Tij[i]);
             sfree(dfhist->Tij_empirical[i]);

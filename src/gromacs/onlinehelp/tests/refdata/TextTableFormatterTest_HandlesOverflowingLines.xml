@@ -4,16 +4,16 @@
   <String Name="FormattedTable"><![CDATA[
 Col1 Col2 Col3Wrap       Col4Wrap
 ---------------------------------------
-foobar barfoo A quick brown A quick brown
-          fox jumps over fox jumps
-          the lazy dog   over the lazy
-                         dog
+foobar barfoo A quick    A quick brown
+          brown fox      fox jumps
+          jumps over the over the lazy
+          lazy dog       dog
 ]]></String>
   <String Name="FormattedRow2"><![CDATA[
 foobar    A quick brown  A quick brown
-     barfoo fox jumps over fox jumps
-          the lazy dog   over the lazy
-                         dog
+     barfoo fox jumps    fox jumps
+          over the lazy  over the lazy
+          dog            dog
 ]]></String>
   <String Name="FormattedRow3"><![CDATA[
 foobar                   A quick brown
@@ -21,5 +21,11 @@ foobar                   A quick brown
           A quick brown  over the lazy
           fox jumps over dog
           the lazy dog
+]]></String>
+  <String Name="FormattedRow4"><![CDATA[
+foobarfoobar barfoobarfoo A quick brown
+          A quick brown  fox jumps
+          fox jumps over over the lazy
+          the lazy dog   dog
 ]]></String>
 </ReferenceData>

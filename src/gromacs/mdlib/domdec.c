@@ -1,8 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2008 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,14 +57,11 @@
 #include "names.h"
 #include "force.h"
 #include "pme.h"
-#include "pull.h"
-#include "pull_rotation.h"
 #include "mdrun.h"
 #include "nsgrid.h"
 #include "shellfc.h"
 #include "mtop_util.h"
 #include "gmx_ga2la.h"
-#include "gmx_sort.h"
 #include "macros.h"
 #include "nbnxn_search.h"
 #include "bondf.h"
@@ -77,6 +73,10 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/swap/swapcoords.h"
+#include "gromacs/utility/qsort_threadsafe.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_rotation.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
@@ -399,7 +399,7 @@ typedef struct gmx_domdec_comm
     double load_pme;
 
     /* The last partition step */
-    gmx_large_int_t partition_step;
+    gmx_int64_t partition_step;
 
     /* Debugging */
     int  nstDDDump;
@@ -1971,7 +1971,7 @@ static char dim2char(int dim)
     return c;
 }
 
-static void write_dd_grid_pdb(const char *fn, gmx_large_int_t step,
+static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
                               gmx_domdec_t *dd, matrix box, gmx_ddbox_t *ddbox)
 {
     rvec   grid_s[2], *grid_r = NULL, cx, r;
@@ -2060,7 +2060,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_large_int_t step,
     }
 }
 
-void write_dd_pdb(const char *fn, gmx_large_int_t step, const char *title,
+void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
                   gmx_mtop_t *mtop, t_commrec *cr,
                   int natoms, rvec x[], matrix box)
 {
@@ -2828,7 +2828,7 @@ static real grid_jump_limit(gmx_domdec_comm_t *comm, real cutoff,
     return grid_jump_limit;
 }
 
-static gmx_bool check_grid_jump(gmx_large_int_t step,
+static gmx_bool check_grid_jump(gmx_int64_t     step,
                                 gmx_domdec_t   *dd,
                                 real            cutoff,
                                 gmx_ddbox_t    *ddbox,
@@ -3241,7 +3241,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
 static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
                                                   int d, int dim, gmx_domdec_root_t *root,
                                                   gmx_ddbox_t *ddbox,
-                                                  gmx_bool bUniform, gmx_large_int_t step, real cellsize_limit_f, int range[])
+                                                  gmx_bool bUniform, gmx_int64_t step, real cellsize_limit_f, int range[])
 {
     gmx_domdec_comm_t *comm;
     int                ncd, i, j, nmin, nmin_old;
@@ -3452,7 +3452,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
 static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                                        int d, int dim, gmx_domdec_root_t *root,
                                        gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
-                                       gmx_bool bUniform, gmx_large_int_t step)
+                                       gmx_bool bUniform, gmx_int64_t step)
 {
     gmx_domdec_comm_t *comm;
     int                ncd, d1, i, j, pos;
@@ -3677,7 +3677,7 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
 
 static void set_dd_cell_sizes_dlb_change(gmx_domdec_t *dd,
                                          gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
-                                         gmx_bool bUniform, gmx_large_int_t step)
+                                         gmx_bool bUniform, gmx_int64_t step)
 {
     gmx_domdec_comm_t *comm;
     int                d, dim, d1;
@@ -3737,7 +3737,7 @@ static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
 
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
                                   gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
-                                  gmx_bool bUniform, gmx_bool bDoDLB, gmx_large_int_t step,
+                                  gmx_bool bUniform, gmx_bool bDoDLB, gmx_int64_t step,
                                   gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm;
@@ -3807,7 +3807,7 @@ static void realloc_comm_ind(gmx_domdec_t *dd, ivec npulse)
 
 static void set_dd_cell_sizes(gmx_domdec_t *dd,
                               gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
-                              gmx_bool bUniform, gmx_bool bDoDLB, gmx_large_int_t step,
+                              gmx_bool bUniform, gmx_bool bDoDLB, gmx_int64_t step,
                               gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm;
@@ -3847,7 +3847,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,
 static void comm_dd_ns_cell_sizes(gmx_domdec_t *dd,
                                   gmx_ddbox_t *ddbox,
                                   rvec cell_ns_x0, rvec cell_ns_x1,
-                                  gmx_large_int_t step)
+                                  gmx_int64_t step)
 {
     gmx_domdec_comm_t *comm;
     int                dim_ind, dim;
@@ -3923,7 +3923,7 @@ static void check_screw_box(matrix box)
     }
 }
 
-static void distribute_cg(FILE *fplog, gmx_large_int_t step,
+static void distribute_cg(FILE *fplog, gmx_int64_t step,
                           matrix box, ivec tric_dir, t_block *cgs, rvec pos[],
                           gmx_domdec_t *dd)
 {
@@ -4088,7 +4088,7 @@ static void distribute_cg(FILE *fplog, gmx_large_int_t step,
     }
 }
 
-static void get_cg_distribution(FILE *fplog, gmx_large_int_t step, gmx_domdec_t *dd,
+static void get_cg_distribution(FILE *fplog, gmx_int64_t step, gmx_domdec_t *dd,
                                 t_block *cgs, matrix box, gmx_ddbox_t *ddbox,
                                 rvec pos[])
 {
@@ -4356,7 +4356,7 @@ static void clear_and_mark_ind(int ncg, int *move,
 
 static void print_cg_move(FILE *fplog,
                           gmx_domdec_t *dd,
-                          gmx_large_int_t step, int cg, int dim, int dir,
+                          gmx_int64_t step, int cg, int dim, int dir,
                           gmx_bool bHaveLimitdAndCMOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
@@ -4395,7 +4395,7 @@ static void print_cg_move(FILE *fplog,
 
 static void cg_move_error(FILE *fplog,
                           gmx_domdec_t *dd,
-                          gmx_large_int_t step, int cg, int dim, int dir,
+                          gmx_int64_t step, int cg, int dim, int dir,
                           gmx_bool bHaveLimitdAndCMOld, real limitd,
                           rvec cm_old, rvec cm_new, real pos_d)
 {
@@ -4463,7 +4463,7 @@ static int *get_moved(gmx_domdec_comm_t *comm, int natoms)
     return comm->moved;
 }
 
-static void calc_cg_move(FILE *fplog, gmx_large_int_t step,
+static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                          gmx_domdec_t *dd,
                          t_state *state,
                          ivec tric_dir, matrix tcm,
@@ -4638,7 +4638,7 @@ static void calc_cg_move(FILE *fplog, gmx_large_int_t step,
     }
 }
 
-static void dd_redistribute_cg(FILE *fplog, gmx_large_int_t step,
+static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                                gmx_domdec_t *dd, ivec tric_dir,
                                t_state *state, rvec **f,
                                t_forcerec *fr,
@@ -5567,7 +5567,7 @@ float dd_pme_f_ratio(gmx_domdec_t *dd)
     }
 }
 
-static void dd_print_load(FILE *fplog, gmx_domdec_t *dd, gmx_large_int_t step)
+static void dd_print_load(FILE *fplog, gmx_domdec_t *dd, gmx_int64_t step)
 {
     int  flags, d;
     char buf[22];
@@ -7080,7 +7080,7 @@ static void set_dlb_limits(gmx_domdec_t *dd)
 }
 
 
-static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_large_int_t step)
+static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -8897,7 +8897,7 @@ static void ordered_sort(int nsort2, gmx_cgsort_t *sort2,
     int i1, i2, i_new;
 
     /* The new indices are not very ordered, so we qsort them */
-    qsort_threadsafe(sort_new, nsort_new, sizeof(sort_new[0]), comp_cgsort);
+    gmx_qsort_threadsafe(sort_new, nsort_new, sizeof(sort_new[0]), comp_cgsort);
 
     /* sort2 is already ordered, so now we can merge the two arrays */
     i1    = 0;
@@ -9010,7 +9010,7 @@ static int dd_sort_order(gmx_domdec_t *dd, t_forcerec *fr, int ncg_home_old)
             fprintf(debug, "qsort cgs: %d new home %d\n", dd->ncg_home, ncg_new);
         }
         /* Determine the order of the charge groups using qsort */
-        qsort_threadsafe(cgsort, dd->ncg_home, sizeof(cgsort[0]), comp_cgsort);
+        gmx_qsort_threadsafe(cgsort, dd->ncg_home, sizeof(cgsort[0]), comp_cgsort);
     }
 
     return ncg_new;
@@ -9274,7 +9274,7 @@ void print_dd_statistics(t_commrec *cr, t_inputrec *ir, FILE *fplog)
 }
 
 void dd_partition_system(FILE                *fplog,
-                         gmx_large_int_t      step,
+                         gmx_int64_t          step,
                          t_commrec           *cr,
                          gmx_bool             bMasterState,
                          int                  nstglobalcomm,
@@ -9297,7 +9297,7 @@ void dd_partition_system(FILE                *fplog,
     gmx_domdec_comm_t *comm;
     gmx_ddbox_t        ddbox = {0};
     t_block           *cgs_gl;
-    gmx_large_int_t    step_pcoupl;
+    gmx_int64_t        step_pcoupl;
     rvec               cell_ns_x0, cell_ns_x1;
     int                i, j, n, ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
     gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckDLB, bTurnOnDLB, bLogLoad;
@@ -9821,6 +9821,11 @@ void dd_partition_system(FILE                *fplog,
         dd_make_local_rotation_groups(dd, ir->rot);
     }
 
+    if (ir->eSwapCoords != eswapNO)
+    {
+        /* Update the local groups needed for ion swapping */
+        dd_make_local_swap_groups(dd, ir->swap);
+    }
 
     add_dd_statistics(dd);
 

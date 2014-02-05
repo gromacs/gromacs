@@ -1,36 +1,36 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 /* Note that floating-point constants in CUDA code should be suffixed
@@ -58,12 +58,12 @@ static inline __device__
 float interpolate_coulomb_force_r(float r, float scale)
 {
     float   normalized = scale * r;
-    int     index = (int) normalized;
-    float   fract2 = normalized - index;
-    float   fract1 = 1.0f - fract2;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
 
-    return  fract1 * tex1Dfetch(coulomb_tab_texref, index)
-            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
+    return fract1 * tex1Dfetch(coulomb_tab_texref, index)
+           + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
 }
 
 #ifdef TEXOBJ_SUPPORTED
@@ -72,12 +72,12 @@ float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)
 {
     float   normalized = scale * r;
-    int     index = (int) normalized;
-    float   fract2 = normalized - index;
-    float   fract1 = 1.0f - fract2;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
 
-    return  fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
-            fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
+    return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
+           fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
 }
 #endif
 
@@ -101,7 +101,7 @@ float pmecorrF(float z2)
     const float FD0 = 1.0f;
 
     float       z4;
-    float       polyFN0,polyFN1,polyFD0,polyFD1;
+    float       polyFN0, polyFN1, polyFD0, polyFD1;
 
     z4          = z2*z2;
 
@@ -344,16 +344,16 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
 #pragma unroll 5
     for (i = 0; i < 5; i++)
     {
-        E_lj += __shfl_down(E_lj,sh);
-        E_el += __shfl_down(E_el,sh);
-        sh += sh;
+        E_lj += __shfl_down(E_lj, sh);
+        E_el += __shfl_down(E_el, sh);
+        sh   += sh;
     }
 
     /* The first thread in the warp writes the reduced energies */
     if (tidx == 0 || tidx == WARP_SIZE)
     {
-        atomicAdd(e_lj,E_lj);
-        atomicAdd(e_el,E_el);
+        atomicAdd(e_lj, E_lj);
+        atomicAdd(e_el, E_el);
     }
 }
 #endif /* __CUDA_ARCH__ */

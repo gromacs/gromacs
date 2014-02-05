@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -38,6 +40,8 @@
 
 #include <string.h>
 #include <math.h>
+
+#include "copyrite.h"
 #include "macros.h"
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -46,7 +50,8 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
-#include "statutil.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
@@ -61,7 +66,6 @@
 #include "viewit.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
-#include "gmx_sort.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -314,8 +318,9 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
         {
             if (debug)
             {
-                fprintf (debug, "\nShifting position of molecule %d "
-                         "by %8.3f  %8.3f  %8.3f\n", i+1, PR_VEC(shift));
+                fprintf(debug, "\nShifting position of molecule %d "
+                        "by %8.3f  %8.3f  %8.3f\n", i+1,
+                        shift[XX], shift[YY], shift[ZZ]);
             }
             for (j = mols->index[i]; (j < mols->index[i+1] && j < natoms); j++)
             {
@@ -369,9 +374,9 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             {
                 if (debug)
                 {
-                    fprintf (debug, "\nShifting position of residue %d (atoms %u-%u) "
-                             "by %g,%g,%g\n", atom[res_start].resind+1,
-                             res_start+1, res_end+1, PR_VEC(shift));
+                    fprintf(debug, "\nShifting position of residue %d (atoms %u-%u) "
+                            "by %g,%g,%g\n", atom[res_start].resind+1,
+                            res_start+1, res_end+1, shift[XX], shift[YY], shift[ZZ]);
                 }
                 for (j = res_start; j < res_end; j++)
                 {
@@ -543,26 +548,65 @@ void do_trunc(const char *fn, real t0)
 }
 #endif
 
+/*! \brief Read a full molecular topology if useful and available.
+ *
+ * If the input trajectory file is not in TNG format, and the output
+ * file is in TNG format, then we want to try to read a full topology
+ * (if available), so that we can write molecule information to the
+ * output file. The full topology provides better molecule information
+ * than is available from the normal t_topology data used by GROMACS
+ * tools.
+ *
+ * Also, the t_topology is only read under (different) particular
+ * conditions. If both apply, then a .tpr file might be read
+ * twice. Trying to fix this redundancy while trjconv is still an
+ * all-purpose tool does not seem worthwhile.
+ *
+ * Because of the way gmx_prepare_tng_writing is implemented, the case
+ * where the input TNG file has no molecule information will never
+ * lead to an output TNG file having molecule information. Since
+ * molecule information will generally be present if the input TNG
+ * file was written by a GROMACS tool, this seems like reasonable
+ * behaviour. */
+static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
+                                     const char *input_file,
+                                     const char *output_file)
+{
+    gmx_mtop_t *mtop = NULL;
+
+    if (fn2bTPX(tps_file) &&
+        efTNG != fn2ftp(input_file) &&
+        efTNG == fn2ftp(output_file))
+    {
+        int temp_natoms = -1;
+        snew(mtop, 1);
+        read_tpx(tps_file, NULL, NULL, &temp_natoms,
+                 NULL, NULL, NULL, mtop);
+    }
+
+    return mtop;
+}
+
 int gmx_trjconv(int argc, char *argv[])
 {
     const char *desc[] = {
         "[THISMODULE] can convert trajectory files in many ways:[BR]",
-        "[BB]1.[bb] from one format to another[BR]",
-        "[BB]2.[bb] select a subset of atoms[BR]",
-        "[BB]3.[bb] change the periodicity representation[BR]",
-        "[BB]4.[bb] keep multimeric molecules together[BR]",
-        "[BB]5.[bb] center atoms in the box[BR]",
-        "[BB]6.[bb] fit atoms to reference structure[BR]",
-        "[BB]7.[bb] reduce the number of frames[BR]",
-        "[BB]8.[bb] change the timestamps of the frames ",
+        "* from one format to another[BR]",
+        "* select a subset of atoms[BR]",
+        "* change the periodicity representation[BR]",
+        "* keep multimeric molecules together[BR]",
+        "* center atoms in the box[BR]",
+        "* fit atoms to reference structure[BR]",
+        "* reduce the number of frames[BR]",
+        "* change the timestamps of the frames ",
         "([TT]-t0[tt] and [TT]-timestep[tt])[BR]",
-        "[BB]9.[bb] cut the trajectory in small subtrajectories according",
+        "* cut the trajectory in small subtrajectories according",
         "to information in an index file. This allows subsequent analysis of",
         "the subtrajectories that could, for example, be the result of a",
         "cluster analysis. Use option [TT]-sub[tt].",
         "This assumes that the entries in the index file are frame numbers and",
         "dumps each group in the index file to a separate trajectory file.[BR]",
-        "[BB]10.[bb] select frames within a certain range of a quantity given",
+        "* select frames within a certain range of a quantity given",
         "in an [TT].xvg[tt] file.[PAR]",
 
         "[gmx-trjcat] is better suited for concatenating multiple trajectory files.",
@@ -581,11 +625,6 @@ int gmx_trjconv(int argc, char *argv[])
         "of the [THISMODULE] binary.",
         "Note that velocities are only supported in",
         "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
-
-        "Option [TT]-app[tt] can be used to",
-        "append output to an existing trajectory file.",
-        "No checks are performed to ensure integrity",
-        "of the resulting combined trajectory file.[PAR]",
 
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
         "[TT].gro, .g96[tt] or [TT].pdb[tt] file. By default, all frames all written to one file.",
@@ -725,7 +764,7 @@ int gmx_trjconv(int argc, char *argv[])
         "progressive", NULL
     };
 
-    static gmx_bool  bAppend       = FALSE, bSeparate = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
+    static gmx_bool  bSeparate     = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
     static gmx_bool  bCenter       = FALSE;
     static int       skip_nr       = 1, ndec = 3, nzero = 0;
     static real      tzero         = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
@@ -792,8 +831,6 @@ int gmx_trjconv(int argc, char *argv[])
           { &exec_command },
           "Execute command for every output frame with the "
           "frame number as argument" },
-        { "-app", FALSE, etBOOL,
-          { &bAppend }, "Append output" },
         { "-split", FALSE, etTIME,
           { &split_t },
           "Start writing new file when t MOD split = first "
@@ -820,7 +857,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     FILE            *out    = NULL;
     t_trxstatus     *trxout = NULL;
-    t_trxstatus     *status;
+    t_trxstatus     *trxin;
     int              ftp, ftpin = 0, file_nr;
     t_trxframe       fr, frout;
     int              flags;
@@ -830,6 +867,7 @@ int gmx_trjconv(int argc, char *argv[])
     int              m, i, d, frame, outframe, natoms, nout, ncent, nre, newstep = 0, model_nr;
 #define SKIP 10
     t_topology       top;
+    gmx_mtop_t      *mtop  = NULL;
     gmx_conect       gc    = NULL;
     int              ePBC  = -1;
     t_atoms         *atoms = NULL, useatoms;
@@ -1046,6 +1084,8 @@ int gmx_trjconv(int argc, char *argv[])
         {
         }
 
+        mtop = read_mtop_for_tng(top_file, in_file, out_file);
+
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS, NFILE, fnm) ||
                 bRmPBC || bReset || bPBCcomMol || bCluster ||
@@ -1141,12 +1181,12 @@ int gmx_trjconv(int argc, char *argv[])
         else
         {
             /* no index file, so read natoms from TRX */
-            if (!read_first_frame(oenv, &status, in_file, &fr, TRX_DONT_SKIP))
+            if (!read_first_frame(oenv, &trxin, in_file, &fr, TRX_DONT_SKIP))
             {
                 gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
             }
             natoms = fr.natoms;
-            close_trj(status);
+            close_trj(trxin);
             sfree(fr.x);
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1233,7 +1273,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
 
         /* open trx file for reading */
-        bHaveFirstFrame = read_first_frame(oenv, &status, in_file, &fr, flags);
+        bHaveFirstFrame = read_first_frame(oenv, &trxin, in_file, &fr, flags);
         if (fr.bPrec)
         {
             fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file, 1/fr.prec);
@@ -1265,18 +1305,38 @@ int gmx_trjconv(int argc, char *argv[])
                 tzero = fr.time;
             }
 
+            bCopy = FALSE;
+            if (bIndex)
+            {
+                /* check if index is meaningful */
+                for (i = 0; i < nout; i++)
+                {
+                    if (index[i] >= natoms)
+                    {
+                        gmx_fatal(FARGS,
+                                  "Index[%d] %d is larger than the number of atoms in the\n"
+                                  "trajectory file (%d). There is a mismatch in the contents\n"
+                                  "of your -f, -s and/or -n files.", i, index[i]+1, natoms);
+                    }
+                    bCopy = bCopy || (i != index[i]);
+                }
+            }
+
             /* open output for writing */
-            if ((bAppend) && (gmx_fexist(out_file)))
-            {
-                strcpy(filemode, "a");
-                fprintf(stderr, "APPENDING to existing file %s\n", out_file);
-            }
-            else
-            {
-                strcpy(filemode, "w");
-            }
+            strcpy(filemode, "w");
             switch (ftp)
             {
+                case efTNG:
+                    trjtools_gmx_prepare_tng_writing(out_file,
+                                                     filemode[0],
+                                                     trxin,
+                                                     &trxout,
+                                                     NULL,
+                                                     nout,
+                                                     mtop,
+                                                     index,
+                                                     grpnm);
+                    break;
                 case efXTC:
                 case efG87:
                 case efTRR:
@@ -1295,24 +1355,10 @@ int gmx_trjconv(int argc, char *argv[])
                         out = ffopen(out_file, filemode);
                     }
                     break;
+                default:
+                    gmx_incons("Illegal output file format");
             }
 
-            bCopy = FALSE;
-            if (bIndex)
-            {
-                /* check if index is meaningful */
-                for (i = 0; i < nout; i++)
-                {
-                    if (index[i] >= natoms)
-                    {
-                        gmx_fatal(FARGS,
-                                  "Index[%d] %d is larger than the number of atoms in the\n"
-                                  "trajectory file (%d). There is a mismatch in the contents\n"
-                                  "of your -f, -s and/or -n files.", i, index[i]+1, natoms);
-                    }
-                    bCopy = bCopy || (i != index[i]);
-                }
-            }
             if (bCopy)
             {
                 snew(xmem, nout);
@@ -1689,6 +1735,10 @@ int gmx_trjconv(int argc, char *argv[])
 
                         switch (ftp)
                         {
+                            case efTNG:
+                                write_tng_frame(trxout, &frout);
+                                // TODO when trjconv behaves better: work how to read and write lambda
+                                break;
                             case efTRJ:
                             case efTRR:
                             case efG87:
@@ -1829,7 +1879,7 @@ int gmx_trjconv(int argc, char *argv[])
                     }
                 }
                 frame++;
-                bHaveNextFrame = read_next_frame(oenv, status, &fr);
+                bHaveNextFrame = read_next_frame(oenv, trxin, &fr);
             }
             while (!(bTDump && bDumpFrame) && bHaveNextFrame);
         }
@@ -1841,7 +1891,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         fprintf(stderr, "\n");
 
-        close_trj(status);
+        close_trj(trxin);
         sfree(outf_base);
 
         if (bRmPBC)
@@ -1868,6 +1918,8 @@ int gmx_trjconv(int argc, char *argv[])
             }
         }
     }
+
+    sfree(mtop);
 
     do_view(oenv, out_file, NULL);
 

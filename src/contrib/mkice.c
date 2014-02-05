@@ -39,7 +39,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gmx_fatal.h"
 #include "gromacs/fileio/pdbio.h"
@@ -52,7 +52,7 @@
 #include "txtdump.h"
 #include "gromacs/fileio/trnio.h"
 #include "symtab.h"
-#include "strdb.h"
+#include "gromacs/fileio/strdb.h"
 #include "atomprop.h"
 #include "gromacs/fileio/confio.h"
 

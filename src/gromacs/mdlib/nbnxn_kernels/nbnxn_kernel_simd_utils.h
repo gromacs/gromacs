@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@
 
 /* Align a stack-based thread-local working array. */
 static gmx_inline int *
-prepare_table_load_buffer(const int *array)
+prepare_table_load_buffer(const int gmx_unused *array)
 {
     return NULL;
 }
@@ -67,7 +67,7 @@ prepare_table_load_buffer(const int *array)
 
 #else /* GMX_SIMD_REFERENCE_PLAIN_C */
 
-#ifdef GMX_X86_SSE2
+#if defined  GMX_X86_SSE2 && !defined __MIC__
 /* Include x86 SSE2 compatible SIMD functions */
 
 /* Set the stride for the lookup of the two LJ parameters from their
@@ -137,6 +137,10 @@ static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
 #include "nbnxn_kernel_simd_utils_ibm_qpx.h"
 #endif /* GMX_CPU_ACCELERATION_IBM_QPX */
 
+#ifdef __MIC__
+#include "nbnxn_kernel_simd_utils_x86_mic.h"
+#endif
+
 #endif /* GMX_X86_SSE2 */
 #endif /* GMX_SIMD_REFERENCE_PLAIN_C */
 
@@ -155,7 +159,7 @@ gmx_sum_simd2(gmx_mm_pr x, real* b)
     return b[0]+b[1];
 }
 
-#if GMX_SIMD_WIDTH_HERE>=4
+#if GMX_SIMD_WIDTH_HERE >= 4
 static gmx_inline real
 gmx_sum_simd4(gmx_mm_pr4 x, real* b)
 {

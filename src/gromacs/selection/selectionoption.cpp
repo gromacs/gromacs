@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,8 @@ namespace gmx
 SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
     : MyBase(settings, OptionFlags() | efOption_NoDefaultValue
              | efOption_DontCheckMinimumCount),
-      info_(this), manager_(NULL), selectionFlags_(settings.selectionFlags_)
+      info_(this), manager_(NULL), defaultText_(settings.defaultText_),
+      selectionFlags_(settings.selectionFlags_)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for selection options");
@@ -125,7 +126,7 @@ void SelectionOptionStorage::convertValue(const std::string &value)
 {
     GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
 
-    manager_->convertOptionValue(this, value);
+    manager_->convertOptionValue(this, value, false);
 }
 
 void SelectionOptionStorage::processSetValues(ValueList *values)
@@ -144,10 +145,13 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
 
 void SelectionOptionStorage::processAll()
 {
+    GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
+    if (!isSet() && !defaultText_.empty())
+    {
+        manager_->convertOptionValue(this, defaultText_, true);
+    }
     if (isRequired() && !isSet())
     {
-        GMX_RELEASE_ASSERT(manager_ != NULL, "Manager is not set");
-
         manager_->requestOptionDelayedParsing(this);
         markAsSet();
     }
