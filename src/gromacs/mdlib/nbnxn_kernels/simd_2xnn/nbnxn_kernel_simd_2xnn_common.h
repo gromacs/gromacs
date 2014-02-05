@@ -33,6 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
 #include "../../nbnxn_consts.h"
 #ifdef CALC_COUL_EWALD
