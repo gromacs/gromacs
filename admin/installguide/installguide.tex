@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -285,9 +285,7 @@ documentation). Then set \verb+-DGMX_FFT_LIBRARY=mkl+ when you run
 and \lapack{} (see \hyperref{linear-algebra}{here}).
 
 Otherwise, you can get your hands dirty and configure \mkl{} by setting
-\verb+-DGMX_FFT_LIBRARY=mkl
--DMKL_LIBRARIES="/full/path/to/libone.so;/full/path/to/libtwo.so"
--DMKL_INCLUDE_DIR="/full/path/to/mkl/include"+,
+\verb+-DGMX_FFT_LIBRARY=mkl -DMKL_LIBRARIES="/full/path/to/libone.so;/full/path/to/libtwo.so" -DMKL_INCLUDE_DIR="/full/path/to/mkl/include"+,
 where the full list (and order!) of libraries you require are found in
 Intel's \mkl{} documentation for your system.
 
@@ -547,6 +545,18 @@ cmake .. -DGMX_DEFAULT_SUFFIX=OFF -DGMX_BINARY_SUFFIX=_mod -DGMX_LIBS_SUFFIX=_mo
 
 Thus the names of all binaries and libraries will be appended with
 "\_mod."
+
+\subsection{Backward compatible program names}
+Up until verion 4.6 {\gromacs} compiled in to over 60 different
+programs, which were difficult to keep track of. For ease of use all
+of these have been replaced by a single binary called \verb+gmx+ which
+you run similar to the old programs, for instance \verb+g_angle+ now
+is \verb+gmx angle+. We think this will facilitate usage of a larger
+fraction of the programs, in addition to having certain advantages
+inside \gromacs. However, for those who have invested heavily
+in scripts for running {\gromacs} we provide an option to generate
+symbolic links to the old names.This option can be effectuated by
+running cmake with the flag \verb+-DGMX_SYMLINK_OLD_BINARY_NAMES+.
 
 \subsection{Building \gromacs{}}
 

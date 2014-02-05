@@ -244,7 +244,7 @@ option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_R
 mark_as_advanced(GMX_GIT_VERSION_INFO)
 
 if(UNIX)
-    option(GMX_SYMLINK_OLD_BINARY_NAMES "Create symbolic links for pre-5.0 binary names" ON)
+    option(GMX_SYMLINK_OLD_BINARY_NAMES "Create symbolic links for pre-5.0 binary names" OFF)
 endif()
 option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
