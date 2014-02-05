@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ if(MANUAL_BUILD_IS_POSSIBLE)
     ADD_LATEX_DOCUMENT(gromacs.tex
         # Normal LaTeX \included files
         INPUTS algorithms.tex  defunits.tex    implement.tex  macros.tex     special.tex
-        analyse.tex     files.tex       gmxpar.tex     install.tex    topology.tex
+        analyse.tex     files.tex       install.tex    topology.tex
         averages.tex    forcefield.tex  gromacs.tex    intro.tex      programs.tex
 
         # CMake does variable replacement in these files
