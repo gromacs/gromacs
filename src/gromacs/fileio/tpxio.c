@@ -75,8 +75,16 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  *
  * version  feature added
  *    96    support for ion/water position swaps (computational electrophysiology)
+ *    97    support for intermolecular bonded interactions
+ *
+ * The following constants should be used throughout this file, rather
+ * than hard-coded numbers. This will help prevent merge resolutions
+ * that let different bumps to tpx_version resolve silently because
+ * they are textually identical.
  */
-static const int tpx_version = 97;
+static const int tpxv_CompEl = 96;
+static const int tpxv_IntermolecularBondeds = 97;
+static const int tpx_version = tpxv_IntermolecularBondeds;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -1678,7 +1686,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
 
     /* Swap ions */
-    if (file_version >= 96)
+    if (file_version >= txpv_CompEl)
     {
         gmx_fio_do_int(fio, ir->eSwapCoords);
         if (ir->eSwapCoords != eswapNO)
@@ -2970,7 +2978,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         mtop->molblock[0].nposres_xB = 0;
     }
 
-    if (file_version >= 97)
+    if (file_version >= tpxv_IntermolecularBondeds)
     {
         gmx_fio_do_gmx_bool(fio, mtop->bIntermolecularInteractions);
         if (mtop->bIntermolecularInteractions)
