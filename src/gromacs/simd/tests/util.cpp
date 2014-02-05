@@ -37,6 +37,7 @@
 #endif
 
 #include "util.h"
+#include "smalloc.h"
 
 namespace simdTest
 {
@@ -216,11 +217,12 @@ SimdTest::compareSimdRealUlp(const char * refExpr, const char * tstExpr,
 std::vector<int>
 simdInt2Vector(const gmx_simd_int32_t simd)
 {
-    int                 mem[GMX_SIMD_INT32_WIDTH*2];
-    int *               p = gmx_simd_align_i(mem);
+    int *               p;
+    snew_aligned(p, GMX_SIMD_INT32_WIDTH, GMX_SIMD_INT32_WIDTH*sizeof(int));
 
     gmx_simd_store_i(p, simd);
     std::vector<int>    v(p, p+GMX_SIMD_INT32_WIDTH);
+    sfree_aligned(p);
 
     return v;
 }
