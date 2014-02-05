@@ -38,77 +38,24 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/init.h"
-#include "gromacs/onlinehelp/helptopicinterface.h"
 
 #include "alex_modules.h"
-
-namespace gmx {
-
-class AlexHelpTopicInterface : HelpTopicInterface
-{
-    public:
-        ~AlexHelpTopicInterface() {}
-
-        /*! \brief
-         * Returns the name of the topic.
-         *
-         * This should be a single lowercase word, used to identify the topic.
-         * It is not used for the root of the help topic tree.
-         */
-        const char *name() const { return "alexandria"; }
-        /*! \brief
-         * Returns a title for the topic.
-         *
-         * May return NULL, in which case the topic is omitted from normal
-         * subtopic lists and no title is printed by the methods provided in
-         * helptopic.h.
-         */
-        const char *title() const { return "alexandria"; }
-
-        //! Returns whether the topic has any subtopics.
-        bool hasSubTopics() const { return false; }
-        /*! \brief
-         * Finds a subtopic by name.
-         *
-         * \param[in] name  Name of subtopic to find.
-         * \returns   Pointer to the found subtopic, or NULL if matching topic
-         *      is not found.
-         */
-        const HelpTopicInterface *findSubTopic(const char *name) { return NULL; }
-
-        /*! \brief
-         * Prints the help text for this topic.
-         *
-         * \param[in] context  Context object for writing the help.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         */
-        void writeHelp(const HelpWriterContext &context);
-};
-
-void AlexHelpTopicInterface::writeHelp(const HelpWriterContext &context)
-{
-    printf("BOE\n");
-}
-
-};
 
 int
 main(int argc, char *argv[])
 {
-    gmx::ProgramInfo &info = gmx::init("alexandria", &argc, &argv);
+    gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
     try
     {
-        gmx::CommandLineModuleManager manager(&info);
+        gmx::CommandLineModuleManager manager("alexandria", &context);
         registerAlexandriaModules(&manager);
-        
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
         int rc = manager.run(argc, argv);
-        gmx::finalize();
+        gmx::finalizeForCommandLine();
         return rc;
     }
     catch (const std::exception &ex)

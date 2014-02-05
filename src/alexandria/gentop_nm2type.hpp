@@ -34,13 +34,13 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gentop_nm2type_hpp
-#define _gentop_nm2type_hpp
+#ifndef GENTOP_NM2TYPE_HPP
+#define GENTOP_NM2TYPE_HPP
 
 #include <stdio.h>
 #include "atomprop.h"
-#include "grompp.h"
-#include "gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "poldata.hpp"
 #include "gentop_vsite.hpp"
 

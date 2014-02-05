@@ -43,7 +43,7 @@
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "poldata.hpp"
-#include "toputil.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gentop_vsite.hpp"
 
 typedef struct {

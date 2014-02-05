@@ -41,16 +41,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "maths.h"
 #include "gromacs/fileio/futil.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"
 #include "xvgr.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "physics.h"
-#include "gstat.h"
 #include "gmx_fatal.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "poldata.hpp"

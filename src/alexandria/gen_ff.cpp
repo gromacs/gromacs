@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gromacs/legacyheaders/string2.h"
-#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/pdb2top.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/legacyheaders/atomprop.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"

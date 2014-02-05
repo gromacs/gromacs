@@ -38,26 +38,22 @@
 #endif
 
 #include <ctype.h>
-#include <maths.h>
 #include <macros.h>
 #include <copyrite.h>
 #include <bondf.h>
 #include <string2.h>
 #include <smalloc.h>
-#include <strdb.h>
-#include <sysstuff.h>
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/confio.h"
 #include <physics.h>
-#include <statutil.h>
 #include <vec.h>
-#include <random.h>
-#include <3dview.h>
+#include "gromacs/random/random.h"
 #include <txtdump.h>
 #include <readinp.h>
 #include <names.h>
 #include <vec.h>
 #include <atomprop.h>
-#include <grompp.h>
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "molprop.hpp"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/coulombintegrals/coulombintegrals.h"

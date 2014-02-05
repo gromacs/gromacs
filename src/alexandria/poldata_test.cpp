@@ -34,7 +34,7 @@
  * Groningen Machine for Chemical Simulation
  */
 #include <stdlib.h>
-#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "poldata_xml.hpp"

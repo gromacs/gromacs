@@ -34,15 +34,15 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gentop_core_hpp
-#define _gentop_core_hpp
+#ifndef GENTOP_CORE_HPP
+#define GENTOP_CORE_HPP
 
 #include <stdio.h>
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gentop_nm2type.hpp"
-#include "gpp_nextnb.h"
-#include "gpp_atomtype.h"
 #include "poldata.hpp"
 
 #ifdef __cplusplus

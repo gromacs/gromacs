@@ -34,10 +34,10 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _molprop_tables_hpp
-#define _molprop_tables_hpp
+#ifndef MOLPROP_TABLES_HPP
+#define MOLPROP_TABLES_HPP
 
-#include "grompp.h"
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "atomprop.h"
 #include "poldata.hpp"
 #include "molprop.hpp"

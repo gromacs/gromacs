@@ -34,14 +34,14 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gmx_resp_hpp
-#define _gmx_resp_hpp
+#ifndef GMX_RESP_HPP
+#define GMX_RESP_HPP
 	
 #include <stdio.h>
-#include "grompp.h"
+//#include "grompp.h"
+#include "gromacs/statistics/statistics.h"
 #include "poldata.hpp"
 #include "atomprop.h"
-#include "gmx_statistics.h"
 #include "molprop.hpp"
 
 typedef struct 

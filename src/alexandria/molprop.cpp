@@ -1,8 +1,8 @@
 #include <string>
 #include <vector>
+#include "gromacs/math/utilities.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "maths.h"
 #include "poldata.hpp"
 #include "gmx_simple_comm.h"
 #include "molprop.hpp"

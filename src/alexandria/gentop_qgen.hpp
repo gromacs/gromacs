@@ -34,11 +34,11 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gentop_qgen_h
-#define _gentop_qgen_h
+#ifndef GENTOP_QGEN_H
+#define GENTOP_QGEN_H
 
 #include <stdio.h>
-#include "grompp.h"
+//#include "gromacs/gmxpreprocess/grompp.h"
 #include "poldata.hpp"
 #include "gmx_resp.hpp"
 	

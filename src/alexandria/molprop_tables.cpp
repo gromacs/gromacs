@@ -42,14 +42,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/utility/exceptions.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"
 #include "xvgr.h"
-#include "statutil.h"
 #include "copyrite.h"
 #include "gmx_statistics.h"
 #include "gmx_fatal.h"

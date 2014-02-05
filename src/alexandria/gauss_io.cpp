@@ -42,7 +42,7 @@
 #include "typedefs.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
-#include "strdb.h" 
+#include "gromacs/fileio/strdb.h" 
 #include "gromacs/fileio/futil.h"
 #include "symtab.h"
 #include "string2.h"
@@ -91,6 +91,8 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 
 // Include Open Babel classes for OBMol and OBConversion
 #ifdef HAVE_LIBOPENBABEL2
+// Hack to make this compile!
+#undef ANGSTROM
 #include <openbabel/babelconfig.h>
 #include <openbabel/obmolecformat.h>
 #include <openbabel/mol.h>

@@ -33,14 +33,15 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
-#include "math.h"
-#include "string.h"
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
 #include "copyrite.h"
-#include "stdio.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "vec.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/futil.h"
 #include "xvgr.h"
 #include "smalloc.h"
 #include "coulomb.h"

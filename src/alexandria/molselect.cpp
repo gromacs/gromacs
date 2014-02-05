@@ -33,11 +33,10 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
-#include <strdb.h>
-#include <string2.h>
-#include <smalloc.h>
-#include <strdb.h>
-#include <gmx_fatal.h>
+#include "gromacs/legacyheaders/string2.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/fileio/strdb.h"
 #include "molselect.hpp"
 
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };

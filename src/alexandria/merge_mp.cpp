@@ -41,14 +41,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "maths.h"
 #include "gromacs/fileio/futil.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "gstat.h"
 #include "gmx_fatal.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"

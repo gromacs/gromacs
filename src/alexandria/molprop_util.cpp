@@ -39,7 +39,7 @@
 #include <vector>
 #include <algorithm>
 #include "smalloc.h"
-#include "maths.h"
+#include "gromacs/math/utilities.h"
 #include "typedefs.h"
 #include "string2.h"
 #include "gromacs/fileio/futil.h"
@@ -48,10 +48,10 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "atomprop.h"
-#include "gpp_atomtype.h"
-#include "gpp_nextnb.h"
-#include "toputil.h"
-#include "gen_ad.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gmx_simple_comm.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"

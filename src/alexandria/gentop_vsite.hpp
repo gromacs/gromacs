@@ -34,10 +34,10 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gentop_vsite_h
-#define _gentop_vsite_h
+#ifndef GENTOP_VSITE_H
+#define GENTOP_VSITE_H
 
-#include "grompp.h"
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "poldata.hpp"
 
 enum { egvtNO, egvtLINEAR, egvtPLANAR, egvtRING_PLANAR, egvtALL, egvtNR };

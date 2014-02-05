@@ -1,10 +1,10 @@
-#ifndef _MYMOL2_HPP
-#define _MYMOL2_HPP
+#ifndef MYMOL_HPP
+#define MYMOL_HPP
 
 #include "typedefs.h"
 #include "vsite.h"
-#include "gpp_atomtype.h"
-#include "pdb2top.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
 #include "atomprop.h"
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"

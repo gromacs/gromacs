@@ -45,7 +45,7 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "string2.h"
-#include "grompp.h"
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "smalloc.h"
 #include "poldata_xml.hpp"
 #include "xml_util.h"

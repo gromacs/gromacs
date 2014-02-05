@@ -36,7 +36,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "statutil.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/futil.h"
 #include "copyrite.h"
 #include "smalloc.h"
 #include "molprop.hpp"
