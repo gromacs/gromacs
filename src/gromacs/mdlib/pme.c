@@ -94,6 +94,12 @@
 #    define PME_SIMD_SOLVE
 #endif
 
+/* TODO: Temporary disabled because MIC in double precision produces
+   NANs for nbnx_vsite test */
+#if defined __MIC__ && defined GMX_DOUBLE
+#undef PME_SIMD_SOLVE
+#endif
+
 #define PME_GRID_QA    0 /* Gridindex for A-state for Q */
 #define PME_GRID_C6A   2 /* Gridindex for A-state for LJ */
 #define DO_Q           2 /* Electrostatic grids have index q<2 */
