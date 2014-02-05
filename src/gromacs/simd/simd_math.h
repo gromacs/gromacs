@@ -1550,6 +1550,7 @@ gmx_simd_exp2_d(gmx_simd_double_t x)
     return x;
 }
 
+#ifndef gmx_simd_exp_d
 /*! \brief SIMD double exp(x).
  *
  * \copydetails gmx_simd_exp_f
@@ -1602,6 +1603,7 @@ gmx_simd_exp_d(gmx_simd_double_t x)
     x         = gmx_simd_mul_d(p, fexppart);
     return x;
 }
+#endif
 
 /*! \brief SIMD double erf(x).
  *

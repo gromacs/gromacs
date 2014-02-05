@@ -66,7 +66,9 @@ extern "C" {
 
 #endif
 
-#ifdef __MIC__
+/* MIC for double is implemented in the SIMD module but so far missing in
+   mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_mic.h */
+#if defined __MIC__ && !defined GMX_DOUBLE
 #define GMX_NBNXN_SIMD
 #define GMX_NBNXN_SIMD_2XNN
 #endif
