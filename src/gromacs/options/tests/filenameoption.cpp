@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,6 +89,25 @@ TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ("testfile.dat", value);
+}
+
+TEST(FileNameOptionTest, HandlesRequiredOptionWithoutValue)
+{
+    gmx::Options           options(NULL, NULL);
+    std::string            value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+                                FileNameOption("f").store(&value).required()
+                                    .filetype(gmx::eftGenericData).outputFile()
+                                    .defaultBasename("testfile")));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options.finish());
 

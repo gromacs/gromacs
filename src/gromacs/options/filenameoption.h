@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,7 +113,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * be provided; it is automatically added based on filetype().
          * The behavior is also adjusted based on required(): if the option is
          * required, the value given to defaultBasename() is treated as for
-         * defaultValue(), otherwise it is treated as for defaultValueIfSet().
+         * both defaultValue() and defaultValueIfSet(), otherwise it is treated
+         * as for defaultValueIfSet().
          */
         MyClass &defaultBasename(const char *basename)
         { defaultBasename_ = basename; return me(); }
