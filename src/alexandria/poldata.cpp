@@ -2343,15 +2343,16 @@ typedef struct {
 } t_eemtype_props;
 
 static t_eemtype_props eemtype_props[eqgNR] = {
-    { eqgNone,     "None",     "None",           FALSE },
-    { eqgAXp,      "AXp",      "Maaren2014a",    FALSE },
-    { eqgAXs,      "AXs",      "Maaren2014a",   TRUE },
+    { eqgNone,     "None",     "None",          FALSE },
+    { eqgAXp,      "AXp",      "Maaren2014a",   FALSE },
     { eqgAXg,      "AXg",      "Maaren2014a",   TRUE },
+    { eqgAXs,      "AXs",      "Maaren2014a",   TRUE },
     { eqgESP,      "ESP",      "Kollman1991a",  FALSE },
     { eqgRESP,     "RESP",     "Kollman1991a",  FALSE },
+    { eqgRESPG,    "RESPG",    "Maaren2014a",   FALSE },
     { eqgYang,     "Yang",     "Yang2006b",     TRUE },
     { eqgBultinck, "Bultinck", "Bultinck2002a", FALSE },
-    { eqgRappe,    "Rappe",    "Rappe1991a",     TRUE }
+    { eqgRappe,    "Rappe",    "Rappe1991a",    TRUE }
 };
 
 ChargeGenerationModel name2eemtype(const char *name)
