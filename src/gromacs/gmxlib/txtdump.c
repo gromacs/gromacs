@@ -431,7 +431,7 @@ static void pr_double(FILE *fp, int indent, const char *title, double d)
 static void pr_str(FILE *fp, int indent, const char *title, const char *s)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%-20s = %s\n", title, s);
+    fprintf(fp, "%-30s = %s\n", title, s);
 }
 
 void pr_qm_opts(FILE *fp, int indent, const char *title, t_grpopts *opts)
@@ -855,11 +855,14 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         {
             indent = pr_title(fp, indent, title);
         }
+        /* This strings do not all have a direct correspondence to
+           .mdp entries, but we should follow the same convention of
+           using hyphens in the names users read and write. */
         PS("integrator", EI(ir->eI));
         PSTEP("nsteps", ir->nsteps);
         PSTEP("init-step", ir->init_step);
         PS("cutoff-scheme", ECUTSCHEME(ir->cutoff_scheme));
-        PS("ns_type", ENS(ir->ns_type));
+        PS("ns-type", ENS(ir->ns_type));
         PI("nstlist", ir->nstlist);
         PI("ndelta", ir->ndelta);
         PI("nstcomm", ir->nstcomm);
@@ -870,11 +873,11 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PI("nstfout", ir->nstfout);
         PI("nstcalcenergy", ir->nstcalcenergy);
         PI("nstenergy", ir->nstenergy);
-        PI("nstxout_compressed", ir->nstxout_compressed);
+        PI("nstxout-compressed", ir->nstxout_compressed);
         PR("init-t", ir->init_t);
         PR("delta-t", ir->delta_t);
 
-        PR("x_compression_precision", ir->x_compression_precision);
+        PR("x-compression-precision", ir->x_compression_precision);
         PR("fourierspacing", ir->fourier_spacing);
         PI("nkx", ir->nkx);
         PI("nky", ir->nky);
@@ -1028,16 +1031,16 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PS("adress", EBOOL(ir->bAdress));
         if (ir->bAdress)
         {
-            PS("adress_type", EADRESSTYPE(ir->adress->type));
-            PR("adress_const_wf", ir->adress->const_wf);
-            PR("adress_ex_width", ir->adress->ex_width);
-            PR("adress_hy_width", ir->adress->hy_width);
-            PS("adress_interface_correction", EADRESSICTYPE(ir->adress->icor));
-            PS("adress_site", EADRESSSITETYPE(ir->adress->site));
-            PR("adress_ex_force_cap", ir->adress->ex_forcecap);
-            PS("adress_do_hybridpairs", EBOOL(ir->adress->do_hybridpairs));
+            PS("adress-type", EADRESSTYPE(ir->adress->type));
+            PR("adress-const-wf", ir->adress->const_wf);
+            PR("adress-ex-width", ir->adress->ex_width);
+            PR("adress-hy-width", ir->adress->hy_width);
+            PS("adress-interface-correction", EADRESSICTYPE(ir->adress->icor));
+            PS("adress-site", EADRESSSITETYPE(ir->adress->site));
+            PR("adress-ex-force-cap", ir->adress->ex_forcecap);
+            PS("adress-do-hybridpairs", EBOOL(ir->adress->do_hybridpairs));
 
-            pr_rvec(fp, indent, "adress_reference_coords", ir->adress->refs, DIM, TRUE);
+            pr_rvec(fp, indent, "adress-reference-coords", ir->adress->refs, DIM, TRUE);
         }
         PI("userint1", ir->userint1);
         PI("userint2", ir->userint2);
