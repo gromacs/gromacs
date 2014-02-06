@@ -44,6 +44,7 @@
 #include "tngio.h"
 #include "trajectory_writing.h"
 #include "checkpoint.h"
+#include "copyrite.h"
 
 struct gmx_mdoutf {
     t_fileio         *fp_trn;
@@ -66,14 +67,14 @@ struct gmx_mdoutf {
 };
 
 
-gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
-                         const t_commrec *cr, const t_inputrec *ir,
-                         gmx_mtop_t *top_global,
+gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
+                         int mdrun_flags, const t_commrec *cr,
+                         const t_inputrec *ir, gmx_mtop_t *top_global,
                          const output_env_t oenv)
 {
     gmx_mdoutf_t  of;
     char          filemode[3];
-    gmx_bool      bAppendFiles;
+    gmx_bool      bAppendFiles, bCiteTng = FALSE;
     int           i;
 
     snew(of, 1);
@@ -124,6 +125,7 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                     {
                         gmx_tng_prepare_md_writing(of->tng, top_global, ir);
                     }
+                    bCiteTng = TRUE;
                     break;
                 default:
                     gmx_incons("Invalid full precision file format");
@@ -145,6 +147,7 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                     {
                         gmx_tng_prepare_low_prec_writing(of->tng_low_prec, top_global, ir);
                     }
+                    bCiteTng = TRUE;
                     break;
                 default:
                     gmx_incons("Invalid reduced precision file format");
@@ -200,6 +203,11 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                 of->natoms_x_compressed++;
             }
         }
+    }
+
+    if (bCiteTng)
+    {
+        please_cite(fplog, "Lundborg2014");
     }
 
     return of;
