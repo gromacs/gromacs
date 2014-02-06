@@ -2769,7 +2769,7 @@ void init_md(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf = init_mdoutf(nfile, fnm, Flags, cr, ir, mtop, oenv);
+        *outf = init_mdoutf(fplog, nfile, fnm, Flags, cr, ir, mtop, oenv);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf));

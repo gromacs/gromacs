@@ -443,7 +443,7 @@ void init_em(FILE *fplog, const char *title,
         *gstat = global_stat_init(ir);
     }
 
-    *outf = init_mdoutf(nfile, fnm, 0, cr, ir, top_global, NULL);
+    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, ir, top_global, NULL);
 
     snew(*enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
