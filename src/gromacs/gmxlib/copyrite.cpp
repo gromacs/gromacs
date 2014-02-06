@@ -556,7 +556,12 @@ void please_cite(FILE *fp, const char *key)
           "C. Kutzner, H. Grubmuller, B. L. de Groot, and U. Zachariae",
           "Computational Electrophysiology: The Molecular Dynamics of Ion Channel Permeation and Selectivity in Atomistic Detail",
           "Biophys. J.",
-          101, 2011, "809-817"}
+          101, 2011, "809-817"},
+        { "Lundborg2014",
+          "M. Lundborg, R. Apostolov, D. Spangberg, A. Gardenas, D. van der Spoel and E. Lindahl",
+          "An efficient and extensible format, library, and API for binary trajectory data from molecular simulations",
+          "J. Comput. Chem.",
+          35, 2014, "260-269"}
     };
 #define NSTR (int)asize(citedb)
 

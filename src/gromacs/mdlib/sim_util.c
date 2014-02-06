@@ -2769,6 +2769,20 @@ void init_md(FILE *fplog,
 
     if (nfile != -1)
     {
+        const char *filename;
+        filename = ftp2fn(efTRN, nfile, fnm);
+        if (fn2ftp(filename) == efTNG)
+        {
+            please_cite(fplog, "Lundborg2014");
+        }
+        else
+        {
+            filename = ftp2fn(efCOMPRESSED, nfile, fnm);
+            if (fn2ftp(filename) == efTNG)
+            {
+                please_cite(fplog, "Lundborg2014");
+            }
+        }
         *outf = init_mdoutf(nfile, fnm, Flags, cr, ir, mtop, oenv);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : mdoutf_get_fp_ene(*outf),
