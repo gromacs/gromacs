@@ -255,8 +255,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate local pitch/bending/rotation/orientation inside helices");
     registerModule(manager, &gmx_hydorder, "hydorder",
                    "Compute tetrahedrality parameters around a given atom");
-    registerModule(manager, &gmx_kinetics, "kinetics",
-                   "Analyze kinetic constants from properties based on the Eyring model");
     registerModule(manager, &gmx_lie, "lie",
                    "Estimate free energy from linear combinations");
     registerModule(manager, &gmx_mdmat, "mdmat",
@@ -455,7 +453,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("current");
         group.addModule("dos");
         group.addModule("dyecoupl");
-        group.addModule("kinetics");
         group.addModule("principal");
         group.addModule("tcaf");
         group.addModule("traj");
