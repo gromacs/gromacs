@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1074,7 +1074,8 @@ int gmx_kinetics(int argc, char *argv[])
     view_all(oenv, NFILE, fnm);
 
 #else
-    fprintf(stderr, "This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.\n");
+    fprintf(stderr, "You have requested code to run that is deprecated.\n");
+    fprintf(stderr, "Revert to an older GROMACS version or help in porting the code.\n");
 #endif /*HAVE_LIBGSL*/
 
     return 0;
