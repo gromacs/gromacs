@@ -829,29 +829,21 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         bExit = (context != NULL);
         if (context != NULL && !(FF(PCA_QUIET)))
         {
-            if (context->isCompletionExport())
+            gmx::Options options(NULL, NULL);
+            options.setDescription(gmx::concatenateStrings(desc, ndesc));
+            for (i = 0; i < nfile; i++)
             {
-                context->shellCompletionWriter().writeLegacyModuleCompletions(
-                        context->moduleDisplayName(), nfile, fnm, npall, all_pa);
+                gmx::filenmToOptions(&options, &fnm[i]);
             }
-            else
+            for (i = 0; i < npall; i++)
             {
-                gmx::Options options(NULL, NULL);
-                options.setDescription(gmx::concatenateStrings(desc, ndesc));
-                for (i = 0; i < nfile; i++)
-                {
-                    gmx::filenmToOptions(&options, &fnm[i]);
-                }
-                for (i = 0; i < npall; i++)
-                {
-                    gmx::pargsToOptions(&options, &all_pa[i]);
-                }
-                gmx::CommandLineHelpWriter(options)
-                    .setShowDescriptions(true)
-                    .setTimeUnitString(output_env_get_time_unit(*oenv))
-                    .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
-                    .writeHelp(*context);
+                gmx::pargsToOptions(&options, &all_pa[i]);
             }
+            gmx::CommandLineHelpWriter(options)
+                .setShowDescriptions(true)
+                .setTimeUnitString(output_env_get_time_unit(*oenv))
+                .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
+                .writeHelp(*context);
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

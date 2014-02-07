@@ -704,7 +704,9 @@ void HelpExportCompletion::exportModuleHelp(
 
 void HelpExportCompletion::finishModuleExport()
 {
-    bashWriter_.writeWrapperCompletions(modules_);
+    CommandLineCommonOptionsHolder optionsHolder;
+    optionsHolder.initOptions();
+    bashWriter_.writeWrapperCompletions(modules_, *optionsHolder.options());
     bashWriter_.finishCompletions();
 }
 

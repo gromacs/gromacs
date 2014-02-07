@@ -51,6 +51,7 @@
 namespace gmx
 {
 
+template <typename T> class ConstArrayRef;
 class FileNameOptionInfo;
 class FileNameOptionStorage;
 
@@ -165,6 +166,9 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 class FileNameOptionInfo : public OptionInfo
 {
     public:
+        //! Shorthand for a list of extensions.
+        typedef ConstArrayRef<const char *> ExtensionList;
+
         //! Creates an option info object for the given option.
         explicit FileNameOptionInfo(FileNameOptionStorage *option);
 
@@ -180,6 +184,11 @@ class FileNameOptionInfo : public OptionInfo
          * \see FileNameOption::libraryFile()
          */
         bool isLibraryFile() const;
+
+        //! Whether the option specifies directories.
+        bool isDirectoryOption() const;
+        //! Returns the list of extensions this option accepts.
+        ExtensionList extensions() const;
 
     private:
         const FileNameOptionStorage &option() const;
