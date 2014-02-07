@@ -136,21 +136,14 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
          * Does not throw.
          */
         explicit RootHelpTopic(const std::string &binaryName)
-            : binaryName_(binaryName), commonOptions_(NULL)
+            : binaryName_(binaryName)
         {
-        }
-
-        //! Sets the common options for the wrapper binary.
-        void setCommonOptions(const Options *options)
-        {
-            commonOptions_ = options;
         }
 
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
         std::string                 binaryName_;
-        const Options              *commonOptions_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
@@ -165,11 +158,13 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
                           "Root help is not implemented for this output format"));
     }
     {
-        CommandLineHelpContext cmdlineContext(context);
+        CommandLineCommonOptionsHolder optionsHolder;
+        CommandLineHelpContext         cmdlineContext(context);
+        optionsHolder.initOptions();
         cmdlineContext.setModuleDisplayName(binaryName_);
         // TODO: Add <command> [<args>] into the synopsis.
         // TODO: Propagate the -hidden option here.
-        CommandLineHelpWriter(*commonOptions_)
+        CommandLineHelpWriter(*optionsHolder.options())
             .writeHelp(cmdlineContext);
     }
     // TODO: Consider printing a list of "core" commands. Would require someone
@@ -791,11 +786,6 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 void CommandLineHelpModule::setShowHidden(bool bHidden)
 {
     impl_->bHidden_ = bHidden;
-}
-
-void CommandLineHelpModule::setCommonOptions(const Options *options)
-{
-    impl_->rootTopic_->setCommonOptions(options);
 }
 
 void CommandLineHelpModule::setModuleOverride(

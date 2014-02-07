@@ -136,98 +136,49 @@ class CMainCommandLineModule : public CommandLineModuleInterface
 
 };
 
-/********************************************************************
- * CommonOptionsHolder
- */
-
-/*! \brief
- * Encapsulates some handling of common options to the wrapper binary.
- */
-class CommonOptionsHolder
-{
-    public:
-        CommonOptionsHolder()
-            : options_(NULL, NULL), bHelp_(false), bHidden_(false),
-              bQuiet_(false), bVersion_(false), bCopyright_(true)
-        {
-            binaryInfoSettings_.copyright(true);
-        }
-
-        //! Initializes the common options.
-        void initOptions()
-        {
-            options_.addOption(BooleanOption("h").store(&bHelp_)
-                                   .description("Print help and quit"));
-            options_.addOption(BooleanOption("hidden").store(&bHidden_)
-                                   .hidden()
-                                   .description("Show hidden options in help"));
-            options_.addOption(BooleanOption("quiet").store(&bQuiet_)
-                                   .description("Do not print common startup info or quotes"));
-            options_.addOption(BooleanOption("version").store(&bVersion_)
-                                   .description("Print extended version information and quit"));
-            options_.addOption(BooleanOption("copyright").store(&bCopyright_)
-                                   .description("Print copyright information on startup"));
-        }
-
-        /*! \brief
-         * Finishes option parsing.
-         *
-         * \returns `false` if the wrapper binary should quit without executing
-         *     any module.
-         */
-        bool finishOptions()
-        {
-            options_.finish();
-            binaryInfoSettings_.extendedInfo(bVersion_);
-            // The latter condition suppresses the copyright with
-            // -quiet -version.
-            binaryInfoSettings_.copyright(bCopyright_ && !bQuiet_);
-            return !bVersion_;
-        }
-
-        //! Returns the internal Options object.
-        Options *options() { return &options_; }
-        //! Returns the settings for printing startup information.
-        const BinaryInformationSettings &binaryInfoSettings() const
-        {
-            return binaryInfoSettings_;
-        }
-
-        /*! \brief
-         * Returns `true` if common options are set such that the wrapper
-         * binary should quit, without running the actual module.
-         */
-        bool shouldIgnoreActualModule() const
-        {
-            return bHelp_ || bVersion_;
-        }
-        //! Returns whether common options specify showing help.
-        bool shouldShowHelp() const { return bHelp_; }
-        //! Returns whether common options specify showing hidden options in help.
-        bool shouldShowHidden() const { return bHidden_; }
-        //! Returns whether common options specify quiet execution.
-        bool shouldBeQuiet() const
-        {
-            return bQuiet_ && !bVersion_;
-        }
-
-        //! Returns the file to which startup information should be printed.
-        FILE *startupInfoFile() const { return (bVersion_ ? stdout : stderr); }
-
-    private:
-        Options                      options_;
-        //! Settings for what to write in the startup header.
-        BinaryInformationSettings    binaryInfoSettings_;
-        bool                         bHelp_;
-        bool                         bHidden_;
-        bool                         bQuiet_;
-        bool                         bVersion_;
-        bool                         bCopyright_;
-};
-
 //! \}
 
 }   // namespace
+
+/********************************************************************
+ * CommandLineCommonOptionsHolder
+ */
+
+CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
+    : options_(NULL, NULL), bHelp_(false), bHidden_(false),
+      bQuiet_(false), bVersion_(false), bCopyright_(true)
+{
+    binaryInfoSettings_.copyright(true);
+}
+
+CommandLineCommonOptionsHolder::~CommandLineCommonOptionsHolder()
+{
+}
+
+void CommandLineCommonOptionsHolder::initOptions()
+{
+    options_.addOption(BooleanOption("h").store(&bHelp_)
+                           .description("Print help and quit"));
+    options_.addOption(BooleanOption("hidden").store(&bHidden_)
+                           .hidden()
+                           .description("Show hidden options in help"));
+    options_.addOption(BooleanOption("quiet").store(&bQuiet_)
+                           .description("Do not print common startup info or quotes"));
+    options_.addOption(BooleanOption("version").store(&bVersion_)
+                           .description("Print extended version information and quit"));
+    options_.addOption(BooleanOption("copyright").store(&bCopyright_)
+                           .description("Print copyright information on startup"));
+}
+
+bool CommandLineCommonOptionsHolder::finishOptions()
+{
+    options_.finish();
+    binaryInfoSettings_.extendedInfo(bVersion_);
+    // The latter condition suppresses the copyright with
+    // -quiet -version.
+    binaryInfoSettings_.copyright(bCopyright_ && !bQuiet_);
+    return !bVersion_;
+}
 
 /********************************************************************
  * CommandLineModuleManager::Impl
@@ -312,7 +263,7 @@ class CommandLineModuleManager::Impl
          * arguments that should be passed to it.
          */
         CommandLineModuleInterface *
-        processCommonOptions(CommonOptionsHolder *optionsHolder,
+        processCommonOptions(CommandLineCommonOptionsHolder *optionsHolder,
                              int *argc, char ***argv);
 
         /*! \brief
@@ -410,7 +361,7 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(
 
 CommandLineModuleInterface *
 CommandLineModuleManager::Impl::processCommonOptions(
-        CommonOptionsHolder *optionsHolder, int *argc, char ***argv)
+        CommandLineCommonOptionsHolder *optionsHolder, int *argc, char ***argv)
 {
     // Check if we are directly invoking a certain module.
     CommandLineModuleInterface *module = singleModule_;
@@ -492,7 +443,6 @@ CommandLineModuleManager::Impl::processCommonOptions(
     if (module == helpModule_)
     {
         helpModule_->setShowHidden(optionsHolder->shouldShowHidden());
-        helpModule_->setCommonOptions(optionsHolder->options());
     }
     return module;
 }
@@ -559,10 +509,10 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
-    CommandLineModuleInterface *module;
-    const bool                  bMaster = (!gmx_mpi_initialized() || gmx_node_rank() == 0);
-    bool                        bQuiet  = impl_->bQuiet_ || !bMaster;
-    CommonOptionsHolder         optionsHolder;
+    CommandLineModuleInterface    *module;
+    const bool                     bMaster = (!gmx_mpi_initialized() || gmx_node_rank() == 0);
+    bool                           bQuiet  = impl_->bQuiet_ || !bMaster;
+    CommandLineCommonOptionsHolder optionsHolder;
     try
     {
         optionsHolder.initOptions();
