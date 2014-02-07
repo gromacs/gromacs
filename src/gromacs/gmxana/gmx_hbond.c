@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2317,157 +2317,6 @@ typedef struct {
     real *t, *ct, *nt, *kt, *sigma_ct, *sigma_nt, *sigma_kt;
 } t_luzar;
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_sf.h>
-#include <gsl/gsl_version.h>
-
-static double my_f(const gsl_vector *v, void *params)
-{
-    t_luzar *tl = (t_luzar *)params;
-    int      i;
-    double   tol = 1e-16, chi2 = 0;
-    double   di;
-    real     k, kp;
-
-    for (i = 0; (i < tl->nparams); i++)
-    {
-        tl->kkk[i] = gsl_vector_get(v, i);
-    }
-    k  = tl->kkk[0];
-    kp = tl->kkk[1];
-
-    for (i = tl->n0; (i < tl->n1); i += tl->ndelta)
-    {
-        di = sqr(k*tl->sigma_ct[i]) + sqr(kp*tl->sigma_nt[i]) + sqr(tl->sigma_kt[i]);
-        /*di = 1;*/
-        if (di > tol)
-        {
-            chi2 += sqr(k*tl->ct[i]-kp*tl->nt[i]-tl->kt[i])/di;
-        }
-
-        else
-        {
-            fprintf(stderr, "WARNING: sigma_ct = %g, sigma_nt = %g, sigma_kt = %g\n"
-                    "di = %g k = %g kp = %g\n", tl->sigma_ct[i],
-                    tl->sigma_nt[i], tl->sigma_kt[i], di, k, kp);
-        }
-    }
-#ifdef DEBUG
-    chi2 = 0.3*sqr(k-0.6)+0.7*sqr(kp-1.3);
-#endif
-    return chi2;
-}
-
-static real optimize_luzar_parameters(FILE *fp, t_luzar *tl, int maxiter,
-                                      real tol)
-{
-    real   size, d2;
-    int    iter   = 0;
-    int    status = 0;
-    int    i;
-
-    const gsl_multimin_fminimizer_type *T;
-    gsl_multimin_fminimizer            *s;
-
-    gsl_vector                         *x, *dx;
-    gsl_multimin_function               my_func;
-
-    my_func.f      = &my_f;
-    my_func.n      = tl->nparams;
-    my_func.params = (void *) tl;
-
-    /* Starting point */
-    x = gsl_vector_alloc (my_func.n);
-    for (i = 0; (i < my_func.n); i++)
-    {
-        gsl_vector_set (x, i, tl->kkk[i]);
-    }
-
-    /* Step size, different for each of the parameters */
-    dx = gsl_vector_alloc (my_func.n);
-    for (i = 0; (i < my_func.n); i++)
-    {
-        gsl_vector_set (dx, i, 0.01*tl->kkk[i]);
-    }
-
-    T = gsl_multimin_fminimizer_nmsimplex;
-    s = gsl_multimin_fminimizer_alloc (T, my_func.n);
-
-    gsl_multimin_fminimizer_set (s, &my_func, x, dx);
-    gsl_vector_free (x);
-    gsl_vector_free (dx);
-
-    if (fp)
-    {
-        fprintf(fp, "%5s %12s %12s %12s %12s\n", "Iter", "k", "kp", "NM Size", "Chi2");
-    }
-
-    do
-    {
-        iter++;
-        status = gsl_multimin_fminimizer_iterate (s);
-
-        if (status != 0)
-        {
-            gmx_fatal(FARGS, "Something went wrong in the iteration in minimizer %s",
-                      gsl_multimin_fminimizer_name(s));
-        }
-
-        d2     = gsl_multimin_fminimizer_minimum(s);
-        size   = gsl_multimin_fminimizer_size(s);
-        status = gsl_multimin_test_size(size, tol);
-
-        if (status == GSL_SUCCESS)
-        {
-            if (fp)
-            {
-                fprintf(fp, "Minimum found using %s at:\n",
-                        gsl_multimin_fminimizer_name(s));
-            }
-        }
-
-        if (fp)
-        {
-            fprintf(fp, "%5d", iter);
-            for (i = 0; (i < my_func.n); i++)
-            {
-                fprintf(fp, " %12.4e", gsl_vector_get (s->x, i));
-            }
-            fprintf (fp, " %12.4e %12.4e\n", size, d2);
-        }
-    }
-    while ((status == GSL_CONTINUE) && (iter < maxiter));
-
-    gsl_multimin_fminimizer_free (s);
-
-    return d2;
-}
-
-static real quality_of_fit(real chi2, int N)
-{
-    return gsl_sf_gamma_inc_Q((N-2)/2.0, chi2/2.0);
-}
-
-#else
-static real optimize_luzar_parameters(FILE gmx_unused    *fp,
-                                      t_luzar gmx_unused *tl,
-                                      int gmx_unused      maxiter,
-                                      real gmx_unused     tol)
-{
-    fprintf(stderr, "This program needs the GNU scientific library to work.\n");
-
-    return -1;
-}
-static real quality_of_fit(real gmx_unused chi2, int gmx_unused N)
-{
-    fprintf(stderr, "This program needs the GNU scientific library to work.\n");
-
-    return -1;
-}
-
-#endif
-
 static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
                                    real kt[], real sigma_ct[], real sigma_nt[],
                                    real sigma_kt[], real *k, real *kp,
@@ -3902,9 +3751,6 @@ int gmx_hbond(int argc, char *argv[])
     if (bGem)
     {
         printf("Geminate recombination: %s\n", gemType[gemmode]);
-#ifndef HAVE_LIBGSL
-        printf("Note that some aspects of reversible geminate recombination won't work without gsl.\n");
-#endif
         if (bContact)
         {
             if (gemmode != gemDD)
