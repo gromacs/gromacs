@@ -90,7 +90,6 @@ set(SYMLINK_NAMES
     g_helix
     g_helixorient
     g_hydorder
-    g_kinetics
     g_lie
     g_mdmat
     g_mindist

@@ -429,17 +429,6 @@ mark_as_advanced(GMX_XML)
 #    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 #endif()
 
-option(GMX_GSL "Add support for gsl" OFF)
-if (GMX_GSL)
-  find_package(GSL)
-  set(PKG_GSL "")
-  if(GSL_FOUND)
-    include_directories(${GSL_INCLUDE_DIR})
-    set(PKG_GSL gsl)
-    set(HAVE_LIBGSL 1)
-  endif()
-endif()
-
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
 
