@@ -1,6 +1,4 @@
 
-#add_subdirectory(coulombintegrals)
-
 set(ALEXANDRIA_SOURCES
      coulombintegrals/DSlater_1S_1S.cpp
      coulombintegrals/DSlater_1S_2S.cpp
@@ -88,7 +86,6 @@ set_target_properties(libalexandria PROPERTIES
                       SOVERSION ${LIBRARY_SOVERSION}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
-
 
 list(APPEND GMX_EXTRA_LIBRARIES libalexandria libgromacs)
 
