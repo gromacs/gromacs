@@ -1,0 +1,9 @@
+Code-Review+2: Rossen Apostolov <rossen@kth.se>
+Code-Review+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Verified+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Verified+2: Jenkins Buildbot
+Submitted-by: Rossen Apostolov <rossen@kth.se>
+Submitted-at: Fri, 07 Feb 2014 23:07:26 +0100
+Reviewed-on: https://gerrit.gromacs.org/3114
+Project: gromacs
+Branch: refs/heads/master
