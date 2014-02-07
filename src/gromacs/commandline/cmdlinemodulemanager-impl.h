@@ -49,12 +49,18 @@
 #include "cmdlinemodule.h"
 #include "cmdlinemodulemanager.h"
 
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/options/options.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
+
+//! \addtogroup module_commandline
+//! \{
+
 //! Container type for mapping module names to module objects.
 typedef std::map<std::string, CommandLineModulePointer> CommandLineModuleMap;
 
@@ -65,8 +71,6 @@ typedef std::map<std::string, CommandLineModulePointer> CommandLineModuleMap;
  * This class contains the state of a module group.  CommandLineModuleGroup
  * provides the public interface to construct/alter the state, and
  * CommandLineModuleManager and its associated classes use it for help output.
- *
- * \ingroup module_commandline
  */
 class CommandLineModuleGroupData
 {
@@ -129,6 +133,70 @@ typedef gmx_unique_ptr<CommandLineModuleGroupData>::type
 //! Container type for keeping a list of module groups.
 typedef std::vector<CommandLineModuleGroupDataPointer>
     CommandLineModuleGroupList;
+
+/*! \internal
+ * \brief
+ * Encapsulates some handling of common options to the wrapper binary.
+ */
+class CommandLineCommonOptionsHolder
+{
+    public:
+        CommandLineCommonOptionsHolder();
+        ~CommandLineCommonOptionsHolder();
+
+        //! Initializes the common options.
+        void initOptions();
+        /*! \brief
+         * Finishes option parsing.
+         *
+         * \returns `false` if the wrapper binary should quit without executing
+         *     any module.
+         */
+        bool finishOptions();
+
+        //! Returns the internal Options object.
+        Options *options() { return &options_; }
+        //! Returns the settings for printing startup information.
+        const BinaryInformationSettings &binaryInfoSettings() const
+        {
+            return binaryInfoSettings_;
+        }
+
+        /*! \brief
+         * Returns `true` if common options are set such that the wrapper
+         * binary should quit, without running the actual module.
+         */
+        bool shouldIgnoreActualModule() const
+        {
+            return bHelp_ || bVersion_;
+        }
+        //! Returns whether common options specify showing help.
+        bool shouldShowHelp() const { return bHelp_; }
+        //! Returns whether common options specify showing hidden options in help.
+        bool shouldShowHidden() const { return bHidden_; }
+        //! Returns whether common options specify quiet execution.
+        bool shouldBeQuiet() const
+        {
+            return bQuiet_ && !bVersion_;
+        }
+
+        //! Returns the file to which startup information should be printed.
+        FILE *startupInfoFile() const { return (bVersion_ ? stdout : stderr); }
+
+    private:
+        Options                      options_;
+        //! Settings for what to write in the startup header.
+        BinaryInformationSettings    binaryInfoSettings_;
+        bool                         bHelp_;
+        bool                         bHidden_;
+        bool                         bQuiet_;
+        bool                         bVersion_;
+        bool                         bCopyright_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineCommonOptionsHolder);
+};
+
+//! \}
 
 } // namespace gmx
 
