@@ -3,6 +3,7 @@
 *.cpp   filter=uncrustify
 *.cu    filter=uncrustify
 *.h     filter=uncrustify
+*.hpp   filter=uncrustify
 *.cuh   filter=uncrustify
 CMakeLists.txt  filter=copyright
 *.cmake         filter=copyright
@@ -44,3 +45,4 @@ src/gromacs/selection/parser.h          !filter
 src/gromacs/selection/scanner.cpp       !filter
 src/gromacs/selection/scanner_flex.h    !filter
 nb_kernel_Elec*                         filter=copyright
+src/programs/alexandria/CMakeLists.txt  !filter
