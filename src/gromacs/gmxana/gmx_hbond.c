@@ -3902,9 +3902,6 @@ int gmx_hbond(int argc, char *argv[])
     if (bGem)
     {
         printf("Geminate recombination: %s\n", gemType[gemmode]);
-#ifndef HAVE_LIBGSL
-        printf("Note that some aspects of reversible geminate recombination won't work without gsl.\n");
-#endif
         if (bContact)
         {
             if (gemmode != gemDD)

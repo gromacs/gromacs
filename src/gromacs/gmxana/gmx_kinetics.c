@@ -1074,7 +1074,8 @@ int gmx_kinetics(int argc, char *argv[])
     view_all(oenv, NFILE, fnm);
 
 #else
-    fprintf(stderr, "This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.\n");
+    fprintf(stderr, "You have requested code to run that is deprecated.\n");
+    fprintf(stderr, "Revert to an older GROMACS version or help in porting the code.\n");
 #endif /*HAVE_LIBGSL*/
 
     return 0;
