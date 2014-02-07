@@ -63,7 +63,6 @@ endif()
 
 add_subdirectory(gromacs)
 add_subdirectory(programs)
-add_subdirectory(alexandria)
 
 if (NOT GMX_FAHCORE)
     add_subdirectory(contrib)

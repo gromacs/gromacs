@@ -53,7 +53,7 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include <atomprop.h>
 #include "nmsimplex.h"
-#include "gromacs/coulombintegrals/coulombintegrals.h"
+#include "coulombintegrals/coulombintegrals.h"
 #include "poldata.hpp"
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"

@@ -44,7 +44,7 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "molprop.hpp"
 #include "gromacs/linearalgebra/matrix.h"
-#include "gromacs/coulombintegrals/coulombintegrals.h"
+#include "coulombintegrals/coulombintegrals.h"
 #include "poldata.hpp"
 #include "gentop_nm2type.hpp"
 #include "gentop_qgen.hpp"
