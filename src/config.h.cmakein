@@ -242,9 +242,6 @@
 /* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
 #cmakedefine HAVE__FSEEKI64
 
-/* Define to 1 if you have the gsl library (-lgsl). */
-#cmakedefine HAVE_LIBGSL
-
 /* Have io.h (windows)*/
 #cmakedefine HAVE_IO_H
 

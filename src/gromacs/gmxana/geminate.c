@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,17 +36,6 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_multifit_nlin.h>
-#include <gsl/gsl_sf.h>
-#include <gsl/gsl_version.h>
-#endif
-
 #include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
@@ -54,6 +43,12 @@
 #include "geminate.h"
 
 #include "gromacs/utility/gmxomp.h"
+
+static void missing_gsl_message()
+{
+    fprintf(stderr, "You have requested code to run that is deprecated.\n");
+    fprintf(stderr, "Revert to an older GROMACS version or help in porting the code.\n");
+}
 
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,
@@ -682,8 +677,7 @@ extern real fitGemRecomb(double gmx_unused      *ct,
 #endif /* GSL_MAJOR_VERSION */
     fprintf(stdout, "Will fit ka and kd to the ACF according to the reversible geminate recombination model.\n");
 #else  /* HAVE_LIBGSL */
-    fprintf(stderr, "Sorry, can't do reversible geminate recombination without gsl. "
-            "Recompile using --with-gsl.\n");
+    missing_gsl_message();
     return -1;
 #endif /* HAVE_LIBGSL */
 
@@ -1111,8 +1105,7 @@ extern void takeAwayBallistic(double gmx_unused *ct, double *t, int len, real tM
 
 #else
     /* We have no gsl. */
-    fprintf(stderr, "Sorry, can't take away ballistic component without gsl. "
-            "Recompile using --with-gsl.\n");
+    missing_gsl_message();
     return;
 #endif /* HAVE_LIBGSL */
 
