@@ -113,20 +113,21 @@ compared to version 4.5.
 
 \begin{itemize}
 \item On Intel-based x86 hardware, we recommend you to use
-the Intel compiler for best performance. It is usually better at instruction
-scheduling, although it does not hurt to try gcc too. Recent versions can
-give icc a run for the money.
-\item On AMD-based x86 hardware up through the Magny-Cours architecture
-(e.g. Opteron 6100-series processors), it is worth using the Intel compiler for
-better performance, but gcc-4.7 and later are also reasonable.
+the GNU compilers version 4.7 or later or Intel compilers version 12 or later
+for best performance. The Intel compiler has historically been better at
+instruction scheduling, but recent gcc versions have proved to be as fast or
+sometimes faster than Intel.
+\item On AMD-based x86 hardware up through the ``K10'' microarchitecture (``Family 10h'')
+Thuban/Magny-Cours architecture (e.g. Opteron 6100-series processors), it is worth using the Intel compiler for
+better performance, but gcc version 4.7 and later are also reasonable.
 \item On the AMD Bulldozer architecture (Opteron 6200), AMD introduced fused multiply-add
 instructions and an "FMA4" instruction format not available on Intel x86 processors. Thus,
-on the most recent AMD processors you want to use gcc-4.7 or later for better performance!
-icc will only generate code for the subset also supported by Intel processors, and that
+on the most recent AMD processors you want to use gcc version 4.7 or later for better performance!
+The Intel compiler will only generate code for the subset also supported by Intel processors, and that
 is significantly slower right now.
 \item If you are running on Mac OS X, the best option is the Intel compiler.
 Both clang and gcc will work, but they produce lower performance and each have some
-shortcomings. Clang does not fully support OpenMP, and the current gcc ports do not
+shortcomings. Clang does not support OpenMP, and the current gcc ports (e.g. from MacPorts) do not
 support AVX instructions. 
 \item For all non-x86 platforms, your best option is typically to use the vendor's 
 default compiler, and check for specialized information below.
@@ -177,9 +178,9 @@ In some cases, \openmp{} parallelism is an advantage for \gromacs{},
 but support for this is generally built into your compiler and detected
 automatically. The one common exception is Mac OS X, where the default
 clang compiler currently does not fully support OpenMP. You can install
-gcc-4.7 instead, but the currently available binary distribution of gcc 
+gcc version 4.7 instead, but the currently available binary distribution of gcc 
 uses an old system assembler that does not support AVX acceleration
-instructions. There are some examples on the internet where people have
+instructions. There are some examples on the Internet where people have
 hacked this to work, but presently the only straightforward way to get
 both OpenMP and AVX support on Mac OS X is to get the Intel compiler.
 
@@ -258,7 +259,7 @@ support has been compiled into \fftw{}, so you need to set this at compile time.
 
 \subsubsection{\mkl{}}
 
-Using \mkl{} with icc 11 or higher is very simple. Set up your
+Using \mkl{} with the Intel Compilers version 11 or higher is very simple. Set up your
 compiler environment correctly, perhaps with a command like
 \verb+source /path/to/compilervars.sh intel64+ (or consult your local
 documentation). Then set \verb+-DGMX_FFT_LIBRARY=mkl+ when you run
@@ -354,10 +355,11 @@ about them by using e.g. the curses interface
 \begin{verbatim}
 $ ccmake ..
 \end{verbatim}
-You can actually use \verb+ccmake+ directly in the first step, but then
+You can actually use \verb+ccmake+ (available on most Unix platforms,
+if the curses library is supported) directly in the first step, but then
 most of the status messages will merely blink in the lower part
-of the terminal rather than be written to standard out. Some platforms
-like Windows or Mac even have native graphical user interfaces for
+of the terminal rather than be written to standard out. Most platforms
+including Linux, Windows, and Mac OS X even have native graphical user interfaces for
 \cmake{}, and it can create project files for almost any build environment
 you want (including Visual Studio or Xcode).
 Check out \url{http://www.cmake.org/cmake/help/runningcmake.html} for
@@ -405,6 +407,42 @@ changing. There are a lot more options available, which you can see by
 toggling the advanced mode in \verb+ccmake+ on and off with
 '\verb+t+'. Even there, most of the variables that you might want to
 change have a '\verb+CMAKE_+' or '\verb+GMX_+' prefix.
+
+\subsubsection{Portability aspects}
+Here, we consider portability aspects related to CPU instruction sets,
+for details on other topics like binaries with statical vs dynamic linking
+please consult the relevant parts of this documentation or other non-\gromacs{} specific
+resources.
+
+Most often a \gromacs{} build will by default not be portable,
+not even across hardware with the same base instruction set like x86.
+The reason for this is that hardware-specific optimizations are selected
+at configure-time, like the SIMD instruction set used in the compute-kernels.
+This selection will be done by the build system based on the capabilities
+of the build host machine or based on cross-compilation information provided
+to \cmake{} at configuration.
+
+Often it is possible to ensure portability by choosing the
+least common denominator of SIMD support, e.g. SSE2 for x86
+and ensuring the \cmake{} option \verb+GMX_USE_RDTSCP+ is off if any of the
+target CPU architectures does not support the \verb+RDTSCP+ instruction.
+However, we discourage attempts to use a single \gromacs{}
+installation when the execution environment is heterogeneous, such as
+a mix of \avx{} and earlier hardware, because this will lead to slow
+binaries (especially \verb+mdrun+), on the new hardware.
+Building two full installations and locally managing how to
+call the correct one (e.g. using the module system) is the recommended
+approach.
+Alternatively, as at the moment the \gromacs{} tools do not make
+strong use of SIMD acceleration, it can be convenient to create an installation
+with tools portable across different x86 machines, but with separate \verb+mdrun+
+binaries for each architecture.
+To achieve this, one can first build a full installation with the least common
+denominator SIMD instruction set, e.g. SSE2, then build separate \verb+mdrun+
+binaries for each architecture present in the heterogeneous environment.
+By using custom binary and library suffixes for the \verb+mdrun+-only builds,
+these can be installed to the same location as the ''generic`` tools installation.
+
 
 \subsection{Helping CMake find the right libraries/headers/programs}
 
@@ -766,11 +804,14 @@ it works because we've tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code
 repository is currently tested on x86 with gcc versions ranging
-from 4.4 through 4.7, and versions 12 and 13 of the Intel compiler.
-Under Windows we test both the visual studio compilers and icc,
+from 4.4 through 4.7, and versions 12 and 13 of the Intel compiler as 
+well as Clang version 3.1 through 3.3. For this we use a variety of GNU/Linux
+flavors and versions as well as recent version of Mac OS X.
+Under Windows we test both MSVC and the Intel compiler. For details, you can
+have a look at the continuous integration server at \url{http://jenkins.gromacs.org}.
 
 We test irregularly on BlueGene/Q, Cray,
-Fujitsu PRIMEHPC, Google nativeclient and other environments. In 
+Fujitsu PRIMEHPC, Google Native Client and other environments. In
 the future we expect ARM to be an important test target too, but this
 is currently not included.
 
