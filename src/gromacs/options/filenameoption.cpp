@@ -47,6 +47,7 @@
 
 #include "gromacs/fileio/filenm.h"
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -360,6 +361,19 @@ void FileNameOptionStorage::convertValue(const std::string &value)
     addValue(completeFileName(value, filetype_, legacyType_, bInput));
 }
 
+bool FileNameOptionStorage::isDirectoryOption() const
+{
+    return legacyType_ == efRND;
+}
+
+ConstArrayRef<const char *> FileNameOptionStorage::extensions() const
+{
+    const FileTypeRegistry &registry    = FileTypeRegistry::instance();
+    const FileTypeHandler  &typeHandler = registry.handlerForType(filetype_, legacyType_);
+    const ExtensionList    &extensions  = typeHandler.extensions();
+    return ConstArrayRef<const char *>(extensions.begin(), extensions.end());
+}
+
 /********************************************************************
  * FileNameOptionInfo
  */
@@ -392,6 +406,16 @@ bool FileNameOptionInfo::isInputOutputFile() const
 bool FileNameOptionInfo::isLibraryFile() const
 {
     return option().isLibraryFile();
+}
+
+bool FileNameOptionInfo::isDirectoryOption() const
+{
+    return option().isDirectoryOption();
+}
+
+FileNameOptionInfo::ExtensionList FileNameOptionInfo::extensions() const
+{
+    return option().extensions();
 }
 
 /********************************************************************

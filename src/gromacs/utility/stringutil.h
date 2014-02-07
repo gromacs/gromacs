@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,6 +109,45 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * supported.
  */
 std::string formatString(const char *fmt, ...);
+
+/*! \brief
+ * Joins strings from a range with a separator in between.
+ *
+ * \param[in] begin      Iterator the beginning of the range to join.
+ * \param[in] end        Iterator the end of the range to join.
+ * \param[in] separator  String to put in between the joined strings.
+ * \returns   All strings from (`begin`, `end`) concatenated with `separator`
+ *     between each pair.
+ * \throws    std::bad_alloc if out of memory.
+ */
+template <typename InputIterator>
+std::string joinStrings(InputIterator begin, InputIterator end,
+                        const char *separator)
+{
+    std::string result;
+    const char *currentSeparator = "";
+    for (InputIterator i = begin; i != end; ++i)
+    {
+        result.append(currentSeparator);
+        result.append(*i);
+        currentSeparator = separator;
+    }
+    return result;
+}
+/*! \brief
+ * Joins strings from a container with a separator in between.
+ *
+ * \param[in] container  Strings to join.
+ * \param[in] separator  String to put in between the joined strings.
+ * \returns   All strings from `container` concatenated with `separator`
+ *     between each pair.
+ * \throws    std::bad_alloc if out of memory.
+ */
+template <typename ContainerType>
+std::string joinStrings(const ContainerType &container, const char *separator)
+{
+    return joinStrings(container.begin(), container.end(), separator);
+}
 
 /*! \brief
  * Joins strings in an array to a single string.

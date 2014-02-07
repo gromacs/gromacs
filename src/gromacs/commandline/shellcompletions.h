@@ -46,8 +46,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/utility/common.h"
 
 namespace gmx
@@ -82,12 +80,10 @@ class ShellCompletionWriter
         File *outputFile();
 
         void startCompletions();
-        void writeLegacyModuleCompletions(const char *moduleName,
-                                          int nfile,  t_filenm *fnm,
-                                          int npargs, t_pargs *pa);
         void writeModuleCompletions(const char    *moduleName,
                                     const Options &options);
-        void writeWrapperCompletions(const ModuleNameList &modules);
+        void writeWrapperCompletions(const ModuleNameList &modules,
+                                     const Options        &options);
         void finishCompletions();
 
     private:

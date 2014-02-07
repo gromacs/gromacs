@@ -75,6 +75,9 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
         virtual std::string typeString() const { return "bool"; }
         virtual std::string formatSingleValue(const bool &value) const;
 
+        //! \copydoc BooleanOptionInfo::defaultValue()
+        bool defaultValue() const { return valueCount() > 0 && values()[0]; }
+
     private:
         virtual void convertValue(const std::string &value);
 
