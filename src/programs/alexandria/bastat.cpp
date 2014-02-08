@@ -426,7 +426,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         gmx_stats_get_average(b->dih[i].lsq, &av);
         gmx_stats_get_sigma(b->dih[i].lsq, &sig);
         gmx_stats_get_npoints(b->dih[i].lsq, &N);
-        sprintf(pbuf, "%g", kp);
+        sprintf(pbuf, "%g  1", kp);
         gmx_poldata_add_dihedral(pd, egdPDIHS,
                                  b->dih[i].a1, b->dih[i].a2,
                                  b->dih[i].a3, b->dih[i].a4, av, sig, N, pbuf);
@@ -464,7 +464,7 @@ int alex_bastat(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
     static int            compress = 0;
-    static gmx_bool       bHisto   = FALSE;
+    static gmx_bool       bHisto   = FALSE, bBondOrder = TRUE;
     static real           Dm       = 400, kt = 400, kp = 5, beta = 20;
     static char          *lot      = (char *)"B3LYP/aug-cc-pVTZ";
     static char          *qgen[]   = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
@@ -482,7 +482,9 @@ int alex_bastat(int argc, char *argv[])
         { "-histo", FALSE, etBOOL, {&bHisto},
           "Print (hundreds of) xvg files containing histograms for bonds, angles and dihedrals" },
         { "-compress", FALSE, etBOOL, {&compress},
-          "Compress output XML file" }
+          "Compress output XML file" },
+        { "-bondorder", FALSE, etBOOL, {&bBondOrder},
+          "Make separate bonds for different bond orders" }
     };
     //alexandria::MolDip    md;
     FILE                 *fp;
@@ -572,10 +574,10 @@ int alex_bastat(int argc, char *argv[])
                 }
                 continue;
             }
-#define ATP(ii) gmx_poldata_atype_to_btype(pd, *mmi.topology_->atoms.atomtype[ii])
+#define BTP(ii) gmx_poldata_atype_to_btype(pd, *mmi.topology_->atoms.atomtype[ii])
             for (i = 0; (i < mmi.topology_->atoms.nr); i++)
             {
-                if (NULL == ATP(i))
+                if (NULL == BTP(i))
                 {
                     if (NULL != debug)
                     {
@@ -594,18 +596,30 @@ int alex_bastat(int argc, char *argv[])
                 int         ai = mmi.ltop_->idef.il[ftb].iatoms[j+1];
                 int         aj = mmi.ltop_->idef.il[ftb].iatoms[j+2];
                 rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
-                const char *cai = ATP(ai);
-                const char *caj = ATP(aj);
-                for (alexandria::BondIterator bi = mmi.BeginBond(); (bi < mmi.EndBond()); bi++)
+                const char *cai = BTP(ai);
+                const char *caj = BTP(aj);
+                if ((NULL != cai) && (NULL != caj))
                 {
-                    int xi, xj, xb;
-                    bi->Get(&xi, &xj, &xb);
-                    if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
+                    for (alexandria::BondIterator bi = mmi.BeginBond(); (bi < mmi.EndBond()); bi++)
                     {
-                        add_bond(fp, mmi.GetMolname().c_str(), b, cai, caj, 1000*norm(dx),
-                                 bspacing, xb);
-                        break;
+                        int xi, xj, xb;
+                        bi->Get(&xi, &xj, &xb);
+                        if (!bBondOrder)
+                        {
+                            xb = 1;
+                        }
+                        if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
+                        {
+                            add_bond(fp, mmi.GetMolname().c_str(), b, cai, caj, 1000*norm(dx),
+                                     bspacing, xb);
+                            break;
+                        }
                     }
+                }
+                else
+                {
+                    fprintf(stderr, "No bond_atom type for either %s or %s\n",
+                            BTP(ai), BTP(aj));
                 }
             }
             for (int j = 0; (j < mmi.ltop_->idef.il[fta].nr); j += interaction_function[fta].nratoms+1)
@@ -616,10 +630,18 @@ int alex_bastat(int argc, char *argv[])
                 rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
                 rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
                 double      ang = RAD2DEG*gmx_angle(dx, dx2);
-                const char *cai = ATP(ai);
-                const char *caj = ATP(aj);
-                const char *cak = ATP(ak);
-                add_angle(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, ang, aspacing);
+                const char *cai = BTP(ai);
+                const char *caj = BTP(aj);
+                const char *cak = BTP(ak);
+                if ((NULL != cai) && (NULL != caj) && (NULL != cak))
+                {
+                    add_angle(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, ang, aspacing);
+                }
+                else
+                {
+                    fprintf(stderr, "No bond_atom type for either %s, %s or %s\n",
+                            BTP(ai), BTP(aj), BTP(ak));
+                }
             }
             clear_mat(box);
             set_pbc(&pbc, epbcNONE, box);
@@ -634,11 +656,19 @@ int alex_bastat(int argc, char *argv[])
                                                mmi.x_[ak], mmi.x_[al],
                                                &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
                                                &sign, &t1, &t2, &t3);
-                const char *cai = ATP(ai);
-                const char *caj = ATP(aj);
-                const char *cak = ATP(ak);
-                const char *cal = ATP(al);
-                add_dih(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdPDIHS);
+                const char *cai = BTP(ai);
+                const char *caj = BTP(aj);
+                const char *cak = BTP(ak);
+                const char *cal = BTP(al);
+                if ((NULL != cai) && (NULL != caj) && (NULL != cak) && (NULL != cal))
+                {
+                    add_dih(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdPDIHS);
+                }
+                else
+                {
+                    fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
+                            BTP(ai), BTP(aj), BTP(ak), BTP(al));
+                }
             }
 
             for (int j = 0; (j < mmi.ltop_->idef.il[fti].nr); j += interaction_function[fti].nratoms+1)
@@ -651,11 +681,19 @@ int alex_bastat(int argc, char *argv[])
                                                mmi.x_[ak], mmi.x_[al],
                                                &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
                                                &sign, &t1, &t2, &t3);
-                const char *cai = ATP(ai);
-                const char *caj = ATP(aj);
-                const char *cak = ATP(ak);
-                const char *cal = ATP(al);
-                add_dih(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdIDIHS);
+                const char *cai = BTP(ai);
+                const char *caj = BTP(aj);
+                const char *cak = BTP(ak);
+                const char *cal = BTP(al);
+                if ((NULL != cai) && (NULL != caj) && (NULL != cak) && (NULL != cal))
+                {
+                    add_dih(fp, mmi.GetMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdIDIHS);
+                }
+                else
+                {
+                    fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
+                            BTP(ai), BTP(aj), BTP(ak), BTP(al));
+                }
             }
         }
     }

@@ -25,11 +25,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gromacs/legacyheaders/string2.h"
-#include "gromacs/commandline/pargs.h"
+#include "gromacs/legacyheaders/atomprop.h"
+#include "gromacs/legacyheaders/physics.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
-#include "gromacs/legacyheaders/atomprop.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"
 
@@ -64,14 +66,21 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
               
   fprintf(fp,"[ defaults ]\n");
   fprintf(fp,"; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ\n");
+  const char *ff = gmx_poldata_get_vdw_function(pd);
+  if (strcasecmp(ff,"LJ_SR") == 0) 
+  {
+      ff = "LJ";
+  }
   fprintf(fp,"%s              %s              yes             %lf     %lf\n\n",
-          gmx_poldata_get_vdw_function(pd),
+          ff,
           gmx_poldata_get_combination_rule(pd),
           gmx_poldata_get_fudgeLJ(pd),
           gmx_poldata_get_fudgeQQ(pd));
 
   fprintf(fp,"[ atomtypes ]\n");
-  fprintf(fp,"; name      at.num  mass     charge ptype  repulsion  dispersion\n");
+  fprintf(fp,"%-7s%-6s  %6s  %12s  %10s  %5s  %-s\n",
+          "; atype", "btype", "at.num", "mass", "charge", "ptype", 
+          "Van der Waals");
 
   gt_old = NULL;
   nline = 2;
@@ -90,10 +99,12 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
           atomnumber = gmx_atomprop_atomnumber(aps,elem);
           if ((NULL == gt_old) || (strcmp(gt_old,gt_type) != 0))
           {
-              fprintf(fp,"%5s   %3d  %12.6f  %10.4f  A  %-s\n",
-                      gt_type,atomnumber,mass,0.0,vdwparams);
-              fprintf(fp,"%5ss  %3d  %12.6f  %10.4f  S  0  0\n",
-                      gt_type,0,0.0,0.0);
+              char sgt_type[32];
+              snprintf(sgt_type, 32, "%s_s", gt_type);
+              fprintf(fp,"%-6s %-6s %6d  %12.6f  %10.4f  A     %-s\n",
+                      gt_type, btype, atomnumber, mass, 0.0, vdwparams);
+              fprintf(fp,"%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",
+                      sgt_type, "MW", 0, 0.0, 0.0);
               if (0 == (nline % maxline)) 
               {
                   end_table(tp);
@@ -130,7 +141,8 @@ static void do_brule(FILE *tp, gmx_poldata_t pd)
   nr = 1;
   while (0 != gmx_poldata_get_bonding_rule(pd,&rule,&gt_type,&geometry,&numbonds,
                                            &valence,&bAromatic,&neighbors)) {
-    if (0 == (nline % maxline)) {
+    if (0 == (nline % maxline)) 
+    {
       end_table(tp);
       sprintf(pbuf,"brule%d",++npage);
       fprintf(tp,"\\addtocounter{table}{-1}\n");
@@ -145,6 +157,30 @@ static void do_brule(FILE *tp, gmx_poldata_t pd)
   end_table(tp);
 }
   
+static int inverse_ifunc_index(directive d, int ftype)
+{
+    int i;
+    
+    for(i = 1; (i<F_NRE); i++) 
+    {
+        int ifi = ifunc_index(d, i);
+        if ((ifi == ftype) || (ifi == -1))
+        {
+            break;
+        }
+    }
+    if ((i < F_NRE) && (i != -1))
+    {
+        return i;
+    }
+    else
+    {
+        fprintf(stderr, "Could not find the right %s type, setting to 1\n",
+                dir2str(d));
+    }
+    return 1;
+}
+
 static void do_bad(FILE *fp, FILE *tp, gmx_poldata_t pd)
 {
   int bts[ebtsNR];
@@ -154,11 +190,6 @@ static void do_bad(FILE *fp, FILE *tp, gmx_poldata_t pd)
   double length,ang,sigma,bondorder;
   
   lu = gmx_poldata_get_length_unit(pd);
-  bts[ebtsBONDS] = gmx_poldata_get_bond_ftype(pd);
-  bts[ebtsANGLES] = gmx_poldata_get_angle_ftype(pd);
-  bts[ebtsPDIHS] = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
-  bts[ebtsIDIHS] = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
-  
   /* Bondtypes */
   strcpy(colinfo,"ccccccl");
   sprintf(hbuf,"Nr. & i & j & Length (%s) & Ntrain & Bond order & Params",lu);
@@ -170,10 +201,14 @@ static void do_bad(FILE *fp, FILE *tp, gmx_poldata_t pd)
   nline = 2;
   npage = 0;
   nr = 1;
+  bts[ebtsBONDS] = inverse_ifunc_index(d_bonds, gmx_poldata_get_bond_ftype(pd));
   while (0 < gmx_poldata_get_bond(pd,&ai,&aj,&length,&sigma,&ntrain,
-                                  &bondorder,&params)) {
-    if (ntrain > 0) {
-      fprintf(fp,"%-5s  %-5s   %d  %g  %s\n",ai,aj,bts[ebtsBONDS],length,params);
+                                  &bondorder,&params)) 
+  {
+    if (ntrain > 0) 
+    {
+        fprintf(fp,"%-5s  %-5s   %d  %g  %s\n",ai,aj,bts[ebtsBONDS],
+                convert2gmx(length, string2unit(lu)), params);
       if (0 == (nline % maxline)) {
         end_table(tp);
         sprintf(pbuf,"btype%d",++npage);
@@ -199,6 +234,7 @@ static void do_bad(FILE *fp, FILE *tp, gmx_poldata_t pd)
   nline = 2;
   npage = 0;
   nr = 1;
+  bts[ebtsANGLES] = inverse_ifunc_index(d_angles, gmx_poldata_get_angle_ftype(pd));
   while (0 < gmx_poldata_get_angle(pd,&ai,&aj,&ak,&ang,&sigma,&ntrain,&params)) {
     if (ntrain > 0) {
       fprintf(fp,"%-5s  %-5s  %-5s  %d  %g  %s\n",ai,aj,ak,bts[ebtsANGLES],length,params);
@@ -227,6 +263,8 @@ static void do_bad(FILE *fp, FILE *tp, gmx_poldata_t pd)
   nline = 2;
   npage = 0;
   nr = 1;
+  bts[ebtsPDIHS] = inverse_ifunc_index(d_dihedrals, 
+                                       gmx_poldata_get_dihedral_ftype(pd, egdPDIHS));
   while (0 < gmx_poldata_get_dihedral(pd,egdPDIHS,&ai,&aj,&ak,&al,&ang,&sigma,&ntrain,&params)) {
     if (ntrain > 0) {
       fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %.1f  %s\n",
@@ -256,6 +294,8 @@ static void do_bad(FILE *fp, FILE *tp, gmx_poldata_t pd)
   nline = 2;
   npage = 0;
   nr = 1;
+  bts[ebtsIDIHS] = inverse_ifunc_index(d_dihedrals, 
+                                       gmx_poldata_get_dihedral_ftype(pd, egdIDIHS));
   while (0 < gmx_poldata_get_dihedral(pd,egdIDIHS,&ai,&aj,&ak,&al,&ang,&sigma,&ntrain,&params)) {
     if (ntrain > 0) {
       fprintf(fp,"%-5s  %-5s  %-5s  %-5s  %d  %.1f  %s\n",
@@ -290,7 +330,7 @@ int alex_gen_ff(int argc,char *argv[])
     }
     
     gmx_atomprop_t aps = gmx_atomprop_init();
-    gmx_poldata_t pd   = gmx_poldata_read(NULL,aps);
+    gmx_poldata_t pd   = gmx_poldata_read("gentop.dat",aps);
     FILE *tp = fopen("forcefield.tex","w");
     fprintf(tp,"%% Generated by gen_ff\n");
     fprintf(tp,"%% Copyright 2013 David van der Spoel\n");

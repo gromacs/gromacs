@@ -120,8 +120,8 @@ int ifunc_index(directive d, int type)
                 case 10:
                     return F_RESTRBONDS;
                 default:
-                    gmx_fatal(FARGS, "Invalid bond type %d", type);
-                    break;
+                    fprintf(stderr, "Invalid bond type %d\n", type);
+                    return -1;
             }
             break;
         case d_angles:
@@ -145,8 +145,8 @@ int ifunc_index(directive d, int type)
                 case 9:
                     return F_LINEAR_ANGLES;
                 default:
-                    gmx_fatal(FARGS, "Invalid angle type %d", type);
-                    break;
+                    fprintf(stderr, "Invalid angle type %d\n", type);
+                    return -1;
             }
             break;
         case d_pairs:
@@ -161,7 +161,8 @@ int ifunc_index(directive d, int type)
             }
             else
             {
-                gmx_fatal(FARGS, "Invalid pairs type %d", type);
+                fprintf(stderr, "Invalid pairs type %d\n", type);
+                return -1;
             }
             break;
         case d_pairs_nb:
@@ -185,7 +186,8 @@ int ifunc_index(directive d, int type)
                 case 9:
                     return F_PDIHS; /* proper dihedrals where we allow multiple terms over single bond */
                 default:
-                    gmx_fatal(FARGS, "Invalid dihedral type %d", type);
+                    fprintf(stderr, "Invalid dihedral type %d\n", type);
+                    return -1;
             }
             break;
         case d_cmaptypes:
@@ -215,7 +217,8 @@ int ifunc_index(directive d, int type)
                 case 4:
                     return F_VSITE3OUT;
                 default:
-                    gmx_fatal(FARGS, "Invalid vsites3 type %d", type);
+                    fprintf(stderr, "Invalid vsites3 type %d\n", type);
+                    return -1;
             }
             break;
         case d_vsites4:
@@ -226,7 +229,8 @@ int ifunc_index(directive d, int type)
                 case 2:
                     return F_VSITE4FDN;
                 default:
-                    gmx_fatal(FARGS, "Invalid vsites4 type %d", type);
+                    fprintf(stderr, "Invalid vsites4 type %d\n", type);
+                    return -1;
             }
             break;
         case d_vsitesn:
@@ -240,7 +244,8 @@ int ifunc_index(directive d, int type)
                 case 2:
                     return F_CONSTRNC;
                 default:
-                    gmx_fatal(FARGS, "Invalid constraints type %d", type);
+                    fprintf(stderr, "Invalid constraints type %d\n", type);
+                    return -1;
             }
             break;
         case d_settles:
@@ -254,7 +259,8 @@ int ifunc_index(directive d, int type)
                     return F_FBPOSRES;
                     break;
                 default:
-                    gmx_fatal(FARGS, "Invalid position restraint type %d", type);
+                    fprintf(stderr, "Invalid position restraint type %d\n", type);
+                    return -1;
             }
             break;
         case d_polarization:
@@ -265,7 +271,8 @@ int ifunc_index(directive d, int type)
                 case 2:
                     return F_ANHARM_POL;
                 default:
-                    gmx_fatal(FARGS, "Invalid polarization type %d", type);
+                    fprintf(stderr, "Invalid polarization type %d\n", type);
+                    return -1;
             }
             break;
         case d_thole_polarization:
@@ -283,8 +290,8 @@ int ifunc_index(directive d, int type)
         case d_dihedral_restraints:
             return F_DIHRES;
         default:
-            gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%s)",
-                      dir2str(d), __FILE__, __LINE__);
+            fprintf(stderr, "invalid directive %d in ifunc_index (%s:%d)",
+                    (int)d, __FILE__, __LINE__);
     }
     return -1;
 }

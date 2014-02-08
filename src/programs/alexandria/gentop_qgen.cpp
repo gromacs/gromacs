@@ -967,8 +967,9 @@ int generate_charges(FILE *fp,
     real chieq, chi2, chi2min = GMX_REAL_MAX;
 
     /* Generate charges */
-    if (qgen->iModel == eqgRESP)
+    switch (qgen->iModel)
     {
+    case eqgRESP:
         if (NULL == gr)
         {
             gmx_incons("No RESP data structure");
@@ -1012,9 +1013,8 @@ int generate_charges(FILE *fp,
             qgen_print(fp, atoms, qgen);
         }
         qgen->eQGEN = eQGEN_min;
-    }
-    else
-    {
+        break;
+    default:
         /* Use empirical algorithms */
         if (fp)
         {

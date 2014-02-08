@@ -1,6 +1,6 @@
 /*
  * alexandria - driver program for tools that are part of the
- * Alexandria force field. 
+ * Alexandria force field.
  * Output files are compatible with GROMACS 5.0 or newer.
  *
  * Copyright (C) 2014 David van der Spoel and Paul J. van Maaren
@@ -53,7 +53,7 @@ static void dump_it(t_manager *man)
 {
     t_psdata ps;
 
-        ps = ps_open("view.ps", 0, 0, man->molw->wd.width, man->molw->wd.height);
+    ps = ps_open("view.ps", 0, 0, man->molw->wd.width, man->molw->wd.height);
     ps_draw_mol(ps, man);
     ps_close(ps);
 }

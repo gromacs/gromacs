@@ -446,6 +446,10 @@ int alex_gentop(int argc, char *argv[])
         {
             printf("Will read (gaussian) file %s\n", fn);
         }
+        if (strlen(molnm) == 0)
+        {
+            molnm = (char *)"XXX";
+        }
         ReadGauss(fn, mp, gap, bBabel, aps, pd, molnm, iupac, conf, basis,
                   maxpot, bVerbose, gmx_poldata_get_force_field(pd));
         mps.push_back(mp);

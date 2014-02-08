@@ -1150,7 +1150,6 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
             }
             break;
         case eqgESP:
-            fprintf(stderr, "ESP not implemented right now\n");
             break;
         case eqgNone:
             /* Check which algorithm to use for charge generation */
@@ -1439,9 +1438,9 @@ void MyMol::PrintTopology(const char *fn, ChargeGenerationModel iModel, bool bVe
     fp   = ffopen(fn, "w");
     if (!bITP)
     {
-        print_top_header(fp, fn, bITP,
-                         GetForceField().c_str(),
-                         1.0, "No Comment");
+        std::string ff = GetForceField();
+        ff.append(".ff");
+        print_top_header(fp, fn, bITP, ff.c_str(), 1.0, "Check your output");
     }
 
     /* Make pdb2gmx compatible bts array
