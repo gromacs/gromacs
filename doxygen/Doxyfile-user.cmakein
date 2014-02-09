@@ -4,6 +4,7 @@
 # exclude them from the generated file list
 EXCLUDE               += @CMAKE_SOURCE_DIR@/src/programs
 EXCLUDE               += @CMAKE_SOURCE_DIR@/src/testutils
+EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/doxygen.md
 EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/unittesting.md
 EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/wrapperbinary.md
 
@@ -15,7 +16,5 @@ HTML_OUTPUT            = html-user
 
 ALIASES               += inpublicapi="\ingroup group_publicapi"
 ALIASES               += inlibraryapi="\ingroup group_libraryapi"
-ALIASES               += addtopublicapi="\addtogroup group_publicapi"
-ALIASES               += addtolibraryapi="\addtogroup group_libraryapi"
 ALIASES               += libinternal="\internal"
 ALIASES               += endlibinternal="\endinternal"
