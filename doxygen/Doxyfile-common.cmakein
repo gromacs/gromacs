@@ -6,7 +6,8 @@ INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@ \
                          @CMAKE_SOURCE_DIR@/share/template
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
-EXCLUDE                = @CMAKE_SOURCE_DIR@/src/contrib \
+EXCLUDE                = @CMAKE_SOURCE_DIR@/doxygen/examples \
+                         @CMAKE_SOURCE_DIR@/src/contrib \
                          @CMAKE_SOURCE_DIR@/src/external \
                          @CMAKE_SOURCE_DIR@/src/gromacs/legacyheaders/thread_mpi/atomic \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
@@ -43,6 +44,7 @@ GENERATE_LATEX         = NO
 # Setting this to NO has a side effect to hide undocumented headers from the
 # file list, which makes it generally look nicer.
 VERBATIM_HEADERS       = NO
+STRIP_CODE_COMMENTS    = NO
 
 EXTRACT_LOCAL_CLASSES  = NO
 
