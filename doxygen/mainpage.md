@@ -22,6 +22,8 @@ to be used outside a single module.
 \elseif libapi
 documentation of functions in the library intended for reuse within the
 library (a subset of these functions is also exposed as a public API).
+Also overview documentation aimed at \Gromacs developers is included at this
+level.
 
 The main audience for this level of detail are users and developers who want to
 understand the \Gromacs code in general.
@@ -38,7 +40,8 @@ preliminary, and subject to change.
 The main audience for this level of detail are users of \Gromacs who are
 interested in writing their own analysis tools that use \Gromacs as a library,
 as well as other developers who want to link against \Gromacs.
-To understand the inner workings of \Gromacs, see the more detailed
+To understand the inner workings of \Gromacs, or if you want to contribute to
+\Gromacs, see the more detailed
 [library API documentation](../html-lib/index.xhtml) or
 [full documentation](../html-full/index.xhtml).
 \endif
@@ -56,6 +59,9 @@ give an overview of some of the topics that are documented:
    Provides general guidance for writing software that uses the \Gromacs
    library.
 \if libapi
+ - \subpage page_doxygen <br/>
+   Provides an overview and some instructions for using Doxygen to document the
+   source code.
  - \subpage page_unittesting <br/>
    Provides an overview of unit testing in \Gromacs.
  - \subpage page_wrapperbinary <br/>

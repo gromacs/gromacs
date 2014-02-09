@@ -17,7 +17,5 @@ INLINE_INHERITED_MEMB  = NO  # Makes it easier to go through all documentation
 
 ALIASES               += inpublicapi="\ingroup group_publicapi"
 ALIASES               += inlibraryapi="\ingroup group_libraryapi"
-ALIASES               += addtopublicapi="\addtogroup group_publicapi"
-ALIASES               += addtolibraryapi="\addtogroup group_libraryapi"
 ALIASES               += libinternal=
 ALIASES               += endlibinternal=
