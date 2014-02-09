@@ -4,6 +4,7 @@
 # exclude them from the generated file list
 EXCLUDE               += @CMAKE_SOURCE_DIR@/src/programs
 EXCLUDE               += @CMAKE_SOURCE_DIR@/src/testutils
+EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/doxygen.md
 EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/unittesting.md
 EXCLUDE               += @CMAKE_SOURCE_DIR@/doxygen/wrapperbinary.md
 
