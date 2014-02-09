@@ -33,7 +33,6 @@
 #include "string2.h"
 #include "vec.h"
 #include "copyrite.h"
-//#include "gstat.h"
 #include "gmx_fatal.h"
 #include "names.h"
 #include "gromacs/commandline/pargs.h"
@@ -157,7 +156,8 @@ static void dump_csv(gmx_poldata_t pd,
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "Supported molecule %s has unsupported atom %s (ptype %s)", mpi->GetMolname().c_str(), atomname, ptype);
+                    gmx_fatal(FARGS, "Supported molecule %s has unsupported atom %s (ptype %s)",
+                              mpi->GetMolname().c_str(), atomname, ptype);
                 }
             }
             for (int i = 0; (i < ntest); i++)
@@ -175,7 +175,6 @@ static void dump_csv(gmx_poldata_t pd,
     {
         gmx_fatal(FARGS, "Consistency error: nusemol = %d, nn = %d", nusemol, nn);
     }
-
 }
      
 static int decompose_frag(FILE *fplog,
@@ -215,6 +214,7 @@ static int decompose_frag(FILE *fplog,
     }
     int iter      = 1;
     int nmol_orig = mp.size();
+    // Check whether molecules have all supported atom types, remove the molecule otherwise
     do
     {
         if (NULL != fplog)
@@ -225,7 +225,7 @@ static int decompose_frag(FILE *fplog,
         nusemol = 0;
         poltot  = 0;
         j       = 0;
-        for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++, j++)
+        for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); j++)
         {
             iMolSelect ims  = gmx_molselect_status(gms, mpi->GetIupac().c_str());
 
@@ -238,11 +238,11 @@ static int decompose_frag(FILE *fplog,
             bUseMol[j] = ((imsTrain == ims) && bPol && (pol > 0) &&
                           (mci != mpi->EndMolecularComposition()));
 
-            /* Now check for the right composition */
+            /* Now check whether all atoms have supported ptypes */
             for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
                  (bUseMol[j] && (ani < mci->EndAtomNum())); ani++)
             {
-                double      apol, spol;
+                double      apol = 0, spol = 0;
                 const char *atomname = ani->GetAtom().c_str();
                 const char *ptype    = gmx_poldata_atype_to_ptype(pd, atomname);
                 if (NULL == ptype)
@@ -256,12 +256,14 @@ static int decompose_frag(FILE *fplog,
                 }
                 else if (0 == gmx_poldata_get_ptype_pol(pd, ptype, &apol, &spol))
                 {
+                    /* No polarizability found for this one, seems unnecessary
+                     * as we first lookup the polarizability ptype */
                     bUseMol[j] = false;
+                    fprintf(stderr, "Dit mag nooit gebeuren %s %d\n", __FILE__, __LINE__);
                 }
                 else if (apol > 0)
                 {
                     bUseMol[j] = false;
-                    pol       -= apol*ani->GetNumber();
                 }
             }
             if (NULL != debug)
@@ -278,12 +280,15 @@ static int decompose_frag(FILE *fplog,
                 x[nusemol] = pol;
                 poltot    += pol;
                 nusemol++;
+                mpi++;
             }
             else
             {
                 mpi = mp.erase(mpi);
             }
         }
+        // Now we have checked all molecules, now check whether the ptypes still have support
+        // in experimental/QM polarizabilities
         ntest[cur] = 0;
         int ntp = 0;
         while (1 == gmx_poldata_get_ptype(pd, &ptype, NULL, NULL, &pol, NULL))
@@ -312,6 +317,7 @@ static int decompose_frag(FILE *fplog,
                 if (bUseAtype[ntp])
                 {
                     ntest[cur]++;
+                    ntp++;
                 }
                 else
                 {
@@ -330,40 +336,21 @@ static int decompose_frag(FILE *fplog,
                             ptype, pol);
                 }
             }
-            ntp++;
         }
     }
     while (ntest[cur] < ntest[prev]);
-    if (ntest[cur] == 0)
-    {
-        gmx_fatal(FARGS, "Nothing to optimize. Check your input");
-    }
+
     if ((int)mp.size() < nmol_orig)
     {
         printf("Reduced number of molecules from %d to %d\n", nmol_orig, (int)mp.size());
     }
+    if (ntest[cur] == 0)
+    {
+        printf("No polarization types to optimize. Check your input.\n");
+        return 0;
+    }
 
-    //! Now condense array of atom types
     for (int i = 0; (i < ntmax); i++)
-    {
-        double apol, spol;
-        if (bUseAtype[i] &&
-            (gmx_poldata_get_ptype_pol(pd, atype[i], &apol, &spol) == 1))
-        {
-            bUseAtype[i] = (apol == 0);
-        }
-    }
-
-    int i, nt = 0;
-    for (i = 0; (i < ntmax); i++)
-    {
-        if (bUseAtype[i])
-        {
-            nt++;
-        }
-    }
-    ntest[cur] = nt;
-    for (i = 0; (i < ntmax); i++)
     {
         for (int j = i+1; !bUseAtype[i] && (j < ntmax); j++)
         {

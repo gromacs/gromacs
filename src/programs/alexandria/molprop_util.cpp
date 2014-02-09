@@ -72,7 +72,8 @@ void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
     }
     if (mp.size() > 1)
     {
-        printf("Generated composition for %d out of %d molecules.\n",nOK,(int)mp.size());
+        printf("Generated composition for %d out of %d molecules.\n",
+               nOK+1, (int)mp.size());
     }
 }
 

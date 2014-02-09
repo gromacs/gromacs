@@ -1,0 +1,22 @@
+#!/bin/csh -f
+
+setenv DEST        $HOME/software-alexandria
+setenv SW          /opt/local
+setenv OB          $HOME/GG/openbabel-dev/install
+setenv PREFIX      "${SW}:${OB}"
+setenv CPPFLAGS    "-I${SW}/include/boost" 
+
+setenv CC          `which gcc-mp-4.9`
+setenv CXX         `which g++-mp-4.9`
+setenv OMPI_MPICC  $CC
+setenv OMPI_MPICXX $CXX
+setenv MPICC       ${SW}/bin/mpicc-openmpi-mp
+setenv MPICXX      ${SW}/bin/mpicxx-openmpi-mp
+
+mkdir build
+cd build
+
+cmake -DGMX_CXX11=OFF -DGMX_SYMLINK_OLD_BINARY_NAMES=OFF -DGMX_BUILD_UNITTESTS=OFF -DGMX_CPU_ACCELERATION=SSE4.1 -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=$DEST -DCMAKE_CXX_COMPILER=$MPICXX -DCMAKE_C_COMPILER=$MPICC -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_PREFIX_PATH='${OB};${SW}' -DBUILD_SHARED_LIBS:BOOL=OFF -DGMX_DEFAULT_SUFFIX=OFF ..
+
+make install
+
