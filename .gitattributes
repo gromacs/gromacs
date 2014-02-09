@@ -27,6 +27,8 @@ cmake/*.c                               !filter
 cmake/*.c.cmakein                       !filter
 doxygen/Doxyfile-*.cmakein              !filter
 doxygen/*.cpp                           !filter
+doxygen/examples/*.cpp                  filter=uncrustify_only
+doxygen/examples/*.c                    filter=uncrustify_only
 manual/UseLATEX.cmake                   !filter
 scripts/GMXRC.*                         !filter
 scripts/make_gromos_rtp.py              !filter
