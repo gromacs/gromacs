@@ -1,22 +1,25 @@
 #!/bin/csh -f
 
 setenv DEST        $HOME/software-alexandria
-setenv SW          /opt/local
+setenv SW          /home/apps
 setenv OB          $HOME/GG/openbabel-dev/install
+setenv SQ3	   /opt/sqlite
 setenv CPPFLAGS    "-I${SW}/include/boost" 
 
-setenv CC          `which gcc-mp-4.9`
-setenv CXX         `which g++-mp-4.9`
+setenv CC          `which gcc`
+setenv CXX         `which g++`
 setenv OMPI_MPICC  $CC
 setenv OMPI_MPICXX $CXX
-setenv MPICC       ${SW}/bin/mpicc-openmpi-mp
-setenv MPICXX      ${SW}/bin/mpicxx-openmpi-mp
+setenv MPICC       `which mpicc`
+setenv MPICXX      `which mpicxx`
 
 mkdir build
 cd build
 
+#-DCMAKE_CXX_COMPILER=$MPICXX -DCMAKE_C_COMPILER=$MPICC
+
 echo "running cmake. output in cmake.log"
-cmake -DGMX_DEFAULT_SUFFIX=OFF -DGMX_CXX11=OFF -DGMX_SYMLINK_OLD_BINARY_NAMES=OFF -DGMX_BUILD_UNITTESTS=OFF -DGMX_CPU_ACCELERATION=SSE4.1 -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=$DEST -DCMAKE_CXX_COMPILER=$MPICXX -DCMAKE_C_COMPILER=$MPICC -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_PREFIX_PATH="${SW}:${OB}" -DBUILD_SHARED_LIBS:BOOL=OFF -DGMX_DEFAULT_SUFFIX=OFF .. >& cmake.log
+cmake -DGMX_ALEXANDRIA=ON -DGMX_LOAD_PLUGINS:BOOL=OFF -DGMX_DEFAULT_SUFFIX=OFF -DGMX_CXX11=OFF -DGMX_SYMLINK_OLD_BINARY_NAMES=OFF -DGMX_BUILD_UNITTESTS=OFF -DGMX_CPU_ACCELERATION=SSE4.1 -DGMX_OPENMP=OFF -DGMX_MPI=ON -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=$DEST  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH:PATH=${SW}:${OB}:${SQ3} -DBUILD_SHARED_LIBS:BOOL=OFF -DGMX_DEFAULT_SUFFIX=OFF .. >& cmake.log
 
 echo "running make. output in make.log"
 make install >& make.log
