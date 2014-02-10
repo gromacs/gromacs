@@ -69,6 +69,9 @@
 
         vx_tz_S = gmx_simd4_mul_r(vx_S, tz_S);
 
+        /* TODO: For MIC the unaligned load/store is only needed in 3/16 cases (if k0%16 is 13,14,or 15).
+           Add a if statement and use the aligned for the majority. Because k0 doesn't change in
+           the loop, the branch can be outside the loop and should be faster than this */
         gri_S0 = gmx_simd4_loadu_r(grid+index_x+(j0+0)*pnz+k0);
         gri_S1 = gmx_simd4_loadu_r(grid+index_x+(j0+1)*pnz+k0);
         gri_S2 = gmx_simd4_loadu_r(grid+index_x+(j0+2)*pnz+k0);
