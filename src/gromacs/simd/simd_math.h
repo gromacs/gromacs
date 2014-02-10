@@ -104,6 +104,63 @@ gmx_simd_sum4_f(gmx_simd_float_t a, gmx_simd_float_t b,
     return gmx_simd_add_f(gmx_simd_add_f(a, b), gmx_simd_add_f(c, d));
 }
 
+#ifndef GMX_SIMD_HAVE_REDUCE
+/*! \brief Computes the sum of the first 2 elements of vector x
+ *
+ * You should normally call the real-precision routine \ref gmx_simd_reduce2_r.
+ *
+ * \param x Argument.
+ * \param b Aligned temporary memory buffer
+ * \return sum of first 2 elements of x
+ */
+static gmx_inline float
+gmx_simd_reduce2_f(gmx_simd_float_t x, float* b)
+{
+    gmx_simd_store_f(b, x);
+    return b[0]+b[1];
+}
+
+#if GMX_SIMD_FLOAT_WIDTH == 2 || defined DOXYGEN
+/*! \brief Computes the sum of the elements of vector x
+ *
+ * You should normally call the real-precision routine \ref gmx_simd_reduce_r.
+ *
+ * \param x Argument.
+ * \param b Aligned temporary memory buffer
+ * \return sum of elements of x
+ */
+static gmx_inline float gmx_simd_reduce_f(gmx_simd_float_t x, float* b)
+{
+    gmx_simd_store_f(b, x);
+    return b[0]+b[1];
+}
+#elif GMX_SIMD_FLOAT_WIDTH == 4
+static gmx_inline float gmx_simd_reduce_f(gmx_simd_float_t x, float* b)
+{
+    gmx_simd_store_f(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+#elif GMX_SIMD_FLOAT_WIDTH == 8
+static gmx_inline float gmx_simd_reduce_f(gmx_simd_float_t x, float* b)
+{
+    gmx_simd_store_f(b, x);
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7];
+}
+#elif GMX_SIMD_FLOAT_WIDTH == 16
+/* This is getting ridiculous, SIMD horizontal adds would help,
+ * but this is not performance critical (only used to reduce energies)
+ */
+static gmx_inline float gmx_simd_reduce_f(gmx_simd_float_t x, float* b)
+{
+    gmx_simd_store_f(b, x);
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]+b[9]+b[10]+b[11]+b[12]+b[13]+b[14]+b[15];
+}
+#else
+#error "unsupported simd width configuration"
+#endif
+#endif //GMX_SIMD_HAVE_REDUCE
+
+
 /*! \brief Return -a if b is negative, SIMD float.
  *
  * You should normally call the real-precision routine \ref gmx_simd_xor_sign_r.
@@ -1309,6 +1366,54 @@ gmx_simd_sum4_d(gmx_simd_double_t a, gmx_simd_double_t b,
 {
     return gmx_simd_add_d(gmx_simd_add_d(a, b), gmx_simd_add_d(c, d));
 }
+
+#ifndef GMX_SIMD_HAVE_REDUCE
+/*! \brief Computes the sum of the first 2 elements of vector x
+ *
+ * \copydetails gmx_simd_reduce2_f
+ */
+static gmx_inline double
+gmx_simd_reduce2_d(gmx_simd_double_t x, double* b)
+{
+    gmx_simd_store_d(b, x);
+    return b[0]+b[1];
+}
+
+#if GMX_SIMD_DOUBLE_WIDTH == 2 || defined DOXYGEN
+/*! \brief Computes the sum of the elements of vector x
+ *
+ * \copydetails gmx_simd_reduce_f
+ */
+static gmx_inline double gmx_simd_reduce_d(gmx_simd_double_t x, double* b)
+{
+    gmx_simd_store_d(b, x);
+    return b[0]+b[1];
+}
+#elif GMX_SIMD_DOUBLE_WIDTH == 4
+static gmx_inline double gmx_simd_reduce_d(gmx_simd_double_t x, double* b)
+{
+    gmx_simd_store_d(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+#elif GMX_SIMD_DOUBLE_WIDTH == 8
+static gmx_inline double gmx_simd_reduce_d(gmx_simd_double_t x, double* b)
+{
+    gmx_simd_store_d(b, x);
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7];
+}
+#elif GMX_SIMD_DOUBLE_WIDTH == 16
+/* This is getting ridiculous, SIMD horizontal adds would help,
+ * but this is not performance critical (only used to reduce energies)
+ */
+static gmx_inline double gmx_simd_reduce_d(gmx_simd_double_t x, double* b)
+{
+    gmx_simd_store_d(b, x);
+    return b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]+b[9]+b[10]+b[11]+b[12]+b[13]+b[14]+b[15];
+}
+#else
+#error "unsupported simd width configuration"
+#endif
+#endif //GMX_SIMD_HAVE_REDUCE
 
 /*! \brief Return -a if b is negative, SIMD double.
  *
@@ -2656,6 +2761,24 @@ gmx_simd4_sum4_f(gmx_simd4_float_t a, gmx_simd4_float_t b,
     return gmx_simd4_add_f(gmx_simd4_add_f(a, b), gmx_simd4_add_f(c, d));
 }
 
+#ifndef GMX_SIMD_HAVE_REDUCE
+/*! \brief Computes the sum of the elements of SIMD4 x
+ *
+ * You should normally call the real-precision routine \ref gmx_simd4_reduce_r.
+ *
+ * \param x Argument.
+ * \param b Aligned temporary memory buffer
+ * \return sum of elements of x
+ */
+static gmx_inline float
+gmx_simd4_reduce_f(gmx_simd4_float_t x, float* b)
+{
+    gmx_simd4_store_f(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+#endif
+
+
 /*! \brief Perform one Newton-Raphson iteration to improve 1/sqrt(x) for SIMD4 float.
  *
  * \copydetails gmx_simd_rsqrt_iter_f
@@ -2711,6 +2834,19 @@ gmx_simd4_sum4_d(gmx_simd4_double_t a, gmx_simd4_double_t b,
     return gmx_simd4_add_d(gmx_simd4_add_d(a, b), gmx_simd4_add_d(c, d));
 }
 
+#ifndef GMX_SIMD_HAVE_REDUCE
+/*! \brief Computes the sum of the elements of SIMD4 x
+ *
+ * \copydetails gmx_simd4_reduce_f
+ */
+static gmx_inline double
+gmx_simd4_reduce_d(gmx_simd4_double_t x, double* b)
+{
+    gmx_simd4_store_d(b, x);
+    return b[0]+b[1]+b[2]+b[3];
+}
+#endif
+
 /*! \brief Perform one Newton-Raphson iteration to improve 1/sqrt(x) for SIMD4 double.
  *
  * \copydetails gmx_simd_rsqrt_iter_f
@@ -2756,6 +2892,8 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
 #ifdef GMX_DOUBLE
 /* Documentation in single branch below */
 #    define gmx_simd_sum4_r           gmx_simd_sum4_d
+#    define gmx_simd_reduce2_r        gmx_simd_reduce2_d
+#    define gmx_simd_reduce_r         gmx_simd_reduce_d
 #    define gmx_simd_xor_sign_r       gmx_simd_xor_sign_d
 #    define gmx_simd_invsqrt_r        gmx_simd_invsqrt_d
 #    define gmx_simd_invsqrt_pair_r   gmx_simd_invsqrt_pair_d
@@ -2777,6 +2915,7 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
 #    define gmx_simd_pmecorrF_r       gmx_simd_pmecorrF_d
 #    define gmx_simd_pmecorrV_r       gmx_simd_pmecorrV_d
 #    define gmx_simd4_sum4_r          gmx_simd4_sum4_d
+#    define gmx_simd4_reduce_r        gmx_simd4_reduce_d
 #    define gmx_simd4_invsqrt_r       gmx_simd4_invsqrt_d
 
 #else /* GMX_DOUBLE */
@@ -2792,6 +2931,18 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
  * \copydetails gmx_simd_sum4_f
  */
 #    define gmx_simd_sum4_r           gmx_simd_sum4_f
+
+/*! \brief Computes the sum of the first 2 elements of vector x
+ *
+ * \copydetails gmx_simd_reduce2_f
+ */
+#    define gmx_simd_reduce2_r           gmx_simd_reduce2_f
+
+/*! \brief Computes the sum of the elements of vector x
+ *
+ * \copydetails gmx_simd_reduce_f
+ */
+#    define gmx_simd_reduce_r           gmx_simd_reduce_f
 
 /*! \brief Return -a if b is negative, SIMD real.
  *
@@ -2923,6 +3074,12 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
  * \copydetails gmx_simd_sum4_f
  */
 #    define gmx_simd4_sum4_r          gmx_simd4_sum4_f
+
+/*! \brief Computes the sum of the elements of SIMD4 x
+ *
+ * \copydetails gmx_simd4_reduce_f
+ */
+#    define gmx_simd4_reduce_r           gmx_simd4_reduce_f
 
 /*! \brief Calculate 1/sqrt(x) for SIMD4 real.
  *
