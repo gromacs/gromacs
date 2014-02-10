@@ -46,27 +46,6 @@ static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 #define mask_loh _mm512_int2mask(0x00FF) /* would be better a constant - but can't initialize with a function call. */
 #define mask_hih _mm512_int2mask(0xFF00)
 
-/* float/double SIMD register type */
-typedef __m512 gmx_simd4_float_t;
-
-static gmx_inline __m512
-gmx_simd4_load_r(const real *r)
-{
-    return _mm512_loadunpacklo_ps(_mm512_undefined_ps(), r);
-}
-
-static gmx_inline void
-gmx_simd4_store_r(real *dest, __m512 src)
-{
-    _mm512_mask_packstorelo_ps(dest, _mm512_int2mask(0xF), src);
-}
-
-static gmx_inline __m512
-gmx_simd4_add_r(__m512 a, __m512 b)
-{
-    return _mm512_add_ps(a, b);
-}
-
 /* Half-width SIMD real type */
 typedef __m512 gmx_mm_hpr; /* high half is ignored */
 
