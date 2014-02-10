@@ -1908,7 +1908,7 @@ static void free_work(pme_work_t *work)
 }
 
 
-#if defined PME_SIMD_SOLVE && defined GMX_SIMD_HAVE_EXP
+#if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
 inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
@@ -1953,7 +1953,7 @@ inline static void calc_exponentials_q(int start, int end, real f, real *d, real
 }
 #endif
 
-#if defined PME_SIMD_SOLVE && defined GMX_SIMD_HAVE_ERFC
+#if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
 inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
 {

@@ -67,8 +67,8 @@
 #undef  GMX_SIMD_HAVE_DINT32_EXTRACT
 #define GMX_SIMD_HAVE_DINT32_LOGICAL
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#undef  GMX_SIMD4_HAVE_FLOAT
-#undef  GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD4_HAVE_FLOAT
+#define GMX_SIMD4_HAVE_DOUBLE
 
 /* Implementation details */
 #define GMX_SIMD_FLOAT_WIDTH        16
@@ -256,6 +256,95 @@
 #define gmx_simd_cvt_f2dd          gmx_simd_cvt_f2dd_mic
 #define gmx_simd_cvt_dd2f          gmx_simd_cvt_dd2f_mic
 
+/****************************************************
+ *      SINGLE PRECISION SIMD4 IMPLEMENTATION       *
+ ****************************************************/
+/* Load and store are guranteed to only access the 4 floats. All arithmetic operations
+   only operate on the 4 elements (to avoid floating excpetions). But other operations
+   are not gurateed to not modify the other 12 elements. E.g. setzero or blendzero
+   set the upper 12 to zero. */
+#define gmx_simd4_float_t          __m512
+#define gmx_simd4_mask             _mm512_int2mask(0xF)
+#define gmx_simd4_load_f(m)        _mm512_mask_loadunpacklo_ps(_mm512_undefined_ps(), gmx_simd4_mask, m)
+#define gmx_simd4_load1_f(m)       _mm512_mask_extload_ps(_mm512_undefined_ps(), gmx_simd4_mask, m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE)
+#define gmx_simd4_set1_f           _mm512_set1_ps
+#define gmx_simd4_store_f(m, a)    _mm512_mask_packstorelo_ps(m, gmx_simd4_mask, a)
+#define gmx_simd4_loadu_f(m)       _mm512_mask_loadunpackhi_ps(_mm512_mask_loadunpacklo_ps(_mm512_undefined_ps(), gmx_simd4_mask, m), gmx_simd4_mask, m+64)
+#define gmx_simd4_storeu_f         _gmx_simd4_storeu_f_mic
+#define gmx_simd4_setzero_f        _mm512_setzero_ps
+#define gmx_simd4_add_f(a,b)       _mm512_mask_add_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
+#define gmx_simd4_sub_f(a,b)       _mm512_mask_sub_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
+#define gmx_simd4_mul_f(a,b)       _mm512_mask_mul_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
+#define gmx_simd4_fmadd_f(a, b, c)  _mm512_mask_fmadd_ps(a, gmx_simd4_mask, b, c)
+#define gmx_simd4_fmsub_f(a, b, c)  _mm512_mask_fmsub_ps(a, gmx_simd4_mask, b, c)
+#define gmx_simd4_fnmadd_f(a, b, c) _mm512_mask_fnmadd_ps(a, gmx_simd4_mask, b, c)
+#define gmx_simd4_fnmsub_f(a, b, c) _mm512_mask_fnmsub_ps(a, gmx_simd4_mask, b, c)
+#define gmx_simd4_and_f(a, b)      _mm512_castsi512_ps(_mm512_mask_and_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd4_andnot_f(a, b)   _mm512_castsi512_ps(_mm512_mask_andnot_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd4_or_f(a, b)       _mm512_castsi512_ps(_mm512_mask_or_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd4_xor_f(a, b)      _mm512_castsi512_ps(_mm512_mask_xor_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd4_rsqrt_f(a)       _mm512_mask_rsqrt23_ps(_mm512_undefined_ps(), gmx_simd4_mask, a)
+#define gmx_simd4_fabs_f(x)        gmx_simd4_andnot_f(_mm512_set1_ps(-0.0), x)
+#define gmx_simd4_fneg_f(x)        _mm512_mask_addn_ps(_mm512_undefined_ps(), gmx_simd4_mask, x, _mm512_setzero_ps())
+#define gmx_simd4_max_f(a, b)      _mm512_mask_gmax_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
+#define gmx_simd4_min_f(a, b)      _mm512_mask_gmin_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)            
+#define gmx_simd4_round_f(x)       _mm512_mask_round_ps(_mm512_undefined_ps(), gmx_simd4_mask, x, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE)
+#define gmx_simd4_trunc_f(x)       _mm512_mask_round_ps(_mm512_undefined_ps(), gmx_simd4_mask, x, _MM_FROUND_TO_ZERO, _MM_EXPADJ_NONE)
+#define gmx_simd4_dotproduct3_f(a, b) _mm512_mask_reduce_add_ps(_mm512_int2mask(7), _mm512_mask_mul_ps(_mm512_undefined_ps(), _mm512_int2mask(7), a, b))
+#define gmx_simd4_fbool_t          __mmask16
+#define gmx_simd4_cmpeq_f(a, b)    _mm512_mask_cmp_ps_mask(gmx_simd4_mask, a, b, _CMP_EQ_OQ)
+#define gmx_simd4_cmplt_f(a, b)    _mm512_mask_cmp_ps_mask(gmx_simd4_mask, a, b, _CMP_LT_OS)
+#define gmx_simd4_cmple_f(a, b)    _mm512_mask_cmp_ps_mask(gmx_simd4_mask, a, b, _CMP_LE_OS)
+#define gmx_simd4_and_fb           _mm512_kand
+#define gmx_simd4_or_fb            _mm512_kor
+#define gmx_simd4_anytrue_fb(x)    (_mm512_mask2int(x)&0xF)
+#define gmx_simd4_blendzero_f(a, sel)    _mm512_mask_mov_ps(_mm512_setzero_ps(), sel, a)
+#define gmx_simd4_blendnotzero_f(a, sel) _mm512_mask_mov_ps(_mm512_setzero_ps(), _mm512_knot(sel), a) 
+#define gmx_simd4_blendv_f(a, b, sel)    _mm512_mask_blend_ps(sel, a, b)
+
+/****************************************************
+ *      DOUBLE PRECISION SIMD4 IMPLEMENTATION       *
+ ****************************************************/
+#define gmx_simd4_double_t          __m512d
+#define gmx_simd4_mask             _mm512_int2mask(0xF)
+#define gmx_simd4_load_d(m)        _mm512_mask_loadunpacklo_pd(_mm512_undefined_pd(), gmx_simd4_mask, m)
+#define gmx_simd4_load1_d(m)       _mm512_mask_extload_pd(_mm512_undefined_pd(), gmx_simd4_mask, m, _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE)
+#define gmx_simd4_set1_d           _mm512_set1_pd
+#define gmx_simd4_store_d(m, a)    _mm512_mask_packstorelo_pd(m, gmx_simd4_mask, a)
+#define gmx_simd4_loadu_d(m)       _mm512_mask_loadunpackhi_pd(_mm512_mask_loadunpacklo_pd(_mm512_undefined_pd(), gmx_simd4_mask, m), gmx_simd4_mask, m+64)
+#define gmx_simd4_storeu_d         _gmx_simd4_storeu_d_mic
+#define gmx_simd4_setzero_d        _mm512_setzero_pd
+#define gmx_simd4_add_d(a,b)       _mm512_mask_add_pd(_mm512_undefined_pd(), gmx_simd4_mask, a, b)
+#define gmx_simd4_sub_d(a,b)       _mm512_mask_sub_pd(_mm512_undefined_pd(), gmx_simd4_mask, a, b)
+#define gmx_simd4_mul_d(a,b)       _mm512_mask_mul_pd(_mm512_undefined_pd(), gmx_simd4_mask, a, b)
+#define gmx_simd4_fmadd_d(a, b, c)  _mm512_mask_fmadd_pd(a, gmx_simd4_mask, b, c)
+#define gmx_simd4_fmsub_d(a, b, c)  _mm512_mask_fmsub_pd(a, gmx_simd4_mask, b, c)
+#define gmx_simd4_fnmadd_d(a, b, c) _mm512_mask_fnmadd_pd(a, gmx_simd4_mask, b, c)
+#define gmx_simd4_fnmsub_d(a, b, c) _mm512_mask_fnmsub_pd(a, gmx_simd4_mask, b, c)
+#define gmx_simd4_and_d(a, b)      _mm512_castsi512_pd(_mm512_mask_and_epi64(_mm512_undefined_epi64(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd4_andnot_d(a, b)   _mm512_castsi512_pd(_mm512_mask_andnot_epi64(_mm512_undefined_epi64(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd4_or_d(a, b)       _mm512_castsi512_pd(_mm512_mask_or_epi64(_mm512_undefined_epi64(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd4_xor_d(a, b)      _mm512_castsi512_pd(_mm512_mask_xor_epi64(_mm512_undefined_epi64(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define gmx_simd4_rsqrt_d(a)       _mm512_mask_cvtpslo_pd(_mm512_undefined_pd(), gmx_simd4_mask, _mm512_mask_rsqrt23_ps(_mm512_undefined_ps(), gmx_simd4_mask, _mm512_mask_cvtpd_pslo(_mm512_undefined_ps(), gmx_simd4_mask, x)))
+#define gmx_simd4_fabs_d(x)        gmx_simd4_andnot_d(_mm512_set1_pd(-0.0), x)
+#define gmx_simd4_fneg_d(x)        _mm512_mask_addn_pd(_mm512_undefined_pd(), gmx_simd4_mask, x, _mm512_setzero_pd())
+#define gmx_simd4_max_d(a, b)      _mm512_mask_gmax_pd(_mm512_undefined_pd(), gmx_simd4_mask, a, b)
+#define gmx_simd4_min_d(a, b)      _mm512_mask_gmin_pd(_mm512_undefined_pd(), gmx_simd4_mask, a, b)            
+#define gmx_simd4_round_d(x)       _mm512_mask_round_pd(_mm512_undefined_pd(), gmx_simd4_mask, x, _MM_dROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE)
+#define gmx_simd4_trunc_d(x)       _mm512_mask_round_pd(_mm512_undefined_pd(), gmx_simd4_mask, x, _MM_FROUND_TO_ZERO, _MM_EXPADJ_NONE)
+#define gmx_simd4_dotproduct3_d(a, b) _mm512_mask_reduce_add_pd(_mm512_int2mask(7), _mm512_mask_mul_pd(_mm512_undefined_pd(), _mm512_int2mask(7), a, b))
+#define gmx_simd4_dbool_t          __mmask16
+#define gmx_simd4_cmpeq_d(a, b)    _mm512_mask_cmp_pd_mask(gmx_simd4_mask, a, b, _CMP_EQ_OQ)
+#define gmx_simd4_cmplt_d(a, b)    _mm512_mask_cmp_pd_mask(gmx_simd4_mask, a, b, _CMP_LT_OS)
+#define gmx_simd4_cmple_d(a, b)    _mm512_mask_cmp_pd_mask(gmx_simd4_mask, a, b, _CMP_LE_OS)
+#define gmx_simd4_and_db           _mm512_kand
+#define gmx_simd4_or_db            _mm512_kor
+#define gmx_simd4_anytrue_db(x)    (_mm512_mask2int(x)&0xF)
+#define gmx_simd4_blendzero_d(a, sel)    _mm512_mask_mov_pd(_mm512_setzero_pd(), sel, a)
+#define gmx_simd4_blendnotzero_d(a, sel) _mm512_mask_mov_pd(_mm512_setzero_pd(), _mm512_knot(sel), a) 
+#define gmx_simd4_blendv_d(a, b, sel)    _mm512_mask_blend_pd(sel, a, b)
+
+
 #define PERM_LOW2HIGH _MM_PERM_BABA
 #define PERM_HIGH2LOW _MM_PERM_DCDC
 
@@ -282,6 +371,21 @@ _gmx_simd_storeu_i_mic(void* m, __m512i s)
     _mm512_packstorelo_epi32(m, s); 
     _mm512_packstorehi_epi32(m+64, s);
 }
+
+static gmx_inline void
+_gmx_simd4_storeu_f_mic(void* m, __m512 s)
+{
+    _mm512_mask_packstorelo_ps(m, gmx_simd4_mask, s); 
+    _mm512_mask_packstorehi_ps(m+64, gmx_simd4_mask, s);
+}
+
+static gmx_inline void
+_gmx_simd4_storeu_d_mic(void* m, __m512d s)
+{
+    _mm512_mask_packstorelo_pd(m, gmx_simd4_mask, s); 
+    _mm512_mask_packstorehi_pd(m+64, gmx_simd4_mask, s);
+}
+
 
 /* This is likely faster than the built in scale operation (lat 8, t-put 3)
  * since we only work on the integer part and use shifts. TODO: check. given that scale also only does integer
