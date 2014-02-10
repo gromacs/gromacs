@@ -233,7 +233,9 @@ gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_WIDTH "Reference kernel width"
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
-mark_as_advanced(GMX_LOAD_PLUGINS)
+if (${GMX_LOAD_PLUGINS})
+  mark_as_advanced(GMX_LOAD_PLUGINS)
+endif()
 
 option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
