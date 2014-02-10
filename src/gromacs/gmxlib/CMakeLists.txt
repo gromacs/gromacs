@@ -60,12 +60,6 @@ if(GMX_GPU)
     set(GMX_GPU_LIBRARIES ${GMX_GPU_LIBRARIES} gpu_utils cuda_tools PARENT_SCOPE)
 endif()
 
-if(GMX_USE_PLUGINS)
-  set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
-else()
-  list(REMOVE_ITEM GMXLIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vmdio.c)
-endif()
-
 # An ugly hack to get absolute paths...
 file(GLOB THREAD_MPI_SOURCES ${THREAD_MPI_SRC})
 
