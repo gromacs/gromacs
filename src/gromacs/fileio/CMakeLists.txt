@@ -33,6 +33,13 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB FILEIO_SOURCES *.cpp *.c)
+
+if(GMX_USE_PLUGINS)
+  set(FILEIO_SOURCES ${FILEIO_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
+else()
+  list(REMOVE_ITEM FILEIO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vmdio.c)
+endif()
+
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
 
 set(FILEIO_PUBLIC_HEADERS
