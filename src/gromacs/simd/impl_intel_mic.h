@@ -69,6 +69,7 @@
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS
 #define GMX_SIMD4_HAVE_FLOAT
 #define GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD_HAVE_REDUCE
 
 /* Implementation details */
 #define GMX_SIMD_FLOAT_WIDTH        16
@@ -160,6 +161,9 @@
 /* Conversions between different booleans */
 #define gmx_simd_cvt_fb2fib(x)     (x)
 #define gmx_simd_cvt_fib2fb(x)     (x)
+/* Reduction */
+#define gmx_simd_reduce_f(x, b)    _mm512_reduce_add_ps(x)
+#define gmx_simd_reduce2_f(x, b)   _mm512_mask_reduce_add_ps(_mm512_int2mask(0x3), x)
 
 /* MIC provides full single precision of some neat functions: */
 /* 1/sqrt(x) and 1/x work fine in simd_math.h, and won't use extra iterations */
@@ -251,10 +255,12 @@
 /* Conversions between booleans. Double & dint stuff is stored in low bits */
 #define gmx_simd_cvt_db2dib(x)     (x)
 #define gmx_simd_cvt_dib2db(x)     (x)
-
 /* Float/double conversion */
 #define gmx_simd_cvt_f2dd          gmx_simd_cvt_f2dd_mic
 #define gmx_simd_cvt_dd2f          gmx_simd_cvt_dd2f_mic
+/* Reduction */
+#define gmx_simd_reduce_d(x, b)    _mm512_reduce_add_pd(x)
+#define gmx_simd_reduce2_d(x, b)   _mm512_mask_reduce_add_pd(_mm512_int2mask(0x3), x)
 
 /****************************************************
  *      SINGLE PRECISION SIMD4 IMPLEMENTATION       *
@@ -301,6 +307,7 @@
 #define gmx_simd4_blendzero_f(a, sel)    _mm512_mask_mov_ps(_mm512_setzero_ps(), sel, a)
 #define gmx_simd4_blendnotzero_f(a, sel) _mm512_mask_mov_ps(_mm512_setzero_ps(), _mm512_knot(sel), a)
 #define gmx_simd4_blendv_f(a, b, sel)    _mm512_mask_blend_ps(sel, a, b)
+#define gmx_simd4_reduce_f(x, b)   _mm512_mask_reduce_add_ps(_mm512_int2mask(0xF), x)
 
 /****************************************************
  *      DOUBLE PRECISION SIMD4 IMPLEMENTATION       *
@@ -343,7 +350,7 @@
 #define gmx_simd4_blendzero_d(a, sel)    _mm512_mask_mov_pd(_mm512_setzero_pd(), sel, a)
 #define gmx_simd4_blendnotzero_d(a, sel) _mm512_mask_mov_pd(_mm512_setzero_pd(), _mm512_knot(sel), a)
 #define gmx_simd4_blendv_d(a, b, sel)    _mm512_mask_blend_pd(sel, a, b)
-
+#define gmx_simd4_reduce_d(x, b)   _mm512_mask_reduce_add_pd(_mm512_int2mask(0xF), x)
 
 #define PERM_LOW2HIGH _MM_PERM_BABA
 #define PERM_HIGH2LOW _MM_PERM_DCDC

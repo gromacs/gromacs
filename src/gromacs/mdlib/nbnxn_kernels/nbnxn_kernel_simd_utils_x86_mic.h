@@ -240,18 +240,6 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
     gmx_2hpr_high_to_pr(tmp1, tmp2, c12_S);
 }
 
-#define HAVE_GMX_SUM_SIMD
-static gmx_inline real
-gmx_sum_simd(gmx_simd_real_t x, real* b)
-{
-    return _mm512_reduce_add_ps(x);
-}
-static gmx_inline real
-gmx_sum_simd4(gmx_simd_real_t x, real* b)
-{
-    return _mm512_mask_reduce_add_ps(_mm512_int2mask(0xF), x);
-}
-
 /* Code for handling loading exclusions and converting them into
    interactions. */
 #define gmx_load1_exclfilter _mm512_set1_epi32
