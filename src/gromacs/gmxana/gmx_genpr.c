@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,17 +55,22 @@
 int gmx_genpr(int argc, char *argv[])
 {
     const char        *desc[] = {
-        "[THISMODULE] produces an include file for a topology containing",
+        "[THISMODULE] produces an #include file for a topology containing",
         "a list of atom numbers and three force constants for the",
-        "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-direction. A single isotropic force constant may",
+        "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-direction based on",
+        "the contents of the [TT]-f[tt] file. A single isotropic force constant may",
         "be given on the command line instead of three components.[PAR]",
-        "WARNING: position restraints only work for the one molecule at a time.",
-        "Position restraints are interactions within molecules, therefore",
-        "they should be included within the correct [TT][ moleculetype ][tt]",
-        "block in the topology. Since the atom numbers in every moleculetype",
-        "in the topology start at 1 and the numbers in the input file for",
-        "[THISMODULE] number consecutively from 1, [THISMODULE] will only",
-        "produce a useful file for the first molecule.[PAR]",
+        "WARNING: Position restraints are interactions within molecules, therefore",
+        "they must be included within the correct [TT][ moleculetype ][tt]",
+        "block in the topology. The atom indices within the",
+        "[TT][ position_restraints ][tt] block must be within the range of the",
+        "atom indices for that molecule type. Since the atom numbers in every",
+        "moleculetype in the topology start at 1 and the numbers in the input file",
+        "for [THISMODULE] number consecutively from 1, [THISMODULE] will only",
+        "produce a useful file for the first molecule. You may wish to",
+        "edit the resulting index file to remove the lines for later atoms,",
+        "or construct a suitable index group to provide",
+        "as input to [THISMODULE].[PAR]",
         "The [TT]-of[tt] option produces an index file that can be used for",
         "freezing atoms. In this case, the input file must be a [TT].pdb[tt] file.[PAR]",
         "With the [TT]-disre[tt] option, half a matrix of distance restraints",

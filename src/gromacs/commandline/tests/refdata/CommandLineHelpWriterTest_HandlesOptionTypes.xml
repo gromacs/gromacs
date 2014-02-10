@@ -2,9 +2,16 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-f [<.xtc/.trr/...>]] [-mult [<.xtc/.trr/...> [...]]] [-lib [<.dat>]]
+    [-io [<.dat>]] [-o <.xvg>] [-[no]bool] [-[no]hidden] [-int <int>]
+    [-ivec <vector>] [-double <real>] [-dvec <vector>] [-time <time>]
+    [-string <string>] [-enum <enum>]
+
 FILE OPTIONS
 
- -f     <.xtc/.trr/...> (traj.xtc) (Input)
+ -f     [<.xtc/.trr/...>] (traj.xtc) (Input)
      Input file description: xtc trr cpt trj gro g96 pdb g87 tng
  -mult  [<.xtc/.trr/...> [...]] (traj.xtc) (Input, Opt.)
      Multiple file description: xtc trr cpt trj gro g96 pdb g87 tng

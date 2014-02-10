@@ -85,7 +85,7 @@ a few parts:
  - Generic test fixtures and helper classes.  Functionality here includes
    locating test input files from the source directory and constructing
    temporary files (gmx::test::TestFileManager), adding custom command line
-   options to the test binary (testoptions.h), some custom test assertions
+   options to the test binary (#GMX_TEST_OPTIONS), some custom test assertions
    for better exception and floating-point handling (testasserts.h), utilities
    for constructing command line argument arrays (gmx::test::CommandLine) and
    test fixtures for tests that need to test long strings for correctness

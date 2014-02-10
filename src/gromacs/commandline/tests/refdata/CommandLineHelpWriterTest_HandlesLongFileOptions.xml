@@ -2,11 +2,16 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-f [<.xtc/.trr/...>]] [-f2 [<.xtc/.trr/...>]] [-lib [<.xtc/.trr/...>]]
+    [-longfileopt [<.dat>]] [-longfileopt2 [<.dat>]]
+
 FILE OPTIONS
 
- -f     <.xtc/.trr/...> (path/to/long/trajectory/name.xtc) (Input)
+ -f     [<.xtc/.trr/...>] (path/to/long/trajectory/name.xtc) (Input)
      File name option with a long value: xtc trr cpt trj gro g96 pdb g87 tng
- -f2    <.xtc/.trr/...> (path/to/long/trajectory.xtc) (Input)
+ -f2    [<.xtc/.trr/...>] (path/to/long/trajectory.xtc) (Input)
      File name option with a long value: xtc trr cpt trj gro g96 pdb g87 tng
  -lib   [<.xtc/.trr/...>] (path/to/long/trajectory/name.xtc) (Input, Opt., Lib.)
      File name option with a long value and type: xtc trr cpt trj gro g96 pdb

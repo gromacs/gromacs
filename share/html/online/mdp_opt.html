@@ -260,10 +260,10 @@ set <tt>init-step</tt> to the step number of the restart frame.
 <dd>Brownian dynamics friction coefficient.
 When <b>bd-fric</b><tt>=0</tt>, the friction coefficient for each
 particle is calculated as mass/<b><A HREF="#tc">tau-t</A></b>.</dd>
-<dt><b>ld-seed: (1993) [integer]</b></dt>
+<dt><b>ld-seed: (-1) [integer]</b></dt>
 <dd>used to initialize random generator for thermal noise
 for stochastic and Brownian dynamics.
-When <b>ld-seed</b> is set to -1, the seed is calculated from the process ID.
+When <b>ld-seed</b> is set to -1, a pseudo random seed is used.
 When running BD or SD on multiple processors, each processor uses a seed equal
 to <b>ld-seed</b> plus the processor number.</dd>
 </dl>
@@ -1120,10 +1120,9 @@ This is only meaningful with integrator <b><A HREF="#run">md</A></b>.</dd>
 </dl></dd>
 <dt><b>gen-temp: (300) [K]</b></dt>
 <dd>temperature for Maxwell distribution</dd>
-<dt><b>gen-seed: (173529) [integer]</b></dt>
+<dt><b>gen-seed: (-1) [integer]</b></dt>
 <dd>used to initialize random generator for random velocities,
-when <b>gen-seed</b> is set to -1, the seed is calculated from
-the process ID number.
+when <b>gen-seed</b> is set to -1, a pseudo random seed is used.
 </dl>
 
 <A NAME="bond"><br>
@@ -1673,8 +1672,8 @@ decide which state to move to.</dd>
 decide which state to move to, EXCLUDING the current state, then uses a rejection step to ensure detailed
 balance. Always more efficient that Gibbs, though only marginally so in many situations, such as when only the nearest neighbors have decent phase space overlap.</dd>
 </dl>
-<dt><b>lmc-seed:</b></dt>
-<dd> random seed to use for Monte Carlo moves in state space.  If not specified, <b>ld-seed</b> is used instead.</dd>
+<dt><b>lmc-seed: (-1)</b></dt>
+<dd> random seed to use for Monte Carlo moves in state space. When <b>lmc-seed</b> is set to -1, a pseudo random seed is us</dd>
 <dt><b>mc-temperature:</b></dt>
 <dd> Temperature used for acceptance/rejection for Monte Carlo moves. If not specified, the temperature of the
 simulation specified in the first group of <b>ref_t</b> is used.</dd>

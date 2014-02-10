@@ -254,11 +254,13 @@ static void do_nsgrid(FILE *fp, gmx_bool bVerbose,
 
     /* inputrec structure */
     snew(ir, 1);
-    ir->cutoff_scheme = ecutsGROUP;
-    ir->coulombtype   = eelCUT;
-    ir->vdwtype       = evdwCUT;
-    ir->ndelta        = 2;
-    ir->ns_type       = ensGRID;
+    ir->cutoff_scheme    = ecutsGROUP;
+    ir->coulomb_modifier = eintmodNONE;
+    ir->vdw_modifier     = eintmodNONE;
+    ir->coulombtype      = eelCUT;
+    ir->vdwtype          = evdwCUT;
+    ir->ndelta           = 2;
+    ir->ns_type          = ensGRID;
     snew(ir->opts.egp_flags, 1);
 
     top = gmx_mtop_generate_local_top(mtop, ir);

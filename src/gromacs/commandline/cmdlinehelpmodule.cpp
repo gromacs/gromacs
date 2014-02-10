@@ -120,9 +120,7 @@ struct RootHelpText
 // The first two are not used.
 const char        RootHelpText::name[]  = "";
 const char        RootHelpText::title[] = "";
-const char *const RootHelpText::text[]  = {
-    "Usage: [PROGRAM] [<options>] <command> [<args>]",
-};
+const char *const RootHelpText::text[]  = { "" };
 
 /*! \brief
  * Help topic that forms the root of the help tree for the help subcommand.
@@ -137,20 +135,15 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
          *
          * Does not throw.
          */
-        RootHelpTopic() : commonOptions_(NULL)
+        explicit RootHelpTopic(const std::string &binaryName)
+            : binaryName_(binaryName)
         {
-        }
-
-        //! Sets the common options for the wrapper binary.
-        void setCommonOptions(const Options *options)
-        {
-            commonOptions_ = options;
         }
 
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
-        const Options              *commonOptions_;
+        std::string                 binaryName_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
@@ -164,12 +157,14 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         GMX_THROW(NotImplementedError(
                           "Root help is not implemented for this output format"));
     }
-    writeBasicHelpTopic(context, *this, helpText());
-    context.outputFile().writeLine();
     {
-        CommandLineHelpContext cmdlineContext(context);
+        CommandLineCommonOptionsHolder optionsHolder;
+        CommandLineHelpContext         cmdlineContext(context);
+        optionsHolder.initOptions();
+        cmdlineContext.setModuleDisplayName(binaryName_);
+        // TODO: Add <command> [<args>] into the synopsis.
         // TODO: Propagate the -hidden option here.
-        CommandLineHelpWriter(*commonOptions_)
+        CommandLineHelpWriter(*optionsHolder.options())
             .writeHelp(cmdlineContext);
     }
     // TODO: Consider printing a list of "core" commands. Would require someone
@@ -709,7 +704,9 @@ void HelpExportCompletion::exportModuleHelp(
 
 void HelpExportCompletion::finishModuleExport()
 {
-    bashWriter_.writeWrapperCompletions(modules_);
+    CommandLineCommonOptionsHolder optionsHolder;
+    optionsHolder.initOptions();
+    bashWriter_.writeWrapperCompletions(modules_, *optionsHolder.options());
     bashWriter_.finishCompletions();
 }
 
@@ -723,7 +720,7 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : rootTopic_(new RootHelpTopic), programContext_(programContext),
+    : rootTopic_(new RootHelpTopic(binaryName)), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false),
       outputOverride_(NULL)
@@ -791,11 +788,6 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 void CommandLineHelpModule::setShowHidden(bool bHidden)
 {
     impl_->bHidden_ = bHidden;
-}
-
-void CommandLineHelpModule::setCommonOptions(const Options *options)
-{
-    impl_->rootTopic_->setCommonOptions(options);
 }
 
 void CommandLineHelpModule::setModuleOverride(

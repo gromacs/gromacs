@@ -44,136 +44,134 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/optionsvisitor.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "gromacs/legacyheaders/smalloc.h"
-
-// TODO: Don't duplicate this from filenm.c/futil.c.
-#define NZEXT 2
-static const char *z_ext[NZEXT] = { ".gz", ".Z" };
-
-static void pr_fopts(FILE *fp, int nf, const t_filenm tfn[])
-{
-    for (int i = 0; i < nf; i++)
-    {
-        const int   ftp          = tfn[i].ftp;
-        const char *multiplicity = "(( $n == 1 )) && ";
-        if (tfn[i].flag & ffMULT)
-        {
-            multiplicity = "";
-        }
-        if (ftp == efRND)
-        {
-            fprintf(fp, "%s) %sCOMPREPLY=( $(compgen -S ' ' -d $c) );;\n",
-                    tfn[i].opt, multiplicity);
-            continue;
-        }
-        fprintf(fp, "%s) %sCOMPREPLY=( $(compgen -S ' ' -X '!*.",
-                tfn[i].opt, multiplicity);
-        const int genericCount = ftp2generic_count(ftp);
-        if (genericCount > 0)
-        {
-            fprintf(fp, "@(");
-            const int *const genericTypes = ftp2generic_list(ftp);
-            for (int j = 0; j < genericCount; j++)
-            {
-                if (j > 0)
-                {
-                    fprintf(fp, "|");
-                }
-                fprintf(fp, "%s", ftp2ext(genericTypes[j]));
-            }
-            fprintf(fp, ")");
-        }
-        else
-        {
-            fprintf(fp, "%s", ftp2ext(ftp));
-        }
-        fprintf(fp, "?(");
-        for (int j = 0; j < NZEXT; j++)
-        {
-            if (j > 0)
-            {
-                fprintf(fp, "|");
-            }
-            fprintf(fp, "%s", z_ext[j]);
-        }
-        fprintf(fp, ")' -f $c ; compgen -S '/' -d $c ));;\n");
-    }
-}
-
-static void pr_opts(FILE *fp,
-                    int nfile,  t_filenm *fnm,
-                    int npargs, t_pargs pa[])
-{
-    fprintf(fp, "if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen -S ' '  -W $'");
-    const char *sep = "";
-    for (int i = 0; i < nfile; i++)
-    {
-        fprintf(fp, "%s-%s", sep, fnm[i].opt+1);
-        sep = "\\n";
-    }
-    for (int i = 0; i < npargs; i++)
-    {
-        if (pa[i].type == etBOOL && *(pa[i].u.b))
-        {
-            fprintf(fp, "%s-no%s", sep, pa[i].option + 1);
-        }
-        else
-        {
-            fprintf(fp, "%s-%s", sep, pa[i].option + 1);
-        }
-        sep = "\\n";
-    }
-    fprintf(fp, "' -- $c)); return 0; fi\n");
-}
-
-static void pr_enums(FILE *fp, int npargs, t_pargs pa[])
-{
-    for (int i = 0; i < npargs; i++)
-    {
-        if (pa[i].type == etENUM)
-        {
-            fprintf(fp, "%s) (( $n == 1 )) && COMPREPLY=( $(compgen -S ' ' -W $'", pa[i].option);
-            for (int j = 1; pa[i].u.c[j]; j++)
-            {
-                fprintf(fp, "%s%s", (j == 1 ? "" : "\\n"), pa[i].u.c[j]);
-            }
-            fprintf(fp, "' -- $c ));;\n");
-        }
-    }
-}
-
-static void write_bashcompl(FILE *out,
-                            const char *funcName,
-                            int nfile,  t_filenm *fnm,
-                            int npargs, t_pargs *pa)
-{
-    /* Advanced bash completions are handled by shell functions.
-     * p and c hold the previous and current word on the command line.
-     */
-    fprintf(out, "%s() {\n", funcName);
-    fprintf(out, "local IFS=$'\\n'\n");
-    fprintf(out, "local c=${COMP_WORDS[COMP_CWORD]}\n");
-    fprintf(out, "local n\n");
-    fprintf(out, "for ((n=1;n<COMP_CWORD;++n)) ; do [[ \"${COMP_WORDS[COMP_CWORD-n]}\" == -* ]] && break ; done\n");
-    fprintf(out, "local p=${COMP_WORDS[COMP_CWORD-n]}\n");
-    fprintf(out, "COMPREPLY=()\n");
-
-    pr_opts(out, nfile, fnm, npargs, pa);
-    fprintf(out, "case \"$p\" in\n");
-
-    pr_enums(out, npargs, pa);
-    pr_fopts(out, nfile, fnm);
-    fprintf(out, "esac }\n");
-}
-
 namespace gmx
 {
+
+namespace
+{
+
+class OptionsListWriter : public OptionsVisitor
+{
+    public:
+        const std::string &optionList() const { return optionList_; }
+
+        virtual void visitSubSection(const Options &section)
+        {
+            OptionsIterator iterator(section);
+            iterator.acceptSubSections(this);
+            iterator.acceptOptions(this);
+        }
+        virtual void visitOption(const OptionInfo &option)
+        {
+            if (option.isHidden())
+            {
+                return;
+            }
+            if (!optionList_.empty())
+            {
+                optionList_.append("\\n");
+            }
+            optionList_.append("-");
+            const BooleanOptionInfo *booleanOption
+                = option.toType<BooleanOptionInfo>();
+            if (booleanOption != NULL && booleanOption->defaultValue())
+            {
+                optionList_.append("no");
+            }
+            optionList_.append(option.name());
+        }
+
+    private:
+        std::string optionList_;
+};
+
+class OptionCompletionWriter : public OptionsVisitor
+{
+    public:
+        explicit OptionCompletionWriter(File *out) : out_(*out) {}
+
+        virtual void visitSubSection(const Options &section)
+        {
+            OptionsIterator iterator(section);
+            iterator.acceptSubSections(this);
+            iterator.acceptOptions(this);
+        }
+        virtual void visitOption(const OptionInfo &option);
+
+    private:
+        void writeOptionCompletion(const OptionInfo  &option,
+                                   const std::string &completion);
+
+        File &out_;
+};
+
+void OptionCompletionWriter::visitOption(const OptionInfo &option)
+{
+    if (option.isHidden())
+    {
+        return;
+    }
+    const FileNameOptionInfo *fileOption = option.toType<FileNameOptionInfo>();
+    if (fileOption != NULL)
+    {
+        if (fileOption->isDirectoryOption())
+        {
+            writeOptionCompletion(option, "compgen -S ' ' -d $c");
+            return;
+        }
+        const FileNameOptionInfo::ExtensionList &extensionList = fileOption->extensions();
+        if (extensionList.empty())
+        {
+            return;
+        }
+        std::string completion("compgen -S ' ' -X '!*");
+        std::string extensions(joinStrings(extensionList, "|"));
+        if (extensionList.size() > 1)
+        {
+            extensions = "@(" + extensions + ")";
+        }
+        completion.append(extensions);
+        // TODO: Don't duplicate this from filenm.c/futil.c.
+        completion.append("?(.gz|.Z)' -f -- $c ; compgen -S '/' -d $c");
+        writeOptionCompletion(option, completion);
+        return;
+    }
+    const StringOptionInfo *stringOption = option.toType<StringOptionInfo>();
+    if (stringOption != NULL && stringOption->isEnumerated())
+    {
+        std::string completion("compgen -S ' ' -W $'");
+        completion.append(joinStrings(stringOption->allowedValues(), "\\n"));
+        completion.append("' -- $c");
+        writeOptionCompletion(option, completion);
+        return;
+    }
+}
+
+void OptionCompletionWriter::writeOptionCompletion(
+        const OptionInfo &option, const std::string &completion)
+{
+    std::string result(formatString("-%s) ", option.name().c_str()));
+    if (option.maxValueCount() >= 0)
+    {
+        result.append(formatString("(( $n <= %d )) && ", option.maxValueCount()));
+    }
+    result.append("COMPREPLY=( $(");
+    result.append(completion);
+    result.append("));;");
+    out_.writeLine(result);
+}
+
+}   // namespace
 
 class ShellCompletionWriter::Impl
 {
@@ -214,44 +212,31 @@ void ShellCompletionWriter::startCompletions()
     impl_->file_->writeLine("shopt -s extglob");
 }
 
-void ShellCompletionWriter::writeLegacyModuleCompletions(
-        const char *moduleName,
-        int nfile,  t_filenm *fnm,
-        int npargs, t_pargs *pa)
-{
-    int      npar;
-    t_pargs *par;
-
-    // Remove hidden arguments.
-    snew(par, npargs);
-    npar = 0;
-    for (int i = 0; i < npargs; i++)
-    {
-        if (!is_hidden(&pa[i]))
-        {
-            par[npar] = pa[i];
-            npar++;
-        }
-    }
-
-    write_bashcompl(impl_->file_->handle(),
-                    impl_->completionFunctionName(moduleName).c_str(),
-                    nfile, fnm, npar, par);
-
-    sfree(par);
-}
-
 void ShellCompletionWriter::writeModuleCompletions(
         const char    *moduleName,
-        const Options  & /*options*/)
+        const Options &options)
 {
-    // TODO: Implement.
-    impl_->file_->writeLine(
-            impl_->completionFunctionName(moduleName) + "() {\nCOMPREPLY=()\n}\n");
+    File &out = *impl_->file_;
+    out.writeLine(formatString("%s() {", impl_->completionFunctionName(moduleName).c_str()));
+    out.writeLine("local IFS=$'\\n'");
+    out.writeLine("local c=${COMP_WORDS[COMP_CWORD]}");
+    out.writeLine("local n");
+    out.writeLine("for ((n=1;n<COMP_CWORD;++n)) ; do [[ \"${COMP_WORDS[COMP_CWORD-n]}\" == -* ]] && break ; done");
+    out.writeLine("local p=${COMP_WORDS[COMP_CWORD-n]}");
+    out.writeLine("COMPREPLY=()");
+
+    OptionsListWriter listWriter;
+    listWriter.visitSubSection(options);
+    out.writeLine(formatString("if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen -S ' '  -W $'%s' -- $c)); return 0; fi", listWriter.optionList().c_str()));
+
+    out.writeLine("case \"$p\" in");
+    OptionCompletionWriter optionWriter(&out);
+    optionWriter.visitSubSection(options);
+    out.writeLine("esac }");
 }
 
 void ShellCompletionWriter::writeWrapperCompletions(
-        const ModuleNameList &modules)
+        const ModuleNameList &modules, const Options &options)
 {
     impl_->file_->writeLine("_" + impl_->binaryName_ + "_compl() {");
     impl_->file_->writeLine("local i c m");
@@ -264,8 +249,9 @@ void ShellCompletionWriter::writeWrapperCompletions(
     impl_->file_->writeLine("done");
     impl_->file_->writeLine("if (( i == COMP_CWORD )); then");
     impl_->file_->writeLine("c=${COMP_WORDS[COMP_CWORD]}");
-    // TODO: Get rid of these hard-coded options.
-    std::string completions("-h\\n-quiet\\n-version\\n-nocopyright");
+    OptionsListWriter lister;
+    lister.visitSubSection(options);
+    std::string       completions(lister.optionList());
     for (ModuleNameList::const_iterator i = modules.begin();
          i != modules.end(); ++i)
     {

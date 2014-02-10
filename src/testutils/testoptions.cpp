@@ -60,6 +60,7 @@
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/programcontext.h"
 
 #include "refdata.h"
 #include "testfilemanager.h"
@@ -74,7 +75,7 @@ namespace
 {
 
 /*! \brief
- * Singleton registry for test options added with GMX_TEST_OPTIONS.
+ * Singleton registry for test options added with #GMX_TEST_OPTIONS.
  *
  * \ingroup module_testutils
  */
@@ -129,6 +130,7 @@ void printHelp(const Options &options)
                  "to control the behavior of the tests:\n\n");
     CommandLineHelpContext context(&File::standardError(),
                                    eHelpOutputFormat_Console, NULL);
+    context.setModuleDisplayName(getProgramContext().displayName());
     CommandLineHelpWriter(options).writeHelp(context);
 }
 

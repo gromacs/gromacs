@@ -125,6 +125,16 @@ BooleanOptionInfo::BooleanOptionInfo(BooleanOptionStorage *option)
 {
 }
 
+const BooleanOptionStorage &BooleanOptionInfo::option() const
+{
+    return static_cast<const BooleanOptionStorage &>(OptionInfo::option());
+}
+
+bool BooleanOptionInfo::defaultValue() const
+{
+    return option().defaultValue();
+}
+
 /********************************************************************
  * BooleanOption
  */

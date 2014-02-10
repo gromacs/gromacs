@@ -92,12 +92,15 @@ class SelectionCollectionTest : public ::testing::Test
 
 int SelectionCollectionTest::s_debugLevel = 0;
 
+// \cond/\endcond do not seem to work here with Doxygen 1.8.5 parser.
+#ifndef DOXYGEN
 GMX_TEST_OPTIONS(SelectionCollectionTestOptions, options)
 {
     options->addOption(gmx::IntegerOption("seldebug")
                            .store(&SelectionCollectionTest::s_debugLevel)
                            .description("Set selection debug level"));
 }
+#endif
 
 SelectionCollectionTest::SelectionCollectionTest()
     : top_(NULL), frame_(NULL), grps_(NULL)
