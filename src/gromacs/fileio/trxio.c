@@ -46,7 +46,9 @@
 
 #include "sysstuff.h"
 #include "typedefs.h"
+#ifdef GMX_USE_PLUGINS
 #include "vmdio.h"
+#endif
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
