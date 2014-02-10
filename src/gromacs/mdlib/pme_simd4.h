@@ -94,7 +94,7 @@
  * This code does not assume any memory alignment for the grid.
  */
 {
-    real             fx_tmp[4], fy_tmp[4], fz_tmp[4];
+    real             tmp[8], *tmp_aligned;
 
     gmx_simd4_real_t fx_S, fy_S, fz_S;
 
@@ -105,6 +105,8 @@
 
     gmx_simd4_real_t fxy1_S;
     gmx_simd4_real_t fz1_S;
+
+    tmp_aligned = gmx_simd4_align_r(tmp);
 
     fx_S = gmx_simd4_setzero_r();
     fy_S = gmx_simd4_setzero_r();
@@ -137,13 +139,9 @@
         }
     }
 
-    gmx_simd4_storeu_r(fx_tmp, fx_S);
-    gmx_simd4_storeu_r(fy_tmp, fy_S);
-    gmx_simd4_storeu_r(fz_tmp, fz_S);
-
-    fx += fx_tmp[0]+fx_tmp[1]+fx_tmp[2]+fx_tmp[3];
-    fy += fy_tmp[0]+fy_tmp[1]+fy_tmp[2]+fy_tmp[3];
-    fz += fz_tmp[0]+fz_tmp[1]+fz_tmp[2]+fz_tmp[3];
+    fx += gmx_simd4_reduce_r(fx_S, tmp_aligned);
+    fy += gmx_simd4_reduce_r(fy_S, tmp_aligned);
+    fz += gmx_simd4_reduce_r(fz_S, tmp_aligned);
 }
 #undef PME_GATHER_F_SIMD4_ORDER4
 #endif
@@ -265,7 +263,7 @@
 {
     int              offset;
 
-    real             fx_tmp[4], fy_tmp[4], fz_tmp[4];
+    real             tmp[8], *tmp_aligned;
 
     gmx_simd4_real_t fx_S, fy_S, fz_S;
 
@@ -281,6 +279,8 @@
     gmx_simd4_real_t fz1_S1;
     gmx_simd4_real_t fxy1_S;
     gmx_simd4_real_t fz1_S;
+
+    tmp_aligned = gmx_simd4_align_r(tmp);
 
     offset = k0 & 3;
 
@@ -342,13 +342,9 @@
         }
     }
 
-    gmx_simd4_store_r(fx_tmp, fx_S);
-    gmx_simd4_store_r(fy_tmp, fy_S);
-    gmx_simd4_store_r(fz_tmp, fz_S);
-
-    fx += fx_tmp[0]+fx_tmp[1]+fx_tmp[2]+fx_tmp[3];
-    fy += fy_tmp[0]+fy_tmp[1]+fy_tmp[2]+fy_tmp[3];
-    fz += fz_tmp[0]+fz_tmp[1]+fz_tmp[2]+fz_tmp[3];
+    fx += gmx_simd4_reduce_r(fx_S, tmp_aligned);
+    fy += gmx_simd4_reduce_r(fy_S, tmp_aligned);
+    fz += gmx_simd4_reduce_r(fz_S, tmp_aligned);
 }
 #undef PME_ORDER
 #undef PME_GATHER_F_SIMD4_ALIGNED
