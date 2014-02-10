@@ -777,13 +777,6 @@ else()
     endif ()
 endif()
 
-# TODO The Windows builds are still broken (we are avoiding some
-# unknown bug, perhaps with checkpointing?), because defaulting to
-# .tng output leads to calling null-op implementation functions, so
-# regressiontests will fail on Windows at the post-mdrun stages. We
-# can fix this during the 5.0 beta phase.
-gmx_add_cache_dependency(GMX_USE_TNG BOOL "NOT GMX_NATIVE_WINDOWS" OFF)
-
 if(GMX_USE_TNG)
     find_package(ZLIB)
     set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
