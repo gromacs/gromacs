@@ -130,6 +130,10 @@ if (HAS_NO_DEPRECATED_REGISTER)
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
+if(GMX_USE_TNG)
+    add_dependencies(libgromacs libtng)
+endif()
+
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${GMX_TNG_LIBRARIES}
