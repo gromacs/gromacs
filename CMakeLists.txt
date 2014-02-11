@@ -785,15 +785,33 @@ endif()
 gmx_add_cache_dependency(GMX_USE_TNG BOOL "NOT GMX_NATIVE_WINDOWS" OFF)
 
 if(GMX_USE_TNG)
+    include(ExternalProject)
     find_package(ZLIB)
-    set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
-    set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
-    set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
+    set(TNG_BUILD_FORTRAN OFF BOOL "Build Fortran compatible TNG library and examples for testing")
+    set(TNG_BUILD_EXAMPLES OFF BOOL "Build examples showing usage of the TNG API")
+    set(TNG_BUILD_COMPRESSION_TESTS OFF BOOL "Build tests of the TNG compression library")
     # TODO reconsider use of OpenMP in TNG if/when trajectory writing is not serial in mdrun
-    set(TNG_USE_OPENMP ${GMX_OPENMP} CACHE BOOL "Try to use the OpenMP library (if available) with TNG")
-    set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
-    set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
-    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
+    set(TNG_USE_OPENMP ${GMX_OPENMP} BOOL "Try to use the OpenMP library (if available) with TNG")
+    set(TNG_BUILD_DOCUMENTATION OFF BOOL "Use Doxygen to create the HTML based TNG API documentation")
+    set(TNG_BUILD_TEST OFF BOOL "Build TNG testing binary.")
+#     add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
+    ExternalProject_Add(
+    libtng
+    GIT_REPOSITORY https://gerrit.gromacs.org/tng.git
+    INSTALL_COMMAND ""
+    GIT_TAG 506198102980db786648af48bd572af7f7cc3ba4
+    UPDATE_COMMAND ""
+    PREFIX src/external/tng_io
+    CMAKE_ARGS -DTNG_BUILD_FORTRAN:BOOL=${TNG_BUILD_FORTRAN}
+        -DTNG_BUILD_EXAMPLES:BOOL=${TNG_BUILD_EXAMPLES}
+        -DTNG_BUILD_COMPRESSION_TESTS:BOOL=${TNG_BUILD_COMPRESSION_TESTS}
+        -DTNG_USE_OPENMP:BOOL=${TNG_USE_OPENMP}
+        -DTNG_BUILD_DOCUMENTATION:BOOL=${TNG_BUILD_DOCUMENTATION}
+        -DTNG_BUILD_TEST:BOOL=${TNG_BUILD_TEST}
+#    DOWNLOAD_DIR src/external/tng_io
+#    SOURCE_DIR src/external/tng_io
+#     BINARY_DIR ${CMAKE_SOURCE_DIR}/lib
+    )
     set(GMX_TNG_LIBRARIES tng_io)
 endif()
 mark_as_advanced(TNG_BUILD_FORTRAN)
