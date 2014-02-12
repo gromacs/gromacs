@@ -254,7 +254,8 @@ public:
 };
 //! Iterates over MolecularComposition items
 typedef std::vector<MolecularComposition>::iterator MolecularCompositionIterator;
-  
+
+
 /*! \brief
  * Generic molecular property base clase
  *
