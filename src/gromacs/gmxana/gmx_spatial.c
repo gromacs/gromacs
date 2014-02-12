@@ -320,7 +320,7 @@ int gmx_spatial(int argc, char *argv[])
     }
 
     /* OUTPUT */
-    flp = ffopen("grid.cube", "w");
+    flp = gmx_ffopen("grid.cube", "w");
     fprintf(flp, "Spatial Distribution Function\n");
     fprintf(flp, "test\n");
     fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", nidxp, (MINBIN[XX]+(minx+iIGNOREOUTER)*rBINWIDTH)*10./bohr, (MINBIN[YY]+(miny+iIGNOREOUTER)*rBINWIDTH)*10./bohr, (MINBIN[ZZ]+(minz+iIGNOREOUTER)*rBINWIDTH)*10./bohr);
@@ -449,7 +449,7 @@ int gmx_spatial(int argc, char *argv[])
         }
         fprintf(flp, "\n");
     }
-    ffclose(flp);
+    gmx_ffclose(flp);
 
     /* printf("x=%d to %d\n",minx,maxx); */
     /* printf("y=%d to %d\n",miny,maxy); */

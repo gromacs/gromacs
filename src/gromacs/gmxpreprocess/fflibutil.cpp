@@ -343,7 +343,7 @@ FILE *fflib_open(const char *file)
 
     file_fullpath = gmxlibfn(file);
     fprintf(stderr, "Opening force field file %s\n", file_fullpath);
-    fp = ffopen(file_fullpath, "r");
+    fp = gmx_ffopen(file_fullpath, "r");
     sfree(file_fullpath);
 
     return fp;

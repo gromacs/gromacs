@@ -639,10 +639,10 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
         hi = max_dr;
     }
     printf("Highest level in the matrix will be %g\n", hi);
-    fp = ffopen(fn, "w");
+    fp = gmx_ffopen(fn, "w");
     write_xpm(fp, 0, "Distance Violations", "<V> (nm)", "Residue", "Residue",
               n_res, n_res, t_res, t_res, matrix, 0, hi, rlo, rhi, &nlevels);
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 int gmx_disre(int argc, char *argv[])
@@ -929,13 +929,13 @@ int gmx_disre(int argc, char *argv[])
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres,
                           j, &top->idef, &mtop, max_dr, nlevels, bThird);
-        ffclose(out);
-        ffclose(aver);
-        ffclose(numv);
-        ffclose(maxxv);
+        gmx_ffclose(out);
+        gmx_ffclose(aver);
+        gmx_ffclose(numv);
+        gmx_ffclose(maxxv);
         if (isize > 0)
         {
-            ffclose(xvg);
+            gmx_ffclose(xvg);
             do_view(oenv, opt2fn("-dr", NFILE, fnm), "-nxy");
         }
         do_view(oenv, opt2fn("-dn", NFILE, fnm), "-nxy");

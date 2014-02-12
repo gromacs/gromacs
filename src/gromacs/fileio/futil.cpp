@@ -119,8 +119,8 @@ void push_ps(FILE *fp)
 #define pclose fah_fclose
 #define SKIP_FFOPS 1
 #else
-#ifdef ffclose
-#undef ffclose
+#ifdef gmx_ffclose
+#undef gmx_ffclose
 #endif
 #if (!defined(HAVE_PIPES) && !defined(__native_client__))
 static FILE *popen(const char *nm, const char *mode)
@@ -139,7 +139,7 @@ static int pclose(FILE *fp)
 #endif /* !defined(HAVE_PIPES) && !defined(__native_client__) */
 #endif /* GMX_FAHCORE */
 
-int ffclose(FILE *fp)
+int gmx_ffclose(FILE *fp)
 {
 #ifdef SKIP_FFOPS
     return fclose(fp);
@@ -461,7 +461,7 @@ gmx_bool make_backup(const char * name)
 #endif
 }
 
-FILE *ffopen(const char *file, const char *mode)
+FILE *gmx_ffopen(const char *file, const char *mode)
 {
 #ifdef SKIP_FFOPS
     return fopen(file, mode);

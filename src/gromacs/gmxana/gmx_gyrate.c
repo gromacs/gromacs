@@ -379,7 +379,7 @@ int gmx_gyrate(int argc, char *argv[])
         gmx_rmpbc_done(gpbc);
     }
 
-    ffclose(out);
+    gmx_ffclose(out);
 
     if (bACF)
     {

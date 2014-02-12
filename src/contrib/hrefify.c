@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
   else
     fprintf(stderr,"Adding '%s' to href's\n",link_text);
 
-  fp=ffopen(out,"w");
+  fp=gmx_ffopen(out,"w");
 
   n_repl=0;
   i_str=-1;
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
     fprintf(fp,"%s\n",line);
   }
 
-  ffclose(fp);
+  gmx_ffclose(fp);
   
   fprintf(stderr,"Added %d HTML references\n",n_repl);
 

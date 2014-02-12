@@ -427,17 +427,17 @@ int gmx_bundle(int argc, char *argv[])
     {
         close_trx(fpdb);
     }
-    ffclose(flen);
-    ffclose(fdist);
-    ffclose(fz);
-    ffclose(ftilt);
-    ffclose(ftiltr);
-    ffclose(ftiltl);
+    gmx_ffclose(flen);
+    gmx_ffclose(fdist);
+    gmx_ffclose(fz);
+    gmx_ffclose(ftilt);
+    gmx_ffclose(ftiltr);
+    gmx_ffclose(ftiltl);
     if (bKink)
     {
-        ffclose(fkink);
-        ffclose(fkinkr);
-        ffclose(fkinkl);
+        gmx_ffclose(fkink);
+        gmx_ffclose(fkinkr);
+        gmx_ffclose(fkinkl);
     }
 
     return 0;

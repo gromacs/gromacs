@@ -223,16 +223,16 @@ int gmx_helixorient(int argc, char *argv[])
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    fpaxis    = ffopen(opt2fn("-oaxis", NFILE, fnm), "w");
-    fpcenter  = ffopen(opt2fn("-ocenter", NFILE, fnm), "w");
-    fprise    = ffopen(opt2fn("-orise", NFILE, fnm), "w");
-    fpradius  = ffopen(opt2fn("-oradius", NFILE, fnm), "w");
-    fptwist   = ffopen(opt2fn("-otwist", NFILE, fnm), "w");
-    fpbending = ffopen(opt2fn("-obending", NFILE, fnm), "w");
+    fpaxis    = gmx_ffopen(opt2fn("-oaxis", NFILE, fnm), "w");
+    fpcenter  = gmx_ffopen(opt2fn("-ocenter", NFILE, fnm), "w");
+    fprise    = gmx_ffopen(opt2fn("-orise", NFILE, fnm), "w");
+    fpradius  = gmx_ffopen(opt2fn("-oradius", NFILE, fnm), "w");
+    fptwist   = gmx_ffopen(opt2fn("-otwist", NFILE, fnm), "w");
+    fpbending = gmx_ffopen(opt2fn("-obending", NFILE, fnm), "w");
 
-    fptheta1 = ffopen("theta1.xvg", "w");
-    fptheta2 = ffopen("theta2.xvg", "w");
-    fptheta3 = ffopen("theta3.xvg", "w");
+    fptheta1 = gmx_ffopen("theta1.xvg", "w");
+    fptheta2 = gmx_ffopen("theta2.xvg", "w");
+    fptheta3 = gmx_ffopen("theta3.xvg", "w");
 
     if (bIncremental)
     {
@@ -513,17 +513,17 @@ int gmx_helixorient(int argc, char *argv[])
 
     gmx_rmpbc_done(gpbc);
 
-    ffclose(fpaxis);
-    ffclose(fpcenter);
-    ffclose(fptilt);
-    ffclose(fprotation);
-    ffclose(fprise);
-    ffclose(fpradius);
-    ffclose(fptwist);
-    ffclose(fpbending);
-    ffclose(fptheta1);
-    ffclose(fptheta2);
-    ffclose(fptheta3);
+    gmx_ffclose(fpaxis);
+    gmx_ffclose(fpcenter);
+    gmx_ffclose(fptilt);
+    gmx_ffclose(fprotation);
+    gmx_ffclose(fprise);
+    gmx_ffclose(fpradius);
+    gmx_ffclose(fptwist);
+    gmx_ffclose(fpbending);
+    gmx_ffclose(fptheta1);
+    gmx_ffclose(fptheta2);
+    gmx_ffclose(fptheta3);
 
     close_trj(status);
 

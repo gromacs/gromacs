@@ -438,7 +438,7 @@ t_fgrid *FGridFromFile(const char *infile)
         }
         fscanf(in, "%15s", buf);
     }
-    ffclose(in);
+    gmx_ffclose(in);
 
     return fgrid;
 }

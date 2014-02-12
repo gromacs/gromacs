@@ -1221,9 +1221,9 @@ static int copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid, 
         char  fn[STRLEN], format[STRLEN];
         real  val;
         sprintf(fn, "pmegrid%d.pdb", pme->nodeid);
-        fp = ffopen(fn, "w");
+        fp = gmx_ffopen(fn, "w");
         sprintf(fn, "pmegrid%d.txt", pme->nodeid);
-        fp2 = ffopen(fn, "w");
+        fp2 = gmx_ffopen(fn, "w");
         sprintf(format, "%s%s\n", pdbformat, "%6.2f%6.2f");
 #endif
 
@@ -1257,8 +1257,8 @@ static int copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid, 
             }
         }
 #ifdef DEBUG_PME
-        ffclose(fp);
-        ffclose(fp2);
+        gmx_ffclose(fp);
+        gmx_ffclose(fp2);
 #endif
     }
     return 0;

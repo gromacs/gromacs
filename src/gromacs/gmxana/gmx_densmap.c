@@ -499,7 +499,7 @@ int gmx_densmap(int argc, char *argv[])
     }
     if (ftp2bSet(efDAT, NFILE, fnm))
     {
-        fp = ffopen(ftp2fn(efDAT, NFILE, fnm), "w");
+        fp = gmx_ffopen(ftp2fn(efDAT, NFILE, fnm), "w");
         /*optional text form output:  first row is tickz; first col is tickx */
         fprintf(fp, "0\t");
         for (j = 0; j < n2; ++j)
@@ -517,15 +517,15 @@ int gmx_densmap(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     else
     {
-        fp = ffopen(ftp2fn(efXPM, NFILE, fnm), "w");
+        fp = gmx_ffopen(ftp2fn(efXPM, NFILE, fnm), "w");
         write_xpm(fp, MAT_SPATIAL_X | MAT_SPATIAL_Y, buf, unit,
                   bRadial ? "axial (nm)" : label[c1], bRadial ? "r (nm)" : label[c2],
                   n1, n2, tickx, tickz, grid, dmin, maxgrid, rlo, rhi, &nlev);
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);

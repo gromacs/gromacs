@@ -339,16 +339,16 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     while (read_next_frame(oenv, status, &fr));
     close_trx(status);
-    ffclose(fp);
-    ffclose(gp);
-    ffclose(hp);
-    ffclose(tp);
+    gmx_ffclose(fp);
+    gmx_ffclose(gp);
+    gmx_ffclose(hp);
+    gmx_ffclose(tp);
 
     gmx_mtop_atomlookup_destroy(alook);
 
     if (max_clust_ind >= 0)
     {
-        fp = ffopen(mcn, "w");
+        fp = gmx_ffopen(mcn, "w");
         fprintf(fp, "[ max_clust ]\n");
         for (i = 0; (i < nindex); i++)
         {
@@ -367,7 +367,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                 }
             }
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     /* Print the real distribution cluster-size/numer, averaged over the trajectory. */
@@ -385,7 +385,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         nhisto += (int)((j+1)*nelem/n_x);
     }
     fprintf(fp, "%5d  %8.3f\n", j+1, 0.0);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     fprintf(stderr, "Total number of atoms in clusters =  %d\n", nhisto);
 
@@ -407,11 +407,11 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     fprintf(stderr, "cmid: %g, cmax: %g, max_size: %d\n", cmid, cmax, max_size);
     cmid = 1;
-    fp   = ffopen(xpm, "w");
+    fp   = gmx_ffopen(xpm, "w");
     write_xpm3(fp, 0, "Cluster size distribution", "# clusters", timebuf, "Size",
                n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
                rlo, rmid, rhi, &nlevels);
-    ffclose(fp);
+    gmx_ffclose(fp);
     cmid = 100.0;
     cmax = 0.0;
     for (i = 0; (i < n_x); i++)
@@ -427,11 +427,11 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         }
     }
     fprintf(stderr, "cmid: %g, cmax: %g, max_size: %d\n", cmid, cmax, max_size);
-    fp = ffopen(xpmw, "w");
+    fp = gmx_ffopen(xpmw, "w");
     write_xpm3(fp, 0, "Weighted cluster size distribution", "Fraction", timebuf,
                "Size", n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
                rlo, rmid, rhi, &nlevels);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     sfree(clust_index);
     sfree(clust_size);

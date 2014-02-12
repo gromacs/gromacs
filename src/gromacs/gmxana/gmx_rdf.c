@@ -742,7 +742,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     do_view(oenv, fnRDF, NULL);
 
@@ -773,7 +773,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
         {
             fprintf(fp, "%10g %10g\n", i*0.5, hq[i]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         do_view(oenv, fnHQ, NULL);
         sfree(hq);
         sfree(integrand);
@@ -812,7 +812,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         sfree(sum);
 
         do_view(oenv, fnCNRDF, NULL);

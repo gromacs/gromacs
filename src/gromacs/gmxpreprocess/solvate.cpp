@@ -525,8 +525,8 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
     if (ftp2bSet(efTOP, NFILE, fnm) )
     {
         fprintf(stderr, "Processing topology\n");
-        fpin    = ffopen(topinout, "r");
-        fpout   = ffopen(TEMP_FILENM, "w");
+        fpin    = gmx_ffopen(topinout, "r");
+        fpout   = gmx_ffopen(TEMP_FILENM, "w");
         line    = 0;
         bSystem = bMolecules = FALSE;
         while (fgets(buf, STRLEN, fpin))
@@ -595,17 +595,17 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                 fprintf(fpout, "%s", buf);
             }
         }
-        ffclose(fpin);
+        gmx_ffclose(fpin);
         if (nsol)
         {
             fprintf(stdout, "Adding line for %d solvent molecules to "
                     "topology file (%s)\n", nsol, topinout);
             fprintf(fpout, "%-15s %5d\n", "SOL", nsol);
         }
-        ffclose(fpout);
-        /* use ffopen to generate backup of topinout */
-        fpout = ffopen(topinout, "w");
-        ffclose(fpout);
+        gmx_ffclose(fpout);
+        /* use gmx_ffopen to generate backup of topinout */
+        fpout = gmx_ffopen(topinout, "w");
+        gmx_ffclose(fpout);
         rename(TEMP_FILENM, topinout);
     }
 #undef TEMP_FILENM

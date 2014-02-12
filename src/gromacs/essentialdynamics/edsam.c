@@ -470,7 +470,7 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
 
 
     sprintf(fn, "EDdump_node%d_edi%d", cr->nodeid, nr_edi);
-    out = ffopen(fn, "w");
+    out = gmx_ffopen(fn, "w");
 
     fprintf(out, "#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
             edpars->nini, edpars->fitmas, edpars->pcamas);
@@ -502,7 +502,7 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     fprintf(out, "buf->do_edsam         =%p\n", (void*)edpars->buf->do_edsam  );
     fprintf(out, "buf->do_radcon        =%p\n", (void*)edpars->buf->do_radcon );
 
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 

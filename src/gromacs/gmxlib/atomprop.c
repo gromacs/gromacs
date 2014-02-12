@@ -238,7 +238,7 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
     }
 
     /* for libraries we can use the low-level close routines */
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     ap->bSet = TRUE;
 }

@@ -137,7 +137,7 @@ static void dump_sd(const char *fn, t_shiftdata *sd)
         }
     }
     sprintf(buf, "%s.xpm", fn);
-    fp = ffopen(buf, "w");
+    fp = gmx_ffopen(buf, "w");
     write_xpm(fp, 0, fn, fn, "Phi", "Psi", nnx, nny,
               x_phi, y_psi, newdata, lo, hi, rlo, rhi, &nlevels);
     for (i = 0; (i < nnx); i++)
@@ -188,7 +188,7 @@ static t_shiftdata *read_shifts(const char *fn)
         }
         sd->data[i][j] = sd->data[i][0];
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     if (bDebugMode())
     {

@@ -302,7 +302,7 @@ static void outputfield(const char *fldfn, real ****Densmap,
     dim[2] = yslices;
     dim[3] = zslices;
 
-    fldH = ffopen(fldfn, "w");
+    fldH = gmx_ffopen(fldfn, "w");
     fwrite(dim, sizeof(int), 4, fldH);
     for (n = 0; n < tdim; n++)
     {
@@ -320,7 +320,7 @@ static void outputfield(const char *fldfn, real ****Densmap,
     }
     totdens /= (xslices*yslices*zslices*tdim);
     fprintf(stderr, "Total density [kg/m^3]  %8f", totdens);
-    ffclose(fldH);
+    gmx_ffclose(fldH);
 }
 
 static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslices, int tblocks, int ftsize)
@@ -562,8 +562,8 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
         yticks[j] += bw;
     }
 
-    xpmfile1 = ffopen(outfiles[0], "w");
-    xpmfile2 = ffopen(outfiles[1], "w");
+    xpmfile1 = gmx_ffopen(outfiles[0], "w");
+    xpmfile2 = gmx_ffopen(outfiles[1], "w");
 
     max1 = max2 = 0.0;
     min1 = min2 = zbins*bwz;
@@ -602,8 +602,8 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
         write_xpm(xpmfile2, 3, numbuf, "Height", "x[nm]", "y[nm]", xbins, ybins, xticks, yticks, profile2, min2, max2, lo, hi, &maplevels);
     }
 
-    ffclose(xpmfile1);
-    ffclose(xpmfile2);
+    gmx_ffclose(xpmfile1);
+    gmx_ffclose(xpmfile2);
 
 
     sfree(profile1);
@@ -617,8 +617,8 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
     FILE *raw1, *raw2;
     int   i, j, n;
 
-    raw1 = ffopen(fnms[0], "w");
-    raw2 = ffopen(fnms[1], "w");
+    raw1 = gmx_ffopen(fnms[0], "w");
+    raw2 = gmx_ffopen(fnms[1], "w");
     try
     {
         gmx::BinaryInformationSettings settings;
@@ -644,8 +644,8 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
         }
     }
 
-    ffclose(raw1);
-    ffclose(raw2);
+    gmx_ffclose(raw1);
+    gmx_ffclose(raw2);
 }
 
 

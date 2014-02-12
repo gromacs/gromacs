@@ -453,7 +453,7 @@ int main(int argc,char *argv[])
     /* Finish I/O, close files */
     if (MASTER(cr)) {
       close_trx(status);
-      ffclose(fp);
+      gmx_ffclose(fp);
     }
   }
   

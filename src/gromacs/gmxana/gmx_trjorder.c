@@ -376,7 +376,7 @@ int gmx_trjorder(int argc, char *argv[])
     }
     if (fp)
     {
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     gmx_rmpbc_done(gpbc);
 

@@ -505,8 +505,8 @@ static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, rea
         yticks[j] += bw;
     }
 
-    xpmfile1 = ffopen(outfiles[0], "w");
-    xpmfile2 = ffopen(outfiles[1], "w");
+    xpmfile1 = gmx_ffopen(outfiles[0], "w");
+    xpmfile2 = gmx_ffopen(outfiles[1], "w");
 
     max1 = max2 = 0.0;
     min1 = min2 = 1000.00;
@@ -545,8 +545,8 @@ static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, rea
         write_xpm(xpmfile2, 3, numbuf, "Height", "x[nm]", "y[nm]", xbins, ybins, xticks, yticks, profile2, min2, max2, lo, hi, &maplevels);
     }
 
-    ffclose(xpmfile1);
-    ffclose(xpmfile2);
+    gmx_ffclose(xpmfile1);
+    gmx_ffclose(xpmfile2);
 
 
 
@@ -562,8 +562,8 @@ static void writeraw(real ***surf, int tblocks, int xbins, int ybins, char **fnm
     FILE *raw1, *raw2;
     int   i, j, n;
 
-    raw1 = ffopen(fnms[0], "w");
-    raw2 = ffopen(fnms[1], "w");
+    raw1 = gmx_ffopen(fnms[0], "w");
+    raw2 = gmx_ffopen(fnms[1], "w");
     fprintf(raw1, "#Legend\n#TBlock\n#Xbin Ybin Z t\n");
     fprintf(raw2, "#Legend\n#TBlock\n#Xbin Ybin Z t\n");
     for (n = 0; n < tblocks; n++)
@@ -580,8 +580,8 @@ static void writeraw(real ***surf, int tblocks, int xbins, int ybins, char **fnm
         }
     }
 
-    ffclose(raw1);
-    ffclose(raw2);
+    gmx_ffclose(raw1);
+    gmx_ffclose(raw2);
 }
 
 

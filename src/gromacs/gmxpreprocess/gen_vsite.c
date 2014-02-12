@@ -312,7 +312,7 @@ static void read_vsite_database(const char *ddbname,
     *nvsiteconf     = nvsite;
     *nvsitetop      = ntop;
 
-    ffclose(ddb);
+    gmx_ffclose(ddb);
 }
 
 static int nitrogen_is_planar(t_vsiteconf vsiteconflist[], int nvsiteconf, char atomtype[])

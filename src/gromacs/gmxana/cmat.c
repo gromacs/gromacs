@@ -232,7 +232,7 @@ void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
     {
         fprintf(fp, "%10g  %10d\n", i/fac, histo[i]);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     sfree(histo);
 }
 

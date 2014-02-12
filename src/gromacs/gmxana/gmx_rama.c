@@ -114,7 +114,7 @@ int gmx_rama(int argc, char *argv[])
     }
     while (new_data(xr));
     fprintf(stderr, "\n");
-    ffclose(out);
+    gmx_ffclose(out);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
 

@@ -327,8 +327,8 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     sfree(index);
     sfree(isize);
 
-    ffclose(fpsg);
-    ffclose(fpsk);
+    gmx_ffclose(fpsg);
+    gmx_ffclose(fpsk);
 
     fpsg = xvgropen(sgslfn,
                     "S\\sg\\N Angle Order Parameter / Slab", "(nm)", "S\\sg\\N",
@@ -343,8 +343,8 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
         fprintf(fpsk, "%10g  %10g\n", (i+0.5)*box[slice_dim][slice_dim]/nslice,
                 sk_slice_tot[i]/nframes);
     }
-    ffclose(fpsg);
-    ffclose(fpsk);
+    gmx_ffclose(fpsg);
+    gmx_ffclose(fpsk);
 }
 
 
@@ -832,8 +832,8 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
                                                         0.333 * order[atom][YY]));
         }
 
-        ffclose(ord);
-        ffclose(slOrd);
+        gmx_ffclose(ord);
+        gmx_ffclose(slOrd);
     }
 }
 

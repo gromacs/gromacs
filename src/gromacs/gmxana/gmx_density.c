@@ -88,7 +88,7 @@ int get_electrons(t_electron **eltab, const char *fn)
     int   nr;        /* number of atomstypes to read */
     int   i;
 
-    if (!(in = ffopen(fn, "r")))
+    if (!(in = gmx_ffopen(fn, "r")))
     {
         gmx_fatal(FARGS, "Couldn't open %s. Exiting.\n", fn);
     }
@@ -118,7 +118,7 @@ int get_electrons(t_electron **eltab, const char *fn)
         (*eltab)[i].nr_el    = tempnr;
         (*eltab)[i].atomname = strdup(tempname);
     }
-    ffclose(in);
+    gmx_ffclose(in);
 
     /* sort the list */
     fprintf(stderr, "Sorting list..\n");
@@ -431,7 +431,7 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
         fprintf(den, "\n");
     }
 
-    ffclose(den);
+    gmx_ffclose(den);
 }
 
 int gmx_density(int argc, char *argv[])

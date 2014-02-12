@@ -991,16 +991,16 @@ int gmx_current(int argc, char *argv[])
                temp, trust, bfit, efit, bvit, evit, status, isize, nmols, nshift,
                index0, indexm, mass2, qmol, eps_rf, oenv);
 
-    ffclose(fmj);
-    ffclose(fmd);
-    ffclose(fmjdsp);
+    gmx_ffclose(fmj);
+    gmx_ffclose(fmd);
+    gmx_ffclose(fmjdsp);
     if (bACF)
     {
-        ffclose(outf);
+        gmx_ffclose(outf);
     }
     if (bINT)
     {
-        ffclose(mcor);
+        gmx_ffclose(mcor);
     }
 
     return 0;

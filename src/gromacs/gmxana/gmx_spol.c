@@ -380,7 +380,7 @@ int gmx_spol(int argc, char *argv[])
         nmol += hist[i];
         fprintf(fp, "%g %g\n", i*bw, nmol/nf);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
 

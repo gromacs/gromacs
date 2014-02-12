@@ -609,7 +609,7 @@ int gmx_confrms(int argc, char *argv[])
         find_matching_names(&isize1, index1, atoms1, &isize2, index2, atoms2);
         if (matchndxfile)
         {
-            fp = ffopen(matchndxfile, "w");
+            fp = gmx_ffopen(matchndxfile, "w");
             fprintf(fp, "; Matching atoms between %s from %s and %s from %s\n",
                     groupnames1, conf1file, groupnames2, conf2file);
             fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1);
@@ -798,26 +798,26 @@ int gmx_confrms(int argc, char *argv[])
 /*    atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B'; */
                 }
             }
-            fp = ffopen(outfile, "w");
+            fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
                 write_pdbfile(fp, title1, atoms1, x1, ePBC1, box1, ' ', 1, NULL, TRUE);
             }
             write_pdbfile(fp, title2, atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, NULL, TRUE);
-            ffclose(fp);
+            gmx_ffclose(fp);
             break;
         case efGRO:
             if (bBfac)
             {
                 fprintf(stderr, "WARNING: cannot write B-factor values to gro file\n");
             }
-            fp = ffopen(outfile, "w");
+            fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
                 write_hconf_p(fp, title1, atoms1, 3, x1, v1, box1);
             }
             write_hconf_p(fp, title2, atoms2, 3, x2, v2, box2);
-            ffclose(fp);
+            gmx_ffclose(fp);
             break;
         default:
             if (bBfac)

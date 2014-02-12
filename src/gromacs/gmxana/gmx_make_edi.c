@@ -983,7 +983,7 @@ int gmx_make_edi(int argc, char *argv[])
     }
 
     /* Write edi-file */
-    write_the_whole_thing(ffopen(EdiFile, "w"), &edi_params, eigvec1, nvec1, listen, evStepList);
+    write_the_whole_thing(gmx_ffopen(EdiFile, "w"), &edi_params, eigvec1, nvec1, listen, evStepList);
 
     return 0;
 }

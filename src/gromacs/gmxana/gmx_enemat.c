@@ -470,7 +470,7 @@ int gmx_enemat(int argc, char *argv[])
 
                     sprintf(fn, "%s%s", egrp_nm[m], ftp2fn(efXPM, NFILE, fnm));
                     sprintf(label, "%s Interaction Energies", egrp_nm[m]);
-                    out = ffopen(fn, "w");
+                    out = gmx_ffopen(fn, "w");
                     if (emin >= emid)
                     {
                         write_xpm(out, 0, label, "Energy (kJ/mol)",
@@ -492,7 +492,7 @@ int gmx_enemat(int argc, char *argv[])
                                    ngroups, ngroups, groupnr, groupnr, emat[m],
                                    emin, emid, emax, rlo, rmid, rhi, &nlevels);
                     }
-                    ffclose(out);
+                    gmx_ffclose(out);
                 }
             }
         }
@@ -566,7 +566,7 @@ int gmx_enemat(int argc, char *argv[])
             }
             fprintf(out, "\n");
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     else
     {
@@ -584,7 +584,7 @@ int gmx_enemat(int argc, char *argv[])
       write_matrix(out,ngroups,1,ngroups,groupnr,emat,label,emin,emax,nlevels);
       n++;
     }
-    ffclose(out);
+    gmx_ffclose(out);
  */
     }
     close_enx(in);

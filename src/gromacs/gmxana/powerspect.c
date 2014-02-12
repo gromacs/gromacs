@@ -99,8 +99,8 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
     }
     /*Print out average energy-spectrum to outfiles[0] and outfiles[1];*/
 
-    datfile1 = ffopen(outfiles[0], "w");
-    datfile2 = ffopen(outfiles[1], "w");
+    datfile1 = gmx_ffopen(outfiles[0], "w");
+    datfile2 = gmx_ffopen(outfiles[1], "w");
 
 /*Filling dat files with spectral data*/
     fprintf(datfile1, "%s\n", "kx\t ky\t\tPower(kx,ky)");
@@ -110,8 +110,8 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
         fprintf(datfile1, "%d\t%d\t %8.6f\n", (n / fy), (n % fy), pspectavg1[n]);
         fprintf(datfile2, "%d\t%d\t %8.6f\n", (n /fy), (n % fy), pspectavg2[n]);
     }
-    ffclose(datfile1);
-    ffclose(datfile2);
+    gmx_ffclose(datfile1);
+    gmx_ffclose(datfile2);
 
     free(ftspect1);
     free(ftspect2);

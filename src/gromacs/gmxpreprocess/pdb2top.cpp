@@ -250,10 +250,10 @@ choose_ff(const char *ffsel,
             if (gmx_fexist(buf))
             {
                 /* We don't use fflib_open, because we don't want printf's */
-                fp = ffopen(buf, "r");
+                fp = gmx_ffopen(buf, "r");
                 snew(desc[i], STRLEN);
                 get_a_line(fp, desc[i], STRLEN);
-                ffclose(fp);
+                gmx_ffclose(fp);
             }
             else
             {
@@ -410,7 +410,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
             sfree(model[nwm]);
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     fprintf(stderr, "%2d: %s\n", nwm+1, "None");
 
     sel = -1;

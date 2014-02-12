@@ -101,20 +101,20 @@ gmx_bool gmx_eof(FILE *fp);
 /* Return TRUE on end-of-file, FALSE otherwise */
 
 gmx_bool is_pipe(FILE *fp);
-/* Check whether the file (opened by ffopen) is a pipe */
+/* Check whether the file (opened by gmx_ffopen) is a pipe */
 
 /*  Make a backup of file if necessary.
     Return false if there was a problem.
  */
 gmx_bool make_backup(const char * file);
 
-FILE *ffopen(const char *file, const char *mode);
+FILE *gmx_ffopen(const char *file, const char *mode);
 /* Return a valid file pointer when successful, exits otherwise
  * If the file is in compressed format, open a pipe which uncompresses
- * the file! Therefore, files must be closed with ffclose (see below)
+ * the file! Therefore, files must be closed with gmx_ffclose (see below)
  */
 
-int ffclose(FILE *fp);
+int gmx_ffclose(FILE *fp);
 /* Close files or pipes */
 
 

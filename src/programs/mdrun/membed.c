@@ -895,8 +895,8 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     char       buf[STRLEN], buf2[STRLEN], *temp;
     int        i, *nmol_rm, nmol, line;
 
-    fpin  = ffopen(topfile, "r");
-    fpout = ffopen(TEMP_FILENM, "w");
+    fpin  = gmx_ffopen(topfile, "r");
+    fpout = gmx_ffopen(TEMP_FILENM, "w");
 
     snew(nmol_rm, mtop->nmoltype);
     for (i = 0; i < rm_p->nr; i++)
@@ -961,10 +961,10 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
         }
     }
 
-    ffclose(fpout);
-    /* use ffopen to generate backup of topinout */
-    fpout = ffopen(topfile, "w");
-    ffclose(fpout);
+    gmx_ffclose(fpout);
+    /* use gmx_ffopen to generate backup of topinout */
+    fpout = gmx_ffopen(topfile, "w");
+    gmx_ffclose(fpout);
     rename(TEMP_FILENM, topfile);
 #undef TEMP_FILENM
 }

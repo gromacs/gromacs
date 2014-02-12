@@ -205,7 +205,7 @@ int gmx_lie(int argc, char *argv[])
         }
     }
     close_enx(fp);
-    ffclose(out);
+    gmx_ffclose(out);
     fprintf(stderr, "\n");
 
     if (nframes > 0)

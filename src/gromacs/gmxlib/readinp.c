@@ -68,7 +68,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
         fprintf(debug, "Reading MDP file %s\n", fn);
     }
 
-    in = ffopen(fn, "r");
+    in = gmx_ffopen(fn, "r");
 
     nin = lc  = 0;
     do
@@ -201,7 +201,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
     }
     while (ptr);
 
-    ffclose(in);
+    gmx_ffclose(in);
 
     if (debug)
     {

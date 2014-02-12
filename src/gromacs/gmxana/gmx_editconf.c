@@ -1273,9 +1273,9 @@ int gmx_editconf(int argc, char *argv[])
 
         if (outftp == efPDB)
         {
-            out = ffopen(outfile, "w");
+            out = gmx_ffopen(outfile, "w");
             write_pdbfile_indexed(out, title, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE);
-            ffclose(out);
+            gmx_ffclose(out);
         }
         else
         {
@@ -1291,7 +1291,7 @@ int gmx_editconf(int argc, char *argv[])
 
         if ((outftp == efPDB) || (outftp == efPQR))
         {
-            out = ffopen(outfile, "w");
+            out = gmx_ffopen(outfile, "w");
             if (bMead)
             {
                 set_pdb_wide_format(TRUE);
@@ -1331,7 +1331,7 @@ int gmx_editconf(int argc, char *argv[])
                 visualize_box(out, bLegend ? atoms.nr+12 : atoms.nr,
                               bLegend ? atoms.nres = 12 : atoms.nres, box, visbox);
             }
-            ffclose(out);
+            gmx_ffclose(out);
         }
         else
         {

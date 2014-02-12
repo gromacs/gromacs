@@ -468,14 +468,14 @@ int gmx_polystat(int argc, char *argv[])
 
     close_trx(status);
 
-    ffclose(out);
+    gmx_ffclose(out);
     if (outv)
     {
-        ffclose(outv);
+        gmx_ffclose(outv);
     }
     if (outp)
     {
-        ffclose(outp);
+        gmx_ffclose(outp);
     }
 
     sum_eed2_tot /= frame;
@@ -515,7 +515,7 @@ int gmx_polystat(int argc, char *argv[])
         {
             fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
         }
-        ffclose(outi);
+        gmx_ffclose(outi);
     }
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");

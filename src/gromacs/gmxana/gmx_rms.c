@@ -1064,11 +1064,11 @@ int gmx_rms(int argc, char *argv[])
                     del_yaxis[i] = delta_maxy*i/del_lev;
                 }
                 sprintf(buf, "%s %s vs. delta t", gn_rms[0], whatname[ewhat]);
-                fp = ffopen("delta.xpm", "w");
+                fp = gmx_ffopen("delta.xpm", "w");
                 write_xpm(fp, 0, buf, "density", output_env_get_time_label(oenv), whatlabel[ewhat],
                           delta_xsize, del_lev+1, del_xaxis, del_yaxis,
                           delta, 0.0, delta_max, rlo, rhi, &nlevels);
-                ffclose(fp);
+                gmx_ffclose(fp);
             }
             if (opt2bSet("-bin", NFILE, fnm))
             {
@@ -1081,7 +1081,7 @@ int gmx_rms(int argc, char *argv[])
                         gmx_fatal(FARGS, "Error writing to output file");
                     }
                 }
-                ffclose(fp);
+                gmx_ffclose(fp);
             }
         }
         if (bBond)
@@ -1151,7 +1151,7 @@ int gmx_rms(int argc, char *argv[])
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     if (bMirror)
     {
@@ -1189,7 +1189,7 @@ int gmx_rms(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     if (bAv)
@@ -1201,7 +1201,7 @@ int gmx_rms(int argc, char *argv[])
         {
             fprintf(fp, "%10d  %10g\n", j, rlstot/teller);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     if (bNorm)
@@ -1211,7 +1211,7 @@ int gmx_rms(int argc, char *argv[])
         {
             fprintf(fp, "%10d  %10g\n", j, rlsnorm[j]/teller);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     do_view(oenv, opt2fn_null("-a", NFILE, fnm), "-graphtype bar");
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);

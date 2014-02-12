@@ -128,7 +128,7 @@ void File::open(const char *filename, const char *mode)
 {
     GMX_RELEASE_ASSERT(impl_->fp_ == NULL,
                        "Attempted to open the same file object twice");
-    // TODO: Port all necessary functionality from ffopen() here.
+    // TODO: Port all necessary functionality from gmx_ffopen() here.
     impl_->fp_ = fopen(filename, mode);
     if (impl_->fp_ == NULL)
     {

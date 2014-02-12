@@ -305,7 +305,7 @@ int gmx_mk_angndx(int argc, char *argv[])
             fprintf(out, "\n");
         }
     }
-    ffclose(out);
+    gmx_ffclose(out);
 
     return 0;
 }
