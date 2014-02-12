@@ -217,6 +217,26 @@ static ::testing::AssertionResult assertWithinRelativeTolerance(
 #define ASSERT_NEAR_REL(val1, val2, rel_error) \
     ASSERT_PRED_FORMAT3(::gmx::test::assertWithinRelativeTolerance, val1, val2, rel_error)
 
+/* The (void *) casts in the next two macros work around xlC++ 12.1
+ * on BG/Q, which decides the type of NULL is int, and does not work
+ * out how to convert it to a void *, which it would need to make a
+ * valid comparison with a const char *, via the GoogleTest
+ * equality-tester template. */
+
+/*! \brief
+ * Asserts that a pointer is null.
+ *
+ * Works exactly like EXPECT_EQ comparing with a null pointer. */
+#define EXPECT_NULL(val, rel_error) \
+    EXPECT_EQ((void *) NULL, val, rel_error)
+
+/*! \brief
+ * Asserts that a pointer is null.
+ *
+ * Works eactly like ASSERT_EQ comparing with a null pointer. */
+#define ASSSERT_NULL(val, rel_error) \
+    ASSERT_EQ((void *) NULL, val, rel_error)
+
 } // namespace test
 } // namespace gmx
 

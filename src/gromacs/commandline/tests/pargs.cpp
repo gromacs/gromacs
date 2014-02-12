@@ -303,7 +303,7 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaults)
     parse(cmdline, 0, fnm, gmx::EmptyArrayRef());
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("traj.xtc", opt2fn("-f2", nfile(), fnm));
-    EXPECT_EQ(NULL, opt2fn_null("-f2", nfile(), fnm));
+    EXPECT_NULL(opt2fn_null("-f2", nfile(), fnm));
     EXPECT_STREQ("trj3.xtc", opt2fn("-f3", nfile(), fnm));
     EXPECT_STREQ("out.xvg", opt2fn("-o", nfile(), fnm));
     EXPECT_STREQ("outm.xvg", opt2fn("-om", nfile(), fnm));
