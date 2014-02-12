@@ -127,11 +127,7 @@ int main ()
         printf("  Cannot init trajectory.\n");
         exit(1);
     }
-#ifdef TNG_EXAMPLE_FILES_DIR
     tng_output_file_set(traj, TNG_EXAMPLE_FILES_DIR "tng_md_out.tng");
-#else
-    tng_output_file_set(traj, "/tmp/tng_md_out.tng");
-#endif
 
 
 

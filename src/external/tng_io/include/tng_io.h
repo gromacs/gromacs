@@ -1,6 +1,6 @@
 /* This code is part of the tng binary trajectory format.
  *
- *                      VERSION 1.4
+ *                      VERSION 1.5
  *
  * Written by Magnus Lundborg
  * Copyright (c) 2012-2013, The GROMACS development team.
@@ -77,6 +77,17 @@
  * See git log for full revision history.
  *
  * Revisions
+ *
+ * v. 1.5 - Third stable release of the API.
+ *
+ *        - Fortran wrapper split into separate file
+ *        - Added more block IDs.
+ *        - Some new functions and utility functions added.
+ *        - Improved compression precision settings.
+ *        - Improved tests.
+ *        - Make appending to file work better.
+ *        - Modified CMake settings
+ *        - Bugs fixed
  *
  * v. 1.4 - Changed from LGPL to the Revised BSD License.
  *
@@ -334,7 +345,7 @@ typedef unsigned __int64 uint64_t;
 
 
 /** The version of this TNG build */
-#define TNG_VERSION 4 /* TNG_VERSION 4 => Api version 1.4 */
+#define TNG_VERSION 5 /* TNG_VERSION 4 => Api version 1.5 */
 
 /** Flag to indicate frame dependent data. */
 #define TNG_FRAME_DEPENDENT 1
@@ -658,7 +669,7 @@ tng_function_status DECLSPECDLLEXPORT tng_output_append_file_set
  * could not be retrieved.
  */
 tng_function_status DECLSPECDLLEXPORT tng_output_file_endianness_get
-                (tng_trajectory_t tng_data, tng_file_endianness *endianness);
+                (const tng_trajectory_t tng_data, tng_file_endianness *endianness);
 
 /**
  * @brief Set the endianness of the output file.
@@ -1283,7 +1294,7 @@ tng_function_status DECLSPECDLLEXPORT tng_num_frame_sets_get
  * @return TNG_SUCCESS (0) if successful.
  */
 tng_function_status DECLSPECDLLEXPORT tng_current_frame_set_get
-                (tng_trajectory_t tng_data,
+                (const tng_trajectory_t tng_data,
                  tng_trajectory_frame_set_t *frame_set_p);
 
 /**
@@ -1516,8 +1527,8 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_name_set
  * has occurred or TNG_CRITICAL (2) if a major error has occured.
  */
 tng_function_status DECLSPECDLLEXPORT tng_molecule_cnt_get
-                (tng_trajectory_t tng_data,
-                 tng_molecule_t molecule,
+                (const tng_trajectory_t tng_data,
+                 const tng_molecule_t molecule,
                  int64_t *cnt);
 
 /**
@@ -1601,8 +1612,8 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_system_copy(tng_trajectory_t 
  * @return TNG_SUCCESS (0) if successful.
  */
 tng_function_status DECLSPECDLLEXPORT tng_molecule_num_chains_get
-                (tng_trajectory_t tng_data,
-                 tng_molecule_t molecule,
+                (const tng_trajectory_t tng_data,
+                 const tng_molecule_t molecule,
                  int64_t *n);
 
 /**
@@ -1633,8 +1644,8 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_chain_of_index_get
  * @return TNG_SUCCESS (0) if successful.
  */
 tng_function_status DECLSPECDLLEXPORT tng_molecule_num_residues_get
-                (tng_trajectory_t tng_data,
-                 tng_molecule_t molecule,
+                (const tng_trajectory_t tng_data,
+                 const tng_molecule_t molecule,
                  int64_t *n);
 
 /**
@@ -1650,9 +1661,9 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_num_residues_get
  * residue is not found.
  */
 tng_function_status DECLSPECDLLEXPORT tng_molecule_residue_of_index_get
-                (tng_trajectory_t tng_data,
-                 tng_molecule_t molecule,
-                 int64_t index,
+                (const tng_trajectory_t tng_data,
+                 const tng_molecule_t molecule,
+                 const int64_t index,
                  tng_residue_t *residue);
 
 /**
@@ -1665,8 +1676,8 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_residue_of_index_get
  * @return TNG_SUCCESS (0) if successful.
  */
 tng_function_status DECLSPECDLLEXPORT tng_molecule_num_atoms_get
-                (tng_trajectory_t tng_data,
-                 tng_molecule_t molecule,
+                (const tng_trajectory_t tng_data,
+                 const tng_molecule_t molecule,
                  int64_t *n);
 
 /**
@@ -1682,9 +1693,9 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_num_atoms_get
  * atom is not found.
  */
 tng_function_status DECLSPECDLLEXPORT tng_molecule_atom_of_index_get
-                (tng_trajectory_t tng_data,
-                 tng_molecule_t molecule,
-                 int64_t index,
+                (const tng_trajectory_t tng_data,
+                 const tng_molecule_t molecule,
+                 const int64_t index,
                  tng_atom_t *atom);
 
 /**
@@ -1856,9 +1867,9 @@ tng_function_status DECLSPECDLLEXPORT tng_chain_num_residues_get
  * residue is not found.
  */
 tng_function_status DECLSPECDLLEXPORT tng_chain_residue_of_index_get
-                (tng_trajectory_t tng_data,
-                 tng_chain_t chain,
-                 int64_t index,
+                (const tng_trajectory_t tng_data,
+                 const tng_chain_t chain,
+                 const int64_t index,
                  tng_residue_t *residue);
 
 /**
@@ -1988,9 +1999,9 @@ tng_function_status DECLSPECDLLEXPORT tng_residue_num_atoms_get
  * atom is not found.
  */
 tng_function_status DECLSPECDLLEXPORT tng_residue_atom_of_index_get
-                (tng_trajectory_t tng_data,
-                 tng_residue_t residue,
-                 int64_t index,
+                (const tng_trajectory_t tng_data,
+                 const tng_residue_t residue,
+                 const int64_t index,
                  tng_atom_t *atom);
 
 /**
@@ -2049,7 +2060,7 @@ tng_function_status DECLSPECDLLEXPORT tng_residue_atom_w_id_add
  * @pre \code atom != 0 \endcode The atom must not be NULL.
  * @return TNG_SUCCESS (0) if successful.
  */
-tng_function_status tng_atom_residue_get(tng_trajectory_t tng_data,
+tng_function_status tng_atom_residue_get(const tng_trajectory_t tng_data,
                                          const tng_atom_t atom,
                                          tng_residue_t *residue);
 
@@ -2600,7 +2611,7 @@ tng_function_status DECLSPECDLLEXPORT tng_frame_set_first_frame_time_set
  * frame set or TNG_CRITICAL(2) if a major error has occured.
  */
 tng_function_status DECLSPECDLLEXPORT tng_first_frame_nr_of_next_frame_set_get
-                (tng_trajectory_t tng_data,
+                (const tng_trajectory_t tng_data,
                  int64_t *frame);
 
 /**
@@ -2725,7 +2736,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_block_name_get
  * TNG_CRITICAL (2) if a major error has occured.
  */
 tng_function_status DECLSPECDLLEXPORT tng_data_block_dependency_get
-                (tng_trajectory_t tng_data,
+                (const tng_trajectory_t tng_data,
                  int64_t block_id,
                  int *block_dependency);
 
@@ -2742,7 +2753,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_block_dependency_get
  * TNG_CRITICAL (2) if a major error has occured.
  */
 tng_function_status DECLSPECDLLEXPORT tng_data_block_num_values_per_frame_get
-                (tng_trajectory_t tng_data,
+                (const tng_trajectory_t tng_data,
                  int64_t block_id,
                  int64_t *n_values_per_frame);
 
@@ -3218,7 +3229,7 @@ tng_function_status DECLSPECDLLEXPORT tng_particle_data_vector_interval_get
  * has occurred or TNG_CRITICAL (2) if a major error has occured.
  */
 tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length
-                (tng_trajectory_t tng_data,
+                (const tng_trajectory_t tng_data,
                  const int64_t block_id,
                  int64_t frame,
                  int64_t *stride_length);
@@ -4670,7 +4681,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_box_shape_with_time_double_write
 tng_function_status DECLSPECDLLEXPORT tng_util_frame_current_compression_get
                 (tng_trajectory_t tng_data,
                  const int64_t block_id,
-                 char *codec_id,
+                 int64_t *codec_id,
                  float *factor);
 
 /** @brief High-level function for determining the next frame with data and what

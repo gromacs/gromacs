@@ -423,9 +423,12 @@ static void compress_quantized_pos(int *quant, int *quant_inter, int *quant_intr
       if (data)
         bufferfix((unsigned char*)data+bufloc,(fix_t)length,4);
       bufloc+=4;
-      if (data)
-        memcpy(data+bufloc,datablock,length);
-      free(datablock);
+      if (datablock)
+        {
+          if (data)
+            memcpy(data+bufloc,datablock,length);
+          free(datablock);
+        }
       bufloc+=length;
     }
   *nitems=bufloc;

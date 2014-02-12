@@ -1,6 +1,6 @@
 /* This code is part of the tng binary trajectory format.
  *
- *                      VERSION 1.4
+ *                      VERSION 1.5
  *
  * Written by Anders Gärdenäs
  * Copyright (c) 2012-2013, The GROMACS development team.
