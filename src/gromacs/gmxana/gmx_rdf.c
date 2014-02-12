@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -742,7 +742,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     do_view(oenv, fnRDF, NULL);
 
@@ -773,7 +773,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
         {
             fprintf(fp, "%10g %10g\n", i*0.5, hq[i]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         do_view(oenv, fnHQ, NULL);
         sfree(hq);
         sfree(integrand);
@@ -812,7 +812,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         sfree(sum);
 
         do_view(oenv, fnCNRDF, NULL);

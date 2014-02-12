@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -470,7 +470,7 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
 
 
     sprintf(fn, "EDdump_node%d_edi%d", cr->nodeid, nr_edi);
-    out = ffopen(fn, "w");
+    out = gmx_ffopen(fn, "w");
 
     fprintf(out, "#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
             edpars->nini, edpars->fitmas, edpars->pcamas);
@@ -502,7 +502,7 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     fprintf(out, "buf->do_edsam         =%p\n", (void*)edpars->buf->do_edsam  );
     fprintf(out, "buf->do_radcon        =%p\n", (void*)edpars->buf->do_radcon );
 
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 

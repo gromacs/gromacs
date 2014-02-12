@@ -205,7 +205,7 @@ int gmx_helix(int argc, char *argv[])
         {
             sprintf(buf, "%s.out", xf[i].filenm);
             remove(buf);
-            xf[i].fp2 = ffopen(buf, "w");
+            xf[i].fp2 = gmx_ffopen(buf, "w");
         }
     }
 
@@ -293,10 +293,10 @@ int gmx_helix(int argc, char *argv[])
 
     for (i = 0; (i < efhNR); i++)
     {
-        ffclose(xf[i].fp);
+        gmx_ffclose(xf[i].fp);
         if (xf[i].bfp2)
         {
-            ffclose(xf[i].fp2);
+            gmx_ffclose(xf[i].fp2);
         }
         do_view(oenv, xf[i].filenm, "-nxy");
     }

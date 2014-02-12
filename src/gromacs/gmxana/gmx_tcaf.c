@@ -101,7 +101,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         do_view(oenv, fn_trans, "-nxy");
     }
 
@@ -169,7 +169,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     do_view(oenv, fn_tc, "-nxy");
 
     if (fn_cub)
@@ -217,7 +217,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         }
         fprintf(fp, "&\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     do_view(oenv, fn_tcf, "-nxy");
 
     if (fn_cub)
@@ -244,10 +244,10 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             fprintf(fp_cub, "&\n");
         }
         fprintf(fp_vk, "&\n");
-        ffclose(fp_cub);
+        gmx_ffclose(fp_cub);
         do_view(oenv, fn_cub, "-nxy");
     }
-    ffclose(fp_vk);
+    gmx_ffclose(fp_vk);
     do_view(oenv, fn_vk, "-nxy");
 }
 

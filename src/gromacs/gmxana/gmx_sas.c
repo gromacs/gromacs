@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -128,7 +128,7 @@ void do_conect(const char *fn, int n, rvec x[])
             add_rec(c, j, i, d2);
         }
     }
-    fp = ffopen(fn, "a");
+    fp = gmx_ffopen(fn, "a");
     for (i = 0; (i < n); i++)
     {
         if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
@@ -137,7 +137,7 @@ void do_conect(const char *fn, int n, rvec x[])
         }
         fprintf(fp, "CONECT%5d%5d%5d\n", i+1, c[i].aa+1, c[i].ab+1);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     sfree(c);
 }
 
@@ -597,10 +597,10 @@ void sas_plot(int nfile, t_filenm fnm[], real solsize, int ndots,
 
     fprintf(stderr, "\n");
     close_trj(status);
-    ffclose(fp);
+    gmx_ffclose(fp);
     if (vp)
     {
-        ffclose(vp);
+        gmx_ffclose(vp);
     }
 
     /* if necessary, print areas per atom to file too: */
@@ -659,9 +659,9 @@ void sas_plot(int nfile, t_filenm fnm[], real solsize, int ndots,
         }
         if (bITP)
         {
-            ffclose(fp3);
+            gmx_ffclose(fp3);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     /* Be a good citizen, keep our memory free! */

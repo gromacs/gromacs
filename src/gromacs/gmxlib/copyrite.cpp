@@ -94,7 +94,7 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
     {
         nhlp = fget_lines(fp, &help);
         /* for libraries we can use the low-level close routines */
-        ffclose(fp);
+        gmx_ffclose(fp);
         rng    = gmx_rng_init(gmx_rng_make_seed());
         *cqnum = static_cast<int>(nhlp*gmx_rng_uniform_real(rng));
         gmx_rng_destroy(rng);

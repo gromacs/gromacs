@@ -119,7 +119,7 @@ void dump_histo(t_histo *h,char *fn,char *title,char *xaxis,char *yaxis,
       gmx_fatal(FARGS,"Wrong value for enorm (%d)",enorm);
     }
   }
-  ffclose(fp);
+  gmx_ffclose(fp);
 }
 
 /*******************************************************************
@@ -351,10 +351,10 @@ void dump_ana_struct(char *rmax,char *nion,char *gyr_com,char *gyr_origin,
 	    sqrt(anal->d2_origin[i][YY]/nsim),
 	    sqrt(anal->d2_origin[i][ZZ]/nsim));
   }
-  ffclose(hp);
-  ffclose(gp);
-  ffclose(fp);
-  ffclose(kp);
+  gmx_ffclose(hp);
+  gmx_ffclose(gp);
+  gmx_ffclose(fp);
+  gmx_ffclose(kp);
 }
 
 void dump_as_pdb(char *pdb,t_ana_struct *anal)
@@ -363,7 +363,7 @@ void dump_as_pdb(char *pdb,t_ana_struct *anal)
   int  i,j;
   real t;
   
-  kp = ffopen(pdb,"w");
+  kp = gmx_ffopen(pdb,"w");
   for(i=0; (i<anal->nstruct); i++) {
     t = 1000*anal->t[i];
     fprintf(kp,"MODEL  %d  time %g fs\n",i+1,t);
@@ -377,7 +377,7 @@ void dump_as_pdb(char *pdb,t_ana_struct *anal)
     }
     fprintf(kp,"ENDMDL\n");
   }
-  ffclose(kp);
+  gmx_ffclose(kp);
 }
 
 char *enms[eNR] = {
@@ -425,6 +425,6 @@ void dump_ana_ener(t_ana_ener *ae,int nsim,real dt,char *edump,
     fprintf(fp,"  %8.3f\n",ae->e[i][eELECTRON]/(ELECTRONVOLT*total->nion[i]));
   }    
   fprintf(fp,"&\n");
-  ffclose(fp);
+  gmx_ffclose(fp);
 }
 

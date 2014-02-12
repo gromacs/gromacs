@@ -138,7 +138,7 @@ int opt2fns(char **fns[], const char *opt, int nfile,
 /* Return the filenames belonging to cmd-line option opt, or NULL when
  * no such option. */
 
-#define opt2FILE(opt, nfile, fnm, mode) ffopen(opt2fn(opt, nfile, fnm), mode)
+#define opt2FILE(opt, nfile, fnm, mode) gmx_ffopen(opt2fn(opt, nfile, fnm), mode)
 /* Return a file pointer from the filename (see above) */
 
 int fn2ftp(const char *fn);
@@ -151,7 +151,7 @@ int ftp2fns(char **fns[], int ftp, int nfile, const t_filenm fnm[]);
 /* Return the number of files for the first option with type ftp
    and the files in **fns[] (will be allocated), or NULL when none found. */
 
-#define ftp2FILE(ftp, nfile, fnm, mode) ffopen(ftp2fn(ftp, nfile, fnm), mode)
+#define ftp2FILE(ftp, nfile, fnm, mode) gmx_ffopen(ftp2fn(ftp, nfile, fnm), mode)
 /* Return a file pointer from the filename (see above) */
 
 gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[]);

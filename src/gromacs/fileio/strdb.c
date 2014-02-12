@@ -132,7 +132,7 @@ int get_strings(const char *db, char ***strings)
     if (fscanf(in, "%d", &nstr) != 1)
     {
         gmx_warning("File %s is empty", db);
-        ffclose(in);
+        gmx_ffclose(in);
         return 0;
     }
     snew(ptr, nstr);
@@ -147,7 +147,7 @@ int get_strings(const char *db, char ***strings)
 #endif
         ptr[i] = strdup(buf);
     }
-    ffclose(in);
+    gmx_ffclose(in);
 
     *strings = ptr;
 
@@ -181,7 +181,7 @@ int fget_lines(FILE *in, char ***strings)
     if (pret == NULL  || sscanf(buf, "%d", &nstr) != 1)
     {
         gmx_warning("File is empty");
-        ffclose(in);
+        gmx_ffclose(in);
 
         return 0;
     }
@@ -204,7 +204,7 @@ int get_lines(const char *db, char ***strings)
 
     in   = libopen(db);
     nstr = fget_lines(in, strings);
-    ffclose(in);
+    gmx_ffclose(in);
 
     return nstr;
 }
@@ -230,7 +230,7 @@ int get_file(const char *db, char ***strings)
         i++;
     }
     nstr = i;
-    ffclose(in);
+    gmx_ffclose(in);
     srenew(ptr, nstr);
     *strings = ptr;
 

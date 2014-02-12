@@ -243,8 +243,8 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     gmx_bool bMolecules;
 
     printf("\nProcessing topology\n");
-    fpin  = ffopen(topinout, "r");
-    fpout = ffopen(TEMP_FILENM, "w");
+    fpin  = gmx_ffopen(topinout, "r");
+    fpout = gmx_ffopen(TEMP_FILENM, "w");
 
     line       = 0;
     bMolecules = FALSE;
@@ -296,16 +296,16 @@ static void update_topol(const char *topinout, int p_num, int n_num,
             nmol_line++;
         }
     }
-    ffclose(fpin);
+    gmx_ffclose(fpin);
 
     if (sol_line == -1)
     {
-        ffclose(fpout);
+        gmx_ffclose(fpout);
         gmx_fatal(FARGS, "No line with moleculetype '%s' found the [ molecules ] section of file '%s'", grpname, topinout);
     }
     if (nsol_last < p_num+n_num)
     {
-        ffclose(fpout);
+        gmx_ffclose(fpout);
         gmx_fatal(FARGS, "The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' has less solvent molecules (%d) than were replaced (%d)", grpname, topinout, nsol_last, p_num+n_num);
     }
 
@@ -336,10 +336,10 @@ static void update_topol(const char *topinout, int p_num, int n_num,
             }
         }
     }
-    ffclose(fpout);
-    /* use ffopen to generate backup of topinout */
-    fpout = ffopen(topinout, "w");
-    ffclose(fpout);
+    gmx_ffclose(fpout);
+    /* use gmx_ffopen to generate backup of topinout */
+    fpout = gmx_ffopen(topinout, "w");
+    gmx_ffclose(fpout);
     rename(TEMP_FILENM, topinout);
 #undef TEMP_FILENM
 }

@@ -1429,7 +1429,7 @@ static void do_the_tests(
     if (0 == repeats)
     {
         fprintf(fp, "\nNo benchmarks done since number of repeats (-r) is 0.\n");
-        ffclose(fp);
+        gmx_ffclose(fp);
         finalize(opt2fn("-p", nfile, fnm));
         exit(0);
     }
@@ -2313,7 +2313,7 @@ int gmx_tune_pme(int argc, char *argv[])
     }
 
     /* Open performance output file and write header info */
-    fp = ffopen(opt2fn("-p", NFILE, fnm), "w");
+    fp = gmx_ffopen(opt2fn("-p", NFILE, fnm), "w");
 
     /* Make a quick consistency check of command line parameters */
     check_input(nnodes, repeats, &ntprs, &rmin, rcoulomb, &rmax,
@@ -2496,7 +2496,7 @@ int gmx_tune_pme(int argc, char *argv[])
         launch_simulation(bLaunch, fp, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,
                           cmd_args_launch, simulation_tpr, best_npme);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     /* ... or simply print the performance results to screen: */
     if (!bLaunch)

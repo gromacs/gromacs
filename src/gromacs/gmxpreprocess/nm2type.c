@@ -126,7 +126,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
         }
     }
     while (bCont);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     *nnm = nnnm;
     *nmp = nm2t;

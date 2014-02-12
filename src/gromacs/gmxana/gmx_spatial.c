@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2007,2008,2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -320,7 +320,7 @@ int gmx_spatial(int argc, char *argv[])
     }
 
     /* OUTPUT */
-    flp = ffopen("grid.cube", "w");
+    flp = gmx_ffopen("grid.cube", "w");
     fprintf(flp, "Spatial Distribution Function\n");
     fprintf(flp, "test\n");
     fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", nidxp, (MINBIN[XX]+(minx+iIGNOREOUTER)*rBINWIDTH)*10./bohr, (MINBIN[YY]+(miny+iIGNOREOUTER)*rBINWIDTH)*10./bohr, (MINBIN[ZZ]+(minz+iIGNOREOUTER)*rBINWIDTH)*10./bohr);
@@ -449,7 +449,7 @@ int gmx_spatial(int argc, char *argv[])
         }
         fprintf(flp, "\n");
     }
-    ffclose(flp);
+    gmx_ffclose(flp);
 
     /* printf("x=%d to %d\n",minx,maxx); */
     /* printf("y=%d to %d\n",miny,maxy); */

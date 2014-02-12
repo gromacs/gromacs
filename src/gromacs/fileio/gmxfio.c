@@ -518,7 +518,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
                 gmx_incons("gmx_fio_open may not be used to open TNG files");
             }
             /* Open the file */
-            fio->fp = ffopen(fn, newmode);
+            fio->fp = gmx_ffopen(fn, newmode);
 
             /* determine the XDR direction */
             if (newmode[0] == 'w' || newmode[0] == 'a')
@@ -536,7 +536,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
         else
         {
             /* If it is not, open it as a regular file */
-            fio->fp = ffopen(fn, newmode);
+            fio->fp = gmx_ffopen(fn, newmode);
         }
 
         /* for appending seek to end of file to make sure ftell gives correct position
@@ -586,7 +586,7 @@ static int gmx_fio_close_locked(t_fileio *fio)
     /* Don't close stdin and stdout! */
     if (!fio->bStdio && fio->fp != NULL)
     {
-        rc = ffclose(fio->fp); /* fclose returns 0 if happy */
+        rc = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
 
     }
     fio->bOpen = FALSE;
@@ -627,7 +627,7 @@ int gmx_fio_fp_close(t_fileio *fio)
     gmx_fio_lock(fio);
     if (!in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR) && !fio->bStdio)
     {
-        rc      = ffclose(fio->fp); /* fclose returns 0 if happy */
+        rc      = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
         fio->fp = NULL;
     }
     gmx_fio_unlock(fio);
