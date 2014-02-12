@@ -303,7 +303,12 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaults)
     parse(cmdline, 0, fnm, gmx::EmptyArrayRef());
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("traj.xtc", opt2fn("-f2", nfile(), fnm));
-    EXPECT_EQ(NULL, opt2fn_null("-f2", nfile(), fnm));
+    /* The cast below works around xlC++ 12.1 on BG/Q, which decides
+       the type of NULL is int, and does not work out how to convert
+       it to a void *, which it would need to make a valid comparison
+       with a const char * via the GoogleTest equality-tester
+       template. */
+    EXPECT_EQ((void *)NULL, opt2fn_null("-f2", nfile(), fnm));
     EXPECT_STREQ("trj3.xtc", opt2fn("-f3", nfile(), fnm));
     EXPECT_STREQ("out.xvg", opt2fn("-o", nfile(), fnm));
     EXPECT_STREQ("outm.xvg", opt2fn("-om", nfile(), fnm));
