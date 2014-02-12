@@ -183,7 +183,7 @@ int gmx_genpr(int argc, char *argv[])
                 fprintf(out, "%d\n", i+1);
             }
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     else if ((bDisre || bConstr) && x)
     {
@@ -236,7 +236,7 @@ int gmx_genpr(int argc, char *argv[])
                 }
             }
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     else
     {
@@ -252,7 +252,7 @@ int gmx_genpr(int argc, char *argv[])
             fprintf(out, "%4d %4d %10g %10g %10g\n",
                     ind_grp[i]+1, 1, fc[XX], fc[YY], fc[ZZ]);
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     if (xfn)
     {

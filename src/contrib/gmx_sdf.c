@@ -552,7 +552,7 @@ structure if needed */
   /* write the reference strcture*/
   if ( bRef )
     {
-      fp=ffopen(fnREF,"w"); 
+      fp=gmx_ffopen(fnREF,"w"); 
       fprintf(fp,"%s\n",title);
       fprintf(fp,"  %d\n",isize[G_REFMOL]);
 
@@ -565,7 +565,7 @@ structure if needed */
                 -1*x_refmol[i][XX],-1*x_refmol[i][YY],-1*x_refmol[i][ZZ]);
       /* Inserted -1* on the line above three times */
       fprintf(fp,"   10.00000   10.00000   10.00000\n");
-      ffclose(fp);
+      gmx_ffclose(fp);
       fprintf(stderr,"\nWrote reference structure. (%d Atoms)\n",isize[G_REFMOL]);
     }
 
@@ -582,7 +582,7 @@ structure if needed */
 
   /* normalize the SDF and write output */
   /* see http://www.csc.fi/gopenmol/index.phtml for documentation */
-  fp=ffopen(fnSDF,"wb"); 
+  fp=gmx_ffopen(fnSDF,"wb"); 
 
 
   /* rank */
@@ -630,7 +630,7 @@ structure if needed */
   fprintf(stderr,"\nMin: %f Max: %f\n",min_sdf,max_sdf);
 
 
-  ffclose(fp); 
+  gmx_ffclose(fp); 
 
 
   /* Give back the mem */

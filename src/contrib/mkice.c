@@ -635,7 +635,7 @@ int main(int argc,char *argv[])
 
   fn = ftp2fn(efSTO,NFILE,fnm);
   if (fn2ftp(fn) == efPDB) {
-    fp = ffopen(fn,"w");
+    fp = gmx_ffopen(fn,"w");
     if (bDiamond)
       fprintf(fp,"HEADER    This is a *diamond*\n");
     else
@@ -645,7 +645,7 @@ int main(int argc,char *argv[])
 	    nx,ny,nz,odist,hdist);
 	bromacs(quote,255);
     write_pdbfile(fp,quote,pdba,xx,boxje,' ',-1);
-    ffclose(fp);
+    gmx_ffclose(fp);
   }
   else {
     bromacs(quote,255);

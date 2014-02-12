@@ -1353,7 +1353,7 @@ int gmx_trjconv(int argc, char *argv[])
                 case efPDB:
                     if (( !bSeparate && !bSplit ) && !bSubTraj)
                     {
-                        out = ffopen(out_file, filemode);
+                        out = gmx_ffopen(out_file, filemode);
                     }
                     break;
                 default:
@@ -1799,7 +1799,7 @@ int gmx_trjconv(int argc, char *argv[])
                                         top_title, fr.time);
                                 if (bSeparate || bSplitHere)
                                 {
-                                    out = ffopen(out_file2, "w");
+                                    out = gmx_ffopen(out_file2, "w");
                                 }
                                 switch (ftp)
                                 {
@@ -1848,7 +1848,7 @@ int gmx_trjconv(int argc, char *argv[])
                                 }
                                 if (bSeparate)
                                 {
-                                    ffclose(out);
+                                    gmx_ffclose(out);
                                     out = NULL;
                                 }
                                 break;
@@ -1906,7 +1906,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         else if (out != NULL)
         {
-            ffclose(out);
+            gmx_ffclose(out);
         }
         if (bSubTraj)
         {

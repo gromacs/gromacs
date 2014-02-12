@@ -75,7 +75,7 @@ void dump_otrj(FILE *otrj, int natoms, atom_id all_index[], rvec x[],
 
     if (fp == NULL)
     {
-        fp   = ffopen("WEDGAMMA10.DAT", "w");
+        fp   = gmx_ffopen("WEDGAMMA10.DAT", "w");
         fac0 = fac;
     }
     fac /= fac0;
@@ -258,7 +258,7 @@ int gmx_helix(int argc, char *argv[])
         {
             sprintf(buf, "%s.out", xf[i].filenm);
             remove(buf);
-            xf[i].fp2 = ffopen(buf, "w");
+            xf[i].fp2 = gmx_ffopen(buf, "w");
         }
     }
 
@@ -341,7 +341,7 @@ int gmx_helix(int argc, char *argv[])
 
     if (otrj)
     {
-        ffclose(otrj);
+        gmx_ffclose(otrj);
         fac = 1.0/teller;
         for (i = 0; (i < nall); i++)
         {
@@ -369,10 +369,10 @@ int gmx_helix(int argc, char *argv[])
 
     for (i = 0; (i < efhNR); i++)
     {
-        ffclose(xf[i].fp);
+        gmx_ffclose(xf[i].fp);
         if (xf[i].bfp2)
         {
-            ffclose(xf[i].fp2);
+            gmx_ffclose(xf[i].fp2);
         }
         do_view(oenv, xf[i].filenm, "-nxy");
     }

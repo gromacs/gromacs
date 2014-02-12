@@ -771,7 +771,7 @@ static FILE *open_output_file(const char *fn, int steps, const char what[])
     FILE *fp;
 
 
-    fp = ffopen(fn, "w");
+    fp = gmx_ffopen(fn, "w");
 
     fprintf(fp, "# Output of %s is written in intervals of %d time step%s.\n#\n",
             what, steps, steps > 1 ? "s" : "");

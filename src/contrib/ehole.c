@@ -527,7 +527,7 @@ void do_sims(int NFILE,t_filenm fnm[],t_eh_params *ehp)
   helec = init_histo(500,0,500);
   snew(ae,1);
 
-  logfp = ffopen(ftp2fn(efLOG,NFILE,fnm),"w");
+  logfp = gmx_ffopen(ftp2fn(efLOG,NFILE,fnm),"w");
   print_header(logfp,ehp);
     
   for(i=0; (i<ehp->nsim); i++) {
@@ -538,7 +538,7 @@ void do_sims(int NFILE,t_filenm fnm[],t_eh_params *ehp)
     fprintf(stderr,"\rSim: %d/%d",i+1,ehp->nsim);
   }
   fprintf(stderr,"\n");
-  ffclose(logfp);
+  gmx_ffclose(logfp);
   
   sfree(rptr);
   sfree(pdbbuf);

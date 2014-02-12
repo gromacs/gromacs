@@ -618,7 +618,7 @@ int gmx_x2top(int argc, char *argv[])
                   cgnr, rtp_header_settings.nrexcl);
         print_top_mols(fp, mymol.name, ffdir, NULL, 0, NULL, 1, &mymol);
 
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     if (bRTP)
     {

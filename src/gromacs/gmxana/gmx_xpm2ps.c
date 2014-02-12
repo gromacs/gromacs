@@ -677,7 +677,7 @@ void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
     int        nmap;
     t_mapping *map = NULL;
 
-    out = ffopen(outf, "w");
+    out = gmx_ffopen(outf, "w");
 
     for (i = 0; i < nmat; i++)
     {
@@ -724,7 +724,7 @@ void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
             write_xpm_m(out, mat[i]);
         }
     }
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 static void tick_spacing(int n, real axis[], real offset, char axisnm,
@@ -1169,7 +1169,7 @@ void write_combined_matrix(int ecombine, const char *fn,
     real     **rmat1, **rmat2;
     real       rhi, rlo;
 
-    out = ffopen(fn, "w");
+    out = gmx_ffopen(fn, "w");
     for (k = 0; k < nmat; k++)
     {
         if (mat2[k].nx != mat1[k].nx || mat2[k].ny != mat1[k].ny)
@@ -1240,7 +1240,7 @@ void write_combined_matrix(int ecombine, const char *fn,
                       rmat1, rlo, rhi, white, black, &nlevels);
         }
     }
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 void do_mat(int nmat, t_matrix *mat, t_matrix *mat2,

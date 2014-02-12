@@ -75,7 +75,7 @@ static t_pdbfile *read_pdbf(const char *fn)
     init_t_atoms(&(pdbf->atoms), natoms, FALSE);
     snew(pdbf->x, natoms);
     read_stx_conf(fn, buf, &pdbf->atoms, pdbf->x, NULL, &pdbf->ePBC, pdbf->box);
-    fp = ffopen(fn, "r");
+    fp = gmx_ffopen(fn, "r");
     do
     {
         ptr = fgets2(buf, 255, fp);
@@ -96,7 +96,7 @@ static t_pdbfile *read_pdbf(const char *fn)
         }
     }
     while (ptr != NULL);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     return pdbf;
 }
@@ -195,7 +195,7 @@ static void analyse_em_all(int npdb, t_pdbfile *pdbf[], const char *edocked,
         {
             fprintf(fp, "%12lf\n", bFreeSort ? pdbf[i]->efree : pdbf[i]->edocked);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 }
 
@@ -380,7 +380,7 @@ int gmx_anadock(int argc, char *argv[])
         return 0;
     }
 
-    fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
+    fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
     please_cite(stdout, "Hetenyi2002b");
     please_cite(fp, "Hetenyi2002b");
 
@@ -392,7 +392,7 @@ int gmx_anadock(int argc, char *argv[])
     cluster_em_all(fp, npdbf, pdbf, bFree, bRMS, cutoff);
 
     gmx_thanx(fp);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     return 0;
 }

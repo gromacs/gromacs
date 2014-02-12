@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -185,7 +185,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
         gmx_rmpbc_done(gpbc);
     }
 
-    ffclose(out);
+    gmx_ffclose(out);
 
     fprintf(stdout,
             "\nThe shortest periodic distance is %g (nm) at time %g (%s),\n"
@@ -336,7 +336,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     dist = xvgropen(dfile, buf, output_env_get_time_label(oenv), "Distance (nm)", oenv);
     sprintf(buf, "Number of Contacts %s %g nm", bMin ? "<" : ">", rcut);
     num    = nfile ? xvgropen(nfile, buf, output_env_get_time_label(oenv), "Number", oenv) : NULL;
-    atm    = afile ? ffopen(afile, "w") : NULL;
+    atm    = afile ? gmx_ffopen(afile, "w") : NULL;
     trxout = xfile ? open_trx(xfile, "w") : NULL;
 
     if (bMat)
@@ -534,14 +534,14 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     while (read_next_x(oenv, status, &t, x0, box));
 
     close_trj(status);
-    ffclose(dist);
+    gmx_ffclose(dist);
     if (num)
     {
-        ffclose(num);
+        gmx_ffclose(num);
     }
     if (atm)
     {
-        ffclose(atm);
+        gmx_ffclose(atm);
     }
     if (trxout)
     {

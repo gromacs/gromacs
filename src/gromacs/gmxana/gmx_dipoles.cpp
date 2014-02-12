@@ -320,13 +320,13 @@ static void print_cmap(const char *cmap, t_gkrbin *gb, int *nlevels)
         }
         /*2.0*j/(gb->ny-1.0)-1.0;*/
     }
-    out = ffopen(cmap, "w");
+    out = gmx_ffopen(cmap, "w");
     write_xpm(out, 0,
               "Dipole Orientation Distribution", "Fraction", "r (nm)",
               gb->bPhi ? "Phi" : "Alpha",
               gb->nx, gb->ny, xaxis, yaxis,
               gb->cmap, 0, hi, rlo, rhi, nlevels);
-    ffclose(out);
+    gmx_ffclose(out);
     sfree(xaxis);
     sfree(yaxis);
 }
@@ -405,7 +405,7 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
         /* Swap x0 and x1 */
         x0 = x1;
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol,
@@ -687,7 +687,7 @@ static void dump_slab_dipoles(const char *fn, int idim, int nslice,
                 slab_dipole[i][ZZ]/nframes,
                 mutot);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     do_view(oenv, fn, "-autoscale xy -nxy");
 }
 
@@ -943,11 +943,11 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         snew(dipsp, gnx_tot);
 
         /* we need a dummy file for gnuplot */
-        dip3d = (FILE *)ffopen("dummy.dat", "w");
+        dip3d = (FILE *)gmx_ffopen("dummy.dat", "w");
         fprintf(dip3d, "%f %f %f", 0.0, 0.0, 0.0);
-        ffclose(dip3d);
+        gmx_ffclose(dip3d);
 
-        dip3d = (FILE *)ffopen(fndip3d, "w");
+        dip3d = (FILE *)gmx_ffopen(fndip3d, "w");
         try
         {
             gmx::BinaryInformationSettings settings;
@@ -1337,18 +1337,18 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         close_trj(status);
     }
 
-    ffclose(outmtot);
-    ffclose(outaver);
-    ffclose(outeps);
+    gmx_ffclose(outmtot);
+    gmx_ffclose(outaver);
+    gmx_ffclose(outeps);
 
     if (fnadip)
     {
-        ffclose(adip);
+        gmx_ffclose(adip);
     }
 
     if (cosaver)
     {
-        ffclose(caver);
+        gmx_ffclose(caver);
     }
 
     if (dip3d)
@@ -1358,7 +1358,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         fprintf(dip3d, "set zrange [0.0:%4.2f]\n\n", box[ZZ][ZZ]);
         fprintf(dip3d, "splot 'dummy.dat' using 1:2:3 w vec\n");
         fprintf(dip3d, "pause -1 'Hit return to continue'\n");
-        ffclose(dip3d);
+        gmx_ffclose(dip3d);
     }
 
     if (bSlab)
@@ -1457,7 +1457,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             fprintf(outdd, "%10g  %10f\n",
                     (i*mu_max)/ndipbin, dipole_bin[i]/(double)teller);
         }
-        ffclose(outdd);
+        gmx_ffclose(outdd);
         sfree(dipole_bin);
     }
     if (bGkr)

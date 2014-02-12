@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -427,17 +427,17 @@ int gmx_bundle(int argc, char *argv[])
     {
         close_trx(fpdb);
     }
-    ffclose(flen);
-    ffclose(fdist);
-    ffclose(fz);
-    ffclose(ftilt);
-    ffclose(ftiltr);
-    ffclose(ftiltl);
+    gmx_ffclose(flen);
+    gmx_ffclose(fdist);
+    gmx_ffclose(fz);
+    gmx_ffclose(ftilt);
+    gmx_ffclose(ftiltr);
+    gmx_ffclose(ftiltl);
     if (bKink)
     {
-        ffclose(fkink);
-        ffclose(fkinkr);
-        ffclose(fkinkl);
+        gmx_ffclose(fkink);
+        gmx_ffclose(fkinkr);
+        gmx_ffclose(fkinkl);
     }
 
     return 0;

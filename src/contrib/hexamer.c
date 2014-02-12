@@ -199,14 +199,14 @@ int main(int argc, char *argv[])
   if (bCenter) 
     prep_x(atoms.nr,xin,rDist,rAngleZ,rAngleX);
   
-  fp = ffopen(outfile,"w");
+  fp = gmx_ffopen(outfile,"w");
   for(i=0; (i<(bTrimer ? 3 : 6)); i++) {
     rotate_x(atoms.nr,xin,i*(bTrimer ? 120.0 : 60.0),xout,TRUE,
 	     bAlternate && ((i % 2) != 0),alterz*(((i % 2) == 0) ? 0 : 1));
     sprintf(buf,"Rotated %d degrees",i*(bTrimer ? 120 : 60));
     write_pdbfile(fp,buf,&atoms,xout,box,'A'+i,1+i);
   }
-  ffclose(fp);
+  gmx_ffclose(fp);
   
   gmx_thanx(stderr);
   
