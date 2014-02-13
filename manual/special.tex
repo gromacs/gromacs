@@ -1137,6 +1137,10 @@ is the box length in that direction. If you have already defined index groups fo
 the channel for the single-layered system, {\tt gmx make_ndx -n index.ndx -twin} will
 provide you with the groups for the double-layered system.
 
+To suppress large fluctuations of each membrane/protein system along the swap direction,
+a position restraint in form of a harmonic potential can be applied on each bilayer/protein
+center during the simulation. This can be achieved with pull groups (see section~\ref{sec:pull}).
+
 \subsection*{Multimeric channels}
 If a split group consists of more than one molecule, the correct PBC image of all molecules
 with respect to each other has to be chosen such that the channel center can be correctly
