@@ -170,6 +170,13 @@ gmx_simd4_real_t   vector2Simd4Real(const std::vector<real> &v);
  */
 gmx_simd4_real_t   setSimd4From3R(real r0, real r1, real r2);
 
+/*! \brief Set all SIMD register elements to a single value.
+ *
+ * This implements the same functionality as gmx_simd4_set1_r(), which
+ * is needed in order to test the latter.
+ */
+gmx_simd4_real_t  set1Simd4From1R(real value);
+
 /*! \brief Print contents of SIMD4 datatype to string.
  *
  * SIMD datatypes are typically implemented as quite low-level

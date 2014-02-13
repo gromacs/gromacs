@@ -136,6 +136,17 @@ setSimdFrom3R(real r0, real r1, real r2)
     return vector2SimdReal(v);
 }
 
+gmx_simd_real_t
+set1SimdFrom1R(real value)
+{
+    std::vector<real> v(GMX_SIMD_REAL_WIDTH);
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        v[i] = value;
+    }
+    return vector2SimdReal(v);
+}
+
 std::string
 printSimdReal(const gmx_simd_real_t simd)
 {
@@ -215,7 +226,7 @@ testing::AssertionResult
 SimdTest::compareSimdRealUlp(const char * refExpr, const char * tstExpr,
                              real ref,             const gmx_simd_real_t tst)
 {
-    return compareSimdRealUlp(refExpr, tstExpr, gmx_simd_set1_r(ref), tst);
+    return compareSimdRealUlp(refExpr, tstExpr, set1SimdFrom1R(ref), tst);
 }
 
 testing::AssertionResult
@@ -238,7 +249,7 @@ testing::AssertionResult
 SimdTest::compareSimdRealEq(const char * refExpr, const char * tstExpr,
                             real ref,             const gmx_simd_real_t tst)
 {
-    return compareSimdRealEq(refExpr, tstExpr, gmx_simd_set1_r(ref), tst);
+    return compareSimdRealEq(refExpr, tstExpr, set1SimdFrom1R(ref), tst);
 }
 
 
@@ -278,6 +289,17 @@ setSimdFrom3I(int i0, int i1, int i2)
     v[0] = i0;
     v[1] = i1;
     v[2] = i2;
+    return vector2SimdInt(v);
+}
+
+gmx_simd_int32_t
+set1SimdFrom1I(int value)
+{
+    std::vector<int> v(GMX_SIMD_INT32_WIDTH);
+    for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
+    {
+        v[i] = value;
+    }
     return vector2SimdInt(v);
 }
 
@@ -322,7 +344,7 @@ testing::AssertionResult
 SimdTest::compareSimdInt32(const char * refExpr, const char * tstExpr,
                            int ref,              const gmx_simd_int32_t tst)
 {
-    return compareSimdInt32(refExpr, tstExpr, gmx_simd_set1_i(ref), tst);
+    return compareSimdInt32(refExpr, tstExpr, set1SimdFrom1I(ref), tst);
 }
 #endif // GMX_SIMD_HAVE_INT32
 

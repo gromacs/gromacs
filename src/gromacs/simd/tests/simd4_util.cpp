@@ -112,6 +112,17 @@ setSimd4From3R(real r0, real r1, real r2)
     return vector2Simd4Real(v);
 }
 
+gmx_simd4_real_t
+set1Simd4From1R(real value)
+{
+    std::vector<real> v(GMX_SIMD4_WIDTH);
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        v[i] = value;
+    }
+    return vector2Simd4Real(v);
+}
+
 std::string
 printSimd4Real(const gmx_simd4_real_t simd)
 {
@@ -214,7 +225,7 @@ testing::AssertionResult
 Simd4Test::compareSimd4RealEq(const char * refExpr, const char * tstExpr,
                               real ref,             const gmx_simd4_real_t tst)
 {
-    return compareSimd4RealEq(refExpr, tstExpr, gmx_simd4_set1_r(ref), tst);
+    return compareSimd4RealEq(refExpr, tstExpr, set1SimdFrom1R(ref), tst);
 }
 
 #endif

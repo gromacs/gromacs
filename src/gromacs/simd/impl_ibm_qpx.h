@@ -82,13 +82,12 @@
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
 #define gmx_simd_float_t          vector4double
+#define gmx_simd_load1_f(m)       vec_lds(0, (float *)(m))
 #ifdef NDEBUG
 #    define gmx_simd_load_f(m)    vec_ld(0, (float *)(m))
-#    define gmx_simd_load1_f(m)   vec_lds(0, (float *)(m))
 #    define gmx_simd_store_f(m, a) vec_st(a, 0, (float *)(m))
 #else
 #    define gmx_simd_load_f(m)    vec_lda(0, (float *)(m))
-#    define gmx_simd_load1_f(m)   vec_ldsa(0, (float *)(m))
 #    define gmx_simd_store_f(m, a) vec_sta(a, 0, (float *)(m))
 #endif
 #define gmx_simd_set1_f(x)        vec_splats(x)
@@ -160,13 +159,12 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
 #define gmx_simd_double_t         vector4double
+#define gmx_simd_load1_d(m)       vec_lds(0, (double *)(m))
 #ifdef NDEBUG
 #    define gmx_simd_load_d(m)    vec_ld(0, (double *)(m))
-#    define gmx_simd_load1_d(m)   vec_lds(0, (double *)(m))
 #    define gmx_simd_store_d(m, a) vec_st(a, 0, (double *)(m))
 #else
 #    define gmx_simd_load_d(m)    vec_lda(0, (double *)(m))
-#    define gmx_simd_load1_d(m)   vec_ldsa(0, (double *)(m))
 #    define gmx_simd_store_d(m, a) vec_sta(a, 0, (double *)(m))
 #endif
 #define gmx_simd_set1_d(x)        vec_splats(x)
@@ -242,8 +240,9 @@ gmx_simd_setzero_ibm_qpx(void)
 static __attribute__((always_inline)) vector4double
 gmx_simd_get_exponent_ibm_qpx(vector4double x)
 {
+    const gmx_int64_t    expmask = 0x7ff0000000000000LL;
     const gmx_int64_t    expbase = 1023;
-    gmx_int64_t[4]       idata __attribute__((aligned(32)));
+    gmx_int64_t       idata[4] __attribute__((aligned(32)));
 
     /* Store to memory */
     vec_st(x, 0, idata);
@@ -253,21 +252,23 @@ gmx_simd_get_exponent_ibm_qpx(vector4double x)
     idata[2] = ((idata[2] & expmask) >> 52) - expbase;
     idata[3] = ((idata[3] & expmask) >> 52) - expbase;
     /* Reload from memory */
-    return vec_ld(0, idata);
+    return vec_cfid(vec_ld(0, idata));
 }
 
 static __attribute__((always_inline)) vector4double
 gmx_simd_get_mantissa_ibm_qpx(vector4double x)
 {
-    const gmx_int64_t    expmask   = 0x7ff0000000000000LL;
+    const gmx_int64_t    exp_and_sign_mask = 0xfff0000000000000LL;
     const gmx_int64_t    ione      = 0x3ff0000000000000LL;
+    gmx_int64_t          idata[4] __attribute__((aligned(32)));
+
     /* Store to memory */
     vec_st(x, 0, idata);
     /* Perform integer arithmetics in general registers. */
-    idata[0] = (idata[0] & (~iexpmask)) | ione;
-    idata[1] = (idata[1] & (~iexpmask)) | ione;
-    idata[2] = (idata[2] & (~iexpmask)) | ione;
-    idata[3] = (idata[3] & (~iexpmask)) | ione;
+    idata[0] = (idata[0] & (~exp_and_sign_mask)) | ione;
+    idata[1] = (idata[1] & (~exp_and_sign_mask)) | ione;
+    idata[2] = (idata[2] & (~exp_and_sign_mask)) | ione;
+    idata[3] = (idata[3] & (~exp_and_sign_mask)) | ione;
     /* Reload from memory */
     return vec_ld(0, idata);
 }
@@ -276,10 +277,10 @@ static __attribute__((always_inline)) vector4double
 gmx_simd_set_exponent_ibm_qpx(vector4double x)
 {
     const gmx_int64_t    expbase = 1023;
-    gmx_int64_t[4]       idata __attribute__((aligned(32)));
+    gmx_int64_t       idata[4] __attribute__((aligned(32)));
 
     /* Store to memory for shifts */
-    vec_st(x, 0, idata);
+    vec_st(vec_ctid(x), 0, idata);
     /* Perform integer arithmetics in general registers. */
     idata[0] = (idata[0] + expbase) << 52;
     idata[1] = (idata[1] + expbase) << 52;
@@ -292,13 +293,11 @@ gmx_simd_set_exponent_ibm_qpx(vector4double x)
 static __attribute__((always_inline)) vector4double
 gmx_simd_set1_int_ibm_qpx(int i)
 {
-    union {
-        vector4double v; long long i[4];
-    } conv;
+    int idata[4] __attribute__((aligned(32)));
 
-    conv.i[0] = i;
+    idata[0] = i;
     /* Reload from memory */
-    return vec_splat(vec_ldia(0, (int *)&conv.v), 0);
+    return vec_splat(vec_ldia(0, idata), 0);
 }
 
 /* This works in both single and double */
@@ -367,7 +366,7 @@ gmx_simd_anytrue_bool_ibm_qpx(vector4double a)
 #define gmx_simd4_or_fb                  gmx_simd_or_fb
 #define gmx_simd4_anytrue_fb             gmx_simd_anytrue_fb
 #define gmx_simd4_blendzero_f            gmx_simd_blendzero_f
-#define gmx_simd4_blendnotzero_f         gmx_simd_blendzero_f
+#define gmx_simd4_blendnotzero_f         gmx_simd_blendnotzero_f
 #define gmx_simd4_blendv_f               gmx_simd_blendv_f
 /* DOUBLE */
 #define gmx_simd4_double_t               gmx_simd_double_t

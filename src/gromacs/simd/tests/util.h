@@ -304,6 +304,13 @@ gmx_simd_real_t   vector2SimdReal(const std::vector<real> &v);
  */
 gmx_simd_real_t   setSimdFrom3R(real r0, real r1, real r2);
 
+/*! \brief Set all SIMD register elements to a single value.
+ *
+ * This implements the same functionality as gmx_simd_set1_r(), which
+ * is needed in order to test the latter.
+ */
+gmx_simd_int32_t  set1SimdFrom1R(real value);
+
 /*! \brief Print SIMD real datatype.
  *
  * Simd datatypes are typically implemented as quite low-level
@@ -347,6 +354,13 @@ gmx_simd_int32_t  vector2SimdInt(const std::vector<int> &v);
  * between the low/high 64/128/256 bits in the SIMD register, which could hide bugs.
  */
 gmx_simd_int32_t  setSimdFrom3I(int i0, int i1, int i2);
+
+/*! \brief Set all SIMD register elements to a single value.
+ *
+ * This implements the same functionality as gmx_simd_set1_i(), which
+ * is needed in order to test the latter.
+ */
+gmx_simd_int32_t  set1SimdFrom1I(int value);
 
 /*! \brief Print SIMD 32-bit integer datatype.
  *

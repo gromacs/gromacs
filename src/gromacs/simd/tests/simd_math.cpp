@@ -122,7 +122,7 @@ SimdMathTest::compareSimdMathFunction(const char * refFuncExpr, const char *simd
                 maxUlpDiff        = ulpDiff;
                 maxUlpDiffPos     = x;
                 refValMaxUlpDiff  = refval;
-                simdValMaxUlpDiff = vsimd[0];
+                simdValMaxUlpDiff = vsimd[i];
             }
         }
     }
