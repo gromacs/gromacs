@@ -274,8 +274,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         /* BASIC CUT-OFF STUFF */
         if (ir->rlist == 0 ||
-            !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
-              (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)    && ir->rvdw     > ir->rlist)))
+            !((ir_coulomb_might_be_zero_at_cutoff(ir) && ir->rcoulomb > ir->rlist) ||
+              (ir_vdw_might_be_zero_at_cutoff(ir)     && ir->rvdw     > ir->rlist)))
         {
             /* No switched potential and/or no twin-range:
              * we can set the long-range cut-off to the maximum of the other cut-offs.
@@ -1076,9 +1076,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
      * means the interaction is zero outside rcoulomb, but it helps to
      * provide accurate energy conservation.
      */
-    if (EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype))
+    if (ir_coulomb_might_be_zero_at_cutoff(ir))
     {
-        if (EEL_SWITCHED(ir->coulombtype))
+        if (ir_coulomb_switched(ir))
         {
             sprintf(err_buf,
                     "With coulombtype = %s rcoulomb_switch must be < rcoulomb. Or, better: Use the potential modifier options!",
@@ -1147,7 +1147,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (EVDW_PME(ir->vdwtype))
     {
-        if (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype))
+        if (ir_vdw_might_be_zero_at_cutoff(ir))
         {
             sprintf(err_buf, "With vdwtype = %s, rvdw must be <= rlist",
                     evdw_names[ir->vdwtype]);
@@ -1183,7 +1183,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK(ir->wall_ewald_zfac < 2);
     }
 
-    if (EVDW_SWITCHED(ir->vdwtype))
+    if (ir_vdw_switched(ir))
     {
         sprintf(err_buf, "With vdwtype = %s rvdw-switch must be < rvdw. Or, better - use a potential modifier.",
                 evdw_names[ir->vdwtype]);
@@ -1209,14 +1209,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                          "between neighborsearch steps");
         }
 
-        if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
-            && (ir->rlistlong <= ir->rcoulomb))
+        if (ir_coulomb_is_zero_at_cutoff(ir) && ir->rlistlong <= ir->rcoulomb)
         {
             sprintf(warn_buf, "For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
                     IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
             warning_note(wi, warn_buf);
         }
-        if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlistlong <= ir->rvdw))
+        if (ir_vdw_switched(ir) && (ir->rlistlong <= ir->rvdw))
         {
             sprintf(warn_buf, "For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
                     IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
@@ -1251,13 +1250,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     /* ENERGY CONSERVATION */
     if (ir_NVE(ir) && ir->cutoff_scheme == ecutsGROUP)
     {
-        if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0 && ir->vdw_modifier == eintmodNONE)
+        if (!ir_vdw_might_be_zero_at_cutoff(ir) && ir->rvdw > 0 && ir->vdw_modifier == eintmodNONE)
         {
             sprintf(warn_buf, "You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
                     evdw_names[evdwSHIFT]);
             warning_note(wi, warn_buf);
         }
-        if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0 && ir->coulomb_modifier == eintmodNONE)
+        if (!ir_coulomb_might_be_zero_at_cutoff(ir) && ir->rcoulomb > 0 && ir->coulomb_modifier == eintmodNONE)
         {
             sprintf(warn_buf, "You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
                     eel_names[eelPMESWITCH], eel_names[eelRF_ZERO]);
@@ -4207,8 +4206,7 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
              * since user defined interactions might purposely
              * not be zero at the cut-off.
              */
-            if ((EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) ||
-                 ir->vdw_modifier != eintmodNONE) &&
+            if ((ir_vdw_is_zero_at_cutoff(ir) || ir->vdw_modifier != eintmodNONE) &&
                 rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
             {
                 sprintf(warn_buf, "The sum of the two largest charge group "
@@ -4229,7 +4227,7 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     warning_note(wi, warn_buf);
                 }
             }
-            if ((EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype) ||
+            if ((ir_coulomb_is_zero_at_cutoff(ir) ||
                  ir->coulomb_modifier != eintmodNONE) &&
                 rcoul1 + rcoul2 > ir->rlistlong - ir->rcoulomb)
             {
