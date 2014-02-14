@@ -77,6 +77,7 @@
 #include "membed.h"
 #include "macros.h"
 #include "gmx_thread_affinity.h"
+#include "inputrec.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdlib/nbnxn_search.h"
@@ -762,15 +763,15 @@ static void convert_to_verlet_scheme(FILE *fplog,
     {
         gmx_fatal(FARGS, "User non-bonded potentials are not (yet) supported with the Verlet scheme");
     }
-    else if (EVDW_SWITCHED(ir->vdwtype) || EEL_SWITCHED(ir->coulombtype))
+    else if (ir_vdw_switched(ir) || ir_coulomb_switched(ir))
     {
         md_print_warn(NULL, fplog, "Converting switched or shifted interactions to a shifted potential (without force shift), this will lead to slightly different interaction potentials");
 
-        if (EVDW_SWITCHED(ir->vdwtype))
+        if (ir_vdw_switched(ir))
         {
             ir->vdwtype = evdwCUT;
         }
-        if (EEL_SWITCHED(ir->coulombtype))
+        if (ir_coulomb_switched(ir))
         {
             if (EEL_FULL(ir->coulombtype))
             {

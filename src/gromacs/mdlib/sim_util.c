@@ -2228,13 +2228,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
         }
         else if (EVDW_PME(fr->vdwtype))
         {
-            if (EVDW_SWITCHED(fr->vdwtype) && fr->rvdw_switch == 0)
-            {
-                gmx_fatal(FARGS,
-                          "With dispersion correction rvdw-switch can not be zero "
-                          "for vdw-type = %s", evdw_names[fr->vdwtype]);
-            }
-
             scale  = fr->nblists[0].table_vdw.scale;
             vdwtab = fr->nblists[0].table_vdw.data;
 
@@ -2251,15 +2244,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              */
             fr->enershiftsix = pow(fr->ewaldcoeff_lj, 6) / 6.0;
 
-            /* Calculate C12 values as without PME. */
-            if (EVDW_SWITCHED(fr->vdwtype))
-            {
-                enersum = 0;
-                virsum  = 0;
-                integrate_table(vdwtab, scale, 4, ri0, ri1, &enersum, &virsum);
-                eners[1] -= enersum;
-                virs[1]  -= virsum;
-            }
             /* Add analytical corrections, C6 for the whole range, C12
              * from rvdw_switch to infinity.
              */
