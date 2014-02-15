@@ -131,11 +131,11 @@ const t_sandr sandrTty[] = {
 
 //! List of replacements for man page output.
 const t_sandr sandrMan[] = {
-    { "[TT]", "\\fB " },
+    { "[TT]", "\\fB" },
     { "[tt]", "\\fR" },
-    { "[BB]", "\\fB " },
+    { "[BB]", "\\fB" },
     { "[bb]", "\\fR" },
-    { "[IT]", "\\fI " },
+    { "[IT]", "\\fI" },
     { "[it]", "\\fR" },
     { "[MATH]", "" },
     { "[math]", "" },
