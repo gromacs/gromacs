@@ -472,12 +472,12 @@ class OptionsListFormatter : public OptionsFormatterInterface
         //! Creates a helper object for formatting options.
         OptionsListFormatter(const HelpWriterContext   &context,
                              const CommonFormatterData &common,
-                             bool                       bConsole);
+                             const char                *title);
 
         //! Initiates a new section in the options list.
-        void startSection(const char *title)
+        void startSection(const char *header)
         {
-            title_      = title;
+            header_     = header;
             bDidOutput_ = false;
         }
         //! Finishes a section in the options list.
@@ -495,11 +495,16 @@ class OptionsListFormatter : public OptionsFormatterInterface
     private:
         void writeSectionStartIfNecessary()
         {
+            if (title_ != NULL)
+            {
+                context_.writeTitle(title_);
+                title_ = NULL;
+            }
             if (!bDidOutput_)
             {
-                if (title_ != NULL)
+                if (header_ != NULL)
                 {
-                    context_.writeTitle(title_);
+                    context_.writeTextBlock(header_);
                 }
                 context_.writeOptionListStart();
             }
@@ -510,6 +515,7 @@ class OptionsListFormatter : public OptionsFormatterInterface
         const CommonFormatterData             &common_;
         boost::scoped_ptr<TextTableFormatter>  consoleFormatter_;
         const char                            *title_;
+        const char                            *header_;
         bool                                   bDidOutput_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsListFormatter);
@@ -518,10 +524,11 @@ class OptionsListFormatter : public OptionsFormatterInterface
 OptionsListFormatter::OptionsListFormatter(
         const HelpWriterContext   &context,
         const CommonFormatterData &common,
-        bool                       bConsole)
-    : context_(context), common_(common), title_(NULL), bDidOutput_(false)
+        const char                *title)
+    : context_(context), common_(common),
+      title_(title), header_(NULL), bDidOutput_(false)
 {
-    if (bConsole)
+    if (context.outputFormat() == eHelpOutputFormat_Console)
     {
         consoleFormatter_.reset(new TextTableFormatter());
         consoleFormatter_->setFirstColumnIndent(1);
@@ -700,8 +707,6 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
         return;
     }
     const HelpWriterContext &writerContext = context.writerContext();
-    const bool               bConsole
-        = (writerContext.outputFormat() == eHelpOutputFormat_Console);
     OptionsFilter            filter;
     filter.setShowHidden(context.showHidden());
 
@@ -722,12 +727,12 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
         descriptionFormatter.format(impl_->options_, "Description");
     }
     CommonFormatterData    common(impl_->timeUnit_.c_str());
-    OptionsListFormatter   formatter(writerContext, common, bConsole);
-    formatter.startSection("File Options");
+    OptionsListFormatter   formatter(writerContext, common, "Options");
+    formatter.startSection("Options to specify input and output files:[PAR]");
     filter.formatSelected(OptionsFilter::eSelectFileOptions,
                           &formatter, impl_->options_);
     formatter.finishSection();
-    formatter.startSection("Options");
+    formatter.startSection("Other options:[PAR]");
     filter.formatSelected(OptionsFilter::eSelectOtherOptions,
                           &formatter, impl_->options_);
     formatter.finishSection();
