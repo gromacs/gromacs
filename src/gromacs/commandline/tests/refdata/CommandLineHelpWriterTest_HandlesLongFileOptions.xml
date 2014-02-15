@@ -7,7 +7,9 @@ SYNOPSIS
 gmx [-f [<.xtc/.trr/...>]] [-f2 [<.xtc/.trr/...>]] [-lib [<.xtc/.trr/...>]]
     [-longfileopt [<.dat>]] [-longfileopt2 [<.dat>]]
 
-FILE OPTIONS
+OPTIONS
+
+Options to specify input and output files:
 
  -f     [<.xtc/.trr/...>] (path/to/long/trajectory/name.xtc) (Input)
      File name option with a long value: xtc trr cpt trj gro g96 pdb g87 tng
