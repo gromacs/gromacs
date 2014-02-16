@@ -2272,14 +2272,14 @@ void init_forcerec(FILE              *fp,
         bNoSolvOpt         = TRUE;
     }
 
-    if ( (getenv("GMX_DISABLE_CPU_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
+    if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
     {
         fr->use_simd_kernels = FALSE;
         if (fp != NULL)
         {
             fprintf(fp,
-                    "\nFound environment variable GMX_DISABLE_CPU_ACCELERATION.\n"
-                    "Disabling the usage of most SIMD-specific kernel (e.g. SSE2/SSE4/AVX) routines.\n\n");
+                    "\nFound environment variable GMX_DISABLE_SIMD_KERNELS.\n"
+                    "Disabling the usage of any SIMD-specific kernel routines (e.g. SSE2/SSE4.1/AVX).\n\n");
         }
     }
 
