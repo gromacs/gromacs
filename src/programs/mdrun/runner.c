@@ -709,7 +709,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
         verletbuf_list_setup_t ls;
         real                   rlist_new;
 
-        /* Here we assume CPU acceleration is on. But as currently
+        /* Here we assume SIMD-enabled kernels are being used. But as currently
          * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
          * and 4x2 gives a larger buffer than 4x4, this is ok.
          */
@@ -1538,7 +1538,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->gpu_opt.ncuda_dev_use = 0;
     }
 
-    /* check consistency of CPU acceleration and number of GPUs selected */
+    /* check consistency across ranks of things like SIMD
+     * support and number of GPUs selected */
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
 
     if (DOMAINDECOMP(cr))
