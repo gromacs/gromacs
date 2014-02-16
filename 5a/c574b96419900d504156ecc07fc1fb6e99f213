@@ -1,0 +1,9 @@
+Code-Review+2: Rossen Apostolov <rossen@kth.se>
+Code-Review+1: Szilárd Páll <pall.szilard@gmail.com>
+Verified+1: Szilárd Páll <pall.szilard@gmail.com>
+Verified+2: Jenkins Buildbot
+Submitted-by: Rossen Apostolov <rossen@kth.se>
+Submitted-at: Sun, 16 Feb 2014 10:32:07 +0100
+Reviewed-on: https://gerrit.gromacs.org/3149
+Project: gromacs
+Branch: refs/heads/master
