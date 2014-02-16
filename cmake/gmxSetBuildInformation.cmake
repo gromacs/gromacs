@@ -82,7 +82,7 @@ macro(gmx_set_build_information)
     endif(CMAKE_HOST_UNIX)
 
     if(NOT CMAKE_CROSSCOMPILING)
-        # Get CPU acceleration information
+        # Get CPU information, e.g. for deciding what SIMD support exists
         set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders -DGMX_CPUID_STANDALONE")
         if(GMX_TARGET_X86)
             set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")

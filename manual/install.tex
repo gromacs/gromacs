@@ -246,7 +246,7 @@ you should consult your local documentation for details.
 \item   {\tt GMX_DETAILED_PERF_STATS}: when set, print slightly more detailed performance information
         to the {\tt .log} file. The resulting output is the way performance summary is reported in versions
         4.5.x and thus may be useful for anyone using scripts to parse {\tt .log} files or standard output.
-\item   {\tt GMX_DISABLE_CPU_ACCELERATION}: disables CPU architecture-specific SIMD-optimized (SSE2, SSE4, AVX, etc.)
+\item   {\tt GMX_DISABLE_SIMD_KERNELS}: disables architecture-specific SIMD-optimized (SSE2, SSE4.1, AVX, etc.)
         non-bonded kernels thus forcing the use of plain C kernels.
 \item   {\tt GMX_DISABLE_CUDA_TIMING}: timing of asynchronously executed GPU operations can have a
         non-negligible overhead with short step times. Disabling timing can improve performance in these cases.
