@@ -143,7 +143,7 @@ static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
 #endif /* GMX_SIMD_X86_SSE2_OR_HIGHER */
 #endif /* GMX_SIMD_REFERENCE */
 
-#if GMX_SIMD_REAL_WIDTH == 4 && !defined GMX_SIMD_REFERENCE
+#if GMX_SIMD_REAL_WIDTH == 4
 #define gmx_mm_pr4    gmx_simd_real_t
 #define gmx_load_pr4  gmx_simd_load_r
 #define gmx_store_pr4 gmx_simd_store_r
