@@ -96,14 +96,6 @@ gmx_add_pr4(gmx_mm_pr4 a, gmx_mm_pr4 b)
 
     return c;
 }
-#else
-
-typedef gmx_simd_ref_pr gmx_mm_pr4;
-
-#define gmx_load_pr4   gmx_load_pr
-#define gmx_store_pr4  gmx_store_pr
-#define gmx_add_pr4    gmx_add_pr
-
 #endif
 
 
