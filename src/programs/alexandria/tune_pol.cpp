@@ -232,6 +232,7 @@ static int decompose_frag(FILE *fplog,
         {
             iMolSelect ims  = gmx_molselect_status(gms, mpi->GetIupac().c_str());
 
+            pol             = 0;
             bool       bPol = mpi->GetProp(MPO_POLARIZABILITY,
                                            bQM ? iqmBoth : iqmExp,
                                            lot, NULL, NULL, &pol);
@@ -287,6 +288,9 @@ static int decompose_frag(FILE *fplog,
             }
             else
             {
+                fprintf(fplog, "Removing %s. bPol = %s pol = %g composition found = %s\n",
+                        mpi->GetMolname().c_str(), bool_names[bPol], pol,
+                        (mci == mpi->EndMolecularComposition()) ? "true" : "false");
                 mpi = mp.erase(mpi);
             }
         }
@@ -435,9 +439,9 @@ static int decompose_frag(FILE *fplog,
                 x_copy[ii] = x[uu];
             }
         }
-        matrix_multiply(fplog, nUseBootStrap, ntest[cur], a_copy, at_copy, ata);
+        matrix_multiply(debug, nUseBootStrap, ntest[cur], a_copy, at_copy, ata);
         if (check_matrix(ata, x_copy, ntest[cur], ntest[cur], atype) &&
-            ((row = matrix_invert(fplog, ntest[cur], ata)) == 0))
+            ((row = matrix_invert(debug, ntest[cur], ata)) == 0))
         {
             snew(atx, ntest[cur]);
             snew(fpp, ntest[cur]);

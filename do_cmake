@@ -16,6 +16,12 @@ setenv MPICXX      `which mpicxx`
 mkdir build
 cd build
 
+if ( -f Makefile ) then
+  make -k clean
+  rm -f Makefile
+endif
+rm -f CMakeCache.txt
+
 #-DCMAKE_CXX_COMPILER=$MPICXX -DCMAKE_C_COMPILER=$MPICC
 
 echo "running cmake. output in cmake.log"

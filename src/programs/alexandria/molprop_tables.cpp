@@ -804,7 +804,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,
                 {
                     bool bFound = false;
 
-                    for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); !bFound && (ani<mci->EndAtomNum()); ani++)
+                    for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); !bFound && (ani<mci->EndAtomNum()); ++ani)
                     {
                         const char *pt = 
                             gmx_poldata_atype_to_ptype(pd,
