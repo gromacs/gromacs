@@ -771,3 +771,15 @@ void gmx_print_version_info(FILE *fp)
     gmx_print_version_info_gpu(fp);
 #endif
 }
+
+#ifdef GMX_DOUBLE
+void gmx_is_double_precision()
+{
+    /* allow precision detection */
+}
+#else
+void gmx_is_single_precision()
+{
+    /* allow precision detection */
+}
+#endif
