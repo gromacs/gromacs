@@ -271,7 +271,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
                     deviation = sqr(blen-b0);
                     if (sqrt(deviation/sqr(b0) > tol))
                     {
-                        fprintf(stderr, "Distance between atoms %d and %d is %.3f, should be %.3f\n", ai+1, aj+1, blen, b0);
+                        fprintf(stdout, "Distance between atoms %d and %d is %.3f, should be %.3f\n", ai+1, aj+1, blen, b0);
                     }
                 }
             }
@@ -337,16 +337,16 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
     {
         if (j == 0)
         {
-            fprintf(stderr, "\n# Atoms  %d\n", fr.natoms);
+            fprintf(stdout, "\n# Atoms  %d\n", fr.natoms);
             if (fr.bPrec)
             {
-                fprintf(stderr, "Precision %g (nm)\n", 1/fr.prec);
+                fprintf(stdout, "Precision %g (nm)\n", 1/fr.prec);
             }
         }
         newline = TRUE;
         if ((natoms > 0) && (new_natoms != natoms))
         {
-            fprintf(stderr, "\nNumber of atoms at t=%g don't match (%d, %d)\n",
+            fprintf(stdout, "\nNumber of atoms at t=%g don't match (%d, %d)\n",
                     old_t1, natoms, new_natoms);
             newline = FALSE;
         }
@@ -356,7 +356,7 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
                 0.1*(fabs(fr.time-old_t1)+fabs(old_t1-old_t2)) )
             {
                 bShowTimestep = FALSE;
-                fprintf(stderr, "%sTimesteps at t=%g don't match (%g, %g)\n",
+                fprintf(stdout, "%sTimesteps at t=%g don't match (%g, %g)\n",
                         newline ? "\n" : "", old_t1, old_t1-old_t2, fr.time-old_t1);
             }
         }
@@ -395,17 +395,17 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
     }
     while (read_next_frame(oenv, status, &fr));
 
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
     close_trj(status);
 
-    fprintf(stderr, "\nItem        #frames");
+    fprintf(stdout, "\nItem        #frames");
     if (bShowTimestep)
     {
-        fprintf(stderr, " Timestep (ps)");
+        fprintf(stdout, " Timestep (ps)");
     }
-    fprintf(stderr, "\n");
-#define PRINTITEM(label, item) fprintf(stderr, "%-10s  %6d", label, count.item); if ((bShowTimestep) && (count.item > 1)) {fprintf(stderr, "    %g\n", (last.item-first.item)/(count.item-1)); }else fprintf(stderr, "\n")
+    fprintf(stdout, "\n");
+#define PRINTITEM(label, item) fprintf(stdout, "%-10s  %6d", label, count.item); if ((bShowTimestep) && (count.item > 1)) {fprintf(stdout, "    %g\n", (last.item-first.item)/(count.item-1)); }else fprintf(stdout, "\n")
     PRINTITEM ( "Step",       bStep );
     PRINTITEM ( "Time",       bTime );
     PRINTITEM ( "Lambda",     bLambda );
@@ -431,11 +431,11 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     real          *atom_vdw;
     gmx_atomprop_t aps;
 
-    fprintf(stderr, "Checking coordinate file %s\n", fn);
+    fprintf(stdout, "Checking coordinate file %s\n", fn);
     read_tps_conf(fn, title, &top, &ePBC, &x, &v, box, TRUE);
     atoms = &top.atoms;
     natom = atoms->nr;
-    fprintf(stderr, "%d atoms in file\n", atoms->nr);
+    fprintf(stdout, "%d atoms in file\n", atoms->nr);
 
     /* check coordinates and box */
     bV = FALSE;
@@ -457,10 +457,10 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
         }
     }
 
-    fprintf(stderr, "coordinates %s\n", bX ? "found" : "absent");
-    fprintf(stderr, "box         %s\n", bB ? "found" : "absent");
-    fprintf(stderr, "velocities  %s\n", bV ? "found" : "absent");
-    fprintf(stderr, "\n");
+    fprintf(stdout, "coordinates %s\n", bX ? "found" : "absent");
+    fprintf(stdout, "box         %s\n", bB ? "found" : "absent");
+    fprintf(stdout, "velocities  %s\n", bV ? "found" : "absent");
+    fprintf(stdout, "\n");
 
     /* check velocities */
     if (bV)
@@ -475,8 +475,8 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
         }
         temp1 = (2.0*ekin)/(natom*DIM*BOLTZ);
         temp2 = (2.0*ekin)/(natom*(DIM-1)*BOLTZ);
-        fprintf(stderr, "Kinetic energy: %g (kJ/mol)\n", ekin);
-        fprintf(stderr, "Assuming the number of degrees of freedom to be "
+        fprintf(stdout, "Kinetic energy: %g (kJ/mol)\n", ekin);
+        fprintf(stdout, "Assuming the number of degrees of freedom to be "
                 "Natoms * %d or Natoms * %d,\n"
                 "the velocities correspond to a temperature of the system\n"
                 "of %g K or %g K respectively.\n\n", DIM, DIM-1, temp1, temp2);
@@ -489,7 +489,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
         bonlo2  = sqr(bon_lo);
         bonhi2  = sqr(bon_hi);
 
-        fprintf(stderr,
+        fprintf(stdout,
                 "Checking for atoms closer than %g and not between %g and %g,\n"
                 "relative to sum of Van der Waals distance:\n",
                 vdw_fac, bon_lo, bon_hi);
@@ -519,7 +519,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
         {
             if (((i+1)%10) == 0)
             {
-                fprintf(stderr, "\r%5d", i+1);
+                fprintf(stdout, "\r%5d", i+1);
             }
             for (j = i+1; (j < natom); j++)
             {
@@ -538,12 +538,12 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                 {
                     if (bFirst)
                     {
-                        fprintf(stderr, "\r%5s %4s %8s %5s  %5s %4s %8s %5s  %6s\n",
+                        fprintf(stdout, "\r%5s %4s %8s %5s  %5s %4s %8s %5s  %6s\n",
                                 "atom#", "name", "residue", "r_vdw",
                                 "atom#", "name", "residue", "r_vdw", "distance");
                         bFirst = FALSE;
                     }
-                    fprintf(stderr,
+                    fprintf(stdout,
                             "\r%5d %4s %4s%4d %-5.3g  %5d %4s %4s%4d %-5.3g  %-6.4g\n",
                             i+1, *(atoms->atomname[i]),
                             *(atoms->resinfo[atoms->atom[i].resind].name),
@@ -559,9 +559,9 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
         }
         if (bFirst)
         {
-            fprintf(stderr, "\rno close atoms found\n");
+            fprintf(stdout, "\rno close atoms found\n");
         }
-        fprintf(stderr, "\r      \n");
+        fprintf(stdout, "\r      \n");
 
         if (bB)
         {
@@ -580,38 +580,38 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                     k++;
                     if (bFirst)
                     {
-                        fprintf(stderr, "Atoms outside box ( ");
+                        fprintf(stdout, "Atoms outside box ( ");
                         for (j = 0; (j < DIM); j++)
                         {
-                            fprintf(stderr, "%g ", box[j][j]);
+                            fprintf(stdout, "%g ", box[j][j]);
                         }
-                        fprintf(stderr, "):\n"
+                        fprintf(stdout, "):\n"
                                 "(These may occur often and are normally not a problem)\n"
                                 "%5s %4s %8s %5s  %s\n",
                                 "atom#", "name", "residue", "r_vdw", "coordinate");
                         bFirst = FALSE;
                     }
-                    fprintf(stderr,
+                    fprintf(stdout,
                             "%5d %4s %4s%4d %-5.3g",
                             i, *(atoms->atomname[i]),
                             *(atoms->resinfo[atoms->atom[i].resind].name),
                             atoms->resinfo[atoms->atom[i].resind].nr, atom_vdw[i]);
                     for (j = 0; (j < DIM); j++)
                     {
-                        fprintf(stderr, " %6.3g", x[i][j]);
+                        fprintf(stdout, " %6.3g", x[i][j]);
                     }
-                    fprintf(stderr, "\n");
+                    fprintf(stdout, "\n");
                 }
             }
             if (k == 10)
             {
-                fprintf(stderr, "(maybe more)\n");
+                fprintf(stdout, "(maybe more)\n");
             }
             if (bFirst)
             {
-                fprintf(stderr, "no atoms found outside box\n");
+                fprintf(stdout, "no atoms found outside box\n");
             }
-            fprintf(stderr, "\n");
+            fprintf(stdout, "\n");
         }
     }
 }
@@ -658,11 +658,11 @@ void chk_enx(const char *fn)
     real           t0, old_t1, old_t2;
     char           buf[22];
 
-    fprintf(stderr, "Checking energy file %s\n\n", fn);
+    fprintf(stdout, "Checking energy file %s\n\n", fn);
 
     in = open_enx(fn, "r");
     do_enxnms(in, &nre, &enm);
-    fprintf(stderr, "%d groups in energy file", nre);
+    fprintf(stdout, "%d groups in energy file", nre);
     snew(fr, 1);
     old_t2     = -2.0;
     old_t1     = -1.0;
@@ -678,7 +678,7 @@ void chk_enx(const char *fn)
                 0.1*(fabs(fr->t-old_t1)+fabs(old_t1-old_t2)) )
             {
                 bShowTStep = FALSE;
-                fprintf(stderr, "\nTimesteps at t=%g don't match (%g, %g)\n",
+                fprintf(stdout, "\nTimesteps at t=%g don't match (%g, %g)\n",
                         old_t1, old_t1-old_t2, fr->t-old_t1);
             }
         }
@@ -690,17 +690,17 @@ void chk_enx(const char *fn)
         }
         if (fnr == 0)
         {
-            fprintf(stderr, "\rframe: %6s (index %6d), t: %10.3f\n",
+            fprintf(stdout, "\rframe: %6s (index %6d), t: %10.3f\n",
                     gmx_step_str(fr->step, buf), fnr, fr->t);
         }
         fnr++;
     }
-    fprintf(stderr, "\n\nFound %d frames", fnr);
+    fprintf(stdout, "\n\nFound %d frames", fnr);
     if (bShowTStep && fnr > 1)
     {
-        fprintf(stderr, " with a timestep of %g ps", (old_t1-t0)/(fnr-1));
+        fprintf(stdout, " with a timestep of %g ps", (old_t1-t0)/(fnr-1));
     }
-    fprintf(stderr, ".\n");
+    fprintf(stdout, ".\n");
 
     free_enxframe(fr);
     free_enxnms(nre, enm);
@@ -785,6 +785,10 @@ int gmx_check(int argc, char *argv[])
         return 0;
     }
 
+    /* TODO fix the order of operations, so that the input is sane and
+       asks for only one thing, before attempting to do anything. A
+       UNIX tool should only try to do one thing at a time. */
+
     fn1 = opt2fn_null("-f", NFILE, fnm);
     fn2 = opt2fn_null("-f2", NFILE, fnm);
     tex = opt2fn_null("-m", NFILE, fnm);
@@ -798,7 +802,7 @@ int gmx_check(int argc, char *argv[])
     }
     else if (fn2)
     {
-        fprintf(stderr, "Please give me TWO trajectory (.xtc/.trr/.trj) files!\n");
+        gmx_fatal(FARGS, "Please give me TWO trajectory (.xtc/.trr/.trj) files!");
     }
 
     fn1 = opt2fn_null("-s1", NFILE, fnm);
@@ -821,8 +825,8 @@ int gmx_check(int argc, char *argv[])
     }
     else if ((fn1 && !opt2fn_null("-f", NFILE, fnm)) || (!fn1 && fn2))
     {
-        fprintf(stderr, "Please give me TWO run input (.tpr/.tpa/.tpb) files\n"
-                "or specify the -m flag to generate a methods.tex file\n");
+        gmx_fatal(FARGS, "Please give me TWO run input (.tpr/.tpa/.tpb) files "
+                  "or specify the -m flag to generate a methods.tex file\n");
     }
 
     fn1 = opt2fn_null("-e", NFILE, fnm);
@@ -837,7 +841,7 @@ int gmx_check(int argc, char *argv[])
     }
     else if (fn2)
     {
-        fprintf(stderr, "Please give me TWO energy (.edr/.ene) files!\n");
+        gmx_fatal(FARGS, "Please give me TWO energy (.edr/.ene) files!");
     }
 
     if (ftp2bSet(efTPS, NFILE, fnm))

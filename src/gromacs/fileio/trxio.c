@@ -176,7 +176,7 @@ static void printcount_(t_trxstatus *status, const output_env_t oenv,
         (status->__frame < 2*SKIP2 || status->__frame % SKIP2 == 0) &&
         (status->__frame < 2*SKIP3 || status->__frame % SKIP3 == 0))
     {
-        fprintf(stderr, "\r%-14s %6d time %8.3f   ", l, status->__frame,
+        fprintf(stdout, "\r%-14s %6d time %8.3f   ", l, status->__frame,
                 output_env_conv_time(oenv, t));
     }
 }
@@ -191,7 +191,7 @@ static void printcount(t_trxstatus *status, const output_env_t oenv, real t,
 static void printlast(t_trxstatus *status, const output_env_t oenv, real t)
 {
     printcount_(status, oenv, "Last frame", t);
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 }
 
 static void printincomp(t_trxstatus *status, t_trxframe *fr)
