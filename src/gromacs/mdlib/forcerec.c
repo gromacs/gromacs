@@ -2120,7 +2120,7 @@ void init_forcerec(FILE              *fp,
     double         dbl;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
-    gmx_bool       bTab, bSep14tab, bNormalnblists;
+    gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
     t_nblists     *nbl;
     int           *nm_ind, egp_flags;
 
@@ -2740,24 +2740,24 @@ void init_forcerec(FILE              *fp,
      * A little unnecessary to make both vdw and coul tables sometimes,
      * but what the heck... */
 
-    bTab = fr->bcoultab || fr->bvdwtab || fr->bEwald;
+    bMakeTables = fr->bcoultab || fr->bvdwtab || fr->bEwald;
 
-    bSep14tab = ((!bTab || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
-                  fr->bBHAM || fr->bEwald) &&
-                 (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
-                  gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
-                  gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0));
+    bMakeSeparate14Table = ((!bMakeTables || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
+                             fr->bBHAM || fr->bEwald) &&
+                            (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
+                             gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
+                             gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0));
 
     negp_pp   = ir->opts.ngener - ir->nwall;
     negptable = 0;
-    if (!bTab)
+    if (!bMakeTables)
     {
-        bNormalnblists = TRUE;
+        bSomeNormalNbListsAreInUse = TRUE;
         fr->nnblists   = 1;
     }
     else
     {
-        bNormalnblists = (ir->eDispCorr != edispcNO);
+        bSomeNormalNbListsAreInUse = (ir->eDispCorr != edispcNO);
         for (egi = 0; egi < negp_pp; egi++)
         {
             for (egj = egi; egj < negp_pp; egj++)
@@ -2771,12 +2771,12 @@ void init_forcerec(FILE              *fp,
                     }
                     else
                     {
-                        bNormalnblists = TRUE;
+                        bSomeNormalNbListsAreInUse = TRUE;
                     }
                 }
             }
         }
-        if (bNormalnblists)
+        if (bSomeNormalNbListsAreInUse)
         {
             fr->nnblists = negptable + 1;
         }
@@ -2803,17 +2803,17 @@ void init_forcerec(FILE              *fp,
      */
     rtab = ir->rlistlong + ir->tabext;
 
-    if (bTab)
+    if (bMakeTables)
     {
         /* make tables for ordinary interactions */
-        if (bNormalnblists)
+        if (bSomeNormalNbListsAreInUse)
         {
             make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
             if (ir->adress)
             {
                 make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
             }
-            if (!bSep14tab)
+            if (!bMakeSeparate14Table)
             {
                 fr->tab14 = fr->nblists[0].table_elec_vdw;
             }
@@ -2861,7 +2861,7 @@ void init_forcerec(FILE              *fp,
             }
         }
     }
-    if (bSep14tab)
+    if (bMakeSeparate14Table)
     {
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
         fr->tab14 = make_tables(fp, oenv, fr, MASTER(cr), tabpfn, rtab,
