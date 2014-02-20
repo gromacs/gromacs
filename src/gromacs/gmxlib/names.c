@@ -79,7 +79,7 @@ const char *ecutscheme_names[ecutsNR+1] = {
 const char *eel_names[eelNR+1] = {
     "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
     "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User",
-    "Generalized-Born", "Reaction-Field-nec", "Encad-shift",
+    "Generalized-Born", "Reaction-Field-nec",
     "PME-User", "PME-Switch", "PME-User-Switch",
     "Reaction-Field-zero", NULL
 };
@@ -93,7 +93,7 @@ const char *eljpme_names[eljpmeNR+1] = {
 };
 
 const char *evdw_names[evdwNR+1] = {
-    "Cut-off", "Switch", "Shift", "User", "Encad-shift",
+    "Cut-off", "Switch", "Shift", "User",
     "PME", NULL
 };
 

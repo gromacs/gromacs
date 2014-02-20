@@ -100,7 +100,7 @@ enum eintmod {
  */
 enum {
     eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
-    eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC, eelENCADSHIFT,
+    eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC,
     eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
 };
 
@@ -117,7 +117,7 @@ enum {
 #define EEL_USER(e) ((e) == eelUSER || (e) == eelPMEUSER || (e) == (eelPMEUSERSWITCH))
 
 enum {
-    evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT,
+    evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER,
     evdwPME, evdwNR
 };
 

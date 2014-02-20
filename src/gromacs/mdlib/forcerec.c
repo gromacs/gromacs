@@ -2460,7 +2460,6 @@ void init_forcerec(FILE              *fp,
         case eelSWITCH:
         case eelSHIFT:
         case eelUSER:
-        case eelENCADSHIFT:
         case eelPMESWITCH:
         case eelPMEUSER:
         case eelPMEUSERSWITCH:
@@ -2495,9 +2494,6 @@ void init_forcerec(FILE              *fp,
         case evdwSWITCH:
         case evdwSHIFT:
         case evdwUSER:
-        case evdwENCADSHIFT:
-            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
-            break;
 
         default:
             gmx_fatal(FARGS, "Unsupported vdw interaction: %s", evdw_names[fr->vdwtype]);

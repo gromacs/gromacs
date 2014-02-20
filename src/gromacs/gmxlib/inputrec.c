@@ -200,7 +200,6 @@ gmx_bool ir_coulomb_switched(const t_inputrec *ir)
 {
     return (ir->coulombtype == eelSWITCH ||
             ir->coulombtype == eelSHIFT ||
-            ir->coulombtype == eelENCADSHIFT ||
             ir->coulombtype == eelPMESWITCH ||
             ir->coulombtype == eelPMEUSERSWITCH ||
             ir->coulomb_modifier == eintmodPOTSWITCH ||
@@ -223,7 +222,6 @@ gmx_bool ir_vdw_switched(const t_inputrec *ir)
 {
     return (ir->vdwtype == evdwSWITCH ||
             ir->vdwtype == evdwSHIFT ||
-            ir->vdwtype == evdwENCADSHIFT ||
             ir->vdw_modifier == eintmodPOTSWITCH ||
             ir->vdw_modifier == eintmodFORCESWITCH);
 }
