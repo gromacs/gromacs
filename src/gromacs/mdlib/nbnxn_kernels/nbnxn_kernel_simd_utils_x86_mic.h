@@ -38,8 +38,6 @@
 typedef gmx_simd_int32_t      gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
-#define nbfp_stride 2
-
 #define PERM_LOW2HIGH _MM_PERM_BABA
 #define PERM_HIGH2LOW _MM_PERM_DCDC
 
@@ -213,8 +211,6 @@ gmx_mm_transpose_sum4_pr(gmx_mm_ps in0, gmx_mm_ps in1,
                            _mm512_reduce_add_ps(in3));
 }
 
-/* TODO: Test. Untested by regressiontests (requires input with specific LJ rule, #1373) */
-/* Assumed the same optmization which helps for load_table_f is the fastest here too. */
 static gmx_inline void
 load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
                      const int *type, int aj,
@@ -226,14 +222,12 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
     idx0 = _mm512_loadunpacklo_epi32(_mm512_undefined_epi32(), type+aj);
     idx0 = _mm512_loadunpackhi_epi32(idx0, type+aj+16);
 
+    idx0 = _mm512_mullo_epi32(idx0, _mm512_set1_epi32(nbfp_stride));
     idx1 = _mm512_add_epi32(idx0, _mm512_set1_epi32(1)); /* incr by 1 for c12 */
 
     gmx_2hepi_to_epi(idx0, idx1, &idx);
-    /* ICC requires nbfp_stride here to be preprocessor constant (not a "const int") */
-    __m512 tmp1 = _mm512_i32gather_ps(idx, nbfp0, sizeof(float)*nbfp_stride);
-
-    gmx_2hepi_high_to_epi(idx0, idx1, &idx);
-    __m512 tmp2 = _mm512_i32gather_ps(idx, nbfp1, sizeof(float)*nbfp_stride);
+    __m512 tmp1 = _mm512_i32gather_ps(idx, nbfp0, sizeof(float));
+    __m512 tmp2 = _mm512_i32gather_ps(idx, nbfp1, sizeof(float));
 
     gmx_2hpr_to_pr(tmp1, tmp2, c6_S);
     gmx_2hpr_high_to_pr(tmp1, tmp2, c12_S);
