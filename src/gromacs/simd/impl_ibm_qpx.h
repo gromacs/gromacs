@@ -108,7 +108,7 @@
 #define gmx_simd_fneg_f           gmx_simd_fneg_ibm_qpx
 #define gmx_simd_max_f(a, b)       vec_sel(b, a, vec_sub(a, b))
 #define gmx_simd_min_f(a, b)       vec_sel(b, a, vec_sub(b, a))
-#define gmx_simd_round_f(a)       vec_round(a)
+#define gmx_simd_round_f(a)       vec_cfid(vec_ctid(a))
 #define gmx_simd_trunc_f(a)       vec_trunc(a)
 #define gmx_simd_fraction_f(x)    vec_sub(x, vec_trunc(x))
 #define gmx_simd_get_exponent_f(a) gmx_simd_get_exponent_ibm_qpx(a)
@@ -186,7 +186,7 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
 #define gmx_simd_fneg_d           gmx_simd_fneg_ibm_qpx
 #define gmx_simd_max_d(a, b)       vec_sel(b, a, vec_sub(a, b))
 #define gmx_simd_min_d(a, b)       vec_sel(b, a, vec_sub(b, a))
-#define gmx_simd_round_d(a)       vec_round(a)
+#define gmx_simd_round_d(a)       vec_cfid(vec_ctid(a))
 #define gmx_simd_trunc_d(a)       vec_trunc(a)
 #define gmx_simd_fraction_d(x)    vec_sub(x, vec_trunc(x))
 #define gmx_simd_get_exponent_d(a) gmx_simd_get_exponent_ibm_qpx(a)
@@ -290,11 +290,12 @@ gmx_simd_set_exponent_ibm_qpx(vector4double x)
 static __attribute__((always_inline)) double
 gmx_simd_reduce_ibm_qpx(vector4double x)
 {
-    vector4double y = vec_perm(x, x, vec_gpci(02301));
+    vector4double y = vec_sldw(x, x, 2);
+    vector4double z;
 
     y = vec_add(y, x);
-    y = vec_perm(y, y, vec_gpci(01230));
-    y = vec_add(y, y);
+    z = vec_sldw(y, y, 1);
+    y = vec_add(y, z);
     return vec_extract(y, 0);
 }
 

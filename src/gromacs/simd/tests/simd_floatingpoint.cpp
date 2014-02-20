@@ -167,6 +167,16 @@ TEST_F(SimdFloatingpointTest, gmxSimdRoundR)
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(4), gmx_simd_round_r(gmx_simd_set1_r(3.75)));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2), gmx_simd_round_r(gmx_simd_set1_r(-2.25)));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-4), gmx_simd_round_r(gmx_simd_set1_r(-3.75)));
+    // Test that SIMD rounding is the same as IEEE rounding (namely
+    // round-to-nearest, ties to nearest even)
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-100), gmx_simd_round_r(gmx_simd_set1_r(-99.5)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-98), gmx_simd_round_r(gmx_simd_set1_r(-98.5)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-98), gmx_simd_round_r(gmx_simd_set1_r(-97.5)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-96), gmx_simd_round_r(gmx_simd_set1_r(-96.5)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(30), gmx_simd_round_r(gmx_simd_set1_r(30.5)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(32), gmx_simd_round_r(gmx_simd_set1_r(31.5)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(32), gmx_simd_round_r(gmx_simd_set1_r(32.5)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(34), gmx_simd_round_r(gmx_simd_set1_r(33.5)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdTruncR)
@@ -313,7 +323,7 @@ TEST_F(SimdFloatingpointTest, gmxSimdReduceR)
 {
     // The horizontal sum of the SIMD variable depends on the width, so
     // simply store it an extra time and calculate what the sum should be
-    std::vector<real> v   = simdReal2Vector(rSimd_1_2_3);
+    std::vector<real> v   = simdReal2Vector(rSimd_4_5_6);
     real              sum = 0.0;
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -321,7 +331,7 @@ TEST_F(SimdFloatingpointTest, gmxSimdReduceR)
         sum += v[i];
     }
 
-    EXPECT_EQ(sum, gmx_simd_reduce_r(rSimd_1_2_3));
+    EXPECT_EQ(sum, gmx_simd_reduce_r(rSimd_4_5_6));
 }
 
 #endif // GMX_SIMD_HAVE_REAL

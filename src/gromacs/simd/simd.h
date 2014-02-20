@@ -74,6 +74,7 @@
 #include <config.h>
 #endif
 
+#include <stddef.h>
 #include "gromacs/legacyheaders/types/simple.h"
 
 /* Forward declarations so memory allocation can be used in implementations */
