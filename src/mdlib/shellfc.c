@@ -285,11 +285,6 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, const t_commrec *cr,
         return NULL;
     }
 
-    if (DOMAINDECOMP(cr))
-    {
-        gmx_fatal(FARGS, "The shell code does not work with domain decomposition. Use particle decomposition, or only one MPI rank.\n");
-        /* The problem is probably not severe. See Redmine #1429. */
-    }
     if (bCutoffSchemeIsVerlet)
     {
         gmx_fatal(FARGS, "The shell code does not work with the Verlet cut-off scheme.\n");
