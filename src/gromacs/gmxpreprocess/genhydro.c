@@ -813,7 +813,7 @@ int protonate(t_atoms **atomsptr, rvec **xptr, t_protonate *protdata)
         }
 
         /* set forcefield to use: */
-        strcpy(protdata->FF, "gmx2.ff");
+        strcpy(protdata->FF, "oplsaa.ff");
 
         /* get the databases: */
         protdata->nah = read_h_db(protdata->FF, &protdata->ah);
