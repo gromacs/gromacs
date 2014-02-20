@@ -253,10 +253,6 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, const t_commrec *cr,
     gmx_moltype_t            *molt;
     t_block                  *cgs;
 
-    if (DOMAINDECOMP(cr) && cr->nnodes > 1)
-    {
-        gmx_fatal(FARGS, "The shell code does not work with domain decompsition and more than 1 domain.\n");
-    }
     if (bCutoffSchemeIsVerlet)
     {
         gmx_fatal(FARGS, "The shell code does not work with the Verlet cut-off scheme.\n");
