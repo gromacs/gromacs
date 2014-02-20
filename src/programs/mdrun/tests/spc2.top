@@ -1,7 +1,7 @@
 #include "oplsaa.ff/forcefield.itp"
 
 ; Include water topology
-#include "tip3p.itp"
+#include "oplsaa.ff/tip3p.itp"
 
 [ system ]
 ; Name
