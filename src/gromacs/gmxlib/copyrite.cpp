@@ -731,6 +731,18 @@ static void gmx_print_version_info(FILE *fp)
 #endif
 }
 
+#ifdef GMX_DOUBLE
+void gmx_is_double_precision()
+{
+    /* allow precision detection */
+}
+#else
+void gmx_is_single_precision()
+{
+    /* allow precision detection */
+}
+#endif
+
 namespace gmx
 {
 
