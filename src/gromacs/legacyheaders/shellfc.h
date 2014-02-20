@@ -45,7 +45,8 @@ extern "C" {
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
-gmx_shellfc_t init_shell_flexcon(FILE *log,
+gmx_shellfc_t init_shell_flexcon(FILE *fplog, const t_commrec *cr,
+                                 gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x);
 
