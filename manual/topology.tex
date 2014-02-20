@@ -99,24 +99,24 @@ which have a characteristic name or number, and mass (in
 a.m.u.). These listings are found in the {\tt atomtypes.atp}
 file (.atp = {\bf a}tom {\bf t}ype {\bf p}arameter file).
 Therefore, it is in this file that you can begin to change
-and/or add an atom type. A sample from the deprecated
-{\tt gmx.ff} force field is listed below.
+and/or add an atom type. A sample from the {\tt gromos43a1.ff} 
+force field is listed below.
 
 {\small
 \begin{verbatim}
     O  15.99940 ;     carbonyl oxygen (C=O)
    OM  15.99940 ;     carboxyl oxygen (CO-)
-   OA  15.99940 ;     hydroxyl oxygen (OH)
+   OA  15.99940 ;     hydroxyl, sugar or ester oxygen
    OW  15.99940 ;     water oxygen
     N  14.00670 ;     peptide nitrogen (N or NH)
    NT  14.00670 ;     terminal nitrogen (NH2)
    NL  14.00670 ;     terminal nitrogen (NH3)
-  NR5  14.00670 ;     aromatic N (5-ring,2 bonds)
- NR5*  14.00670 ;     aromatic N (5-ring,3 bonds)
-   NP  14.00670 ;     porphyrin nitrogen
-    C  12.01100 ;     bare carbon (peptide,C=O,C-N)
-  CH1  13.01900 ;     aliphatic CH-group
-  CH2  14.02700 ;     aliphatic CH2-group
+   NR  14.00670 ;     aromatic nitrogen
+   NZ  14.00670 ;     Arg NH (NH2)
+   NE  14.00670 ;     Arg NE (NH)
+    C  12.01100 ;     bare carbon
+  CH1  13.01900 ;     aliphatic or sugar CH-group
+  CH2  14.02700 ;     aliphatic or sugar CH2-group
   CH3  15.03500 ;     aliphatic CH3-group
 \end{verbatim}}
 
@@ -753,11 +753,10 @@ files. These strings are copied to the topology file and can be
 replaced by force field parameters by the C-preprocessor in {\tt grompp}
 using {\tt \#define} statements.
 
-{\tt pdb2gmx} automatically generates all angles. This means that for the
-{\tt gmx.ff} force field,
-the {\tt [~angles~]} field is only useful for overriding {\tt .itp}
-parameters. For the \gromosv{96} force field the interaction number
-of all angles need to be specified.
+{\tt pdb2gmx} automatically generates all angles. This means that for 
+most force fields the {\tt [~angles~]} field is only useful for overriding 
+{\tt .itp} parameters. For the \gromosv{96} force field the interaction 
+number of all angles needs to be specified.
 
 {\tt pdb2gmx} automatically generates one proper dihedral for every rotatable
 bond, preferably on heavy atoms. When the {\tt [~dihedrals~]} field is used,
@@ -952,27 +951,32 @@ The \swapindex{termini}{database}s are stored in {\tt aminoacids.n.tdb} and
 {\tt aminoacids.c.tdb} for the N- and C-termini respectively. They contain
 information for the {\tt pdb2gmx} program on how to connect new atoms
 to existing ones, which atoms should be removed or changed, and which
-bonded interactions should be added. The format of the is as follows
-(from {\tt gmx.ff/aminoacids.c.tdb}):
+bonded interactions should be added. Their format is as follows
+(from {\tt gromos43a1.ff/aminoacids.c.tdb}):
 
 {\small
 \begin{verbatim}
-[ COO- ]
-
-[ replace ]
-C       C       C       12.011  0.27
-
-[ add ]
-2       8       O       C       CA      N
-        OM      15.9994 -0.635
-
-[ delete ]
-O
-
-[ impropers ]
-C       O1      O2      CA
-
 [ None ]
+
+[ COO- ]
+[ replace ]
+C	C	C	12.011	0.27
+O 	O1	OM	15.9994	-0.635
+OXT	O2	OM	15.9994	-0.635
+[ add ]
+2	8	O	C	CA	N
+	OM	15.9994	-0.635
+[ bonds ]
+C	O1	gb_5
+C	O2	gb_5
+[ angles ]
+O1	C	O2	ga_37
+CA	C	O1	ga_21
+CA	C	O2	ga_21
+[ dihedrals ]
+N	CA	C	O2	gd_20
+[ impropers ]
+C	CA	O2	O1	gi_1
 \end{verbatim}}
 
 The file is organized in blocks, each with a header specifying the
@@ -1927,17 +1931,17 @@ A force field is included at the beginning of a topology file with an
 {\tt \#include} statement followed by {\tt <name>.ff/forcefield.itp}.
 This statement includes the force field file,
 which, in turn, may include other force field files. All the force fields
-are organized in the same way. As an example, we show the {\tt gmx.ff/forcefield.itp}
+are organized in the same way. As an example, we show the {\tt gromos43a1.ff/forcefield.itp}
 file:
 
 {\small
 \begin{verbatim}
-#define _FF_GROMACS
-#define _FF_GROMACS1
+#define _FF_GROMOS96
+#define _FF_GROMOS43A1
 
 [ defaults ]
-; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
-  1             1               no              1.0     1.0
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+  1		1		no		1.0	1.0
 
 #include "ffnonbonded.itp"
 #include "ffbonded.itp"
@@ -1988,22 +1992,6 @@ In pre-3.1.3 versions of {\gromacs}, the new atom types needed to be
 added in the {\tt [~atomtypes~]} section of the force field files,
 because all non-bonded parameters above the last {\tt [~atomtypes~]}
 section would be overwritten using the standard combination rules.
-
-\section{{\tt gmx.ff} documentation}
-For backward compatibility we retain here some reference to parameters
-present in the {\tt gmx.ff} force field. The last 10 atom types were
-not part of the original \gromosv{87} force field~\cite{biomos}, so
-if you use them you should refer to one or more of the following
-papers:
-\begin{itemize}
-\item F was taken from ref.~\cite{Buuren93a}, 
-\item CP2 and CP3 from ref.~\cite{Buuren93b} and references cited therein, 
-\item CR5, CR6 and HCR from ref.~\cite{Spoel96c}
-\item OWT3 from ref.~\cite{Jorgensen83}
-\item SD, OD and CD from ref.~\cite{Liu95}
-\end{itemize}
-{\bf Note that we recommend against using these parameters in new projects
-since they are not well-tested.}
 
 % LocalWords:  parameterized fffiles ptype polarizable gromacs atp ype arameter
 % LocalWords:  lll carboxyl OA hydroxyl NL porphyrin OPLS CP HCR OWT fd funct
