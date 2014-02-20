@@ -122,7 +122,8 @@ prepare_table_load_buffer(const int gmx_unused *array)
 #else  /* GMX_SIMD_X86_SSE2_OR_HIGHER */
 
 #if GMX_SIMD_REAL_WIDTH > 4
-static const int nbfp_stride = 4;
+/* For width>4 we use unaligned loads. And thus we can use the minimal stride */
+static const int nbfp_stride = 2;
 #else
 static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
 #endif
