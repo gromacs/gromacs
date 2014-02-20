@@ -1054,13 +1054,9 @@
 
 #ifdef CALC_LJ
 #ifdef CALC_COULOMB
-    fscal_S0    = gmx_simd_mul_r(rinvsq_S0,
-                                 gmx_simd_add_r(frcoul_S0,
-                                                gmx_simd_sub_r(FrLJ12_S0, FrLJ6_S0)));
+    fscal_S0    = gmx_simd_mul_r(rinvsq_S0, gmx_simd_add_r(frcoul_S0, frLJ_S0));
 #else
-    fscal_S0    = gmx_simd_mul_r(rinvsq_S0,
-                                 (
-                                     gmx_simd_sub_r(FrLJ12_S0, FrLJ6_S0)));
+    fscal_S0    = gmx_simd_mul_r(rinvsq_S0, frLJ_S0);
 #endif
 #ifdef CALC_COULOMB
     fscal_S1    = gmx_simd_mul_r(rinvsq_S1, gmx_simd_add_r(frcoul_S1, frLJ_S1));
