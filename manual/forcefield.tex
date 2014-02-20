@@ -2801,16 +2801,11 @@ to be the so-called ``{\gromacs} force field,'' which was based on
 \gromosv{87}~\cite{biomos}\index{GROMOS87}, with a small modification
 concerning the interaction between water oxygens and carbon
 atoms~\cite{Buuren93b,Mark94}, as well as 10 extra atom
-types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}. Whenever
-using this force field, please cite the above references, and {\bf do not}
-call it the ``{\gromacs} force field,'' instead name it
-\gromosv{87}~\cite{biomos} with corrections as detailed
-in~\cite{Buuren93b,Mark94}.  As noted by {\tt pdb2gmx}, this force field is
-``deprecated,'' indicating that newer, perhaps more reliable, versions of this
-parameter set are available.  For backwards compatibility, it is maintained 
-in the current release.  Should you have a justifiable reason to use this
-force field, all necessary files are provided in the {\tt gmx.ff} sub-directory
-of the {\gromacs} library.  See also the note in~\ssecref{atomtype}.
+types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}.
+
+Since version 5.0 this force field has been ``deprecated''. Should 
+you have a justifiable reason to use this force field please 
+use eariler versions of {\gromacs}.
 
 \subsubsection{All-hydrogen force field}
 The \gromosv{87}-based all-hydrogen force field is almost identical to the
