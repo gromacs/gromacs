@@ -1277,6 +1277,11 @@ int gmx_anaeig(int argc, char *argv[])
             snew(xrefp, atoms->nr);
             if (xref1 != NULL)
             {
+                /* Safety check between selected fit-group and reference structure read from the eigenvector file */
+                if (natoms != nfit)
+                {
+                    gmx_fatal(FARGS, "you selected a group with %d elements instead of %d, your selection does not fit the reference structure in the eigenvector file.", nfit, natoms);
+                }
                 for (i = 0; (i < nfit); i++)
                 {
                     copy_rvec(xref1[i], xrefp[ifit[i]]);

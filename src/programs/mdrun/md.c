@@ -323,7 +323,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     debug_gmx();
 
     /* Check for polarizable models and flexible constraints */
-    shellfc = init_shell_flexcon(fplog,
+    shellfc = init_shell_flexcon(fplog, fr->cutoff_scheme == ecutsVERLET,
                                  top_global, n_flexible_constraints(constr),
                                  (ir->bContinuation ||
                                   (DOMAINDECOMP(cr) && !MASTER(cr))) ?
