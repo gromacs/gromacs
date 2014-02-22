@@ -154,13 +154,13 @@ void low_do_autocorr(const char *fn, const output_env_t oenv,
  *   C(t) = < (X(tau) == X(tau+t)) >
  * }
  * else if (mode == eacVector) {
- *   C(t) = < X(tau) * X(tau+t)
+ *   C(t) = < X(tau) * X(tau+t) >
  * }
  * else if (mode == eacP1) {
- *   C(t) = < cos (X(tau) * X(tau+t) >
+ *   C(t) = < cos (X(tau) * X(tau+t) ) >
  * }
  * else if (mode == eacP2) {
- *   C(t) = 1/2 * < 3 cos (X(tau) * X(tau+t) - 1 >
+ *   C(t) = 1/2 * < 3 cos (X(tau) * X(tau+t)) - 1 >
  * }
  * else if (mode == eacRcross) {
  *   C(t) = < ( X(tau) * X(tau+t) )^2 >

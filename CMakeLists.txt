@@ -95,15 +95,18 @@ set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PR
 mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
+include(gmxBuildTypeProfile)
 include(gmxBuildTypeThreadSanitizer)
 include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build,
+options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert
+Profile." FORCE)
     # There's no need to offer a user the choice of ThreadSanitizer
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert")
+        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
     # Add appropriate GROMACS-specific build types for the Visual
@@ -115,7 +118,8 @@ if(CMAKE_CONFIGURATION_TYPES)
         "List of configuration types"
         FORCE)
 endif()
-set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL)
+set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO
+RELWITHASSERT MINSIZEREL PROFILE)
 
 enable_language(C)
 enable_language(CXX)
