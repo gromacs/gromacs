@@ -507,13 +507,20 @@ int gmx_mdrun(int argc, char *argv[])
         { "-dlb",     FALSE, etENUM, {dddlb_opt},
           "Dynamic load balancing (with DD)" },
         { "-dds",     FALSE, etREAL, {&dlb_scale},
-          "Minimum allowed dlb scaling of the DD cell size" },
+          "Fraction in (0,1) by whose reciprocal the initial DD cell size will be increased in order to "
+          "provide a margin in which dynamic load balancing can act while preserving the minimum cell size." },
         { "-ddcsx",   FALSE, etSTR, {&ddcsx},
-          "HIDDENThe DD cell sizes in x" },
+          "HIDDENA string containing a vector of the relative sizes in the x "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
         { "-ddcsy",   FALSE, etSTR, {&ddcsy},
-          "HIDDENThe DD cell sizes in y" },
+          "HIDDENA string containing a vector of the relative sizes in the y "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
         { "-ddcsz",   FALSE, etSTR, {&ddcsz},
-          "HIDDENThe DD cell sizes in z" },
+          "HIDDENA string containing a vector of the relative sizes in the z "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
         { "-gcom",    FALSE, etINT, {&nstglobalcomm},
           "Global communication frequency" },
         { "-nb",      FALSE, etENUM, {&nbpu_opt},
