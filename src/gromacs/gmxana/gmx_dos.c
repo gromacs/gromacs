@@ -37,34 +37,146 @@
 #endif
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/fft/fft.h"
+#include "mtop_util.h"
 #include "copyrite.h"
 #include "gmx_fatal.h"
-#include "gromacs/fileio/futil.h"
+#include "txtdump.h"
 #include "gstat.h"
 #include "macros.h"
-#include "gromacs/math/utilities.h"
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"
-#include "gromacs/commandline/pargs.h"
-#include <string.h>
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
+#include "names.h"
 #include "vec.h"
 #include "xvgr.h"
 #include "correl.h"
 #include "gmx_ana.h"
-#include "gromacs/fft/fft.h"
-#include "gromacs/fileio/trxio.h"
+#include "nrjac.h"
 
-enum {
-    VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
+#ifdef  SPEED_OF_LIGHT
+#undef  SPEED_OF_LIGHT
+#endif
+#define SPEED_OF_LIGHT 2.99792458E5
+
+// TYPE OF VELOCITIES: trans, angular, vibrational, rotational, total
+enum Velocity {
+    V_T, V_A, V_V, V_R, V_ATOM, V_SUM, V_NR
 };
 
-static double FD(double Delta, double f)
+static const char *velocityName[V_NR] = {
+    "Trans", "Angul", "Vibr", "Rotat", "Atomic", "Sum"
+};
+
+static const char *velocityLong[V_NR] = {
+    "Translation", "Angular motion", "Vibration", "Rotational motion",
+    "Atomic motion", "Sum of it all"
+};
+
+enum SolidDiff {
+    DS_SOLID, DS_DIFF, DS_TOT, DS_NR
+};
+
+static const char *dsLong[DS_NR] = {
+    "Solid", "Diff.", "Total"
+};
+
+enum Density {
+    DOS_CP, DOS_S, DOS_A, DOS_E, DOS_EC, DOS_NR
+};
+
+static const char *dosLong[DOS_NR] = {
+    "Heat capacity cV (J/mol K)",
+    "Entropy S (J/mol K)",
+    "Helmholtz energy A (kJ/mol)",
+    "Internal energy E (kJ/mol)",
+    "Classical energy Ec (kJ/mol)"
+};
+
+typedef struct {
+    int      npart;
+    double   X[DOS_NR][DS_NR];
+    double   wDiff[DOS_NR];
+    double   Emd, E0;
+    double   f, y, fy, ry, z, nrho, Delta, beta, bfac, partMass;
+    double   hsdf, ttdf;
+    double   sigHS, Shs, Sig;
+    double   DiffACF, DiffDoS;
+    double   dostot, dof, DoS0;
+    double   Tdiff, T;
+    real   **vec;
+    real    *dos[DS_NR];
+    real    *wdos[DOS_NR][DS_NR];
+} t_dosprops;
+
+/* double precision dsub_xcm */
+
+real dsub_xcm(rvec x[], int gnx, atom_id *index, t_atom atom[], rvec xcm,
+              gmx_bool bQ)
+{
+    int    i, m;
+    double m0, tm, dxcm[3], xx[3], a, b, c;
+
+    dxcm[XX] = dxcm[YY] = dxcm[ZZ] = 0.0;
+
+    tm = 0.0;
+    for (i = 0; (i < gnx); i++)
+    {
+        int ii     = index ? index[i] : i;
+        xx[XX] = x[ii][XX];
+        xx[YY] = x[ii][YY];
+        xx[ZZ] = x[ii][ZZ];
+        if (bQ)
+        {
+            m0 = fabs(atom[ii].q);
+        }
+        else
+        {
+            m0 = atom[ii].m;
+        }
+        tm += m0;
+        for (m = 0; (m < DIM); m++)
+        {
+            dxcm[m] += m0*xx[m];
+        }
+    }
+    for (m = 0; (m < DIM); m++)
+    {
+        dxcm[m] /= tm;
+    }
+
+
+    for (i = 0; (i < gnx); i++)
+    {
+        int ii        = index ? index[i] : i;
+        a         = (double)x[ii][XX] - dxcm[XX];
+        b         = (double)x[ii][YY] - dxcm[YY];
+        c         = (double)x[ii][ZZ] - dxcm[ZZ];
+        x[ii][XX] = a;
+        x[ii][YY] = b;
+        x[ii][ZZ] = c;
+    }
+
+    xcm[XX] = dxcm[XX];
+    xcm[YY] = dxcm[YY];
+    xcm[ZZ] = dxcm[ZZ];
+
+    return ((real) tm);
+}
+
+/* ********************************************************** */
+
+static double FD(double Delta, double f) // eq 34 JCP 119, 11792 (2003)
 {
     return (2*pow(Delta, -4.5)*pow(f, 7.5) -
             6*pow(Delta, -3)*pow(f, 5) -
@@ -73,19 +185,17 @@ static double FD(double Delta, double f)
             2*f - 2);
 }
 
+//! fluidicity eq. for hard spheres packing, eq 31 JCP 119, 11792 (2003)
 static double YYY(double f, double y)
 {
     return (2*pow(y*f, 3) - sqr(f)*y*(1+6*y) +
             (2+6*y)*f - 2);
 }
 
+//! compressibility of hard spheres z=(1+y+y^3-y^3)/(1-y)^3
 static double calc_compress(double y)
 {
-    if (y == 1)
-    {
-        return 0;
-    }
-    return ((1+y+sqr(y)-pow(y, 3))/(pow(1-y, 3)));
+    return ((1+y+sqr(y)-pow(y, 3))/(pow((1-y), 3)));
 }
 
 static double bisector(double Delta, double tol,
@@ -99,7 +209,8 @@ static double bisector(double Delta, double tol,
     f1 = ff1;
     if (tol < tolmin)
     {
-        fprintf(stderr, "Unrealistic tolerance %g for bisector. Setting it to %g\n", tol, tolmin);
+        fprintf(stderr, "Unrealistic tolerance %g for bisector. Setting it to %g\n",
+                tol, tolmin);
         tol = tolmin;
     }
 
@@ -127,11 +238,14 @@ static double bisector(double Delta, double tol,
     return f;
 }
 
+// calculate fluidicity f
 static double calc_fluidicity(double Delta, double tol)
 {
+    // solution for FD
     return bisector(Delta, tol, 0, 1, FD);
 }
 
+// hard sphere packing fraction, eq 32 JCP 119, 11792 (2003)
 static double calc_y(double f, double Delta, double toler)
 {
     double y1, y2;
@@ -147,69 +261,130 @@ static double calc_y(double f, double Delta, double toler)
     return y1;
 }
 
-static double calc_Shs(double f, double y)
+static double calc_Shs(double fy)
+// entropy for hard spheres
 {
-    double fy  = f*y;
+    double z = calc_compress(fy);
 
-    return BOLTZ*(log(calc_compress(fy)) + fy*(3*fy-4)/sqr(1-fy));
+    if (0 == z)
+    {
+        fprintf(stderr, "Zero compressibility found in calc_Shs\n");
+        return 0;
+    }
+    else if (1 == fy)
+    {
+        fprintf(stderr, "Hard sphere packing fraction is 1 in calc_Shs\n");
+        return 0;
+    }
+    else
+    {
+        return BOLTZ*(log(z) + fy*(3*fy-4)/sqr(1-fy));
+    }
 }
 
-static real wCsolid(real nu, real beta)
+static real old_calc_fluidicity(real Delta, real tol)
+{
+    real fd0, fd, fd1, f, f0 = 0, f1 = 1;
+    real tolmin = 1e-6;
+
+    /* Since the fluidity is monotonous according to Fig. 2 in Lin2003a,
+       J. Chem. Phys. 112 (2003) p. 11792 we can use a bisection method
+       to get it. */
+    if (tol < tolmin)
+    {
+        fprintf(stderr, "Unrealistic tolerance %g for calc_fluidity. Setting it to %g\n", tol, tolmin);
+        tol = 1e-6;
+    }
+
+    do
+    {
+        fd0 = FD(Delta, f0);
+        fd1 = FD(Delta, f1);
+        f   = (f0+f1)*0.5;
+        fd  = FD(Delta, f);
+        if (fd < 0)
+        {
+            f0 = f;
+        }
+        else if (fd > 0)
+        {
+            f1 = f;
+        }
+        else
+        {
+            return f;
+        }
+    }
+    while ((f1-f0) > tol);
+
+    return f;
+}
+
+static real wCsolid(real nu, real beta) // weight function heat capacity constant volume for solid, eq 20 (2013)
 {
     real bhn = beta*PLANCK*nu;
     real ebn, koko;
 
     if (bhn == 0)
     {
-        return 1.0;
+        return 1.0;    // in the limit bhn -> 0, eq 3.41 -> 1
+    }
+    if (bhn > 44.3437) // empirical limit
+    {
+        return 0.0;
     }
     else
     {
         ebn  = exp(bhn);
         koko = sqr(1-ebn);
-        return sqr(bhn)*ebn/koko;
+        return sqr(bhn)*ebn/koko; // eq 3.41 Berens
     }
 }
 
-static real wSsolid(real nu, real beta)
+static real wSsolid(real nu, real beta) // weight function entropy for solid, eq 19 (2013)
 {
     real bhn = beta*PLANCK*nu;
 
     if (bhn == 0)
     {
-        return 1;
+        return 0; // in the limit bhn -> 0, eq 3.43 -> +inf, set to 0 because S(v)=0 for Solid
     }
     else
     {
-        return bhn/(exp(bhn)-1) - log(1-exp(-bhn));
+        return bhn/(exp(bhn)-1) - log(1-exp(-bhn)); // eq 3.43 Berens
     }
 }
 
-static real wAsolid(real nu, real beta)
+static real wAsolid(real nu, real beta) // weight function hentalpy for solid, eq 18 (2013)?
 {
     real bhn = beta*PLANCK*nu;
 
     if (bhn == 0)
     {
-        return 0;
+        return 0; // in the limit bhn -> 0, eq 3.42 -> -inf, set to 0 because S(v)=0 for Solid
     }
     else
     {
-        return log((1-exp(-bhn))/(exp(-bhn/2))) - log(bhn);
+        return log((1-exp(-bhn))/(exp(-bhn/2))); // eq 3.42 Berens
     }
 }
 
-static real wEsolid(real nu, real beta)
+static real wEcsolid(real gmx_unused nu, real gmx_unused beta) // weight function energy for solid, eq 17 (2013)
+{
+    return 1;
+}
+
+static real wEsolid(real nu, real beta) // weight function energy for solid, eq 17 (2013)
 {
     real bhn = beta*PLANCK*nu;
 
     if (bhn == 0)
     {
-        return 1;
+        return 1; // bhn -> 0, eq 3.40 -> 1
     }
     else
     {
-        return bhn/2 + bhn/(exp(bhn)-1)-1;
+        return bhn/2 + bhn/(exp(bhn)-1); // eq 3.40 Berens
     }
 }
 
@@ -230,7 +405,7 @@ static void dump_fy(output_env_t oenv, real toler)
         y = calc_y(f, Delta, toler);
         fprintf(fp, "%10g  %10g  %10g  %10g\n", Delta, f, f*y, y);
     }
-    xvgrclose(fp);
+    fclose(fp);
 }
 
 static void dump_w(output_env_t oenv, real beta)
@@ -242,97 +417,420 @@ static void dump_w(output_env_t oenv, real beta)
     fp = xvgropen("w.xvg", "Fig. 1, Berens1983a", "\\f{12}b\\f{4}h\\f{12}n",
                   "w", oenv);
     xvgr_legend(fp, asize(leg), leg, oenv);
-    for (nu = 1; (nu < 100); nu += 0.05)
+    for (nu = 0; (nu < 100); nu += 0.05)
     {
         fprintf(fp, "%10g  %10g  %10g  %10g  %10g\n", beta*PLANCK*nu,
                 wCsolid(nu, beta), wSsolid(nu, beta),
                 wAsolid(nu, beta), wEsolid(nu, beta));
     }
-    xvgrclose(fp);
+    fclose(fp);
+}
+
+static void principal(int n, atom_id index[], t_atom atom[], rvec x[],
+                      matrix trans, rvec d)
+{
+#define NDIM 4
+    int      i, j, ai, m, nrot;
+    real     mm, rx, ry, rz;
+    double **inten, dd[NDIM], tvec[NDIM], **ev;
+#ifdef DEBUG
+    real     e[NDIM];
+#endif
+    real     temp;
+
+    snew(inten, NDIM);
+    snew(ev, NDIM);
+    for (i = 0; (i < NDIM); i++)
+    {
+        snew(inten[i], NDIM);
+        snew(ev[i], NDIM);
+        dd[i] = 0.0;
+#ifdef DEBUG
+        e[i] = 0.0;
+#endif
+    }
+
+    for (i = 0; (i < NDIM); i++)
+    {
+        for (m = 0; (m < NDIM); m++)
+        {
+            inten[i][m] = 0;
+        }
+    }
+    for (i = 0; (i < n); i++)
+    {
+        ai           = index[i];
+        mm           = atom[ai].m;
+        rx           = x[ai][XX];
+        ry           = x[ai][YY];
+        rz           = x[ai][ZZ];
+        inten[0][0] += mm*(sqr(ry)+sqr(rz));
+        inten[1][1] += mm*(sqr(rx)+sqr(rz));
+        inten[2][2] += mm*(sqr(rx)+sqr(ry));
+        inten[1][0] -= mm*(ry*rx);
+        inten[2][0] -= mm*(rx*rz);
+        inten[2][1] -= mm*(rz*ry);
+    }
+    inten[0][1] = inten[1][0];
+    inten[0][2] = inten[2][0];
+    inten[1][2] = inten[2][1];
+#ifdef DEBUG
+    ptrans("initial", inten, dd, e);
+#endif
+
+    /* Call numerical recipe routines */
+    jacobi(inten, 3, dd, ev, &nrot);
+
+    /* Sort eigenvalues in ascending order */
+#define SWAPPER(i)          \
+    if (fabs(dd[i+1]) > fabs(dd[i])) {    \
+        temp = dd[i];         \
+        for (j = 0; (j < NDIM); j++) { tvec[j] = ev[j][i]; } \
+        dd[i] = dd[i+1];          \
+        for (j = 0; (j < NDIM); j++) { ev[j][i] = ev[j][i+1]; }        \
+        dd[i+1] = temp;           \
+        for (j = 0; (j < NDIM); j++) { ev[j][i+1] = tvec[j]; }         \
+    }
+    SWAPPER(0)
+    SWAPPER(1)
+    SWAPPER(0)
+
+    for (i = 0; (i < DIM); i++)
+    {
+        d[i] = dd[i];
+        for (m = 0; (m < DIM); m++)
+        {
+            trans[i][m] = ev[i][m];
+        }
+    }
+
+    for (i = 0; (i < NDIM); i++)
+    {
+        sfree(inten[i]);
+        sfree(ev[i]);
+    }
+    sfree(inten);
+    sfree(ev);
+}
+
+static void print_dp(FILE *fplog, int t, t_dosprops *dp)
+{
+    int i, j;
+
+    if (dp->npart == 0)
+    {
+        fprintf(fplog, "\n No particles in %s\n", velocityLong[t]);
+        return;
+    }
+    fprintf(fplog, "\n+++ Analyzing %s +++\n", velocityLong[t]);
+    fprintf(fplog, "Npart                           = %d\n", dp->npart);
+    fprintf(fplog, "T                               = %g\n", dp->T);
+    fprintf(fplog, "Number density                  = %g particles/nm^3\n", dp->nrho);
+    fprintf(fplog, "Delta                           = %g\n", dp->Delta);
+    fprintf(fplog, "fluidicity f                    = %g\n", dp->f);
+    fprintf(fplog, "ry                              = %g\n", dp->ry);
+    fprintf(fplog, "hsdf                            = %g\n", dp->hsdf);
+    fprintf(fplog, "ttdf                            = %g\n", dp->ttdf);
+    fprintf(fplog, "fy                              = %g nm\n", dp->fy);
+    fprintf(fplog, "hard sphere packing fraction y  = %g\n", dp->y);
+    fprintf(fplog, "hard sphere compressibility z   = %g\n", dp->z);
+    fprintf(fplog, "Particle mass                   = %g amu\n", dp->partMass);
+    fprintf(fplog, "ideal gas entropy Sig           = %g 1/K\n", dp->Sig / BOLTZ);
+    fprintf(fplog, "hard sphere entropy Shs         = %g 1/K\n", dp->Shs / BOLTZ);
+    fprintf(fplog, "sigma_HS                        = %g nm\n", dp->sigHS);
+    fprintf(fplog, "DoS0                            = %g\n", dp->DoS0);
+    fprintf(fplog, "DoSTot                          = %g\n", dp->dostot);
+    for (i = 0; (i < DOS_NR); i++)
+    {
+        for (j = 0; (j < DS_NR); j++)
+        {
+            fprintf(fplog, "%-29s %-6s = %g\n", dosLong[i], dsLong[j], dp->X[i][j]);
+        }
+    }
+    if (V_V != t)
+    {
+        fprintf(fplog, "Diffusion coefficient from dos[VACF] %g 10^-5 cm^2/s\n",
+                dp->DiffACF);
+        fprintf(fplog, "Diffusion coefficient from DoS0 %g 10^-5 cm^2/s\n",
+                dp->DiffDoS);
+    }
+}
+
+static void print_legend(FILE *fp, t_dosprops dp[], output_env_t oenv)
+{
+    const char *leg[V_NR];
+    int         t, nleg = 0;
+
+    for (t = 0; (t < V_SUM); t++)
+    {
+        if (dp[t].npart > 0)
+        {
+            leg[nleg++] = velocityName[t];
+        }
+    }
+    xvgr_legend(fp, nleg, leg, oenv);
+}
+
+static void print_stuff(int n, real tt[], t_dosprops dp[], real dos_vacf[],
+                        const char *vacf, const char *mvacf, output_env_t oenv)
+{
+    FILE *fp;
+    int   j, t;
+
+    if (NULL != vacf)
+    {
+        fp = xvgropen(vacf, "Velocity ACF",
+                      "Time (ps)", "C(t)", oenv);
+        for (j = 0; (j < n); j++)
+        {
+            fprintf(fp, "%10g %10g\n", tt[j], dos_vacf[j]);
+        }
+        fclose(fp);
+    }
+    if (NULL != mvacf)
+    {
+        fp = xvgropen(mvacf, "Mass-weighted velocity ACF",
+                      "Time (ps)", "C(t)", oenv);
+        print_legend(fp, dp, oenv);
+        for (j = 0; (j < n); j++)
+        {
+            fprintf(fp, "%10g", tt[j]);
+            for (t = 0; (t < V_SUM); t++)
+            {
+                if ((dp[t].npart > 0) && (dp[t].dof > 0))
+                {
+                    fprintf(fp, "  %10g", dp[t].dos[DS_TOT][j]);
+                }
+            }
+            fprintf(fp, "\n");
+        }
+        fclose(fp);
+    }
+}
+
+static void print_dos(gmx_bool bRecip, double recip_fac,
+                      int n, real nu[], t_dosprops dp[],
+                      output_env_t oenv)
+{
+    int   j, t;
+    FILE *fp = xvgropen("DoS.xvg", "DoS",
+                        bRecip ? "E (cm\\S-1\\N)" : "\\f{12}n\\f{4} (1/ps)", "DoS(v)", oenv);
+
+    print_legend(fp, dp, oenv);
+    for (j = 0; (j < n); j++)
+    {
+        fprintf(fp, "%10g", recip_fac*nu[j]);
+        for (t = 0; (t < V_SUM); t++)
+        {
+            if ((dp[t].npart > 0) && (dp[t].dof > 0))
+            {
+                fprintf(fp, " %10g", dp[t].dos[DS_TOT][j]/recip_fac);
+            }
+        }
+        fprintf(fp, "\n");
+    }
+    fclose(fp);
+}
+
+static void print_dos_component(const char *fn, gmx_bool bRecip, double recip_fac,
+                                int n,
+                                real nu[], int t, t_dosprops dp[],
+                                output_env_t oenv)
+{
+    FILE       *fp;
+    int         j;
+    char        buf[STRLEN];
+    const char *DoSlegend[] = {
+        "DoS(v)", "DoS(v)[Solid]", "DoS(v)[Diff]"
+    };
+
+    snprintf(buf, STRLEN, "%s-%s", velocityName[t], fn);
+
+    fp = xvgropen(buf, "Density of states",
+                  bRecip ? "E (cm\\S-1\\N)" : "\\f{12}n\\f{4} (1/ps)",
+                  "\\f{4}S(\\f{12}n\\f{4})", oenv);
+    xvgr_legend(fp, asize(DoSlegend), DoSlegend, oenv);
+    for (j = 0; (j < n); j++)
+    {
+        fprintf(fp, "%10g  %10g  %10g  %10g\n",
+                recip_fac*nu[j],
+                dp[t].dos[DS_TOT][j]/recip_fac,
+                dp[t].dos[DS_SOLID][j]/recip_fac,
+                dp[t].dos[DS_DIFF][j]/recip_fac);
+    }
+    fclose(fp);
+}
+
+void get_energy_term(const char *enx_fn, int ftype, double *e, double *stddev)
+{
+    int          nre, fff;
+    gmx_enxnm_t *enm = NULL;
+    gmx_bool     bCont;
+    ener_file_t  fp = open_enx(enx_fn, "r");
+    t_enxframe  *frame, *fr = NULL;
+    int          timecheck = 0;
+    double       esum      = 0, e2sum = 0;
+    int          nesum     = 0;
+    int          cur       = 0;
+#define NEXT (1-cur)
+
+    *e      = 0;
+    *stddev = 0;
+    snew(frame, 2);
+    do_enxnms(fp, &nre, &enm);
+    for (fff = 0; (fff < nre); fff++)
+    {
+        if (strcmp(interaction_function[ftype].longname, enm[fff].name) == 0)
+        {
+            break;
+        }
+    }
+
+    if (fff == nre)
+    {
+        fprintf(stderr, "No energy %s found in energy file %s\n",
+                interaction_function[ftype].longname, enx_fn);
+        return;
+    }
+    do
+    {
+        /* This loop searches for the first frame (when -b option is given),
+         * or when this has been found it reads just one energy frame
+         */
+        do
+        {
+            bCont = do_enx(fp, &(frame[NEXT]));
+            if (bCont)
+            {
+                timecheck = check_times(frame[NEXT].t);
+            }
+        }
+        while (bCont && (timecheck < 0));
+
+        if ((timecheck == 0) && bCont)
+        {
+            /* We read a valid frame, so we can use it */
+            fr = &(frame[NEXT]);
+
+            if (fr->nre > 0)
+            {
+                if (fff < fr->nre)
+                {
+                    esum  += fr->ener[fff].e;
+                    e2sum += fr->ener[fff].e*fr->ener[fff].e;
+                    nesum++;
+                }
+            }
+        }
+        cur  = NEXT;
+    }
+    while (bCont);
+    close_enx(fp);
+    if (nesum > 0)
+    {
+        *e      = esum/nesum;
+        *stddev = sqrt(e2sum/nesum - (*e)*(*e));
+    }
+    sfree(frame);
+    sfree(enm);
 }
 
 int gmx_dos(int argc, char *argv[])
 {
     const char         *desc[] = {
-        "[THISMODULE] computes the Density of States from a simulations.",
-        "In order for this to be meaningful the velocities must be saved",
-        "in the trajecotry with sufficiently high frequency such as to cover",
-        "all vibrations. For flexible systems that would be around a few fs",
-        "between saving. Properties based on the DoS are printed on the",
-        "standard output."
+        "[THISMODULE] computes the Density of States from a constant volume simulation.",
+        "In order for this to be meaningful the coordinates and velocities must be saved",
+        "in the trajectory with sufficiently high frequency such as to cover",
+        "all vibrations, typically at most 5 fs.",
+        "between saving. Properties based on the DoS are printed in the",
+        "log file."
     };
     const char         *bugs[] = {
         "This program needs a lot of memory: total usage equals the number of atoms times 3 times number of frames times 4 (or 8 when run in double precision)."
     };
-    FILE               *fp, *fplog;
-    t_topology          top;
-    int                 ePBC = -1;
-    t_trxframe          fr;
-    matrix              box;
-    int                 gnx;
-    char                title[256];
-    real                t0, t1, m;
-    t_trxstatus        *status;
-    int                 nV, nframes, n_alloc, i, j, k, l, fftcode, Nmol, Natom;
-    double              rho, dt, V2sum, Vsum, V, tmass, dostot, dos2, dosabs;
-    real              **c1, **dos, mi, beta, bfac, *nu, *tt, stddev, c1j;
-    output_env_t        oenv;
-    gmx_fft_t           fft;
-    double              cP, S, A, E, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
-    double              wCdiff, wSdiff, wAdiff, wEdiff;
+    /* Command line options */
+    static     gmx_bool bVerbose = TRUE, bAtomic = FALSE;
+    static     gmx_bool bRecip   = FALSE, bDump = FALSE, bQ = FALSE;
+    static     real     toler    = 1e-6, Emd = 0;
+    static     real     rot_symm = 2;
 
-    static     gmx_bool bVerbose = TRUE, bAbsolute = FALSE, bNormalize = FALSE;
-    static     gmx_bool bRecip   = FALSE, bDump = FALSE;
-    static     real     Temp     = 298.15, toler = 1e-6;
-    t_pargs             pa[]     = {
+    t_pargs             pa[] = {
         { "-v", FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy." },
+        { "-atomic", FALSE, etBOOL, {&bAtomic},
+          "Do the Density of State calculation treating the system as independent atoms as well. This requires a lot of extra memory and computer time and is therefore by default turned off." },
         { "-recip", FALSE, etBOOL, {&bRecip},
           "Use cm^-1 on X-axis instead of 1/ps for DoS plots." },
-        { "-abs", FALSE, etBOOL, {&bAbsolute},
-          "Use the absolute value of the Fourier transform of the VACF as the Density of States. Default is to use the real component only" },
-        { "-normdos", FALSE, etBOOL, {&bNormalize},
-          "Normalize the DoS such that it adds up to 3N. This is a hack that should not be necessary." },
-        { "-T", FALSE, etREAL, {&Temp},
-          "Temperature in the simulation" },
+        { "-Emd", FALSE, etREAL, {&Emd},
+          "The average total energy in the MD simulation" },
+        { "-rot_symm", FALSE, etREAL, {&rot_symm},
+          "Rotational symmetry in the molecule" },
         { "-toler", FALSE, etREAL, {&toler},
           "[HIDDEN]Tolerance when computing the fluidicity using bisection algorithm" },
         { "-dump", FALSE, etBOOL, {&bDump},
-          "[HIDDEN]Dump the y/fy plot corresponding to Fig. 2 inLin2003a and the and the weighting functions corresponding to Fig. 1 in Berens1983a." }
+          "[HIDDEN]Dump the y/fy plot corresponding to Fig. 2 inLin2003a and the and the weighting functions corresponding to Fig. 1 in Berens1983a." },
     };
 
     t_filenm            fnm[] = {
         { efTRN, "-f",    NULL,    ffREAD  },
         { efTPX, "-s",    NULL,    ffREAD  },
         { efNDX, NULL,    NULL,    ffOPTRD },
-        { efXVG, "-vacf", "vacf",  ffWRITE },
-        { efXVG, "-mvacf", "mvacf", ffWRITE },
-        { efXVG, "-dos",  "dos",   ffWRITE },
-        { efLOG, "-g",    "dos",   ffWRITE },
+        { efEDR, "-enx",    NULL,      ffOPTRD  },
+        { efXVG, "-vacf", "molvacf",  ffWRITE },
+        { efXVG, "-mvacf", "molmvacf", ffWRITE },
+        { efXVG, "-dos",  "moldos",   ffWRITE },
+        { efLOG, "-g",    "moldos",   ffWRITE },
     };
 #define NFILE asize(fnm)
-    int                 npargs;
-    t_pargs            *ppa;
-    const char         *DoSlegend[] = {
-        "DoS(v)", "DoS(v)[Solid]", "DoS(v)[Diff]"
-    };
 
-    npargs = asize(pa);
-    ppa    = add_acf_pargs(&npargs, pa);
+    /* Regular variables */
+    FILE               *fplog;
+    gmx_mtop_t          mtop;
+    t_topology          top;
+    int                 Natom, Nmol, Natmxmol, NatomTotal;
+    int                 ePBC;
+    t_trxframe          fr;
+    matrix              box;
+    real                t0, t1;
+    t_trxstatus        *status;
+    int                 nV, nframes, n_alloc, i, j, k, l, fftcode;
+    double              rho, V2sum, Vsum, Volume, VolError, tmass;
+    real               *dos_vacf, *nu, *tt, stddev;
+    output_env_t        oenv;
+    gmx_fft_t           fft2;
+    t_dosprops         *dp;
+    double              recip_fac, dt;
+    int                 id, rdof;
+    real                crT;
+    rvec               *r1, *v1, *vecI;
+
+    /* rotational temperatures */
+    rvec                vr, I, xcm, vcm, tmp, angmom, pomega, omega, rT;
+    matrix              trans;
+    real                tm, vib;
+    int                 t, ai, nconstr;
+    atom_id            *particle_index, *dummy_index;
+    t_atom             *atom;
+    gmx_rmpbc_t         gpbc = NULL;
+    const char         *enx_fn;
+    double              fudge = 1.5;
+    int                 N_tot, nfreq;
+    double              recip0 = (1e7/SPEED_OF_LIGHT);
+
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                           NFILE, fnm, npargs, ppa, asize(desc), desc,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc,
                            asize(bugs), bugs, &oenv))
     {
         return 0;
     }
-
-    beta = 1/(Temp*BOLTZ);
     if (bDump)
     {
+        real beta = 1/(298.15*BOLTZ);
         printf("Dumping reference figures. Thanks for your patience.\n");
         dump_fy(oenv, toler);
         dump_w(oenv, beta);
-        exit(0);
+
+        return 0;
     }
 
     fplog = gmx_fio_fopen(ftp2fn(efLOG, NFILE, fnm), "w");
@@ -340,248 +838,789 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
-                  TRUE);
-    V     = det(box);
+    enx_fn = opt2fn_null("-enx", NFILE, fnm);
+    if (NULL != enx_fn)
+    {
+        double e, stddev;
+        get_energy_term(enx_fn, F_ETOT, &e, &stddev);
+        fprintf(fplog, "Read energy file %s. Etot = %g +/ %g\n", enx_fn,
+                e, stddev);
+        Emd = e;
+    }
+    recip_fac = bRecip ? recip0 : 1.0;
+
+    /* Allocate stuff */
+    snew(dp, V_NR);
+
+    {
+        /* Read topology, allocate memory and such. */
+        t_tpxheader tpx;
+        t_inputrec  ir;
+        int         version, generation;
+
+        read_tpxheader(ftp2fn(efTPX, NFILE, fnm), &tpx, TRUE, &version, &generation);
+        snew(v1, tpx.natoms);
+        snew(r1, tpx.natoms);
+
+        ePBC = read_tpx(ftp2fn(efTPX, NFILE, fnm), &ir, box,
+                        &Natom, r1, v1, NULL, &mtop);
+        Nmol = mtop.molblock[0].nmol;
+        if (mtop.nmoltype != 1)
+        {
+            fprintf(stderr, "WARNING: the system contains more than 1 molecule type.\n");
+            fprintf(stderr, "Name: %s, nmoltype: %d\n", *mtop.name, mtop.nmoltype);
+            fprintf(stderr, "Will only analyze the first molecule type (%d molecules).\n",
+                    Nmol);
+        }
+        Volume = det(box);
+    }
+
+    /* allocation of memory */
+    snew(vecI,  Nmol);
+    snew(particle_index, Natom);
+    snew(dummy_index, Natom);
+    snew(atom,  Natom);
     tmass = 0;
-    for (i = 0; (i < top.atoms.nr); i++)
+
+    /* Re-count number of *real* atoms */
+    Natom = 0;
+    for (j = 0; (j < mtop.molblock[0].nmol); j++)
     {
-        tmass += top.atoms.atom[i].m;
+        for (i = 0; (i < mtop.moltype[0].atoms.nr); i++)
+        {
+            if (eptAtom == mtop.moltype[0].atoms.atom[i].ptype)
+            {
+                /* we need to store the propertie of each atom */
+                particle_index[Natom] = j*mtop.moltype[0].atoms.nr+i;
+                dummy_index[Natom]    = Natom;
+                atom[Natom]           = mtop.moltype[0].atoms.atom[i];
+                tmass                += atom[Natom].m;
+                Natom++;
+            }
+        }
+    }
+    Natmxmol = Natom/Nmol;
+
+    /* Compute degrees of freedom */
+    {
+        /* Should be molecule specific! */
+        nconstr = (gmx_mtop_ftype_count(&mtop, F_CONSTR) +
+                   3*gmx_mtop_ftype_count(&mtop, F_SETTLE))/Nmol;
+        fprintf(fplog, "Number of constraints in molecule type 0 = %d\n", nconstr);
+        dp[V_ATOM].dof  = max(0, 3*Natmxmol - nconstr);
+        dp[V_T].dof     = min(3, dp[V_ATOM].dof);
+        dp[V_A].dof     = min(3, dp[V_ATOM].dof - dp[V_T].dof);
+        if (Natmxmol == 1)
+        {
+            dp[V_A].dof = 0;
+        }
+        else if (Natmxmol == 2)
+        {
+            dp[V_A].dof = min(2, dp[V_A].dof);
+        }
+        dp[V_R].dof = dp[V_A].dof;
+        dp[V_V].dof = dp[V_ATOM].dof - dp[V_T].dof - dp[V_A].dof;
     }
 
-    Natom = top.atoms.nr;
-    Nmol  = top.mols.nr;
-    gnx   = Natom*DIM;
-
-    /* Correlation stuff */
-    snew(c1, gnx);
-    for (i = 0; (i < gnx); i++)
+    /* pbc corrections */
     {
-        c1[i] = NULL;
-    }
+        /* Note that this routines breaks the mtop structure so it can not be
+         * used afterwards!
+         */
+        top        = gmx_mtop_t_to_t_topology(&mtop);
+        NatomTotal = top.atoms.nr;
+        gpbc       = gmx_rmpbc_init(&top.idef, ePBC, NatomTotal);
 
-    read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_V);
+        fprintf(fplog, "Natom  %d, Nmol %d, NatmXmol %d, NatomTotal %d.\n",
+                Natom, Nmol, Natmxmol, NatomTotal);
+    }
+    read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm),
+                     &fr, TRX_NEED_V | TRX_NEED_X);
     t0 = fr.time;
 
     n_alloc = 0;
     nframes = 0;
-    Vsum    = V2sum = 0;
+    Vsum    = V2sum = VolError = 0;
     nV      = 0;
+
+    /* allocation of memory */
+    dp[V_T].npart = dp[V_A].npart = Nmol;
+    dp[V_V].npart = dp[V_SUM].npart = Natom;
+    if (bAtomic)
+    {
+        dp[V_R].npart = dp[V_ATOM].npart = Natom;
+    }
+    for (t = 0; (t < V_NR); t++)
+    {
+        if (dp[t].npart > 0)
+        {
+            snew(dp[t].vec, dp[t].npart*DIM);
+        }
+    }
+    /* Read each frame, save coordinates and velocities,
+     * do calculation and save results.
+     */
     do
     {
         if (fr.bBox)
         {
-            V      = det(fr.box);
-            V2sum += V*V;
-            Vsum  += V;
+            Volume = det(fr.box);
+            V2sum += Volume*Volume;
+            Vsum  += Volume;
             nV++;
         }
+
         if (nframes >= n_alloc)
         {
-            n_alloc += 100;
-            for (i = 0; i < gnx; i++)
+            n_alloc += 128;
+            for (t = 0; (t < V_NR); t++)
             {
-                srenew(c1[i], n_alloc);
+                if (dp[t].npart > 0)
+                {
+                    for (i = 0; i < dp[t].npart*DIM; i++)
+                    {
+                        srenew(dp[t].vec[i], n_alloc);
+                    }
+                }
             }
         }
-        for (i = 0; i < gnx; i += DIM)
+        /* Remove periodicity */
+        gmx_rmpbc_copy(gpbc, NatomTotal, box, fr.x, fr.x);
+
+        /* Read velocities and coordinates of all atoms:
+         * each atoms is pointed to by j
+         */
+        for (j = 0; j < Natom; j++)
         {
-            c1[i+XX][nframes] = fr.v[i/DIM][XX];
-            c1[i+YY][nframes] = fr.v[i/DIM][YY];
-            c1[i+ZZ][nframes] = fr.v[i/DIM][ZZ];
+            int  aj  = particle_index[j];
+
+            /* load atomic positions and velocities */
+            copy_rvec(fr.v[aj], v1[j]);
+            copy_rvec(fr.x[aj], r1[j]);
+
+            if (bAtomic)
+            {
+                for (k = 0; (k < DIM); k++)
+                {
+                    /* save total velocities */
+                    dp[V_ATOM].vec[DIM*j+k][nframes] = v1[j][k];
+                }
+            }
+        }
+
+        /* dividing atoms in molecules, id */
+        for (id = 0; id < Nmol; id++) // Nmol: number of molecules
+        {
+            int  lid     = id*DIM;
+            int *d_index = &dummy_index[id*Natmxmol];
+            /* Find center of mass and shift all position to this new origin:
+             * it must be done for each atom in the molecule.
+             * Returns total mass of molecule
+             */
+            tm = dsub_xcm(r1, Natmxmol, d_index, atom, xcm, bQ);
+            /* find the velocity of center of mass and shift all position to
+             * this new origin: must be done for each molecule
+             */
+            tm = dsub_xcm(v1, Natmxmol, d_index, atom, vcm, bQ);
+            /* save translational velocities for the molecule id */
+            for (k = 0; (k < DIM); k++)
+            {
+                dp[V_T].vec[lid+k][nframes] = vcm[k];
+            }
+
+            if (Natmxmol > 1.0)
+            {
+                /* compute principal moment of inertia
+                 * return trans eigenvector tensor and I the eigenvalues
+                 * (principal moment of inertia)
+                 */
+                principal(Natmxmol, d_index, atom, r1, trans, I);
+                /* Save the principal moment: it will be used to compute the
+                 * rotational temperatures.
+                 */
+                rvec_inc(vecI[id], I);
+
+                // we run through the j-th atom of id-th molecule and we
+                // save velocities for i-th atoms from d_index
+                // reset the needed variables
+                clear_rvec(angmom);
+                clear_rvec(pomega);
+                clear_rvec(omega);
+
+                for (j = 0; j < Natmxmol; j++)
+                {
+                    ai = d_index[j];
+                    // compute the angular momentum angmom
+                    clear_rvec(tmp);
+                    cprod(r1[ai], v1[ai], tmp);
+                    // mass weigth it for each atom in the molecule
+                    angmom[XX] += atom[ai].m*tmp[XX];
+                    angmom[YY] += atom[ai].m*tmp[YY];
+                    angmom[ZZ] += atom[ai].m*tmp[ZZ];
+                }
+                // compute angular velocity along principle axis, first step
+                for (j = 0; (j < DIM); j++)
+                {
+                    if (I[j] > 0.0)
+                    {
+                        for (k = 0; k < 3; k++)
+                        {
+                            pomega[j] += angmom[k]*trans[k][j];
+                        }
+                        pomega[j] /= I[j];
+                    }
+                }
+                // calculate angular velocities. Here we use the transpose of the trans
+                // matrix by swapping the indexing
+                for (j = 0; (j < 3); j++)
+                {
+                    for (k = 0; k < 3; k++)
+                    {
+                        omega[j] += pomega[k]*trans[j][k];
+                    }
+                }
+                // calculate inertia weighted angular velocities and save
+                for (j = 0; (j < DIM); j++)
+                {
+                    real vvv = 0;
+                    for (k = 0; k < 3; k++)
+                    {
+                        if (I[k] > 0)
+                        {
+                            vvv += pomega[k]*trans[j][k]*sqrt(I[k]);
+                        }
+                    }
+                    /* save angular velocities of molecule id,
+                     * weighted by sqrt(I)
+                     */
+                    dp[V_A].vec[id*DIM+j][nframes] = vvv;
+                }
+
+                for (j = 0; j < Natmxmol; j++)
+                {
+                    ai = d_index[j];
+                    /* calculate velocity due to rotation vr = w x r */
+                    cprod(omega, r1[ai], vr);
+                    for (k = 0; (k < DIM); k++)
+                    {
+                        if (bAtomic)
+                        {
+                            /* save rotational velocities */
+                            dp[V_R].vec[ai*DIM+k][nframes] = vr[k];
+                        }
+                        /* calculate vibrational velocities and save
+                         * v1 is the relative velocity versus center of mass
+                         */
+                        dp[V_V].vec[ai*DIM+k][nframes] = v1[ai][k] - vr[k];
+                    }
+                }
+            }
         }
 
         t1 = fr.time;
-
         nframes++;
     }
     while (read_next_frame(oenv, status, &fr));
+    N_tot = fudge*nframes;
+    nfreq = 1+N_tot/2;
+    printf("N_tot = %d\n", N_tot);
 
+    gmx_rmpbc_done(gpbc);
+
+    sfree(r1);   // empty r1, we need memory
+    sfree(v1);   // empty v1, we need memory
     close_trj(status);
+
+    {
+        /* Normalize moment of inertia */
+        real ddd = 1.0/nframes;
+        rvec sumVec;
+        clear_rvec(sumVec);
+        for (id = 0; id < Nmol; id++)
+        {
+            svmul(ddd, vecI[id], vecI[id]);
+            rvec_inc(sumVec, vecI[id]);
+        }
+        if (NULL != debug)
+        {
+            pr_rvecs(debug, 0, "Average vecI", vecI, Nmol);
+            svmul(1.0/Nmol, sumVec, sumVec);
+            pr_rvec(debug, 0, "Overall Average vecI", sumVec, DIM, FALSE);
+        }
+    }
 
     dt = (t1-t0)/(nframes-1);
     if (nV > 0)
     {
-        V = Vsum/nV;
-    }
-    if (bVerbose)
-    {
-        printf("Going to do %d fourier transforms of length %d. Hang on.\n",
-               gnx, nframes);
-    }
-    low_do_autocorr(NULL, oenv, NULL, nframes, gnx, nframes, c1, dt, eacNormal, 0, FALSE,
-                    FALSE, FALSE, -1, -1, 0);
-    snew(dos, DOS_NR);
-    for (j = 0; (j < DOS_NR); j++)
-    {
-        snew(dos[j], nframes+4);
+        double V2aver = V2sum/nV;
+        double Vol2   = Volume*Volume;
+        Volume   = Vsum/nV;
+        VolError = 0;
+        if (V2aver > Vol2)
+        {
+            VolError = sqrt(V2aver - Vol2);
+        }
+        fprintf(fplog, "Vsum = %g V2sum = %g Volume = %g VolError = %g\n",
+                Vsum, V2sum, Volume, VolError);
     }
 
-    if (bVerbose)
+    for (t = 0; (t < V_NR); t++)
     {
-        printf("Going to merge the ACFs into the mass-weighted and plain ACF\n");
-    }
-    for (i = 0; (i < gnx); i += DIM)
-    {
-        mi = top.atoms.atom[i/DIM].m;
-        for (j = 0; (j < nframes/2); j++)
+        if (dp[t].npart > 0)
         {
-            c1j            = (c1[i+XX][j] + c1[i+YY][j] + c1[i+ZZ][j]);
-            dos[VACF][j]  += c1j/Natom;
-            dos[MVACF][j] += mi*c1j;
+            for (i = 0; (i < DS_NR); i++)
+            {
+                snew_aligned(dp[t].dos[i], N_tot, 16);
+            }
+            for (j = 0; (j < DOS_NR); j++)
+            {
+                for (i = 0; (i < DS_NR); i++)
+                {
+                    snew_aligned(dp[t].wdos[j][i], N_tot, 16);
+                }
+            }
         }
     }
-    fp = xvgropen(opt2fn("-vacf", NFILE, fnm), "Velocity ACF",
-                  "Time (ps)", "C(t)", oenv);
-    snew(tt, nframes/2);
-    for (j = 0; (j < nframes/2); j++)
+
+    snew(dos_vacf, N_tot);
+    {
+        int nfft = 0;
+        for (t = 0; (t < V_NR); t++)
+        {
+            /* Set the particle mass */
+            if (dp[t].npart > 0)
+            {
+                dp[t].partMass = tmass/dp[t].npart;
+            }
+
+            /* Padding the vec array with zeroes */
+            for (i = 0; (i < DIM*dp[t].npart); i++)
+            {
+                srenew(dp[t].vec[i], N_tot);
+                for (j = nframes; (j < N_tot); j++)
+                {
+                    dp[t].vec[i][j] = 0;
+                }
+            }
+            nfft += DIM*dp[t].npart;
+        }
+        if (bVerbose)
+        {
+            printf("Going to determine %d correlation functions of length %d. Hang on.\n",
+                   nfft, N_tot);
+            printf("Going to merge the ACFs into the mass-weighted and plain ACF\n");
+        }
+    }
+
+    for (t = 0; (t < V_NR); t++)
+    {
+        if ((dp[t].dof > 0) && (dp[t].npart > 0))
+        {
+            int fftcode;
+            fftcode = many_auto_correl(DIM*dp[t].npart, nframes, N_tot, dp[t].vec);
+            if (0 != fftcode)
+            {
+                return -1;
+            }
+
+            for (i = 0; (i < dp[t].npart); i++)
+            {
+                int  ai    = i*DIM;
+                real mass  = atom[i].m;
+                if (V_T == t)
+                {
+                    mass = tm;
+                }
+                else if (V_A == t)
+                {
+                    mass = 1;
+                }
+
+                for (j = 0; (j < N_tot); j++)
+                {
+                    real v1j = (dp[t].vec[ai+XX][j] +
+                                dp[t].vec[ai+YY][j] +
+                                dp[t].vec[ai+ZZ][j]);
+                    dp[t].dos[DS_TOT][j] += v1j*mass;
+                    if (V_ATOM == t)
+                    {
+                        dos_vacf[j] += v1j/dp[t].npart;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Compute the temperatures. The number of degrees of freedom
+     * are per molecule, therefore we divide the DoS by the number
+     * of molecules.
+     * From here, the temperature is taken from simulation.
+     */
+    for (t = 0; (t < V_NR); t++)
+    {
+        if ((dp[t].dof > 0) && (dp[t].npart > 0))
+        {
+            dp[t].T    = dp[t].dos[DS_TOT][0]/(dp[t].dof*BOLTZ*Nmol);
+            dp[t].beta = 1.0/(dp[t].T*BOLTZ);
+            dp[t].bfac = 2.0*dt*dp[t].beta;
+        }
+    }
+    /* Make time- and frequency arrays */
+    snew(tt, N_tot);
+    snew(nu, N_tot);
+    double pwrfreq = 1/(dt*(N_tot+1));
+    for (j = 0; (j < N_tot); j++)
     {
         tt[j] = j*dt;
-        fprintf(fp, "%10g  %10g\n", tt[j], dos[VACF][j]);
+        nu[j] = j*pwrfreq;
     }
-    xvgrclose(fp);
-    fp = xvgropen(opt2fn("-mvacf", NFILE, fnm), "Mass-weighted velocity ACF",
-                  "Time (ps)", "C(t)", oenv);
-    for (j = 0; (j < nframes/2); j++)
+    print_stuff(N_tot, tt, dp, dos_vacf, opt2fn_null("-vacf", NFILE, fnm),
+                opt2fn_null("-mvacf", NFILE, fnm), oenv);
+    if ((fftcode = gmx_fft_init_1d(&fft2, N_tot,
+                                   GMX_FFT_FLAG_CONSERVATIVE)) != 0)
     {
-        fprintf(fp, "%10g  %10g\n", tt[j], dos[MVACF][j]);
-    }
-    xvgrclose(fp);
-
-    if ((fftcode = gmx_fft_init_1d_real(&fft, nframes/2,
-                                        GMX_FFT_FLAG_NONE)) != 0)
-    {
-        gmx_fatal(FARGS, "gmx_fft_init_1d_real returned %d", fftcode);
-    }
-    if ((fftcode = gmx_fft_1d_real(fft, GMX_FFT_REAL_TO_COMPLEX,
-                                   (void *)dos[MVACF], (void *)dos[DOS])) != 0)
-    {
-        gmx_fatal(FARGS, "gmx_fft_1d_real returned %d", fftcode);
+        gmx_fatal(FARGS, "gmx_fft_init_1d returned %d", fftcode);
     }
 
-    /* First compute the DoS */
-    /* Magic factor of 8 included now. */
-    bfac = 8*dt*beta/2;
-    dos2 = 0;
-    snew(nu, nframes/4);
-    for (j = 0; (j < nframes/4); j++)
+    /* compute density of state for each kind of velocities,
+     * return in same vector
+     */
+    for (t = 0; t < V_NR; t++)
     {
-        nu[j] = 2*j/(t1-t0);
-        dos2 += sqr(dos[DOS][2*j]) + sqr(dos[DOS][2*j+1]);
-        if (bAbsolute)
+        if ((dp[t].dof > 0) && (dp[t].npart > 0))
         {
-            dos[DOS][j] = bfac*sqrt(sqr(dos[DOS][2*j]) + sqr(dos[DOS][2*j+1]));
+            typedef real complex[2];
+            complex *in, *out;
+            snew(in, N_tot);
+            snew(out, N_tot);
+            for (j = 0; (j < N_tot); j++)
+            {
+                in[j][0] = dp[t].bfac*dp[t].dos[DS_TOT][j];
+                in[j][1] = 0;
+            }
+            for (; (j < N_tot); j++)
+            {
+                in[j][0] = in[j][1] = 0;
+            }
+            /* The 2pt code uses a backword transform, but the articles
+             * write a forward transform. However for real data it
+             * does not affect the real component of the output.
+             */
+            if ((fftcode = gmx_fft_1d(fft2, GMX_FFT_BACKWARD,
+                                      (void *)in, (void *)out)) != 0)
+            {
+                gmx_fatal(FARGS, "gmx_fft_1d_real returned %d", fftcode);
+            }
+            for (j = 0; (j < nfreq); j++)
+            {
+                dp[t].dos[DS_TOT][j] = sqrt(sqr(out[j][0])+sqr(out[j][1]));
+            }
+            sfree(in);
+            sfree(out);
+        }
+    }
+    gmx_fft_destroy(fft2);
+
+    print_dos(bRecip, recip_fac, nfreq, nu, dp, oenv);
+
+    /* Density */
+    rho   = (tmass*AMU)/(Volume*NANO*NANO*NANO);
+
+    if (0)
+    {
+        char **strings;
+        int    nline = get_file("test.pwr", &strings);
+        for (j = 0; (j < nline); j++)
+        {
+            double nnu, ddos;
+            if (2 == sscanf(strings[j], "%lf %lf", &nnu, &ddos))
+            {
+                nnu                    = nnu/recip0;
+                dp[V_V].dos[DS_TOT][j] = ddos*recip0;
+                if (fabs(nnu - nu[j]) > 0.01)
+                {
+                    printf("Strange nu %g (expected %g) dos = %g line %d\n",
+                           nnu, nu[j], ddos, j);
+                }
+            }
+            else
+            {
+                printf("Couldn't read two arguments from line %d in test.pwr\n", j);
+            }
+            sfree(strings[j]);
+        }
+        sfree(strings);
+    }
+    /* Analyze the DoS[t] */
+    for (t = 0; (t < V_NR); t++)
+    {
+        if ((dp[t].dof == 0) || (dp[t].npart == 0))
+        {
+            continue;
+        }
+        dp[t].DoS0 = dp[t].dos[DS_TOT][0];
+
+        if (V_V != t)
+        {
+            // eq 13 JPC B, 114, 8191 (2010)
+            dp[t].nrho  = dp[t].npart/Volume;
+            dp[t].Delta = ((2*dp[t].DoS0/(9*dp[t].npart))*sqrt(M_PI*BOLTZ*dp[t].T/dp[t].partMass)*
+                           pow(dp[t].nrho, 1.0/3.0)*pow(6/M_PI, 2.0/3.0));
+            dp[t].f     = calc_fluidicity(dp[t].Delta, toler);
+            dp[t].ry    = calc_y(dp[t].f, dp[t].Delta, toler);
+
+            for (j = 0; (j < nfreq); j++)
+            {
+                dp[t].dos[DS_DIFF][j] = (dp[t].DoS0/(1+sqr(dp[t].DoS0*M_PI*nu[j]/
+                                                           (6*dp[t].f*dp[t].npart))));
+            }
+
+            /* determine hard sphere degrees of freedom hsdf */
+            dp[t].hsdf  = evaluate_integral(nfreq, nu, dp[t].dos[DS_DIFF],
+                                            NULL, 0, &stddev);
+            /* determine total degrees of freedom ttdf */
+            dp[t].ttdf  = evaluate_integral(nfreq, nu, dp[t].dos[DS_TOT],
+                                            NULL, 0, &stddev);
+
+            dp[t].y     = dp[t].ry*(dp[t].hsdf/dp[t].ttdf);
+
+            dp[t].fy    = dp[t].f * dp[t].y;
+
+            dp[t].z     = calc_compress(dp[t].y);
+            // eq 16, Lin 2010, Sackur-Tetrode eq.
+            double xlog = (pow(2*M_PI*dp[t].partMass*BOLTZ*dp[t].T/
+                               (sqr(PLANCK)), 1.5)*Volume/(dp[t].f * dp[t].npart));
+            dp[t].Sig   = BOLTZ*(2.5+log(xlog));
+            fprintf(fplog, "m %g k %g T %g h %g V %g N %d xlog %g\n",
+                    dp[t].partMass, BOLTZ, dp[t].T, PLANCK, Volume, dp[t].npart, xlog);
+
+            dp[t].Shs   = dp[t].Sig+calc_Shs(dp[t].y);
+            dp[t].sigHS = pow(6*dp[t].ry*Volume/(M_PI*dp[t].npart), 1.0/3.0);
         }
         else
         {
-            dos[DOS][j] = bfac*dos[DOS][2*j];
+            // All other parameters are 0
+            dp[t].y     = 1;
+            for (j = 0; (j < nfreq); j++)
+            {
+                dp[t].dos[DS_DIFF][j] = 0;
+            }
         }
-    }
-    /* Normalize it */
-    dostot = evaluate_integral(nframes/4, nu, dos[DOS], NULL, nframes/4, &stddev);
-    if (bNormalize)
-    {
-        for (j = 0; (j < nframes/4); j++)
+        /* Now compute solid (2) component */
+        for (j = 0; (j < nfreq); j++)
         {
-            dos[DOS][j] *= 3*Natom/dostot;
+            dp[t].dos[DS_SOLID][j] = dp[t].dos[DS_TOT][j]-dp[t].dos[DS_DIFF][j];
+        }
+        dp[t].dostot = evaluate_integral(nfreq, nu, dp[t].dos[DS_TOT], NULL, 0, &stddev);
+
+        print_dos_component(opt2fn("-dos", NFILE, fnm), bRecip, recip_fac,
+                            nfreq, nu, t, dp, oenv);
+
+        /* Finally analyze the results! */
+        for (i = 0; (i < DOS_NR); i++)
+        {
+            dp[t].wDiff[i] = 0;
+        }
+
+        if (V_A == t)
+        {
+            clear_rvec(rT);
+            clear_rvec(I);
+
+            const double Q = PLANCK*PLANCK/(8.0*M_PI*M_PI*BOLTZ);
+            for (i = 0; i < dp[t].npart; i++)   // run for each molecule
+            {
+                for (k = 0; (k < DIM); k++)
+                {
+                    if (vecI[i][k] > 0.0)
+                    {
+                        rT[k] += Q/vecI[i][k];
+                        I[k]  += vecI[i][k];
+                    }
+                }
+            }
+            svmul(1.0/dp[t].npart, I,  I);
+            svmul(1.0/dp[t].npart, rT, rT);
+
+            fprintf(fplog, "Momenta of Inertia Ix %g Iy %g Iz %g amu nm^2\n",
+                    I[XX], I[YY], I[ZZ]);
+            fprintf(fplog, "Characteristic Rotational T x %g y %g z %g K\n",
+                    rT[XX], rT[YY], rT[ZZ]);
+
+            crT  = 1.0; // characteristic rotational temperature
+            rdof = 0;   // rotational degrees of freedom
+
+            for (i = 0; i < DIM; i++)
+            {
+                if (rT[i] > 0.0)
+                {
+                    crT *= rT[i];
+                    rdof++;
+                }
+            }
+            if (rdof == 0)
+            {
+                crT = -1.0;
+            }
+            real rot = 2.0;
+            real SR  = (3.0/2.0 + log(sqrt(M_PI*pow(dp[V_A].T, rdof)/crT)/rot_symm))/3;
+            dp[t].wDiff[DOS_S]  = SR;
+            fprintf(fplog, "SR = %g, rdof = %d, crT = %g rot = %g\n", SR, rdof, crT, rot);
+        }
+        else
+        {
+            dp[t].wDiff[DOS_S] = dp[t].Shs/(3*BOLTZ);
+        }
+        if (V_V != t)
+        {
+            dp[t].wDiff[DOS_CP] = 0.5;
+            dp[t].wDiff[DOS_E]  = 0.5;
+            dp[t].wDiff[DOS_EC] = 0.5;
+            dp[t].wDiff[DOS_A]  = dp[t].wDiff[DOS_E] - dp[t].wDiff[DOS_S];
+        }
+        {
+            real  *ddd;
+            real   fff[DOS_NR];
+            real (*wSolid[DOS_NR]) (real, real) = {
+                wCsolid, wSsolid, wAsolid, wEsolid, wEcsolid
+            };
+
+            snew(ddd, nfreq);
+            fff[DOS_CP] = fff[DOS_S] = (BOLTZ*KILO/Nmol);
+            fff[DOS_A]  = fff[DOS_E] = fff[DOS_EC] = (BOLTZ*dp[t].T/Nmol);
+            for (i = 0; (i < DOS_NR); i++)
+            {
+                for (j = 0; (j < nfreq); j++)
+                {
+                    dp[t].wdos[i][DS_SOLID][j] = (dp[t].dos[DS_SOLID][j]*
+                                                  wSolid[i](nu[j], dp[t].beta));
+                    dp[t].wdos[i][DS_DIFF][j]  = (dp[t].dos[DS_DIFF][j]*
+                                                  dp[t].wDiff[i]);
+                    dp[t].wdos[i][DS_TOT][j]   = (dp[t].wdos[i][DS_SOLID][j] +
+                                                  dp[t].wdos[i][DS_DIFF][j]);
+                }
+                for (k = 0; (k < DS_NR); k++)
+                {
+                    dp[t].X[i][k] = fff[i]*evaluate_integral(nfreq, nu,
+                                                             dp[t].wdos[i][k],
+                                                             NULL, 0, &stddev);
+                }
+            }
+        }
+
+        if (V_V != t)
+        {
+            dp[t].DiffACF = (1000/3.0)*evaluate_integral(nfreq, tt, dos_vacf, NULL,
+                                                         0, &stddev);
+            dp[t].DiffDoS = 1000*dp[t].DoS0/(12*tmass*dp[t].beta);
         }
     }
-
-    /* Now analyze it */
-    DoS0 = dos[DOS][0];
-
-    /* Note this eqn. is incorrect in Pascal2011a! */
-    Delta = ((2*DoS0/(9*Natom))*sqrt(M_PI*BOLTZ*Temp*Natom/tmass)*
-             pow((Natom/V), 1.0/3.0)*pow(6/M_PI, 2.0/3.0));
-    f     = calc_fluidicity(Delta, toler);
-    y     = calc_y(f, Delta, toler);
-    z     = calc_compress(y);
-    Sig   = BOLTZ*(5.0/2.0+log(2*M_PI*BOLTZ*Temp/(sqr(PLANCK))*V/(f*Natom)));
-    Shs   = Sig+calc_Shs(f, y);
-    rho   = (tmass*AMU)/(V*NANO*NANO*NANO);
-    sigHS = pow(6*y*V/(M_PI*Natom), 1.0/3.0);
-
-    fprintf(fplog, "System = \"%s\"\n", title);
-    fprintf(fplog, "Nmol = %d\n", Nmol);
-    fprintf(fplog, "Natom = %d\n", Natom);
-    fprintf(fplog, "dt = %g ps\n", dt);
-    fprintf(fplog, "tmass = %g amu\n", tmass);
-    fprintf(fplog, "V = %g nm^3\n", V);
-    fprintf(fplog, "rho = %g g/l\n", rho);
-    fprintf(fplog, "T = %g K\n", Temp);
-    fprintf(fplog, "beta = %g mol/kJ\n", beta);
-
-    fprintf(fplog, "\nDoS parameters\n");
-    fprintf(fplog, "Delta = %g\n", Delta);
-    fprintf(fplog, "fluidicity = %g\n", f);
-    fprintf(fplog, "hard sphere packing fraction = %g\n", y);
-    fprintf(fplog, "hard sphere compressibility = %g\n", z);
-    fprintf(fplog, "ideal gas entropy = %g\n", Sig);
-    fprintf(fplog, "hard sphere entropy = %g\n", Shs);
-    fprintf(fplog, "sigma_HS = %g nm\n", sigHS);
-    fprintf(fplog, "DoS0 = %g\n", DoS0);
-    fprintf(fplog, "Dos2 = %g\n", dos2);
-    fprintf(fplog, "DoSTot = %g\n", dostot);
-
-    /* Now compute solid (2) and diffusive (3) components */
-    fp = xvgropen(opt2fn("-dos", NFILE, fnm), "Density of states",
-                  bRecip ? "E (cm\\S-1\\N)" : "\\f{12}n\\f{4} (1/ps)",
-                  "\\f{4}S(\\f{12}n\\f{4})", oenv);
-    xvgr_legend(fp, asize(DoSlegend), DoSlegend, oenv);
-    recip_fac = bRecip ? (1e7/SPEED_OF_LIGHT) : 1.0;
-    for (j = 0; (j < nframes/4); j++)
+    for (t = 0; (t <= V_ATOM); t++)
     {
-        dos[DOS_DIFF][j]  = DoS0/(1+sqr(DoS0*M_PI*nu[j]/(6*f*Natom)));
-        dos[DOS_SOLID][j] = dos[DOS][j]-dos[DOS_DIFF][j];
-        fprintf(fp, "%10g  %10g  %10g  %10g\n",
-                recip_fac*nu[j],
-                dos[DOS][j]/recip_fac,
-                dos[DOS_SOLID][j]/recip_fac,
-                dos[DOS_DIFF][j]/recip_fac);
-    }
-    xvgrclose(fp);
+        dp[t].Emd = Emd*dp[t].dof/dp[V_ATOM].dof;
+        dp[t].E0  = dp[t].Emd/Nmol - dp[t].X[DOS_EC][DS_TOT];
 
-    /* Finally analyze the results! */
-    wCdiff = 0.5;
-    wSdiff = Shs/(3*BOLTZ); /* Is this correct? */
-    wEdiff = 0.5;
-    wAdiff = wEdiff-wSdiff;
-    for (j = 0; (j < nframes/4); j++)
+        print_dp(fplog, t, &dp[t]);
+    }
+    /* Sum the energies etc. */
+    for (t = 0; (t <= V_V); t++)
     {
-        dos[DOS_CP][j] = (dos[DOS_DIFF][j]*wCdiff +
-                          dos[DOS_SOLID][j]*wCsolid(nu[j], beta));
-        dos[DOS_S][j]  = (dos[DOS_DIFF][j]*wSdiff +
-                          dos[DOS_SOLID][j]*wSsolid(nu[j], beta));
-        dos[DOS_A][j]  = (dos[DOS_DIFF][j]*wAdiff +
-                          dos[DOS_SOLID][j]*wAsolid(nu[j], beta));
-        dos[DOS_E][j]  = (dos[DOS_DIFF][j]*wEdiff +
-                          dos[DOS_SOLID][j]*wEsolid(nu[j], beta));
+        dp[V_SUM].dostot += dp[t].dostot;
+        dp[V_SUM].DoS0   += dp[t].DoS0;
+        for (k = 0; (k < DOS_NR); k++)
+        {
+            int m;
+            for (m = 0; (m < DS_NR); m++)
+            {
+                dp[V_SUM].X[k][m] += dp[t].X[k][m];
+            }
+        }
+        dp[V_SUM].E0     += dp[t].E0;
+        dp[V_SUM].dof    += dp[t].dof;
+        dp[V_SUM].T      += dp[t].T*dp[t].dof;
     }
-    DiffCoeff = evaluate_integral(nframes/2, tt, dos[VACF], NULL, nframes/2, &stddev);
-    DiffCoeff = 1000*DiffCoeff/3.0;
-    fprintf(fplog, "Diffusion coefficient from VACF %g 10^-5 cm^2/s\n",
-            DiffCoeff);
-    fprintf(fplog, "Diffusion coefficient from DoS %g 10^-5 cm^2/s\n",
-            1000*DoS0/(12*tmass*beta));
+    dp[V_SUM].T /= dp[V_SUM].dof;
+    /* ---------------------- */
+    fprintf(fplog, "\n\t\t Final resume \n");
+    fprintf(fplog, "System  = %s\n", *top.name);
+    fprintf(fplog, "Nmol    = %d\n", Nmol);
+    fprintf(fplog, "Natom   = %d\n", Natom);
+    fprintf(fplog, "dt      = %g ps\n", dt);
+    fprintf(fplog, "tmass   = %g amu\n", tmass);
+    if (VolError > 0)
+    {
+        fprintf(fplog, "Volume  = %g +/- %g nm^3\n", Volume, VolError);
+        fprintf(fplog, "WARNING: The two phase thermodynamics method may not work well\n");
+        fprintf(fplog, "in constant pressure simulations.\n");
+    }
+    fprintf(fplog, "Volume  = %g nm^3\n", Volume);
+    fprintf(fplog, "Density = %g g/l\n", rho);
+    fprintf(fplog, "Emd     = %g kJ/mol/system\n", Emd);
+    fprintf(fplog, "bRecip  = %s\n", bool_names[bRecip]);
 
-    cP = BOLTZ * evaluate_integral(nframes/4, nu, dos[DOS_CP], NULL,
-                                   nframes/4, &stddev);
-    fprintf(fplog, "Heat capacity %g J/mol K\n", 1000*cP/Nmol);
+    {
+        const char *items[] = {
+            "", "Temperature", "DOF", "Dos integral", "DoS0",
+            "E0", "fluidicity",
+        };
 
-    /*
-       S  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_S],NULL,
-                                   nframes/4,&stddev);
-       fprintf(fplog,"Entropy %g J/mol K\n",1000*S/Nmol);
-       A  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_A],NULL,
-                                   nframes/4,&stddev);
-       fprintf(fplog,"Helmholtz energy %g kJ/mol\n",A/Nmol);
-       E  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_E],NULL,
-                                   nframes/4,&stddev);
-       fprintf(fplog,"Internal energy %g kJ/mol\n",E/Nmol);
-     */
+        for (k = 0; (k < asize(items)); k++)
+        {
+            fprintf(fplog, "%-36s", items[k]);
+            for (t = 0; (t <= V_SUM); t++)
+            {
+                if ((dp[t].dof == 0) || (dp[t].npart == 0))
+                {
+                    continue;
+                }
+                switch (k)
+                {
+                    case 0:
+                        fprintf(fplog, "  %10s", velocityName[t]);
+                        break;
+                    case 1:
+                        fprintf(fplog, "  %10g", dp[t].T);
+                        break;
+                    case 2:
+                        fprintf(fplog, "  %10g", dp[t].dof);
+                        break;
+                    case 3:
+                        fprintf(fplog, "  %10g", dp[t].dostot);
+                        break;
+                    case 4:
+                        fprintf(fplog, "  %10g", dp[t].DoS0);
+                        break;
+                    case 5:
+                        fprintf(fplog, "  %10g", dp[t].E0);
+                        break;
+                    case 6:
+                        fprintf(fplog, "  %10g", dp[t].f);
+                        break;
+                }
+            }
+            fprintf(fplog, "\n");
+        }
+        for (i = 0; (i < DOS_NR); i++)
+        {
+            for (j = 0; (j < DS_NR); j++)
+            {
+                fprintf(fplog, "%-29s %-6s", dosLong[i], dsLong[j]);
+                for (t = 0; (t <= V_SUM); t++)
+                {
+                    if ((dp[t].dof == 0) || (dp[t].npart == 0))
+                    {
+                        continue;
+                    }
+                    fprintf(fplog, "  %10g", dp[t].X[i][j]);
+                }
+                fprintf(fplog, "\n");
+            }
+        }
+    }
+    sfree(atom);
+
     fprintf(fplog, "\nArrivederci!\n");
-    gmx_fio_fclose(fplog);
-
+    fclose(fplog);
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");
 
     return 0;
