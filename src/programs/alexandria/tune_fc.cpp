@@ -568,7 +568,7 @@ static void dump_csv(int nD,
                      double **a,
                      double *x)
 {
-    FILE *csv = ffopen("out.csv", "w");
+    FILE *csv = gmx_ffopen("out.csv", "w");
     fprintf(csv, "\"\",");
     for (int j = 0; (j < nD); j++)
     {
@@ -1055,7 +1055,7 @@ double OptParam::CalcDeviation()
 
             /* Now compute energy */
             atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
-                     mymol->mtop_->natoms, mymol->md_);
+                     mymol->md_);
 
             for (j = 0; (j < mymol->NAtom()); j++)
             {
@@ -1684,7 +1684,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(cr))
     {
-        fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
+        fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
         time(&my_t);
         fprintf(fp, "# This file was created %s", ctime(&my_t));
@@ -1758,7 +1758,7 @@ int alex_tune_fc(int argc, char *argv[])
         gmx_molselect_done(gms);
         done_filenms(NFILE, fnm);
 
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     return 0;

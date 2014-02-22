@@ -1435,7 +1435,7 @@ void MyMol::PrintTopology(const char *fn, ChargeGenerationModel iModel, bool bVe
 
     /* Write topology_ file */
     bITP = (fn2ftp(fn) == efITP);
-    fp   = ffopen(fn, "w");
+    fp   = gmx_ffopen(fn, "w");
     if (!bITP)
     {
         std::string ff = GetForceField();

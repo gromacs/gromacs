@@ -37,6 +37,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/futil.h"
 #include <physics.h>
 #include <vec.h>
 #include "gromacs/random/random.h"
@@ -442,7 +443,7 @@ void gmx_resp_write_diff_cube(gmx_resp_t grref,gmx_resp_t gr,const char *cube_fn
     }
     if (NULL != cube_fn)
     {
-        fp = ffopen(cube_fn,"w");
+        fp = gmx_ffopen(cube_fn,"w");
         fprintf(fp,"%s\n",title);
         fprintf(fp,"POTENTIAL\n");
         fprintf(fp,"%5d%12.6f%12.6f%12.6f\n",

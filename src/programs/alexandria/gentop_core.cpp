@@ -34,6 +34,7 @@
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/futil.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
@@ -129,7 +130,7 @@ void print_rtp(const char *filenm,const char *title,t_atoms *atoms,
     FILE *fp;
     int i;
     
-    fp = ffopen(filenm,"w");
+    fp = gmx_ffopen(filenm,"w");
     fprintf(fp,"; %s\n",title);
     fprintf(fp,"\n");
     fprintf(fp,"[ %s ]\n",*atoms->resinfo[0].name);

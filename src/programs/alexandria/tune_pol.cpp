@@ -122,7 +122,7 @@ static void dump_csv(gmx_poldata_t pd,
                      double **at)
 {
     alexandria::CompositionSpecs cs;
-    FILE *csv = ffopen("out.csv", "w");
+    FILE *csv = gmx_ffopen("out.csv", "w");
 
     fprintf(csv, "\"molecule\",\"formula\",");
     for (int i = 0; (i < ntest); i++)
@@ -672,7 +672,7 @@ int alex_tune_pol(int argc, char *argv[])
     gmx_molprop_atomtype_table(tp, true, pd, mp, lot, exp_type);
     fclose(tp);
 
-    ffclose(fplog);
+    gmx_ffclose(fplog);
     
     const char *mpfn = opt2fn_null("-o", NFILE, fnm);
     if (NULL != mpfn) 

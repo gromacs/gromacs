@@ -478,7 +478,7 @@ static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
                 ((strcmp(atype[j], "OW") == 0) && (strcmp(atype[k], "OW") == 0)))
             {
 
-                fp = ffopen(buf, "w");
+                fp = gmx_ffopen(buf, "w");
 
                 imax = 3*pts_nm;
                 for (i = 0; (i <= imax); i++)
@@ -513,7 +513,7 @@ static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
                      ((strcmp(atype[j], "OWd") == 0) && (strcmp(atype[k], "OW") == 0)))
             {
 
-                fp = ffopen(buf, "w");
+                fp = gmx_ffopen(buf, "w");
 
                 imax = 3*pts_nm;
                 for (i = 0; (i <= imax); i++)
@@ -547,7 +547,7 @@ static void do_guillot2001a(int eel, int pts_nm, double xi, double xir)
                      ((strcmp(atype[j], "OWd") == 0) && (strcmp(atype[k], "OWd") == 0)))
             {
 
-                fp = ffopen(buf, "w");
+                fp = gmx_ffopen(buf, "w");
 
                 imax = 3*pts_nm;
                 for (i = 0; (i <= imax); i++)
@@ -615,7 +615,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                 ((strcmp(atype[j], "OW") == 0) && (strcmp(atype[k], "OW") == 0)))
             {
 
-                fp = ffopen(buf, "w");
+                fp = gmx_ffopen(buf, "w");
                 fprintf(fp, "#\n# Table %s %s DEC(Guillot2001a): rc=%g, rtol=%g, xi=%g, xir=%g\n#\n", atype[k], atype[j], rc, rtol, xi, xir);
 
                 imax = 3*pts_nm;
@@ -651,7 +651,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                      ((strcmp(atype[j], "OWd") == 0) && (strcmp(atype[k], "OW") == 0)))
             {
 
-                fp = ffopen(buf, "w");
+                fp = gmx_ffopen(buf, "w");
                 fprintf(fp, "#\n# Table %s %s DEC(Guillot2001a): rc=%g, rtol=%g, xi=%g, xir=%g\n#\n", atype[k], atype[j], rc, rtol, xi, xir);
 
                 imax = 3*pts_nm;
@@ -686,7 +686,7 @@ static void do_DEC_pair(const char *file, int eel, int pts_nm, double rc, double
                      ((strcmp(atype[j], "OWd") == 0) && (strcmp(atype[k], "OWd") == 0)))
             {
 
-                fp = ffopen(buf, "w");
+                fp = gmx_ffopen(buf, "w");
                 fprintf(fp, "#\n# Table %s %s DEC(Guillot2001a): rc=%g, rtol=%g, xi=%g, xir=%g\n#\n", atype[k], atype[j], rc, rtol, xi, xir);
 
                 imax = 3*pts_nm;
@@ -737,7 +737,7 @@ static void do_Slater(int pts_nm,
 
     sprintf(buf, "table_%d-%g_%d-%g.xvg", nrow1, w1, nrow2, w2);
     printf("Writing %s\n", buf);
-    fp = ffopen(buf, "w");
+    fp = gmx_ffopen(buf, "w");
 
     vd   = fd = vr = fr = 0;
     imax = 3*pts_nm;
@@ -1377,7 +1377,7 @@ int alex_gen_table(int argc, char *argv[])
         fn = opt2fn("-o", NFILE, fnm);
         if ((m != mGuillot2001a) && (m != mSlater))
         {
-            fp = ffopen(fn, "w");
+            fp = gmx_ffopen(fn, "w");
         }
         switch (m)
         {

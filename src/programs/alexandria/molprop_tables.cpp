@@ -292,7 +292,7 @@ void gmx_molprop_stats_table(FILE *fp,
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     std::vector<std::string>::iterator si;
-    int    i,line,k,m,N,nprint,nqmres,nexpres;
+    int    i,line,k,m,N,nprint;
     double exp_val,qm_val;
     real   rms,R,a,da,b,db,chi2;
     char   lbuf[256],tmp[32],catbuf[STRLEN];
@@ -331,8 +331,8 @@ void gmx_molprop_stats_table(FILE *fp,
     {
         snprintf(catbuf, STRLEN, 
                  " %s (%d) ",cats->catli[i].cat,cats->catli[i].count);
-        nqmres = 0;
-        nexpres = 0;
+        int nqmres = 0;
+        int nexpres = 0;
         for(k=0; (k<qmc->n); k++) 
         {
             snprintf(lbuf, 256, "%s/%s",qmc->method[k],qmc->basis[k]);

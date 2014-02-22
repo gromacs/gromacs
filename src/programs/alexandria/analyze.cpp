@@ -337,7 +337,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     }
     printf("--------------------------------------------------\n");
 
-    fp = ffopen(texfn, "w");
+    fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
         gmx_molprop_stats_table(fp, prop, mp, qmc, exp_type, outlier, gms, imsTrain);
