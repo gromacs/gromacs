@@ -185,22 +185,22 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 include(gmxManageGPU)
 
 # Detect the architecture the compiler is targetting, detect
-# acceleration possibilities on that hardware, suggest an acceleration
+# SIMD instructions possibilities on that hardware, suggest SIMD instruction set
 # to use if none is specified, and populate the cache option for CPU
-# accleration.
+# SIMD.
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
-include(gmxDetectAcceleration)
-gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
-if("${GMX_SUGGESTED_CPU_ACCELERATION}" STREQUAL "AVX2_256")
+include(gmxDetectSimd)
+gmx_detect_simd(GMX_SUGGESTED_SIMD)
+if("${GMX_SUGGESTED_SIMD}" STREQUAL "AVX2_256")
     message(STATUS "Changing acceleration from AVX2 to AVX (until AVX2 patches commited).")
-    set(GMX_SUGGESTED_CPU_ACCELERATION "AVX_256")
+    set(GMX_SUGGESTED_SIMD "AVX_256")
 endif()
 
 gmx_option_multichoice(
-    GMX_CPU_ACCELERATION
-    "Acceleration for CPU kernels and compiler optimization"
-    "${GMX_SUGGESTED_CPU_ACCELERATION}"
+    GMX_SIMD
+    "SIMD instruction set for CPU kernels and compiler optimization"
+    "${GMX_SUGGESTED_SIMD}"
     None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 IBM_QPX Sparc64_HPC_ACE Reference)
 
 gmx_option_multichoice(
@@ -227,8 +227,8 @@ gmx_option_multichoice(
     None
     none gaussian mopac gamess orca)
 
-gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_TYPE "Reference kernel type (4xn or 2xnn)" STRING "4xn" "GMX_CPU_ACCELERATION STREQUAL REFERENCE")
-gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_WIDTH "Reference kernel width" STRING "4" "GMX_CPU_ACCELERATION STREQUAL REFERENCE")
+gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_TYPE "Reference kernel type (4xn or 2xnn)" STRING "4xn" "GMX_SIMD STREQUAL REFERENCE")
+gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_WIDTH "Reference kernel width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
@@ -286,7 +286,7 @@ include(gmxCFlags)
 gmx_c_flags()
 
 # This variable should be used for additional compiler flags which are not
-# generated in gmxCFlags nor are acceleration or MPI related.
+# generated in gmxCFlags nor are SIMD or MPI related.
 set(EXTRA_C_FLAGS "")
 set(EXTRA_CXX_FLAGS "")
 
@@ -552,9 +552,25 @@ gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
 include(gmxSetBuildInformation)
 gmx_set_build_information()
-if(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
+# Turn on RDTSCP if:
+# - the build system's CPU supports it
+# - the acceleration is set to AVX as all AVX-capable CPUs support AVX (which
+#   at this point means that the user set it).
+# Note: it's better to not use the later set value of GMX_SIMD because
+# it reflects the system's capability of both compiling and running AVX code.
+# TODO: After merge with 5.0 one could implement a cache variable dependency
+# such that GMX_USE_RDTSCP can change if GMX_CPU_ACCELERATION is changed to AVX
+# after the first cmake pass.
+if (BUILD_CPU_FEATURES MATCHES "rdtscp" OR GMX_SIMD MATCHES "AVX")
+    set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
+else()
+    set(GMX_USE_RDTSCP_DEFAULT_VALUE OFF)
+endif()
+option(GMX_USE_RDTSCP "Use RDTSCP for better CPU-based timers (available on recent x86 CPUs; might need to be off when compiling for heterogeneous environments)" ${GMX_USE_RDTSCP_DEFAULT_VALUE})
+mark_as_advanced(GMX_USE_RDTSCP)
+if(GMX_USE_RDTSCP)
     set(HAVE_RDTSCP 1)
-endif(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
+endif()
 
 include(gmxTestFloatFormat)
 gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754
@@ -603,13 +619,13 @@ endif(NOT GMX_SYSTEM_XDR)
 
 
 ##################################################
-# Process CPU acceleration settings
+# Process SIMD instruction settings
 ##################################################
 # This checks what flags to add in order to
 # support the SIMD instructions we need, and sets
-# correct defines for the acceleration supported.
-include(gmxTestCPUAcceleration)
-gmx_test_cpu_acceleration()
+# correct defines for the SIMD instructions supported.
+include(gmxTestSimd)
+gmx_test_simd()
 
 
 # Process QM/MM Settings
@@ -716,16 +732,16 @@ endif()
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
-    message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
+    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
     message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
     message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
-    message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
+    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
     message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
@@ -804,20 +820,11 @@ else()
     endif ()
 endif()
 
-# TODO The Windows builds are still broken (we are avoiding some
-# unknown bug, perhaps with checkpointing?), because defaulting to
-# .tng output leads to calling null-op implementation functions, so
-# regressiontests will fail on Windows at the post-mdrun stages. We
-# can fix this during the 5.0 beta phase.
-gmx_add_cache_dependency(GMX_USE_TNG BOOL "NOT GMX_NATIVE_WINDOWS" OFF)
-
 if(GMX_USE_TNG)
     find_package(ZLIB)
     set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
     set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
     set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
-    # TODO reconsider use of OpenMP in TNG if/when trajectory writing is not serial in mdrun
-    set(TNG_USE_OPENMP ${GMX_OPENMP} CACHE BOOL "Try to use the OpenMP library (if available) with TNG")
     set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
     set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
     add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
@@ -826,7 +833,6 @@ endif()
 mark_as_advanced(TNG_BUILD_FORTRAN)
 mark_as_advanced(TNG_BUILD_EXAMPLES)
 mark_as_advanced(TNG_BUILD_COMPRESSION_TESTS)
-mark_as_advanced(TNG_USE_OPENMP)
 mark_as_advanced(TNG_BUILD_DOCUMENTATION)
 mark_as_advanced(TNG_BUILD_TEST)
 mark_as_advanced(TNG_EXAMPLE_FILES_DIR)

@@ -9,17 +9,19 @@ gmx [-f [<.xtc/.trr/...>]] [-mult [<.xtc/.trr/...> [...]]] [-lib [<.dat>]]
     [-ivec <vector>] [-double <real>] [-dvec <vector>] [-time <time>]
     [-string <string>] [-enum <enum>]
 
-FILE OPTIONS
+OPTIONS
+
+Options to specify input and output files:
 
  -f     [<.xtc/.trr/...>] (traj.xtc) (Input)
-     Input file description: xtc trr cpt trj gro g96 pdb g87 tng
+     Input file description: xtc trr cpt trj gro g96 pdb tng
  -mult  [<.xtc/.trr/...> [...]] (traj.xtc) (Input, Opt.)
-     Multiple file description: xtc trr cpt trj gro g96 pdb g87 tng
+     Multiple file description: xtc trr cpt trj gro g96 pdb tng
  -lib   [<.dat>] (libdata.dat) (Input, Opt., Lib.) Library file description
  -io    [<.dat>] (inout.dat) (In/Out, Opt.) Input/Output file description
  -o     <.xvg>   (Output, Opt.) Output file description
 
-OPTIONS
+Other options:
 
  -[no]bool       (yes)      Boolean option
  -[no]hidden     (yes)      Hidden option

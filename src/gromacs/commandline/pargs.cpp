@@ -585,7 +585,7 @@ void pargsToOptions(Options *options, t_pargs *pa)
             return;
         case etENUM:
             options->addOption(
-                StringOption(name).defaultEnumIndex(nenum(pa->u.c))
+                StringOption(name).defaultEnumIndex(nenum(pa->u.c) - 1)
                     .enumValueFromNullTerminatedArray(pa->u.c + 1)
                     .description(desc).hidden(bHidden));
             return;

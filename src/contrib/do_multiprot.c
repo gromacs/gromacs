@@ -75,7 +75,7 @@ static void process_multiprot_output(const char *fn, real *rmsd, int *nres, rvec
     
     (*rmsd)=-1;
     (*nres)=0;
-    mpoutput=ffopen (fn,"r");
+    mpoutput=gmx_ffopen (fn,"r");
     
     if (bCountres) {
 	do {
@@ -138,7 +138,7 @@ static void process_multiprot_output(const char *fn, real *rmsd, int *nres, rvec
 	    (*nres) = atoi(string);
 	}
     }
-    ffclose(mpoutput);
+    gmx_ffclose(mpoutput);
 }
 
 int main(int argc,char *argv[])
@@ -289,7 +289,7 @@ int main(int argc,char *argv[])
 	}
     }
     else {
-	ffclose(tmpf);
+	gmx_ffclose(tmpf);
     }
 
     if (ftp != efPDB) {
@@ -348,7 +348,7 @@ int main(int argc,char *argv[])
 		    useatoms.nres=max(useatoms.nres,useatoms.atom[i].resind+1);
 		}
 		useatoms.nr=nout;
-		out=ffopen(TrjoutFile,filemode);
+		out=gmx_ffopen(TrjoutFile,filemode);
 		break;
 	}
 	if (outftp == efG87)
@@ -369,9 +369,9 @@ int main(int argc,char *argv[])
     do {
 	t = output_env_conv_time(oenv,fr.time);
 	gmx_rmpbc(gpbc,natoms,fr.box,fr.x);
-	tapein=ffopen(pdbfile,"w");
+	tapein=gmx_ffopen(pdbfile,"w");
 	write_pdbfile_indexed(tapein,NULL,atoms,fr.x,ePBC,fr.box,' ',-1,gnx,index,NULL,TRUE); 
-	ffclose(tapein);
+	gmx_ffclose(tapein);
 	system(multiprot);
 	remove(pdbfile);
 	process_multiprot_output(fn, &rmsd, &nres2,rotangles,translation,bCountres,countres);
@@ -433,17 +433,17 @@ int main(int argc,char *argv[])
 	for (i=0;i<ratoms.nres;i++) {
 	    fprintf(fres,"%10d  %12d\n",countres[i].resnr,countres[i].count);
 	}
-	ffclose(fres);
+	gmx_ffclose(fres);
     }
-    ffclose(fo);
-    ffclose(frc);
+    gmx_ffclose(fo);
+    gmx_ffclose(frc);
     fprintf(stderr,"\n");
     close_trj(status);
     if (trxout != NULL) {
 	close_trx(trxout);
     }
     else if (out != NULL) {
-	ffclose(out);
+	gmx_ffclose(out);
     }
     view_all(oenv,NFILE, fnm);
     sfree(xr);

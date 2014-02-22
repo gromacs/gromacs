@@ -49,7 +49,6 @@
 #include "names.h"
 #include "physics.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "network.h"
 #include "gmx_fatal.h"
 #include "mtop_util.h"
@@ -58,7 +57,7 @@
 #include "gromacs/utility/gmxmpi.h"
 
 /* Only compile this file if SSE2 intrinsics are available */
-#if 0 && defined (GMX_X86_SSE2)
+#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
 #include <gmx_sse2_double.h>
 #include <emmintrin.h>
 
@@ -268,11 +267,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,
     }
 
     /* Sum up the polarization energy from other nodes */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, work, cr);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         dd_atom_sum_real(cr->dd, work);
     }
@@ -687,11 +682,7 @@ calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_
     }
 
     /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, work, cr);
-    }
-    else if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
         dd_atom_sum_real(cr->dd, work);
     }

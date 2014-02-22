@@ -77,7 +77,7 @@ static const int trxs[] =
 #ifdef USE_XDR
     efXTC, efTRR, efCPT,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87, efTNG
+    efTRJ, efGRO, efG96, efPDB, efTNG
 };
 #define NTRXS asize(trxs)
 
@@ -95,7 +95,7 @@ static const int tros[] =
 #ifdef USE_XDR
     efXTC, efTRR,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87, efTNG
+    efTRJ, efGRO, efG96, efPDB, efTNG
 };
 #define NTROS asize(tros)
 
@@ -109,12 +109,12 @@ static const int trns[] =
 #define NTRNS asize(trns)
 
 static const int stos[] =
-{ efGRO, efG96, efPDB, efBRK, efENT, efESP, efXYZ };
+{ efGRO, efG96, efPDB, efBRK, efENT, efESP };
 #define NSTOS asize(stos)
 
 static const int stxs[] =
 {
-    efGRO, efG96, efPDB, efBRK, efENT, efESP, efXYZ,
+    efGRO, efG96, efPDB, efBRK, efENT, efESP,
 #ifdef USE_XDR
     efTPR,
 #endif
@@ -168,7 +168,6 @@ static const t_deffile
       "Compressed trajectory (portable xdr format): xtc" },
     { eftTNG, ".tng", "traj", NULL,
       "Trajectory file (tng format)" },
-    { eftASC, ".g87", "gtraj", NULL, "Gromos-87 ASCII trajectory format" },
     { eftXDR, ".edr", "ener",   NULL, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
     { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },
@@ -179,7 +178,6 @@ static const t_deffile
     { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
     { eftASC, ".esp", "conf", "-f", "Coordinate file in Espresso format" },
     { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
-    { eftASC, ".xyz", "conf", "-o", "Coordinate file for some other programs" },
     { eftXDR, ".cpt", "state",  "-cp", "Checkpoint file"},
     { eftASC, ".log", "run",    "-l", "Log file"},
     { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},

@@ -131,7 +131,7 @@ void verletbuf_get_list_setup(gmx_bool                bGPU,
 #ifndef GMX_NBNXN_SIMD
         list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
 #else
-        list_setup->cluster_size_j = GMX_SIMD_WIDTH_HERE;
+        list_setup->cluster_size_j = GMX_SIMD_REAL_WIDTH;
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We assume the smallest cluster size to be on the safe side */
         list_setup->cluster_size_j /= 2;
@@ -546,7 +546,9 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
 static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                        const gmx_ffparams_t *ffp,
                        real kT_fac,
-                       real md_ljd, real md_ljr, real md_el, real dd_el,
+                       real md_ljd, real dd_ljd,
+                       real md_ljr, real dd_ljr,
+                       real md_el, real dd_el,
                        real r_buffer,
                        real rlist, real boxvol)
 {
@@ -584,7 +586,10 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                 md_el*att[i].prop.q*att[j].prop.q;
 
             /* d2V/dr2 at the cut-off for Coulomb, we neglect LJ */
-            dd = dd_el*att[i].prop.q*att[j].prop.q;
+            dd =
+                dd_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
+                dd_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
+                dd_el*att[i].prop.q*att[j].prop.q;
 
             rsh    = r_buffer;
             sc_fac = 1.0;
@@ -726,7 +731,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     verletbuf_atomtype_t *att  = NULL;
     int                   natt = -1, i;
     double                reppow;
-    real                  md_ljd, md_ljr, md_el, dd_el;
+    real                  md_ljd,  dd_ljd, md_ljr, dd_ljr, md_el, dd_el;
     real                  elfac;
     real                  kT_fac, mass_min;
     int                   ib0, ib1, ib;
@@ -804,13 +809,48 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     reppow = mtop->ffparams.reppow;
     md_ljd = 0;
+    dd_ljd = 0;
     md_ljr = 0;
+    dd_ljr = 0;
     if (ir->vdwtype == evdwCUT)
     {
-        /* -dV/dr of -r^-6 and r^-repporw */
-        md_ljd = -6*pow(ir->rvdw, -7.0);
-        md_ljr = reppow*pow(ir->rvdw, -(reppow+1));
-        /* The contribution of the second derivative is negligible */
+        real sw_range, sw_range2;
+
+        switch (ir->vdw_modifier)
+        {
+            case eintmodNONE:
+            case eintmodPOTSHIFT:
+                /* -dV/dr of -r^-6 and r^-reppow */
+                md_ljd =     -6*pow(ir->rvdw, -7.0);
+                md_ljr = reppow*pow(ir->rvdw, -(reppow+1));
+                /* The contribution of the second derivative is negligible */
+                break;
+            case eintmodFORCESWITCH:
+                /* At the cut-off: V=V'=V''=0.
+                 * We choose to approximate the potential over the switch
+                 * region using a linear force, thus quadratic potential.
+                 * This is a tight overestimate for too short switching
+                 * regions and not more than a factor 2 higher otherwise.
+                 */
+                sw_range = ir->rvdw - ir->rvdw_switch;
+                dd_ljd   =     -6*pow(ir->rvdw_switch, -7.0       )/sw_range;
+                dd_ljr   = reppow*pow(ir->rvdw_switch, -(reppow+1))/sw_range;
+                break;
+            case eintmodPOTSWITCH:
+                /* At the cut-off: V=V'=V''=0.
+                 * We choose to approximate the potential over the switch
+                 * region using a quadratic potential.
+                 * This is an overestimate close to the cut-off and can be
+                 * a slight underestimate close to rswitch.
+                 */
+                sw_range  = ir->rvdw - ir->rvdw_switch;
+                sw_range2 = sw_range*sw_range;
+                dd_ljd    =      -12*pow(ir->rvdw_switch, -6.0   )/sw_range2;
+                dd_ljr    = 2*reppow*pow(ir->rvdw_switch, -reppow)/sw_range2;
+                break;
+            default:
+                gmx_incons("Unimplemented VdW modifier");
+        }
     }
     else if (EVDW_PME(ir->vdwtype))
     {
@@ -934,8 +974,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     if (debug)
     {
-        fprintf(debug, "md_ljd %e md_ljr %e\n", md_ljd, md_ljr);
-        fprintf(debug, "md_el %e dd_el %e\n", md_el, dd_el);
+        fprintf(debug, "md_ljd %9.2e dd_ljd %9.2e\n", md_ljd, dd_ljd);
+        fprintf(debug, "md_ljr %9.2e dd_ljr %9.2e\n", md_ljr, dd_ljr);
+        fprintf(debug, "md_el  %9.2e dd_el  %9.2e\n", md_el, dd_el);
         fprintf(debug, "sqrt(kT_fac) %f\n", sqrt(kT_fac));
         fprintf(debug, "mass_min %f\n", mass_min);
     }
@@ -955,7 +996,10 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          */
         drift = ener_drift(att, natt, &mtop->ffparams,
                            kT_fac,
-                           md_ljd, md_ljr, md_el, dd_el, rb,
+                           md_ljd, dd_ljd,
+                           md_ljr, dd_ljr,
+                           md_el, dd_el,
+                           rb,
                            rl, boxvol);
 
         /* Correct for the fact that we are using a Ni x Nj particle pair list

@@ -135,7 +135,7 @@ int main(int argc,char *argv[])
     oldx = x;
       
   }
-  ffclose(fp);
+  gmx_ffclose(fp);
   
   do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
 

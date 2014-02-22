@@ -94,7 +94,7 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
     {
         nhlp = fget_lines(fp, &help);
         /* for libraries we can use the low-level close routines */
-        ffclose(fp);
+        gmx_ffclose(fp);
         rng    = gmx_rng_init(gmx_rng_make_seed());
         *cqnum = static_cast<int>(nhlp*gmx_rng_uniform_real(rng));
         gmx_rng_destroy(rng);
@@ -556,7 +556,12 @@ void please_cite(FILE *fp, const char *key)
           "C. Kutzner, H. Grubmuller, B. L. de Groot, and U. Zachariae",
           "Computational Electrophysiology: The Molecular Dynamics of Ion Channel Permeation and Selectivity in Atomistic Detail",
           "Biophys. J.",
-          101, 2011, "809-817"}
+          101, 2011, "809-817"},
+        { "Lundborg2014",
+          "M. Lundborg, R. Apostolov, D. Spangberg, A. Gardenas, D. van der Spoel and E. Lindahl",
+          "An efficient and extensible format, library, and API for binary trajectory data from molecular simulations",
+          "J. Comput. Chem.",
+          35, 2014, "260-269"}
     };
 #define NSTR (int)asize(citedb)
 
@@ -674,7 +679,7 @@ static void gmx_print_version_info(FILE *fp)
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
-    fprintf(fp, "CPU acceleration:   %s\n", GMX_CPU_ACCELERATION_STRING);
+    fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
 
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP
@@ -725,6 +730,18 @@ static void gmx_print_version_info(FILE *fp)
     gmx_print_version_info_gpu(fp);
 #endif
 }
+
+#ifdef GMX_DOUBLE
+void gmx_is_double_precision()
+{
+    /* allow precision detection */
+}
+#else
+void gmx_is_single_precision()
+{
+    /* allow precision detection */
+}
+#endif
 
 namespace gmx
 {

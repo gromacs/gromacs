@@ -144,9 +144,6 @@ const char *trajectoryFileNames[] = {
     "spc2-traj.pdb",
     "spc2-traj.g96"
 };
-// .g87 and .xyz file reading has been broken (and awkwardly
-// interactive) since at least v4.5 proposed on gmx-developers for
-// removing that support, so not testing it
 
 #ifdef __INTEL_COMPILER
 #pragma warning( disable : 177 )

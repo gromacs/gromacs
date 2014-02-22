@@ -1895,7 +1895,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     {
         dd->nbonded_local += nexcl;
 
-        forcerec_set_excl_load(fr, ltop, NULL);
+        forcerec_set_excl_load(fr, ltop);
     }
 
     ltop->atomtypes  = mtop->atomtypes;
@@ -2277,7 +2277,7 @@ static void get_cgcm_mol(gmx_moltype_t *molt, gmx_ffparams_t *ffparams,
     {
         construct_vsites(vsite, xs, 0.0, NULL,
                          ffparams->iparams, molt->ilist,
-                         epbcNONE, TRUE, NULL, NULL, NULL);
+                         epbcNONE, TRUE, NULL, NULL);
     }
 
     calc_cgcm(NULL, 0, molt->cgs.nr, &molt->cgs, xs, cg_cm);

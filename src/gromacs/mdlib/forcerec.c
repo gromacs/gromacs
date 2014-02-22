@@ -65,7 +65,6 @@
 #include "md_support.h"
 #include "md_logging.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
@@ -74,6 +73,7 @@
 #include "nbnxn_consts.h"
 #include "gmx_omp_nthreads.h"
 #include "gmx_detect_hardware.h"
+#include "inputrec.h"
 
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
@@ -1495,7 +1495,7 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
 
     if (bAllvsAll && fp && MASTER(cr))
     {
-        fprintf(fp, "\nUsing accelerated all-vs-all kernels.\n\n");
+        fprintf(fp, "\nUsing SIMD all-vs-all kernels.\n\n");
     }
 
     return bAllvsAll;
@@ -1545,7 +1545,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         *kernel_type = nbnxnk4xN_SIMD_2xNN;
 #endif
 
-#if defined GMX_NBNXN_SIMD_4XN && defined GMX_X86_AVX_256
+#if defined GMX_NBNXN_SIMD_4XN && defined GMX_SIMD_X86_AVX_256_OR_HIGHER
         if (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT)
         {
             /* The raw pair rate of the 4x8 kernel is higher than 2x(4+4),
@@ -1578,7 +1578,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * of precision. In single precision, this is faster on
          * Bulldozer, and slightly faster on Sandy Bridge.
          */
-#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256 || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if ((defined GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER || defined GMX_SIMD_X86_AVX_256_OR_HIGHER || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_SIMD_IBM_QPX)
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1609,12 +1609,12 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
 #ifdef GMX_NBNXN_SIMD
-#ifdef GMX_X86_SSE2
+#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
             /* We have x86 SSE2 compatible SIMD */
-#ifdef GMX_X86_AVX_128_FMA
+#ifdef GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER
             returnvalue = "AVX-128-FMA";
 #else
-#if defined GMX_X86_AVX_256 || defined __AVX__
+#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER || defined __AVX__
             /* x86 SIMD intrinsics can be converted to SSE or AVX depending
              * on compiler flags. As we use nearly identical intrinsics,
              * compiling for AVX without an AVX macros effectively results
@@ -1622,23 +1622,23 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
              * For gcc we check for __AVX__
              * At least a check for icc should be added (if there is a macro)
              */
-#if defined GMX_X86_AVX_256 && !defined GMX_NBNXN_HALF_WIDTH_SIMD
+#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_NBNXN_HALF_WIDTH_SIMD
             returnvalue = "AVX-256";
 #else
             returnvalue = "AVX-128";
 #endif
 #else
-#ifdef GMX_X86_SSE4_1
+#ifdef GMX_SIMD_X86_SSE4_1_OR_HIGHER
             returnvalue  = "SSE4.1";
 #else
             returnvalue  = "SSE2";
 #endif
 #endif
 #endif
-#else   /* GMX_X86_SSE2 */
-            /* not GMX_X86_SSE2, but other SIMD */
+#else   /* GMX_SIMD_X86_SSE2_OR_HIGHER */
+            /* not GMX_SIMD_X86_SSE2_OR_HIGHER, but other SIMD */
             returnvalue  = "SIMD";
-#endif /* GMX_X86_SSE2 */
+#endif /* GMX_SIMD_X86_SSE2_OR_HIGHER */
 #else  /* GMX_NBNXN_SIMD */
             returnvalue = "not available";
 #endif /* GMX_NBNXN_SIMD */
@@ -1657,7 +1657,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 
 static void pick_nbnxn_kernel(FILE                *fp,
                               const t_commrec     *cr,
-                              gmx_bool             use_cpu_acceleration,
+                              gmx_bool             use_simd_kernels,
                               gmx_bool             bUseGPU,
                               gmx_bool             bEmulateGPU,
                               const t_inputrec    *ir,
@@ -1686,7 +1686,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
 
     if (*kernel_type == nbnxnkNotSet)
     {
-        if (use_cpu_acceleration)
+        if (use_simd_kernels)
         {
             pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
@@ -1835,11 +1835,52 @@ void init_interaction_const_tables(FILE                *fp,
     }
 }
 
-static void init_interaction_const(FILE                       *fp,
-                                   const t_commrec gmx_unused *cr,
-                                   interaction_const_t       **interaction_const,
-                                   const t_forcerec           *fr,
-                                   real                        rtab)
+static void clear_force_switch_constants(shift_consts_t *sc)
+{
+    sc->c2   = 0;
+    sc->c3   = 0;
+    sc->cpot = 0;
+}
+
+static void force_switch_constants(real p,
+                                   real rsw, real rc,
+                                   shift_consts_t *sc)
+{
+    /* Here we determine the coefficient for shifting the force to zero
+     * between distance rsw and the cut-off rc.
+     * For a potential of r^-p, we have force p*r^-(p+1).
+     * But to save flops we absorb p in the coefficient.
+     * Thus we get:
+     * force/p   = r^-(p+1) + c2*r^2 + c3*r^3
+     * potential = r^-p + c2/3*r^3 + c3/4*r^4 + cpot
+     */
+    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 2));
+    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 3));
+    sc->cpot = -pow(rc, -p) + p*sc->c2/3*pow(rc - rsw, 3) + p*sc->c3/4*pow(rc - rsw, 4);
+}
+
+static void potential_switch_constants(real rsw, real rc,
+                                       switch_consts_t *sc)
+{
+    /* The switch function is 1 at rsw and 0 at rc.
+     * The derivative and second derivate are zero at both ends.
+     * rsw        = max(r - r_switch, 0)
+     * sw         = 1 + c3*rsw^3 + c4*rsw^4 + c5*rsw^5
+     * dsw        = 3*c3*rsw^2 + 4*c4*rsw^3 + 5*c5*rsw^4
+     * force      = force*dsw - potential*sw
+     * potential *= sw
+     */
+    sc->c3 = -10*pow(rc - rsw, -3);
+    sc->c4 =  15*pow(rc - rsw, -4);
+    sc->c5 =  -6*pow(rc - rsw, -5);
+}
+
+static void
+init_interaction_const(FILE                       *fp,
+                       const t_commrec gmx_unused *cr,
+                       interaction_const_t       **interaction_const,
+                       const t_forcerec           *fr,
+                       real                        rtab)
 {
     interaction_const_t *ic;
     gmx_bool             bUsesSimpleTables = TRUE;
@@ -1855,15 +1896,40 @@ static void init_interaction_const(FILE                       *fp,
     ic->rlistlong   = fr->rlistlong;
 
     /* Lennard-Jones */
-    ic->rvdw        = fr->rvdw;
-    if (fr->vdw_modifier == eintmodPOTSHIFT)
+    ic->vdw_modifier = fr->vdw_modifier;
+    ic->rvdw         = fr->rvdw;
+    ic->rvdw_switch  = fr->rvdw_switch;
+    clear_force_switch_constants(&ic->dispersion_shift);
+    clear_force_switch_constants(&ic->repulsion_shift);
+
+    switch (ic->vdw_modifier)
     {
-        ic->sh_invrc6 = pow(ic->rvdw, -6.0);
+        case eintmodPOTSHIFT:
+            /* Only shift the potential, don't touch the force */
+            ic->dispersion_shift.cpot = -pow(ic->rvdw, -6.0);
+            ic->repulsion_shift.cpot  = -pow(ic->rvdw, -12.0);
+            break;
+        case eintmodFORCESWITCH:
+            /* Switch the force, switch and shift the potential */
+            force_switch_constants(6.0, ic->rvdw_switch, ic->rvdw,
+                                   &ic->dispersion_shift);
+            force_switch_constants(12.0, ic->rvdw_switch, ic->rvdw,
+                                   &ic->repulsion_shift);
+            break;
+        case eintmodPOTSWITCH:
+            /* Switch the potential and force */
+            potential_switch_constants(ic->rvdw_switch, ic->rvdw,
+                                       &ic->vdw_switch);
+            break;
+        case eintmodNONE:
+        case eintmodEXACTCUTOFF:
+            /* Nothing to do here */
+            break;
+        default:
+            gmx_incons("unimplemented potential modifier");
     }
-    else
-    {
-        ic->sh_invrc6 = 0;
-    }
+
+    ic->sh_invrc6 = -ic->dispersion_shift.cpot;
 
     /* Electrostatics */
     ic->eeltype     = fr->eeltype;
@@ -1909,14 +1975,14 @@ static void init_interaction_const(FILE                       *fp,
     if (fp != NULL)
     {
         fprintf(fp, "Potential shift: LJ r^-12: %.3f r^-6 %.3f",
-                sqr(ic->sh_invrc6), ic->sh_invrc6);
+                ic->repulsion_shift.cpot, ic->dispersion_shift.cpot);
         if (ic->eeltype == eelCUT)
         {
-            fprintf(fp, ", Coulomb %.3f", ic->c_rf);
+            fprintf(fp, ", Coulomb %.3f", -ic->c_rf);
         }
         else if (EEL_PME(ic->eeltype))
         {
-            fprintf(fp, ", Ewald %.3e", ic->sh_ewald);
+            fprintf(fp, ", Ewald %.3e", -ic->sh_ewald);
         }
         fprintf(fp, "\n");
     }
@@ -1985,7 +2051,7 @@ static void init_nb_verlet(FILE                *fp,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(fp, cr, fr->use_cpu_acceleration,
+            pick_nbnxn_kernel(fp, cr, fr->use_simd_kernels,
                               nbv->bUseGPU, bEmulateGPU, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
@@ -1996,7 +2062,7 @@ static void init_nb_verlet(FILE                *fp,
             if (nbpu_opt != NULL && strcmp(nbpu_opt, "gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, fr->use_cpu_acceleration,
+                pick_nbnxn_kernel(fp, cr, fr->use_simd_kernels,
                                   FALSE, FALSE, ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
@@ -2082,13 +2148,19 @@ static void init_nb_verlet(FILE                *fp,
         if (i == 0 ||
             nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
         {
+            gmx_bool bSimpleList;
+
+            bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type);
+
             snew(nbv->grp[i].nbat, 1);
             nbnxn_atomdata_init(fp,
                                 nbv->grp[i].nbat,
                                 nbv->grp[i].kernel_type,
+                                /* SIMD LJ switch kernels don't support LJ combination rules */
+                                bSimpleList && !(fr->vdw_modifier == eintmodFORCESWITCH || fr->vdw_modifier == eintmodPOTSWITCH),
                                 fr->ntype, fr->nbfp,
                                 ir->opts.ngener,
-                                nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type) ? gmx_omp_nthreads_get(emntNonbonded) : 1,
+                                bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
                                 nb_alloc, nb_free);
         }
         else
@@ -2121,7 +2193,7 @@ void init_forcerec(FILE              *fp,
     double         dbl;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
-    gmx_bool       bTab, bSep14tab, bNormalnblists;
+    gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
     t_nblists     *nbl;
     int           *nm_ind, egp_flags;
 
@@ -2134,8 +2206,8 @@ void init_forcerec(FILE              *fp,
         fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE);
     }
 
-    /* By default we turn acceleration on, but it might be turned off further down... */
-    fr->use_cpu_acceleration = TRUE;
+    /* By default we turn SIMD kernels on, but it might be turned off further down... */
+    fr->use_simd_kernels = TRUE;
 
     fr->bDomDec = DOMAINDECOMP(cr);
 
@@ -2273,14 +2345,14 @@ void init_forcerec(FILE              *fp,
         bNoSolvOpt         = TRUE;
     }
 
-    if ( (getenv("GMX_DISABLE_CPU_ACCELERATION") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
+    if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
     {
-        fr->use_cpu_acceleration = FALSE;
+        fr->use_simd_kernels = FALSE;
         if (fp != NULL)
         {
             fprintf(fp,
-                    "\nFound environment variable GMX_DISABLE_CPU_ACCELERATION.\n"
-                    "Disabling all CPU architecture-specific (e.g. SSE2/SSE4/AVX) routines.\n\n");
+                    "\nFound environment variable GMX_DISABLE_SIMD_KERNELS.\n"
+                    "Disabling the usage of any SIMD-specific kernel routines (e.g. SSE2/SSE4.1/AVX).\n\n");
         }
     }
 
@@ -2292,12 +2364,12 @@ void init_forcerec(FILE              *fp,
     fr->AllvsAll_workgb = NULL;
 
     /* All-vs-all kernels have not been implemented in 4.6, and
-     * the SIMD group kernels are also buggy in this case. Non-accelerated
+     * the SIMD group kernels are also buggy in this case. Non-SIMD
      * group kernels are OK. See Redmine #1249. */
     if (fr->bAllvsAll)
     {
         fr->bAllvsAll            = FALSE;
-        fr->use_cpu_acceleration = FALSE;
+        fr->use_simd_kernels     = FALSE;
         if (fp != NULL)
         {
             fprintf(fp,
@@ -2700,7 +2772,7 @@ void init_forcerec(FILE              *fp,
         fr->gbtabr = 100;
         fr->gbtab  = make_gb_table(oenv, fr);
 
-        init_gb(&fr->born, cr, fr, ir, mtop, ir->gb_algorithm);
+        init_gb(&fr->born, fr, ir, mtop, ir->gb_algorithm);
 
         /* Copy local gb data (for dd, this is done in dd_partition_system) */
         if (!DOMAINDECOMP(cr))
@@ -2741,24 +2813,25 @@ void init_forcerec(FILE              *fp,
      * A little unnecessary to make both vdw and coul tables sometimes,
      * but what the heck... */
 
-    bTab = fr->bcoultab || fr->bvdwtab || fr->bEwald;
+    bMakeTables = fr->bcoultab || fr->bvdwtab || fr->bEwald ||
+        (ir->eDispCorr != edispcNO && ir_vdw_switched(ir));
 
-    bSep14tab = ((!bTab || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
-                  fr->bBHAM || fr->bEwald) &&
-                 (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
-                  gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
-                  gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0));
+    bMakeSeparate14Table = ((!bMakeTables || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
+                             fr->bBHAM || fr->bEwald) &&
+                            (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
+                             gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
+                             gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0));
 
     negp_pp   = ir->opts.ngener - ir->nwall;
     negptable = 0;
-    if (!bTab)
+    if (!bMakeTables)
     {
-        bNormalnblists = TRUE;
-        fr->nnblists   = 1;
+        bSomeNormalNbListsAreInUse = TRUE;
+        fr->nnblists               = 1;
     }
     else
     {
-        bNormalnblists = (ir->eDispCorr != edispcNO);
+        bSomeNormalNbListsAreInUse = (ir->eDispCorr != edispcNO);
         for (egi = 0; egi < negp_pp; egi++)
         {
             for (egj = egi; egj < negp_pp; egj++)
@@ -2772,12 +2845,12 @@ void init_forcerec(FILE              *fp,
                     }
                     else
                     {
-                        bNormalnblists = TRUE;
+                        bSomeNormalNbListsAreInUse = TRUE;
                     }
                 }
             }
         }
-        if (bNormalnblists)
+        if (bSomeNormalNbListsAreInUse)
         {
             fr->nnblists = negptable + 1;
         }
@@ -2804,17 +2877,17 @@ void init_forcerec(FILE              *fp,
      */
     rtab = ir->rlistlong + ir->tabext;
 
-    if (bTab)
+    if (bMakeTables)
     {
         /* make tables for ordinary interactions */
-        if (bNormalnblists)
+        if (bSomeNormalNbListsAreInUse)
         {
             make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
             if (ir->adress)
             {
                 make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
             }
-            if (!bSep14tab)
+            if (!bMakeSeparate14Table)
             {
                 fr->tab14 = fr->nblists[0].table_elec_vdw;
             }
@@ -2862,7 +2935,7 @@ void init_forcerec(FILE              *fp,
             }
         }
     }
-    if (bSep14tab)
+    if (bMakeSeparate14Table)
     {
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
         fr->tab14 = make_tables(fp, oenv, fr, MASTER(cr), tabpfn, rtab,
@@ -2938,9 +3011,6 @@ void init_forcerec(FILE              *fp,
 
     if (!DOMAINDECOMP(cr))
     {
-        /* When using particle decomposition, the effect of the second argument,
-         * which sets fr->hcg, is corrected later in do_md and init_em.
-         */
         forcerec_set_ranges(fr, ncg_mtop(mtop), ncg_mtop(mtop),
                             mtop->natoms, mtop->natoms, mtop->natoms);
     }
@@ -3016,21 +3086,11 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
     fflush(fp);
 }
 
-void forcerec_set_excl_load(t_forcerec *fr,
-                            const gmx_localtop_t *top, const t_commrec *cr)
+void forcerec_set_excl_load(t_forcerec           *fr,
+                            const gmx_localtop_t *top)
 {
     const int *ind, *a;
     int        t, i, j, ntot, n, ntarget;
-
-    if (cr != NULL && PARTDECOMP(cr))
-    {
-        /* No OpenMP with particle decomposition */
-        pd_at_range(cr,
-                    &fr->excl_load[0],
-                    &fr->excl_load[1]);
-
-        return;
-    }
 
     ind = top->excls.index;
     a   = top->excls.a;

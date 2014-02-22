@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -306,7 +306,7 @@ int gmx_g_angle(int argc, char *argv[])
             }
             fprintf(out, "\n");
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     if (opt2bSet("-or", NFILE, fnm))
     {
@@ -324,7 +324,7 @@ int gmx_g_angle(int argc, char *argv[])
             fprintf(out, "%10.5f  %10.3f\n", time[i], trans_frac[i]);
             tfrac += trans_frac[i];
         }
-        ffclose(out);
+        gmx_ffclose(out);
 
         tfrac /= nframes;
         fprintf(stderr, "Average trans fraction: %g\n", tfrac);
@@ -463,7 +463,7 @@ int gmx_g_angle(int argc, char *argv[])
         fprintf(out, "%10g  %10f\n", 180.0, angstat[0]*norm_fac);
     }
 
-    ffclose(out);
+    gmx_ffclose(out);
 
     do_view(oenv, opt2fn("-od", NFILE, fnm), "-nxy");
     if (bAver)

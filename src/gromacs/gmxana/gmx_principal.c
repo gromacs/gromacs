@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,10 +124,10 @@ int gmx_principal(int argc, char *argv[])
         return 0;
     }
 
-    axis1 = ffopen(opt2fn("-a1", NFILE, fnm), "w");
-    axis2 = ffopen(opt2fn("-a2", NFILE, fnm), "w");
-    axis3 = ffopen(opt2fn("-a3", NFILE, fnm), "w");
-    fmoi  = ffopen(opt2fn("-om", NFILE, fnm), "w");
+    axis1 = gmx_ffopen(opt2fn("-a1", NFILE, fnm), "w");
+    axis2 = gmx_ffopen(opt2fn("-a2", NFILE, fnm), "w");
+    axis3 = gmx_ffopen(opt2fn("-a3", NFILE, fnm), "w");
+    fmoi  = gmx_ffopen(opt2fn("-om", NFILE, fnm), "w");
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box, TRUE);
 
@@ -154,10 +154,10 @@ int gmx_principal(int argc, char *argv[])
 
 
     close_trj(status);
-    ffclose(axis1);
-    ffclose(axis2);
-    ffclose(axis3);
-    ffclose(fmoi);
+    gmx_ffclose(axis1);
+    gmx_ffclose(axis2);
+    gmx_ffclose(axis3);
+    gmx_ffclose(fmoi);
 
     return 0;
 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -468,14 +468,14 @@ int gmx_polystat(int argc, char *argv[])
 
     close_trx(status);
 
-    ffclose(out);
+    gmx_ffclose(out);
     if (outv)
     {
-        ffclose(outv);
+        gmx_ffclose(outv);
     }
     if (outp)
     {
-        ffclose(outp);
+        gmx_ffclose(outp);
     }
 
     sum_eed2_tot /= frame;
@@ -515,7 +515,7 @@ int gmx_polystat(int argc, char *argv[])
         {
             fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
         }
-        ffclose(outi);
+        gmx_ffclose(outi);
     }
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");

@@ -37,7 +37,7 @@
 
 typedef gmx_simd_ref_epi32      gmx_simd_ref_exclfilter;
 typedef gmx_simd_ref_exclfilter gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
+static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
 /* Set the stride for the lookup of the two LJ parameters from their
    (padded) array. Only strides of 2 and 4 are currently supported. */
@@ -49,7 +49,7 @@ static const int nbfp_stride = 2;
 static const int nbfp_stride = 4;
 #endif
 
-#if GMX_SIMD_WIDTH_HERE > 4
+#if GMX_SIMD_REAL_WIDTH > 4
 /* The 4xn kernel operates on 4-wide i-force registers */
 
 /* float/double SIMD register type */
@@ -96,14 +96,6 @@ gmx_add_pr4(gmx_mm_pr4 a, gmx_mm_pr4 b)
 
     return c;
 }
-#else
-
-typedef gmx_simd_ref_pr gmx_mm_pr4;
-
-#define gmx_load_pr4   gmx_load_pr
-#define gmx_store_pr4  gmx_store_pr
-#define gmx_add_pr4    gmx_add_pr
-
 #endif
 
 
@@ -114,7 +106,7 @@ typedef gmx_simd_ref_pr gmx_mm_pr4;
 /* Half-width SIMD real type */
 /* float/double SIMD register type */
 typedef struct {
-    real r[GMX_SIMD_WIDTH_HERE/2];
+    real r[GMX_SIMD_REAL_WIDTH/2];
 } gmx_mm_hpr;
 
 /* Half-width SIMD operations */
@@ -125,7 +117,7 @@ gmx_load_hpr(gmx_mm_hpr *a, const real *b)
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         a->r[i] = b[i];
     }
@@ -137,7 +129,7 @@ gmx_set1_hpr(gmx_mm_hpr *a, real b)
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         a->r[i] = b;
     }
@@ -149,10 +141,10 @@ gmx_load1p1_pr(gmx_simd_ref_pr *a, const real *b)
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         a->r[                        i] = b[0];
-        a->r[GMX_SIMD_WIDTH_HERE/2 + i] = b[1];
+        a->r[GMX_SIMD_REAL_WIDTH/2 + i] = b[1];
     }
 }
 
@@ -162,10 +154,10 @@ gmx_loaddh_pr(gmx_simd_ref_pr *a, const real *b)
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         a->r[i]                         = b[i];
-        a->r[GMX_SIMD_WIDTH_HERE/2 + i] = b[i];
+        a->r[GMX_SIMD_REAL_WIDTH/2 + i] = b[i];
     }
 }
 
@@ -175,7 +167,7 @@ gmx_store_hpr(real *a, gmx_mm_hpr b)
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         a[i] = b.r[i];
     }
@@ -187,7 +179,7 @@ gmx_add_hpr(gmx_mm_hpr a, gmx_mm_hpr b)
     gmx_mm_hpr c;
     int        i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         c.r[i] = a.r[i] + b.r[i];
     }
@@ -201,7 +193,7 @@ gmx_sub_hpr(gmx_mm_hpr a, gmx_mm_hpr b)
     gmx_mm_hpr c;
     int        i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         c.r[i] = a.r[i] - b.r[i];
     }
@@ -216,13 +208,13 @@ gmx_sum4_hpr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
     gmx_mm_hpr c;
     int        i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         c.r[i] =
             a.r[i] +
-            a.r[GMX_SIMD_WIDTH_HERE/2+i] +
+            a.r[GMX_SIMD_REAL_WIDTH/2+i] +
             b.r[i] +
-            b.r[GMX_SIMD_WIDTH_HERE/2+i];
+            b.r[GMX_SIMD_REAL_WIDTH/2+i];
     }
 
     return c;
@@ -241,12 +233,12 @@ gmx_mm_transpose_sum4h_pr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
     sum.r[2] = 0;
     sum.r[3] = 0;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         sum.r[0] += a.r[i];
-        sum.r[1] += a.r[GMX_SIMD_WIDTH_HERE/2+i];
+        sum.r[1] += a.r[GMX_SIMD_REAL_WIDTH/2+i];
         sum.r[2] += b.r[i];
-        sum.r[3] += b.r[GMX_SIMD_WIDTH_HERE/2+i];
+        sum.r[3] += b.r[GMX_SIMD_REAL_WIDTH/2+i];
     }
 
     return sum;
@@ -258,10 +250,10 @@ gmx_pr_to_2hpr(gmx_simd_ref_pr a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         b->r[i] = a.r[i];
-        c->r[i] = a.r[GMX_SIMD_WIDTH_HERE/2 + i];
+        c->r[i] = a.r[GMX_SIMD_REAL_WIDTH/2 + i];
     }
 }
 static gmx_inline void
@@ -269,10 +261,10 @@ gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_ref_pr *c)
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         c->r[i]                         = a.r[i];
-        c->r[GMX_SIMD_WIDTH_HERE/2 + i] = b.r[i];
+        c->r[GMX_SIMD_REAL_WIDTH/2 + i] = b.r[i];
     }
 }
 
@@ -287,13 +279,13 @@ load_table_f(const real *tab_coul_F, gmx_simd_ref_epi32 ti_S,
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         ctab0_S->r[i] = tab_coul_F[ti_S.r[i]];
         ctab1_S->r[i] = tab_coul_F[ti_S.r[i]+1];
     }
 
-    *ctab1_S  = gmx_sub_pr(*ctab1_S, *ctab0_S);
+    *ctab1_S  = gmx_simd_sub_r(*ctab1_S, *ctab0_S);
 }
 
 static gmx_inline void
@@ -306,7 +298,7 @@ load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
 
     load_table_f(tab_coul_F, ti_S, ti, ctab0_S, ctab1_S);
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         ctabv_S->r[i] = tab_coul_V[ti_S.r[i]];
     }
@@ -320,7 +312,7 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_ref_epi32 ti_S, int *ti,
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         ctab0_S->r[i] = tab_coul_FDV0[ti_S.r[i]*4];
         ctab1_S->r[i] = tab_coul_FDV0[ti_S.r[i]*4+1];
@@ -337,7 +329,7 @@ load_table_f_v(const real *tab_coul_FDV0,
 
     load_table_f(tab_coul_FDV0, ti_S, ti, ctab0_S, ctab1_S);
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         ctabv_S->r[i] = tab_coul_FDV0[ti_S.r[i]*4+2];
     }
@@ -347,7 +339,7 @@ load_table_f_v(const real *tab_coul_FDV0,
 /* Sum the elements within each input register and store the sums in out.
  * Note that 4/8-way SIMD requires gmx_mm_transpose_sum4_pr instead.
  */
-#if GMX_SIMD_WIDTH_HERE == 2
+#if GMX_SIMD_REAL_WIDTH == 2
 static gmx_inline gmx_simd_ref_pr
 gmx_mm_transpose_sum2_pr(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1)
 {
@@ -360,8 +352,8 @@ gmx_mm_transpose_sum2_pr(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1)
 }
 #endif
 
-#if GMX_SIMD_WIDTH_HERE >= 4
-#if GMX_SIMD_WIDTH_HERE == 4
+#if GMX_SIMD_REAL_WIDTH >= 4
+#if GMX_SIMD_REAL_WIDTH == 4
 static gmx_inline gmx_simd_ref_pr
 #else
 static gmx_inline gmx_mm_pr4
@@ -369,7 +361,7 @@ static gmx_inline gmx_mm_pr4
 gmx_mm_transpose_sum4_pr(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1,
                          gmx_simd_ref_pr in2, gmx_simd_ref_pr in3)
 {
-#if GMX_SIMD_WIDTH_HERE == 4
+#if GMX_SIMD_REAL_WIDTH == 4
     gmx_simd_ref_pr sum;
 #else
     gmx_mm_pr4      sum;
@@ -381,7 +373,7 @@ gmx_mm_transpose_sum4_pr(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1,
     sum.r[2] = 0;
     sum.r[3] = 0;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         sum.r[0] += in0.r[i];
         sum.r[1] += in1.r[i];
@@ -403,8 +395,8 @@ static gmx_inline void
 gmx_mm_invsqrt2_pd(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1,
                    gmx_simd_ref_pr *out0, gmx_simd_ref_pr *out1)
 {
-    *out0 = gmx_invsqrt_pr(in0);
-    *out1 = gmx_invsqrt_pr(in1);
+    *out0 = gmx_simd_invsqrt_r(in0);
+    *out1 = gmx_simd_invsqrt_r(in1);
 }
 #endif
 
@@ -414,7 +406,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         c6_S->r[i]  = nbfp[type[aj+i]*nbfp_stride];
         c12_S->r[i] = nbfp[type[aj+i]*nbfp_stride+1];
@@ -429,12 +421,12 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
 {
     int i;
 
-    for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
     {
         c6_S->r[i]                          = nbfp0[type[aj+i]*nbfp_stride];
-        c6_S->r[GMX_SIMD_WIDTH_HERE/2 + i]  = nbfp1[type[aj+i]*nbfp_stride];
+        c6_S->r[GMX_SIMD_REAL_WIDTH/2 + i]  = nbfp1[type[aj+i]*nbfp_stride];
         c12_S->r[i]                         = nbfp0[type[aj+i]*nbfp_stride+1];
-        c12_S->r[GMX_SIMD_WIDTH_HERE/2 + i] = nbfp1[type[aj+i]*nbfp_stride+1];
+        c12_S->r[GMX_SIMD_REAL_WIDTH/2 + i] = nbfp1[type[aj+i]*nbfp_stride+1];
     }
 }
 #endif

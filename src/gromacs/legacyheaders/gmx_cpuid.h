@@ -115,23 +115,23 @@ enum gmx_cpuid_feature
 };
 
 
-/* Currently supported acceleration instruction sets, intrinsics or other similar combinations
+/* Currently supported SIMD instruction sets, intrinsics or other similar combinations
  * in Gromacs. There is not always a 1-to-1 correspondence with feature flags; on some AMD
  * hardware we prefer to use 128bit AVX instructions (although 256-bit ones could be executed),
  * and we still haven't written the AVX2 kernels.
  */
-enum gmx_cpuid_acceleration
+enum gmx_cpuid_simd
 {
-    GMX_CPUID_ACCELERATION_CANNOTDETECT,    /* Should only be used if something fails */
-    GMX_CPUID_ACCELERATION_NONE,
-    GMX_CPUID_ACCELERATION_X86_SSE2,
-    GMX_CPUID_ACCELERATION_X86_SSE4_1,
-    GMX_CPUID_ACCELERATION_X86_AVX_128_FMA,
-    GMX_CPUID_ACCELERATION_X86_AVX_256,
-    GMX_CPUID_ACCELERATION_X86_AVX2_256,
-    GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE,
-    GMX_CPUID_ACCELERATION_IBM_QPX,
-    GMX_CPUID_NACCELERATIONS
+    GMX_CPUID_SIMD_CANNOTDETECT,    /* Should only be used if something fails */
+    GMX_CPUID_SIMD_NONE,
+    GMX_CPUID_SIMD_X86_SSE2,
+    GMX_CPUID_SIMD_X86_SSE4_1,
+    GMX_CPUID_SIMD_X86_AVX_128_FMA,
+    GMX_CPUID_SIMD_X86_AVX_256,
+    GMX_CPUID_SIMD_X86_AVX2_256,
+    GMX_CPUID_SIMD_SPARC64_HPC_ACE,
+    GMX_CPUID_SIMD_IBM_QPX,
+    GMX_CPUID_NSIMD
 };
 
 /* Text strings corresponding to CPU vendors */
@@ -142,9 +142,9 @@ gmx_cpuid_vendor_string[GMX_CPUID_NVENDORS];
 extern const char *
 gmx_cpuid_feature_string[GMX_CPUID_NFEATURES];
 
-/* Text strings for Gromacs acceleration/instruction sets */
+/* Text strings for Gromacs SIMD instruction sets */
 extern const char *
-gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS];
+gmx_cpuid_simd_string[GMX_CPUID_NSIMD];
 
 
 /* Abstract data type with CPU detection information. Set by gmx_cpuid_init(). */
@@ -281,22 +281,22 @@ gmx_cpuid_formatstring      (gmx_cpuid_t                cpuid,
                              int                        n);
 
 
-/* Suggests a suitable gromacs acceleration based on the support in the
+/* Suggests a suitable gromacs SIMD based on the support in the
  * hardware.
  */
-enum gmx_cpuid_acceleration
-gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                    cpuid);
+enum gmx_cpuid_simd
+gmx_cpuid_simd_suggest  (gmx_cpuid_t                    cpuid);
 
 
-/* Check if this binary was compiled with the same acceleration as we
+/* Check if this binary was compiled with the same SIMD instructions as we
  * would suggest for the current hardware. Always print stats to the log file
  * if it is non-NULL, and if we don't have a match, print a warning in log
  * (if non-NULL) and if print_to_stderr!=0 also to stderr.
  */
 int
-gmx_cpuid_acceleration_check    (gmx_cpuid_t                cpuid,
-                                 FILE *                     log,
-                                 int                        print_to_stderr);
+gmx_cpuid_simd_check    (gmx_cpuid_t                cpuid,
+                         FILE *                     log,
+                         int                        print_to_stderr);
 
 
 /* Release resources used by data structure. Note that the pointer to the

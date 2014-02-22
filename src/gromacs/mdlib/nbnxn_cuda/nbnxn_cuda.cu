@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,18 +155,18 @@ static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
 static const nbnxn_cu_kfunc_ptr_t
     nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
-    { { k_nbnxn_cutoff,                     k_nbnxn_cutoff_prune },
-      { k_nbnxn_cutoff_ener,                k_nbnxn_cutoff_ener_prune } },
-    { { k_nbnxn_rf,                         k_nbnxn_rf_prune },
-      { k_nbnxn_rf_ener,                    k_nbnxn_rf_ener_prune } },
-    { { k_nbnxn_ewald_tab,                  k_nbnxn_ewald_tab_prune },
-      { k_nbnxn_ewald_tab_ener,             k_nbnxn_ewald_tab_ener_prune } },
-    { { k_nbnxn_ewald_tab_twin,             k_nbnxn_ewald_tab_twin_prune },
-      { k_nbnxn_ewald_tab_twin_ener,        k_nbnxn_ewald_twin_ener_prune } },
-    { { k_nbnxn_ewald,                      k_nbnxn_ewald_prune },
-      { k_nbnxn_ewald_ener,                 k_nbnxn_ewald_ener_prune } },
-    { { k_nbnxn_ewald_twin,                 k_nbnxn_ewald_twin_prune },
-      { k_nbnxn_ewald_twin_ener,            k_nbnxn_ewald_twin_ener_prune } },
+    { { nbnxn_kernel_ElecCut_VdwLJ_F_cuda,             nbnxn_kernel_ElecCut_VdwLJ_F_prune_cuda },
+      { nbnxn_kernel_ElecCut_VdwLJ_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJ_VF_prune_cuda } },
+    { { nbnxn_kernel_ElecRF_VdwLJ_F_cuda,              nbnxn_kernel_ElecRF_VdwLJ_F_prune_cuda },
+      { nbnxn_kernel_ElecRF_VdwLJ_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJ_VF_prune_cuda } },
+    { { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_cuda,         nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_cuda },
+      { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_cuda } },
+    { { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_cuda,  nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_cuda },
+      { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_cuda } },
+    { { nbnxn_kernel_ElecEw_VdwLJ_F_cuda,              nbnxn_kernel_ElecEw_VdwLJ_F_prune_cuda },
+      { nbnxn_kernel_ElecEw_VdwLJ_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJ_VF_prune_cuda } },
+    { { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_cuda,       nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_cuda },
+      { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_cuda } }
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */

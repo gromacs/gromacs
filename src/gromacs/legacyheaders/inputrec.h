@@ -57,6 +57,32 @@ int pcouple_min_integration_steps(int epc);
 
 int ir_optimal_nstpcouple(const t_inputrec *ir);
 
+/* Returns if the Coulomb force or potential is switched to zero */
+gmx_bool ir_coulomb_switched(const t_inputrec *ir);
+
+/* Returns if the Coulomb interactions are zero beyond the rcoulomb.
+ * Note: always returns TRUE for the Verlet cut-off scheme.
+ */
+gmx_bool ir_coulomb_is_zero_at_cutoff(const t_inputrec *ir);
+
+/* As ir_coulomb_is_zero_at_cutoff, but also returns TRUE for user tabulated
+ * interactions, since these might be zero beyond rcoulomb.
+ */
+gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec *ir);
+
+/* Returns if the Van der Waals force or potential is switched to zero */
+gmx_bool ir_vdw_switched(const t_inputrec *ir);
+
+/* Returns if the Van der Waals interactions are zero beyond the rvdw.
+ * Note: always returns TRUE for the Verlet cut-off scheme.
+ */
+gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir);
+
+/* As ir_vdw_is_zero_at_cutoff, but also returns TRUE for user tabulated
+ * interactions, since these might be zero beyond rvdw.
+ */
+gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir);
+
 #ifdef __cplusplus
 }
 #endif

@@ -44,6 +44,7 @@
 #include "tngio.h"
 #include "trajectory_writing.h"
 #include "checkpoint.h"
+#include "copyrite.h"
 
 struct gmx_mdoutf {
     t_fileio         *fp_trn;
@@ -66,14 +67,14 @@ struct gmx_mdoutf {
 };
 
 
-gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
-                         const t_commrec *cr, const t_inputrec *ir,
-                         gmx_mtop_t *top_global,
+gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
+                         int mdrun_flags, const t_commrec *cr,
+                         const t_inputrec *ir, gmx_mtop_t *top_global,
                          const output_env_t oenv)
 {
     gmx_mdoutf_t  of;
     char          filemode[3];
-    gmx_bool      bAppendFiles;
+    gmx_bool      bAppendFiles, bCiteTng = FALSE;
     int           i;
 
     snew(of, 1);
@@ -124,6 +125,7 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                     {
                         gmx_tng_prepare_md_writing(of->tng, top_global, ir);
                     }
+                    bCiteTng = TRUE;
                     break;
                 default:
                     gmx_incons("Invalid full precision file format");
@@ -145,6 +147,7 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                     {
                         gmx_tng_prepare_low_prec_writing(of->tng_low_prec, top_global, ir);
                     }
+                    bCiteTng = TRUE;
                     break;
                 default:
                     gmx_incons("Invalid reduced precision file format");
@@ -202,6 +205,11 @@ gmx_mdoutf_t init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
         }
     }
 
+    if (bCiteTng)
+    {
+        please_cite(fplog, "Lundborg2014");
+    }
+
     return of;
 }
 
@@ -220,16 +228,6 @@ FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of)
     return of->fp_dhdl;
 }
 
-static void moveit(t_commrec *cr, rvec xx[])
-{
-    if (!xx)
-    {
-        return;
-    }
-
-    move_rvecs(cr, FALSE, FALSE, xx, NULL, (cr->nnodes-cr->npmenodes)-1, NULL);
-}
-
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
@@ -240,8 +238,6 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
 {
     rvec *local_v;
     rvec *global_v;
-
-#define MX(xvf) moveit(cr, xvf)
 
     /* MRS -- defining these variables is to manage the difference
      * between half step and full step velocities, but there must be a better way . . . */
@@ -288,63 +284,6 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             copy_mat(state_local->svir_prev, state_global->svir_prev);
             copy_mat(state_local->fvir_prev, state_global->fvir_prev);
             copy_mat(state_local->pres_prev, state_global->pres_prev);
-        }
-        if (cr->nnodes > 1)
-        {
-            /* Particle decomposition, collect the data on the master node */
-            if (mdof_flags & MDOF_CPT)
-            {
-                if (state_local->flags & (1<<estX))
-                {
-                    MX(state_global->x);
-                }
-                if (state_local->flags & (1<<estV))
-                {
-                    MX(state_global->v);
-                }
-                if (state_local->flags & (1<<estSDX))
-                {
-                    MX(state_global->sd_X);
-                }
-                if (state_global->nrngi > 1)
-                {
-                    if (state_local->flags & (1<<estLD_RNG))
-                    {
-#ifdef GMX_MPI
-                        MPI_Gather(state_local->ld_rng,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                                   state_global->ld_rng,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]), MPI_BYTE,
-                                   MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-                    }
-                    if (state_local->flags & (1<<estLD_RNGI))
-                    {
-#ifdef GMX_MPI
-                        MPI_Gather(state_local->ld_rngi,
-                                   sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                                   state_global->ld_rngi,
-                                   sizeof(state_local->ld_rngi[0]), MPI_BYTE,
-                                   MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-                    }
-                }
-            }
-            else
-            {
-                if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
-                {
-                    MX(state_global->x);
-                }
-                if (mdof_flags & MDOF_V)
-                {
-                    MX(global_v);
-                }
-            }
-            if (mdof_flags & MDOF_F)
-            {
-                MX(f_global);
-            }
         }
     }
 

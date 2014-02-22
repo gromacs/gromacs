@@ -980,13 +980,13 @@ static void ana_trans(t_clusters *clust, int nf,
                 "max %d between two specific clusters\n", ntranst, maxtrans);
     if (transfn)
     {
-        fp = ffopen(transfn, "w");
+        fp = gmx_ffopen(transfn, "w");
         i  = min(maxtrans+1, 80);
         write_xpm(fp, 0, "Cluster Transitions", "# transitions",
                   "from cluster", "to cluster",
                   clust->ncl, clust->ncl, axis, axis, trans,
                   0, maxtrans, rlo, rhi, &i);
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     if (ntransfn)
     {
@@ -996,7 +996,7 @@ static void ana_trans(t_clusters *clust, int nf,
         {
             fprintf(fp, "%5d %5d\n", i+1, ntrans[i]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     sfree(ntrans);
     for (i = 0; i < clust->ncl; i++)
@@ -1102,7 +1102,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         {
             fprintf(fp, "%8g %8d\n", time[i], clust->cl[i]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     if (sizefn)
     {
@@ -1865,7 +1865,7 @@ int gmx_cluster(int argc, char *argv[])
             {
                 fprintf(fp, "%10d  %10g\n", i, eigenvalues[i]);
             }
-            ffclose(fp);
+            gmx_ffclose(fp);
             break;
         case m_monte_carlo:
             orig     = init_mat(rms->nn, FALSE);
@@ -1921,7 +1921,7 @@ int gmx_cluster(int argc, char *argv[])
                          bAverage, write_ncl, write_nst, rmsmin, bFit, log,
                          rlo_bot, rhi_bot, oenv);
     }
-    ffclose(log);
+    gmx_ffclose(log);
 
     if (bBinary && !bAnalyze)
     {
@@ -1966,7 +1966,7 @@ int gmx_cluster(int argc, char *argv[])
         }
     }
     fprintf(stderr, "\n");
-    ffclose(fp);
+    gmx_ffclose(fp);
     if (NULL != orig)
     {
         fp = opt2FILE("-om", NFILE, fnm, "w");
@@ -1975,7 +1975,7 @@ int gmx_cluster(int argc, char *argv[])
         write_xpm(fp, 0, title, "RMSD (nm)", buf, buf,
                   nf, nf, time, time, orig->mat, 0.0, orig->maxrms,
                   rlo_top, rhi_top, &nlevels);
-        ffclose(fp);
+        gmx_ffclose(fp);
         done_mat(&orig);
         sfree(orig);
     }

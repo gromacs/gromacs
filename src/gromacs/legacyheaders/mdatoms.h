@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@ t_mdatoms *init_mdatoms(FILE *fp, gmx_mtop_t *mtop, gmx_bool bFreeEnergy);
 
 void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
               int nindex, int *index,
-              int start, int homenr,
+              int homenr,
               t_mdatoms *md);
 /* This routine copies the atoms->atom struct into md.
  * If index!=NULL only the indexed atoms are copied.

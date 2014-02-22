@@ -153,7 +153,7 @@ static void plot_coscont(const char *ccfile, int n, int nset, real **val,
     }
     fprintf(stdout, "\n");
 
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static void regression_analysis(int n, gmx_bool bXYdy,
@@ -293,7 +293,7 @@ void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
             fprintf(fp, "&\n");
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static int real_comp(const void *a, const void *b)
@@ -322,7 +322,7 @@ static void average(const char *avfile, int avbar_opt,
     double  av, var, err;
     real   *tmp = NULL;
 
-    fp = ffopen(avfile, "w");
+    fp = gmx_ffopen(avfile, "w");
     if ((avbar_opt == avbarERROR) && (nset == 1))
     {
         avbar_opt = avbarNONE;
@@ -383,7 +383,7 @@ static void average(const char *avfile, int avbar_opt,
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     if (avbar_opt == avbar90)
     {
@@ -685,7 +685,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
     sfree(fitsig);
     sfree(ybs);
     sfree(tbs);
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static void luzar_correl(int nn, real *time, int nset, real **val, real temp,
@@ -1265,7 +1265,7 @@ int gmx_analyze(int argc, char *argv[])
 
     if (fitfile != NULL)
     {
-        out_fit = ffopen(fitfile, "w");
+        out_fit = gmx_ffopen(fitfile, "w");
         if (bXYdy && nset >= 2)
         {
             do_fit(out_fit, 0, TRUE, n, t, val, npargs, ppa, oenv);
@@ -1277,7 +1277,7 @@ int gmx_analyze(int argc, char *argv[])
                 do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv);
             }
         }
-        ffclose(out_fit);
+        gmx_ffclose(out_fit);
     }
 
     printf("                                      std. dev.    relative deviation of\n");
@@ -1355,7 +1355,7 @@ int gmx_analyze(int argc, char *argv[])
                 fprintf(out, "&\n");
             }
         }
-        ffclose(out);
+        gmx_ffclose(out);
         fprintf(stderr, "\r%d, time=%g\n", j-1, (j-1)*dt);
     }
     if (ccfile)

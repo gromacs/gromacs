@@ -771,7 +771,7 @@ static FILE *open_output_file(const char *fn, int steps, const char what[])
     FILE *fp;
 
 
-    fp = ffopen(fn, "w");
+    fp = gmx_ffopen(fn, "w");
 
     fprintf(fp, "# Output of %s is written in intervals of %d time step%s.\n#\n",
             what, steps, steps > 1 ? "s" : "");
@@ -3684,11 +3684,6 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     gmx_enfrotgrp_t erg;          /* Pointer to enforced rotation group data */
     rvec           *x_pbc = NULL; /* Space for the pbc-correct atom positions */
 
-
-    if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
-    {
-        gmx_fatal(FARGS, "Enforced rotation is only implemented for domain decomposition!");
-    }
 
     if (MASTER(cr) && bVerbose)
     {

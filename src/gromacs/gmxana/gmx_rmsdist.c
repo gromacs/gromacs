@@ -175,7 +175,7 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
     int       neq, na, n, resnr;
     t_equiv **equiv;
 
-    fp    = ffopen(eq_fn, "r");
+    fp    = gmx_ffopen(eq_fn, "r");
     neq   = 0;
     equiv = NULL;
     while (get_a_line(fp, line, STRLEN))
@@ -214,7 +214,7 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
         /* next */
         neq++;
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     *equivptr = equiv;
 
@@ -800,7 +800,7 @@ int gmx_rmsdist(int argc, char *argv[])
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     teller = nframes_read(status);
 

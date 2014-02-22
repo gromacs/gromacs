@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ static void lo_write_xplor(XplorMap * map, const char * file)
     FILE * fp;
     int    z, i, j, n;
 
-    fp = ffopen(file, "w");
+    fp = gmx_ffopen(file, "w");
     /* The REMARKS part is the worst part of the XPLOR format
      * and may cause problems with some programs
      */
@@ -134,7 +134,7 @@ static void lo_write_xplor(XplorMap * map, const char * file)
         }
     }
     fprintf(fp, "   -9999\n");
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static void write_xplor(const char *file, real *data, int *ibox, real dmin[], real dmax[])
@@ -277,7 +277,7 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
 
     snew(mm, len);
     nmin = 0;
-    fp   = ffopen(logfile, "w");
+    fp   = gmx_ffopen(logfile, "w");
     /* Loop over each element in the array of dimenion ndim seeking
      * minima with respect to every dimension. Specialized loops for
      * speed with ndim == 2 and ndim == 3. */
@@ -405,7 +405,7 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
     {
         print_minimum(fp, i, &mm[i]);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     sfree(mm);
 }
 
@@ -623,7 +623,7 @@ static void do_sham(const char *fn, const char *ndx,
     Smax = Emax-Smin;
     Sinf = Smax+1;
     /* Write out the free energy as a function of bin index */
-    fp = ffopen(fn, "w");
+    fp = gmx_ffopen(fn, "w");
     for (i = 0; (i < len); i++)
     {
         if (P[i] != 0)
@@ -639,7 +639,7 @@ static void do_sham(const char *fn, const char *ndx,
             S[i] = Sinf;
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     /* Organize the structures in the bins */
     snew(b, 1);
     snew(b->index, len+1);
@@ -666,7 +666,7 @@ static void do_sham(const char *fn, const char *ndx,
        }
      */
     /* Write the index file */
-    fp = ffopen(ndx, "w");
+    fp = gmx_ffopen(ndx, "w");
     for (i = 0; (i < len); i++)
     {
         if (nbin[i] > 0)
@@ -678,7 +678,7 @@ static void do_sham(const char *fn, const char *ndx,
             }
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     snew(axis_x, ibox[0]+1);
     snew(axis_y, ibox[1]+1);
     snew(axis_z, ibox[2]+1);
@@ -761,35 +761,35 @@ static void do_sham(const char *fn, const char *ndx,
             EE[i] = &(E[i*ibox[1]]);
             SS[i] = &(S[i*ibox[1]]);
         }
-        fp = ffopen(xpmP, "w");
+        fp = gmx_ffopen(xpmP, "w");
         write_xpm(fp, flags, "Probability Distribution", "", "PC1", "PC2",
                   ibox[0], ibox[1], axis_x, axis_y, PP, 0, Pmax, rlo, rhi, &nlevels);
-        ffclose(fp);
-        fp = ffopen(xpm, "w");
+        gmx_ffclose(fp);
+        fp = gmx_ffopen(xpm, "w");
         write_xpm(fp, flags, "Gibbs Energy Landscape", "G (kJ/mol)", "PC1", "PC2",
                   ibox[0], ibox[1], axis_x, axis_y, WW, 0, gmax, rlo, rhi, &nlevels);
-        ffclose(fp);
-        fp = ffopen(xpm2, "w");
+        gmx_ffclose(fp);
+        fp = gmx_ffopen(xpm2, "w");
         write_xpm(fp, flags, "Enthalpy Landscape", "H (kJ/mol)", "PC1", "PC2",
                   ibox[0], ibox[1], axis_x, axis_y, EE,
                   emin ? *emin : Emin, emax ? *emax : Einf, rlo, rhi, &nlevels);
-        ffclose(fp);
-        fp = ffopen(xpm3, "w");
+        gmx_ffclose(fp);
+        fp = gmx_ffopen(xpm3, "w");
         write_xpm(fp, flags, "Entropy Landscape", "TDS (kJ/mol)", "PC1", "PC2",
                   ibox[0], ibox[1], axis_x, axis_y, SS, 0, Sinf, rlo, rhi, &nlevels);
-        ffclose(fp);
+        gmx_ffclose(fp);
         if (map)
         {
-            fp = ffopen(xpm4, "w");
+            fp = gmx_ffopen(xpm4, "w");
             write_xpm(fp, flags, "Custom Landscape", mname, "PC1", "PC2",
                       ibox[0], ibox[1], axis_x, axis_y, MM, 0, Minf, rlo, rhi, &nlevels);
-            ffclose(fp);
+            gmx_ffclose(fp);
         }
     }
     else if (neig == 3)
     {
         /* Dump to PDB file */
-        fp = ffopen(pdb, "w");
+        fp = gmx_ffopen(pdb, "w");
         for (i = 0; (i < ibox[0]); i++)
         {
             xxx[XX] = 3*(i+0.5-ibox[0]/2);
@@ -809,7 +809,7 @@ static void do_sham(const char *fn, const char *ndx,
                 }
             }
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         write_xplor("out.xplor", W, ibox, min_eig, max_eig);
         if (map)
         {
@@ -829,10 +829,10 @@ static void do_sham(const char *fn, const char *ndx,
         snew(buf, strlen(xpm)+4);
         sprintf(buf, "%s", xpm);
         sprintf(&buf[strlen(xpm)-4], "12.xpm");
-        fp = ffopen(buf, "w");
+        fp = gmx_ffopen(buf, "w");
         write_xpm(fp, flags, "Gibbs Energy Landscape", "W (kJ/mol)", "PC1", "PC2",
                   ibox[0], ibox[1], axis_x, axis_y, WW, 0, gmax, rlo, rhi, &nlevels);
-        ffclose(fp);
+        gmx_ffclose(fp);
         for (i = 0; (i < ibox[0]); i++)
         {
             for (j = 0; (j < ibox[2]); j++)
@@ -841,10 +841,10 @@ static void do_sham(const char *fn, const char *ndx,
             }
         }
         sprintf(&buf[strlen(xpm)-4], "13.xpm");
-        fp = ffopen(buf, "w");
+        fp = gmx_ffopen(buf, "w");
         write_xpm(fp, flags, "SHAM Energy Landscape", "kJ/mol", "PC1", "PC3",
                   ibox[0], ibox[2], axis_x, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
-        ffclose(fp);
+        gmx_ffclose(fp);
         for (i = 0; (i < ibox[1]); i++)
         {
             for (j = 0; (j < ibox[2]); j++)
@@ -853,10 +853,10 @@ static void do_sham(const char *fn, const char *ndx,
             }
         }
         sprintf(&buf[strlen(xpm)-4], "23.xpm");
-        fp = ffopen(buf, "w");
+        fp = gmx_ffopen(buf, "w");
         write_xpm(fp, flags, "SHAM Energy Landscape", "kJ/mol", "PC2", "PC3",
                   ibox[1], ibox[2], axis_y, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
-        ffclose(fp);
+        gmx_ffclose(fp);
         sfree(buf);
     }
     if (map)
@@ -920,7 +920,7 @@ static void ehisto(const char *fh, int n, real **enerT, const output_env_t oenv)
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 int gmx_sham(int argc, char *argv[])

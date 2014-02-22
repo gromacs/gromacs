@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -137,7 +137,7 @@ static void dump_sd(const char *fn, t_shiftdata *sd)
         }
     }
     sprintf(buf, "%s.xpm", fn);
-    fp = ffopen(buf, "w");
+    fp = gmx_ffopen(buf, "w");
     write_xpm(fp, 0, fn, fn, "Phi", "Psi", nnx, nny,
               x_phi, y_psi, newdata, lo, hi, rlo, rhi, &nlevels);
     for (i = 0; (i < nnx); i++)
@@ -188,7 +188,7 @@ static t_shiftdata *read_shifts(const char *fn)
         }
         sd->data[i][j] = sd->data[i][0];
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     if (bDebugMode())
     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ void print_one(const output_env_t oenv, const char *base, const char *name,
     {
         fprintf(fp, "%10g  %10g\n", time[k], data[k]);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static int calc_RBbin(real phi, int gmx_unused multiplicity, real gmx_unused core_frac)
@@ -299,7 +299,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
         {
             fprintf(fp, "%10.3f  %10d\n", time[j], tr_f[j]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     /* Compute histogram from # transitions per dihedral */
@@ -329,7 +329,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
                 fprintf(fp, "%10.3f  %10d\n", ttime/i, tr_f[i]);
             }
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     sfree(tr_f);
@@ -583,7 +583,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
                     }
                 }
                 fprintf(fp, "&\n");
-                ffclose(fp);
+                gmx_ffclose(fp);
             }
 
             /* and finally print out occupancies to a single file */
@@ -610,7 +610,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
     }
 
     sfree(chi_prtrj);
-    ffclose(fpall);
+    gmx_ffclose(fpall);
     fprintf(stderr, "\n");
 
 }

@@ -260,9 +260,9 @@ typedef struct {
 typedef struct {
 #ifdef PME_SIMD4_SPREAD_GATHER
     /* Masks for 4-wide SIMD aligned spreading and gathering */
-    gmx_simd4_pb mask_S0[6], mask_S1[6];
+    gmx_simd4_bool_t mask_S0[6], mask_S1[6];
 #else
-    int          dummy; /* C89 requires that struct has at least one member */
+    int              dummy; /* C89 requires that struct has at least one member */
 #endif
 } pme_spline_work_t;
 
@@ -370,17 +370,6 @@ typedef struct gmx_pme {
 
     /* thread local work data for solve_pme */
     pme_work_t *work;
-
-    /* Work data for PME_redist */
-    gmx_bool redist_init;
-    int *    scounts;
-    int *    rcounts;
-    int *    sdispls;
-    int *    rdispls;
-    int *    sidx;
-    int *    idxa;
-    real *   redist_buf;
-    int      redist_buf_nalloc;
 
     /* Work data for sum_qgrid */
     real *   sum_qgrid_tmp;
@@ -694,117 +683,6 @@ static void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
             }
         }
     }
-}
-
-static void pmeredist_pd(gmx_pme_t pme, gmx_bool gmx_unused forw,
-                         int n, gmx_bool gmx_unused bXF, rvec gmx_unused *x_f,
-                         real gmx_unused *charge, pme_atomcomm_t *atc)
-/* Redistribute particle data for PME calculation */
-/* domain decomposition by x coordinate           */
-{
-    int *idxa;
-    int  i, ii;
-
-    if (FALSE == pme->redist_init)
-    {
-        snew(pme->scounts, atc->nslab);
-        snew(pme->rcounts, atc->nslab);
-        snew(pme->sdispls, atc->nslab);
-        snew(pme->rdispls, atc->nslab);
-        snew(pme->sidx, atc->nslab);
-        pme->redist_init = TRUE;
-    }
-    if (n > pme->redist_buf_nalloc)
-    {
-        pme->redist_buf_nalloc = over_alloc_dd(n);
-        srenew(pme->redist_buf, pme->redist_buf_nalloc*DIM);
-    }
-
-    pme->idxa = atc->pd;
-
-#ifdef GMX_MPI
-    if (forw && bXF)
-    {
-        /* forward, redistribution from pp to pme */
-
-        /* Calculate send counts and exchange them with other nodes */
-        for (i = 0; (i < atc->nslab); i++)
-        {
-            pme->scounts[i] = 0;
-        }
-        for (i = 0; (i < n); i++)
-        {
-            pme->scounts[pme->idxa[i]]++;
-        }
-        MPI_Alltoall( pme->scounts, 1, MPI_INT, pme->rcounts, 1, MPI_INT, atc->mpi_comm);
-
-        /* Calculate send and receive displacements and index into send
-           buffer */
-        pme->sdispls[0] = 0;
-        pme->rdispls[0] = 0;
-        pme->sidx[0]    = 0;
-        for (i = 1; i < atc->nslab; i++)
-        {
-            pme->sdispls[i] = pme->sdispls[i-1]+pme->scounts[i-1];
-            pme->rdispls[i] = pme->rdispls[i-1]+pme->rcounts[i-1];
-            pme->sidx[i]    = pme->sdispls[i];
-        }
-        /* Total # of particles to be received */
-        atc->n = pme->rdispls[atc->nslab-1] + pme->rcounts[atc->nslab-1];
-
-        pme_realloc_atomcomm_things(atc);
-
-        /* Copy particle coordinates into send buffer and exchange*/
-        for (i = 0; (i < n); i++)
-        {
-            ii = DIM*pme->sidx[pme->idxa[i]];
-            pme->sidx[pme->idxa[i]]++;
-            pme->redist_buf[ii+XX] = x_f[i][XX];
-            pme->redist_buf[ii+YY] = x_f[i][YY];
-            pme->redist_buf[ii+ZZ] = x_f[i][ZZ];
-        }
-        MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls,
-                      pme->rvec_mpi, atc->x, pme->rcounts, pme->rdispls,
-                      pme->rvec_mpi, atc->mpi_comm);
-    }
-    if (forw)
-    {
-        /* Copy charge into send buffer and exchange*/
-        for (i = 0; i < atc->nslab; i++)
-        {
-            pme->sidx[i] = pme->sdispls[i];
-        }
-        for (i = 0; (i < n); i++)
-        {
-            ii = pme->sidx[pme->idxa[i]];
-            pme->sidx[pme->idxa[i]]++;
-            pme->redist_buf[ii] = charge[i];
-        }
-        MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls, mpi_type,
-                      atc->q, pme->rcounts, pme->rdispls, mpi_type,
-                      atc->mpi_comm);
-    }
-    else   /* backward, redistribution from pme to pp */
-    {
-        MPI_Alltoallv(atc->f, pme->rcounts, pme->rdispls, pme->rvec_mpi,
-                      pme->redist_buf, pme->scounts, pme->sdispls,
-                      pme->rvec_mpi, atc->mpi_comm);
-
-        /* Copy data from receive buffer */
-        for (i = 0; i < atc->nslab; i++)
-        {
-            pme->sidx[i] = pme->sdispls[i];
-        }
-        for (i = 0; (i < n); i++)
-        {
-            ii          = DIM*pme->sidx[pme->idxa[i]];
-            x_f[i][XX] += pme->redist_buf[ii+XX];
-            x_f[i][YY] += pme->redist_buf[ii+YY];
-            x_f[i][ZZ] += pme->redist_buf[ii+ZZ];
-            pme->sidx[pme->idxa[i]]++;
-        }
-    }
-#endif
 }
 
 static void pme_dd_sendrecv(pme_atomcomm_t gmx_unused *atc,
@@ -1221,9 +1099,9 @@ static int copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid, 
         char  fn[STRLEN], format[STRLEN];
         real  val;
         sprintf(fn, "pmegrid%d.pdb", pme->nodeid);
-        fp = ffopen(fn, "w");
+        fp = gmx_ffopen(fn, "w");
         sprintf(fn, "pmegrid%d.txt", pme->nodeid);
-        fp2 = ffopen(fn, "w");
+        fp2 = gmx_ffopen(fn, "w");
         sprintf(format, "%s%s\n", pdbformat, "%6.2f%6.2f");
 #endif
 
@@ -1257,8 +1135,8 @@ static int copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid, 
             }
         }
 #ifdef DEBUG_PME
-        ffclose(fp);
-        ffclose(fp2);
+        gmx_ffclose(fp);
+        gmx_ffclose(fp2);
 #endif
     }
     return 0;
@@ -1877,7 +1755,7 @@ static void realloc_work(pme_work_t *work, int nkx)
          * elements at the end for padding.
          */
 #ifdef PME_SIMD_SOLVE
-        simd_width = GMX_SIMD_WIDTH_HERE;
+        simd_width = GMX_SIMD_REAL_WIDTH;
 #else
         /* We can use any alignment, apart from 0, so we use 4 */
         simd_width = 4;
@@ -1914,24 +1792,24 @@ static void free_work(pme_work_t *work)
 inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
-        const gmx_mm_pr two = gmx_set1_pr(2.0);
-        gmx_mm_pr f_simd;
-        gmx_mm_pr lu;
-        gmx_mm_pr tmp_d1, d_inv, tmp_r, tmp_e;
+        const gmx_simd_real_t two = gmx_simd_set1_r(2.0);
+        gmx_simd_real_t f_simd;
+        gmx_simd_real_t lu;
+        gmx_simd_real_t tmp_d1, d_inv, tmp_r, tmp_e;
         int kx;
-        f_simd = gmx_set1_pr(f);
+        f_simd = gmx_simd_set1_r(f);
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        for (kx = 0; kx < end; kx += GMX_SIMD_WIDTH_HERE)
+        for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
         {
-            tmp_d1   = gmx_load_pr(d_aligned+kx);
-            d_inv    = gmx_inv_pr(tmp_d1);
-            tmp_r    = gmx_load_pr(r_aligned+kx);
-            tmp_r    = gmx_exp_pr(tmp_r);
-            tmp_e    = gmx_mul_pr(f_simd, d_inv);
-            tmp_e    = gmx_mul_pr(tmp_e, tmp_r);
-            gmx_store_pr(e_aligned+kx, tmp_e);
+            tmp_d1   = gmx_simd_load_r(d_aligned+kx);
+            d_inv    = gmx_simd_inv_r(tmp_d1);
+            tmp_r    = gmx_simd_load_r(r_aligned+kx);
+            tmp_r    = gmx_simd_exp_r(tmp_r);
+            tmp_e    = gmx_simd_mul_r(f_simd, d_inv);
+            tmp_e    = gmx_simd_mul_r(tmp_e, tmp_r);
+            gmx_simd_store_r(e_aligned+kx, tmp_e);
         }
     }
 }
@@ -1958,23 +1836,23 @@ inline static void calc_exponentials_q(int start, int end, real f, real *d, real
 /* Calculate exponentials through SIMD */
 inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
 {
-    gmx_mm_pr tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
-    const gmx_mm_pr sqr_PI = gmx_sqrt_pr(gmx_set1_pr(M_PI));
+    gmx_simd_real_t tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
+    const gmx_simd_real_t sqr_PI = gmx_simd_sqrt_r(gmx_simd_set1_r(M_PI));
     int kx;
-    for (kx = 0; kx < end; kx += GMX_SIMD_WIDTH_HERE)
+    for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
     {
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        tmp_d = gmx_load_pr(d_aligned+kx);
-        d_inv = gmx_inv_pr(tmp_d);
-        gmx_store_pr(d_aligned+kx, d_inv);
-        tmp_r = gmx_load_pr(r_aligned+kx);
-        tmp_r = gmx_exp_pr(tmp_r);
-        gmx_store_pr(r_aligned+kx, tmp_r);
-        tmp_mk  = gmx_load_pr(factor_aligned+kx);
-        tmp_fac = gmx_mul_pr(sqr_PI, gmx_mul_pr(tmp_mk, gmx_erfc_pr(tmp_mk)));
-        gmx_store_pr(factor_aligned+kx, tmp_fac);
+        tmp_d = gmx_simd_load_r(d_aligned+kx);
+        d_inv = gmx_simd_inv_r(tmp_d);
+        gmx_simd_store_r(d_aligned+kx, d_inv);
+        tmp_r = gmx_simd_load_r(r_aligned+kx);
+        tmp_r = gmx_simd_exp_r(tmp_r);
+        gmx_simd_store_r(r_aligned+kx, tmp_r);
+        tmp_mk  = gmx_simd_load_r(factor_aligned+kx);
+        tmp_fac = gmx_simd_mul_r(sqr_PI, gmx_simd_mul_r(tmp_mk, gmx_simd_erfc_r(tmp_mk)));
+        gmx_simd_store_r(factor_aligned+kx, tmp_fac);
     }
 }
 #else
@@ -3176,7 +3054,6 @@ static void init_atomcomm(gmx_pme_t pme, pme_atomcomm_t *atc,
 
     if (atc->nslab > 1)
     {
-        /* These three allocations are not required for particle decomp. */
         snew(atc->node_dest, atc->nslab);
         snew(atc->node_src, atc->nslab);
         setup_coordinate_communication(atc);
@@ -3400,15 +3277,15 @@ static pme_spline_work_t *make_pme_spline_work(int gmx_unused order)
 
 #ifdef PME_SIMD4_SPREAD_GATHER
     real         tmp[12], *tmp_aligned;
-    gmx_simd4_pr zero_S;
-    gmx_simd4_pr real_mask_S0, real_mask_S1;
+    gmx_simd4_real_t zero_S;
+    gmx_simd4_real_t real_mask_S0, real_mask_S1;
     int          of, i;
 
     snew_aligned(work, 1, SIMD4_ALIGNMENT);
 
     tmp_aligned = gmx_simd4_align_real(tmp);
 
-    zero_S = gmx_simd4_setzero_pr();
+    zero_S = gmx_simd4_setzero_r();
 
     /* Generate bit masks to mask out the unused grid entries,
      * as we only operate on order of the 8 grid entries that are
@@ -3420,10 +3297,10 @@ static pme_spline_work_t *make_pme_spline_work(int gmx_unused order)
         {
             tmp_aligned[i] = (i >= of && i < of+order ? -1.0 : 1.0);
         }
-        real_mask_S0      = gmx_simd4_load_pr(tmp_aligned);
-        real_mask_S1      = gmx_simd4_load_pr(tmp_aligned+4);
-        work->mask_S0[of] = gmx_simd4_cmplt_pr(real_mask_S0, zero_S);
-        work->mask_S1[of] = gmx_simd4_cmplt_pr(real_mask_S1, zero_S);
+        real_mask_S0      = gmx_simd4_load_r(tmp_aligned);
+        real_mask_S1      = gmx_simd4_load_r(tmp_aligned+4);
+        work->mask_S0[of] = gmx_simd4_cmplt_r(real_mask_S0, zero_S);
+        work->mask_S1[of] = gmx_simd4_cmplt_r(real_mask_S1, zero_S);
     }
 #else
     work = NULL;
@@ -3509,11 +3386,9 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
     snew(pme, 1);
 
-    pme->redist_init         = FALSE;
     pme->sum_qgrid_tmp       = NULL;
     pme->sum_qgrid_dd_tmp    = NULL;
     pme->buf_nalloc          = 0;
-    pme->redist_buf_nalloc   = 0;
 
     pme->nnodes              = 1;
     pme->bPPnode             = TRUE;
@@ -4779,10 +4654,6 @@ do_redist_x_q(gmx_pme_t pme, t_commrec *cr, int start, int homenr,
         {
             dd_pmeredist_x_q(pme, n_d, bFirst, x_d, q_d, atc);
         }
-        else
-        {
-            pmeredist_pd(pme, TRUE, n_d, bFirst, x_d, q_d, atc);
-        }
     }
 }
 
@@ -5364,10 +5235,6 @@ int gmx_pme_do(gmx_pme_t pme,
             {
                 dd_pmeredist_f(pme, atc, n_d, f_d,
                                d == pme->ndecompdim-1 && pme->bPPnode);
-            }
-            else
-            {
-                pmeredist_pd(pme, FALSE, n_d, TRUE, f_d, NULL, atc);
             }
         }
 

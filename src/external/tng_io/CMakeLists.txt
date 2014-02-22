@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 
-if(CMAKE_BUILD_TOOL MATCHES "(msdev|devenv|nmake)")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W2")
-else()
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+project(TNG_IO)
+
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall")
+elseif(WIN32 AND NOT CYGWIN)
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /W2")
 endif()
 
-project(TNG_IO)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
@@ -18,16 +19,7 @@ option(TNG_BUILD_EXAMPLES "Build examples showing usage of the TNG API" ON)
 option(TNG_BUILD_TEST "Build TNG testing binary." ON)
 option(TNG_BUILD_COMPRESSION_TESTS "Build tests of the TNG compression library" OFF)
 
-option(TNG_USE_OPENMP "Try to use the OpenMP library (if available)" OFF)
-if(TNG_USE_OPENMP)
-  find_package(OpenMP)
-  if(OPENMP_FOUND)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  endif()
-endif()
-
-find_package(ZLIB)
+find_package(ZLIB QUIET)
 
 include(CheckIncludeFile)
 check_include_file(inttypes.h   HAVE_INTTYPES_H)

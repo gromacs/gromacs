@@ -54,7 +54,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec xref[],
                  const t_inputrec *ir,
                  const t_commrec *cr, t_oriresdata *od,
-                 t_state *state, gmx_bool bIsParticleDecomposition)
+                 t_state *state)
 {
     int                     i, j, d, ex, nmol, *nr_ex;
     double                  mtot;
@@ -72,9 +72,9 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
         return;
     }
 
-    if (PAR(cr) && !bIsParticleDecomposition)
+    if (DOMAINDECOMP(cr))
     {
-        gmx_fatal(FARGS, "Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+        gmx_fatal(FARGS, "Orientation restraints do not work with more than one domain (ie. MPI rank).");
     }
     /* Orientation restraints */
     if (!MASTER(cr))

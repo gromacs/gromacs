@@ -1031,8 +1031,8 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
         matrix *ekin_sum;
         real   *dekindl_sum;
 
-        start_t = md->start + ((thread+0)*md->homenr)/nthread;
-        end_t   = md->start + ((thread+1)*md->homenr)/nthread;
+        start_t = ((thread+0)*md->homenr)/nthread;
+        end_t   = ((thread+1)*md->homenr)/nthread;
 
         ekin_sum    = ekind->ekin_work[thread];
         dekindl_sum = ekind->dekindl_work[thread];
@@ -1105,7 +1105,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
                               gmx_ekindata_t *ekind,
                               t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
-    int           start = md->start, homenr = md->homenr;
+    int           start = 0, homenr = md->homenr;
     int           g, d, n, m, gt = 0;
     rvec          v_corrt;
     real          hm;
@@ -1428,7 +1428,7 @@ void update_tcouple(gmx_int64_t       step,
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
-            rescale_velocities(ekind, md, md->start, md->start+md->homenr, state->v);
+            rescale_velocities(ekind, md, 0, md->homenr, state->v);
         }
     }
     else
@@ -1552,7 +1552,7 @@ void update_constraints(FILE             *fplog,
     /* for now, SD update is here -- though it really seems like it
        should be reformulated as a velocity verlet method, since it has two parts */
 
-    start  = md->start;
+    start  = 0;
     homenr = md->homenr;
     nrend  = start+homenr;
 
@@ -1726,7 +1726,7 @@ void update_box(FILE             *fplog,
     int                  start, homenr, nrend, i, n, m, g;
     tensor               vir_con;
 
-    start  = md->start;
+    start  = 0;
     homenr = md->homenr;
     nrend  = start+homenr;
 
@@ -1853,7 +1853,7 @@ void update_coords(FILE             *fplog,
         gmx_incons("update_coords called for velocity without VV integrator");
     }
 
-    start  = md->start;
+    start  = 0;
     homenr = md->homenr;
     nrend  = start+homenr;
 
