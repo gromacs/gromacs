@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -201,4 +201,66 @@ void correl(real data1[], real data2[], int n, real ans[])
     ans[2] = ans[n+1];
     realft(ans, no2, -1);
     sfree(fft);
+}
+
+int many_auto_correl(int nfunc, int nframes, int nfft, real **c)
+{
+    typedef real complex[2];
+    gmx_fft_t    fft1;
+    complex     *in, *out;
+    int          i, j, fftcode;
+
+    /* Allocate temporary arrays */
+    snew(in, nfft);
+    snew(out, nfft);
+
+    fftcode = gmx_fft_init_1d(&fft1, nfft, GMX_FFT_FLAG_CONSERVATIVE);
+    if (0 == fftcode)
+    {
+        /* Excellent location for some OpenMP directives */
+        for (i = 0; (i < nfunc); i++)
+        {
+            for (j = 0; j < nframes; j++)
+            {
+                in[j][0] = c[i][j];
+                in[j][1] = 0;
+            }
+            for (; (j < nfft); j++)
+            {
+                in[j][0] = in[j][1] = 0;
+            }
+
+            fftcode = gmx_fft_1d(fft1, GMX_FFT_BACKWARD, (void *)in, (void *)out);
+            if (0 != fftcode)
+            {
+                break;
+            }
+
+            for (j = 0; j < nfft; j++)
+            {
+                in[j][0] = (out[j][0]*out[j][0] + out[j][1]*out[j][1])/nfft;
+                in[j][1] = 0;
+            }
+            for (; (j < nfft); j++)
+            {
+                in[j][0] = in[j][1] = 0;
+            }
+
+            fftcode = gmx_fft_1d(fft1, GMX_FFT_FORWARD, (void *)in, (void *)out);
+            if (0 != fftcode)
+            {
+                break;
+            }
+
+            for (j = 0; (j < nfft); j++)
+            {
+                c[i][j] = out[j][0]/nframes;
+            }
+        }
+    }
+    /* Free the memory */
+    sfree(in);
+    sfree(out);
+
+    return fftcode;
 }
