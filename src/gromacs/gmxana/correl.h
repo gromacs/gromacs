@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,5 +53,22 @@ extern void done_correl(correl_t *c);
 
 extern void correl(real data1[], real data2[], int n, real ans[]);
 extern void four1(real data[], int nn, int isign);
+
+/*! \brief Perform many autocorrelation calculations.
+ *
+ * This routine performs many autocorrelation function calculations using FFTs.
+ * The GROMACS FFT library wrapper is employed. On return the c[] arrays contain
+ * a symmetric function that is useful for further FFT:ing, for instance in order to
+ * compute spectra.
+ *
+ * \todo Implement OpenMP parallellization
+ *
+ * \param[in] nfunc   Number of data functions to autocorrelate
+ * \param[in] ndata   Number of valid data points in the data
+ * \param[in] nfft    Length of the data arrays, this should at least be 50% larger than ndata. The c arrays will filled with zero beyond ndata before computing the correlation.
+ * \param[inout] c    Data array of size nfunc x nfft, will also be used for output
+ * \return fft error code, or zero if everything went fine (see fft/fft.h)
+ */
+extern int many_auto_correl(int nfunc, int ndata, int nfft, real **c);
 
 #endif
