@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,10 @@
 #include "gromacs/fft/fft.h"
 #include "smalloc.h"
 #include "correl.h"
+#ifdef GMX_OPENMP
+#include "omp.h"
+#endif
+#include "macros.h"
 
 #define SWAP(a, b) tempr = (a); (a) = (b); (b) = tempr
 
@@ -201,4 +205,83 @@ void correl(real data1[], real data2[], int n, real ans[])
     ans[2] = ans[n+1];
     realft(ans, no2, -1);
     sfree(fft);
+}
+
+int many_auto_correl(const int nfunc, const int nframes, const int nfft, real **c)
+{
+#pragma omp parallel
+    {
+        typedef real complex[2];
+        int          i, t, j, fftcode;
+        gmx_fft_t    fft1;
+        complex     *in, *out;
+        int          i0, i1;
+
+#ifdef GMX_OPENMP
+        {
+            int nthreads, thread_id;
+            nthreads  = omp_get_num_threads();
+            thread_id = omp_get_thread_num();
+            if (0 && (0 == thread_id))
+            {
+                fprintf(stderr, "There are %d threads for correlation functions\n",
+                        nthreads);
+            }
+            i0 = thread_id*nfunc/nthreads;
+            i1 = min(nfunc, (thread_id+1)*nfunc/nthreads);
+        }
+#else
+        i0 = 0;
+        i1 = nfunc;
+#endif
+        fftcode = gmx_fft_init_1d(&fft1, nfft, GMX_FFT_FLAG_CONSERVATIVE);
+        /* Allocate temporary arrays */
+        snew(in, nfft);
+        snew(out, nfft);
+        for (i = i0; (i < i1); i++)
+        {
+            for (j = 0; j < nframes; j++)
+            {
+                in[j][0] = c[i][j];
+                in[j][1] = 0;
+            }
+            for (; (j < nfft); j++)
+            {
+                in[j][0] = in[j][1] = 0;
+            }
+
+            fftcode = gmx_fft_1d(fft1, GMX_FFT_BACKWARD, (void *)in, (void *)out);
+#ifndef GMX_OPENMP
+            if (0 != fftcode)
+            {
+                break;
+            }
+#endif
+            for (j = 0; j < nfft; j++)
+            {
+                in[j][0] = (out[j][0]*out[j][0] + out[j][1]*out[j][1])/nfft;
+                in[j][1] = 0;
+            }
+            for (; (j < nfft); j++)
+            {
+                in[j][0] = in[j][1] = 0;
+            }
+
+            fftcode = gmx_fft_1d(fft1, GMX_FFT_FORWARD, (void *)in, (void *)out);
+#ifndef GMX_OPENMP
+            if (0 != fftcode)
+            {
+                break;
+            }
+#endif
+            for (j = 0; (j < nfft); j++)
+            {
+                c[i][j] = out[j][0]/nframes;
+            }
+        }
+        /* Free the memory */
+        sfree(in);
+        sfree(out);
+    }
+    return 0;
 }
