@@ -209,8 +209,20 @@ you should consult your local documentation for details.
         Mainly for debugging purposes, but may also be handy for
         porting to other platforms.
 \item   {\tt WHERE}: when set, print debugging info on line numbers.
+\item   {\tt GMX_DD_NST_DUMP}: number of steps that elapse between dumping
+        the current DD to a PDB file (default 0). This only takes effect
+        during domain decomposition, so it should typically be
+        0 (never), 1 (every DD phase) or a multiple of {\tt nstlist}.
+\item   {\tt GMX_DD_NST_DUMP_GRID}: number of steps that elapse between dumping
+        the current DD grid to a PDB file (default 0). This only takes effect
+        during domain decomposition, so it should typically be
+        0 (never), 1 (every DD phase) or a multiple of {\tt nstlist}.
+\item   {\tt GMX_DD_DEBUG}: general debugging trigger for every domain
+        decomposition (default 0, meaning off). Currently only checks
+        global-local atom index mapping for consistency.
+\item   {\tt GMX_DD_NPULSE}: over-ride the number of DD pulses used
+        (default 0, meaning no over-ride). Normally 1 or 2.
 
-% At this point, all environment variables should be described
 %\item   There are a number of extra environment variables like these
 %        that are used in debugging - check the code!
 
@@ -241,6 +253,17 @@ you should consult your local documentation for details.
 \item   {\tt GMX_CYCLE_BARRIER}: calls MPI_Barrier before each cycle start/stop call.
 \item   {\tt GMX_DD_ORDER_ZYX}: build domain decomposition cells in the order
         (z, y, x) rather than the default (x, y, z).
+\item   {\tt GMX_DD_USE_SENDRECV2}: during constraint and vsite communication, use a pair
+        of {\tt MPI_SendRecv} calls instead of two simultaneous non-blocking calls
+        (default 0, meaning off). Might be faster on some MPI implementations.
+\item   {\tt GMX_DLB_BASED_ON_FLOPS}: do domain-decomposition dynamic load balancing based on flop count rather than
+        measured time elapsed (default 0, meaning off)
+\item   {\tt GMX_DLB_MAX_BOX_SCALING}: maximum percentage box scaling permitted per domain-decomposition
+        load-balancing step (default 10)
+\item   {\tt GMX_DD_RECORD_LOAD}: record DD load statistics for reporting at end of the run (default 1, meaning on)
+\item   {\tt GMX_DD_NST_SORT_CHARGE_GROUPS}: number of steps that elapse between re-sorting of the charge
+        groups (default 1). This only takes effect during domain decomposition, so should typically
+        be 0 (never), 1 (to mean at every domain decomposition), or a multiple of {\tt nstlist}.
 \item   {\tt GMX_DETAILED_PERF_STATS}: when set, print slightly more detailed performance information
         to the {\tt .log} file. The resulting output is the way performance summary is reported in versions
         4.5.x and thus may be useful for anyone using scripts to parse {\tt .log} files or standard output.

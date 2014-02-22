@@ -6423,7 +6423,7 @@ static int multi_body_bondeds_count(gmx_mtop_t *mtop)
     return n;
 }
 
-static int dd_nst_env(FILE *fplog, const char *env_var, int def)
+static int dd_getenv(FILE *fplog, const char *env_var, int def)
 {
     char *val;
     int   nst;
@@ -6666,14 +6666,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     dd->npbcdim   = ePBC2npbcdim(ir->ePBC);
     dd->bScrewPBC = (ir->ePBC == epbcSCREW);
 
-    dd->bSendRecv2      = dd_nst_env(fplog, "GMX_DD_SENDRECV2", 0);
-    comm->dlb_scale_lim = dd_nst_env(fplog, "GMX_DLB_MAX", 10);
-    comm->eFlop         = dd_nst_env(fplog, "GMX_DLB_FLOP", 0);
-    recload             = dd_nst_env(fplog, "GMX_DD_LOAD", 1);
-    comm->nstSortCG     = dd_nst_env(fplog, "GMX_DD_SORT", 1);
-    comm->nstDDDump     = dd_nst_env(fplog, "GMX_DD_DUMP", 0);
-    comm->nstDDDumpGrid = dd_nst_env(fplog, "GMX_DD_DUMP_GRID", 0);
-    comm->DD_debug      = dd_nst_env(fplog, "GMX_DD_DEBUG", 0);
+    dd->bSendRecv2      = dd_getenv(fplog, "GMX_DD_USE_SENDRECV2", 0);
+    comm->dlb_scale_lim = dd_getenv(fplog, "GMX_DLB_MAX_BOX_SCALING", 10);
+    comm->eFlop         = dd_getenv(fplog, "GMX_DLB_BASED_ON_FLOPS", 0);
+    recload             = dd_getenv(fplog, "GMX_DD_RECORD_LOAD", 1);
+    comm->nstSortCG     = dd_getenv(fplog, "GMX_DD_NST_SORT_CHARGE_GROUPS", 1);
+    comm->nstDDDump     = dd_getenv(fplog, "GMX_DD_NST_DUMP", 0);
+    comm->nstDDDumpGrid = dd_getenv(fplog, "GMX_DD_NST_DUMP_GRID", 0);
+    comm->DD_debug      = dd_getenv(fplog, "GMX_DD_DEBUG", 0);
 
     dd->pme_recv_f_alloc = 0;
     dd->pme_recv_f_buf   = NULL;
@@ -7361,7 +7361,7 @@ static void set_cell_limits_dlb(gmx_domdec_t      *dd,
     }
 
     /* This env var can override npulse */
-    d = dd_nst_env(debug, "GMX_DD_NPULSE", 0);
+    d = dd_getenv(debug, "GMX_DD_NPULSE", 0);
     if (d > 0)
     {
         npulse = d;
