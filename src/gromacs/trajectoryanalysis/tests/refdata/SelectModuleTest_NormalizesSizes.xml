@@ -5,17 +5,17 @@
   <OutputData Name="Data">
     <AnalysisData Name="size">
       <DataFrame Name="Frame0">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">3</Int>
           <DataValue>
-            <Real Name="Value">0.533333</Real>
+            <Real Name="Value">0.53333333333333333</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.500000</Real>
+            <Real Name="Value">0.5</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1.000000</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
         </DataValues>
       </DataFrame>

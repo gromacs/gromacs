@@ -5,90 +5,90 @@
   <OutputData Name="Data">
     <AnalysisData Name="angle">
       <DataFrame Name="Frame0">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">4</Int>
           <DataValue>
-            <Real Name="Value">0.000000</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.000000</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.000000</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.000000</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame1">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">4</Int>
           <DataValue>
-            <Real Name="Value">0.000000</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">45.000000</Real>
+            <Real Name="Value">45</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">180.000000</Real>
+            <Real Name="Value">180</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">90.000000</Real>
+            <Real Name="Value">90</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
     </AnalysisData>
     <AnalysisData Name="average">
       <DataFrame Name="Frame0">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.000000</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame1">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">78.750000</Real>
+            <Real Name="Value">78.75</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
     </AnalysisData>
     <AnalysisData Name="histogram">
       <DataFrame Name="Frame0">
-        <Real Name="X">30.000000</Real>
+        <Real Name="X">30</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.012500</Real>
-            <Real Name="Error">0.005893</Real>
+            <Real Name="Value">0.012500000000000001</Real>
+            <Real Name="Error">0.005892556509887896</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame1">
-        <Real Name="X">90.000000</Real>
+        <Real Name="X">90</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.002083</Real>
-            <Real Name="Error">0.002946</Real>
+            <Real Name="Value">0.0020833333333333333</Real>
+            <Real Name="Error">0.002946278254943948</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame2">
-        <Real Name="X">150.000000</Real>
+        <Real Name="X">150</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.002083</Real>
-            <Real Name="Error">0.002946</Real>
+            <Real Name="Value">0.0020833333333333333</Real>
+            <Real Name="Error">0.002946278254943948</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
