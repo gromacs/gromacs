@@ -5,14 +5,14 @@
   <OutputData Name="Data">
     <AnalysisData Name="angle">
       <DataFrame Name="Frame0">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">135.000000</Real>
+            <Real Name="Value">135</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">45.000000</Real>
+            <Real Name="Value">45</Real>
             <Bool Name="Present">false</Bool>
           </DataValue>
         </DataValues>
@@ -20,43 +20,43 @@
     </AnalysisData>
     <AnalysisData Name="average">
       <DataFrame Name="Frame0">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">135.000000</Real>
+            <Real Name="Value">135</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
     </AnalysisData>
     <AnalysisData Name="histogram">
       <DataFrame Name="Frame0">
-        <Real Name="X">30.000000</Real>
+        <Real Name="X">30</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.000000</Real>
-            <Real Name="Error">0.000000</Real>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame1">
-        <Real Name="X">90.000000</Real>
+        <Real Name="X">90</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.000000</Real>
-            <Real Name="Error">0.000000</Real>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
       <DataFrame Name="Frame2">
-        <Real Name="X">150.000000</Real>
+        <Real Name="X">150</Real>
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.016667</Real>
-            <Real Name="Error">0.000000</Real>
+            <Real Name="Value">0.016666666666666666</Real>
+            <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
       </DataFrame>

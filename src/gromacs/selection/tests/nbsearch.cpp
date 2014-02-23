@@ -269,7 +269,8 @@ void NeighborhoodSearchTest::testMinimumDistance(
     for (i = data.testPositions_.begin(); i != data.testPositions_.end(); ++i)
     {
         const real refDist = i->refMinDist;
-        EXPECT_NEAR_REL(refDist, search->minimumDistance(i->x), 20*GMX_REAL_EPS);
+        EXPECT_REAL_EQ_TOL(refDist, search->minimumDistance(i->x),
+                           gmx::test::ulpTolerance(20));
     }
 }
 
