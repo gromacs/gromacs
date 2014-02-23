@@ -150,6 +150,13 @@
    ...
    fun:strtof_l
 }
+{
+   strtod
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:strtod_l
+}
 
 {
    scanf
