@@ -108,16 +108,16 @@
         <Int Name="Length">2</Int>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">1.000000</Real>
-            <Real Name="Y">2.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">1</Real>
+            <Real Name="Y">2</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">2.333333</Real>
-            <Real Name="Y">2.666667</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">2.333333333333333</Real>
+            <Real Name="Y">2.6666666666666665</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
       </Sequence>
@@ -137,51 +137,51 @@
         <Int Name="Length">7</Int>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">1.000000</Real>
-            <Real Name="Y">1.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">1</Real>
+            <Real Name="Y">1</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">1.000000</Real>
-            <Real Name="Y">2.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">1</Real>
+            <Real Name="Y">2</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">1.000000</Real>
-            <Real Name="Y">3.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">1</Real>
+            <Real Name="Y">3</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">2.000000</Real>
-            <Real Name="Y">2.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">2</Real>
+            <Real Name="Y">2</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">2.000000</Real>
-            <Real Name="Y">3.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">2</Real>
+            <Real Name="Y">3</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">3.000000</Real>
-            <Real Name="Y">2.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">3</Real>
+            <Real Name="Y">2</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">3.000000</Real>
-            <Real Name="Y">3.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">3</Real>
+            <Real Name="Y">3</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
       </Sequence>
@@ -200,9 +200,9 @@
         <Int Name="Length">1</Int>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">1.666667</Real>
-            <Real Name="Y">2.333333</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">1.6666666666666665</Real>
+            <Real Name="Y">2.333333333333333</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
       </Sequence>
@@ -219,30 +219,30 @@
         <Int Name="Length">4</Int>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">1.000000</Real>
-            <Real Name="Y">2.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">1</Real>
+            <Real Name="Y">2</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">1.000000</Real>
-            <Real Name="Y">3.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">1</Real>
+            <Real Name="Y">3</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">2.000000</Real>
-            <Real Name="Y">2.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">2</Real>
+            <Real Name="Y">2</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
         <Position>
           <Vector Name="Coordinates">
-            <Real Name="X">2.000000</Real>
-            <Real Name="Y">3.000000</Real>
-            <Real Name="Z">0.000000</Real>
+            <Real Name="X">2</Real>
+            <Real Name="Y">3</Real>
+            <Real Name="Z">0</Real>
           </Vector>
         </Position>
       </Sequence>
