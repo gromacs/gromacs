@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,8 @@ class Options;
 
 namespace test
 {
+
+class FloatingPointTolerance;
 
 /*! \libinternal \brief
  * Mode of operation for reference data handling.
@@ -160,6 +162,10 @@ class TestReferenceChecker;
  * reference data file is not reported as an error, nor is empty reference data
  * file created in write mode).
  *
+ * For floating-point comparisons, the reference data should be generated in
+ * double precision (currently, no warning is provided even if this is not the
+ * case, but the double precision tests will then very likely fail).
+ *
  * \inlibraryapi
  * \ingroup module_testutils
  */
@@ -174,7 +180,9 @@ class TestReferenceData
          * Initializes the reference data in a specific mode.
          *
          * This function is mainly useful for self-testing the reference data
-         * framework.
+         * framework.  As such, it also puts the framework in a state where it
+         * logs additional internal information for failures to help diagnosing
+         * problems in the framework.
          * The default constructor should be used in tests utilizing this class.
          */
         explicit TestReferenceData(ReferenceDataMode mode);
@@ -237,6 +245,18 @@ class TestReferenceChecker
 
         //! Returns true if reference data is currently being written.
         bool isWriteMode() const;
+
+        /*! \brief
+         * Sets the tolerance for floating-point comparisons.
+         *
+         * All following floating-point comparisons using this checker will use
+         * the new tolerance.  Child checkers created with checkCompound()
+         * will inherit the tolerance from their parent checker at the time
+         * checkCompound() is called.
+         *
+         * Does not throw.
+         */
+        void setDefaultTolerance(const FloatingPointTolerance &tolerance);
 
         /*! \brief
          * Checks whether a data item is present.
