@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <limits>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -56,6 +57,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
 #include "testutils/testfilemanager.h"
 
@@ -277,7 +280,8 @@ class TestReferenceChecker::Impl
         //! Creates a checker that does nothing.
         explicit Impl(bool bWrite);
         //! Creates a checker with a given root node.
-        Impl(const std::string &path, xmlNodePtr rootNode, bool bWrite);
+        Impl(const std::string &path, xmlNodePtr rootNode, bool bWrite,
+             const FloatingPointTolerance &defaultTolerance);
 
         //! Returns a string for SCOPED_TRACE() for checking element \p id.
         std::string traceString(const char *id) const;
@@ -357,6 +361,10 @@ class TestReferenceChecker::Impl
         bool shouldIgnore() const;
 
         /*! \brief
+         * Default floating-point comparison tolerance.
+         */
+        FloatingPointTolerance  defaultTolerance_;
+        /*! \brief
          * Human-readable path to the root node of this checker.
          *
          * For the root checker, this will be "/", and for each compound, the
@@ -419,15 +427,17 @@ const char * const    TestReferenceChecker::Impl::cSequenceLengthName =
 
 
 TestReferenceChecker::Impl::Impl(bool bWrite)
-    : currNode_(NULL), prevFoundNode_(NULL), bWrite_(bWrite), seqIndex_(0)
+    : defaultTolerance_(0.0, 0), currNode_(NULL), prevFoundNode_(NULL),
+      bWrite_(bWrite), seqIndex_(0)
 {
 }
 
 
 TestReferenceChecker::Impl::Impl(const std::string &path, xmlNodePtr rootNode,
-                                 bool bWrite)
-    : path_(path + "/"), currNode_(rootNode), prevFoundNode_(NULL),
-      bWrite_(bWrite), seqIndex_(0)
+                                 bool bWrite,
+                                 const FloatingPointTolerance &defaultTolerance)
+    : defaultTolerance_(defaultTolerance), path_(path + "/"),
+      currNode_(rootNode), prevFoundNode_(NULL), bWrite_(bWrite), seqIndex_(0)
 {
 }
 
@@ -639,8 +649,11 @@ TestReferenceChecker TestReferenceData::rootChecker()
         return TestReferenceChecker(new TestReferenceChecker::Impl(isWriteMode()));
     }
     xmlNodePtr rootNode = xmlDocGetRootElement(impl_->refDoc_);
+    // TODO: The default tolerance for double-precision builds that explicitly
+    // call checkFloat() may not be ideal.
     return TestReferenceChecker(
-            new TestReferenceChecker::Impl("", rootNode, isWriteMode()));
+            new TestReferenceChecker::Impl("", rootNode, isWriteMode(),
+                                           defaultRealTolerance()));
 }
 
 
@@ -676,6 +689,13 @@ TestReferenceChecker::~TestReferenceChecker()
 bool TestReferenceChecker::isWriteMode() const
 {
     return impl_->bWrite_;
+}
+
+
+void TestReferenceChecker::setDefaultTolerance(
+        const FloatingPointTolerance &tolerance)
+{
+    impl_->defaultTolerance_ = tolerance;
 }
 
 
@@ -718,7 +738,8 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
         return TestReferenceChecker(new Impl(isWriteMode()));
     }
     return TestReferenceChecker(
-            new Impl(impl_->appendPath(id), newNode, isWriteMode()));
+            new Impl(impl_->appendPath(id), newNode, isWriteMode(),
+                     impl_->defaultTolerance_));
 }
 
 
@@ -844,7 +865,8 @@ void TestReferenceChecker::checkDouble(double value, const char *id)
     }
     SCOPED_TRACE(impl_->traceString(id));
     bool        bFound      = false;
-    std::string strValue    = formatString("%f", value);
+    const int   prec        = std::numeric_limits<double>::digits10 + 2;
+    std::string strValue    = formatString("%.*g", value, prec);
     std::string refStrValue =
         impl_->processItem(Impl::cRealNodeName, id, strValue, &bFound);
     if (bFound)
@@ -852,20 +874,36 @@ void TestReferenceChecker::checkDouble(double value, const char *id)
         char  *endptr;
         double refValue = std::strtod(refStrValue.c_str(), &endptr);
         EXPECT_EQ('\0', *endptr);
-        EXPECT_NEAR(refValue, value, 0.0001);
+        EXPECT_DOUBLE_EQ_TOL(refValue, value, impl_->defaultTolerance_);
     }
 }
 
 
 void TestReferenceChecker::checkFloat(float value, const char *id)
 {
-    checkDouble(value, id);
+    if (impl_->shouldIgnore())
+    {
+        return;
+    }
+    SCOPED_TRACE(impl_->traceString(id));
+    bool        bFound      = false;
+    const int   prec        = std::numeric_limits<float>::digits10 + 2;
+    std::string strValue    = formatString("%.*g", value, prec);
+    std::string refStrValue =
+        impl_->processItem(Impl::cRealNodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        char  *endptr;
+        double refValue = std::strtod(refStrValue.c_str(), &endptr);
+        EXPECT_EQ('\0', *endptr);
+        EXPECT_FLOAT_EQ_TOL(refValue, value, impl_->defaultTolerance_);
+    }
 }
 
 
 void TestReferenceChecker::checkReal(float value, const char *id)
 {
-    checkDouble(value, id);
+    checkFloat(value, id);
 }
 
 
