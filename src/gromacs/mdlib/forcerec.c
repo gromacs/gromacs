@@ -2475,6 +2475,21 @@ void init_forcerec(FILE              *fp,
     fr->bGrid         = (ir->ns_type == ensGRID);
     fr->ePBC          = ir->ePBC;
 
+    if(fr->cutoff_scheme == ecutsGROUP)
+    {
+        const char *note = "NOTE: This file uses the deprecated 'group' cutoff_scheme. This will be\n"
+                           "removed in a future release when 'verlet' supports all interaction forms.\n";
+
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "\n%s\n", note);
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp, "\n%s\n", note);
+        }
+    }
+    
     /* Determine if we will do PBC for distances in bonded interactions */
     if (fr->ePBC == epbcNONE)
     {
