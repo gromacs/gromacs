@@ -2083,11 +2083,17 @@ void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[]
             mv[XX], mv[YY], mv[ZZ]);
 }
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr)
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr, gmx_bool bIsDomainDecomposition)
 {
 
     int  i;
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
+
+    if (ir->etc == etcANDERSEN && constr && bIsDomainDecomposition)
+    {
+        gmx_fatal(FARGS, "Normal Andersen is currently not supported with constraints and domain decomposition. Please consider the massive Andersen thermostat.");
+    }
+
     /* proceed with andersen if 1) it's fixed probability per
        particle andersen or 2) it's massive andersen and it's tau_t/dt */
     if ((ir->etc == etcANDERSEN) || do_per_step(step, (int)(1.0/rate)))
