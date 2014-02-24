@@ -3521,7 +3521,8 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 
     if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != eiBD &&
         ir->comm_mode == ecmNO &&
-        !(absolute_reference(ir, sys, FALSE, AbsRef) || ir->nsteps <= 10))
+        !(absolute_reference(ir, sys, FALSE, AbsRef) || ir->nsteps <= 10) &&
+        !ETC_ANDERSEN(ir->etc))
     {
         warning(wi, "You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
     }
