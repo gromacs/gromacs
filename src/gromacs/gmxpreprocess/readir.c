@@ -272,6 +272,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
+        warning_note(wi,
+                     "The group cutoff scheme is deprecated in Gromacs 5.0 and will be removed in a future "
+                     "release when all interaction forms are supported for the verlet scheme. The verlet "
+                     "scheme already scales better, and it is compatible with GPUs and other accelerators.");
+
         /* BASIC CUT-OFF STUFF */
         if (ir->rlist == 0 ||
             !((ir_coulomb_might_be_zero_at_cutoff(ir) && ir->rcoulomb > ir->rlist) ||
