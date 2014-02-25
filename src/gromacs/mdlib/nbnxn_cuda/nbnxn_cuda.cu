@@ -62,8 +62,11 @@
 #define USE_TEXOBJ
 #endif
 
-/*! Texture reference for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
+/*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
 texture<float, 1, cudaReadModeElementType> nbfp_texref;
+
+/*! Texture reference for LJ-PME parameters; bound to cu_nbparam_t.nbfp_comb */
+texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
@@ -154,45 +157,45 @@ static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
 /*! Force-only kernel function pointers. */
 static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[eelCuNR][evdwCuNR] =
 {
-    { nbnxn_kernel_ElecCut_VdwLJ_F_cuda,                nbnxn_kernel_ElecCut_VdwLJFsw_F_cuda,                    nbnxn_kernel_ElecCut_VdwLJPsw_F_cuda            },
-    { nbnxn_kernel_ElecRF_VdwLJ_F_cuda,                 nbnxn_kernel_ElecRF_VdwLJFsw_F_cuda,                     nbnxn_kernel_ElecRF_VdwLJPsw_F_cuda             },
-    { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_cuda,            nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_cuda,                nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_cuda        },
-    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_cuda,     nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_cuda,         nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_cuda },
-    { nbnxn_kernel_ElecEw_VdwLJ_F_cuda,                 nbnxn_kernel_ElecEw_VdwLJFsw_F_cuda,                     nbnxn_kernel_ElecEw_VdwLJPsw_F_cuda             },
-    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_cuda,          nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_cuda,              nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_cuda      }
+    { nbnxn_kernel_ElecCut_VdwLJ_F_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_F_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_F_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_F_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_F_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_F_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_F_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_F_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_F_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_cuda      }
 };
 
 /*! Force + energy kernel function pointers. */
 static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[eelCuNR][evdwCuNR] =
 {
-    { nbnxn_kernel_ElecCut_VdwLJ_VF_cuda,                 nbnxn_kernel_ElecCut_VdwLJFsw_VF_cuda,                 nbnxn_kernel_ElecCut_VdwLJPsw_VF_cuda            },
-    { nbnxn_kernel_ElecRF_VdwLJ_VF_cuda,                  nbnxn_kernel_ElecRF_VdwLJFsw_VF_cuda,                  nbnxn_kernel_ElecRF_VdwLJPsw_VF_cuda             },
-    { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_cuda,             nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_cuda,             nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_cuda        },
-    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_cuda,      nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_cuda,      nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_cuda },
-    { nbnxn_kernel_ElecEw_VdwLJ_VF_cuda,                  nbnxn_kernel_ElecEw_VdwLJFsw_VF_cuda,                  nbnxn_kernel_ElecEw_VdwLJPsw_VF_cuda             },
-    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_cuda,           nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_cuda,           nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_cuda      }
+    { nbnxn_kernel_ElecCut_VdwLJ_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_cuda              },
+    { nbnxn_kernel_ElecRF_VdwLJ_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_cuda               },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_cuda          },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_cuda     },
+    { nbnxn_kernel_ElecEw_VdwLJ_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_cuda               },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_cuda        }
 };
 
 /*! Force + pruning kernel function pointers. */
 static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[eelCuNR][evdwCuNR] =
 {
-    { nbnxn_kernel_ElecCut_VdwLJ_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_cuda            },
-    { nbnxn_kernel_ElecRF_VdwLJ_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_cuda             },
-    { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_cuda        },
-    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_cuda },
-    { nbnxn_kernel_ElecEw_VdwLJ_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_cuda             },
-    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_cuda      }
+    { nbnxn_kernel_ElecCut_VdwLJ_F_prune_cuda,             nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_prune_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_F_prune_cuda,              nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_prune_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_cuda,         nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_prune_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_cuda,  nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_prune_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_F_prune_cuda,              nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_prune_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_cuda,       nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_cuda      }
 };
 
 /*! Force + energy + pruning kernel function pointers. */
 static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelCuNR][evdwCuNR] =
 {
-    { nbnxn_kernel_ElecCut_VdwLJ_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_cuda,           nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_cuda             },
-    { nbnxn_kernel_ElecRF_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_cuda,            nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_cuda              },
-    { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_cuda        },
-    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_cuda },
-    { nbnxn_kernel_ElecEw_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_cuda             },
-    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_cuda      }
+    { nbnxn_kernel_ElecCut_VdwLJ_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_cuda,            nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_prune_cuda            },
+    { nbnxn_kernel_ElecRF_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_prune_cuda,             nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_prune_cuda             },
+    { nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_prune_cuda,        nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_prune_cuda        },
+    { nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_prune_cuda, nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_prune_cuda },
+    { nbnxn_kernel_ElecEw_VdwLJ_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_cuda,             nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_cuda             },
+    { nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_cuda,      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_cuda      }
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
@@ -681,6 +684,12 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
 {
     return nbfp_texref;
+}
+
+/*! Return the reference to the nbfp_comb texture. */
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref()
+{
+    return nbfp_comb_texref;
 }
 
 /*! Return the reference to the coulomb_tab. */
