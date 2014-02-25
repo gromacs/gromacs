@@ -155,7 +155,8 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 void gmx_pme_send_parameters(t_commrec *cr,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
-                             real *c6A, real *c6B, real *sigmaA, real *sigmaB,
+                             real *sqrt_c6A, real *sqrt_c6B,
+                             real *sigmaA, real *sigmaB,
                              int maxshift_x, int maxshift_y);
 /* Send the charges and maxshift to out PME-only node. */
 
@@ -193,7 +194,7 @@ enum {
 int gmx_pme_recv_params_coords(gmx_pme_pp_t pme_pp,
                                int *natoms,
                                real **chargeA, real **chargeB,
-                               real **c6A, real **c6B,
+                               real **sqrt_c6A, real **sqrt_c6B,
                                real **sigmaA, real **sigmaB,
                                matrix box, rvec **x, rvec **f,
                                int *maxshift_x, int *maxshift_y,
