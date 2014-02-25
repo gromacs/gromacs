@@ -1,0 +1,11 @@
+#include "martini_v2.0.itp"  
+#include "peg_CBT.itp"
+
+[ system ]
+; name
+PEG polymers (37 monomers) in solution 
+
+[ molecules ]
+; name  number
+PEG   56
+W    13312
