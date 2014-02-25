@@ -947,6 +947,18 @@ of the temperature fluctuations at equilibrium, which is slightly
 different from a relaxation time.
 For NVT simulations the conserved energy quantity is written
 to energy and log file.</dd>
+<dt><b>andersen</b></dt>
+<dd>Temperature coupling by randomizing a fraction of the particles
+at each timestep. Reference temperature and coupling groups are selected
+as above. <b>tau-t</b> is the average time between randomization of each molecule.
+Inhibits particle dynamics somewhat, but little or no ergodicity issues. Currently
+only implemented with velocity Verlet, and not implemented with constraints.</dd>
+<dt><b>andersen-massive</b></dt>
+<dd>Temperature coupling by randomizing all particles at infrequent timesteps.
+Reference temperature and coupling groups are selected
+as above. <b>tau-t</b> is the time between randomization of all molecules.
+Inhibits particle dynamics somewhat, but little or no ergodicity issues. Currently
+only implemented with velocity Verlet.</dd>
 <dt><b>v-rescale</b></dt>
 <dd>Temperature coupling using velocity rescaling with a stochastic term
 (JCP 126, 014101).

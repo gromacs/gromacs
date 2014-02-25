@@ -1282,27 +1282,27 @@ is written to the energy and log file.
 \subsubsection{\normindex{Andersen thermostat}}
 One simple way to maintain a thermostatted ensemble is to take an
 $NVE$ integrator and periodically re-select the velocities of the
-particles from a Maxwell-Boltzmann distribution.~\cite{Andersen80}.
+particles from a Maxwell-Boltzmann distribution.~\cite{Andersen80}
 This can either be done by randomizing all the velocities
-simultaneously (massive collision) every $\tau_T/\Dt$ steps, or by
-randomizing every particle with some small probability every timestep,
+simultaneously (massive collision) every $\tau_T/\Dt$ steps ({\tt andersen-massive}), or by
+randomizing every particle with some small probability every timestep ({\tt andersen}),
 equal to $\Dt/\tau$, where in both cases $\Dt$ is the timestep and
 $\tau_T$ is a characteristic coupling time scale.
-
 Because of the way constraints operate, all particles in the same
-constraint group must be re-randomized simultaneously.  This
-thermostat is also only possible with velocity Verlet algorithms,
+constraint group must be randomized simultaneously.  Because of
+parallelization issues, the {\tt andersen} version cannot currently (5.0) be
+used in systems with constraints. {\tt andersen-massive} can be used regardless of constraints.
+This thermostat is also currently only possible with velocity Verlet algorithms,
 because it operates directly on the velocities at each timestep.
 
-This algorithm avoids some of the ergodicity issues of other
+This algorithm completely avoids some of the ergodicity issues of other thermostatting
 algorithms, as energy cannot flow back and forth between energetically
 decoupled components of the system as in velocity scaling motions.
 However, it can slow down the kinetics of system by randomizing
 correlated motions of the system, including slowing sampling when
 $\tau_T$ is at moderate levels (less than 10 ps). This algorithm
-should therefore generally not be used when examining kinetics of the
-system, but can avoid ergodicity problems of scaling problems when
-examining thermodynamic properties.
+should therefore generally not be used when examining kinetics or
+transport properties of the system.~\cite{Basconi2013}
 
 % \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Nos{\'e}-Hoover temperature coupling\index{Nose-Hoover temperature coupling@Nos{\'e}-Hoover temperature coupling|see{temperature coupling, Nos{\'e}-Hoover}}{\index{temperature coupling Nose-Hoover@temperature coupling Nos{\'e}-Hoover}}\index{extended ensemble}}
