@@ -1,0 +1,91 @@
+; VARIOUS PREPROCESSING OPTIONS = 
+title                    = Martini
+cpp                      = /usr/bin/cpp
+
+; RUN CONTROL PARAMETERS = 
+integrator               = md
+; start time and timestep in ps = 
+tinit                    = 0.0
+dt                       = 0.040
+nsteps                   = 50 
+; number of steps for center of mass motion removal = 
+nstcomm                  = 1
+comm-grps		 = PEG W 
+
+; OUTPUT CONTROL OPTIONS = 
+; Output frequency for coords (x), velocities (v) and forces (f) = 
+nstxout                  = 50
+nstvout                  = 50
+nstfout                  = 50
+; Output frequency for energies to log file and energy file = 
+nstlog                   = 0
+nstenergy                = 10
+; Output frequency and precision for xtc file = 
+nstxtcout                = 0
+xtc_precision            = 100
+; This selects the subset of atoms for the xtc file. You can = 
+; select multiple groups. By default all atoms will be written. = 
+xtc-grps                 = 
+; Selection of energy groups = 
+energygrps               = PEG W 
+
+; NEIGHBORSEARCHING PARAMETERS = 
+; Neighbor searching (Not Verlet) !!!NEW!!!
+cutoff-scheme     = group
+; nblist update frequency = 
+nstlist                  = 10
+; ns algorithm (simple or grid) = 
+ns_type                  = grid
+; Periodic boundary conditions: xyz or none = 
+pbc                      = xyz
+; nblist cut-off         = 
+rlist                    = 1.2
+
+; OPTIONS FOR ELECTROSTATICS AND VDW = 
+; Method for doing electrostatics = 
+coulombtype              = Shift 
+rcoulomb_switch          = 0.0
+rcoulomb                 = 1.2
+; Dielectric constant (DC) for cut-off or DC of reaction field = 
+epsilon_r                = 15
+; Method for doing Van der Waals = 
+vdw_type                 = Shift 
+; cut-off lengths        = 
+rvdw_switch              = 0.9
+rvdw                     = 1.2
+; Apply long range dispersion corrections for Energy and Pressure = 
+DispCorr                 = No
+
+; OPTIONS FOR WEAK COUPLING ALGORITHMS = 
+; Temperature coupling   = 
+tcoupl                   = Berendsen
+; Groups to couple separately = 
+tc-grps                  = PEG W
+; Time constant (ps) and reference temperature (K) = 
+tau_t                    = 1.0 1.0
+ref_t                    = 300 300
+; Pressure coupling      = 
+Pcoupl                   = berendsen 
+Pcoupltype               = isotropic
+; Time constant (ps), compressibility (1/bar) and reference P (bar) = 
+tau_p                    = 1.0
+compressibility          = 5e-6
+ref_p                    = 1.0
+
+; GENERATE VELOCITIES FOR STARTUP RUN = 
+gen_vel                  = no
+gen_temp                 = 105
+gen_seed                 = 473529
+
+; OPTIONS FOR BONDS     = 
+constraints              = none 
+; Type of constraint algorithm = 
+constraint_algorithm     = Lincs
+; Do not constrain the start configuration = 
+unconstrained_start      = no
+; Highest order in the expansion of the constraint coupling matrix = 
+lincs_order              = 4
+; Lincs will write a warning to the stderr if in one step a bond = 
+; rotates over more degrees than = 
+lincs_warnangle          = 30
+
