@@ -51,6 +51,20 @@
 #define EL_EWALD_ANY
 #endif
 
+#if defined EL_EWALD_ANY || defined EL_RF || defined LJ_EWALD
+/* Macro to control the calculation of exclusion forces in the kernel
+ * We do that with Ewald (elec/vdw) and RF.
+ *
+ * Note: convenience macro, needs to be undef-ed at the end of the file.
+ */
+#define EXCLUSION_FORCES
+#endif
+
+#if defined LJ_EWALD_COMB_GEOM || defined LJ_EWALD_COMB_LB
+/* Note: convenience macro, needs to be undef-ed at the end of the file. */
+#define LJ_EWALD
+#endif
+
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
@@ -96,6 +110,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef VDW_CUTOFF_CHECK
     float               rvdw_sq     = nbparam.rvdw_sq;
     float               vdw_in_range;
+#endif
+#ifdef LJ_EWALD
+    float               lje_coeff2, lje_coeff6_6;
 #endif
 #ifdef EL_RF
     float two_k_rf              = nbparam.two_k_rf;
@@ -192,29 +209,56 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         fci_buf[ci_offset] = make_float3(0.0f);
     }
 
+#ifdef LJ_EWALD
+    /* TODO: we are trading registers with flops by keeping lje_coeff-s, try re-calculating it later */
+    lje_coeff2   = nbparam.ewaldcoeff_lj*nbparam.ewaldcoeff_lj;
+    lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2*ONE_SIXTH_F;
+#endif /* LJ_EWALD */
+
+
 #ifdef CALC_ENERGIES
     E_lj = 0.0f;
     E_el = 0.0f;
 
-#if defined EL_EWALD_ANY || defined EL_RF
+#if defined EXCLUSION_FORCES /* Ewald or RF */
     if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*NCL_PER_SUPERCL)
     {
-        /* we have the diagonal: add the charge self interaction energy term */
+        /* we have the diagonal: add the charge and LJ self interaction energy term */
         for (i = 0; i < NCL_PER_SUPERCL; i++)
         {
+#if defined EL_EWALD_ANY || defined EL_RF
             qi    = xqib[i * CL_SIZE + tidxi].w;
             E_el += qi*qi;
+#endif
+
+#if defined LJ_EWALD
+#ifdef USE_TEXOBJ
+            E_lj += tex1Dfetch<float>(nbparam.nbfp_texobj, atom_types[(sci*NCL_PER_SUPERCL + i)*CL_SIZE + tidxi]*(ntypes + 1)*2);
+#else
+            E_lj += tex1Dfetch(nbfp_texref, atom_types[(sci*NCL_PER_SUPERCL + i)*CL_SIZE + tidxi]*(ntypes + 1)*2);
+#endif /* USE_TEXOBJ */
+#endif /* LJ_EWALD */
+
         }
-        /* divide the self term equally over the j-threads */
+
+        /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
+#ifdef LJ_EWALD
+        E_lj /= CL_SIZE;
+        E_lj *= 0.5f*ONE_SIXTH_F*lje_coeff6_6;
+#endif  /* LJ_EWALD */
+
+#if defined EL_EWALD_ANY || defined EL_RF
         E_el /= CL_SIZE;
 #ifdef EL_RF
         E_el *= -nbparam.epsfac*0.5f*c_rf;
 #else
         E_el *= -nbparam.epsfac*beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #endif
+#endif                                                 /* EL_EWALD_ANY || defined EL_RF */
     }
-#endif
-#endif
+#endif                                                 /* EXCLUSION_FORCES */
+
+#endif                                                 /* CALC_ENERGIES */
 
     /* skip central shifts when summing shift forces */
     if (nb_sci.shift == CENTRAL)
@@ -300,7 +344,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
 
                             /* cutoff & exclusion check */
-#if defined EL_EWALD_ANY || defined EL_RF
+#ifdef EXCLUSION_FORCES
                             if (r2 < rcoulomb_sq *
                                 (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
 #else
@@ -331,11 +375,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 inv_r   = rsqrt(r2);
                                 inv_r2  = inv_r * inv_r;
                                 inv_r6  = inv_r2 * inv_r2 * inv_r2;
-#if defined EL_EWALD_ANY || defined EL_RF
+#if defined EXCLUSION_FORCES
                                 /* We could mask inv_r2, but with Ewald
                                  * masking both inv_r6 and F_invr is faster */
                                 inv_r6  *= int_bit;
-#endif
+#endif                          /* EXCLUSION_FORCES */
 
                                 F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
@@ -350,6 +394,25 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 calculate_force_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr);
 #endif /* CALC_ENERGIES */
 #endif /* LJ_FORCE_SWITCH */
+
+
+#ifdef LJ_EWALD
+#ifdef LJ_EWALD_COMB_GEOM
+#ifdef CALC_ENERGIES
+                                calculate_lj_ewald_comb_geom_F_E(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, int_bit, &F_invr, &E_lj_p);
+#else
+                                calculate_lj_ewald_comb_geom_F(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, &F_invr);
+#endif                          /* CALC_ENERGIES */
+#elif defined LJ_EWALD_COMB_LB
+                                calculate_lj_ewald_comb_LB_F_E(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6,
+#ifdef CALC_ENERGIES
+                                                               int_bit, &F_invr, &E_lj_p
+#else
+                                                               0, &F_invr, NULL
+#endif /* CALC_ENERGIES */
+                                                               );
+#endif /* LJ_EWALD_COMB_GEOM */
+#endif /* LJ_EWALD */
 
 #ifdef VDW_CUTOFF_CHECK
                                 /* Separate VDW cut-off check to enable twin-range cut-offs
@@ -486,3 +549,5 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 }
 
 #undef EL_EWALD_ANY
+#undef EXCLUSION_FORCES
+#undef LJ_EWALD
