@@ -84,8 +84,9 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  * below that does the right thing according to the value of
  * file_version. */
 enum tpxv {
-    tpxv_ComputationalElectrophysiology = 96, /*! support for ion/water position swaps (computational electrophysiology) */
-    tpxv_Use64BitRandomSeed                   /*! change ld_seed from int to gmx_int64_t */
+    tpxv_ComputationalElectrophysiology = 96,               /*! support for ion/water position swaps (computational electrophysiology) */
+    tpxv_Use64BitRandomSeed,                                /*! change ld_seed from int to gmx_int64_t */
+    tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials /*! potentials for supporting coarse-grained force fields */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -99,8 +100,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_Use64BitRandomSeed;
-
+static const int tpx_version = tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -111,8 +111,11 @@ static const int tpx_version = tpxv_Use64BitRandomSeed;
  * It first appeared in tpx version 26, when I also moved the inputrecord
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
+ *
+ * In particular, it must be increased when adding new elements to
+ * ftupd, so that old code can read new .tpr files.
  */
-static const int tpx_generation = 25;
+static const int tpx_generation = 26;
 
 /* This number should be the most recent backwards incompatible version
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -164,12 +167,15 @@ static const t_ftupd ftupd[] = {
     { 43, F_TABBONDS          },
     { 43, F_TABBONDSNC        },
     { 70, F_RESTRBONDS        },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRANGLES },
     { 76, F_LINEAR_ANGLES     },
     { 30, F_CROSS_BOND_BONDS  },
     { 30, F_CROSS_BOND_ANGLES },
     { 30, F_UREY_BRADLEY      },
     { 34, F_QUARTIC_ANGLES    },
     { 43, F_TABANGLES         },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRDIHS },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_CBTDIHS },
     { 26, F_FOURDIHS          },
     { 26, F_PIDIHS            },
     { 43, F_TABDIHS           },
@@ -1799,6 +1805,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 iparams->pdihs.cpB  = iparams->pdihs.cpA;
             }
             break;
+        case F_RESTRANGLES:
+            gmx_fio_do_real(fio, iparams->harmonic.rA);
+            gmx_fio_do_real(fio, iparams->harmonic.krA);
+            break;
         case F_LINEAR_ANGLES:
             gmx_fio_do_real(fio, iparams->linangle.klinA);
             gmx_fio_do_real(fio, iparams->linangle.aA);
@@ -1809,6 +1819,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fene.bm);
             gmx_fio_do_real(fio, iparams->fene.kb);
             break;
+
         case F_RESTRBONDS:
             gmx_fio_do_real(fio, iparams->restraint.lowA);
             gmx_fio_do_real(fio, iparams->restraint.up1A);
@@ -1961,6 +1972,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 gmx_fio_do_int(fio, iparams->pdihs.mult);
             }
             break;
+        case F_RESTRDIHS:
+            gmx_fio_do_real(fio, iparams->pdihs.phiA);
+            gmx_fio_do_real(fio, iparams->pdihs.cpA);
+            break;
         case F_DISRES:
             gmx_fio_do_int(fio, iparams->disres.label);
             gmx_fio_do_int(fio, iparams->disres.type);
@@ -2018,6 +2033,9 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_rvec(fio, iparams->fbposres.pos0);
             gmx_fio_do_real(fio, iparams->fbposres.r);
             gmx_fio_do_real(fio, iparams->fbposres.k);
+            break;
+        case F_CBTDIHS:
+            gmx_fio_ndo_real(fio, iparams->cbtdihs.cbtcA, NR_CBTDIHS);
             break;
         case F_RBDIHS:
             gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
