@@ -1,0 +1,8 @@
+WARNING 1 [file grompp.mdp]:
+  For proper integration of the Berendsen barostat, tau-p (1) should be at
+  least 10 times larger than nstpcouple*dt (0.4)
+
+WARNING 2 [file grompp.mdp]:
+  For proper integration of the Berendsen thermostat, tau-t (1) should be
+  at least 5 times larger than nsttcouple*dt (0.4)
+
