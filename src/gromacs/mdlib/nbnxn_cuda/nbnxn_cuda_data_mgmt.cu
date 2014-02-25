@@ -72,6 +72,7 @@ static unsigned int gpu_min_ci_balanced_factor = 40;
 /* Functions from nbnxn_cuda.cu */
 extern void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo);
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
 
 /* We should actually be using md_print_warn in md_logging.c,
@@ -266,39 +267,62 @@ static void init_nbparam(cu_nbparam_t              *nbp,
                          const cuda_dev_info_t     *dev_info)
 {
     cudaError_t stat;
-    int         ntypes, nnbfp;
+    int         ntypes, nnbfp, nnbfp_comb;
 
     ntypes  = nbat->ntype;
 
-    nbp->ewald_beta  = ic->ewaldcoeff_q;
-    nbp->sh_ewald    = ic->sh_ewald;
-    nbp->epsfac      = ic->epsfac;
-    nbp->two_k_rf    = 2.0 * ic->k_rf;
-    nbp->c_rf        = ic->c_rf;
-    nbp->rvdw_sq     = ic->rvdw * ic->rvdw;
-    nbp->rcoulomb_sq = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq    = ic->rlist * ic->rlist;
+    nbp->ewald_beta       = ic->ewaldcoeff_q;
+    nbp->sh_ewald         = ic->sh_ewald;
+    nbp->epsfac           = ic->epsfac;
+    nbp->two_k_rf         = 2.0 * ic->k_rf;
+    nbp->c_rf             = ic->c_rf;
+    nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
+    nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
+    nbp->rlist_sq         = ic->rlist * ic->rlist;
+
+    nbp->sh_lj_ewald      = ic->sh_lj_ewald;
+    nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
 
     nbp->rvdw_switch      = ic->rvdw_switch;
     nbp->dispersion_shift = ic->dispersion_shift;
     nbp->repulsion_shift  = ic->repulsion_shift;
     nbp->vdw_switch       = ic->vdw_switch;
 
-    switch (ic->vdw_modifier)
+    if (ic->vdwtype == evdwCUT)
     {
-        case eintmodNONE:
-        case eintmodPOTSHIFT:
-            nbp->vdwtype = evdwCuCUT;
-            break;
-        case eintmodFORCESWITCH:
-            nbp->vdwtype = evdwCuFSWITCH;
-            break;
-        case eintmodPOTSWITCH:
-            nbp->vdwtype = evdwCuPSWITCH;
-            break;
-        default:
-            gmx_incons("The requested VdW interaction modifier is not implemented in the CUDA GPU accelerated kernels!");
-            break;
+        switch (ic->vdw_modifier)
+        {
+            case eintmodNONE:
+            case eintmodPOTSHIFT:
+                nbp->vdwtype = evdwCuCUT;
+                break;
+            case eintmodFORCESWITCH:
+                nbp->vdwtype = evdwCuFSWITCH;
+                break;
+            case eintmodPOTSWITCH:
+                nbp->vdwtype = evdwCuPSWITCH;
+                break;
+            default:
+                gmx_incons("The requested VdW interaction modifier is not implemented in the CUDA GPU accelerated kernels!");
+                break;
+        }
+    }
+    else if (ic->vdwtype == evdwPME)
+    {
+        if (ic->ljpme_comb_rule == ljcrGEOM)
+        {
+            assert(nbat->comb_rule == ljcrGEOM);
+            nbp->vdwtype = evdwCuEWALDGEOM;
+        }
+        else
+        {
+            assert(nbat->comb_rule == ljcrLB);
+            nbp->vdwtype = evdwCuEWALDLB;
+        }
+    }
+    else
+    {
+        gmx_incons("The requested VdW type is not implemented in the CUDA GPU accelerated kernels!");
     }
 
     if (ic->eeltype == eelCUT)
@@ -327,16 +351,28 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         init_ewald_coulomb_force_table(nbp, dev_info);
     }
 
-    nnbfp = 2*ntypes*ntypes;
+    nnbfp      = 2*ntypes*ntypes;
+    nnbfp_comb = 2*ntypes;
+
     stat  = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp");
     cu_copy_H2D(nbp->nbfp, nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
+
+
+    if (ic->vdwtype == evdwPME)
+    {
+        stat  = cudaMalloc((void **)&nbp->nbfp_comb, nnbfp_comb*sizeof(*nbp->nbfp_comb));
+        CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp_comb");
+        cu_copy_H2D(nbp->nbfp_comb, nbat->nbfp_comb, nnbfp_comb*sizeof(*nbp->nbfp_comb));
+    }
 
 #ifdef TEXOBJ_SUPPORTED
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     if (dev_info->prop.major >= 3)
     {
         cudaResourceDesc rd;
+        cudaTextureDesc  td;
+
         memset(&rd, 0, sizeof(rd));
         rd.resType                  = cudaResourceTypeLinear;
         rd.res.linear.devPtr        = nbp->nbfp;
@@ -344,11 +380,25 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         rd.res.linear.desc.x        = 32;
         rd.res.linear.sizeInBytes   = nnbfp*sizeof(*nbp->nbfp);
 
-        cudaTextureDesc td;
         memset(&td, 0, sizeof(td));
         td.readMode                 = cudaReadModeElementType;
         stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, NULL);
         CU_RET_ERR(stat, "cudaCreateTextureObject on nbfp_texobj failed");
+
+        if (ic->vdwtype == evdwPME)
+        {
+            memset(&rd, 0, sizeof(rd));
+            rd.resType                  = cudaResourceTypeLinear;
+            rd.res.linear.devPtr        = nbp->nbfp_comb;
+            rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+            rd.res.linear.desc.x        = 32;
+            rd.res.linear.sizeInBytes   = nnbfp_comb*sizeof(*nbp->nbfp_comb);
+
+            memset(&td, 0, sizeof(td));
+            td.readMode = cudaReadModeElementType;
+            stat        = cudaCreateTextureObject(&nbp->nbfp_comb_texobj, &rd, &td, NULL);
+            CU_RET_ERR(stat, "cudaCreateTextureObject on nbfp_comb_texobj failed");
+        }
     }
     else
 #endif
@@ -357,6 +407,13 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
                                nbp->nbfp, &cd, nnbfp*sizeof(*nbp->nbfp));
         CU_RET_ERR(stat, "cudaBindTexture on nbfp_texref failed");
+
+        if (ic->vdwtype == evdwPME)
+        {
+            stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_comb_texref(),
+                                   nbp->nbfp_comb, &cd, nnbfp_comb*sizeof(*nbp->nbfp_comb));
+            CU_RET_ERR(stat, "cudaBindTexture on nbfp_comb_texref failed");
+        }
     }
 }
 
@@ -941,6 +998,24 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
         CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_texref failed");
     }
     cu_free_buffered(nbparam->nbfp);
+
+    if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
+    {
+#ifdef TEXOBJ_SUPPORTED
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (cu_nb->dev_info->prop.major >= 3)
+        {
+            stat = cudaDestroyTextureObject(nbparam->nbfp_comb_texobj);
+            CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_comb_texobj failed");
+        }
+        else
+#endif
+        {
+            stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_comb_texref());
+            CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_comb_texref failed");
+        }
+        cu_free_buffered(nbparam->nbfp_comb);
+    }
 
     stat = cudaFree(atdat->shift_vec);
     CU_RET_ERR(stat, "cudaFree failed on atdat->shift_vec");
