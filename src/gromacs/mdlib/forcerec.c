@@ -1532,17 +1532,7 @@ gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
                                       const t_inputrec *ir,
                                       gmx_bool          bGPU)
 {
-    /* TODO: remove these GPU specific restrictions by implementing CUDA kernels */
-    if (bGPU)
-    {
-        if (ir->vdwtype == evdwPME)
-        {
-            md_print_warn(cr, fplog, "LJ-PME is not yet supported with GPUs, falling back to CPU only\n");
-            return FALSE;
-        }
-    }
-
-    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
+    if (!bGPU && (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB))
     {
         md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with %s, falling back to %s\n",
                       bGPU ? "GPUs" : "SIMD kernels",
