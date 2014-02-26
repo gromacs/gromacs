@@ -107,6 +107,9 @@ MACRO(gmx_c_flags)
         endif()
         GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wno-sign-compare -Wpointer-arith" GMXC_CFLAGS)
+        # Since 4.8 on by default. For previous version disabling is a no-op. Only disabling for Release because with assert
+        # the warnings are OK.
+        GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
@@ -122,6 +125,7 @@ MACRO(gmx_c_flags)
         # Problematic with CUDA
         # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
+        GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
         # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"

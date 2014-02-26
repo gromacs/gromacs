@@ -45,6 +45,7 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -887,6 +888,8 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
 
     if (rc_scaling != erscNO)
     {
+        assert(npbcdim <= DIM);
+
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
             molb     = &mtop->molblock[mb];
