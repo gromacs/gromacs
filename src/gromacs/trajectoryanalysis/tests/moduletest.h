@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@ namespace test
 {
 
 class CommandLine;
+class FloatingPointTolerance;
 
 /*! \internal
  * \brief
@@ -130,6 +131,29 @@ class AbstractTrajectoryAnalysisModuleTestFixture : public ::testing::Test
          */
         void setOutputFile(const char *option, const char *filename);
         /*! \brief
+         * Sets an output file parameter needed for the test.
+         *
+         * \param[in] option    Option to set.
+         * \param[in] extension Extension for the file to create.
+         *
+         * This method:
+         *  - Sets \p option in the tested module to a temporary file name.
+         *  - Marks the temporary file for removal at test teardown.
+         *
+         * This method provides the mechanism to set output files that are
+         * required to trigger computation of values that are required for
+         * the test.  The contents of the output file are not tested.
+         *
+         * \todo
+         * Adding facilities to AnalysisData to check whether there are any
+         * output modules attached to the data object (directly or indirectly),
+         * marking the mocks as output modules, and using these checks in the
+         * tools instead of or in addition to the output file presence would be
+         * a superior.
+         * Also, the extension should be deducible from the option.
+         */
+        void setOutputFileNoTest(const char *option, const char *extension);
+        /*! \brief
          * Includes only specified dataset for the test.
          *
          * \param[in] name  Name of dataset to include.
@@ -148,14 +172,23 @@ class AbstractTrajectoryAnalysisModuleTestFixture : public ::testing::Test
          *
          * \param[in] name  Name of dataset to exclude.
          *
-         * If includeDataset() has been called, \p name must be one of the
-         * included datasets.
-         *
          * \p name should be one of the names registered for the tested module
          * using TrajectoryAnalysisModule::registerBasicDataset() or
          * TrajectoryAnalysisModule::registerAnalysisDataset().
          */
         void excludeDataset(const char *name);
+        /*! \brief
+         * Sets a custom tolerance for checking a dataset.
+         *
+         * \param[in] name       Name of dataset to set the tolerance for.
+         * \param[in] tolerance  Tolerance used when verifying the data.
+         *
+         * \p name should be one of the names registered for the tested module
+         * using TrajectoryAnalysisModule::registerBasicDataset() or
+         * TrajectoryAnalysisModule::registerAnalysisDataset().
+         */
+        void setDatasetTolerance(const char                   *name,
+                                 const FloatingPointTolerance &tolerance);
 
         /*! \brief
          * Runs the analysis module with the given additional options.
