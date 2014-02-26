@@ -40,6 +40,8 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+
 #include "copyrite.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
@@ -267,6 +269,7 @@ void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
         }
         for (j = 0; (j < nrfp); j++)
         {
+            assert(nrfp+j < MAXFORCEPARAM);
             plist->param[i].c[j]      = c[j];
             plist->param[i].c[nrfp+j] = c[j];
         }

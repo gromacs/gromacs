@@ -45,6 +45,7 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -904,6 +905,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                             xp[i][j] *= invbox[j][j];
                             for (k = j+1; k < npbcdim; k++)
                             {
+                                assert(k < DIM);
                                 xp[i][j] += invbox[k][j]*xp[i][k];
                             }
                         }
@@ -925,6 +927,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                 com[j] *= invbox[j][j];
                 for (k = j+1; k < npbcdim; k++)
                 {
+                    assert(k < DIM);
                     com[j] += invbox[k][j]*com[k];
                 }
             }
