@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1822,9 +1822,10 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         bFoundA = default_params(ftype, bondtype, at, atype, &param, FALSE, &param_defA, &nparam_defA);
         if (bFoundA)
         {
-            /* Copy the A-state and B-state default parameters */
+            /* Copy the A-state and B-state default parameters. */
             for (j = 0; (j < NRFPA(ftype)+NRFPB(ftype)); j++)
             {
+                assert(j < MAXFORCEPARAM); /* Keep the compiler happy about the next line */
                 param.c[j] = param_defA->c[j];
             }
         }
