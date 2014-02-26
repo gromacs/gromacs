@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,44 +45,44 @@
  * This code does not assume any memory alignment for the grid.
  */
 {
-    gmx_simd4_real_t ty_S0, ty_S1, ty_S2, ty_S3;
+
+    /* TODO: using directly MIC intrinsics. Using the fact that 4 and 16 wide is the same type */
+
+    gmx_simd_real_t  tx_S;
+    gmx_simd_real_t  ty_S;
     gmx_simd4_real_t tz_S;
     gmx_simd4_real_t vx_S;
     gmx_simd4_real_t vx_tz_S;
-    gmx_simd4_real_t sum_S0, sum_S1, sum_S2, sum_S3;
-    gmx_simd4_real_t gri_S0, gri_S1, gri_S2, gri_S3;
+    gmx_simd4_real_t sum_S;
+    gmx_simd4_real_t gri_S;
+    gmx_simd_int32_t idx;
 
-    ty_S0 = gmx_simd4_set1_r(thy[0]);
-    ty_S1 = gmx_simd4_set1_r(thy[1]);
-    ty_S2 = gmx_simd4_set1_r(thy[2]);
-    ty_S3 = gmx_simd4_set1_r(thy[3]);
+    idx = _mm512_set_epi32(3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0);
+
+    ty_S = gmx_simd4_load_r(thy);
+    ty_S = _mm512_castsi512_ps(_mm512_permutevar_epi32(idx, _mm512_castps_si512(ty_S)));
 
     /* With order 4 the z-spline is actually aligned */
-    tz_S  = gmx_simd4_load_r(thz);
+    tz_S = _mm512_extload_ps(thz, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE);
+
+    idx = gmx_simd_add_i(_mm512_permutevar_epi32(idx, gmx_simd_mul_i(_mm512_set1_epi32(pnz), _mm512_set4_epi32(3, 2, 1, 0))), _mm512_set4_epi32(3, 2, 1, 0));
+
+    tx_S = _mm512_extload_ps(thx, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE);
+    tx_S = gmx_simd_mul_r(tx_S, gmx_simd_set1_r(coefficient));
 
     for (ithx = 0; (ithx < 4); ithx++)
     {
         index_x = (i0+ithx)*pny*pnz;
-        valx    = coefficient*thx[ithx];
 
-        vx_S   = gmx_simd4_set1_r(valx);
+        vx_S   = _mm512_swizzle_ps(tx_S, ithx+3);
 
-        vx_tz_S = gmx_simd4_mul_r(vx_S, tz_S);
+        vx_tz_S = gmx_simd_mul_r(vx_S, tz_S);
 
-        gri_S0 = gmx_simd4_loadu_r(grid+index_x+(j0+0)*pnz+k0);
-        gri_S1 = gmx_simd4_loadu_r(grid+index_x+(j0+1)*pnz+k0);
-        gri_S2 = gmx_simd4_loadu_r(grid+index_x+(j0+2)*pnz+k0);
-        gri_S3 = gmx_simd4_loadu_r(grid+index_x+(j0+3)*pnz+k0);
+        gri_S = _mm512_i32gather_ps(idx, grid+index_x+j0*pnz+k0, sizeof(float));
 
-        sum_S0 = gmx_simd4_fmadd_r(vx_tz_S, ty_S0, gri_S0);
-        sum_S1 = gmx_simd4_fmadd_r(vx_tz_S, ty_S1, gri_S1);
-        sum_S2 = gmx_simd4_fmadd_r(vx_tz_S, ty_S2, gri_S2);
-        sum_S3 = gmx_simd4_fmadd_r(vx_tz_S, ty_S3, gri_S3);
+        sum_S = gmx_simd_fmadd_r(vx_tz_S, ty_S, gri_S);
 
-        gmx_simd4_storeu_r(grid+index_x+(j0+0)*pnz+k0, sum_S0);
-        gmx_simd4_storeu_r(grid+index_x+(j0+1)*pnz+k0, sum_S1);
-        gmx_simd4_storeu_r(grid+index_x+(j0+2)*pnz+k0, sum_S2);
-        gmx_simd4_storeu_r(grid+index_x+(j0+3)*pnz+k0, sum_S3);
+        _mm512_i32scatter_ps(grid+index_x+j0*pnz+k0, idx, sum_S, sizeof(float));
     }
 }
 #undef PME_SPREAD_SIMD4_ORDER4
