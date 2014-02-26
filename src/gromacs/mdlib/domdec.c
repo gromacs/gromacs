@@ -42,6 +42,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
@@ -8686,6 +8688,7 @@ static void set_zones_size(gmx_domdec_t *dd,
             /* Apply the triclinic couplings */
             for (i = YY; i < ddbox->npbcdim; i++)
             {
+                assert(i < DIM);
                 for (j = XX; j < i; j++)
                 {
                     corner[j] += corner[i]*box[i][j]/box[i][i];

@@ -39,6 +39,8 @@
 #endif
 
 #include <math.h>
+#include <assert.h>
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "vec.h"
@@ -397,6 +399,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                 }
                 for (i = 0; i < pbc->dim; i++)
                 {
+                    assert(i < DIM);
                     if (pbc->box[pbc->dim][i] != 0)
                     {
                         pbc->ePBCDX = epbcdx1D_TRIC;
