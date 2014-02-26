@@ -299,7 +299,7 @@
 #define gmx_simd4_blendzero_f(a, sel)    _mm512_mask_mov_ps(_mm512_setzero_ps(), sel, a)
 #define gmx_simd4_blendnotzero_f(a, sel) _mm512_mask_mov_ps(_mm512_setzero_ps(), _mm512_knot(sel), a)
 #define gmx_simd4_blendv_f(a, b, sel)    _mm512_mask_blend_ps(sel, a, b)
-#define gmx_simd4_reduce_f(x)       _mm512_mask_reduce_add_ps(_mm512_int2mask(0xF), x)
+#define gmx_simd4_reduce_f          gmx_simd4_reduce_f_mic
 
 /****************************************************
  *      DOUBLE PRECISION SIMD4 IMPLEMENTATION       *
@@ -515,6 +515,19 @@ static gmx_inline __m512
 gmx_simd_log_f_mic(__m512 x)
 {
     return _mm512_mul_ps(_mm512_set1_ps(0.693147180559945286226764), _mm512_log2ae23_ps(x));
+}
+
+static gmx_inline float
+gmx_simd4_reduce_f_mic(__m512 x)
+{
+    __m512 t1;
+    union {
+        __m512 s;
+        float d[16];
+    } t2;
+    t1   = gmx_simd4_add_f(x , _mm512_swizzle_ps(x , _MM_SWIZ_REG_BADC));
+    t2.s = gmx_simd4_add_f(t1, _mm512_swizzle_ps(t1, _MM_SWIZ_REG_CDAB));
+    return t2.d[0];
 }
 
 /* Function to check whether SIMD operations have resulted in overflow */
