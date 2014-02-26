@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <assert.h>
 
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -951,6 +952,7 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
         /* When the B topology parameters are not set,
          * copy them from topology A
          */
+        assert(nrfp <= 4);
         for (i = n; i < nrfp; i++)
         {
             c[i] = c[i-2];
@@ -1822,7 +1824,8 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         bFoundA = default_params(ftype, bondtype, at, atype, &param, FALSE, &param_defA, &nparam_defA);
         if (bFoundA)
         {
-            /* Copy the A-state and B-state default parameters */
+            /* Copy the A-state and B-state default parameters. */
+            assert(NRFPA(ftype)+NRFPB(ftype) <= MAXFORCEPARAM);
             for (j = 0; (j < NRFPA(ftype)+NRFPB(ftype)); j++)
             {
                 param.c[j] = param_defA->c[j];
