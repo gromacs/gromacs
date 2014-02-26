@@ -64,6 +64,8 @@ class AnalysisDataHandle;
 namespace test
 {
 
+class FloatingPointTolerance;
+
 /*! \libinternal \brief
  * Represents a single set of points in AnalysisDataTestInputFrame structure.
  *
@@ -414,9 +416,10 @@ class AnalysisDataTestFixture : public ::testing::Test
         /*! \brief
          * Adds a mock module that verifies output against reference data.
          *
-         * \param[in]  checker  Reference data checker to use for comparison.
-         * \param[in]  id       Identifier for reference data compound to use.
-         * \param      source   Data object to verify.
+         * \param[in]  checker   Reference data checker to use for comparison.
+         * \param[in]  id        Identifier for reference data compound to use.
+         * \param      source    Data object to verify.
+         * \param[in]  tolerance Tolerance to use for comparison.
          *
          * Creates a mock module that verifies that the
          * AnalysisDataModuleInterface methods are called correctly by
@@ -428,9 +431,10 @@ class AnalysisDataTestFixture : public ::testing::Test
          *
          * \see TestReferenceData
          */
-        static void addReferenceCheckerModule(TestReferenceChecker  checker,
-                                              const char           *id,
-                                              AbstractAnalysisData *source);
+        static void addReferenceCheckerModule(TestReferenceChecker          checker,
+                                              const char                   *id,
+                                              AbstractAnalysisData         *source,
+                                              const FloatingPointTolerance &tolerance);
 
         /*! \brief
          * Adds a mock module that verifies output against reference data.

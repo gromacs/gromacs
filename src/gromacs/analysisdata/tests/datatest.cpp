@@ -51,6 +51,7 @@
 
 #include "gromacs/analysisdata/tests/mock_datamodule.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 
 namespace gmx
 {
@@ -291,12 +292,15 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
 
 
 void
-AnalysisDataTestFixture::addReferenceCheckerModule(TestReferenceChecker  checker,
-                                                   const char           *id,
-                                                   AbstractAnalysisData *source)
+AnalysisDataTestFixture::addReferenceCheckerModule(TestReferenceChecker          checker,
+                                                   const char                   *id,
+                                                   AbstractAnalysisData         *source,
+                                                   const FloatingPointTolerance &tolerance)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
-    module->setupReferenceCheck(checker.checkCompound("AnalysisData", id), source);
+    TestReferenceChecker          compoundChecker(checker.checkCompound("AnalysisData", id));
+    compoundChecker.setDefaultTolerance(tolerance);
+    module->setupReferenceCheck(compoundChecker, source);
     source->addModule(module);
 }
 
@@ -305,7 +309,8 @@ void
 AnalysisDataTestFixture::addReferenceCheckerModule(const char           *id,
                                                    AbstractAnalysisData *source)
 {
-    addReferenceCheckerModule(data_.rootChecker(), id, source);
+    addReferenceCheckerModule(data_.rootChecker(), id, source,
+                              defaultRealTolerance());
 }
 
 } // namespace test
