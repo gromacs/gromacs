@@ -2201,6 +2201,7 @@ static void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
                     posB *= pbc->box[m][m];
                     for (d = m+1; d < npbcdim; d++)
                     {
+                        assert(d < DIM);
                         posA += pos0A[d]*pbc->box[d][m];
                         posB += pos0B[d]*pbc->box[d][m];
                     }
@@ -2265,6 +2266,7 @@ real fbposres(int nbonds,
         {
             for (d = m; d < npbcdim; d++)
             {
+                assert(d < DIM);
                 com_sc[m] += com[d]*pbc->box[d][m];
             }
         }
@@ -2390,6 +2392,7 @@ real posres(int nbonds,
         {
             for (d = m; d < npbcdim; d++)
             {
+                assert(d < DIM);
                 comA_sc[m] += comA[d]*pbc->box[d][m];
                 comB_sc[m] += comB[d]*pbc->box[d][m];
             }
