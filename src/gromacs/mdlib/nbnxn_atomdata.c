@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1308,6 +1308,41 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
 #endif
 }
 
+static void
+nbnxn_atomdata_reduce_reals_simd_one(real gmx_unused * gmx_restrict dest,
+                                     gmx_bool gmx_unused bDestSet,
+                                     real gmx_unused * gmx_restrict src,
+                                     int gmx_unused i0, int gmx_unused i1)
+{
+#ifdef GMX_NBNXN_SIMD
+/* The SIMD width here is actually independent of that in the kernels,
+ * but we use the same width for simplicity (usually optimal anyhow).
+ */
+    int             i, s;
+    gmx_simd_real_t dest_SSE, src_SSE;
+
+    if (bDestSet)
+    {
+        for (i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
+        {
+            dest_SSE = gmx_simd_load_r(dest+i);
+            src_SSE  = gmx_simd_load_r(src+i);
+            dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
+            gmx_simd_store_r(dest+i, dest_SSE);
+        }
+    }
+    else
+    {
+        for (i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
+        {
+            dest_SSE = gmx_simd_load_r(src+i);
+            gmx_simd_store_r(dest+i, dest_SSE);
+        }
+    }
+#endif
+}
+
+
 /* Add part of the force array(s) from nbnxn_atomdata_t to f */
 static void
 nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
@@ -1527,13 +1562,17 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                     if (bitmask_is_set(flags->flag[b], index[1]) || group_size > 2)
                     {
 #ifdef GMX_NBNXN_SIMD
-                        nbnxn_atomdata_reduce_reals_simd
+                        nbnxn_atomdata_reduce_reals_simd_one
 #else
                         nbnxn_atomdata_reduce_reals
 #endif
                             (nbat->out[index[0]].f,
                             bitmask_is_set(flags->flag[b], index[0]) || group_size > 2,
+#ifdef GMX_NBNXN_SIMD
+                            nbat->out[index[1]].f, i0, i1);
+#else
                             &(nbat->out[index[1]].f), 1, i0, i1);
+#endif
 
                     }
                     else if (!bitmask_is_set(flags->flag[b], index[0]))
