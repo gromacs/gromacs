@@ -109,4 +109,42 @@ TEST_F(AnalysisArrayDataTest, StorageWorks)
     ASSERT_NO_THROW_GMX(data.valuesReady());
 }
 
+TEST_F(AnalysisArrayDataTest, CanSetXAxis)
+{
+    gmx::AnalysisArrayData       data;
+    data.setRowCount(5);
+    data.setXAxis(1.0, 1.0);
+    EXPECT_FLOAT_EQ(1.0, data.xvalue(0));
+    EXPECT_FLOAT_EQ(3.0, data.xvalue(2));
+    EXPECT_FLOAT_EQ(5.0, data.xvalue(4));
+    data.setXAxisValue(0, 3.0);
+    data.setXAxisValue(2, 1.0);
+    EXPECT_FLOAT_EQ(3.0, data.xvalue(0));
+    EXPECT_FLOAT_EQ(2.0, data.xvalue(1));
+    EXPECT_FLOAT_EQ(1.0, data.xvalue(2));
+    EXPECT_FLOAT_EQ(4.0, data.xvalue(3));
+}
+
+TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
+{
+    {
+        gmx::AnalysisArrayData       data;
+        data.setXAxis(1.0, 1.0);
+        data.setRowCount(5);
+        EXPECT_FLOAT_EQ(1.0, data.xvalue(0));
+        EXPECT_FLOAT_EQ(3.0, data.xvalue(2));
+        EXPECT_FLOAT_EQ(5.0, data.xvalue(4));
+    }
+    {
+        gmx::AnalysisArrayData       data;
+        data.setXAxisValue(0, 2.0);
+        data.setXAxisValue(1, 3.0);
+        data.setXAxisValue(2, 5.0);
+        data.setRowCount(3);
+        EXPECT_FLOAT_EQ(2.0, data.xvalue(0));
+        EXPECT_FLOAT_EQ(3.0, data.xvalue(1));
+        EXPECT_FLOAT_EQ(5.0, data.xvalue(2));
+    }
+}
+
 } // namespace
