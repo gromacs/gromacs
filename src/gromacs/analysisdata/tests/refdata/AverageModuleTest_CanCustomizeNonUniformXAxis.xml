@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <AnalysisData Name="InputData">
+    <DataFrame Name="Frame0">
+      <Real Name="X">1</Real>
+      <DataValues>
+        <Int Name="Count">3</Int>
+        <DataValue>
+          <Real Name="Value">0</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">2</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame1">
+      <Real Name="X">2</Real>
+      <DataValues>
+        <Int Name="Count">3</Int>
+        <DataValue>
+          <Real Name="Value">1</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame2">
+      <Real Name="X">3</Real>
+      <DataValues>
+        <Int Name="Count">3</Int>
+        <DataValue>
+          <Real Name="Value">2</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">0</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">0</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+  </AnalysisData>
+  <AnalysisData Name="Average">
+    <DataFrame Name="Frame0">
+      <Real Name="X">2</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">1</Real>
+          <Real Name="Error">1</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame1">
+      <Real Name="X">3</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">0.66666666666666674</Real>
+          <Real Name="Error">0.57735026918962584</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+    <DataFrame Name="Frame2">
+      <Real Name="X">5</Real>
+      <DataValues>
+        <Int Name="Count">1</Int>
+        <DataValue>
+          <Real Name="Value">1</Real>
+          <Real Name="Error">1</Real>
+        </DataValue>
+      </DataValues>
+    </DataFrame>
+  </AnalysisData>
+</ReferenceData>
