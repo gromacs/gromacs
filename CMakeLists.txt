@@ -198,8 +198,12 @@ if(GMX_CPU_ACCELERATION)
     set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
 endif(GMX_CPU_ACCELERATION)
 
-include(gmxDetectSimd)
-gmx_detect_simd(GMX_SUGGESTED_SIMD)
+if(NOT GMX_TARGET_MIC)
+    include(gmxDetectSimd)
+    gmx_detect_simd(GMX_SUGGESTED_SIMD)
+else()
+    set(GMX_SUGGESTED_SIMD "None")
+endif()
 
 gmx_option_multichoice(
     GMX_SIMD
