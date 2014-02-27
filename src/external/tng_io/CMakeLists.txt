@@ -20,6 +20,7 @@ option(TNG_BUILD_TEST "Build TNG testing binary." ON)
 option(TNG_BUILD_COMPRESSION_TESTS "Build tests of the TNG compression library" OFF)
 
 find_package(ZLIB QUIET)
+option(TNG_BUILD_WITH_ZLIB "Build TNG with zlib compression" ${ZLIB_FOUND})
 
 include(CheckIncludeFile)
 check_include_file(inttypes.h   HAVE_INTTYPES_H)

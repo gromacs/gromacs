@@ -23,7 +23,7 @@ if(TNG_INTEGER_BIG_ENDIAN)
   set_property(TARGET tng_io APPEND PROPERTY COMPILE_DEFINITIONS TNG_INTEGER_BIG_ENDIAN)
 endif()
 
-if(ZLIB_FOUND)
+if(TNG_BUILD_WITH_ZLIB)
   set_property(TARGET tng_io APPEND PROPERTY COMPILE_DEFINITIONS USE_ZLIB)
   target_link_libraries(tng_io tng_compress ${ZLIB_LIBRARIES})
 else()
