@@ -871,6 +871,21 @@ Sparc64viiifx chips. On this platform \gromacs{} \gromacsversion{} has
 accelerated group kernels, no accelerated Verlet kernels, and a custom
 build toolchain.
 
+\subsubsection{Intel Xeon Phi}
+
+Gromacs 5.0 has preliminary support for Intel Xeon Phi. Only symmetric
+(aka native) mode is supported. Gromacs is functional on Xeon Phi,
+but it has so far not been optimized to the same level as other
+architectures have. The performance depends among other factors on the
+system size (see ``Running in parallel''). Building for Xeon Phi works
+almost as any other Unix. See the instructions above for details. The
+recommended configuration is
+\begin{verbatim}
+CFLAGS=-mmic CXXFLAGS=-mmic cmake .. -DGMX_FFT_LIBRARY=mkl
+make
+make install
+\end{verbatim}
+
 \section{Tested platforms}
 
 While it is our best belief that \gromacs{} will build and run pretty
