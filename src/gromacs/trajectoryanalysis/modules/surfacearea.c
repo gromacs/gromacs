@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "nsc.h"
+#include "surfacearea.h"
 
 #include <math.h>
 #include <stdarg.h>
