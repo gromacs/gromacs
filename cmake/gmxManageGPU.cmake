@@ -64,11 +64,11 @@ if(GMX_GPU OR GMX_GPU_AUTO)
         # Noise is acceptable when there is a GPU or the user required one.
         set(FIND_CUDA_QUIETLY QUIET)
     endif()
-    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    # We support CUDA >=v4.0 on *nix, but <= v4.1 doesn't work with MSVC
     if(MSVC)
         find_package(CUDA 4.1 ${FIND_CUDA_QUIETLY})
     else()
-        find_package(CUDA 3.2 ${FIND_CUDA_QUIETLY})
+        find_package(CUDA 4.0 ${FIND_CUDA_QUIETLY})
     endif()
 endif()
 
