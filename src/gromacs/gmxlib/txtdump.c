@@ -1042,6 +1042,20 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
 
             pr_rvec(fp, indent, "adress-reference-coords", ir->adress->refs, DIM, TRUE);
         }
+
+        /* Drude stuff */
+        PS("drude", EBOOL(ir->bDrude));
+        if (ir->bDrude)
+        {
+            PS("drudemode", EDRUDETYPE(ir->drude->drudemode));
+            PR("drude-t", ir->drude->drude_t);
+            PR("drude-tau-t", ir->drude->drude_tau_t);
+            PS("drude-hardwall", EBOOL(ir->drude->bHardWall));
+            PR("drude-r", ir->drude->drude_r);
+            PR("drude-khyp", ir->drude->drude_khyp);
+            PR("nbtholecut", ir->drude->nbtholecut);
+        }
+
         PI("userint1", ir->userint1);
         PI("userint2", ir->userint2);
         PI("userint3", ir->userint3);

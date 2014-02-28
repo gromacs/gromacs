@@ -1485,6 +1485,30 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->bAdress = FALSE;
     }
 
+    /* Drude stuff */
+    if (file_version >= 96)
+    {
+        gmx_fio_do_gmx_bool(fio, ir->bDrude);
+        if (ir->bDrude)
+        {
+            if (bRead)
+            {
+                snew(ir->drude, 1);
+            }
+            gmx_fio_do_int(fio, ir->drude->drudemode);
+            gmx_fio_do_real(fio, ir->drude->drude_t);
+            gmx_fio_do_real(fio, ir->drude->drude_tau_t);
+            gmx_fio_do_gmx_bool(fio, ir->drude->bHardWall);
+            gmx_fio_do_real(fio, ir->drude->drude_r);
+            gmx_fio_do_real(fio, ir->drude->drude_khyp);
+            gmx_fio_do_real(fio, ir->drude->nbtholecut);
+        }
+    }
+    else
+    {
+        ir->bDrude = FALSE;
+    }
+
     /* pull stuff */
     if (file_version >= 48)
     {
