@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -106,7 +106,7 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
 
         # On *nix force icc in gcc 4.4 compatibility mode with CUDA 3.2/4.0 and
         # gcc 4.5 compatibility mode with later CUDA versions. This is needed
-        # as even with icc use as host compiler, when icc's gcc compatibility
+        # as even with icc used as host compiler, when icc's gcc compatibility
         # mode is higher than the max gcc version officially supported by CUDA,
         # nvcc will freak out.
         if (UNIX AND CMAKE_C_COMPILER_ID MATCHES "Intel" AND
@@ -134,13 +134,19 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         endif()
     endif()
 
+    # the legacy CUDA kernels have been dropped, warn with CUDA 4.0
+    if (CUDA_VERSION VERSION_EQUAL "4.0")
+        message(WARNING "The legacy GPU kernels optimized for older CUDA compilers, including the detected version 4.0, have been removed. To avoid performance loss, we strongly recommend upgrading to a newer CUDA toolkit.
+        ")
+    endif()
+
     # Set the CUDA GPU architectures to compile for:
     # - with CUDA >v4.2 compute capability 2.0, 2.1 is, but 3.0 is not supported:
     #     => compile sm_20, sm_21 cubin, and compute_20 PTX
-    # - with CUDA >=4.2 compute capabity <=3.0 is supported:
+    # - with CUDA >=4.2 compute capability <=3.0 is supported:
     #     => compile sm_20, sm_21, sm_30 cubin, and compute_30 PTX
-    # - with CUDA 5.0 compute capabity 3.5 is supported, but generating code
-    #   optimized for sm_35 results in lower performance than with sm_30.
+    # - with CUDA 5.0 and later compute capability 3.5 is supported
+    #     => compile sm_20, sm_21, sm_30, sm_35 cubin, and compute_35 PTX
     if(CUDA_VERSION VERSION_LESS "4.2")
         set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_20,code=compute_20")
     elseif(CUDA_VERSION VERSION_LESS "5.0")
