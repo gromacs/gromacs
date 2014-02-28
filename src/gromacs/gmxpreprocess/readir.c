@@ -2181,6 +2181,14 @@ void get_ir(const char *mdparin, const char *mdparout,
         read_adressparams(&ninp, &inp, ir->adress, wi);
     }
 
+    /* Drude options */
+    EETYPE("drude", ir->bDrude, yesno_names);
+    if (ir->bDrude)
+    {
+        snew(ir->drude, 1);
+        read_drude_opts(&ninp, &inp, ir->drude, wi);
+    }
+
     /* User defined thingies */
     CCTYPE ("User defined thingies");
     STYPE ("user1-grps",  is->user1,          NULL);

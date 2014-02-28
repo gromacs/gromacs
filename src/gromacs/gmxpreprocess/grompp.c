@@ -1670,6 +1670,55 @@ int gmx_grompp(int argc, char *argv[])
         /** \TODO check size of ex+hy width against box size */
     }
 
+    if (ir->bDrude)
+    {
+        /* Some checks to help the user */
+        /* Drude settings are very specific, but instead of ugly hard-coded values
+         * we give the user some freedom to make decisions. Some of those decisions
+         * will probably be bad ones, so here we try to help
+         */
+        if (ir->drude->drude_t > 1.0)
+        {
+            warning_note(wi, "Drude temperature > 1.0, could be unstable!");
+        }
+
+        if (ir->drude->bHardWall)
+        {
+            if (ir->drude->drude_r > 0.02)
+            {
+                warning_note(wi, "Drude hard wall radius > 0.02, could be unstable!");
+            }
+        }
+        else
+        {
+            warning_note(wi, "Drude hard wall not set, could be unstable!");
+        }
+
+        /* dt = 0.002 is probably safe for water, but not much else */
+        /* Highly charged systems like proteins and DNA are very sensitive */
+        if (ir->delta_t > 0.001)
+        {
+            warning_note(wi, "dt is very large, recommend 0.001 for stability.");
+        }
+
+        /* Note that free energy and pull code are completely untested...should work? */
+        if (ir->efep != efepNO)
+        {
+            warning_note(wi, "Free energy simulatoins with Drude are completely untested!");
+        }
+
+        if (ir->ePull != epullNO)
+        {
+            warning_note(wi, "Drude + pulling has not been tested but should work. Tread lightly!");
+        }
+
+        /* Drude will not work with anything other than EM or VV */
+        if (!(EI_ENERGY_MINIMIZATION(ir->eI) || (EI_VV(ir->eI))))
+        {
+            gmx_fatal(FARGS, "Cannot run Drude simulation with integrator = %s.", ei_names[ir->eI]);
+        }
+    }
+
     /* Check for errors in the input now, since they might cause problems
      * during processing further down.
      */

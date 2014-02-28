@@ -154,6 +154,9 @@ void read_adressparams(int *ninp_p, t_inpfile **inp_p, t_adress *adress, warninp
 void do_adress_index(t_adress *adress, gmx_groups_t *groups, char **gnames, t_grpopts *opts, warninp_t wi);
 /* Generate adress groups */
 
+void read_drude_opts(int *ninp_p, t_inpfile **inp_p, t_drude *drude, warninp_t wi);
+/* Reads in Drude options */
+
 char **read_rotparams(int *ninp_p, t_inpfile **inp, t_rot *rot, warninp_t wi);
 /* Reads enforced rotation parameters, returns a list of the rot group names */
 

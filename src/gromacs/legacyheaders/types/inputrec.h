@@ -318,6 +318,18 @@ typedef struct {
 } t_adress;
 
 typedef struct {
+    int         drudemode;      /* Mode: SCF of extended Lagrangian */
+    real        drude_t;        /* Temperature for Drude thermostat */
+    real        drude_tau_t;    /* Coupling constant for Drude thermostat */
+    gmx_bool    bHardWall;      /* Whether or not to apply hard-wall restraining potential */
+    real        drude_r;        /* Length beyond which to apply quartic restraining potential */
+    real        drude_khyp;     /* Force constant for hyperpolarization correction */
+    real        nbtholecut;     /* Radius for screened Coulomb correction of Thole for
+                                 * non-excluded nonbonded Drude pairs. Set to 0.5 for
+                                 * highly charged systems (default is 0.0) */
+} t_drude;
+
+typedef struct {
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
@@ -462,6 +474,8 @@ typedef struct {
                                    /* parameter needed for AdResS simulation       */
     gmx_bool        bAdress;       /* Is AdResS enabled ? */
     t_adress       *adress;        /* The data for adress simulations */
+    gmx_bool        bDrude;        /* whether or not we have Drudes */
+    t_drude        *drude;         /* Drude options */
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX] != 0 || (ir).deform[YY][YY] != 0 || (ir).deform[ZZ][ZZ] != 0 || (ir).deform[YY][XX] != 0 || (ir).deform[ZZ][XX] != 0 || (ir).deform[ZZ][YY] != 0)

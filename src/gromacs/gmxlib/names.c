@@ -268,6 +268,10 @@ const char *eAdressSITEtype_names[eAdressSITENR+1] = {
     "com", "cog", "atom", "atomperatom", NULL
 };
 
+const char *edrude_modes[edrudeNR+1] = {
+    "scf", "lagrangian", NULL
+};
+
 const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1] = {
     "Particle-Particle", "Water3-Particle", "Water3-Water3", "Water4-Particle", "Water4-Water4", "CG-CG", NULL
 };

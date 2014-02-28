@@ -374,6 +374,10 @@ enum {
     eAdressSITEcom, eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
 };
 
+/* for Drude - method of updating Drude particle positions */
+enum {
+    edrudeSCF, edrudeLagrangian, edrudeNR
+};
 
 /* The interactions contained in a (possibly merged) table
  * for computing electrostatic, VDW repulsion and/or VDW dispersion
