@@ -317,6 +317,9 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t  pme_lb,
     /* The Ewald coefficient is inversly proportional to the cut-off */
     set->ewaldcoeff_q =
         pme_lb->setup[0].ewaldcoeff_q*pme_lb->setup[0].rcut_coulomb/set->rcut_coulomb;
+    /* We set ewaldcoeff_lj in set, even when LJ-PME is not used */
+    set->ewaldcoeff_lj =
+        pme_lb->setup[0].ewaldcoeff_lj*pme_lb->setup[0].rcut_coulomb/set->rcut_coulomb;
 
     set->count   = 0;
     set->cycles  = 0;
@@ -665,6 +668,19 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
     {
         ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+    }
+    if (EVDW_PME(ic->vdwtype))
+    {
+        /* We have PME for both Coulomb and VdW, set rvdw equal to rcoulomb */
+        real crc2;
+
+        ic->rvdw            = set->rcut_coulomb;
+        ic->ewaldcoeff_lj   = set->ewaldcoeff_lj;
+        crc2                = sqr(ic->ewaldcoeff_lj*ic->rvdw);
+        if (ic->vdw_modifier == eintmodPOTSHIFT)
+        {
+            ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
+        }
     }
 
     bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
