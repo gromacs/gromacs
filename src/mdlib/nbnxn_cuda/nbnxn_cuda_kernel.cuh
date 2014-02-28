@@ -175,15 +175,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     cij4_start  = nb_sci.cj4_ind_start; /* first ...*/
     cij4_end    = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
-    /* Store the i-atom x and q in shared memory */
-    /* Note: the thread indexing here is inverted with respect to the
-       inner-loop as this results in slightly higher performance */
-    ci = sci * NCL_PER_SUPERCL + tidxi;
-    ai = ci * CL_SIZE + tidxj;
-    xqib[tidxi * CL_SIZE + tidxj] = xq[ai] + shift_vec[nb_sci.shift];
-#ifdef IATYPE_SHMEM
+    /* Pre-load i-atom x and q into shared memory */
     ci = sci * NCL_PER_SUPERCL + tidxj;
     ai = ci * CL_SIZE + tidxi;
+    xqib[tidxj * CL_SIZE + tidxi] = xq[ai] + shift_vec[nb_sci.shift];
+#ifdef IATYPE_SHMEM
+    /* Pre-load the i-atom types into shared memory */
     atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
 #endif
     __syncthreads();
