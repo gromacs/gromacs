@@ -427,6 +427,14 @@ void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t           cu_nb,
     nbp->rlist_sq       = ic->rlist * ic->rlist;
     nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
     nbp->ewald_beta     = ic->ewaldcoeff_q;
+    nbp->sh_ewald       = ic->sh_ewald;
+
+    if (EVDW_PME(ic->vdwtype))
+    {
+        nbp->rvdw_sq        = ic->rvdw * ic->rvdw;    
+        nbp->ewaldcoeff_lj  = ic->ewaldcoeff_lj;
+        nbp->sh_lj_ewald    = ic->sh_lj_ewald;
+    }
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  cu_nb->dev_info);
