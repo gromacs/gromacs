@@ -46,8 +46,7 @@
  *  - Tests for XVG labels.  This is a limitation of the current testing
  *    framework.
  *
- * The actual surface area algorithm should be tested separately with a more
- * extensive set of data, but those fit better as a separate set of unit tests.
+ * The actual surface area algorithm is tested separately in nsc.cpp.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
