@@ -402,6 +402,17 @@ relativeToleranceAsPrecisionDependentUlp(double       magnitude,
 }
 
 /*! \brief
+ * Creates a tolerance that allows a specified absolute difference.
+ *
+ * \related FloatingPointTolerance
+ */
+static inline FloatingPointTolerance
+absoluteTolerance(double tolerance)
+{
+    return FloatingPointTolerance(tolerance, -1, false);
+}
+
+/*! \brief
  * Creates a tolerance that allows a relative difference in a complex
  * computation.
  *
