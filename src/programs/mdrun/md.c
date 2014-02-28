@@ -458,11 +458,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
-    /* PME tuning is only supported with GPUs or PME nodes and not with rerun or LJ-PME. */
+    /* PME tuning is only supported with GPUs or PME nodes and not with rerun.
+     * PME tuning is not supported with PME only for LJ and not for Coulomb.
+     */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
         ( (fr->cutoff_scheme == ecutsVERLET && fr->nbv->bUseGPU) || !(cr->duty & DUTY_PME)) &&
-        !bRerunMD && !EVDW_PME(fr->vdwtype))
+        !bRerunMD)
     {
         pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata);
         cycles_pmes = 0;
@@ -1878,11 +1880,17 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                          step);
 
                     /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
-                    fr->ewaldcoeff_q = fr->ic->ewaldcoeff_q;
-                    fr->rlist        = fr->ic->rlist;
-                    fr->rlistlong    = fr->ic->rlistlong;
-                    fr->rcoulomb     = fr->ic->rcoulomb;
-                    fr->rvdw         = fr->ic->rvdw;
+                    fr->ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
+                    fr->ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
+                    fr->rlist         = fr->ic->rlist;
+                    fr->rlistlong     = fr->ic->rlistlong;
+                    fr->rcoulomb      = fr->ic->rcoulomb;
+                    fr->rvdw          = fr->ic->rvdw;
+
+                    if (ir->eDispCorr != edispcNO)
+                    {
+                        calc_enervirdiff(NULL, ir->eDispCorr, fr);
+                    }
                 }
                 cycles_pmes = 0;
             }
