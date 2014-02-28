@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_TRAJECTORYANALYSIS_NSC_H
-#define GMX_TRAJECTORYANALYSIS_NSC_H
+#ifndef GMX_TRAJECTORYANALYSIS_SURFACEAREA_H
+#define GMX_TRAJECTORYANALYSIS_SURFACEAREA_H
 
 #include "gromacs/legacyheaders/types/simple.h"
 
@@ -107,13 +107,13 @@ int nsc_dclm_pbc(const rvec *coords, real *radius, int nat,
    The output pointer 1 cannot be set to NULL in any circumstances. The
    overall area value is returned in every mode.
 
-   All files calling NSC should include nsc.h !!
+   All files calling NSC should include surfacearea.h !!
 
 
    Example for calling NSC (contents of user file):
 
    ...
-   #include "nsc.h"
+   #include "surfacearea.h"
 
    int routine_calling_NSC(int n_atom, real *coordinates, real *radii) {
    real area, volume, *atomwise_area, *surface_dots;

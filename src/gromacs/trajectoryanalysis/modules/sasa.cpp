@@ -75,7 +75,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "nsc.h"
+#include "surfacearea.h"
 
 namespace gmx
 {

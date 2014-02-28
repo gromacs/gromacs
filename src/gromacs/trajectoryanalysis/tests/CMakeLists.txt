@@ -39,6 +39,7 @@ gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
                   freevolume.cpp
                   sasa.cpp
                   select.cpp
+                  surfacearea.cpp
                   $<TARGET_OBJECTS:analysisdata-test-shared>)
 
 add_executable(test_selection ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)
