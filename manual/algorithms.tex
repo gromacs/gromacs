@@ -646,14 +646,23 @@ the inter particle distance changes from $r_0$ to $r_t$, as:
 \nonumber\\
 & &
 \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[}
-V''(r_c)\frac{1}{2}(r_t - r_c)^2 \Big] G\!\left(\frac{r_t-r_0}{\sigma}\right) d r_0 \, d r_t\\
+V''(r_c)\frac{1}{2}(r_t - r_c)^2 +
+\nonumber\\
+& &
+\phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[}
+V'''(r_c)\frac{1}{6}(r_t - r_c)^3 \Big] G\!\left(\frac{r_t-r_0}{\sigma}\right)
+d r_0 \, d r_t\\
 &=&
 4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{
 \frac{1}{2}V'(r_c)\left[r_b \sigma G\!\left(\frac{r_b}{\sigma}\right) - (r_b^2+\sigma^2)E\!\left(\frac{r_b}{\sigma}\right) \right] +
 \nonumber\\
 & &
 \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{ }
-\frac{1}{6}V''(r_c)\left[ \sigma(r_b^2+\sigma^2)G\!\left(\frac{r_b}{\sigma}\right) - r_b(r_b^2+3\sigma^2 ) E\!\left(\frac{r_b}{\sigma}\right) \right]
+\frac{1}{6}V''(r_c)\left[ \sigma(r_b^2+2\sigma^2)G\!\left(\frac{r_b}{\sigma}\right) - r_b(r_b^2+3\sigma^2 ) E\!\left(\frac{r_b}{\sigma}\right) \right] +
+\nonumber\\
+& &
+\phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{ }
+\frac{1}{24}V'''(r_c)\left[ r_b\sigma(r_b^2+5\sigma^2)G\!\left(\frac{r_b}{\sigma}\right) - (r_b^4+6r_b^2\sigma^2+3\sigma^4 ) E\!\left(\frac{r_b}{\sigma}\right) \right]
 \bigg\}
 \end{eqnarray}
 

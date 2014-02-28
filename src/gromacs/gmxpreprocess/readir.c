@@ -1200,6 +1200,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         sprintf(err_buf, "With switched vdw forces or potentials, rvdw-switch must be < rvdw");
         CHECK(ir->rvdw_switch >= ir->rvdw);
+
+        if (ir->rvdw_switch < 0.5*ir->rvdw)
+        {
+            sprintf(warn_buf, "You are applying a switch function to vdw forces or potentials from %g to %g nm, which is more than half the interaction range, whereas switch functions are intended to act only close to the cut-off.",
+                    ir->rvdw_switch, ir->rvdw);
+            warning_note(wi, warn_buf);
+        }
     }
     else if (ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME)
     {
