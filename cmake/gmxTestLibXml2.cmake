@@ -41,7 +41,7 @@
 #
 #  VARIABLE will be set to true if libxml2 support is present
 
-include(CheckCSourceCompiles)
+include(CheckLibraryExists)
 include(gmxOptionUtilities)
 function(GMX_TEST_LIBXML2 VARIABLE)
     if(LIBXML2_FOUND)
@@ -49,13 +49,8 @@ function(GMX_TEST_LIBXML2 VARIABLE)
         if(_do_libxml2_recompile)
             unset(LIBXML2_COMPILES_OK CACHE)
         endif()
-        set(CMAKE_REQUIRED_INCLUDES "${LIBXML2_INCLUDE_DIR}")
-        set(CMAKE_REQUIRED_LIBRARIES "${LIBXML2_LIBRARIES}")
-        check_c_source_compiles(
-            "#include <libxml/xmlwriter.h>
-int main(void) { xmlTextWriterEndAttribute(0); }"
-            LIBXML2_COMPILES_OK)
-        set(${VARIABLE} ${LIBXML2_COMPILES_OK} PARENT_SCOPE)
+        check_library_exists("${LIBXML2_LIBRARIES}" "xmlTextWriterEndAttribute" "" LIBXML2_LINKS_OK)
+        set(${VARIABLE} ${LIBXML2_LINKS_OK} PARENT_SCOPE)
     else()
         set(${VARIABLE} OFF PARENT_SCOPE)
     endif()
