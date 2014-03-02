@@ -96,14 +96,26 @@ mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
 include(gmxBuildTypeThreadSanitizer)
+include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert." FORCE)
     # There's no need to offer a user the choice of ThreadSanitizer
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo")
-endif(NOT CMAKE_BUILD_TYPE)
+        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert")
+endif()
+if(CMAKE_CONFIGURATION_TYPES)
+    # Add appropriate GROMACS-specific build types for the Visual
+    # Studio generator (Debug, Release, MinSizeRel and RelWithDebInfo
+    # are already present by default).
+    list(APPEND CMAKE_CONFIGURATION_TYPES "RelWithAssert" "Reference")
+    list(REMOVE_DUPLICATES CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING
+        "List of configuration types"
+        FORCE)
+endif()
+set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL)
 
 enable_language(C)
 enable_language(CXX)

@@ -54,6 +54,44 @@ MACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
     ENDIF (${VARIABLE})
 ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 
+# Set the real CMake variables for compiler flags. This should be a function
+# so we can have proper local variables while avoiding duplicating code.
+function(gmx_set_cmake_compiler_flags build_types_with_explicit_flags)
+    foreach(language C CXX)
+        # Copy the flags for the release build type to the build types
+        # that are modified forms of it. Ideally, the list of build
+        # types that are modifications of the Release build type would
+        # be set up elsewhere and passed to this function, but it is
+        # inconvenient in CMake to pass more than one list, and such a
+        # list is only used here.
+        foreach(build_type RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL)
+            set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
+        endforeach()
+        # Copy the flags that are only used by the real Release build
+        # type. Currently unused, but we plan to use -Wno-array-bounds
+        # in Release to work around gcc-4.8 being a little too vocal
+        # about some perfectly good code, while using RelWithAssert
+        # (ie. without that suppression) in Jenkins.
+        set(GMXC_${language}FLAGS_RELEASE "${GMXC_${language}FLAGS_RELEASE} ${GMXC_${language}FLAGS_RELEASE_ONLY}")
+
+        # Modify the real CMake variables for compiler flags for all
+        # builds and language types, and also those common to all
+        # build types.
+        foreach(build_type "" ${build_types_with_explicit_flags})
+            if("${build_type}" STREQUAL "")
+                set(punctuation "") # for general compiler flags (e.g.) CMAKE_CXX_FLAGS
+            else()
+                set(punctuation "_") # for build-type-specific compiler flags (e.g.) CMAKE_CXX_FLAGS_RELEASE
+            endif()
+
+            # Append to the variables for the given build type for
+            # each language, in the parent scope.
+            set(CMAKE_${language}_FLAGS${punctuation}${build_type}
+                "${GMXC_${language}FLAGS${punctuation}${build_type}} ${CMAKE_${language}_FLAGS${punctuation}${build_type}}"
+                PARENT_SCOPE)
+        endforeach()
+    endforeach()
+endfunction()
 
 # This is the actual exported function to be called 
 MACRO(gmx_c_flags)
@@ -182,20 +220,8 @@ MACRO(gmx_c_flags)
     endif()
 
     # now actually set the flags:
-    # C
-    if ( NOT GMX_SKIP_DEFAULT_CFLAGS )
-        set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}")
-        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}")
-        set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}")
-    endif()
-
-    # C++
-    if ( NOT GMX_SKIP_DEFAULT_CFLAGS)
-        set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}")
-        set(CMAKE_CXX_FLAGS_RELEASE 
-            "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}")
-        set(CMAKE_CXX_FLAGS_DEBUG 
-            "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}")
+    if (NOT GMX_SKIP_DEFAULT_CFLAGS)
+        gmx_set_cmake_compiler_flags(${build_types_with_explicit_flags})
     endif()
 ENDMACRO(gmx_c_flags)
 

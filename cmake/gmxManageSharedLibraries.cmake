@@ -87,6 +87,27 @@ if (UNIX AND GMX_PREFER_STATIC_LIBS)
     # be used, so we'll add both to the preference list.
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
+
+# ==========
+# Only things for managing shared libraries and build types on Windows follow
+
+# Change the real CMake variables so we prefer static linking. This
+# should be a function so we can have proper local variables while
+# avoiding duplicating code.
+function(gmx_manage_prefer_static_libs_flags build_type)
+    if("${build_type}" STREQUAL "")
+        set(punctuation "") # for general compiler flags (e.g.) CMAKE_CXX_FLAGS
+    else()
+        set(punctuation "_") # for build-type-specific compiler flags (e.g.) CMAKE_CXX_FLAGS_RELEASE
+    endif()
+
+    # Change the real CMake variables for the given build type in each
+    # language, in the parent scope.
+    foreach(language C CXX)
+        string(REPLACE /MD /MT CMAKE_${language}_FLAGS${punctuation}${build_type} ${CMAKE_${language}_FLAGS${punctuation}${build_type}} PARENT_SCOPE)
+    endforeach()
+endfunction()
+
 IF( WIN32 AND NOT CYGWIN)
   if (NOT BUILD_SHARED_LIBS)
       if(NOT GMX_PREFER_STATIC_LIBS)
@@ -103,11 +124,9 @@ IF( WIN32 AND NOT CYGWIN)
   endif()
 
   IF (GMX_PREFER_STATIC_LIBS)
-      #Only setting Debug and Release flags. Others configurations are current not used.
-      STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-      STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-      STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-      STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+      foreach(build_type "" ${build_types_with_explicit_flags})
+          gmx_manage_prefer_static_libs_flags("${build_type}")
+      endforeach()
   ENDIF()
   IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
     if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work
