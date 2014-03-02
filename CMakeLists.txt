@@ -96,14 +96,22 @@ mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
 include(gmxBuildTypeThreadSanitizer)
+include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert." FORCE)
     # There's no need to offer a user the choice of ThreadSanitizer
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo")
+        "MinSizeRel" "RelWithDebInfo" "RelWithAssert")
 endif(NOT CMAKE_BUILD_TYPE)
+if(CMAKE_CONFIGURATION_TYPES)
+   list(APPEND CMAKE_CONFIGURATION_TYPES "RelWithAssert")
+   list(REMOVE_DUPLICATES CMAKE_CONFIGURATION_TYPES)
+   set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING
+     "List of configuration types"
+     FORCE)
+endif()
 
 enable_language(C)
 enable_language(CXX)
