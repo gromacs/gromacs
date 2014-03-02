@@ -61,31 +61,45 @@
 
 #define TPX_TAG_RELEASE  "release"
 
-/* This is the tag string which is stored in the tpx file.
- * Change this if you want to change the tpx format in a feature branch.
- * This ensures that there will not be different tpx formats around which
- * can not be distinguished.
+/*! \brief Tag string for the file format written to run input files
+ * written by this version of the code.
+ *
+ * Change this if you want to change the run input format in a feature
+ * branch. This ensures that there will not be different run input
+ * formats around which cannot be distinguished, while not causing
+ * problems rebasing the feature branch onto upstream changes. When
+ * merging with mainstream GROMACS, set this tag string back to
+ * TPX_TAG_RELEASE, and instead add an element to tpxv and set
+ * tpx_version to that.
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
+/*! \brief Enum of values that describe the contents of a tpr file
+ * whose format matches a version number
+ *
+ * The enum helps the code be more self-documenting and ensure merges
+ * do not silently resolve when two patches make the same bump. When
+ * adding new functionality, add a new element to the end of this
+ * enumeration, change the definition of tpx_version, and write code
+ * below that does the right thing according to the value of
+ * file_version. */
+enum tpxv {
+    tpxv_ComputationalElectrophysiology = 96, /**< support for ion/water position swaps (computational electrophysiology) */
+    tpxv_Use64BitRandomSeed                   /**< change ld_seed from int to gmx_int64_t */
+};
 
-/* The tpx_version number should be increased whenever the file format changes!
+/*! \brief Version number of the file format written to run input
+ * files by this version of the code.
  *
- * The following comment section helps to keep track of which feature has been
- * added in which version.
+ * The tpx_version number should be increased whenever the file format
+ * in the main development branch changes, generally to the highest
+ * value present in tpxv. Backward compatibility for reading old run
+ * input files is maintained by checking this version number against
+ * that of the file and then using the correct code path.
  *
- * version  feature added
- *    96    support for ion/water position swaps (computational electrophysiology)
- *    97    switch ld_seed from int to gmx_int64_t
- *
- * The following macros help the code be more self-documenting and
- * ensure merges do not silently resolve when two patches make the
- * same bump to the number. Unfortunately, compilers don't like
- * initializing a const int with a const int, so we have to be a bit
- * dirty and use a macro.
- */
-#define tpx_version_use_64_bit_random_seed 97
-static const int tpx_version = tpx_version_use_64_bit_random_seed;
+ * When developing a feature branch that needs to change the run input
+ * file format, change tpx_tag instead. */
+static const int tpx_version = tpxv_Use64BitRandomSeed;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -1416,7 +1430,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, bd_temp);
     }
     gmx_fio_do_real(fio, ir->bd_fric);
-    if (file_version >= tpx_version_use_64_bit_random_seed)
+    if (file_version >= tpxv_Use64BitRandomSeed)
     {
         gmx_fio_do_int64(fio, ir->ld_seed);
     }
@@ -1696,7 +1710,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
 
     /* Swap ions */
-    if (file_version >= 96)
+    if (file_version >= tpxv_ComputationalElectrophysiology)
     {
         gmx_fio_do_int(fio, ir->eSwapCoords);
         if (ir->eSwapCoords != eswapNO)
