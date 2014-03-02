@@ -54,6 +54,48 @@ MACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
     ENDIF (${VARIABLE})
 ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 
+# Helper macro for gmx_set_cmake_flags that copies the contents of
+# the helper variables into the real CMake variables. This should be
+# a macro so that we don't need to set variables in parent scope
+# here and in the caller.
+macro(gmx_set_cmake_compiler_flags_inner build_type)
+    if("${build_type}" STREQUAL "")
+        set(punctuation "") # for general compiler flags (e.g.) CMAKE_CXX_FLAGS
+    else()
+        set(punctuation "_") # for build-type-specific compiler flags (e.g.) CMAKE_CXX_FLAGS_RELEASE
+    endif()
+
+    # Append to the variables for the given build type each language,
+    # in the parent scope.
+    foreach(language C CXX)
+        set(CMAKE_${language}_FLAGS${punctuation}${build_type}
+            "${GMXC_${language}FLAGS${punctuation}${build_type}} ${CMAKE_${language}_FLAGS${punctuation}${build_type}}"
+            PARENT_SCOPE)
+    endforeach()
+endmacro()
+
+# Set the real CMake variables for compiler flags. This should be a function
+# so we can have proper local variables while avoiding duplicating code.
+function(gmx_set_cmake_compiler_flags build_types_with_explicit_flags)
+    # Copy the flags for the release build type to the build types
+    # that are modified forms of it. Ideally, the list of build types
+    # that are modifications of the Release build type would be set up
+    # elsewhere and passed to this function, but it is inconvenient in
+    # CMake to pass more than one list, and such a list is only used
+    # here.
+    foreach(build_type RELWITHDEBUGINFO RELWITHASSERT)
+        foreach(language C CXX)
+            set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
+        endforeach()
+    endforeach()
+
+    # Modify the real CMake variables for compiler flags for all
+    # builds and language types, and also those common to all build
+    # types.
+    foreach(build_type "" ${build_types_with_explicit_flags})
+        gmx_set_cmake_compiler_flags_inner("${build_type}")
+    endforeach()
+endfunction()
 
 # This is the actual exported function to be called 
 MACRO(gmx_c_flags)
@@ -191,11 +233,7 @@ MACRO(gmx_c_flags)
 
     # C++
     if ( NOT GMX_SKIP_DEFAULT_CFLAGS)
-        set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}")
-        set(CMAKE_CXX_FLAGS_RELEASE 
-            "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}")
-        set(CMAKE_CXX_FLAGS_DEBUG 
-            "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}")
+        gmx_set_cmake_compiler_flags(${build_types_with_explicit_flags})
     endif()
 ENDMACRO(gmx_c_flags)
 
