@@ -55,6 +55,20 @@ gmx_dependent_option(
     DOXYGEN_FOUND)
 mark_as_advanced(GMX_COMPACT_DOXYGEN)
 
+find_package(PythonInterp)
+set(USE_PYTHON_SCRIPTS OFF)
+if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
+    set(USE_PYTHON_SCRIPTS ON)
+endif()
+
+add_custom_target(find-installed-headers
+    COMMAND ${CMAKE_COMMAND}
+        -D SRCDIR=${CMAKE_SOURCE_DIR}
+        -D BUILDDIR=${CMAKE_BINARY_DIR}
+        -D OUTFILE=${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/getInstalledHeaders.cmake
+    COMMENT "Generating installed headers list" VERBATIM)
+
 ########################################################################
 # Doxygen configuration
 ########################################################################
@@ -72,6 +86,7 @@ if (DOXYGEN_FOUND)
     CONFIGURE_FILE(Doxyfile-full.cmakein Doxyfile-full)
     CONFIGURE_FILE(Doxyfile-lib.cmakein Doxyfile-lib)
     CONFIGURE_FILE(Doxyfile-user.cmakein Doxyfile-user)
+    CONFIGURE_FILE(Doxyfile-xml.cmakein Doxyfile-xml)
 
     if (GMX_COMPACT_DOXYGEN)
         FILE(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
@@ -92,6 +107,10 @@ if (DOXYGEN_FOUND)
         ${CMAKE_COMMAND} -DDOCTYPE=user -P RunDoxygen.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating public API documentation with Doxygen" VERBATIM)
+    add_custom_target(doc-xml
+        ${CMAKE_COMMAND} -DDOCTYPE=xml -P RunDoxygen.cmake
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Extracting Doxygen documentation to XML" VERBATIM)
     add_custom_target(doc-all)
     add_dependencies(doc-all doc-full doc-lib doc-user)
 
@@ -111,15 +130,30 @@ if (DOXYGEN_FOUND)
         add_dependencies(doc-full doxygen-version)
         add_dependencies(doc-lib doxygen-version)
         add_dependencies(doc-user doxygen-version)
+        add_dependencies(doc-xml doxygen-version)
     else()
         set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
         configure_file(Doxyfile-version.cmakein Doxyfile-version)
     endif()
+
+    if (USE_PYTHON_SCRIPTS)
+        set(doc_check_command
+            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-check.py
+            -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
+            --installed ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
+            -l ${CMAKE_CURRENT_BINARY_DIR}/doxygen-check.log)
+        add_custom_target(doc-check COMMAND ${doc_check_command}
+            COMMENT "Checking Doxygen documentation" VERBATIM)
+        add_dependencies(doc-check doc-xml find-installed-headers)
+        # This target is the same as doc-check, but it doesn't rerun the
+        # dependencies each time, making it faster and more convenient for
+        # testing.
+        add_custom_target(doc-check-fast COMMAND ${doc_check_command}
+            COMMENT "Checking Doxygen documentation" VERBATIM)
+    endif()
 endif (DOXYGEN_FOUND)
 
-find_package(PythonInterp)
-
-if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
+if (USE_PYTHON_SCRIPTS)
     add_custom_target(depgraphs
         ${CMAKE_COMMAND}
         -DSRCDIR=${CMAKE_SOURCE_DIR}
