@@ -104,7 +104,6 @@ void update_coords(FILE             *fplog,
                    t_idef           *idef);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
-
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr_t constr);
 
 void update_constraints(FILE             *fplog,
