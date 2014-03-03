@@ -16,4 +16,3 @@ HTML_OUTPUT            = html-user
 ALIASES               += inpublicapi="\ingroup group_publicapi"
 ALIASES               += inlibraryapi="\ingroup group_libraryapi"
 ALIASES               += libinternal="\internal"
-ALIASES               += endlibinternal="\endinternal"
