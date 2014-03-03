@@ -350,7 +350,7 @@ static void cmp_idef(FILE *fp, t_idef *id1, t_idef *id2, real ftol, real abstol)
     {
         cmp_int(fp, "idef->ntypes", -1, id1->ntypes, id2->ntypes);
         cmp_int(fp, "idef->atnr",  -1, id1->atnr, id2->atnr);
-        for (i = 0; (i < id1->ntypes); i++)
+        for (i = 0; (i < min(id1->ntypes, id2->ntypes)); i++)
         {
             sprintf(buf1, "idef->functype[%d]", i);
             sprintf(buf2, "idef->iparam[%d]", i);
