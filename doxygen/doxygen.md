@@ -189,14 +189,16 @@ different mechanisms are used:
   declarations local to source files only in the full documentation.
   You can find the details from the `Doxyfile-*.cmakein` files, and some of
   them are also mentioned below on individual code constructs.
-* The standard Doxygen commands \c \\internal and \c \\endinternal mark the
-  documentation to be only extracted into the full documentation
-  (`INTERNAL_DOCS` is `ON` only for the full documentation).
-  In addition, \Gromacs specific custom Doxygen commands \c \\libinternal and
-  \c \\endlibinternal are provided, which only exclude the documentation from
-  the public API documentation.  These are implemented by expanding the
-  commands to either \c \\internal or to a no-op, depending on the
-  documentation level.
+* The standard Doxygen command \c \\internal marks the documentation to be only
+  extracted into the full documentation (`INTERNAL_DOCS` is `ON` only for the
+  full documentation).  This should be used as a first command in a comment
+  block to exclude all the documentation.  It is possible to use \c \\internal
+  and \c \\endinternal to exclude individual paragraphs, but \c \\if `internal`
+  is preferred (see below).
+  In addition, \Gromacs-specific custom Doxygen command \c \\libinternal is
+  provided, which should be used the same way to exclude the documentation from
+  the public API documentation.  This command expands to either \c \\internal
+  or to a no-op, depending on the documentation level.
 * Doxygen commands \c \\if and \c \\cond can be used with section names
   `libapi` and `internal` to only include the documentation in library API and
   the full documentation, respectively.  `libapi` is also defined in the full
