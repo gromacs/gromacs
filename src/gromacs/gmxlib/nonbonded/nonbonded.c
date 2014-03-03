@@ -61,6 +61,7 @@
 #include "nrnb.h"
 #include "smalloc.h"
 #include "nonbonded.h"
+#include "gromacs/simd/simd.h"
 
 #include "nb_kernel.h"
 #include "nb_free_energy.h"
