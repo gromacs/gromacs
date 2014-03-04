@@ -1427,6 +1427,13 @@ int main (int argc, char *argv[])
                    ir->posres_com,ir->posres_comB,
                    wi);
     }
+
+  /* warn that using nstlist < 0 won't produce checkpoint files */
+  if (ir->nstlist < 0)
+  {
+      warning(wi,"You have set nstlist < 0. In this case checkpoint files will not be written - this is a known bug (redmine issue #1275)");
+  }
+  
 		
   nvsite = 0;
   /* set parameters for virtual site construction (not for vsiten) */
