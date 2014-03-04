@@ -37,7 +37,7 @@ include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(CheckCSourceCompiles)
 
-# sets TMPI_ATOMICS to 1 if atomic operations are found, undef otherwise
+# sets TMPI_ATOMICS to 1 if atomic operations are found, unset otherwise
 # Options:
 # include directory for thread_mpi/atomic.h
 MACRO(TMPI_TEST_ATOMICS INCDIR)
@@ -55,7 +55,7 @@ MACRO(TMPI_TEST_ATOMICS INCDIR)
             set(TMPI_ATOMICS_INCDIR ${INCDIR} CACHE INTERNAL "Atomic operations check include dir")
         else (TEST_ATOMICS)
             message(STATUS "Atomic operations not found")
-            undef(TEST_ATOMICS)
+            unset(TEST_ATOMICS)
         endif(TEST_ATOMICS)
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TMPI_TEST_ATOMICS VARIABLE)
