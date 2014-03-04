@@ -561,7 +561,12 @@ void please_cite(FILE *fp, const char *key)
           "M. Lundborg, R. Apostolov, D. Spangberg, A. Gardenas, D. van der Spoel and E. Lindahl",
           "An efficient and extensible format, library, and API for binary trajectory data from molecular simulations",
           "J. Comput. Chem.",
-          35, 2014, "260-269"}
+          35, 2014, "260-269"},
+        { "Lamoureux2003",
+          "G. Lamoureux and B. Roux",
+          "Modeling induced polarization with classical Drude oscillators: Theory and molecular dynamics simulation algorithm",
+          "J. Chem. Phys.",
+          119, 2003, "3025-3039"}
     };
 #define NSTR (int)asize(citedb)
 

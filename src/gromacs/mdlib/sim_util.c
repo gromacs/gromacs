@@ -2851,6 +2851,12 @@ void init_md(FILE *fplog,
         please_cite(fplog, "Fritsch12");
         please_cite(fplog, "Junghans10");
     }
+
+    if ((ir->bDrude) && (ir->drude->drudemode == edrudeLagrangian))
+    {
+        please_cite(fplog, "Lamoureux2003");
+    }
+
     /* Initiate variables */
     clear_mat(force_vir);
     clear_mat(shake_vir);
