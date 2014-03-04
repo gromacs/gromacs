@@ -130,6 +130,12 @@ gmx_bool is_hydrogen(const char *nm);
 gmx_bool is_dummymass(const char *nm);
 /* Return whether atom nm is a dummy mass */
 
+gmx_bool is_drude(const char *nm);
+/* Return whether atom nm is a Drude */
+
+gmx_bool is_lonepair(const char *nm);
+/* Return whether atom nm is a lone pair */
+
 /* Routines to handle CONECT records if they have been read in */
 void gmx_conect_dump(FILE *fp, gmx_conect conect);
 

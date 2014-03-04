@@ -759,6 +759,36 @@ gmx_bool is_dummymass(const char *nm)
     return FALSE;
 }
 
+gmx_bool is_drude(const char *nm)
+{
+    char buf[30];
+
+    strcpy(buf, nm);
+    trim(buf);
+
+    if (buf[0] == 'D')
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+gmx_bool is_lonepair(const char *nm)
+{
+    char buf[30];
+
+    strcpy(buf, nm);
+    trim(buf);
+
+    if ((buf[0] == 'L') && (buf[1] == 'P'))
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 static void gmx_conect_addline(gmx_conect_t *con, char *line)
 {
     int  n, ai, aj;
