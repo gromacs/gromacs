@@ -87,7 +87,6 @@ int gmx_pme_destroy(FILE *log, gmx_pme_t *pmedata);
  */
 #define GMX_PME_DO_COULOMB    (1<<13)
 #define GMX_PME_DO_LJ         (1<<14)
-#define GMX_PME_LJ_LB         (1<<15)
 
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
 

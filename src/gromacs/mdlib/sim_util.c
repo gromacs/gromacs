@@ -934,10 +934,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (EVDW_PME(fr->vdwtype))
         {
             pme_flags |= GMX_PME_DO_LJ;
-            if (fr->ljpme_combination_rule == eljpmeLB)
-            {
-                pme_flags |= GMX_PME_LJ_LB;
-            }
         }
 
         gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
@@ -1704,10 +1700,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (EVDW_PME(fr->vdwtype))
         {
             pme_flags |= GMX_PME_DO_LJ;
-            if (fr->ljpme_combination_rule == eljpmeLB)
-            {
-                pme_flags |= GMX_PME_LJ_LB;
-            }
         }
 
         gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,

@@ -595,11 +595,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                     if (EVDW_PME(fr->vdwtype))
                     {
                         pme_flags |= GMX_PME_DO_LJ;
-                        if (fr->ljpme_combination_rule == eljpmeLB)
-                        {
-                            /*Lorentz-Berthelot Comb. Rules in LJ-PME*/
-                            pme_flags |= GMX_PME_LJ_LB;
-                        }
                     }
                     if (flags & GMX_FORCE_FORCES)
                     {
