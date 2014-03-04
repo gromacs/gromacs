@@ -69,6 +69,7 @@ typedef struct {
     rvec    xold;
     rvec    fold;
     rvec    step;
+    real    k11, k22, k33;       /* anisotropic polarization force constants */
 } t_shell;
 
 typedef struct gmx_shellfc {
@@ -241,7 +242,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
     int                       i, j, nmol, type, mb, mt, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
-    int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
+    int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_ANISO_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
     t_iatom                  *ia;
     gmx_mtop_atomloop_block_t aloopb;
@@ -324,6 +325,10 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
         /* shell[i].bInterCG=FALSE; */
         shell[i].k_1   = 0;
         shell[i].k     = 0;
+        /* anisotropic polarization */
+        shell[i].k11   = 0;
+        shell[i].k22   = 0;
+        shell[i].k33   = 0;
     }
 
     ffparams = &mtop->ffparams;
@@ -369,6 +374,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                         case F_CUBICBONDS:
                         case F_POLARIZATION:
                         case F_ANHARM_POL:
+                        case F_ANISO_POL:
                             if (atom[ia[1]].ptype == eptShell)
                             {
                                 aS = ia[1];
@@ -446,12 +452,25 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                                 break;
                             case F_POLARIZATION:
                             case F_ANHARM_POL:
+                                /* TODO: our k value is precomputed
+                                 * May need to add F_CHARMM_POL or something */
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
                                 {
                                     gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
                                 }
                                 shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
                                     ffparams->iparams[type].polarize.alpha;
+                                break;
+                            case F_ANISO_POL:
+                                if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
+                                {
+                                    gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
+                                }
+                                /* TODO: review this */ 
+                                shell[nsi].k    += ffparams->iparams[type].harmonic.krA;
+                                shell[nsi].k11  += shell[nsi].k/(ffparams->iparams[type].daniso.a11);
+                                shell[nsi].k22  += shell[nsi].k/(ffparams->iparams[type].daniso.a22);
+                                shell[nsi].k33  += shell[nsi].k/(ffparams->iparams[type].daniso.a33);
                                 break;
                             case F_WATER_POL:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
@@ -529,7 +548,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
         {
             if (fplog)
             {
-                fprintf(fplog, "\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
+                fprintf(fplog, "\nNOTE: there all shells that are connected to particles outside their own charge group, will not predict shells positions during the run\n\n");
             }
             shfc->bPredict = FALSE;
         }
@@ -654,7 +673,7 @@ static void directional_sd(rvec xold[], rvec xnew[], rvec acc_dir[],
 }
 
 static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
-                         int ns, t_shell s[], int count)
+                         int ns, t_shell s[], int *count)
 {
     const real step_scale_min       = 0.8,
                step_scale_increment = 0.2,
@@ -671,7 +690,7 @@ static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
     for (i = 0; (i < ns); i++)
     {
         shell = s[i].shell;
-        if (count == 1)
+        if (*count == 1)
         {
             for (d = 0; d < DIM; d++)
             {
@@ -750,13 +769,13 @@ static void decrease_step_size(int nshell, t_shell s[])
     }
 }
 
-static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real df,
+static void print_epot(FILE *fp, gmx_int64_t mdstep, int *count, real epot, real df,
                        int ndir, real sf_dir)
 {
     char buf[22];
 
     fprintf(fp, "MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e",
-            gmx_step_str(mdstep, buf), count, epot, df);
+            gmx_step_str(mdstep, buf), *count, epot, df);
     if (ndir)
     {
         fprintf(fp, ", dir. rmsF: %6.2e\n", sqrt(sf_dir/ndir));
@@ -916,7 +935,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
               NULL, NULL, nrnb, econqDeriv_FlexCon, FALSE, 0, 0);
 }
 
-int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
+void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         gmx_int64_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
                         gmx_localtop_t *top,
@@ -934,7 +953,8 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         double t, rvec mu_tot,
                         gmx_bool *bConverged,
                         gmx_vsite_t *vsite,
-                        FILE *fp_field)
+                        FILE *fp_field,
+                        int *count)
 {
     int        nshell;
     t_shell   *shell;
@@ -948,7 +968,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     gmx_bool   bCont, bInit;
     int        nat, dd_ac0, dd_ac1 = 0, i;
     int        start = 0, homenr = md->homenr, end = start+homenr, cg0, cg1;
-    int        nflexcon, g, number_steps, d, Min = 0, count = 0;
+    int        nflexcon, g, number_steps, d, Min = 0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
     bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
@@ -1061,198 +1081,212 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
-    sf_dir = 0;
-    if (nflexcon)
+    if ((inputrec->drude->drudemode==edrudeSCF) || EI_ENERGY_MINIMIZATION(inputrec->eI))
     {
-        init_adir(fplog, shfc,
-                  constr, idef, inputrec, cr, dd_ac1, mdstep, md, start, end,
-                  shfc->x_old-start, state->x, state->x, force[Min],
-                  shfc->acc_dir-start,
-                  fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
-
-        for (i = start; i < end; i++)
-        {
-            sf_dir += md->massT[i]*norm2(shfc->acc_dir[i-start]);
-        }
-    }
-
-    Epot[Min] = enerd->term[F_EPOT];
-
-    df[Min] = rms_force(cr, shfc->f[Min], nshell, shell, nflexcon, &sf_dir, &Epot[Min]);
-    df[Try] = 0;
-    if (debug)
-    {
-        fprintf(debug, "df = %g  %g\n", df[Min], df[Try]);
-    }
-
-    if (gmx_debug_at)
-    {
-        pr_rvecs(debug, 0, "force0", force[Min], md->nr);
-    }
-
-    if (nshell+nflexcon > 0)
-    {
-        /* Copy x to pos[Min] & pos[Try]: during minimization only the
-         * shell positions are updated, therefore the other particles must
-         * be set here.
-         */
-        memcpy(pos[Min], state->x, nat*sizeof(state->x[0]));
-        memcpy(pos[Try], state->x, nat*sizeof(state->x[0]));
-    }
-
-    if (bVerbose && MASTER(cr))
-    {
-        print_epot(stdout, mdstep, 0, Epot[Min], df[Min], nflexcon, sf_dir);
-    }
-
-    if (debug)
-    {
-        fprintf(debug, "%17s: %14.10e\n",
-                interaction_function[F_EKIN].longname, enerd->term[F_EKIN]);
-        fprintf(debug, "%17s: %14.10e\n",
-                interaction_function[F_EPOT].longname, enerd->term[F_EPOT]);
-        fprintf(debug, "%17s: %14.10e\n",
-                interaction_function[F_ETOT].longname, enerd->term[F_ETOT]);
-        fprintf(debug, "SHELLSTEP %s\n", gmx_step_str(mdstep, sbuf));
-    }
-
-    /* First check whether we should do shells, or whether the force is
-     * low enough even without minimization.
-     */
-    *bConverged = (df[Min] < ftol);
-
-    for (count = 1; (!(*bConverged) && (count < number_steps)); count++)
-    {
-        if (vsite)
-        {
-            construct_vsites(vsite, pos[Min], inputrec->delta_t, state->v,
-                             idef->iparams, idef->il,
-                             fr->ePBC, fr->bMolPBC, cr, state->box);
-        }
-
-        if (nflexcon)
-        {
-            init_adir(fplog, shfc,
-                      constr, idef, inputrec, cr, dd_ac1, mdstep, md, start, end,
-                      x_old-start, state->x, pos[Min], force[Min], acc_dir-start,
-                      fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
-
-            directional_sd(pos[Min], pos[Try], acc_dir-start, start, end,
-                           fr->fc_stepsize);
-        }
-
-        /* New positions, Steepest descent */
-        shell_pos_sd(pos[Min], pos[Try], force[Min], nshell, shell, count);
-
-        /* do_force expected the charge groups to be in the box */
-        if (graph)
-        {
-            unshift_self(graph, state->box, pos[Try]);
-        }
-
-        if (gmx_debug_at)
-        {
-            pr_rvecs(debug, 0, "RELAX: pos[Min]  ", pos[Min] + start, homenr);
-            pr_rvecs(debug, 0, "RELAX: pos[Try]  ", pos[Try] + start, homenr);
-        }
-        /* Try the new positions */
-        do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
-                 top, groups, state->box, pos[Try], &state->hist,
-                 force[Try], force_vir,
-                 md, enerd, fcd, state->lambda, graph,
-                 fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
-                 force_flags);
-
-        if (gmx_debug_at)
-        {
-            pr_rvecs(debug, 0, "RELAX: force[Min]", force[Min] + start, homenr);
-            pr_rvecs(debug, 0, "RELAX: force[Try]", force[Try] + start, homenr);
-        }
         sf_dir = 0;
         if (nflexcon)
         {
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, start, end,
-                      x_old-start, state->x, pos[Try], force[Try], acc_dir-start,
+                      shfc->x_old-start, state->x, state->x, force[Min],
+                      shfc->acc_dir-start,
                       fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
             for (i = start; i < end; i++)
             {
-                sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
+                sf_dir += md->massT[i]*norm2(shfc->acc_dir[i-start]);
             }
         }
 
-        Epot[Try] = enerd->term[F_EPOT];
+        Epot[Min] = enerd->term[F_EPOT];
 
-        df[Try] = rms_force(cr, force[Try], nshell, shell, nflexcon, &sf_dir, &Epot[Try]);
-
+        df[Min] = rms_force(cr, shfc->f[Min], nshell, shell, nflexcon, &sf_dir, &Epot[Min]);
+        df[Try] = 0;
         if (debug)
         {
             fprintf(debug, "df = %g  %g\n", df[Min], df[Try]);
         }
 
-        if (debug)
+        if (gmx_debug_at)
         {
-            if (gmx_debug_at)
-            {
-                pr_rvecs(debug, 0, "F na do_force", force[Try] + start, homenr);
-            }
-            if (gmx_debug_at)
-            {
-                fprintf(debug, "SHELL ITER %d\n", count);
-                dump_shells(debug, pos[Try], force[Try], ftol, nshell, shell);
-            }
+            pr_rvecs(debug, 0, "force0", force[Min], md->nr);
+        }
+
+        if (nshell+nflexcon > 0)
+        {
+            /* Copy x to pos[Min] & pos[Try]: during minimization only the
+             * shell positions are updated, therefore the other particles must
+             * be set here.
+             */
+            memcpy(pos[Min], state->x, nat*sizeof(state->x[0]));
+            memcpy(pos[Try], state->x, nat*sizeof(state->x[0]));
         }
 
         if (bVerbose && MASTER(cr))
         {
-            print_epot(stdout, mdstep, count, Epot[Try], df[Try], nflexcon, sf_dir);
+            print_epot(stdout, mdstep, 0, Epot[Min], df[Min], nflexcon, sf_dir);
         }
 
-        *bConverged = (df[Try] < ftol);
-
-        if ((df[Try] < df[Min]))
+        if (debug)
         {
-            if (debug)
+            fprintf(debug, "%17s: %14.10e\n",
+                    interaction_function[F_EKIN].longname, enerd->term[F_EKIN]);
+            fprintf(debug, "%17s: %14.10e\n",
+                    interaction_function[F_EPOT].longname, enerd->term[F_EPOT]);
+            fprintf(debug, "%17s: %14.10e\n",
+                    interaction_function[F_ETOT].longname, enerd->term[F_ETOT]);
+            fprintf(debug, "SHELLSTEP %s\n", gmx_step_str(mdstep, sbuf));
+        }
+
+        /* First check whether we should do shells, or whether the force is
+         * low enough even without minimization.
+         */
+        *bConverged = (df[Min] < ftol);
+        /* for (*count = 1; (!(*bConverged) && (*count < number_steps)); *count++) */
+        *count = 1;
+        while (!(*bConverged) && (*count < number_steps))
+        {
+            if (vsite)
             {
-                fprintf(debug, "Swapping Min and Try\n");
+                construct_vsites(vsite, pos[Min], inputrec->delta_t, state->v,
+                                 idef->iparams, idef->il,
+                                 fr->ePBC, fr->bMolPBC, cr, state->box);
             }
+
             if (nflexcon)
             {
-                /* Correct the velocities for the flexible constraints */
-                invdt = 1/inputrec->delta_t;
+                init_adir(fplog, shfc,
+                          constr, idef, inputrec, cr, dd_ac1, mdstep, md, start, end,
+                          x_old-start, state->x, pos[Min], force[Min], acc_dir-start,
+                          fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
+
+                directional_sd(pos[Min], pos[Try], acc_dir-start, start, end,
+                               fr->fc_stepsize);
+            }
+
+            /* New positions, Steepest descent */
+            shell_pos_sd(pos[Min], pos[Try], force[Min], nshell, shell, count);
+
+            /* do_force expected the charge groups to be in the box */
+            if (graph)
+            {
+                unshift_self(graph, state->box, pos[Try]);
+            }
+
+            if (gmx_debug_at)
+            {
+                pr_rvecs(debug, 0, "RELAX: pos[Min]  ", pos[Min] + start, homenr);
+                pr_rvecs(debug, 0, "RELAX: pos[Try]  ", pos[Try] + start, homenr);
+            }
+            /* Try the new positions */
+            do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
+                     top, groups, state->box, pos[Try], &state->hist,
+                     force[Try], force_vir,
+                     md, enerd, fcd, state->lambda, graph,
+                     fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
+                     force_flags);
+
+            if (gmx_debug_at)
+            {
+                pr_rvecs(debug, 0, "RELAX: force[Min]", force[Min] + start, homenr);
+                pr_rvecs(debug, 0, "RELAX: force[Try]", force[Try] + start, homenr);
+            }
+            sf_dir = 0;
+            if (nflexcon)
+            {
+                init_adir(fplog, shfc,
+                          constr, idef, inputrec, cr, dd_ac1, mdstep, md, start, end,
+                          x_old-start, state->x, pos[Try], force[Try], acc_dir-start,
+                          fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
+
                 for (i = start; i < end; i++)
                 {
-                    for (d = 0; d < DIM; d++)
-                    {
-                        state->v[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
-                    }
+                    sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
                 }
             }
-            Min  = Try;
+
+            Epot[Try] = enerd->term[F_EPOT];
+
+            df[Try] = rms_force(cr, force[Try], nshell, shell, nflexcon, &sf_dir, &Epot[Try]);
+
+            if (debug)
+            {
+                fprintf(debug, "df = %g  %g\n", df[Min], df[Try]);
+            }
+
+            if (debug)
+            {
+                if (gmx_debug_at)
+                {
+                    pr_rvecs(debug, 0, "F na do_force", force[Try] + start, homenr);
+                }
+                if (gmx_debug_at)
+                {
+                    fprintf(debug, "SHELL ITER %d\n", *count);
+                    dump_shells(debug, pos[Try], force[Try], ftol, nshell, shell);
+                }
+            }
+
+            if (bVerbose && MASTER(cr))
+            {
+                print_epot(stdout, mdstep, count, Epot[Try], df[Try], nflexcon, sf_dir);
+            }
+
+            *bConverged = (df[Try] < ftol);
+
+            if ((df[Try] < df[Min]))
+            {
+                if (debug)
+                {
+                    fprintf(debug, "Swapping Min and Try\n");
+                }
+                if (nflexcon)
+                {
+                    /* Correct the velocities for the flexible constraints */
+                    invdt = 1/inputrec->delta_t;
+                    for (i = start; i < end; i++)
+                    {
+                        for (d = 0; d < DIM; d++)
+                        {
+                            state->v[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
+                        }
+                    }
+                }
+                Min  = Try;
+            }
+            else
+            {
+                decrease_step_size(nshell, shell);
+            }
+        (*count)++;
         }
-        else
+
+        if (MASTER(cr) && !(*bConverged))
         {
-            decrease_step_size(nshell, shell);
-        }
-    }
-    if (MASTER(cr) && !(*bConverged))
-    {
-        /* Note that the energies and virial are incorrect when not converged */
-        if (fplog)
-        {
-            fprintf(fplog,
+            /* Note that the energies and virial are incorrect when not converged */
+            if (fplog)
+            {
+                fprintf(fplog,
+                        "step %s: EM did not converge in %d iterations, RMS force %.3f\n",
+                        gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
+            }
+            fprintf(stderr,
                     "step %s: EM did not converge in %d iterations, RMS force %.3f\n",
                     gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
         }
-        fprintf(stderr,
-                "step %s: EM did not converge in %d iterations, RMS force %.3f\n",
-                gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
+
+        /* Copy back the coordinates and the forces */
+        memcpy(state->x, pos[Min], nat*sizeof(state->x[0]));
+        memcpy(f, force[Min], nat*sizeof(f[0]));
     }
-
-    /* Copy back the coordinates and the forces */
-    memcpy(state->x, pos[Min], nat*sizeof(state->x[0]));
-    memcpy(f, force[Min], nat*sizeof(f[0]));
-
-    return count;
+    else if (inputrec->drude->drudemode==edrudeLagrangian) 
+    {
+        /* TODO: here will be the Drude Lagrangian update function */
+    }
+    else
+    {
+        /* something has gone horribly wrong */
+        gmx_fatal(FARGS, "Unknown Drude update type in relax_shell_flexcon: %s", 
+                    edrude_modes[inputrec->drude->drudemode]);
+    }
 }

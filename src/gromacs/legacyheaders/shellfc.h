@@ -55,7 +55,7 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
                        gmx_shellfc_t shfc);
 
 /* Optimize shell positions */
-int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
+void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_int64_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
                         gmx_localtop_t *top,
@@ -73,7 +73,8 @@ int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         double t, rvec mu_tot,
                         gmx_bool *bConverged,
                         gmx_vsite_t *vsite,
-                        FILE *fp_field);
+                        FILE *fp_field,
+                        int *count);
 
 
 #ifdef __cplusplus

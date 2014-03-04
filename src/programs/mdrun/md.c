@@ -1029,15 +1029,15 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            count = relax_shell_flexcon(fplog, cr, bVerbose, step,
-                                        ir, bNS, force_flags,
-                                        top,
-                                        constr, enerd, fcd,
-                                        state, f, force_vir, mdatoms,
-                                        nrnb, wcycle, graph, groups,
-                                        shellfc, fr, bBornRadii, t, mu_tot,
-                                        &bConverged, vsite,
-                                        mdoutf_get_fp_field(outf));
+            relax_shell_flexcon(fplog, cr, bVerbose, step,
+                                ir, bNS, force_flags,
+                                top,
+                                constr, enerd, fcd,
+                                state, f, force_vir, mdatoms,
+                                nrnb, wcycle, graph, groups,
+                                shellfc, fr, bBornRadii, t, mu_tot,
+                                &bConverged, vsite,
+                                mdoutf_get_fp_field(outf), &count);
             tcount += count;
 
             if (bConverged)
