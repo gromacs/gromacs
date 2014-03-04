@@ -582,8 +582,10 @@ int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
             /* The box, FE flag and lambda are sent along with the coordinates
              *  */
             copy_mat(cnb.box, box);
-            *bFreeEnergy_q  = (cnb.flags & PP_PME_FEP_Q);
-            *bFreeEnergy_lj = (cnb.flags & PP_PME_FEP_LJ);
+            *bFreeEnergy_q  = ((cnb.flags & GMX_PME_DO_COULOMB) &&
+                               (cnb.flags & PP_PME_FEP_Q));
+            *bFreeEnergy_lj = ((cnb.flags & GMX_PME_DO_LJ) &&
+                               (cnb.flags & PP_PME_FEP_LJ));
             *lambda_q       = cnb.lambda_q;
             *lambda_lj      = cnb.lambda_lj;
             *bEnerVir       = (cnb.flags & PP_PME_ENER_VIR);

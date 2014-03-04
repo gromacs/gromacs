@@ -304,13 +304,18 @@ typedef struct gmx_pme {
     int        nthread;       /* The number of threads doing PME on our rank */
 
     gmx_bool   bPPnode;       /* Node also does particle-particle forces */
+
     gmx_bool   bFEP;          /* Compute Free energy contribution */
     gmx_bool   bFEP_q;
     gmx_bool   bFEP_lj;
+
     int        nkx, nky, nkz; /* Grid dimensions */
+
     gmx_bool   bP3M;          /* Do P3M: optimize the influence function */
     int        pme_order;
     real       epsilon_r;
+
+    int        ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
 
     int        ngrids;                  /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
 
@@ -3502,7 +3507,12 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->nkz         = ir->nkz;
     pme->bP3M        = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != NULL);
     pme->pme_order   = ir->pme_order;
+
+    /* Always constant electrostatics parameters */
     pme->epsilon_r   = ir->epsilon_r;
+
+    /* Always constant LJ parameters */
+    pme->ljpme_combination_rule = ir->ljpme_combination_rule;
 
     /* If we violate restrictions, generate a fatal error here */
     gmx_pme_check_restrictions(pme->pme_order,
@@ -3614,14 +3624,28 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     ndata[0]    = pme->nkx;
     ndata[1]    = pme->nky;
     ndata[2]    = pme->nkz;
-    pme->ngrids = ((ir->ljpme_combination_rule == eljpmeLB) ? DO_Q_AND_LJ_LB : DO_Q_AND_LJ);
+    /* It doesn't matter if we allocate too many grids here,
+     * we only allocate and use the ones we need.
+     */
+    if (EVDW_PME(ir->vdwtype))
+    {
+        pme->ngrids = ((ir->ljpme_combination_rule == eljpmeLB) ? DO_Q_AND_LJ_LB : DO_Q_AND_LJ);
+    }
+    else
+    {
+        pme->ngrids = DO_Q;
+    }
     snew(pme->fftgrid, pme->ngrids);
     snew(pme->cfftgrid, pme->ngrids);
     snew(pme->pfft_setup, pme->ngrids);
 
     for (i = 0; i < pme->ngrids; ++i)
     {
-        if (((ir->ljpme_combination_rule == eljpmeLB) && i >= 2) || i % 2 == 0 || bFreeEnergy_q || bFreeEnergy_lj)
+        if ((i <  DO_Q && EEL_PME(ir->coulombtype) && (i == 0 ||
+                                                       bFreeEnergy_q))|| 
+            (i >= DO_Q && EVDW_PME(ir->vdwtype) && (i == 2 ||
+                                                    bFreeEnergy_lj ||
+                                                    ir->ljpme_combination_rule == eljpmeLB)))
         {
             pmegrids_init(&pme->pmegrid[i],
                           pme->pmegrid_nx, pme->pmegrid_ny, pme->pmegrid_nz,
@@ -4388,7 +4412,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
     {
         gmx_incons("gmx_pme_calc_energy called in parallel");
     }
-    if (pme->bFEP > 1)
+    if (pme->bFEP_q > 1)
     {
         gmx_incons("gmx_pme_calc_energy with free energy");
     }
@@ -4748,7 +4772,7 @@ int gmx_pme_do(gmx_pme_t pme,
      */
 
     /* If we are doing LJ-PME with LB, we only do Q here */
-    qmax = (flags & GMX_PME_LJ_LB) ? DO_Q : DO_Q_AND_LJ;
+    qmax = (pme->ljpme_combination_rule == eljpmeLB) ? DO_Q : DO_Q_AND_LJ;
 
     for (q = 0; q < qmax; ++q)
     {
@@ -4757,10 +4781,10 @@ int gmx_pme_do(gmx_pme_t pme,
          * If q < 2 we should be doing electrostatic PME
          * If q >= 2 we should be doing LJ-PME
          */
-        if ((!pme->bFEP_q && q == 1)
-            || (!pme->bFEP_lj && q == 3)
-            || (!(flags & GMX_PME_DO_COULOMB) && q < 2)
-            || (!(flags & GMX_PME_DO_LJ) && q >= 2))
+        if ((q <  DO_Q && (!(flags & GMX_PME_DO_COULOMB) ||
+                           (q == 1 && !pme->bFEP_q))) ||
+            (q >= DO_Q && (!(flags & GMX_PME_DO_LJ) ||
+                           (q == 3 && !pme->bFEP_lj))))
         {
             continue;
         }
@@ -4990,7 +5014,7 @@ int gmx_pme_do(gmx_pme_t pme,
     /* For Lorentz-Berthelot combination rules in LJ-PME, we need to calculate
      * seven terms. */
 
-    if (flags & GMX_PME_LJ_LB)
+    if ((flags & GMX_PME_DO_LJ) && pme->ljpme_combination_rule == eljpmeLB)
     {
         real *local_c6 = NULL, *local_sigma = NULL;
         if (pme->nnodes == 1)
@@ -5212,7 +5236,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 bFirst = FALSE;
             } /*for (q = 8; q >= 2; --q)*/
         }     /*if (bCalcF)*/
-    }         /*if (flags & GMX_PME_LJ_LB)*/
+    }         /*if ((flags & GMX_PME_DO_LJ) && pme->ljpme_combination_rule == eljpmeLB) */
 
     if (bCalcF && pme->nnodes > 1)
     {
