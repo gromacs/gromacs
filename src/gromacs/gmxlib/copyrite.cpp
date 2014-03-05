@@ -49,6 +49,10 @@
 #include <mkl.h>
 #endif
 
+#ifdef HAVE_EXTRAE
+ #include "extrae_user_events.h"
+#endif
+
 #include <boost/version.hpp>
 
 /* This file is completely threadsafe - keep it that way! */
@@ -693,6 +697,14 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "TNG support:        disabled\n");
 #endif
+#ifdef HAVE_EXTRAE
+    unsigned major, minor, revision;
+    Extrae_get_version(&major, &minor, &revision);
+    fprintf(fp, "Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision);
+#else
+    fprintf(fp, "Tracing support:    disabled\n");
+#endif
+
 
     fprintf(fp, "Built on:           %s\n", BUILD_TIME);
     fprintf(fp, "Built by:           %s\n", BUILD_USER);
