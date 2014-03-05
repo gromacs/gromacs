@@ -424,6 +424,17 @@ if (GMX_GSL)
   endif(GSL_FOUND)
 endif (GMX_GSL)
 
+option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
+mark_as_advanced(GMX_EXTRAE)
+  
+if (GMX_EXTRAE)
+  find_package(EXTRAE)
+  if(EXTRAE_FOUND)
+    include_directories(${EXTRAE_INCLUDE_DIR})
+    set(HAVE_EXTRAE 1)
+  endif()
+endif()
+
 option(GMX_X11 "Use X window system" OFF)
 if (GMX_X11)
     find_package(X11)
