@@ -50,6 +50,10 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/gmxmpi.h"
 
+#ifdef HAVE_EXTRAE
+ #include "extrae_user_events.h"
+#endif
+
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last
  * one that was opened and if you do nest too deep.
@@ -120,6 +124,13 @@ gmx_bool wallcycle_have_counter(void)
 gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused *cr,
                                int nthreads_pp, int nthreads_pme)
 {
+
+#ifdef HAVE_EXTRAE
+    unsigned major, minor, revision;
+    Extrae_get_version(&major, &minor, &revision);
+    fprintf(fplog, "\nUsing for tracing Extrae Version: %d.%d.%d \n", major, minor, revision);
+#endif
+
     gmx_wallcycle_t wc;
 
 
