@@ -115,6 +115,7 @@ or, alternatively the Lorentz-Berthelot rules can be used. An arithmetic average
 \begin{array}{rcl}
  \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii} + \sigma_{jj})        \\
  \epsilon_{ij} &=& \left({\epsilon_{ii} \, \epsilon_{jj}}\right)^{1/2}
+ \label{eqn:lorentzberthelot}
 \end{array}
 \eeq
 finally an geometric average for both parameters can be used (type 3):
@@ -2444,7 +2445,7 @@ Lennard-Jones potential where all shifts add up. We apply the shift
 anyhow, such that the potential is the exact integral of the force.
 
 \subsubsection{Using PME}
-To use Particle-mesh Ewald summation in {\gromacs}, specify the
+As an example for using Particle-mesh Ewald summation in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
 
 \begin{verbatim}
@@ -2671,14 +2672,15 @@ In this case the modified Ewald equations become
 V &=& V_{\mathrm{dir}} + V_{\mathrm{rec}} + V_{0} \\[0.5ex]
 V_{\mathrm{dir}} &=& -\frac{1}{2} \sum_{i,j}^{N}
 \sum_{n_x}\sum_{n_y}
-\sum_{n_{z}*} \frac{C_{ij}^{(6)}g(\beta {r}_{ij,{\bf n}})}{{r_{ij,{\bf n}}}^6} \\[0.5ex]
+\sum_{n_{z}*} \frac{C^{ij}_6 g(\beta {r}_{ij,{\bf n}})}{{r_{ij,{\bf n}}}^6}
+\label{eqn:ljpmerealspace}\\[0.5ex]
 V_{\mathrm{rec}} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
-f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C_{ij}^{(6)} {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
-V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C_{ii}^{(6)},
+f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C^{ij}_6 {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
+V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C^{ii}_6
 \end{eqnarray}
 
 where ${\bf m}=(m_x,m_y,m_z)$, $\beta$ is the parameter determining the weight between
-direct and reciprocal space, and ${C_{ij}}^{(6)}$ is the combined dispersion
+direct and reciprocal space, and ${C^{ij}_6}$ is the combined dispersion
 parameter for particle $i$ and $j$. The star indicates that terms
 with $i = j$ should be omitted when $((n_x,n_y,n_z)=(0,0,0))$, and
 ${\bf r}_{ij,{\bf n}}$ is the real distance between the particles.
@@ -2688,69 +2690,113 @@ f(x)&=&1/3\left[(1-2x^2){\mathrm{exp}}(-x^2) + 2{x^3}\sqrt{\pi}\,{\mathrm{erfc}}
 g(x)&=&{\mathrm{exp}}(-x^2)(1+x^2+\frac{x^4}{2}).
 \end{eqnarray}
 
-The above methodology works fine as long as the dispersion parameters can be factorized in the same
+The above methodology works fine as long as the dispersion parameters can be combined geometrically (\eqnref{comb}) in the same
 way as the charges for electrostatics
 \begin{equation}
-C_{ij}^{(6)} = \left({C_{ii}^{(6)} \, C_{jj}^{(6)}}\right)^{1/2}
+C^{ij}_{6,\mathrm{geom}} = \left(C^{ii}_6 \, C^{jj}_6\right)^{1/2}
 \end{equation}
-For Lorentz-Berthelot combination rules, the reciprocal part of this sum has to be calculated
+For Lorentz-Berthelot combination rules (\eqnref{lorentzberthelot}), the reciprocal part of this sum has to be calculated
 seven times due to the splitting of the dispersion parameter according to
 \begin{equation}
-C_{ij}^{(6)}=(\sigma_i+\sigma_j)^6=\sum_{n=0}^{6} P_{n}\sigma_{i}^{n}\sigma_{j}^{(6-n)},
+C^{ij}_{6,\mathrm{L-B}} = (\sigma_i+\sigma_j)^6=\sum_{n=0}^{6} P_{n}\sigma_{i}^{n}\sigma_{j}^{(6-n)},
 \end{equation}
 for $P_{n}$ the Pascal triangle coefficients. This introduces a
 non-negligible cost to the reciprocal part, requiring seven separate
-FFTs, and therefore this have been the limiting factor in previous
-attempts to implement LJ-PME. A solution to this problem is to
-approximate the interaction parameters in reciprocal space using
-geometrical combination rules.  This will preserve a well-defined
-Hamiltonian and significantly increase the performance of the
-simulations.
+FFTs, and therefore this has been the limiting factor in previous
+attempts to implement LJ-PME. A solution to this problem is to use
+geometrical combination rules in order to calculate an approximate
+interaction parameter for the reciprocal part of the potential,
+yielding a total interaction of
+\begin{eqnarray}
+V(r<r_c) & = & \underbrace{C^{\mathrm{dir}}_6 g(\beta r) r^{-6}}_{\mathrm{Direct \  space}} + \underbrace{C^\mathrm{recip}_{6,\mathrm{geom}} [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}} \nonumber \\
+&=& C^\mathrm{recip}_{6,\mathrm{geom}}r^{-6} + \left(C^{\mathrm{dir}}_6-C^\mathrm{recip}_{6,\mathrm{geom}}\right)g(\beta r)r^{-6} \\
+V(r>r_c) & = & \underbrace{C^\mathrm{recip}_{6,\mathrm{geom}} [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}}.
+\end{eqnarray}
+This will preserve a well-defined Hamiltonian and significantly increase
+the performance of the simulations. The approximation does introduce
+some errors, but since the difference is located in the interactions
+calculated in reciprocal space, the effect will be very small compared
+to the total interaction energy. In a simulation of a lipid bilayer,
+using a cut-off of 1.0 nm, the relative error in total dispersion
+energy was below 0.5\%. A more thorough discussion of this can be
+found in \cite{Wennberg13}.
 
-\begin{figure}
-\centerline{\includegraphics[width=15cm]{plots/ljpmedifference}}
-\caption {Dispersion potential between phosphorous and oxygen, The total, real and
-reciprocal parts of the total dispersion are shown. The reciprocal parts are calculated
-using either LB or geometric rules. The difference introduced by the use of the
-geometric approximation in the reciprocal part is small compared to the total
-interaction energy.}
-\label{fig:ljpmedifference}
-\end{figure}
-
-This approximation does introduce some errors, but since the
-difference is located in the interactions calculated in reciprocal
-space, the effect will be very small compared to the total interaction
-energy (see \figref{ljpmedifference}). The relative error in
-the total dispersion energy will stay below 0.5\% in a lipid bilayer
-simulation, when using a real space cut-off of 1.0 nm. A more
-thorough discussion of this can be found in \cite{Wennberg13}.
+In {\gromacs} we now perform the proper calculation of this interaction
+by subtracting, from the direct-space interactions, the contribution
+made by the approximate potential that is used in the reciprocal part
+\begin{equation}
+V_\mathrm{dir} = C^{\mathrm{dir}}_6 r^{-6} - C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}.
+\label{eqn:ljpmedirectspace}
+\end{equation}
+This potential will reduce to the expression in \eqnref{ljpmerealspace} when $C^{\mathrm{dir}}_6 = C^\mathrm{recip}_6$, 
+and the total interaction is given by
+\begin{eqnarray}
+\nonumber V(r<r_c) &=& \underbrace{C^{\mathrm{dir}}_6 r^{-6} - C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}}_{\mathrm{Direct \  space}} + \underbrace{C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}}_{\mathrm{Reciprocal \  space}} \\ 
+&=&C^{\mathrm{dir}}_6 r^{-6}
+\label {eqn:ljpmecorr2} \\
+V(r>r_c) &=& C^\mathrm{recip}_6 [1 - g(\beta r)] r^{-6}.
+\end{eqnarray}
+For the case when $C^{\mathrm{dir}}_6 \neq C^\mathrm{recip}_6$ this
+will retain an unmodified LJ force up to the cut-off, and the error
+is an order of magnitude smaller than in simulations where the
+direct-space interactions do not account for the approximation used in
+reciprocal space. When using a VdW interaction modifier of
+potential-shift, the constant
+\begin{equation}
+\left(-C^{\mathrm{dir}}_6 + C^\mathrm{recip}_6 [1 - g(\beta r_c)]\right) r_c^{-6}
+\end{equation}
+is added to \eqnref{ljpmecorr2} in order to ensure that the potential
+is continuous at the cutoff. Note that, in the same way as \eqnref{ljpmedirectspace}, this degenerates into the
+expected $-C_6g(\beta r_c)r^{-6}_c$ when $C^{\mathrm{dir}}_6 =
+C^\mathrm{recip}_6$. In addition to this, a long-range dispersion
+correction can be applied to correct for the approximation using a
+combination rule in reciprocal space. This correction assumes, as for
+the cut-off LJ potential, a uniform particle distribution.  But since
+the error of the combination rule approximation is very small this
+long-range correction is not necessary in most cases. Also note that
+this homogenous correction does not correct the surface tension, which
+is an inhomogeneous property.
 
 \subsubsection{Using LJ-PME}
-To use Particle-mesh Ewald summation for Lennard-Jones interactions in {\gromacs}, specify the
+As an example for using Particle-mesh Ewald summation for Lennard-Jones interactions in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
 \begin{verbatim}
 vdwtype          = PME
-rvdw             = 1.0
-rlist            = 1.0
-rcoulomb         = 1.0
+rvdw             = 0.9
+vdw-modifier     = Potential-Shift
+rlist            = 0.9
+rcoulomb         = 0.9
 fourierspacing   = 0.12
 pme-order        = 4
 ewald-rtol-lj    = 0.001
 lj-pme-comb-rule = geometric
 \end{verbatim}
 
-The {\tt fourierspacing} and {\tt pme-order} are the same parameters
-as is used for electrostatic PME, and {\tt ewald-rtol-lj} controls
-splitting between real and reciprocal space in the same way as
+The same Fourier grid and interpolation order are used if both
+LJ-PME and electrostatic PME are active, so the settings for
+{\tt fourierspacing} and {\tt pme-order} are common to both.
+{\tt ewald-rtol-lj} controls the
+splitting between direct and reciprocal space in the same way as
 {\tt ewald-rtol}.  In addition to this, the combination rule to be used
 in reciprocal space is determined by {\tt lj-pme-comb-rule}. If the
 current force field uses Lorentz-Berthelot combination rules, it is
 possible to set {\tt lj-pme-comb-rule = geometric} in order to gain a
 significant increase in performance for a small loss in accuracy. The
-details of this approximation can be found in the section above.  The
-implementation of LJ-PME is currently unsupported together with the
-Verlet cut-off scheme and/or free energy calculations. These features
-will be added in upcoming releases
+details of this approximation can be found in the section above.
+
+Note that the use of a complete long-range dispersion correction means
+that as with Coulomb PME, {\tt rvdw} is now a free parameter in the
+method, rather than being necessarily restricted by the force-field
+parameterization scheme. Thus it is now possible to optimize the
+cutoff, spacing, order and tolerance terms for accuracy and best
+performance.
+
+Naturally, the use of LJ-PME rather than LJ cut-off adds computation
+and communication done for the reciprocal-space part, so for best
+performance in balancing the load of parallel simulations using
+PME-only ranks, more such ranks should be used. It may be possible to
+improve upon the automatic load-balancing used by {\tt mdrun}.
+
 %} % Brace matches ifthenelse test for gmxlite
 
 \section{Force field\index{force field}}
