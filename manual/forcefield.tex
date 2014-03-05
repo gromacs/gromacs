@@ -2591,10 +2591,32 @@ interaction energy.}
 This approximation does introduce some errors, but since the
 difference is located in the interactions calculated in reciprocal
 space, the effect will be very small compared to the total interaction
-energy (see \figref{ljpmedifference}). The relative error in
+energy. The approximation can be treated in two different ways.
+One possibility is to simply add the contribution of $g(r)$ in real space:
+\begin{eqnarray}
+V(r<r_c) & = & C_6 \,g(r) r^{-6} + C^\mathrm{comb}_6 [1 - g(r)] r^{-6} \\
+V(r>r_c) & = & C^\mathrm{comb}_6 [1 - g(r)] r^{-6}
+\end{eqnarray}
+An example of the error is plotted in \figref{ljpmedifference}.
+The relative error in
 the total dispersion energy will stay below 0.5\% in a lipid bilayer
 simulation, when using a real space cut-off of 1.0 nm. A more
 thorough discussion of this can be found in \cite{Wennberg13}.
+This option is currently used in the group cut-off scheme.
+A second option is too explicitly subtract the reciprocal space contribution up to the cut-off distance:
+\begin{eqnarray}
+V(r<r_c) & = & C_6 r^{-6} + \{-C_6 + C^\mathrm{comb}_6 [1 - g(r_c)]\} r_c^{-6}
+\label {ljpmecorr2}\\
+V(r>r_c) & = & C^\mathrm{comb}_6 [1 - g(r)]
+\end{eqnarray}
+where the second term in \eqnref{ljpmecorr2} is a constant which ensures that the potential is continuous at the cut-off.
+Here the LJ force up to the cut-off is unmodified and the error is significantly smaller than in the first option. This second option is used by the Verlet cut-off scheme.
+
+A long-range dispersion correction can be applied to correct for
+the approximation using a combination rule reciprocal space. This correction
+assumes, as for the cut-off LJ potential, a uniform particle distribution.
+But since the error of the combination rule approximation, especially with the second option described above, is extremely small, this long-range correction is not necessary in most cases.
+
 
 \subsubsection{Using LJ-PME}
 To use Particle-mesh Ewald summation for Lennard-Jones interactions in {\gromacs}, specify the
