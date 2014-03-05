@@ -65,6 +65,7 @@
 #include "pdbio.h"
 #include "confio.h"
 #include "checkpoint.h"
+#include "xdrf.h"
 
 #include "gromacs/fileio/timecontrol.h"
 
@@ -228,9 +229,37 @@ t_fileio *trx_get_fileio(t_trxstatus *status)
     return status->fio;
 }
 
-tng_trajectory_t trx_get_tng(t_trxstatus *status)
+float trx_get_time_of_final_frame(t_trxstatus *status)
 {
-    return status->tng;
+    t_fileio *stfio    = trx_get_fileio(status);
+    int       filetype = gmx_fio_getftp(stfio);
+    int       lasttime, bOK;
+
+    if (filetype == efXTC)
+    {
+        lasttime =
+            xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
+                                        gmx_fio_getxdr(stfio),
+                                        status->xframe->natoms, &bOK);
+        if (!bOK)
+        {
+            gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
+        }
+    }
+    else if (filetype == efTNG)
+    {
+        tng_trajectory_t tng = status->tng;
+        if (!tng)
+        {
+            gmx_fatal(FARGS, "Error opening TNG file.");
+        }
+        lasttime = gmx_tng_get_time_of_final_frame(tng);
+    }
+    else
+    {
+        gmx_incons("Only supported for TNG and XTC");
+    }
+    return lasttime;
 }
 
 void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
