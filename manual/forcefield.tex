@@ -2685,14 +2685,14 @@ In this case the modified Ewald equations become
 V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
 V_{dir} &=& -\frac{1}{2} \sum_{i,j}^{N}
 \sum_{n_x}\sum_{n_y}
-\sum_{n_{z}*} \frac{C_{ij}^{(6)}g(\beta {r}_{ij,{\bf n}})}{{r_{ij,{\bf n}}}^6} \\[0.5ex]
+\sum_{n_{z}*} \frac{C^{ij}_6 g(\beta {r}_{ij,{\bf n}})}{{r_{ij,{\bf n}}}^6} \\[0.5ex]
 V_{rec} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
-f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C_{ij}^{(6)} {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
-V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C_{ii}^{(6)},
+f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C^{ij}_6 {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
+V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C^{ii}_6
 \end{eqnarray}
 
 where ${\bf m}=(m_x,m_y,m_z)$, $\beta$ is the parameter determining the weight between
-direct and reciprocal space, and ${C_{ij}}^{(6)}$ is the combined dispersion
+direct and reciprocal space, and ${C^{ij}_6}$ is the combined dispersion
 parameter for particle $i$ and $j$. The star indicates that terms
 with $i = j$ should be omitted when $((n_x,n_y,n_z)=(0,0,0))$, and
 ${\bf r}_{ij,{\bf n}}$ is the real distance between the particles.
@@ -2705,12 +2705,12 @@ g(x)&=&{\mathrm{exp}}(-x^2)(1+x^2+\frac{x^4}{2}).
 The above methodology works fine as long as the dispersion parameters can be factorized in the same
 way as the charges for electrostatics
 \begin{equation}
-C_{ij}^{(6)} = \left({C_{ii}^{(6)} \, C_{jj}^{(6)}}\right)^{1/2}
+C^{ij}_6 = \left(C^{ii}_6 \, C^{jj}_6\right)^{1/2}
 \end{equation}
 For Lorentz-Berthelot combination rules, the reciprocal part of this sum has to be calculated
 seven times due to the splitting of the dispersion parameter according to
 \begin{equation}
-C_{ij}^{(6)}=(\sigma_i+\sigma_j)^6=\sum_{n=0}^{6} P_{n}\sigma_{i}^{n}\sigma_{j}^{(6-n)},
+C^{ij}_6 = (\sigma_i+\sigma_j)^6=\sum_{n=0}^{6} P_{n}\sigma_{i}^{n}\sigma_{j}^{(6-n)},
 \end{equation}
 for $P_{n}$ the Pascal triangle coefficients. This introduces a
 non-negligible cost to the reciprocal part, requiring seven separate
@@ -2734,10 +2734,38 @@ interaction energy.}
 This approximation does introduce some errors, but since the
 difference is located in the interactions calculated in reciprocal
 space, the effect will be very small compared to the total interaction
-energy (see \figref{ljpmedifference}). The relative error in
-the total dispersion energy will stay below 0.5\% in a lipid bilayer
-simulation, when using a real space cut-off of 1.0 nm. A more
-thorough discussion of this can be found in \cite{Wennberg13}.
+energy and an example of the error is plotted in \figref{ljpmedifference}.
+The relative error in the total dispersion energy will stay below
+0.5\% in a lipid bilayer simulation, when using a real space cut-off
+of 1.0 nm. A more thorough discussion of this can be found in
+\cite{Wennberg13}.
+
+In {\gromacs} we correct for this reciprocal error by subtracting
+the approximated reciprocal space contribution, up to the cut-off distance, from the
+interactions calculated in real space
+\begin{equation}
+  V^{ij}_{real} = C^{ij}_6 r^{-6}_{ij} - C^\mathrm{recip}_6 [1 - g(r_{ij})] r^{-6}_{ij}
+\end{equation}
+were $C^\mathrm{recip}_6$ is constructed using the same combination rules as in the
+reciprocal part of the potential. This will give a total interaction of
+\begin{eqnarray}
+V(r<r_c) & = & C_6 r^{-6} + \{-C_6 + C^\mathrm{recip}_6 [1 - g(r_c)]\} r_c^{-6}
+\label {eqn:ljpmecorr2}\\
+V(r>r_c) & = & C^\mathrm{recip}_6 [1 - g(r)] r^{-6}
+\end{eqnarray}
+where the second term in \eqnref{ljpmecorr2} is a constant which ensures
+that the potential is continuous at the cut-off.
+Here the LJ force up to the cut-off is unmodified and the error is an
+order of magnitude smaller than in the first option.
+
+A long-range dispersion correction can be applied to correct for the
+approximation using a combination rule in reciprocal space. This
+correction assumes, as for the cut-off LJ potential, a uniform
+particle distribution.  But since the error of the combination rule
+approximation is very small this long-range correction is not
+necessary in most cases. Also note that this homogenous correction
+does not correct the surface tension, which is an inhomogeneous
+property.
 
 \subsubsection{Using LJ-PME}
 To use Particle-mesh Ewald summation for Lennard-Jones interactions in {\gromacs}, specify the
@@ -2761,10 +2789,7 @@ in reciprocal space is determined by {\tt lj-pme-comb-rule}. If the
 current force field uses Lorentz-Berthelot combination rules, it is
 possible to set {\tt lj-pme-comb-rule = geometric} in order to gain a
 significant increase in performance for a small loss in accuracy. The
-details of this approximation can be found in the section above.  The
-implementation of LJ-PME is currently unsupported together with the
-Verlet cut-off scheme and/or free energy calculations. These features
-will be added in upcoming releases
+details of this approximation can be found in the section above.
 %} % Brace matches ifthenelse test for gmxlite
 
 \section{Force field\index{force field}}
