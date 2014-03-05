@@ -1,0 +1,76 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2014, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
+# - Try to find EXTRAE
+# Once done this will define
+#  EXTRAE_FOUND - System has EXTRAE
+#  EXTRAE_INCLUDE_DIRS - The EXTRAE include directories
+#  EXTRAE_LIBRARIES - The libraries needed to use EXTRAE
+
+find_path(EXTRAE_INCLUDE_DIR extrae_user_events.h)
+
+# EXTRAE libraries have different names depending on the supported features
+
+if (NOT GMX_MPI AND NOT GMX_OPENMP AND NOT GMX_GPU)
+  set (extraelib "seq")
+else()
+  if (GMX_MPI)
+    if (GMX_OPENMP)
+      set (extraelib "ompi")
+    else()
+      set (extraelib "mpi")
+    endif()
+  elseif (GMX_OPENMP)
+    set (extraelib "omp")
+  endif()
+  if (GMX_GPU)
+    set (extraelib "cuda${extraelib}")
+  endif()
+endif()
+
+set (extraelib "${extraelib}trace")
+
+find_library(EXTRAE_LIBRARY NAMES  ${extraelib})
+
+set(EXTRAE_LIBRARIES ${EXTRAE_LIBRARY} )
+set(EXTRAE_INCLUDE_DIRS ${EXTRAE_INCLUDE_DIR} )
+
+# handle the QUIETLY and REQUIRED arguments and set EXTRAE_FOUND to TRUE
+# if all listed variables are TRUE
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(EXTRAE  DEFAULT_MSG
+                                  EXTRAE_LIBRARY EXTRAE_INCLUDE_DIR)
+
+mark_as_advanced(EXTRAE_INCLUDE_DIR EXTRAE_LIBRARY )
+
