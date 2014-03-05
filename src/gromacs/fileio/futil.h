@@ -59,7 +59,6 @@ extern "C" {
 #define DIR_SEPARATOR '/'
 #endif
 
-
 /* Now get the maximum path size. */
 #ifdef PATH_MAX
 #  define GMX_PATH_MAX PATH_MAX
@@ -69,20 +68,7 @@ extern "C" {
 #  define GMX_PATH_MAX 4096
 #endif
 
-
-#ifdef HAVE_FSEEKO
-typedef off_t              gmx_off_t;
-#elif defined HAVE__FSEEKI64
-typedef __int64            gmx_off_t;
-#else
-/* cmake checked that if fseeko and fseeki64 aren't avaiable that long is 64bit */
-#if GMX_INT64_MAX != LONG_MAX
-#error "Configuration error. fseeko or fseeki64 or 64bit long should be available."
-#endif
-typedef long               gmx_off_t;
-#endif
-
-
+typedef gmx_int64_t    gmx_off_t;
 
 void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
