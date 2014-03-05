@@ -424,6 +424,28 @@ if (GMX_GSL)
   endif(GSL_FOUND)
 endif (GMX_GSL)
 
+# Profiling options
+option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
+mark_as_advanced(GMX_EXTRAE)
+# if Extrae is requested, enable PAPI by deault also
+cmake_dependent_option(GMX_PAPI "Add support for tracing using PAPI" ON
+                                "GMX_EXTRAE" OFF)
+mark_as_advanced(GMX_PAPI)
+
+if (GMX_EXTRAE)
+  find_package(EXTRAE)
+  if(EXTRAE_FOUND)
+    include_directories(${EXTRAE_INCLUDE_DIR})
+    set(HAVE_EXTRAE 1)
+    if (GMX_PAPI)
+      find_package(PAPI)
+      if(PAPI_FOUND)
+        include_directories(${PAPI_INCLUDE_DIR})
+      endif()
+    endif()
+  endif()
+endif()
+
 option(GMX_X11 "Use X window system" OFF)
 if (GMX_X11)
     find_package(X11)
