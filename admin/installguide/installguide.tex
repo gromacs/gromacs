@@ -666,7 +666,13 @@ now supported with the \cmake{} option
 \verb+-DGMX_BUILD_MDRUN_ONLY=ON+, which will build a cut-down version
 of \verb+libgromacs+ and/or the \verb+mdrun+ binary (according to
 whether shared or static). Naturally, now \verb+make install+ acts
-only those binaries.
+only those binaries. By default, a fresh build tree with this variable
+set will default to building statically, because this is generally a
+good idea for the targets for which an mdrun-only build is
+desirable. If you re-use a build tree and change to the mdrun-only
+build, then you will inherit the setting for \verb+BUILD_SHARED_LIBS+
+from the old build, and will be warned that you may wish to manage
+\verb+BUILD_SHARED_LIBS+ yourself.
 
 \subsection{Installing \gromacs{}}
 
