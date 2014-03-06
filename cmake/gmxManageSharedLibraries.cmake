@@ -32,14 +32,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Manage the Gromacs shared librar setup. 
+# Manage the Gromacs shared library setup.
 
 ########################################################################
 # Shared/static library settings
 ########################################################################
 # Determine the defaults (this block has no effect if the variables have
 # already been set)
-if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD")
+if((APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD") AND NOT GMX_BUILD_MDRUN_ONLY)
     # Maybe Solaris should be here? Patch this if you know!
     SET(SHARED_LIBS_DEFAULT ON)
 elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
@@ -66,6 +66,10 @@ endif()
 
 # Declare the user-visible options
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
+if(BUILD_SHARED_LIBS AND GMX_BUILD_MDRUN_ONLY)
+    message(WARNING "Both BUILD_SHARED_LIBS and GMX_BUILD_MDRUN_ONLY are set. Generally, an mdrun-only build should prefer to use static libraries, which is the default if you make a fresh build tree. You may be re-using an old build tree, and so may wish to set BUILD_SHARED_LIBS=off yourself.")
+endif()
+
 if (UNIX)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static archives (it will only work if static versions of external dependencies are available and found)")
