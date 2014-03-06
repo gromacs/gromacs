@@ -85,7 +85,8 @@ macro(manage_linear_algebra_library name function_in_library)
         endif()
 
         if(NOT _library_was_found AND HAVE_LIBMKL)
-            set(CMAKE_REQUIRED_LIBRARIES ${FFT_LINKER_FLAGS} ${FFT_LIBRARIES})
+            set(CMAKE_REQUIRED_LIBRARIES "${FFT_LIBRARIES}")
+            set(CMAKE_REQUIRED_FLAGS "${FFT_LINKER_FLAGS}")
             # This may also not work correctly if the user changes
             # MKL_LIBRARIES after the first run. However,
             # MKL_LIBRARIES is only needed for icc version < 11, or
