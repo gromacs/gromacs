@@ -252,14 +252,6 @@ gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double pr
 
 # This should be moved to a separate NBNXN cmake module when that code is cleaned up and modularized
 
-if("${GMX_SIMD}" STREQUAL "REFERENCE")
-    if(GMX_DOUBLE)
-        set(KERNEL_WIDTH ${GMX_SIMD_REF_DOUBLE_WIDTH})
-    else()
-        set(KERNEL_WIDTH ${GMX_SIMD_REF_FLOAT_WIDTH})
-    endif()
-endif()
-
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
