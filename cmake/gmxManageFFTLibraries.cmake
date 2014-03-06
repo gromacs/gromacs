@@ -98,7 +98,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     if (NOT MKL_MANUALLY)
         # The next line takes care of everything for MKL
         if (WIN32)
-            set(FFT_LINKER_FLAGS "/Qmkl=sequential")
+            set(FFT_LINKER_FLAGS "/Qmkl")
         else()
             set(FFT_LINKER_FLAGS "-mkl=sequential")
         endif()
