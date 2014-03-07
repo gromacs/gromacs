@@ -44,6 +44,7 @@
 #include "string2.h"
 #include "force.h"
 #include "smalloc.h"
+#include "types/commrec.h"
 #include "ns.h"
 #include "nrnb.h"
 #include "gmx_fatal.h"

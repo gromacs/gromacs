@@ -44,6 +44,7 @@
 #include <string.h>
 
 #include "main.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "gmx_fatal.h"
 #include "copyrite.h"

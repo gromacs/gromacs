@@ -38,6 +38,7 @@
 #endif
 
 #include <string.h>
+#include "types/commrec.h"
 #include "domdec_network.h"
 
 #include "gromacs/utility/gmxmpi.h"

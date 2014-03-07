@@ -33,11 +33,11 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # includes: Nothing to build, just installation
-file(GLOB ROOT_LEGACY_HEADERS       *.h)
-file(GLOB THREAD_MPI_LEGACY_HEADERS thread_mpi/*.h)
-file(GLOB THREAD_MPI_ATOMIC_LEGACY_HEADERS thread_mpi/atomic/*.h)
-file(GLOB TYPES_LEGACY_HEADERS      types/*.h)
+file(GLOB ROOT_LEGACY_HEADERS          *.h)
+file(GLOB ROOT_LEGACY_HEADERS_PRIVATE  thread_mpi.h tmpi.h gmx_hash.h gmx_ga2la.h) 
+file(GLOB TYPES_LEGACY_HEADERS         types/*.h)
+file(GLOB TYPES_LEGACY_HEADERS_PRIVATE types/commrec.h) 
+list(REMOVE_ITEM ROOT_LEGACY_HEADERS   ${ROOT_LEGACY_HEADERS_PRIVATE})
+list(REMOVE_ITEM TYPES_LEGACY_HEADERS  ${TYPES_LEGACY_HEADERS_PRIVATE})
 gmx_install_headers(legacyheaders                   ${ROOT_LEGACY_HEADERS})
-gmx_install_headers(legacyheaders/thread_mpi        ${THREAD_MPI_LEGACY_HEADERS})
-gmx_install_headers(legacyheaders/thread_mpi/atomic ${THREAD_MPI_ATOMIC_LEGACY_HEADERS})
 gmx_install_headers(legacyheaders/types             ${TYPES_LEGACY_HEADERS})

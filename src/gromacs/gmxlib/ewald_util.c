@@ -14,7 +14,7 @@
  * of the License, or (at your option) any later version.
  *
  * GROMACS is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty ofs
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
@@ -42,6 +42,7 @@
 #include <math.h>
 #include "gromacs/math/utilities.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vec.h"
 #include "coulomb.h"
 #include "smalloc.h"

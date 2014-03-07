@@ -36,7 +36,7 @@
 #ifndef GMX_HARDWARE_DETECT_H
 #define GMX_HARDWARE_DETECT_H
 
-#include "types/hw_info.h"
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,7 +48,6 @@ extern "C" {
 /* the init and consistency functions depend on commrec that may not be
    consistent in cuda because MPI types don't exist there.  */
 #ifndef __CUDACC__
-#include "types/commrec.h"
 /* return a pointer to a global hwinfo structure. */
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs);

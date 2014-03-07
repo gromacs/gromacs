@@ -40,10 +40,6 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef NOGMX
 /*#define GMX_MPI*/
 /*#define GMX_FFT_FFTW3*/
@@ -70,12 +66,18 @@ double MPI_Wtime();
 #endif
 
 #ifdef NOGMX
+#ifdef __cplusplus
+extern "C" {
+#endif
 struct fft5d_time_t {
     double fft, local, mpi1, mpi2;
 };
 typedef struct fft5d_time_t *fft5d_time;
 #else
 #include "gromacs/timing/wallcycle.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 typedef gmx_wallcycle_t fft5d_time;
 #endif
 

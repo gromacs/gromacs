@@ -47,6 +47,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "vec.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "gromacs/fileio/filenm.h"
 #include <string.h>

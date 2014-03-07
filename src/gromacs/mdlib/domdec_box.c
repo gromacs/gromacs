@@ -40,6 +40,7 @@
 #include "typedefs.h"
 #include "vec.h"
 #include "pbc.h"
+#include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
 #include "nsgrid.h"

@@ -46,7 +46,6 @@
 #include <stdio.h>
 
 #include "types/simple.h"
-#include "types/commrec.h"
 #include "typedefs.h"
 #include "main.h"
 #include "gmx_fatal.h"
@@ -120,12 +119,6 @@ void gmx_sumf(int nr, float r[], const t_commrec *cr);
 void gmx_sumd(int nr, double r[], const t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
-void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm);
-/* Calculate the global sum of an array of floats */
-
-void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm);
-/* Calculate the global sum of an array of doubles */
-
 void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of ints */
 
@@ -142,11 +135,9 @@ void gmx_abort(int nodeid, int nnodes, int errorno);
 /* Abort the parallel run */
 
 #ifdef GMX_DOUBLE
-#define gmx_sum_comm  gmx_sumd_comm
 #define gmx_sum       gmx_sumd
 #define gmx_sum_sim   gmx_sumd_sim
 #else
-#define gmx_sum_comm  gmx_sumf_comm
 #define gmx_sum       gmx_sumf
 #define gmx_sum_sim   gmx_sumf_sim
 #endif

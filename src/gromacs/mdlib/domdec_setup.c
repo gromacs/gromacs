@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "domdec.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "perf_est.h"
 #include "physics.h"
