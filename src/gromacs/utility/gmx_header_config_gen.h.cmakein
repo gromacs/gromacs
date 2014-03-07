@@ -48,11 +48,20 @@
  * \ingroup module_utility
  */
 
-/** Detect Cygwin */
-#cmakedefine GMX_CYGWIN
+#ifdef __CYGWIN__ 
+#define GMX_CYGWIN
+#endif
 
-/** Detect native (i.e. non-Cygwin) Windows */
-#cmakedefine GMX_NATIVE_WINDOWS
+/* We currently don't support MingW. And ICC also defines it */
+#ifdef _MSC_VER
+#define GMX_NATIVE_WINDOWS
+#endif
 
 /** Define if we have sufficient C++11 support */
 #cmakedefine GMX_CXX11
+
+/* Use MPI (with mpicc) for parallelization */
+#cmakedefine GMX_LIB_MPI
+
+/* Use threads_mpi for parallelization */
+#cmakedefine GMX_THREAD_MPI
