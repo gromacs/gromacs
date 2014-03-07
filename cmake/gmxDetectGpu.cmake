@@ -218,4 +218,5 @@ macro(gmx_detect_gpu)
         endif()
 
     endif (NOT DEFINED GMX_DETECT_GPU_COUNT OR NOT DEFINED GMX_DETECT_GPU_INFO)
+
 endmacro(gmx_detect_gpu)

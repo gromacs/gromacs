@@ -44,7 +44,7 @@ file(GLOB GMXLIB_SOURCES *.c *.cpp)
 # to link the functions directly
 #if(GMX_THREAD_MPI)
 #    add_subdirectory(thread_mpi)
-#endif(GMX_THREAD_MPI)
+#endif()
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,

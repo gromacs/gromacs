@@ -50,12 +50,12 @@ MACRO(GMX_TEST_SIGUSR1 VARIABLE)
 	IF(HAVE_${VARIABLE})	    
             MESSAGE(STATUS "Checking for SIGUSR1 - found")
             set(${VARIABLE} 1 CACHE INTERNAL "Result of test for SIGUSR1" FORCE)
-        ELSE(HAVE_${VARIABLE})
+        ELSE()
             MESSAGE(STATUS "Checking for SIGUSR1 - not found")
             set(${VARIABLE} 0 CACHE INTERNAL "Result of test for SIGUSR1" FORCE)
-        ENDIF(HAVE_${VARIABLE})
+        ENDIF()
         
-    ENDIF(NOT DEFINED HAVE_${VARIABLE})
+    ENDIF()
 ENDMACRO(GMX_TEST_SIGUSR1 VARIABLE)
 
 

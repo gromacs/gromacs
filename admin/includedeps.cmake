@@ -64,15 +64,15 @@ endfunction ()
 
 if (NOT DEFINED SRCDIR OR NOT DEFINED BUILDDIR OR NOT DEFINED OUTDIR)
     message(FATAL_ERROR "Required input variable (SRCDIR, BUILDDIR, OUTDIR) not set")
-endif ()
+endif()
 
 if (NOT DEFINED PYTHON_EXECUTABLE)
     set(PYTHON_EXECUTABLE python)
-endif ()
+endif()
 
 if (NOT DEFINED MODE)
     set(MODE "CHECK")
-endif ()
+endif()
 
 if (MODE STREQUAL "CHECK")
     set(GRAPHOPTIONS --check)
@@ -83,9 +83,9 @@ elseif (MODE STREQUAL "GRAPHS")
     set(GRAPHOPTIONS
         --module-graph module-deps.dot --module-file-graphs
         -o ${OUTDIR})
-else ()
+else()
     message(FATAL_ERROR "Unknown mode ${MODE}")
-endif ()
+endif()
 
 file(MAKE_DIRECTORY ${OUTDIR})
 generate_module_file_list(${SRCDIR} ${OUTDIR}/module-files.txt ${MODE})
@@ -101,4 +101,4 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SRCDIR}/admin/includedeps.py
 if (MODE STREQUAL "GRAPHS" AND DOT_EXECUTABLE)
     file(GLOB DOT_INPUT_FILES ${OUTDIR}/*.dot)
     execute_process(COMMAND ${DOT_EXECUTABLE} -Tpng -O ${DOT_INPUT_FILES})
-endif ()
+endif()

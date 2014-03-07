@@ -50,12 +50,12 @@ MACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
         if(${VARIABLE})
             MESSAGE(STATUS "Checking for GCC x86 inline asm - supported")
             set(${VARIABLE} 1 CACHE INTERNAL "Result of test for GCC x86 inline asm" FORCE)
-        else(${VARIABLE})
+        else()
             MESSAGE(STATUS "Checking for GCC x86 inline asm - not supported")
             set(${VARIABLE} 0 CACHE INTERNAL "Result of test for GCC x86 inline asm" FORCE)
-        endif(${VARIABLE})
+        endif()
 
-    ENDIF(NOT DEFINED ${VARIABLE})
+    ENDIF()
 ENDMACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
 
 
