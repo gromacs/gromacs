@@ -44,9 +44,9 @@ if (DOXYGEN_FOUND)
     if (DOXYGEN_MSCGEN_EXECUTABLE)
         set(DOXYGEN_MSCGEN_FOUND TRUE)
         get_filename_component(DOXYGEN_MSCGEN_PATH "${DOXYGEN_MSCGEN_EXECUTABLE}" PATH)
-    endif (DOXYGEN_MSCGEN_EXECUTABLE)
+    endif()
     mark_as_advanced(DOXYGEN_MSCGEN_EXECUTABLE)
-endif (DOXYGEN_FOUND)
+endif()
 
 gmx_dependent_option(
     GMX_COMPACT_DOXYGEN
@@ -115,7 +115,7 @@ if (DOXYGEN_FOUND)
         set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
         configure_file(Doxyfile-version.cmakein Doxyfile-version)
     endif()
-endif (DOXYGEN_FOUND)
+endif()
 
 find_package(PythonInterp)
 
@@ -158,4 +158,4 @@ if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
         -DMODE=CHECKDOC
         -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
         COMMENT "Checking some aspects of Doxygen documentation" VERBATIM)
-endif ()
+endif()

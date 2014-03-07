@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -50,12 +50,12 @@ MACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
         if(${VARIABLE})
             MESSAGE(STATUS "Checking for GCC x86 inline asm - supported")
             set(${VARIABLE} 1 CACHE INTERNAL "Result of test for GCC x86 inline asm" FORCE)
-        else(${VARIABLE})
+        else()
             MESSAGE(STATUS "Checking for GCC x86 inline asm - not supported")
             set(${VARIABLE} 0 CACHE INTERNAL "Result of test for GCC x86 inline asm" FORCE)
-        endif(${VARIABLE})
+        endif()
 
-    ENDIF(NOT DEFINED ${VARIABLE})
+    ENDIF()
 ENDMACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
 
 
