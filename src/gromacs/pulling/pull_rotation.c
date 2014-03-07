@@ -3346,7 +3346,7 @@ static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex
 /* Special version of copy_rvec:
  * During the copy procedure of xcurr to b, the correct PBC image is chosen
  * such that the copied vector ends up near its reference position xref */
-static inline void copy_correct_pbc_image(
+static gmx_inline void copy_correct_pbc_image(
         const rvec  xcurr,  /* copy vector xcurr ...                */
         rvec        b,      /* ... to b ...                         */
         const rvec  xref,   /* choosing the PBC image such that b ends up near xref */

@@ -1793,7 +1793,7 @@ static void free_work(pme_work_t *work)
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
+gmx_inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
         const gmx_simd_real_t two = gmx_simd_set1_r(2.0);
@@ -1818,7 +1818,7 @@ inline static void calc_exponentials_q(int gmx_unused start, int end, real f, re
     }
 }
 #else
-inline static void calc_exponentials_q(int start, int end, real f, real *d, real *r, real *e)
+gmx_inline static void calc_exponentials_q(int start, int end, real f, real *d, real *r, real *e)
 {
     int kx;
     for (kx = start; kx < end; kx++)
@@ -1838,7 +1838,7 @@ inline static void calc_exponentials_q(int start, int end, real f, real *d, real
 
 #if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
-inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
+gmx_inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
 {
     gmx_simd_real_t tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
     const gmx_simd_real_t sqr_PI = gmx_simd_sqrt_r(gmx_simd_set1_r(M_PI));
@@ -1860,7 +1860,7 @@ inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_a
     }
 }
 #else
-inline static void calc_exponentials_lj(int start, int end, real *r, real *tmp2, real *d)
+gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *tmp2, real *d)
 {
     int kx;
     real mk;
@@ -3642,7 +3642,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     for (i = 0; i < pme->ngrids; ++i)
     {
         if ((i <  DO_Q && EEL_PME(ir->coulombtype) && (i == 0 ||
-                                                       bFreeEnergy_q))|| 
+                                                       bFreeEnergy_q)) ||
             (i >= DO_Q && EVDW_PME(ir->vdwtype) && (i == 2 ||
                                                     bFreeEnergy_lj ||
                                                     ir->ljpme_combination_rule == eljpmeLB)))
