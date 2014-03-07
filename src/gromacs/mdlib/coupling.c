@@ -40,6 +40,7 @@
 #include <assert.h>
 
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "smalloc.h"
 #include "update.h"
 #include "vec.h"
