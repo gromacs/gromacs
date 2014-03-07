@@ -40,6 +40,7 @@
 #include "types/interaction_const.h"
 #include "types/nbnxn_cuda_types_ext.h"
 #include "types/hw_info.h"
+#include "types/nb_verlet.h"
 
 #ifdef GMX_GPU
 #define FUNC_TERM ;

@@ -42,6 +42,7 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include "types/simple.h"
 
 #ifdef GMX_GPU

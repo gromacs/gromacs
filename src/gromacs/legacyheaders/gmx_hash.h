@@ -37,6 +37,8 @@
 
 #include "typedefs.h"
 #include "smalloc.h"
+#include "types/commrec.h"
+#include "gmx_fatal.h"
 
 #ifdef __cplusplus
 extern "C" {

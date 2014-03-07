@@ -38,6 +38,7 @@
 #ifndef _md_logging_h
 #define _md_logging_h
 
+#include <stdio.h>
 #include "types/commrec.h"
 
 #ifdef __cplusplus

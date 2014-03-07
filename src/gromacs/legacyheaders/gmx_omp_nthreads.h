@@ -36,6 +36,7 @@
 #ifndef GMX_OMP_NTHREADS
 #define GMX_OMP_NTHREADS
 
+#include <stdio.h>
 #include "types/commrec.h"
 
 #ifdef __cplusplus
