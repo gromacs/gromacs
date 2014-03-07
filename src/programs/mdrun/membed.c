@@ -39,6 +39,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "vec.h"

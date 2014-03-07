@@ -37,6 +37,7 @@
 #endif
 
 #include "smalloc.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "calcgrid.h"
 #include "pme.h"
