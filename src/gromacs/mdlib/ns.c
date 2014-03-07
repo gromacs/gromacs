@@ -45,6 +45,7 @@
 #include "macros.h"
 #include "gromacs/math/utilities.h"
 #include "vec.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "nsgrid.h"
 #include "force.h"

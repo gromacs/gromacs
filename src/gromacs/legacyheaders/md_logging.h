@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,8 @@
 #ifndef _md_logging_h
 #define _md_logging_h
 
-#include "types/commrec.h"
+#include <stdio.h>
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
