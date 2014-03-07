@@ -40,7 +40,6 @@
 
 #include <stdio.h>
 #include "../legacyheaders/typedefs.h"
-#include "../legacyheaders/types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {

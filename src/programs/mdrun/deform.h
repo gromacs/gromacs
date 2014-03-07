@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,26 +33,25 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _mvdata_h
-#define _mvdata_h
+#ifndef GMX_MDRUN_DEFORM_H
+#define GMX_MDRUN_DEFORM_H
 
-#include "typedefs.h"
+#include "thread_mpi/threads.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void bcast_ir_mtop(const t_commrec *cr,
-                   t_inputrec *inputrec, gmx_mtop_t *mtop);
-/* Broadcasts ir and mtop from the master to all nodes in cr->mpi_comm_mygroup.
+/* Variables for temporary use with the deform option,
+ * used in runner.c and md.c.
+ * (These variables should be stored in the tpx file.)
  */
-
-void bcast_state(const t_commrec *cr, t_state *state);
-/* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
- */
+extern gmx_int64_t         deform_init_init_step_tpx;
+extern matrix              deform_init_box_tpx;
+extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _mvdata_h */
+#endif

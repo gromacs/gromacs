@@ -44,6 +44,7 @@
 #include "typedefs.h"
 #include "main.h"
 #include "mvdata.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
