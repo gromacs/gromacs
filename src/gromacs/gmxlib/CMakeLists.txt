@@ -44,13 +44,13 @@ file(GLOB GMXLIB_SOURCES *.c *.cpp)
 # to link the functions directly
 #if(GMX_THREAD_MPI)
 #    add_subdirectory(thread_mpi)
-#endif(GMX_THREAD_MPI)
+#endif()
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
-list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
+list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})
 
 # gpu utils + cuda tools module
 if(GMX_GPU)

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -66,10 +66,10 @@ if(GMX_OPENMP)
                     endif()
                 endif()
             endif()
-        else(OPENMP_FOUND)
+        else()
             message(WARNING
                     "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
             set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
-        endif(OPENMP_FOUND)
+        endif()
     endif()
 endif()

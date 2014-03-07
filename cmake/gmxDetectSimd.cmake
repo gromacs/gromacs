@@ -55,9 +55,9 @@ function(gmx_suggest_x86_simd _suggested_simd)
 
     if(GMX_X86_GCC_INLINE_ASM)
         set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM")
-    else(GMX_X86_GCC_INLINE_ASM)
+    else()
         set(GCC_INLINE_ASM_DEFINE "")
-    endif(GMX_X86_GCC_INLINE_ASM)
+    endif()
 
     message(STATUS "Detecting best SIMD instructions for this CPU")
 

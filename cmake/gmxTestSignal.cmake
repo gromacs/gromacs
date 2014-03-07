@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2011, by the GROMACS development team, led by
+# Copyright (c) 2009,2011,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,21 +41,19 @@
 
 MACRO(GMX_TEST_SIGUSR1 VARIABLE)
     IF(NOT DEFINED HAVE_${VARIABLE})
-        
+
         MESSAGE(STATUS "Checking for SIGUSR1")
 
-        TRY_COMPILE(HAVE_${VARIABLE} "${CMAKE_BINARY_DIR}"    
+        TRY_COMPILE(HAVE_${VARIABLE} "${CMAKE_BINARY_DIR}"
                     "${CMAKE_SOURCE_DIR}/cmake/TestSIGUSR1.c")
 
-	IF(HAVE_${VARIABLE})	    
+	IF(HAVE_${VARIABLE})
             MESSAGE(STATUS "Checking for SIGUSR1 - found")
             set(${VARIABLE} 1 CACHE INTERNAL "Result of test for SIGUSR1" FORCE)
-        ELSE(HAVE_${VARIABLE})
+        ELSE()
             MESSAGE(STATUS "Checking for SIGUSR1 - not found")
             set(${VARIABLE} 0 CACHE INTERNAL "Result of test for SIGUSR1" FORCE)
-        ENDIF(HAVE_${VARIABLE})
-        
-    ENDIF(NOT DEFINED HAVE_${VARIABLE})
+        ENDIF()
+
+    ENDIF()
 ENDMACRO(GMX_TEST_SIGUSR1 VARIABLE)
-
-

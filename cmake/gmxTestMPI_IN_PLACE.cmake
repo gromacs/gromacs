@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2011,2012, by the GROMACS development team, led by
+# Copyright (c) 2009,2011,2012,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -56,16 +56,16 @@ int main(void) {
 
     if(MPI_IN_PLACE_COMPILE_OK)
         MESSAGE(STATUS "Checking for MPI_IN_PLACE - yes")
-    else(MPI_IN_PLACE_COMPILE_OK)
+    else()
         MESSAGE(STATUS "Checking for MPI_IN_PLACE - no")
-    endif(MPI_IN_PLACE_COMPILE_OK)
+    endif()
     set(MPI_IN_PLACE_COMPILE_OK "${MPI_IN_PLACE_COMPILE_OK}" CACHE INTERNAL "Result of mpi_in_place check")
     set(CMAKE_REQUIRED_DEFINITIONS)
     set(CMAKE_REQUIRED_INCLUDES)
     set(CMAKE_REQUIRED_LIBRARIES)
   endif()
   if (MPI_IN_PLACE_COMPILE_OK)
-    set(${VARIABLE} ${MPI_IN_PLACE_COMPILE_OK} 
+    set(${VARIABLE} ${MPI_IN_PLACE_COMPILE_OK}
       "Result of test for MPI_IN_PLACE")
   endif()
 ENDMACRO(GMX_TEST_MPI_IN_PLACE VARIABLE)
