@@ -225,7 +225,7 @@ static int comp_minima(const void *a, const void *b)
     }
 }
 
-static inline
+static gmx_inline
 void print_minimum(FILE *fp, int num, const t_minimum *min)
 {
     fprintf(fp,
@@ -233,7 +233,7 @@ void print_minimum(FILE *fp, int num, const t_minimum *min)
             num, min->index, min->ener);
 }
 
-static inline
+static gmx_inline
 void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
 {
     print_minimum(fp, num, min);
@@ -241,7 +241,7 @@ void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
     mm[num].ener  = min->ener;
 }
 
-static inline
+static gmx_inline
 gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
                                      int              dimension_index,
                                      int              dimension_min,
@@ -254,7 +254,7 @@ gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
     /* Note over/underflow within W cannot occur. */
 }
 
-static inline
+static gmx_inline
 gmx_bool is_local_minimum_from_above(const t_minimum *this_min,
                                      int              dimension_index,
                                      int              dimension_max,

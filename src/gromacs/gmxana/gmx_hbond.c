@@ -1647,15 +1647,15 @@ static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
  * This could be implemented slightly more efficient, but the code
  * would get much more complicated.
  */
-static inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static gmx_inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? 0     : (x-1));
 }
-static inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+static gmx_inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
 {
     return ((n == 1) ? x : bTric && bEdge ? (n-1) : (x+1));
 }
-static inline int grid_mod(int j, int n)
+static gmx_inline int grid_mod(int j, int n)
 {
     return (j+n) % (n);
 }
