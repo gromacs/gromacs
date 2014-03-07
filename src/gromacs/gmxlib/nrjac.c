@@ -47,7 +47,7 @@
 #include "nrjac.h"
 
 
-static inline
+static gmx_inline
 void do_rotate(double **a, int i, int j, int k, int l, double tau, double s)
 {
     double g, h;
