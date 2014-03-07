@@ -41,6 +41,7 @@
 #include <math.h>
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "physics.h"

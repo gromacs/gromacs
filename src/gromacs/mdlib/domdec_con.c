@@ -41,6 +41,7 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "constr.h"
+#include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
 #include "mtop_util.h"

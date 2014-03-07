@@ -34,7 +34,6 @@
  */
 #ifndef GMX_THREAD_AFFINITY_H_
 #define GMX_THREAD_AFFINITY_H_
-#include "types/commrec.h"
 #include "typedefs.h"
 
 #ifdef __cplusplus

@@ -38,8 +38,7 @@
 #ifndef _fatal_collective_h
 #define _fatal_collective_h
 
-#include "types/simple.h"
-#include "types/commrec.h"
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

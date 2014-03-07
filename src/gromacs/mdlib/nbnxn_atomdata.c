@@ -49,6 +49,7 @@
 #include "nbnxn_search.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gmx_omp_nthreads.h"
+#include "thread_mpi/atomic.h"
 
 /* Default nbnxn allocation routine, allocates NBNXN_MEM_ALIGN byte aligned */
 void nbnxn_alloc_aligned(void **ptr, size_t nbytes)

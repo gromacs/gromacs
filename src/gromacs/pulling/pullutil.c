@@ -46,6 +46,7 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "names.h"
 #include "gmx_fatal.h"
 #include "macros.h"

@@ -40,6 +40,7 @@
 
 
 #include <stdio.h>
+#include "typedefs.h"
 #include "network.h"
 #include "../fileio/filenm.h"
 
