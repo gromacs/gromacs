@@ -36,12 +36,7 @@
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 #include "nblist.h"
-
-#include "../thread_mpi/atomic.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,10 +75,8 @@ typedef void nbnxn_free_t (void *ptr);
 typedef struct {
     int          cj;    /* The j-cluster                    */
     unsigned int excl;  /* The exclusion (interaction) bits */
-#ifdef GMX_SIMD_IBM_QPX
     /* Indices into the arrays of SIMD interaction masks. */
     char         interaction_mask_indices[4];
-#endif
 } nbnxn_cj_t;
 
 /* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
@@ -229,6 +222,8 @@ enum {
     ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR
 };
 
+typedef struct tMPI_Atomic tMPI_Atomic_t;
+
 typedef struct {
     nbnxn_alloc_t           *alloc;
     nbnxn_free_t            *free;
@@ -266,9 +261,7 @@ typedef struct {
      */
     unsigned int            *simd_exclusion_filter1;
     unsigned int            *simd_exclusion_filter2;
-#ifdef GMX_SIMD_IBM_QPX
     real                    *simd_interaction_array; /* Array of masks needed for exclusions on QPX */
-#endif
     int                      nout;                   /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;                    /* Output data structures               */
     int                      nalloc;                 /* Allocation size of all arrays (for x/f *x/fstride) */
