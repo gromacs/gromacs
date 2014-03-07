@@ -54,14 +54,15 @@ FUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
                 set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
                 set(${VARIABLE} 1 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
                 break()
-            else(${${COMPILE_VARIABLE}})
+            else()
                 set(${VARIABLE} 0 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
-            endif(${${COMPILE_VARIABLE}})
+            endif()
         endforeach()
-    ENDIF(NOT DEFINED ${VARIABLE})
+    ENDIF()
+
     IF (${VARIABLE})
         SET (${CFLAGSVAR} "${${CFLAGSVAR}} ${${VARIABLE}_FLAG}" PARENT_SCOPE)
-    ENDIF (${VARIABLE})
+    ENDIF ()
 ENDFUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
 
 
@@ -73,6 +74,7 @@ ENDFUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
 # FLAGSVAR            Variable (string) to which we should add the correct flag
 # Args 5 through N    Multiple strings with optimization flags to test
 FUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
+
     IF(NOT DEFINED ${VARIABLE})
         # Insert a blank element last in the list (try without any flags too)
         # This must come last, since some compilers (Intel) might try to
@@ -87,13 +89,15 @@ FUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
                 set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
                 set(${VARIABLE} 1 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
                 break()
-            else(${${COMPILE_VARIABLE}})
+            else()
                 set(${VARIABLE} 0 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
-            endif(${${COMPILE_VARIABLE}})
+            endif()
         endforeach()
-    ENDIF(NOT DEFINED ${VARIABLE})
+    ENDIF()
+
     IF (${VARIABLE})
         SET (${CXXFLAGSVAR} "${${CXXFLAGSVAR}} ${${VARIABLE}_FLAG}" PARENT_SCOPE)
-    ENDIF (${VARIABLE})
+    ENDIF ()
+
 ENDFUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
 

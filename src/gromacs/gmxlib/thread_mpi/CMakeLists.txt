@@ -18,8 +18,8 @@ if (THREAD_PTHREADS)
 else (THREAD_PTHREADS)
     if (THREAD_WINDOWS)
         set(THREAD_MPI_LIB_SOURCE winthreads.c ${THREAD_MPI_LIB_SOURCE})
-    endif (THREAD_WINDOWS)
-endif(THREAD_PTHREADS)
+    endif()
+endif()
 
 
 add_library(thread_mpi STATIC ${THREAD_MPI_LIB_SOURCE})
@@ -28,11 +28,11 @@ add_library(thread_mpi STATIC ${THREAD_MPI_LIB_SOURCE})
 target_link_libraries(thread_mpi ${THREAD_LIB})
 
 if (TMPI_CXX_LIB)
-    set(THREAD_MPI_CXX_LIB_SOURCE 
+    set(THREAD_MPI_CXX_LIB_SOURCE
         system_error.cpp )
     add_library(thread_mpi_cxx STATIC ${THREAD_MPI_CXX_LIB_SOURCE})
     target_link_libraries(thread_mpi_cxx thread_mpi)
-endif (TMPI_CXX_LIB)
+endif()
 
 #configure_file(tmpi_config.h.cmakein  tmpi_config.h)
 #add_definitions(-DHAVE_TMPI_CONFIG_H)
