@@ -783,7 +783,7 @@ void dd_make_reverse_top(FILE *fplog,
     }
 }
 
-static inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
+static gmx_inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
 {
     t_iatom *liatoms;
     int      k;

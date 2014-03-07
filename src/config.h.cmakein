@@ -357,9 +357,6 @@
    many compilers support stronger alternatives (e.g. __forceinline)
    that we might want to use. */
 #define gmx_inline ${INLINE_KEYWORD}
-#ifndef __cplusplus
-#define inline ${INLINE_KEYWORD}
-#endif
 
 /* Define to __restrict__ or __restrict if that is what the C compiler
    calls it, unless we are on C99 when it is simply called restrict.
