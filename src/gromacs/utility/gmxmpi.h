@@ -54,6 +54,8 @@
 #ifndef GMX_UTILITY_GMXMPI_H
 #define GMX_UTILITY_GMXMPI_H
 
+#include "gmx_header_config.h"
+
 /*! \cond */
 #ifdef GMX_LIB_MPI
 /* MPI C++ binding is deprecated and can cause name conflicts (e.g. stdio/mpi seek) */
