@@ -41,4 +41,4 @@ gmx_install_headers(tools ${TOOLS_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)
-endif (BUILD_TESTING)
+endif()

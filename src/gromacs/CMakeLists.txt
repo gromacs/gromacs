@@ -70,7 +70,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(selection)
     add_subdirectory(trajectoryanalysis)
     add_subdirectory(tools)
-endif ()
+endif()
 
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
 
@@ -112,7 +112,7 @@ endif()
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx-version)
-endif ()
+endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
@@ -177,4 +177,4 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
     else()
         message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_GPU")
     endif()
-endif ()
+endif()
