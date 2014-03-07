@@ -585,7 +585,6 @@ gmx_directory_open(gmx_directory_t *p_gmxdir, const char *dirname)
     if (dirname != NULL && strlen(dirname) > 0)
     {
         char *     tmpname;
-        size_t     namelength;
         int        len;
 
         len = strlen(dirname);
@@ -827,7 +826,7 @@ FILE *libopen(const char *file)
 
 void gmx_tmpnam(char *buf)
 {
-    int i, len, fd;
+    int i, len;
 
     if ((len = strlen(buf)) < 7)
     {
@@ -844,7 +843,7 @@ void gmx_tmpnam(char *buf)
 #ifdef GMX_NATIVE_WINDOWS
     _mktemp(buf);
 #else
-    fd = mkstemp(buf);
+    int fd = mkstemp(buf);
 
     switch (fd)
     {
