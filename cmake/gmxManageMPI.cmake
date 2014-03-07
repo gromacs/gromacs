@@ -39,7 +39,7 @@ if(GMX_MPI)
     message(STATUS "MPI is not compatible with thread-MPI. Disabling thread-MPI.")
     set(GMX_THREAD_MPI OFF CACHE BOOL
         "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" FORCE)
-  endif(GMX_THREAD_MPI)
+  endif()
 
   # Test the CMAKE_C_COMPILER for being an MPI (wrapper) compiler
   TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
@@ -146,12 +146,12 @@ if(GMX_MPI)
         mark_as_advanced(file_cmd)
     endif()
 
-  else(MPI_FOUND)
+  else()
       message(FATAL_ERROR
         "MPI support requested, but no MPI compiler found. Either set the "
         "C-compiler (CMAKE_C_COMPILER) to the MPI compiler (often called mpicc), "
         "or set the variables reported missing for MPI_C above.")
-  endif(MPI_FOUND)
+  endif()
 
   include(gmxTestCatamount)
   gmx_test_catamount(GMX_CRAY_CATAMOUNT)
@@ -163,4 +163,4 @@ if(GMX_MPI)
 
   set(GMX_LIB_MPI 1)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
-endif(GMX_MPI)
+endif()

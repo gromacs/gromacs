@@ -78,7 +78,7 @@ function(GMX_OPTION_MULTICHOICE NAME DESCRIPTION DEFAULT)
     if (_found_index EQUAL -1)
         message(FATAL_ERROR "Invalid value for ${NAME}: ${_org_value}.  "
                             "Pick one of: ${_allowed_comma_separated}")
-    endif ()
+    endif()
     # Always provide the upper-case value to the caller
     set(${NAME} "${${NAME}}" PARENT_SCOPE)
 endfunction()

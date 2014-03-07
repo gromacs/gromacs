@@ -56,9 +56,9 @@ int main(void) {
 
     if(MPI_IN_PLACE_COMPILE_OK)
         MESSAGE(STATUS "Checking for MPI_IN_PLACE - yes")
-    else(MPI_IN_PLACE_COMPILE_OK)
+    else()
         MESSAGE(STATUS "Checking for MPI_IN_PLACE - no")
-    endif(MPI_IN_PLACE_COMPILE_OK)
+    endif()
     set(MPI_IN_PLACE_COMPILE_OK "${MPI_IN_PLACE_COMPILE_OK}" CACHE INTERNAL "Result of mpi_in_place check")
     set(CMAKE_REQUIRED_DEFINITIONS)
     set(CMAKE_REQUIRED_INCLUDES)

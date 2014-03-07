@@ -79,4 +79,4 @@ unset(SUFFIXES_CHANGED)
 
 if (GMX_BUILD_MDRUN_ONLY)
     set(GMX_LIBS_SUFFIX "_mdrun${GMX_LIBS_SUFFIX}")
-endif ()
+endif()

@@ -51,9 +51,9 @@ MACRO(GMX_TEST_XDR VARIABLE)
 
         if(XDR_COMPILE_OK)
 	    MESSAGE(STATUS "Checking for system XDR support - present")			
-        else(XDR_COMPILE_OK)
+        else()
             MESSAGE(STATUS "Checking for system XDR support - not present")
-      	endif(XDR_COMPILE_OK)
+      	endif()
 
         set(${VARIABLE} ${XDR_COMPILE_OK} CACHE INTERNAL "Result of test for system XDR support" FORCE)
         

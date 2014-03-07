@@ -139,7 +139,7 @@ macro(manage_linear_algebra_library name function_in_library)
     if(GMX_EXTERNAL_${name})
         if (NOT _library_was_found)
             message(FATAL_ERROR "You have set GMX_EXTERNAL_${name}=ON to instruct GROMACS to use an external ${name} library, but no external library could be detected.")
-        endif ()
+        endif()
         # Actually trigger linking.
         list(APPEND LINEAR_ALGEBRA_LIBRARIES ${_libraries_to_link})
     else()
