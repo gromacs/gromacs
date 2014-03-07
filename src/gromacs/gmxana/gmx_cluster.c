@@ -65,7 +65,7 @@
 #include "gromacs/linearalgebra/eigensolver.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
-static inline
+static gmx_inline
 void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     fprintf(fp1, "%s", buf);
@@ -73,14 +73,14 @@ void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 }
 
 /* just print a prepared buffer to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 {
     sprintf(buf, fmt, arg);
@@ -88,7 +88,7 @@ void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 {
     sprintf(buf, fmt, arg);
@@ -96,7 +96,7 @@ void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg)
 {
     sprintf(buf, fmt, arg);
@@ -104,7 +104,7 @@ void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *ar
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -112,7 +112,7 @@ void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, real arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
@@ -120,7 +120,7 @@ void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, re
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static inline
+static gmx_inline
 void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg1, const char *arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
