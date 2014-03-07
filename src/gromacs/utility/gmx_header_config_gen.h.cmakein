@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,11 +48,14 @@
  * \ingroup module_utility
  */
 
-/** Detect Cygwin */
-#cmakedefine GMX_CYGWIN
+#ifdef __CYGWIN__
+#define GMX_CYGWIN
+#endif
 
-/** Detect native (i.e. non-Cygwin) Windows */
-#cmakedefine GMX_NATIVE_WINDOWS
+/* We currently don't support MingW. And ICC also defines it */
+#ifdef _MSC_VER
+#define GMX_NATIVE_WINDOWS
+#endif
 
 /** Define if we have sufficient C++11 support */
 #cmakedefine GMX_CXX11

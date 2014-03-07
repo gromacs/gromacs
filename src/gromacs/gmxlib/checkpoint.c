@@ -61,6 +61,7 @@
 #include "copyrite.h"
 #include "names.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "smalloc.h"
 #include "txtdump.h"
 #include "vec.h"
