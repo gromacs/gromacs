@@ -41,7 +41,7 @@ find_package(Threads)
 set(PTHREADS_LIBRARIES)
 if (CMAKE_USE_PTHREADS_INIT)
     set(PTHREADS_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-endif ()
+endif()
 
 set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(GTEST_DIR ${GMOCK_DIR}/gtest)
