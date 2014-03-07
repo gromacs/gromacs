@@ -40,6 +40,7 @@
 #include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
+#include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
 #include "names.h"

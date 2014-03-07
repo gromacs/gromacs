@@ -42,6 +42,7 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "nrjac.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "orires.h"
 #include "do_fit.h"
