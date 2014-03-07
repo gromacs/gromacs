@@ -601,7 +601,7 @@ gmx_test_cxx11(GMX_CXX11_SUPPORTED GMX_CXX11_FLAGS)
 include(CMakeDependentOption)
 # nvcc does not support C++11 flags, so with GPUs we prefer to skip C++11 flags
 # entirely to keep the compilation environment uniform.
-cmake_dependent_option(GMX_CXX11
+gmx_dependent_option(GMX_CXX11
     "Use C++11 features"
     ON "GMX_CXX11_SUPPORTED AND NOT GMX_GPU" OFF)
 mark_as_advanced(GMX_CXX11)
