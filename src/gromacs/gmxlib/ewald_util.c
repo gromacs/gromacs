@@ -42,6 +42,7 @@
 #include <math.h>
 #include "gromacs/math/utilities.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vec.h"
 #include "coulomb.h"
 #include "smalloc.h"

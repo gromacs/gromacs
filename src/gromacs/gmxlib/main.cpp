@@ -49,6 +49,7 @@
 #endif
 
 #include "smalloc.h"
+#include "types/commrec.h"
 #include "gmx_fatal.h"
 #include "network.h"
 #include "main.h"
