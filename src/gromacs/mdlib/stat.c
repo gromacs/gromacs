@@ -41,6 +41,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "sysstuff.h"
 #include "gmx_fatal.h"
 #include "network.h"

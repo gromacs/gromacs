@@ -53,8 +53,6 @@
 #include "types/membedt.h"
 #include "types/globsig.h"
 
-#include "thread_mpi/threads.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -80,14 +78,6 @@ extern "C" {
 enum {
     ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
-
-/* Variables for temporary use with the deform option,
- * used in runner.c and md.c.
- * (These variables should be stored in the tpx file.)
- */
-extern gmx_int64_t         deform_init_init_step_tpx;
-extern matrix              deform_init_box_tpx;
-extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
 #ifdef GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,

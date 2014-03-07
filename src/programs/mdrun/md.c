@@ -63,6 +63,7 @@
 #include "pme.h"
 #include "mdatoms.h"
 #include "repl_ex.h"
+#include "deform.h"
 #include "qmmm.h"
 #include "domdec.h"
 #include "domdec_network.h"

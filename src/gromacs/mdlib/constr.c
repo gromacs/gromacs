@@ -39,6 +39,7 @@
 #endif
 
 #include "gromacs/fileio/confio.h"
+#include "types/commrec.h"
 #include "constr.h"
 #include "copyrite.h"
 #include "invblock.h"
