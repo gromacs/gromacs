@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,10 @@
 
 #ifndef NBNXN_CUDA_H
 #define NBNXN_CUDA_H
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "types/nbnxn_cuda_types_ext.h"
 #include "types/simple.h"

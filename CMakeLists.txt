@@ -450,7 +450,6 @@ tmpi_enable_cxx()
 if(GMX_THREAD_MPI)
     # enable MPI functions
     tmpi_enable()
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     set(GMX_MPI 1)
     set(MPI_IN_PLACE_EXISTS 1)
 endif()
@@ -581,12 +580,6 @@ gmx_test_large_files(GMX_LARGEFILES)
 
 include(gmxTestSignal)
 gmx_test_sigusr1(HAVE_SIGUSR1)
-
-include(gmxTestInline)
-gmx_test_inline(INLINE_KEYWORD)
-
-include(gmxTestRestrict)
-gmx_test_restrict(RESTRICT_KEYWORD)
 
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)

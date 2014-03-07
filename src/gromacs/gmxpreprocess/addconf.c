@@ -45,6 +45,7 @@
 #include "vec.h"
 #include "macros.h"
 #include "smalloc.h"
+#include "types/commrec.h"
 #include "force.h"
 #include "names.h"
 #include "nsgrid.h"

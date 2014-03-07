@@ -43,6 +43,7 @@
 #include <string.h>
 
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "smalloc.h"
 #include "genborn.h"
 #include "vec.h"

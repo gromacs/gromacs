@@ -36,6 +36,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "smalloc.h"
 #include "vec.h"
 #include "copyrite.h"

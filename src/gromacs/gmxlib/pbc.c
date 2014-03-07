@@ -43,6 +43,7 @@
 
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vec.h"
 #include "gromacs/math/utilities.h"
 #include "main.h"
