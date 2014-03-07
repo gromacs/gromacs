@@ -46,16 +46,6 @@
 /* TODO: For now, disable Doxygen warnings from here */
 /*! \cond */
 
-/* Disable warnings about double-to-float conversion accuracy loss on MSVC */
-#ifdef _MSC_VER
-#pragma warning (disable : 4305)
-#pragma warning (disable : 4244)
-#pragma warning (disable : 4101)
-#pragma warning (disable : 4996)
-#pragma warning (disable : 4267)
-#pragma warning (disable : 4090)
-#endif
-
 /* Version number of package (translate from cmake to autoconf macro name) */
 #define VERSION  "@PROJECT_VERSION@"
 

@@ -199,8 +199,12 @@ MACRO(gmx_c_flags)
         #      forcing value to bool
         #      "this" in initializer list
         #      deprecated (posix, secure) functions
-        GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996" GMXC_CFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996" GMXC_CXXFLAGS)
+        #      truncation (double -> float)
+        #      conversion from 'double' to 'real', possible loss of data
+        #      unreferenced local variable (only C)
+        #      conversion from 'size_t' to 'int', possible loss of data
+        GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267" GMXC_CFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4267" GMXC_CXXFLAGS)
     endif()
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
