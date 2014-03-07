@@ -60,9 +60,9 @@ macro(gmx_set_build_information)
 
     if(GMX_X86_GCC_INLINE_ASM)
         set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM")
-    else(GMX_X86_GCC_INLINE_ASM)
+    else()
         set(GCC_INLINE_ASM_DEFINE "")
-    endif(GMX_X86_GCC_INLINE_ASM)
+    endif()
 
     message(STATUS "Setting build user/date/host/cpu information")
     if(CMAKE_HOST_UNIX)
@@ -74,12 +74,12 @@ macro(gmx_set_build_information)
         execute_process( COMMAND uname -srm OUTPUT_VARIABLE TMP_HOST OUTPUT_STRIP_TRAILING_WHITESPACE)
         set(BUILD_HOST    "@TMP_HOST@" CACHE INTERNAL "Build host & architecture")
         message(STATUS "Setting build user & time - OK")
-    else(CMAKE_HOST_UNIX)
+    else()
         set(BUILD_USER    "Anonymous@unknown [CMAKE]" CACHE INTERNAL "Build user")
         set(BUILD_TIME    "Unknown date" CACHE INTERNAL "Build date & time")
         set(BUILD_HOST    "@CMAKE_HOST_SYSTEM@ @CMAKE_HOST_SYSTEM_PROCESSOR@" CACHE INTERNAL "Build host & architecture")
         message(STATUS "Setting build user & time - not on Unix, using anonymous")
-    endif(CMAKE_HOST_UNIX)
+    endif()
 
     if(NOT CMAKE_CROSSCOMPILING)
         # Get CPU information, e.g. for deciding what SIMD support exists
@@ -157,8 +157,8 @@ macro(gmx_set_build_information)
             set(BUILD_CPU_FEATURES ""                      CACHE INTERNAL "Build CPU features")
         endif()
 
-    else(NOT CMAKE_CROSSCOMPILING)
-        
+    else()
+
         set(BUILD_CPU_VENDOR   "Unknown, cross-compiled"   CACHE INTERNAL "Build CPU vendor")
         set(BUILD_CPU_BRAND    "Unknown, cross-compiled"    CACHE INTERNAL "Build CPU brand")
         set(BUILD_CPU_FAMILY   "0"   CACHE INTERNAL "Build CPU family")
@@ -166,8 +166,7 @@ macro(gmx_set_build_information)
         set(BUILD_CPU_STEPPING "0" CACHE INTERNAL "Build CPU stepping")
         set(BUILD_CPU_FEATURES "" CACHE INTERNAL "Build CPU features")
 
-    endif(NOT CMAKE_CROSSCOMPILING)
+    endif()
 
     ENDIF(NOT DEFINED BUILD_USER)
 endmacro(gmx_set_build_information)
-
