@@ -89,8 +89,8 @@ TEST_F(SasaModuleTest, BasicTest)
     setOutputFileNoTest("-oa", "xvg");
     setOutputFileNoTest("-tv", "xvg");
     excludeDataset("dgsolv");
-    setDatasetTolerance("area", gmx::test::ulpTolerance(8));
-    setDatasetTolerance("volume", gmx::test::ulpTolerance(8));
+    setDatasetTolerance("area", gmx::test::ulpRealTolerance(8));
+    setDatasetTolerance("volume", gmx::test::ulpRealTolerance(8));
     runTest(CommandLine(cmdline));
 }
 
@@ -141,7 +141,7 @@ TEST_F(SasaModuleTest, HandlesDynamicOutputGroup)
     setOutputFileNoTest("-oa", "xvg");
     excludeDataset("volume");
     excludeDataset("dgsolv");
-    setDatasetTolerance("area", gmx::test::ulpTolerance(8));
+    setDatasetTolerance("area", gmx::test::ulpRealTolerance(8));
     runTest(CommandLine(cmdline));
 }
 
@@ -158,7 +158,7 @@ TEST_F(SasaModuleTest, HandlesDynamicCalculationGroup)
     setOutputFileNoTest("-oa", "xvg");
     excludeDataset("volume");
     excludeDataset("dgsolv");
-    setDatasetTolerance("area", gmx::test::ulpTolerance(8));
+    setDatasetTolerance("area", gmx::test::ulpRealTolerance(8));
     runTest(CommandLine(cmdline));
 }
 

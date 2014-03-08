@@ -97,9 +97,8 @@ floatingPointToBiasedInteger(const FloatingPoint<FloatType> &value)
     }
 }
 
-/*! \brief
- * Computes difference in ULPs between two numbers, treating also values of
- * different sign.
+/*! \brief Computes the magnitude of the difference in ULPs between
+ * two numbers, treating also values of different sign.
  */
 template <typename FloatType>
 gmx_uint64_t calculateUlpDifference(const FloatingPoint<FloatType> &value1,
@@ -164,9 +163,11 @@ bool FloatingPointDifference::isNaN() const
 
 std::string FloatingPointDifference::toString() const
 {
-    return formatString("%g (%" GMX_PRIu64 " %s-prec. ULPs)%s",
+    double eps = isDouble() ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS;
+    return formatString("%g (%" GMX_PRIu64 " %s-prec. ULPs which is rel. %g)%s",
                         absoluteDifference_, ulpDifference_,
-                        bDouble_ ? "double" : "single",
+                        isDouble() ? "double" : "single",
+                        ulpDifference_ * eps,
                         bSignDifference_ ? ", signs differ" : "");
 }
 
@@ -187,33 +188,46 @@ bool FloatingPointTolerance::isWithin(
         return false;
     }
 
-    if (difference.asAbsolute() < absoluteTolerance_)
+    double absoluteTolerance = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
+    if (difference.asAbsolute() < absoluteTolerance)
     {
         return true;
     }
 
-    if (ulpTolerance_ >= 0
-        && difference.asUlps() <= static_cast<gmx_uint64_t>(ulpTolerance_))
+    double ulpTolerance = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
+    if (ulpTolerance >= 0
+        && difference.asUlps() <= ulpTolerance)
     {
         return true;
     }
     return false;
 }
 
-std::string FloatingPointTolerance::toString() const
+/* TODO It would be more efficient to template this function by the
+ * floating-point precision, rather than pass difference */
+std::string FloatingPointTolerance::toString(const FloatingPointDifference &difference) const
 {
     std::string result;
-    if (absoluteTolerance_ > 0.0)
+    double      absoluteTolerance = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
+    double      ulpTolerance      = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
+    double      eps               = difference.isDouble() ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS;
+
+    if (absoluteTolerance > 0.0)
     {
-        result.append(formatString("abs. %g", absoluteTolerance_));
+        result.append(formatString("abs. %g", absoluteTolerance));
     }
-    if (ulpTolerance_ >= 0)
+    if (ulpTolerance >= 0)
     {
         if (!result.empty())
         {
             result.append(", ");
         }
-        result.append(formatString("%d ULPs", ulpTolerance_));
+        result.append(formatString("%d ULPs", ulpTolerance));
+        if (magnitude_ > 0.0)
+        {
+            result.append(formatString(" which is rel. %g",
+                                       ulpTolerance * eps));
+        }
     }
     if (bSignMustMatch_)
     {
@@ -224,6 +238,25 @@ std::string FloatingPointTolerance::toString() const
         result.append("sign must match");
     }
     return result;
+}
+
+template <typename Precision>
+gmx_uint64_t makeUlpDifference(Precision magnitude, Precision tolerance)
+{
+    Precision                one = 1.0;
+    FloatingPoint<Precision> m(magnitude);
+    FloatingPoint<Precision> t(magnitude * (one + tolerance));
+    return calculateUlpDifference<Precision>(m, t);
+}
+
+FloatingPointTolerance
+relativeRealToleranceAsFloatingPoint(double magnitude, double tolerance)
+{
+    double absoluteTolerance = magnitude * tolerance;
+    return FloatingPointTolerance(magnitude, absoluteTolerance, absoluteTolerance,
+                                  makeUlpDifference<float>(magnitude, tolerance),
+                                  makeUlpDifference<double>(magnitude, tolerance),
+                                  false);
 }
 
 } // namespace test
