@@ -270,7 +270,7 @@ void NeighborhoodSearchTest::testMinimumDistance(
     {
         const real refDist = i->refMinDist;
         EXPECT_REAL_EQ_TOL(refDist, search->minimumDistance(i->x),
-                           gmx::test::ulpTolerance(20));
+                           gmx::test::ulpRealTolerance(20));
     }
 }
 

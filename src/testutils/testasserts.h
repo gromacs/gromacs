@@ -221,7 +221,9 @@ class FloatingPointDifference
          * 0.0 and -0.0 are treated as positive and negative, respectively.
          */
         bool signsDiffer() const { return bSignDifference_; }
-
+        /*! \brief Returns whether the difference is between single-
+            or double-precision numbers. */
+        bool isDouble() const { return bDouble_; }
         //! Formats the difference as a string for assertion failure messages.
         std::string toString() const;
 
@@ -238,9 +240,12 @@ class FloatingPointDifference
         bool         bDouble_;
 };
 
-/*! \libinternal \brief
- * Specifies a floating-point comparison tolerance and checks whether a
- * difference is within the tolerance.
+/*! \libinternal \brief Specifies a floating-point comparison
+ * tolerance and checks whether a difference is within the
+ * tolerance. Generally, an object of this type should be constructed
+ * by the helper functions defaultRealTolerance, ulpRealTolerance(),
+ * relativeRealToleranceAsFloatingPoint() and
+ * relativeRealToleranceAsUlp().
  *
  * Several types of tolerances are possible:
  *  - _absolute tolerance_: difference between the values must be smaller than
@@ -284,13 +289,26 @@ class FloatingPointTolerance
         /*! \brief
          * Creates a tolerance with the specified values.
          *
-         * \param[in] absolute       Allowed absolute difference.
-         * \param[in] ulp            Allowed ULP difference.
+         * \param[in] magnitude      Magnitude of numbers used in the test (only
+         *     used in toString() if non-zero, for writing output
+         *     for the relative tolerance encoded by `ulp`
+         * \param[in] singleAbsoluteTolerance Allowed absolute difference in a single-precision number.
+         * \param[in] doubleAbsoluteTolerance Allowed absolute difference in a double-precision number.
+         * \param[in] singleUlpTolerance      Allowed ULP difference in a single-precision number.
+         * \param[in] doubleUlpTolerance      Allowed ULP difference in a double-precision number.
          * \param[in] bSignMustMatch Whether sign mismatch fails the comparison.
          */
-        FloatingPointTolerance(double absolute, int ulp,
-                               bool bSignMustMatch)
-            : absoluteTolerance_(absolute), ulpTolerance_(ulp),
+        FloatingPointTolerance(double       magnitude,
+                               float        singleAbsoluteTolerance,
+                               double       doubleAbsoluteTolerance,
+                               gmx_uint64_t singleUlpTolerance,
+                               gmx_uint64_t doubleUlpTolerance,
+                               bool         bSignMustMatch)
+            : magnitude_(magnitude),
+              singleAbsoluteTolerance_(singleAbsoluteTolerance),
+              doubleAbsoluteTolerance_(doubleAbsoluteTolerance),
+              singleUlpTolerance_(singleUlpTolerance),
+              doubleUlpTolerance_(doubleUlpTolerance),
               bSignMustMatch_(bSignMustMatch)
         {
         }
@@ -303,11 +321,14 @@ class FloatingPointTolerance
         bool isWithin(const FloatingPointDifference &difference) const;
 
         //! Formats the tolerance as a string for assertion failure messages.
-        std::string toString() const;
+        std::string toString(const FloatingPointDifference &difference) const;
 
     private:
-        double       absoluteTolerance_;
-        int          ulpTolerance_;
+        double       magnitude_;
+        float        singleAbsoluteTolerance_;
+        double       doubleAbsoluteTolerance_;
+        gmx_uint64_t singleUlpTolerance_;
+        gmx_uint64_t doubleUlpTolerance_;
         bool         bSignMustMatch_;
 };
 
@@ -317,10 +338,29 @@ class FloatingPointTolerance
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
-ulpTolerance(gmx_int64_t ulpDiff)
+ulpRealTolerance(gmx_uint64_t ulpDiff)
 {
-    return FloatingPointTolerance(0.0, ulpDiff, false);
+    return FloatingPointTolerance(0.0, 0.0, 0.0, ulpDiff, ulpDiff, false);
 }
+
+/*! \brief Creates a tolerance that allows a difference in two
+ * compared values that is relative to the given magnitude
+ *
+ * \param[in] magnitude  Magnitude of the numbers the computation operates in
+ * \param[in] tolerance  Relative tolerance permitted (e.g. 1e-4)
+ *
+ * In addition to setting an ulp tolerance equivalent to \p tolerance,
+ * this sets the absolute tolerance such that values close to zero (in
+ * general, smaller than \p magnitude) do not fail the check if they
+ * differ by less than \p tolerance evaluated at \p magnitude. This
+ * accounts for potential loss of precision for small values, and
+ * should be used when accuracy of values much less than \p magnitude
+ * do not matter for correctness.
+ *
+ * \related FloatingPointTolerance
+ */
+FloatingPointTolerance
+    relativeRealToleranceAsFloatingPoint(double magnitude, double tolerance);
 
 /*! \brief
  * Creates a tolerance that allows a relative difference in a complex
@@ -332,16 +372,19 @@ ulpTolerance(gmx_int64_t ulpDiff)
  * In addition to setting the ULP tolerance, this sets the absolute tolerance
  * such that values close to zero (in general, smaller than \p magnitude) do
  * not fail the check if they differ by less than \p ulpDiff evaluated at
- * \p magniture.  This accounts for potential loss of precision for small
+ * \p magnitude.  This accounts for potential loss of precision for small
  * values, and should be used when accuracy of values much less than
- * \p magniture do not matter for correctness.
+ * \p magnitude do not matter for correctness.
  *
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
-relativeRealTolerance(double magnitude, gmx_int64_t ulpDiff)
+relativeRealToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
 {
-    return FloatingPointTolerance(magnitude*ulpDiff*GMX_REAL_EPS, ulpDiff, false);
+    return FloatingPointTolerance(magnitude,
+                                  magnitude*ulpDiff*GMX_FLOAT_EPS,
+                                  magnitude*ulpDiff*GMX_DOUBLE_EPS,
+                                  ulpDiff, ulpDiff, false);
 }
 
 /*! \brief
@@ -351,7 +394,7 @@ relativeRealTolerance(double magnitude, gmx_int64_t ulpDiff)
  */
 static inline FloatingPointTolerance defaultRealTolerance()
 {
-    return relativeRealTolerance(1.0, 4);
+    return relativeRealToleranceAsUlp(1.0, 4);
 }
 
 /*! \name Assertions for floating-point comparison
@@ -372,12 +415,14 @@ static inline FloatingPointTolerance defaultRealTolerance()
  */
 template <typename FloatType>
 static inline ::testing::AssertionResult assertEqualWithinTolerance(
-        const char *expr1, const char *expr2, const char * /*exprTolerance*/,
+        const char *expr1, const char *expr2,
+        const char * /*exprTolerance*/, const char * /*compareEqual*/,
         FloatType value1, FloatType value2,
-        const FloatingPointTolerance &tolerance)
+        const FloatingPointTolerance &tolerance,
+        bool compareEqual)
 {
     FloatingPointDifference diff(value1, value2);
-    if (tolerance.isWithin(diff))
+    if (tolerance.isWithin(diff) == compareEqual)
     {
         return ::testing::AssertionSuccess();
     }
@@ -387,7 +432,7 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
            << "  Expected: " << expr1 << std::endl
            << "  Which is: " << value1 << std::endl
            << "Difference: " << diff.toString() << std::endl
-           << " Tolerance: " << tolerance.toString();
+           << " Tolerance: " << tolerance.toString(diff);
 }
 //! \endcond
 
@@ -397,16 +442,16 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  * \hideinitializer
  */
 #define EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance) \
-    EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, \
-                        value1, value2, tolerance)
+    EXPECT_PRED_FORMAT4(::gmx::test::assertEqualWithinTolerance<float>, \
+                        value1, value2, tolerance, true)
 /*! \brief
  * Asserts that two double-precision values are within the given tolerance.
  *
  * \hideinitializer
  */
 #define EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance) \
-    EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, \
-                        value1, value2, tolerance)
+    EXPECT_PRED_FORMAT4(::gmx::test::assertEqualWithinTolerance<double>, \
+                        value1, value2, tolerance, true)
 /*! \def EXPECT_REAL_EQ_TOL
  * \brief
  * Asserts that two `real` values are within the given tolerance.
@@ -419,16 +464,16 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  * \hideinitializer
  */
 #define ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance) \
-    ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, \
-                        value1, value2, tolerance)
+    ASSERT_PRED_FORMAT4(::gmx::test::assertEqualWithinTolerance<float>, \
+                        value1, value2, tolerance, true)
 /*! \brief
  * Asserts that two double-precision values are within the given tolerance.
  *
  * \hideinitializer
  */
 #define ASSERT_DOUBLE_EQ_TOL(value1, value2, tolerance) \
-    ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, \
-                        value1, value2, tolerance)
+    ASSERT_PRED_FORMAT4(::gmx::test::assertEqualWithinTolerance<double>, \
+                        value1, value2, tolerance, true)
 /*! \def ASSERT_REAL_EQ_TOL
  * \brief
  * Asserts that two `real` values are within the given tolerance.
@@ -446,6 +491,63 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
     EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance)
 #define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \
     ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance)
+#endif
+
+/*! \brief
+ * Asserts that two single-precision values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define EXPECT_FLOAT_NE_TOL(value1, value2, tolerance) \
+    EXPECT_PRED_FORMAT4(::gmx::test::assertEqualWithinTolerance<float>, \
+                        value1, value2, tolerance, false)
+/*! \brief
+ * Asserts that two double-precision values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define EXPECT_DOUBLE_NE_TOL(value1, value2, tolerance) \
+    EXPECT_PRED_FORMAT4(::gmx::test::assertEqualWithinTolerance<double>, \
+                        value1, value2, tolerance, false)
+/*! \def EXPECT_REAL_NE_TOL
+ * \brief
+ * Asserts that two `real` values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+/*! \brief
+ * Asserts that two single-precision values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define ASSERT_FLOAT_NE_TOL(value1, value2, tolerance) \
+    ASSERT_PRED_FORMAT4(::gmx::test::assertEqualWithinTolerance<float>, \
+                        value1, value2, tolerance, false)
+/*! \brief
+ * Asserts that two double-precision values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define ASSERT_DOUBLE_NE_TOL(value1, value2, tolerance) \
+    ASSERT_PRED_FORMAT4(::gmx::test::assertEqualWithinTolerance<double>, \
+                        value1, value2, tolerance, false)
+/*! \def ASSERT_REAL_NE_TOL
+ * \brief
+ * Asserts that two `real` values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+
+#ifdef GMX_DOUBLE
+#define EXPECT_REAL_NE_TOL(value1, value2, tolerance) \
+    EXPECT_DOUBLE_NE_TOL(value1, value2, tolerance)
+#define ASSERT_REAL_NE_TOL(value1, value2, tolerance) \
+    ASSERT_DOUBLE_NE_TOL(value1, value2, tolerance)
+#else
+#define EXPECT_REAL_NE_TOL(value1, value2, tolerance) \
+    EXPECT_FLOAT_NE_TOL(value1, value2, tolerance)
+#define ASSERT_REAL_NE_TOL(value1, value2, tolerance) \
+    ASSERT_FLOAT_NE_TOL(value1, value2, tolerance)
 #endif
 
 //! \}
