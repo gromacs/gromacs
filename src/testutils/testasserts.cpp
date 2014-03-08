@@ -212,6 +212,11 @@ std::string FloatingPointTolerance::toString() const
             result.append(", ");
         }
         result.append(formatString("%d ULPs", ulpTolerance_));
+        if (magnitude_ > 0.0)
+        {
+            result.append(formatString(" which is rel. %g",
+                                       ulpTolerance_ * GMX_REAL_EPS));
+        }
     }
     if (bSignMustMatch_)
     {
@@ -222,6 +227,16 @@ std::string FloatingPointTolerance::toString() const
         result.append("sign must match");
     }
     return result;
+}
+
+FloatingPointTolerance
+relativeFloatTolerance(double magnitude, real tolerance)
+{
+    real one = 1.0;
+    FloatingPoint<real> m((real) magnitude);
+    FloatingPoint<real> t((real) (magnitude * (one + tolerance)));
+    return relativeRealTolerance(magnitude,
+                                 calculateUlpDifference<real>(m, t));
 }
 
 } // namespace test

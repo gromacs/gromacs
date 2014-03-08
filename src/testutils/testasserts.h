@@ -284,13 +284,20 @@ class FloatingPointTolerance
         /*! \brief
          * Creates a tolerance with the specified values.
          *
+         * \param[in] magnitude      Magnitude of numbers used in the test (only
+         *     used in toString() if non-zero, for writing output
+         *     for the relative tolerance encoded by `ulp`
          * \param[in] absolute       Allowed absolute difference.
          * \param[in] ulp            Allowed ULP difference.
          * \param[in] bSignMustMatch Whether sign mismatch fails the comparison.
          */
-        FloatingPointTolerance(double absolute, int ulp,
-                               bool bSignMustMatch)
-            : absoluteTolerance_(absolute), ulpTolerance_(ulp),
+        FloatingPointTolerance(double magnitude,
+                               double absolute,
+                               gmx_uint64_t ulp,
+                               bool   bSignMustMatch)
+            : magnitude_(magnitude),
+              absoluteTolerance_(absolute),
+              ulpTolerance_(ulp),
               bSignMustMatch_(bSignMustMatch)
         {
         }
@@ -306,8 +313,9 @@ class FloatingPointTolerance
         std::string toString() const;
 
     private:
+        double       magnitude_;
         double       absoluteTolerance_;
-        int          ulpTolerance_;
+        gmx_uint64_t ulpTolerance_;
         bool         bSignMustMatch_;
 };
 
@@ -317,10 +325,36 @@ class FloatingPointTolerance
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
-ulpTolerance(gmx_int64_t ulpDiff)
+ulpTolerance(gmx_uint64_t ulpDiff)
 {
-    return FloatingPointTolerance(0.0, ulpDiff, false);
+    return FloatingPointTolerance(0.0, 0.0, ulpDiff, false);
 }
+
+/*! \brief Creates a tolerance that allows a difference in two
+ * compared values that is relative to the given magnitude
+ *
+ * \param[in] magnitude  Magnitude of the numbers the computation operates in
+ * \param[in] tolerance  Relative tolerance permitted (e.g. 1e-4)
+ *
+ * In addition to setting an ulp tolerance equivalent to \p tolerance,
+ * this sets the absolute tolerance such that values close to zero (in
+ * general, smaller than \p magnitude) do not fail the check if they
+ * differ by less than \p tolerance evaluated at \p magnitude. This
+ * accounts for potential loss of precision for small values, and
+ * should be used when accuracy of values much less than \p magnitude
+ * do not matter for correctness.
+ *
+ * \related FloatingPointTolerance
+ */
+FloatingPointTolerance
+relativeFloatTolerance(double magnitude, real tolerance);
+
+// TODO The names of relativeFloatTolerance and relativeRealTolerance
+// are in partial conflict. The only "real" thing about
+// relativeRealTolerance is the use of GMX_REAL_EPS in converting the
+// ulp tolerance to an absolute tolerance. And there's nothing
+// specific to single precision about relativeFloatTolerance. How
+// about relativeToleranceAsUlp and relativeToleranceAsReal?
 
 /*! \brief
  * Creates a tolerance that allows a relative difference in a complex
@@ -332,16 +366,16 @@ ulpTolerance(gmx_int64_t ulpDiff)
  * In addition to setting the ULP tolerance, this sets the absolute tolerance
  * such that values close to zero (in general, smaller than \p magnitude) do
  * not fail the check if they differ by less than \p ulpDiff evaluated at
- * \p magniture.  This accounts for potential loss of precision for small
+ * \p magnitude.  This accounts for potential loss of precision for small
  * values, and should be used when accuracy of values much less than
- * \p magniture do not matter for correctness.
+ * \p magnitude do not matter for correctness.
  *
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
-relativeRealTolerance(double magnitude, gmx_int64_t ulpDiff)
+relativeRealTolerance(double magnitude, gmx_uint64_t ulpDiff)
 {
-    return FloatingPointTolerance(magnitude*ulpDiff*GMX_REAL_EPS, ulpDiff, false);
+    return FloatingPointTolerance(magnitude, magnitude*ulpDiff*GMX_REAL_EPS, ulpDiff, false);
 }
 
 /*! \brief
@@ -446,6 +480,63 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
     EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance)
 #define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \
     ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance)
+#endif
+
+/*! \brief
+ * Asserts that two single-precision values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define EXPECT_FLOAT_NE_TOL(value1, value2, tolerance) \
+    EXPECT_PRED_FORMAT3(!::gmx::test::assertEqualWithinTolerance<float>, \
+                        value1, value2, tolerance)
+/*! \brief
+ * Asserts that two double-precision values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define EXPECT_DOUBLE_NE_TOL(value1, value2, tolerance) \
+    EXPECT_PRED_FORMAT3(!::gmx::test::assertEqualWithinTolerance<double>, \
+                        value1, value2, tolerance)
+/*! \def EXPECT_REAL_NE_TOL
+ * \brief
+ * Asserts that two `real` values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+/*! \brief
+ * Asserts that two single-precision values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define ASSERT_FLOAT_NE_TOL(value1, value2, tolerance) \
+    ASSERT_PRED_FORMAT3(!::gmx::test::assertEqualWithinTolerance<float>, \
+                        value1, value2, tolerance)
+/*! \brief
+ * Asserts that two double-precision values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+#define ASSERT_DOUBLE_NE_TOL(value1, value2, tolerance) \
+    ASSERT_PRED_FORMAT3(!::gmx::test::assertEqualWithinTolerance<double>, \
+                        value1, value2, tolerance)
+/*! \def ASSERT_REAL_NE_TOL
+ * \brief
+ * Asserts that two `real` values are not within the given tolerance.
+ *
+ * \hideinitializer
+ */
+
+#ifdef GMX_DOUBLE
+#define EXPECT_REAL_NE_TOL(value1, value2, tolerance) \
+    EXPECT_DOUBLE_NE_TOL(value1, value2, tolerance)
+#define ASSERT_REAL_NE_TOL(value1, value2, tolerance) \
+    ASSERT_DOUBLE_NE_TOL(value1, value2, tolerance)
+#else
+#define EXPECT_REAL_NE_TOL(value1, value2, tolerance) \
+    EXPECT_FLOAT_NE_TOL(value1, value2, tolerance)
+#define ASSERT_REAL_NE_TOL(value1, value2, tolerance) \
+    ASSERT_FLOAT_NE_TOL(value1, value2, tolerance)
 #endif
 
 //! \}
