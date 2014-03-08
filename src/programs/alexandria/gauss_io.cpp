@@ -399,7 +399,11 @@ static void gmx_molprop_read_babel(const char *g98,
                 gmx_fatal(FARGS,"Could not find %s atom type for atom %s",
                           forcefield,atom->GetIdx());
             }
-            //cout << "atom " << atom->GetIdx() << " : " << type->GetValue() << endl;
+            if (NULL != debug)
+            {
+                fprintf(debug, "XXX atom %d gafftype %s OBtype %s\n", 
+			atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
+            }
             alexandria::CalcAtom ca(OBet->GetSymbol(atom->GetAtomicNum()),
                                     type->GetValue(),atom->GetIdx());
             alexandria::AtomicCharge aq(charge_model,"e",atom->GetPartialCharge());
