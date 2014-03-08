@@ -129,7 +129,7 @@ void init_block(t_block *block);
 void init_blocka(t_blocka *block);
 void init_atom (t_atoms *at);
 void init_mtop(gmx_mtop_t *mtop);
-void init_top (t_topology *top);
+void init_top(t_topology *top);
 void init_inputrec(t_inputrec *ir);
 void init_energyhistory(energyhistory_t * enerhist);
 void done_energyhistory(energyhistory_t * enerhist);

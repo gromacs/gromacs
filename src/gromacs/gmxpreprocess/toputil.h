@@ -63,10 +63,6 @@ void init_plist(t_params plist[]);
 
 void init_molinfo(t_molinfo *mol);
 
-void init_top  (t_topology *top);
-
-void done_top(t_topology *top);
-
 /* FREE */
 void done_mi(t_molinfo *mi);
 

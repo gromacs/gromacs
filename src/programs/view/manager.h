@@ -175,8 +175,6 @@ extern void done_man(t_x11 *x11, t_manager *man);
 
 extern void draw_mol(t_x11 *x11, t_manager *man);
 
-extern void create_visibility(t_manager *man);
-
 extern void do_filter(t_x11 *x11, t_manager *man, t_filter *filter);
 
 #endif

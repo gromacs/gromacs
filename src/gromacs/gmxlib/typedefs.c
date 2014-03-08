@@ -179,7 +179,7 @@ void init_mtop(gmx_mtop_t *mtop)
     open_symtab(&mtop->symtab);
 }
 
-void init_top (t_topology *top)
+void init_top(t_topology *top)
 {
     int i;
 
