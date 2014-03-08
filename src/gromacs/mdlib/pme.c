@@ -87,10 +87,11 @@
 #include "gromacs/utility/gmxomp.h"
 
 /* Include the SIMD macro file and then check for support */
-#include "gromacs/simd/macros.h"
-#if defined GMX_HAVE_SIMD_MACROS
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
+#ifdef GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
-#define PME_SIMD_SOLVE
+#    define PME_SIMD_SOLVE
 #endif
 
 #define PME_GRID_QA    0 /* Gridindex for A-state for Q */
@@ -108,21 +109,19 @@ const real lb_scale_factor[] = {
 /* Pascal triangle coefficients used in solve_pme_lj_yzx, only need to do 4 calculations due to symmetry */
 const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 };
 
-/* Include the 4-wide SIMD macro file */
-#include "gromacs/simd/four_wide_macros.h"
 /* Check if we have 4-wide SIMD macro support */
-#ifdef GMX_HAVE_SIMD4_MACROS
+#if (defined GMX_SIMD4_HAVE_REAL)
 /* Do PME spread and gather with 4-wide SIMD.
  * NOTE: SIMD is only used with PME order 4 and 5 (which are the most common).
  */
-#define PME_SIMD4_SPREAD_GATHER
+#    define PME_SIMD4_SPREAD_GATHER
 
-#ifdef GMX_SIMD4_HAVE_UNALIGNED
+#    if (defined GMX_SIMD_HAVE_LOADU) && (defined GMX_SIMD_HAVE_STOREU)
 /* With PME-order=4 on x86, unaligned load+store is slightly faster
  * than doubling all SIMD operations when using aligned load+store.
  */
-#define PME_SIMD4_UNALIGNED
-#endif
+#        define PME_SIMD4_UNALIGNED
+#    endif
 #endif
 
 #define DFT_TOL 1e-7
@@ -140,10 +139,10 @@ const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 };
 #endif
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-#define SIMD4_ALIGNMENT  (GMX_SIMD4_WIDTH*sizeof(real))
+#    define SIMD4_ALIGNMENT  (GMX_SIMD4_WIDTH*sizeof(real))
 #else
 /* We can use any alignment, apart from 0, so we use 4 reals */
-#define SIMD4_ALIGNMENT  (4*sizeof(real))
+#    define SIMD4_ALIGNMENT  (4*sizeof(real))
 #endif
 
 /* GMX_CACHE_SEP should be a multiple of the SIMD and SIMD4 register size
@@ -305,13 +304,18 @@ typedef struct gmx_pme {
     int        nthread;       /* The number of threads doing PME on our rank */
 
     gmx_bool   bPPnode;       /* Node also does particle-particle forces */
+
     gmx_bool   bFEP;          /* Compute Free energy contribution */
     gmx_bool   bFEP_q;
     gmx_bool   bFEP_lj;
+
     int        nkx, nky, nkz; /* Grid dimensions */
+
     gmx_bool   bP3M;          /* Do P3M: optimize the influence function */
     int        pme_order;
     real       epsilon_r;
+
+    int        ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
 
     int        ngrids;                  /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
 
@@ -1383,9 +1387,9 @@ static void spread_q_bsplines_thread(pmegrid_t                    *pmegrid,
     int            offx, offy, offz;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    real           thz_buffer[12], *thz_aligned;
+    real           thz_buffer[GMX_SIMD4_WIDTH*3], *thz_aligned;
 
-    thz_aligned = gmx_simd4_align_real(thz_buffer);
+    thz_aligned = gmx_simd4_align_r(thz_buffer);
 #endif
 
     pnx = pmegrid->s[XX];
@@ -1787,7 +1791,7 @@ static void free_work(pme_work_t *work)
 }
 
 
-#if defined PME_SIMD_SOLVE && defined GMX_SIMD_HAVE_EXP
+#if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
 inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
@@ -1832,7 +1836,7 @@ inline static void calc_exponentials_q(int start, int end, real f, real *d, real
 }
 #endif
 
-#if defined PME_SIMD_SOLVE && defined GMX_SIMD_HAVE_ERFC
+#if defined PME_SIMD_SOLVE
 /* Calculate exponentials through SIMD */
 inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
 {
@@ -2524,11 +2528,11 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
     pme_spline_work_t *work;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    real           thz_buffer[12],  *thz_aligned;
-    real           dthz_buffer[12], *dthz_aligned;
+    real           thz_buffer[GMX_SIMD4_WIDTH*3],  *thz_aligned;
+    real           dthz_buffer[GMX_SIMD4_WIDTH*3], *dthz_aligned;
 
-    thz_aligned  = gmx_simd4_align_real(thz_buffer);
-    dthz_aligned = gmx_simd4_align_real(dthz_buffer);
+    thz_aligned  = gmx_simd4_align_r(thz_buffer);
+    dthz_aligned = gmx_simd4_align_r(dthz_buffer);
 #endif
 
     work = pme->spline_work;
@@ -3276,14 +3280,14 @@ static pme_spline_work_t *make_pme_spline_work(int gmx_unused order)
     pme_spline_work_t *work;
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-    real         tmp[12], *tmp_aligned;
+    real             tmp[GMX_SIMD4_WIDTH*3], *tmp_aligned;
     gmx_simd4_real_t zero_S;
     gmx_simd4_real_t real_mask_S0, real_mask_S1;
-    int          of, i;
+    int              of, i;
 
     snew_aligned(work, 1, SIMD4_ALIGNMENT);
 
-    tmp_aligned = gmx_simd4_align_real(tmp);
+    tmp_aligned = gmx_simd4_align_r(tmp);
 
     zero_S = gmx_simd4_setzero_r();
 
@@ -3291,14 +3295,14 @@ static pme_spline_work_t *make_pme_spline_work(int gmx_unused order)
      * as we only operate on order of the 8 grid entries that are
      * load into 2 SIMD registers.
      */
-    for (of = 0; of < 8-(order-1); of++)
+    for (of = 0; of < 2*GMX_SIMD4_WIDTH-(order-1); of++)
     {
-        for (i = 0; i < 8; i++)
+        for (i = 0; i < 2*GMX_SIMD4_WIDTH; i++)
         {
             tmp_aligned[i] = (i >= of && i < of+order ? -1.0 : 1.0);
         }
         real_mask_S0      = gmx_simd4_load_r(tmp_aligned);
-        real_mask_S1      = gmx_simd4_load_r(tmp_aligned+4);
+        real_mask_S1      = gmx_simd4_load_r(tmp_aligned+GMX_SIMD4_WIDTH);
         work->mask_S0[of] = gmx_simd4_cmplt_r(real_mask_S0, zero_S);
         work->mask_S1[of] = gmx_simd4_cmplt_r(real_mask_S1, zero_S);
     }
@@ -3503,7 +3507,12 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->nkz         = ir->nkz;
     pme->bP3M        = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != NULL);
     pme->pme_order   = ir->pme_order;
+
+    /* Always constant electrostatics parameters */
     pme->epsilon_r   = ir->epsilon_r;
+
+    /* Always constant LJ parameters */
+    pme->ljpme_combination_rule = ir->ljpme_combination_rule;
 
     /* If we violate restrictions, generate a fatal error here */
     gmx_pme_check_restrictions(pme->pme_order,
@@ -3615,14 +3624,28 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     ndata[0]    = pme->nkx;
     ndata[1]    = pme->nky;
     ndata[2]    = pme->nkz;
-    pme->ngrids = ((ir->ljpme_combination_rule == eljpmeLB) ? DO_Q_AND_LJ_LB : DO_Q_AND_LJ);
+    /* It doesn't matter if we allocate too many grids here,
+     * we only allocate and use the ones we need.
+     */
+    if (EVDW_PME(ir->vdwtype))
+    {
+        pme->ngrids = ((ir->ljpme_combination_rule == eljpmeLB) ? DO_Q_AND_LJ_LB : DO_Q_AND_LJ);
+    }
+    else
+    {
+        pme->ngrids = DO_Q;
+    }
     snew(pme->fftgrid, pme->ngrids);
     snew(pme->cfftgrid, pme->ngrids);
     snew(pme->pfft_setup, pme->ngrids);
 
     for (i = 0; i < pme->ngrids; ++i)
     {
-        if (((ir->ljpme_combination_rule == eljpmeLB) && i >= 2) || i % 2 == 0 || bFreeEnergy_q || bFreeEnergy_lj)
+        if ((i <  DO_Q && EEL_PME(ir->coulombtype) && (i == 0 ||
+                                                       bFreeEnergy_q))|| 
+            (i >= DO_Q && EVDW_PME(ir->vdwtype) && (i == 2 ||
+                                                    bFreeEnergy_lj ||
+                                                    ir->ljpme_combination_rule == eljpmeLB)))
         {
             pmegrids_init(&pme->pmegrid[i],
                           pme->pmegrid_nx, pme->pmegrid_ny, pme->pmegrid_nz,
@@ -4389,7 +4412,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
     {
         gmx_incons("gmx_pme_calc_energy called in parallel");
     }
-    if (pme->bFEP > 1)
+    if (pme->bFEP_q > 1)
     {
         gmx_incons("gmx_pme_calc_energy with free energy");
     }
@@ -4749,7 +4772,7 @@ int gmx_pme_do(gmx_pme_t pme,
      */
 
     /* If we are doing LJ-PME with LB, we only do Q here */
-    qmax = (flags & GMX_PME_LJ_LB) ? DO_Q : DO_Q_AND_LJ;
+    qmax = (pme->ljpme_combination_rule == eljpmeLB) ? DO_Q : DO_Q_AND_LJ;
 
     for (q = 0; q < qmax; ++q)
     {
@@ -4758,10 +4781,10 @@ int gmx_pme_do(gmx_pme_t pme,
          * If q < 2 we should be doing electrostatic PME
          * If q >= 2 we should be doing LJ-PME
          */
-        if ((!pme->bFEP_q && q == 1)
-            || (!pme->bFEP_lj && q == 3)
-            || (!(flags & GMX_PME_DO_COULOMB) && q < 2)
-            || (!(flags & GMX_PME_DO_LJ) && q >= 2))
+        if ((q <  DO_Q && (!(flags & GMX_PME_DO_COULOMB) ||
+                           (q == 1 && !pme->bFEP_q))) ||
+            (q >= DO_Q && (!(flags & GMX_PME_DO_LJ) ||
+                           (q == 3 && !pme->bFEP_lj))))
         {
             continue;
         }
@@ -4991,7 +5014,7 @@ int gmx_pme_do(gmx_pme_t pme,
     /* For Lorentz-Berthelot combination rules in LJ-PME, we need to calculate
      * seven terms. */
 
-    if (flags & GMX_PME_LJ_LB)
+    if ((flags & GMX_PME_DO_LJ) && pme->ljpme_combination_rule == eljpmeLB)
     {
         real *local_c6 = NULL, *local_sigma = NULL;
         if (pme->nnodes == 1)
@@ -5213,7 +5236,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 bFirst = FALSE;
             } /*for (q = 8; q >= 2; --q)*/
         }     /*if (bCalcF)*/
-    }         /*if (flags & GMX_PME_LJ_LB)*/
+    }         /*if ((flags & GMX_PME_DO_LJ) && pme->ljpme_combination_rule == eljpmeLB) */
 
     if (bCalcF && pme->nnodes > 1)
     {

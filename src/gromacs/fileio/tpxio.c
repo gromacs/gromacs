@@ -61,24 +61,46 @@
 
 #define TPX_TAG_RELEASE  "release"
 
-/* This is the tag string which is stored in the tpx file.
- * Change this if you want to change the tpx format in a feature branch.
- * This ensures that there will not be different tpx formats around which
- * can not be distinguished.
+/*! \brief Tag string for the file format written to run input files
+ * written by this version of the code.
+ *
+ * Change this if you want to change the run input format in a feature
+ * branch. This ensures that there will not be different run input
+ * formats around which cannot be distinguished, while not causing
+ * problems rebasing the feature branch onto upstream changes. When
+ * merging with mainstream GROMACS, set this tag string back to
+ * TPX_TAG_RELEASE, and instead add an element to tpxv and set
+ * tpx_version to that.
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
-
-/* The tpx_version number should be increased whenever the file format changes!
+/*! \brief Enum of values that describe the contents of a tpr file
+ * whose format matches a version number
  *
- * The following comment section helps to keep track of which feature has been
- * added in which version.
- *
- * version  feature added
- *    96    support for ion/water position swaps (computational electrophysiology)
- */
-static const int tpx_version = 96;
+ * The enum helps the code be more self-documenting and ensure merges
+ * do not silently resolve when two patches make the same bump. When
+ * adding new functionality, add a new element to the end of this
+ * enumeration, change the definition of tpx_version, and write code
+ * below that does the right thing according to the value of
+ * file_version. */
+enum tpxv {
+    tpxv_ComputationalElectrophysiology = 96,               /**< support for ion/water position swaps (computational electrophysiology) */
+    tpxv_Use64BitRandomSeed,                                /**< change ld_seed from int to gmx_int64_t */
+    tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials /**< potentials for supporting coarse-grained force fields */
+};
 
+/*! \brief Version number of the file format written to run input
+ * files by this version of the code.
+ *
+ * The tpx_version number should be increased whenever the file format
+ * in the main development branch changes, generally to the highest
+ * value present in tpxv. Backward compatibility for reading old run
+ * input files is maintained by checking this version number against
+ * that of the file and then using the correct code path.
+ *
+ * When developing a feature branch that needs to change the run input
+ * file format, change tpx_tag instead. */
+static const int tpx_version = tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -89,8 +111,11 @@ static const int tpx_version = 96;
  * It first appeared in tpx version 26, when I also moved the inputrecord
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
+ *
+ * In particular, it must be increased when adding new elements to
+ * ftupd, so that old code can read new .tpr files.
  */
-static const int tpx_generation = 25;
+static const int tpx_generation = 26;
 
 /* This number should be the most recent backwards incompatible version
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -142,12 +167,15 @@ static const t_ftupd ftupd[] = {
     { 43, F_TABBONDS          },
     { 43, F_TABBONDSNC        },
     { 70, F_RESTRBONDS        },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRANGLES },
     { 76, F_LINEAR_ANGLES     },
     { 30, F_CROSS_BOND_BONDS  },
     { 30, F_CROSS_BOND_ANGLES },
     { 30, F_UREY_BRADLEY      },
     { 34, F_QUARTIC_ANGLES    },
     { 43, F_TABANGLES         },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRDIHS },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_CBTDIHS },
     { 26, F_FOURDIHS          },
     { 26, F_PIDIHS            },
     { 43, F_TABDIHS           },
@@ -1408,7 +1436,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, bd_temp);
     }
     gmx_fio_do_real(fio, ir->bd_fric);
-    gmx_fio_do_int(fio, ir->ld_seed);
+    if (file_version >= tpxv_Use64BitRandomSeed)
+    {
+        gmx_fio_do_int64(fio, ir->ld_seed);
+    }
+    else
+    {
+        gmx_fio_do_int(fio, idum);
+        ir->ld_seed = idum;
+    }
     if (file_version >= 33)
     {
         for (i = 0; i < DIM; i++)
@@ -1680,7 +1716,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
 
     /* Swap ions */
-    if (file_version >= 96)
+    if (file_version >= tpxv_ComputationalElectrophysiology)
     {
         gmx_fio_do_int(fio, ir->eSwapCoords);
         if (ir->eSwapCoords != eswapNO)
@@ -1769,6 +1805,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 iparams->pdihs.cpB  = iparams->pdihs.cpA;
             }
             break;
+        case F_RESTRANGLES:
+            gmx_fio_do_real(fio, iparams->harmonic.rA);
+            gmx_fio_do_real(fio, iparams->harmonic.krA);
+            break;
         case F_LINEAR_ANGLES:
             gmx_fio_do_real(fio, iparams->linangle.klinA);
             gmx_fio_do_real(fio, iparams->linangle.aA);
@@ -1779,6 +1819,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fene.bm);
             gmx_fio_do_real(fio, iparams->fene.kb);
             break;
+
         case F_RESTRBONDS:
             gmx_fio_do_real(fio, iparams->restraint.lowA);
             gmx_fio_do_real(fio, iparams->restraint.up1A);
@@ -1931,6 +1972,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 gmx_fio_do_int(fio, iparams->pdihs.mult);
             }
             break;
+        case F_RESTRDIHS:
+            gmx_fio_do_real(fio, iparams->pdihs.phiA);
+            gmx_fio_do_real(fio, iparams->pdihs.cpA);
+            break;
         case F_DISRES:
             gmx_fio_do_int(fio, iparams->disres.label);
             gmx_fio_do_int(fio, iparams->disres.type);
@@ -1988,6 +2033,9 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_rvec(fio, iparams->fbposres.pos0);
             gmx_fio_do_real(fio, iparams->fbposres.r);
             gmx_fio_do_real(fio, iparams->fbposres.k);
+            break;
+        case F_CBTDIHS:
+            gmx_fio_ndo_real(fio, iparams->cbtdihs.cbtcA, NR_CBTDIHS);
             break;
         case F_RBDIHS:
             gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);

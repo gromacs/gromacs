@@ -272,6 +272,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
+        warning_note(wi,
+                     "The group cutoff scheme is deprecated in Gromacs 5.0 and will be removed in a future "
+                     "release when all interaction forms are supported for the verlet scheme. The verlet "
+                     "scheme already scales better, and it is compatible with GPUs and other accelerators.");
+
         /* BASIC CUT-OFF STUFF */
         if (ir->rlist == 0 ||
             !((ir_coulomb_might_be_zero_at_cutoff(ir) && ir->rcoulomb > ir->rlist) ||
@@ -344,9 +349,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
         }
 
-        if (ir->vdwtype != evdwCUT)
+        if (!(ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME))
         {
-            warning_error(wi, "With Verlet lists only cut-off LJ interactions are supported");
+            warning_error(wi, "With Verlet lists only cut-off and PME LJ interactions are supported");
         }
         if (!(ir->coulombtype == eelCUT ||
               (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
@@ -493,7 +498,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
             /* find the smallest of ( nstenergy, nstdhdl ) */
             if (ir->efep != efepNO && ir->fepvals->nstdhdl > 0 &&
-                (ir->fepvals->nstdhdl < ir->nstenergy) )
+                (ir->nstenergy == 0 || ir->fepvals->nstdhdl < ir->nstenergy))
             {
                 min_nst  = ir->fepvals->nstdhdl;
                 min_name = nstdh;
@@ -1170,23 +1175,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
-    if (EVDW_PME(ir->vdwtype))
-    {
-        if (ir_vdw_might_be_zero_at_cutoff(ir))
-        {
-            sprintf(err_buf, "With vdwtype = %s, rvdw must be <= rlist",
-                    evdw_names[ir->vdwtype]);
-            CHECK(ir->rvdw > ir->rlist);
-        }
-        else
-        {
-            sprintf(err_buf,
-                    "With vdwtype = %s, rvdw must be equal to rlist\n",
-                    evdw_names[ir->vdwtype]);
-            CHECK(ir->rvdw != ir->rlist);
-        }
-    }
-
     if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         if (ir->pme_order < 3)
@@ -1212,8 +1200,15 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         sprintf(err_buf, "With switched vdw forces or potentials, rvdw-switch must be < rvdw");
         CHECK(ir->rvdw_switch >= ir->rvdw);
+
+        if (ir->rvdw_switch < 0.5*ir->rvdw)
+        {
+            sprintf(warn_buf, "You are applying a switch function to vdw forces or potentials from %g to %g nm, which is more than half the interaction range, whereas switch functions are intended to act only close to the cut-off.",
+                    ir->rvdw_switch, ir->rvdw);
+            warning_note(wi, warn_buf);
+        }
     }
-    else if (ir->vdwtype == evdwCUT)
+    else if (ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME)
     {
         if (ir->cutoff_scheme == ecutsGROUP && ir->vdw_modifier == eintmodNONE)
         {
@@ -1800,7 +1795,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
     CTYPE ("Friction coefficient (amu/ps) and random seed");
     RTYPE ("bd-fric",     ir->bd_fric,    0.0);
-    ITYPE ("ld-seed",     ir->ld_seed,    -1);
+    STEPTYPE ("ld-seed",  ir->ld_seed,    -1);
 
     /* Em stuff */
     CCTYPE ("ENERGY MINIMIZATION OPTIONS");
@@ -3869,24 +3864,18 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
                 warning_note(wi, "You are using geometric combination rules in "
                              "LJ-PME, but your non-bonded C6 parameters do "
                              "not follow these rules. "
-                             "If your force field uses Lorentz-Berthelot combination rules this "
-                             "will introduce small errors in the forces and energies in "
-                             "your simulations. Dispersion correction will correct total "
-                             "energy and/or pressure, but not forces or surface tensions. "
-                             "Please check the LJ-PME section in the manual "
-                             "before proceeding further.");
+                             "This will introduce very small errors in the forces and energies in "
+                             "your simulations. Dispersion correction will correct total energy "
+                             "and/or pressure for isotropic systems, but not forces or surface tensions.");
             }
             else
             {
                 warning_note(wi, "You are using geometric combination rules in "
                              "LJ-PME, but your non-bonded C6 parameters do "
                              "not follow these rules. "
-                             "If your force field uses Lorentz-Berthelot combination rules this "
-                             "will introduce small errors in the forces and energies in "
-                             "your simulations. Consider using dispersion correction "
-                             "for the total energy and pressure. "
-                             "Please check the LJ-PME section in the manual "
-                             "before proceeding further.");
+                             "This will introduce very small errors in the forces and energies in "
+                             "your simulations. If your system is homogeneous, consider using dispersion correction "
+                             "for the total energy and pressure.");
             }
         }
     }
@@ -3910,7 +3899,8 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 
     if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != eiBD &&
         ir->comm_mode == ecmNO &&
-        !(absolute_reference(ir, sys, FALSE, AbsRef) || ir->nsteps <= 10))
+        !(absolute_reference(ir, sys, FALSE, AbsRef) || ir->nsteps <= 10) &&
+        !ETC_ANDERSEN(ir->etc))
     {
         warning(wi, "You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
     }

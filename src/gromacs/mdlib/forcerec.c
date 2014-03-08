@@ -68,6 +68,7 @@
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
+#include "nbnxn_simd.h"
 #include "nbnxn_search.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_consts.h"
@@ -227,15 +228,15 @@ check_solvent_cg(const gmx_moltype_t    *molt,
                  int                     cginfo,
                  int                    *cg_sp)
 {
-    const t_blocka     *  excl;
+    const t_blocka       *excl;
     t_atom               *atom;
     int                   j, k;
     int                   j0, j1, nj;
     gmx_bool              perturbed;
     gmx_bool              has_vdw[4];
     gmx_bool              match;
-    real                  tmp_charge[4];
-    int                   tmp_vdwtype[4];
+    real                  tmp_charge[4]  = { 0.0 }; /* init to zero to make gcc4.8 happy */
+    int                   tmp_vdwtype[4] = { 0 };   /* init to zero to make gcc4.8 happy */
     int                   tjA;
     gmx_bool              qm;
     solvent_parameters_t *solvent_parameters;
@@ -590,6 +591,7 @@ enum {
 
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                                    t_forcerec *fr, gmx_bool bNoSolvOpt,
+                                   gmx_bool *bFEP_NonBonded,
                                    gmx_bool *bExcl_IntraCGAll_InterCGNone)
 {
     const t_block        *cgs;
@@ -604,7 +606,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     int                  *a_con;
     int                   ftype;
     int                   ia;
-    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ;
+    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bFEP;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb, mtop->nmolblock);
@@ -622,6 +624,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         }
     }
 
+    *bFEP_NonBonded               = FALSE;
     *bExcl_IntraCGAll_InterCGNone = TRUE;
 
     excl_nalloc = 10;
@@ -721,6 +724,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 bExclInter    = FALSE;
                 bHaveVDW      = FALSE;
                 bHaveQ        = FALSE;
+                bFEP          = FALSE;
                 for (ai = a0; ai < a1; ai++)
                 {
                     /* Check VDW and electrostatic interactions */
@@ -728,6 +732,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                                             type_VDW[molt->atoms.atom[ai].typeB]);
                     bHaveQ  = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
                                             molt->atoms.atom[ai].qB != 0);
+
+                    bFEP    = bFEP || (PERTURBED(molt->atoms.atom[ai]) != 0);
 
                     /* Clear the exclusion list for atom ai */
                     for (aj = a0; aj < a1; aj++)
@@ -788,6 +794,11 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 if (bHaveQ)
                 {
                     SET_CGINFO_HAS_Q(cginfo[cgm+cg]);
+                }
+                if (bFEP)
+                {
+                    SET_CGINFO_FEP(cginfo[cgm+cg]);
+                    *bFEP_NonBonded = TRUE;
                 }
                 /* Store the charge group size */
                 SET_CGINFO_NATOMS(cginfo[cgm+cg], a1-a0);
@@ -864,7 +875,7 @@ static int *cginfo_expand(int nmb, cginfo_mb_t *cgi_mb)
 static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
 {
     /*This now calculates sum for q and c6*/
-    double         qsum, q2sum, q, c6sum, c6, sqrc6;
+    double         qsum, q2sum, q, c6sum, c6;
     int            mb, nmol, i;
     const t_atoms *atoms;
 
@@ -881,13 +892,12 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
             qsum   += nmol*q;
             q2sum  += nmol*q*q;
             c6      = mtop->ffparams.iparams[atoms->atom[i].type*(mtop->ffparams.atnr+1)].lj.c6;
-            sqrc6   = sqrt(c6);
-            c6sum  += nmol*sqrc6*sqrc6;
+            c6sum  += nmol*c6;
         }
     }
     fr->qsum[0]   = qsum;
     fr->q2sum[0]  = q2sum;
-    fr->c6sum[0]  = c6sum/12;
+    fr->c6sum[0]  = c6sum;
 
     if (fr->efep != efepNO)
     {
@@ -904,12 +914,11 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
                 qsum   += nmol*q;
                 q2sum  += nmol*q*q;
                 c6      = mtop->ffparams.iparams[atoms->atom[i].typeB*(mtop->ffparams.atnr+1)].lj.c6;
-                sqrc6   = sqrt(c6);
-                c6sum  += nmol*sqrc6*sqrc6;
+                c6sum  += nmol*c6;
             }
             fr->qsum[1]   = qsum;
             fr->q2sum[1]  = q2sum;
-            fr->c6sum[1]  = c6sum/12;
+            fr->c6sum[1]  = c6sum;
         }
     }
     else
@@ -1528,6 +1537,23 @@ static void init_forcerec_f_threads(t_forcerec *fr, int nenergrp)
 }
 
 
+gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
+                                      const t_commrec  *cr,
+                                      const t_inputrec *ir,
+                                      gmx_bool          bGPU)
+{
+    if (!bGPU && (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB))
+    {
+        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with %s, falling back to %s\n",
+                      bGPU ? "GPUs" : "SIMD kernels",
+                      bGPU ? "CPU only" : "plain-C kernels");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+
 static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
                                   int                         *kernel_type,
                                   int                         *ewald_excl)
@@ -1541,21 +1567,41 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         *kernel_type = nbnxnk4xN_SIMD_4xN;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-        /* We expect the 2xNN kernels to be faster in most cases */
         *kernel_type = nbnxnk4xN_SIMD_2xNN;
 #endif
 
-#if defined GMX_NBNXN_SIMD_4XN && defined GMX_SIMD_X86_AVX_256_OR_HIGHER
-        if (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT)
+#if defined GMX_NBNXN_SIMD_2XNN && defined GMX_NBNXN_SIMD_4XN
+        /* We need to choose if we want 2x(N+N) or 4xN kernels.
+         * Currently this is based on the SIMD acceleration choice,
+         * but it might be better to decide this at runtime based on CPU.
+         *
+         * 4xN calculates more (zero) interactions, but has less pair-search
+         * work and much better kernel instruction scheduling.
+         *
+         * Up till now we have only seen that on Intel Sandy/Ivy Bridge,
+         * which doesn't have FMA, both the analytical and tabulated Ewald
+         * kernels have similar pair rates for 4x8 and 2x(4+4), so we choose
+         * 2x(4+4) because it results in significantly fewer pairs.
+         * For RF, the raw pair rate of the 4x8 kernel is higher than 2x(4+4),
+         * 10% with HT, 50% without HT. As we currently don't detect the actual
+         * use of HT, use 4x8 to avoid a potential performance hit.
+         * On Intel Haswell 4x8 is always faster.
+         */
+        *kernel_type = nbnxnk4xN_SIMD_4xN;
+
+#ifndef GMX_SIMD_HAVE_FMA
+        if (EEL_PME_EWALD(ir->coulombtype) ||
+            EVDW_PME(ir->vdwtype))
         {
-            /* The raw pair rate of the 4x8 kernel is higher than 2x(4+4),
-             * 10% with HT, 50% without HT, but extra zeros interactions
-             * can compensate. As we currently don't detect the actual use
-             * of HT, switch to 4x8 to avoid a potential performance hit.
+            /* We have Ewald kernels without FMA (Intel Sandy/Ivy Bridge).
+             * There are enough instructions to make 2x(4+4) efficient.
              */
-            *kernel_type = nbnxnk4xN_SIMD_4xN;
+            *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
 #endif
+#endif  /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
+
+
         if (getenv("GMX_NBNXN_SIMD_4XN") != NULL)
         {
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -1574,11 +1620,16 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         }
 
         /* Analytical Ewald exclusion correction is only an option in
-         * the SIMD kernel. On BlueGene/Q, this is faster regardless
-         * of precision. In single precision, this is faster on
-         * Bulldozer, and slightly faster on Sandy Bridge.
+         * the SIMD kernel.
+         * Since table lookup's don't parallelize with SIMD, analytical
+         * will probably always be faster for a SIMD width of 8 or more.
+         * With FMA analytical is sometimes faster for a width if 4 as well.
+         * On BlueGene/Q, this is faster regardless of precision.
+         * In single precision, this is faster on Bulldozer.
          */
-#if ((defined GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER || defined GMX_SIMD_X86_AVX_256_OR_HIGHER || defined __MIC__) && !defined GMX_DOUBLE) || (defined GMX_SIMD_IBM_QPX)
+#if GMX_SIMD_REAL_WIDTH >= 8 || \
+        (GMX_SIMD_REAL_WIDTH >= 4 && defined GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || \
+        defined GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1609,36 +1660,19 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
 #ifdef GMX_NBNXN_SIMD
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-            /* We have x86 SSE2 compatible SIMD */
-#ifdef GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER
-            returnvalue = "AVX-128-FMA";
+#if defined GMX_SIMD_X86_SSE2
+            returnvalue = "SSE2";
+#elif defined GMX_SIMD_X86_SSE4_1
+            returnvalue = "SSE4.1";
+#elif defined GMX_SIMD_X86_AVX_128_FMA
+            returnvalue = "AVX_128_FMA";
+#elif defined GMX_SIMD_X86_AVX_256
+            returnvalue = "AVX_256";
+#elif defined GMX_SIMD_X86_AVX2_256
+            returnvalue = "AVX2_256";
 #else
-#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER || defined __AVX__
-            /* x86 SIMD intrinsics can be converted to SSE or AVX depending
-             * on compiler flags. As we use nearly identical intrinsics,
-             * compiling for AVX without an AVX macros effectively results
-             * in AVX kernels.
-             * For gcc we check for __AVX__
-             * At least a check for icc should be added (if there is a macro)
-             */
-#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !defined GMX_NBNXN_HALF_WIDTH_SIMD
-            returnvalue = "AVX-256";
-#else
-            returnvalue = "AVX-128";
+            returnvalue = "SIMD";
 #endif
-#else
-#ifdef GMX_SIMD_X86_SSE4_1_OR_HIGHER
-            returnvalue  = "SSE4.1";
-#else
-            returnvalue  = "SSE2";
-#endif
-#endif
-#endif
-#else   /* GMX_SIMD_X86_SSE2_OR_HIGHER */
-            /* not GMX_SIMD_X86_SSE2_OR_HIGHER, but other SIMD */
-            returnvalue  = "SIMD";
-#endif /* GMX_SIMD_X86_SSE2_OR_HIGHER */
 #else  /* GMX_NBNXN_SIMD */
             returnvalue = "not available";
 #endif /* GMX_NBNXN_SIMD */
@@ -1686,7 +1720,11 @@ static void pick_nbnxn_kernel(FILE                *fp,
 
     if (*kernel_type == nbnxnkNotSet)
     {
-        if (use_simd_kernels)
+        /* LJ PME with LB combination rule does 7 mesh operations.
+         * This so slow that we don't compile SIMD non-bonded kernels for that.
+         */
+        if (use_simd_kernels &&
+            nbnxn_acceleration_supported(fp, cr, ir, FALSE))
         {
             pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
@@ -1892,13 +1930,17 @@ init_interaction_const(FILE                       *fp,
     snew_aligned(ic->tabq_coul_F, 16, 32);
     snew_aligned(ic->tabq_coul_V, 16, 32);
 
-    ic->rlist       = fr->rlist;
-    ic->rlistlong   = fr->rlistlong;
+    ic->rlist           = fr->rlist;
+    ic->rlistlong       = fr->rlistlong;
 
     /* Lennard-Jones */
-    ic->vdw_modifier = fr->vdw_modifier;
-    ic->rvdw         = fr->rvdw;
-    ic->rvdw_switch  = fr->rvdw_switch;
+    ic->vdwtype         = fr->vdwtype;
+    ic->vdw_modifier    = fr->vdw_modifier;
+    ic->rvdw            = fr->rvdw;
+    ic->rvdw_switch     = fr->rvdw_switch;
+    ic->ewaldcoeff_lj   = fr->ewaldcoeff_lj;
+    ic->ljpme_comb_rule = fr->ljpme_combination_rule;
+    ic->sh_lj_ewald     = 0;
     clear_force_switch_constants(&ic->dispersion_shift);
     clear_force_switch_constants(&ic->repulsion_shift);
 
@@ -1908,6 +1950,17 @@ init_interaction_const(FILE                       *fp,
             /* Only shift the potential, don't touch the force */
             ic->dispersion_shift.cpot = -pow(ic->rvdw, -6.0);
             ic->repulsion_shift.cpot  = -pow(ic->rvdw, -12.0);
+            if (EVDW_PME(ic->vdwtype))
+            {
+                real crc2;
+
+                if (fr->cutoff_scheme == ecutsGROUP)
+                {
+                    gmx_fatal(FARGS, "Potential-shift is not (yet) implemented for LJ-PME with cutoff-scheme=group");
+                }
+                crc2            = sqr(ic->ewaldcoeff_lj*ic->rvdw);
+                ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
+            }
             break;
         case eintmodFORCESWITCH:
             /* Switch the force, switch and shift the potential */
@@ -1932,14 +1985,12 @@ init_interaction_const(FILE                       *fp,
     ic->sh_invrc6 = -ic->dispersion_shift.cpot;
 
     /* Electrostatics */
-    ic->eeltype     = fr->eeltype;
-    ic->rcoulomb    = fr->rcoulomb;
-    ic->epsilon_r   = fr->epsilon_r;
-    ic->epsfac      = fr->epsfac;
-
-    /* Ewald */
-    ic->ewaldcoeff_q   = fr->ewaldcoeff_q;
-    ic->ewaldcoeff_lj  = fr->ewaldcoeff_lj;
+    ic->eeltype          = fr->eeltype;
+    ic->coulomb_modifier = fr->coulomb_modifier;
+    ic->rcoulomb         = fr->rcoulomb;
+    ic->epsilon_r        = fr->epsilon_r;
+    ic->epsfac           = fr->epsfac;
+    ic->ewaldcoeff_q     = fr->ewaldcoeff_q;
 
     if (fr->coulomb_modifier == eintmodPOTSHIFT)
     {
@@ -1974,11 +2025,19 @@ init_interaction_const(FILE                       *fp,
 
     if (fp != NULL)
     {
-        fprintf(fp, "Potential shift: LJ r^-12: %.3f r^-6 %.3f",
-                ic->repulsion_shift.cpot, ic->dispersion_shift.cpot);
+        real dispersion_shift;
+
+        dispersion_shift = ic->dispersion_shift.cpot;
+        if (EVDW_PME(ic->vdwtype))
+        {
+            dispersion_shift -= ic->sh_lj_ewald;
+        }
+        fprintf(fp, "Potential shift: LJ r^-12: %.3e r^-6: %.3e",
+                ic->repulsion_shift.cpot, dispersion_shift);
+
         if (ic->eeltype == eelCUT)
         {
-            fprintf(fp, ", Coulomb %.3f", -ic->c_rf);
+            fprintf(fp, ", Coulomb %.e", -ic->c_rf);
         }
         else if (EEL_PME(ic->eeltype))
         {
@@ -2019,6 +2078,7 @@ init_interaction_const(FILE                       *fp,
 
 static void init_nb_verlet(FILE                *fp,
                            nonbonded_verlet_t **nb_verlet,
+                           gmx_bool             bFEP_NonBonded,
                            const t_inputrec    *ir,
                            const t_forcerec    *fr,
                            const t_commrec     *cr,
@@ -2124,6 +2184,7 @@ static void init_nb_verlet(FILE                *fp,
     nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
+                      bFEP_NonBonded,
                       gmx_omp_nthreads_get(emntNonbonded));
 
     for (i = 0; i < nbv->ngrp; i++)
@@ -2149,15 +2210,39 @@ static void init_nb_verlet(FILE                *fp,
             nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
         {
             gmx_bool bSimpleList;
+            int      enbnxninitcombrule;
 
             bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type);
+
+            if (bSimpleList && (fr->vdwtype == evdwCUT && (fr->vdw_modifier == eintmodNONE || fr->vdw_modifier == eintmodPOTSHIFT)))
+            {
+                /* Plain LJ cut-off: we can optimize with combination rules */
+                enbnxninitcombrule = enbnxninitcombruleDETECT;
+            }
+            else if (fr->vdwtype == evdwPME)
+            {
+                /* LJ-PME: we need to use a combination rule for the grid */
+                if (fr->ljpme_combination_rule == eljpmeGEOM)
+                {
+                    enbnxninitcombrule = enbnxninitcombruleGEOM;
+                }
+                else
+                {
+                    enbnxninitcombrule = enbnxninitcombruleLB;
+                }
+            }
+            else
+            {
+                /* We use a full combination matrix: no rule required */
+                enbnxninitcombrule = enbnxninitcombruleNONE;
+            }
+
 
             snew(nbv->grp[i].nbat, 1);
             nbnxn_atomdata_init(fp,
                                 nbv->grp[i].nbat,
                                 nbv->grp[i].kernel_type,
-                                /* SIMD LJ switch kernels don't support LJ combination rules */
-                                bSimpleList && !(fr->vdw_modifier == eintmodFORCESWITCH || fr->vdw_modifier == eintmodPOTSWITCH),
+                                enbnxninitcombrule,
                                 fr->ntype, fr->nbfp,
                                 ir->opts.ngener,
                                 bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1,
@@ -2194,6 +2279,7 @@ void init_forcerec(FILE              *fp,
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
     gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
+    gmx_bool       bFEP_NonBonded;
     t_nblists     *nbl;
     int           *nm_ind, egp_flags;
 
@@ -2387,6 +2473,21 @@ void init_forcerec(FILE              *fp,
     fr->cutoff_scheme = ir->cutoff_scheme;
     fr->bGrid         = (ir->ns_type == ensGRID);
     fr->ePBC          = ir->ePBC;
+
+    if (fr->cutoff_scheme == ecutsGROUP)
+    {
+        const char *note = "NOTE: This file uses the deprecated 'group' cutoff_scheme. This will be\n"
+            "removed in a future release when 'verlet' supports all interaction forms.\n";
+
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "\n%s\n", note);
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp, "\n%s\n", note);
+        }
+    }
 
     /* Determine if we will do PBC for distances in bonded interactions */
     if (fr->ePBC == epbcNONE)
@@ -2622,7 +2723,7 @@ void init_forcerec(FILE              *fp,
         {
             fprintf(fp, "Will do PME sum in reciprocal space for LJ dispersion interactions.\n");
         }
-        please_cite(fp, "Essman95a");
+        please_cite(fp, "Essmann95a");
         fr->ewaldcoeff_lj = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
         if (fp)
         {
@@ -2999,6 +3100,7 @@ void init_forcerec(FILE              *fp,
 
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp, mtop, fr, bNoSolvOpt,
+                                   &bFEP_NonBonded,
                                    &fr->bExcl_IntraCGAll_InterCGNone);
     if (DOMAINDECOMP(cr))
     {
@@ -3049,7 +3151,7 @@ void init_forcerec(FILE              *fp,
             gmx_fatal(FARGS, "With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, &fr->nbv, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
     }
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */

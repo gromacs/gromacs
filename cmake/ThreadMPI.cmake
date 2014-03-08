@@ -37,21 +37,26 @@ include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(CheckCSourceCompiles)
 
-# sets TMPI_ATOMICS to 1 if atomic operations are found, 0 otherwise
+# sets TMPI_ATOMICS to 1 if atomic operations are found, unset otherwise
 # Options:
 # include directory for thread_mpi/atomic.h
 MACRO(TMPI_TEST_ATOMICS INCDIR)
     if (NOT DEFINED TMPI_ATOMICS)
         try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
                 "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.c"
-                COMPILE_DEFINITIONS "-I${INCDIR}")
+                COMPILE_DEFINITIONS "-I${INCDIR} -DTMPI_ATOMICS")
         if (TEST_ATOMICS)
             message(STATUS "Atomic operations found")
+            # If the check fails, we want to be able to check again,
+            # in case the user has been able to fix this without
+            # needing to delete the cache. Thus we only cache
+            # positive results.
+            set(TMPI_ATOMICS ${TEST_ATOMICS} CACHE INTERNAL "Whether atomic operations are found")
+            set(TMPI_ATOMICS_INCDIR ${INCDIR} CACHE INTERNAL "Atomic operations check include dir")
         else (TEST_ATOMICS)
             message(STATUS "Atomic operations not found")
+            unset(TEST_ATOMICS)
         endif(TEST_ATOMICS)
-        set(TMPI_ATOMICS ${TEST_ATOMICS} CACHE INTERNAL "Whether atomic operations are found")
-        set(TMPI_ATOMICS_INCDIR ${INCDIR} CACHE INTERNAL "Atomic operations check include dir")
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TMPI_TEST_ATOMICS VARIABLE)
 
@@ -114,15 +119,10 @@ ENDMACRO(TMPI_ENABLE_CXX)
 
 # Turns on thread_mpi MPI functions.
 MACRO(TMPI_ENABLE)
-    # first check whether threads and atomics are available.
-    if(NOT TMPI_ATOMICS)
-        # check again, to allow the user to fix this.
-        unset(TMPI_ATOMICS CACHE)
-        TMPI_TEST_ATOMICS(${TMPI_ATOMICS_INCDIR})
-    endif(NOT TMPI_ATOMICS)
-    if(NOT TMPI_ATOMICS)
+    TMPI_TEST_ATOMICS(TMPI_ATOMICS_INCDIR)
+    if(NOT DEFINED TMPI_ATOMICS)
         message(WARNING "Atomic operations not found for this CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
-    endif(NOT TMPI_ATOMICS)
+    endif()
 
     set(TMPI_ENABLED 1)
 

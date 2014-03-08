@@ -143,7 +143,6 @@ struct mdrunner_arglist
     real            max_hours;
     const char     *deviceOptions;
     unsigned long   Flags;
-    int             ret; /* return value */
 };
 
 
@@ -170,15 +169,15 @@ static void mdrunner_start_fn(void *arg)
         fplog = mc.fplog;
     }
 
-    mda->ret = mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-                        mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
-                        mc.ddxyz, mc.dd_node_order, mc.rdd,
-                        mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
-                        mc.ddcsx, mc.ddcsy, mc.ddcsz,
-                        mc.nbpu_opt, mc.nstlist_cmdline,
-                        mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
-                        mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
-                        mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
+    mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
+             mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
+             mc.ddxyz, mc.dd_node_order, mc.rdd,
+             mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
+             mc.ddcsx, mc.ddcsy, mc.ddcsz,
+             mc.nbpu_opt, mc.nstlist_cmdline,
+             mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
+             mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
+             mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including
@@ -1098,7 +1097,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       i, m, nChargePerturbed = -1, nTypePerturbed = 0, status, nalloc;
     char                     *gro;
     gmx_wallcycle_t           wcycle;
-    gmx_bool                  bReadRNG, bReadEkin;
+    gmx_bool                  bReadEkin;
     int                       list;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
@@ -1148,10 +1147,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             bUseGPU = (hwinfo->gpu_info.ncuda_dev_compatible > 0 ||
                        getenv("GMX_EMULATE_GPU") != NULL);
 
-            if (bUseGPU && (inputrec->vdw_modifier == eintmodFORCESWITCH ||
-                            inputrec->vdw_modifier == eintmodPOTSWITCH))
+            /* TODO add GPU kernels for this and replace this check by:
+             * (bUseGPU && (ir->vdwtype == evdwPME &&
+             *               ir->ljpme_combination_rule == eljpmeLB))
+             * update the message text and the content of nbnxn_acceleration_supported.
+             */
+            if (bUseGPU &&
+                !nbnxn_acceleration_supported(fplog, cr, inputrec, bUseGPU))
             {
-                md_print_warn(cr, fplog, "LJ switch functions are not yet supported on the GPU, falling back to CPU-only");
+                /* Fallback message printed by nbnxn_acceleration_supported */
+                if (bForceUseGPU)
+                {
+                    gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
+                }
                 bUseGPU = FALSE;
             }
 
@@ -1291,7 +1299,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* now make sure the state is initialized and propagated */
-    set_state_entries(state, inputrec, cr->nnodes);
+    set_state_entries(state, inputrec);
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
@@ -1389,14 +1397,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
                             cr, ddxyz,
-                            inputrec, state, &bReadRNG, &bReadEkin,
+                            inputrec, state, &bReadEkin,
                             (Flags & MD_APPENDFILES),
                             (Flags & MD_APPENDFILESSET));
 
-            if (bReadRNG)
-            {
-                Flags |= MD_READ_RNG;
-            }
             if (bReadEkin)
             {
                 Flags |= MD_READ_EKIN;
@@ -1594,11 +1598,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          * as this can not be done now with domain decomposition.
          */
         mdatoms = init_mdatoms(fplog, mtop, inputrec->efep != efepNO);
-
-        if (mdatoms->nPerturbed > 0 && inputrec->cutoff_scheme == ecutsVERLET)
-        {
-            gmx_fatal(FARGS, "The Verlet cut-off scheme does not (yet) support free-energy calculations with perturbed atoms, only perturbed interactions. This will be implemented soon. Use the group scheme for now.");
-        }
 
         /* Initialize the virtual site communication */
         vsite = init_vsite(mtop, cr, FALSE);

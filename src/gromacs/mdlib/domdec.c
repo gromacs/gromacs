@@ -1586,37 +1586,6 @@ void dd_collect_state(gmx_domdec_t *dd,
                 case estCGP:
                     dd_collect_vec(dd, state_local, state_local->cg_p, state->cg_p);
                     break;
-                case estLD_RNG:
-                    if (state->nrngi == 1)
-                    {
-                        if (DDMASTER(dd))
-                        {
-                            for (i = 0; i < state_local->nrng; i++)
-                            {
-                                state->ld_rng[i] = state_local->ld_rng[i];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        dd_gather(dd, state_local->nrng*sizeof(state->ld_rng[0]),
-                                  state_local->ld_rng, state->ld_rng);
-                    }
-                    break;
-                case estLD_RNGI:
-                    if (state->nrngi == 1)
-                    {
-                        if (DDMASTER(dd))
-                        {
-                            state->ld_rngi[0] = state_local->ld_rngi[0];
-                        }
-                    }
-                    else
-                    {
-                        dd_gather(dd, sizeof(state->ld_rngi[0]),
-                                  state_local->ld_rngi, state->ld_rngi);
-                    }
-                    break;
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
                 case estORIRE_INITF:
@@ -1658,8 +1627,6 @@ static void dd_realloc_state(t_state *state, rvec **f, int nalloc)
                 case estCGP:
                     srenew(state->cg_p, state->nalloc);
                     break;
-                case estLD_RNG:
-                case estLD_RNGI:
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
                 case estORIRE_INITF:
@@ -1916,32 +1883,6 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
                     break;
                 case estCGP:
                     dd_distribute_vec(dd, cgs, state->cg_p, state_local->cg_p);
-                    break;
-                case estLD_RNG:
-                    if (state->nrngi == 1)
-                    {
-                        dd_bcastc(dd,
-                                  state_local->nrng*sizeof(state_local->ld_rng[0]),
-                                  state->ld_rng, state_local->ld_rng);
-                    }
-                    else
-                    {
-                        dd_scatter(dd,
-                                   state_local->nrng*sizeof(state_local->ld_rng[0]),
-                                   state->ld_rng, state_local->ld_rng);
-                    }
-                    break;
-                case estLD_RNGI:
-                    if (state->nrngi == 1)
-                    {
-                        dd_bcastc(dd, sizeof(state_local->ld_rngi[0]),
-                                  state->ld_rngi, state_local->ld_rngi);
-                    }
-                    else
-                    {
-                        dd_scatter(dd, sizeof(state_local->ld_rngi[0]),
-                                   state->ld_rngi, state_local->ld_rngi);
-                    }
                     break;
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
@@ -6423,7 +6364,7 @@ static int multi_body_bondeds_count(gmx_mtop_t *mtop)
     return n;
 }
 
-static int dd_nst_env(FILE *fplog, const char *env_var, int def)
+static int dd_getenv(FILE *fplog, const char *env_var, int def)
 {
     char *val;
     int   nst;
@@ -6666,14 +6607,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     dd->npbcdim   = ePBC2npbcdim(ir->ePBC);
     dd->bScrewPBC = (ir->ePBC == epbcSCREW);
 
-    dd->bSendRecv2      = dd_nst_env(fplog, "GMX_DD_SENDRECV2", 0);
-    comm->dlb_scale_lim = dd_nst_env(fplog, "GMX_DLB_MAX", 10);
-    comm->eFlop         = dd_nst_env(fplog, "GMX_DLB_FLOP", 0);
-    recload             = dd_nst_env(fplog, "GMX_DD_LOAD", 1);
-    comm->nstSortCG     = dd_nst_env(fplog, "GMX_DD_SORT", 1);
-    comm->nstDDDump     = dd_nst_env(fplog, "GMX_DD_DUMP", 0);
-    comm->nstDDDumpGrid = dd_nst_env(fplog, "GMX_DD_DUMP_GRID", 0);
-    comm->DD_debug      = dd_nst_env(fplog, "GMX_DD_DEBUG", 0);
+    dd->bSendRecv2      = dd_getenv(fplog, "GMX_DD_USE_SENDRECV2", 0);
+    comm->dlb_scale_lim = dd_getenv(fplog, "GMX_DLB_MAX_BOX_SCALING", 10);
+    comm->eFlop         = dd_getenv(fplog, "GMX_DLB_BASED_ON_FLOPS", 0);
+    recload             = dd_getenv(fplog, "GMX_DD_RECORD_LOAD", 1);
+    comm->nstSortCG     = dd_getenv(fplog, "GMX_DD_NST_SORT_CHARGE_GROUPS", 1);
+    comm->nstDDDump     = dd_getenv(fplog, "GMX_DD_NST_DUMP", 0);
+    comm->nstDDDumpGrid = dd_getenv(fplog, "GMX_DD_NST_DUMP_GRID", 0);
+    comm->DD_debug      = dd_getenv(fplog, "GMX_DD_DEBUG", 0);
 
     dd->pme_recv_f_alloc = 0;
     dd->pme_recv_f_buf   = NULL;
@@ -7361,7 +7302,7 @@ static void set_cell_limits_dlb(gmx_domdec_t      *dd,
     }
 
     /* This env var can override npulse */
-    d = dd_nst_env(debug, "GMX_DD_NPULSE", 0);
+    d = dd_getenv(debug, "GMX_DD_NPULSE", 0);
     if (d > 0)
     {
         npulse = d;
@@ -9799,7 +9740,7 @@ void dd_partition_system(FILE                *fplog,
         /* Send the charges and/or c6/sigmas to our PME only node */
         gmx_pme_send_parameters(cr, mdatoms->nChargePerturbed, mdatoms->nTypePerturbed,
                                 mdatoms->chargeA, mdatoms->chargeB,
-                                mdatoms->c6A, mdatoms->c6B,
+                                mdatoms->sqrt_c6A, mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA, mdatoms->sigmaB,
                                 dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
     }

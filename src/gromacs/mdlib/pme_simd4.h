@@ -94,8 +94,6 @@
  * This code does not assume any memory alignment for the grid.
  */
 {
-    real             fx_tmp[4], fy_tmp[4], fz_tmp[4];
-
     gmx_simd4_real_t fx_S, fy_S, fz_S;
 
     gmx_simd4_real_t tx_S, ty_S, tz_S;
@@ -137,13 +135,9 @@
         }
     }
 
-    gmx_simd4_storeu_r(fx_tmp, fx_S);
-    gmx_simd4_storeu_r(fy_tmp, fy_S);
-    gmx_simd4_storeu_r(fz_tmp, fz_S);
-
-    fx += fx_tmp[0]+fx_tmp[1]+fx_tmp[2]+fx_tmp[3];
-    fy += fy_tmp[0]+fy_tmp[1]+fy_tmp[2]+fy_tmp[3];
-    fz += fz_tmp[0]+fz_tmp[1]+fz_tmp[2]+fz_tmp[3];
+    fx += gmx_simd4_reduce_r(fx_S);
+    fy += gmx_simd4_reduce_r(fy_S);
+    fz += gmx_simd4_reduce_r(fz_S);
 }
 #undef PME_GATHER_F_SIMD4_ORDER4
 #endif
@@ -178,7 +172,7 @@
     ty_S4 = gmx_simd4_set1_r(thy[4]);
 #endif
 
-#ifdef GMX_SIMD4_HAVE_UNALIGNED
+#ifdef PME_SIMD4_UNALIGNED
     tz_S0 = gmx_simd4_loadu_r(thz-offset);
     tz_S1 = gmx_simd4_loadu_r(thz-offset+4);
 #else
@@ -265,8 +259,6 @@
 {
     int              offset;
 
-    real             fx_tmp[4], fy_tmp[4], fz_tmp[4];
-
     gmx_simd4_real_t fx_S, fy_S, fz_S;
 
     gmx_simd4_real_t tx_S, ty_S, tz_S0, tz_S1;
@@ -288,7 +280,7 @@
     fy_S = gmx_simd4_setzero_r();
     fz_S = gmx_simd4_setzero_r();
 
-#ifdef GMX_SIMD4_HAVE_UNALIGNED
+#ifdef PME_SIMD4_UNALIGNED
     tz_S0 = gmx_simd4_loadu_r(thz-offset);
     tz_S1 = gmx_simd4_loadu_r(thz-offset+4);
     dz_S0 = gmx_simd4_loadu_r(dthz-offset);
@@ -342,13 +334,9 @@
         }
     }
 
-    gmx_simd4_store_r(fx_tmp, fx_S);
-    gmx_simd4_store_r(fy_tmp, fy_S);
-    gmx_simd4_store_r(fz_tmp, fz_S);
-
-    fx += fx_tmp[0]+fx_tmp[1]+fx_tmp[2]+fx_tmp[3];
-    fy += fy_tmp[0]+fy_tmp[1]+fy_tmp[2]+fy_tmp[3];
-    fz += fz_tmp[0]+fz_tmp[1]+fz_tmp[2]+fz_tmp[3];
+    fx += gmx_simd4_reduce_r(fx_S);
+    fy += gmx_simd4_reduce_r(fy_S);
+    fz += gmx_simd4_reduce_r(fz_S);
 }
 #undef PME_ORDER
 #undef PME_GATHER_F_SIMD4_ALIGNED

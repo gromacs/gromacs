@@ -37,8 +37,8 @@
 {
     const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
-    const int          *type;
-    const real         *q;
+    const int *         type;
+    const real *        q;
     const real         *shiftvec;
     const real         *x;
     const real         *nbfp0, *nbfp1, *nbfp2 = NULL, *nbfp3 = NULL;
@@ -46,7 +46,7 @@
     real               *nbfp_ptr;
     int                 n, ci, ci_sh;
     int                 ish, ish3;
-    gmx_bool            do_LJ, half_LJ, do_coul;
+    gmx_bool            do_LJ, half_LJ, do_coul, do_self;
     int                 sci, scix, sciy, sciz, sci2;
     int                 cjind0, cjind1, cjind;
     int                 ip, jp;
@@ -109,9 +109,9 @@
 #ifdef CALC_COUL_TAB
     /* Coulomb table variables */
     gmx_simd_real_t   invtsp_S;
-    const real       *tab_coul_F;
+    const real *      tab_coul_F;
 #ifndef TAB_FDV0
-    const real       *tab_coul_V;
+    const real *      tab_coul_V;
 #endif
     /* Thread-local working buffers for force and potential lookups */
     int               ti0_array[2*GMX_SIMD_REAL_WIDTH], *ti0 = NULL;
@@ -131,11 +131,14 @@
     gmx_simd_real_t  sh_ewald_S;
 #endif
 
+#if defined LJ_CUT && defined CALC_ENERGIES
+    gmx_simd_real_t   p6_cpot_S, p12_cpot_S;
+#endif
 #ifdef LJ_POT_SWITCH
     gmx_simd_real_t   rswitch_S;
     gmx_simd_real_t   swV3_S, swV4_S, swV5_S;
     gmx_simd_real_t   swF2_S, swF3_S, swF4_S;
-#else
+#endif
 #ifdef LJ_FORCE_SWITCH
     gmx_simd_real_t   rswitch_S;
     gmx_simd_real_t   p6_fc2_S, p6_fc3_S;
@@ -145,11 +148,10 @@
     gmx_simd_real_t   p12_vc3_S, p12_vc4_S;
     gmx_simd_real_t   p6_6cpot_S, p12_12cpot_S;
 #endif
-#else
-#ifdef CALC_ENERGIES
-    gmx_simd_real_t  p6_cpot_S, p12_cpot_S;
 #endif
-#endif
+#ifdef LJ_EWALD_GEOM
+    real              lj_ewaldcoeff2, lj_ewaldcoeff6_6;
+    gmx_simd_real_t   mone_S, half_S, lje_c2_S, lje_c6_6_S, lje_vc_S;
 #endif
 
 #ifdef LJ_COMB_LB
@@ -169,7 +171,7 @@
     gmx_simd_real_t   c6_S3, c12_S3;
 #endif
 
-#ifdef LJ_COMB_GEOM
+#if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
     const real       *ljc;
 
     gmx_simd_real_t   c6s_S0, c12s_S0;
@@ -190,24 +192,16 @@
     gmx_simd_real_t  rcvdw2_S;
 #endif
 
-#ifdef CALC_ENERGIES
-    /* cppcheck-suppress unassignedVariable */
-    real       tmpsum_array[GMX_SIMD_REAL_WIDTH*2], *tmpsum;
-#endif
-#ifdef CALC_SHIFTFORCES
-    /* cppcheck-suppress unassignedVariable */
-    real       shf_array[GMX_SIMD_REAL_WIDTH*2], *shf;
-#endif
-
     int ninner;
 
 #ifdef COUNT_PAIRS
     int npair = 0;
 #endif
 
-#if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+#if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
     ljc = nbat->lj_comb;
-#else
+#endif
+#if !(defined LJ_COMB_GEOM || defined LJ_COMB_LB)
     /* No combination rule used */
     nbfp_ptr    = (4 == nbfp_stride) ? nbat->nbfp_s4 : nbat->nbfp;
 #endif
@@ -313,6 +307,11 @@
     twelveth_S   = gmx_simd_set1_r(1.0/12.0);
 #endif
 
+#if defined LJ_CUT && defined CALC_ENERGIES
+    /* We shift the potential by cpot, which can be zero */
+    p6_cpot_S    = gmx_simd_set1_r(ic->dispersion_shift.cpot);
+    p12_cpot_S   = gmx_simd_set1_r(ic->repulsion_shift.cpot);
+#endif
 #ifdef LJ_POT_SWITCH
     rswitch_S = gmx_simd_set1_r(ic->rvdw_switch);
     swV3_S    = gmx_simd_set1_r(ic->vdw_switch.c3);
@@ -321,9 +320,7 @@
     swF2_S    = gmx_simd_set1_r(3*ic->vdw_switch.c3);
     swF3_S    = gmx_simd_set1_r(4*ic->vdw_switch.c4);
     swF4_S    = gmx_simd_set1_r(5*ic->vdw_switch.c5);
-#else
-    sixth_S      = gmx_simd_set1_r(1.0/6.0);
-    twelveth_S   = gmx_simd_set1_r(1.0/12.0);
+#endif
 #ifdef LJ_FORCE_SWITCH
     rswitch_S = gmx_simd_set1_r(ic->rvdw_switch);
     p6_fc2_S  = gmx_simd_set1_r(ic->dispersion_shift.c2);
@@ -343,14 +340,17 @@
         p12_12cpot_S = gmx_simd_set1_r(ic->repulsion_shift.cpot/12);
     }
 #endif
-#else
-    /* Plain LJ cut-off, with potential shift cpot, which can be 0 */
-#ifdef CALC_ENERGIES
-    p6_cpot_S    = gmx_simd_set1_r(ic->dispersion_shift.cpot);
-    p12_cpot_S   = gmx_simd_set1_r(ic->repulsion_shift.cpot);
 #endif
+#ifdef LJ_EWALD_GEOM
+    mone_S           = gmx_simd_set1_r(-1.0);
+    half_S           = gmx_simd_set1_r(0.5);
+    lj_ewaldcoeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
+    lj_ewaldcoeff6_6 = lj_ewaldcoeff2*lj_ewaldcoeff2*lj_ewaldcoeff2/6;
+    lje_c2_S         = gmx_simd_set1_r(lj_ewaldcoeff2);
+    lje_c6_6_S       = gmx_simd_set1_r(lj_ewaldcoeff6_6);
+    /* Determine the grid potential at the cut-off */
+    lje_vc_S         = gmx_simd_set1_r(ic->sh_lj_ewald);
 #endif
-#endif /* LJ_POT_SWITCH */
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
     rc2_S    = gmx_simd_set1_r(ic->rcoulomb*ic->rcoulomb);
@@ -365,13 +365,6 @@
     facel               = ic->epsfac;
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
-
-#ifdef CALC_ENERGIES
-    tmpsum   = gmx_simd_align_r(tmpsum_array);
-#endif
-#ifdef CALC_SHIFTFORCES
-    shf      = gmx_simd_align_r(shf_array);
-#endif
 
 #ifdef FIX_LJ_C
     pvdw_c6  = gmx_simd_align_real(pvdw_array);
@@ -448,6 +441,11 @@
         do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
         do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
         half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
+#ifdef LJ_EWALD_GEOM
+        do_self = TRUE;
+#else
+        do_self = do_coul;
+#endif
 
 #ifdef ENERGY_GROUPS
         egps_i = nbat->energrp[ci];
@@ -462,47 +460,70 @@
             }
         }
 #endif
-#if defined CALC_ENERGIES
+
+#ifdef CALC_ENERGIES
 #if UNROLLJ == 4
-        if (do_coul && l_cj[nbln->cj_ind_start].cj == ci_sh)
+        if (do_self && l_cj[nbln->cj_ind_start].cj == ci_sh)
 #endif
 #if UNROLLJ == 2
-        if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh<<1))
+        if (do_self && l_cj[nbln->cj_ind_start].cj == (ci_sh<<1))
 #endif
 #if UNROLLJ == 8
-        if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh>>1))
+        if (do_self && l_cj[nbln->cj_ind_start].cj == (ci_sh>>1))
 #endif
         {
-            int  ia;
-            real Vc_sub_self;
+            if (do_coul)
+            {
+                real Vc_sub_self;
+                int  ia;
 
 #ifdef CALC_COUL_RF
-            Vc_sub_self = 0.5*ic->c_rf;
+                Vc_sub_self = 0.5*ic->c_rf;
 #endif
 #ifdef CALC_COUL_TAB
 #ifdef TAB_FDV0
-            Vc_sub_self = 0.5*tab_coul_F[2];
+                Vc_sub_self = 0.5*tab_coul_F[2];
 #else
-            Vc_sub_self = 0.5*tab_coul_V[0];
+                Vc_sub_self = 0.5*tab_coul_V[0];
 #endif
 #endif
 #ifdef CALC_COUL_EWALD
-            /* beta/sqrt(pi) */
-            Vc_sub_self = 0.5*ic->ewaldcoeff_q*M_2_SQRTPI;
+                /* beta/sqrt(pi) */
+                Vc_sub_self = 0.5*ic->ewaldcoeff_q*M_2_SQRTPI;
 #endif
 
-            for (ia = 0; ia < UNROLLI; ia++)
-            {
-                real qi;
+                for (ia = 0; ia < UNROLLI; ia++)
+                {
+                    real qi;
 
-                qi = q[sci+ia];
+                    qi = q[sci+ia];
 #ifdef ENERGY_GROUPS
-                vctp[ia][((egps_i>>(ia*egps_ishift)) & egps_imask)*egps_jstride]
+                    vctp[ia][((egps_i>>(ia*egps_ishift)) & egps_imask)*egps_jstride]
 #else
-                Vc[0]
+                    Vc[0]
 #endif
-                    -= facel*qi*qi*Vc_sub_self;
+                        -= facel*qi*qi*Vc_sub_self;
+                }
             }
+
+#ifdef LJ_EWALD_GEOM
+            {
+                int  ia;
+
+                for (ia = 0; ia < UNROLLI; ia++)
+                {
+                    real c6_i;
+
+                    c6_i = nbat->nbfp[nbat->type[sci+ia]*(nbat->ntype + 1)*2]/6;
+#ifdef ENERGY_GROUPS
+                    vvdwtp[ia][((egps_i>>(ia*egps_ishift)) & egps_imask)*egps_jstride]
+#else
+                    Vvdw[0]
+#endif
+                        += 0.5*c6_i*lj_ewaldcoeff6_6;
+                }
+            }
+#endif      /* LJ_EWALD_GEOM */
         }
 #endif
 
@@ -564,6 +585,16 @@
             nbfp3 = nbfp_ptr + type[sci+3]*nbat->ntype*nbfp_stride;
         }
 #endif
+#endif
+#ifdef LJ_EWALD_GEOM
+        /* We need the geometrically combined C6 for the PME grid correction */
+        c6s_S0 = gmx_simd_load1_r(ljc+sci2+0);
+        c6s_S1 = gmx_simd_load1_r(ljc+sci2+1);
+        if (!half_LJ)
+        {
+            c6s_S2 = gmx_simd_load1_r(ljc+sci2+2);
+            c6s_S3 = gmx_simd_load1_r(ljc+sci2+3);
+        }
 #endif
 
         /* Zero the potential energy for this list */
@@ -645,18 +676,18 @@
         /* Add accumulated i-forces to the force array */
 #if UNROLLJ >= 4
         fix_S = gmx_mm_transpose_sum4_pr(fix_S0, fix_S1, fix_S2, fix_S3);
-        gmx_simd4_store_r(f+scix, gmx_add_pr4(fix_S, gmx_load_pr4(f+scix)));
+        gmx_simd4_store_r(f+scix, gmx_simd4_add_r(fix_S, gmx_simd4_load_r(f+scix)));
 
         fiy_S = gmx_mm_transpose_sum4_pr(fiy_S0, fiy_S1, fiy_S2, fiy_S3);
-        gmx_simd4_store_r(f+sciy, gmx_add_pr4(fiy_S, gmx_load_pr4(f+sciy)));
+        gmx_simd4_store_r(f+sciy, gmx_simd4_add_r(fiy_S, gmx_simd4_load_r(f+sciy)));
 
         fiz_S = gmx_mm_transpose_sum4_pr(fiz_S0, fiz_S1, fiz_S2, fiz_S3);
-        gmx_simd4_store_r(f+sciz, gmx_add_pr4(fiz_S, gmx_load_pr4(f+sciz)));
+        gmx_simd4_store_r(f+sciz, gmx_simd4_add_r(fiz_S, gmx_simd4_load_r(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
-        fshift[ish3+0] += gmx_sum_simd4(fix_S, shf);
-        fshift[ish3+1] += gmx_sum_simd4(fiy_S, shf);
-        fshift[ish3+2] += gmx_sum_simd4(fiz_S, shf);
+        fshift[ish3+0] += gmx_simd4_reduce_r(fix_S);
+        fshift[ish3+1] += gmx_simd4_reduce_r(fiy_S);
+        fshift[ish3+2] += gmx_simd4_reduce_r(fiz_S);
 #endif
 #else
         fix0_S = gmx_mm_transpose_sum2_pr(fix_S0, fix_S1);
@@ -675,19 +706,19 @@
         gmx_simd_store_r(f+sciz+2, gmx_simd_add_r(fiz2_S, gmx_simd_load_r(f+sciz+2)));
 
 #ifdef CALC_SHIFTFORCES
-        fshift[ish3+0] += gmx_sum_simd2(gmx_simd_add_r(fix0_S, fix2_S), shf);
-        fshift[ish3+1] += gmx_sum_simd2(gmx_simd_add_r(fiy0_S, fiy2_S), shf);
-        fshift[ish3+2] += gmx_sum_simd2(gmx_simd_add_r(fiz0_S, fiz2_S), shf);
+        fshift[ish3+0] += gmx_simd_reduce_r(gmx_simd_add_r(fix0_S, fix2_S));
+        fshift[ish3+1] += gmx_simd_reduce_r(gmx_simd_add_r(fiy0_S, fiy2_S));
+        fshift[ish3+2] += gmx_simd_reduce_r(gmx_simd_add_r(fiz0_S, fiz2_S));
 #endif
 #endif
 
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
-            *Vc += gmx_sum_simd(vctot_S, tmpsum);
+            *Vc += gmx_simd_reduce_r(vctot_S);
         }
 
-        *Vvdw += gmx_sum_simd(Vvdwtot_S, tmpsum);
+        *Vvdw += gmx_simd_reduce_r(Vvdwtot_S);
 #endif
 
         /* Outer loop uses 6 flops/iteration */

@@ -261,9 +261,14 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         /* Add short-range interactions */
         donb_flags |= GMX_NONBONDED_DO_SR;
 
+        /* Currently all group scheme kernels always calculate (shift-)forces */
         if (flags & GMX_FORCE_FORCES)
         {
             donb_flags |= GMX_NONBONDED_DO_FORCE;
+        }
+        if (flags & GMX_FORCE_VIRIAL)
+        {
+            donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
         }
         if (flags & GMX_FORCE_ENERGY)
         {
@@ -469,7 +474,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
         int  status            = 0;
 
-        if (EEL_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
+        if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
             real dvdl_long_range_correction_q   = 0;
             real dvdl_long_range_correction_lj  = 0;
@@ -534,8 +539,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                                        cr, t, fr,
                                        md->chargeA,
                                        md->nChargePerturbed ? md->chargeB : NULL,
-                                       md->c6A,
-                                       md->nChargePerturbed ? md->c6B : NULL,
+                                       md->sqrt_c6A,
+                                       md->nChargePerturbed ? md->sqrt_c6B : NULL,
                                        md->sigmaA,
                                        md->nChargePerturbed ? md->sigmaB : NULL,
                                        md->sigma3A,
@@ -561,7 +566,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                 wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
 
-            if (fr->n_tpi == 0)
+            if (EEL_PME_EWALD(fr->eeltype) && fr->n_tpi == 0)
             {
                 Vcorr_q += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
                                                    &dvdl_long_range_correction_q,
@@ -590,11 +595,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                     if (EVDW_PME(fr->vdwtype))
                     {
                         pme_flags |= GMX_PME_DO_LJ;
-                        if (fr->ljpme_combination_rule == eljpmeLB)
-                        {
-                            /*Lorentz-Berthelot Comb. Rules in LJ-PME*/
-                            pme_flags |= GMX_PME_LJ_LB;
-                        }
                     }
                     if (flags & GMX_FORCE_FORCES)
                     {
@@ -614,7 +614,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                                         0, md->homenr - fr->n_tpi,
                                         x, fr->f_novirsum,
                                         md->chargeA, md->chargeB,
-                                        md->c6A, md->c6B,
+                                        md->sqrt_c6A, md->sqrt_c6B,
                                         md->sigmaA, md->sigmaB,
                                         bSB ? boxs : box, cr,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
@@ -657,7 +657,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
             }
         }
 
-        if (!EEL_PME(fr->eeltype) && EEL_EWALD(fr->eeltype))
+        if (!EEL_PME(fr->eeltype) && EEL_PME_EWALD(fr->eeltype))
         {
             Vlr_q = do_ewald(ir, x, fr->f_novirsum,
                              md->chargeA, md->chargeB,
@@ -666,11 +666,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                              lambda[efptCOUL], &dvdl_long_range_q, fr->ewald_table);
             PRINT_SEPDVDL("Ewald long-range", Vlr_q, dvdl_long_range_q);
         }
-        else if (!EEL_EWALD(fr->eeltype))
-        {
-            gmx_fatal(FARGS, "No such electrostatics method implemented %s",
-                      eel_names[fr->eeltype]);
-        }
+
         /* Note that with separate PME nodes we get the real energies later */
         enerd->dvdl_lin[efptCOUL] += dvdl_long_range_q;
         enerd->dvdl_lin[efptVDW]  += dvdl_long_range_lj;

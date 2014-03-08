@@ -1550,8 +1550,8 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->ld_seed == -1)
     {
-        ir->ld_seed = (int)gmx_rng_make_seed();
-        fprintf(stderr, "Setting the LD random seed to %d\n", ir->ld_seed);
+        ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+        fprintf(stderr, "Setting the LD random seed to %"GMX_PRId64 "\n", ir->ld_seed);
     }
 
     if (ir->expandedvals->lmc_seed == -1)
@@ -1620,11 +1620,6 @@ int gmx_grompp(int argc, char *argv[])
 
         /* Remove all charge groups */
         gmx_mtop_remove_chargegroups(sys);
-
-        if (EVDW_PME(ir->vdwtype))
-        {
-            gmx_fatal(FARGS, "LJ-PME not implemented together with verlet-scheme!");
-        }
     }
 
     if (count_constraints(sys, mi, wi) && (ir->eConstrAlg == econtSHAKE))

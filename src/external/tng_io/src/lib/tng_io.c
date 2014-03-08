@@ -16517,7 +16517,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_particle_data_next_frame_read
                  double *retrieved_time)
 {
     tng_trajectory_frame_set_t frame_set;
-    tng_particle_data_t data;
+    tng_particle_data_t data = 0;
     tng_function_status stat;
     int size;
     int64_t i, data_size, n_particles;
@@ -16670,7 +16670,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_non_particle_data_next_frame_read
                  double *retrieved_time)
 {
     tng_trajectory_frame_set_t frame_set;
-    tng_non_particle_data_t data;
+    tng_non_particle_data_t data = 0;
     tng_function_status stat;
     int size;
     int64_t i, data_size;
@@ -17359,7 +17359,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_generic_write
     tng_trajectory_frame_set_t frame_set;
     tng_particle_data_t p_data;
     tng_non_particle_data_t np_data;
-    int64_t n_particles, n_frames, stride_length = 100, frame_pos;
+    int64_t n_particles = 0, n_frames, stride_length = 100, frame_pos;
     int64_t last_frame;
     int is_first_frame_flag = 0;
     char block_type_flag;
@@ -17573,7 +17573,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_generic_double_write
     tng_trajectory_frame_set_t frame_set;
     tng_particle_data_t p_data;
     tng_non_particle_data_t np_data;
-    int64_t n_particles, n_frames, stride_length = 100, frame_pos;
+    int64_t n_particles = 0, n_frames, stride_length = 100, frame_pos;
     int64_t last_frame;
     int is_first_frame_flag = 0;
     char block_type_flag;
@@ -18149,8 +18149,8 @@ tng_function_status DECLSPECDLLEXPORT tng_util_frame_current_compression_get
                  float *factor)
 {
     tng_trajectory_frame_set_t frame_set;
-    tng_particle_data_t p_data;
-    tng_non_particle_data_t np_data;
+    tng_particle_data_t p_data = 0;
+    tng_non_particle_data_t np_data = 0;
     tng_function_status stat;
     int64_t i;
     int block_type = -1;

@@ -47,6 +47,7 @@
 #include "modules/angle.h"
 #include "modules/distance.h"
 #include "modules/freevolume.h"
+#include "modules/sasa.h"
 #include "modules/select.h"
 
 namespace gmx
@@ -87,6 +88,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<AngleInfo>(manager, group);
     registerModule<DistanceInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
+    registerModule<SasaInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
 }
 //! \endcond

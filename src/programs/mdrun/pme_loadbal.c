@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -662,6 +662,10 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     ic->rlistlong    = set->rlistlong;
     ir->nstcalclr    = set->nstcalclr;
     ic->ewaldcoeff_q = set->ewaldcoeff_q;
+    if (ic->coulomb_modifier == eintmodPOTSHIFT)
+    {
+        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+    }
 
     bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
     if (pme_lb->cutoff_scheme == ecutsVERLET &&
@@ -688,17 +692,12 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
         }
 #endif  /* GMX_THREAD_MPI */
     }
-    else
-    {
-        init_interaction_const_tables(NULL, ic, bUsesSimpleTables,
-                                      rtab);
-    }
 
-    if (pme_lb->cutoff_scheme == ecutsVERLET && nbv->ngrp > 1)
-    {
-        init_interaction_const_tables(NULL, ic, bUsesSimpleTables,
-                                      rtab);
-    }
+    /* Usually we won't need the simple tables with GPUs.
+     * But we do with hybrid acceleration and with free energy.
+     * To avoid bugs, we always re-initialize the simple tables here.
+     */
+    init_interaction_const_tables(NULL, ic, bUsesSimpleTables, rtab);
 
     if (cr->duty & DUTY_PME)
     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -172,12 +172,12 @@ typedef __int64 gmx_int64_t;
 #define GMX_SCNd64 "I64d"
 
 typedef unsigned __int32 gmx_uint32_t;
-#define GMX_PRIu32 "U32d"
-#define GMX_SCNu32 "U32d"
+#define GMX_PRIu32 "I32u"
+#define GMX_SCNu32 "I32u"
 
 typedef unsigned __int64 gmx_uint64_t;
-#define GMX_PRIu64 "U64d"
-#define GMX_SCNu64 "U64d"
+#define GMX_PRIu64 "I64u"
+#define GMX_SCNu64 "I64u"
 #else
 typedef int32_t gmx_int32_t;
 #define GMX_PRId32 PRId32

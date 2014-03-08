@@ -679,7 +679,11 @@ static void gmx_print_version_info(FILE *fp)
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
+#ifndef __MIC__
     fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
+#else
+    fprintf(fp, "SIMD instructions:  %s\n", "Intel MIC");
+#endif
 
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP
@@ -791,12 +795,17 @@ void printBinaryInformation(FILE                            *fp,
         printCopyright(fp);
         fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
+    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
             GromacsVersion(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
     if (binaryPath != NULL && binaryPath[0] != '\0')
     {
-        fprintf(fp, "%sExecutable: %s%s\n", prefix, binaryPath, suffix);
+        fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
+    }
+    const char *const libraryPath = programContext.defaultLibraryDataPath();
+    if (libraryPath != NULL && libraryPath[0] != '\0')
+    {
+        fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
     }
     const char *const commandLine = programContext.commandLine();
     if (commandLine != NULL && commandLine[0] != '\0')

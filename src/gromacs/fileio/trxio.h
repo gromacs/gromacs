@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
 #include "pdbio.h"
 #include "../legacyheaders/oenv.h"
 #include "gmxfio.h"
-#include "../../external/tng_io/include/tng_io_fwd.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -144,8 +143,8 @@ t_trxstatus *open_trx(const char *outfile, const char *filemode);
 t_fileio *trx_get_fileio(t_trxstatus *status);
 /* get a fileio from a trxstatus */
 
-tng_trajectory_t trx_get_tng(t_trxstatus *status);
-/* get a tng trajectory container from a trxstatus */
+float trx_get_time_of_final_frame(t_trxstatus *status);
+/* get time of final frame. Only supported for TNG and XTC */
 
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly

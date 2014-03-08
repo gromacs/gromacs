@@ -51,12 +51,12 @@
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "mtop_util.h"
-#include "gromacs/random/random.h"
 #include "checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/futil.h"
+#include "gromacs/random/random.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
 
@@ -466,9 +466,9 @@ int gmx_convert_tpr(int argc, char *argv[])
 
         if (EI_SD(ir->eI) || ir->eI == eiBD)
         {
-            fprintf(stderr, "\nChanging ld-seed from %d ", ir->ld_seed);
-            ir->ld_seed = (int)gmx_rng_make_seed();
-            fprintf(stderr, "to %d\n\n", ir->ld_seed);
+            fprintf(stderr, "\nChanging ld-seed from %"GMX_PRId64 " ", ir->ld_seed);
+            ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+            fprintf(stderr, "to %"GMX_PRId64 "\n\n", ir->ld_seed);
         }
 
         frame_fn = ftp2fn(efTRN, NFILE, fnm);

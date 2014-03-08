@@ -43,6 +43,8 @@
 #include <sys/time.h>
 #endif
 #include <math.h>
+#include <assert.h>
+
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -69,7 +71,6 @@
 #include "constr.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "gromacs/random/random.h"
 #include "domdec.h"
 #include "genborn.h"
 #include "nbnxn_atomdata.h"
@@ -78,6 +79,9 @@
 #include "nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
 #include "nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
+#include "nonbonded.h"
+#include "../gmxlib/nonbonded/nb_kernel.h"
+#include "../gmxlib/nonbonded/nb_free_energy.h"
 
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -88,6 +92,8 @@
 
 #include "adress.h"
 #include "qmmm.h"
+
+#include "gmx_omp_nthreads.h"
 
 #include "nbnxn_cuda_data_mgmt.h"
 #include "nbnxn_cuda/nbnxn_cuda.h"
@@ -670,15 +676,129 @@ static void do_nb_verlet(t_forcerec *fr,
     if (ic->vdw_modifier == eintmodFORCESWITCH)
     {
         /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
                  nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
     if (ic->vdw_modifier == eintmodPOTSWITCH)
     {
         /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
                  nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
+    if (ic->vdwtype == evdwPME)
+    {
+        /* We add up the LJ Ewald cost separately */
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_EWALD+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+                 nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
+    }
+}
+
+static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
+                             t_forcerec           *fr,
+                             rvec                  x[],
+                             rvec                  f[],
+                             t_mdatoms            *mdatoms,
+                             t_lambda             *fepvals,
+                             real                 *lambda,
+                             gmx_enerdata_t       *enerd,
+                             int                   flags,
+                             t_nrnb               *nrnb,
+                             gmx_wallcycle_t       wcycle)
+{
+    int              donb_flags;
+    nb_kernel_data_t kernel_data;
+    real             lam_i[efptNR];
+    real             dvdl_nb[efptNR];
+    int              th;
+    int              i, j;
+
+    donb_flags = 0;
+    /* Add short-range interactions */
+    donb_flags |= GMX_NONBONDED_DO_SR;
+
+    /* Currently all group scheme kernels always calculate (shift-)forces */
+    if (flags & GMX_FORCE_FORCES)
+    {
+        donb_flags |= GMX_NONBONDED_DO_FORCE;
+    }
+    if (flags & GMX_FORCE_VIRIAL)
+    {
+        donb_flags |= GMX_NONBONDED_DO_SHIFTFORCE;
+    }
+    if (flags & GMX_FORCE_ENERGY)
+    {
+        donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
+    }
+    if (flags & GMX_FORCE_DO_LR)
+    {
+        donb_flags |= GMX_NONBONDED_DO_LR;
+    }
+
+    kernel_data.flags  = donb_flags;
+    kernel_data.lambda = lambda;
+    kernel_data.dvdl   = dvdl_nb;
+
+    kernel_data.energygrp_elec = enerd->grpp.ener[egCOULSR];
+    kernel_data.energygrp_vdw  = enerd->grpp.ener[egLJSR];
+
+    /* reset free energy components */
+    for (i = 0; i < efptNR; i++)
+    {
+        dvdl_nb[i]  = 0;
+    }
+
+    assert(gmx_omp_nthreads_get(emntNonbonded) == nbl_lists->nnbl);
+
+    wallcycle_sub_start(wcycle, ewcsNONBONDED);
+#pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
+    for (th = 0; th < nbl_lists->nnbl; th++)
+    {
+        gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
+                                  x, f, fr, mdatoms, &kernel_data, nrnb);
+    }
+
+    if (fepvals->sc_alpha != 0)
+    {
+        enerd->dvdl_nonlin[efptVDW]  += dvdl_nb[efptVDW];
+        enerd->dvdl_nonlin[efptCOUL] += dvdl_nb[efptCOUL];
+    }
+    else
+    {
+        enerd->dvdl_lin[efptVDW]  += dvdl_nb[efptVDW];
+        enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
+    }
+
+    /* If we do foreign lambda and we have soft-core interactions
+     * we have to recalculate the (non-linear) energies contributions.
+     */
+    if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
+    {
+        kernel_data.flags          = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE)) | GMX_NONBONDED_DO_FOREIGNLAMBDA;
+        kernel_data.lambda         = lam_i;
+        kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR];
+        kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR];
+        /* Note that we add to kernel_data.dvdl, but ignore the result */
+
+        for (i = 0; i < enerd->n_lambda; i++)
+        {
+            for (j = 0; j < efptNR; j++)
+            {
+                lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
+            }
+            reset_foreign_enerdata(enerd);
+#pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
+            for (th = 0; th < nbl_lists->nnbl; th++)
+            {
+                gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
+                                          x, f, fr, mdatoms, &kernel_data, nrnb);
+            }
+
+            sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
+            enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
+        }
+    }
+
+    wallcycle_sub_stop(wcycle, ewcsNONBONDED);
 }
 
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
@@ -814,10 +934,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (EVDW_PME(fr->vdwtype))
         {
             pme_flags |= GMX_PME_DO_LJ;
-            if (fr->ljpme_combination_rule == eljpmeLB)
-            {
-                pme_flags |= GMX_PME_LJ_LB;
-            }
         }
 
         gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
@@ -1145,6 +1261,29 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* Maybe we should move this into do_force_lowlevel */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
                      nrnb, wcycle);
+    }
+
+    if (fr->efep != efepNO)
+    {
+        /* Calculate the local and non-local free energy interactions here.
+         * Happens here on the CPU both with and without GPU.
+         */
+        if (fr->nbv->grp[eintLocal].nbl_lists.nbl_fep[0]->nrj > 0)
+        {
+            do_nb_verlet_fep(&fr->nbv->grp[eintLocal].nbl_lists,
+                             fr, x, f, mdatoms,
+                             inputrec->fepvals, lambda,
+                             enerd, flags, nrnb, wcycle);
+        }
+
+        if (DOMAINDECOMP(cr) &&
+            fr->nbv->grp[eintNonlocal].nbl_lists.nbl_fep[0]->nrj > 0)
+        {
+            do_nb_verlet_fep(&fr->nbv->grp[eintNonlocal].nbl_lists,
+                             fr, x, f, mdatoms,
+                             inputrec->fepvals, lambda,
+                             enerd, flags, nrnb, wcycle);
+        }
     }
 
     if (!bUseOrEmulGPU || bDiffKernels)
@@ -1561,10 +1700,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (EVDW_PME(fr->vdwtype))
         {
             pme_flags |= GMX_PME_DO_LJ;
-            if (fr->ljpme_combination_rule == eljpmeLB)
-            {
-                pme_flags |= GMX_PME_LJ_LB;
-            }
         }
 
         gmx_pme_send_coordinates(cr, bBS ? boxs : box, x,
@@ -2197,40 +2332,23 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             virs[0]  +=  8.0*M_PI/rc3;
             virs[1]  += -16.0*M_PI/(3.0*rc9);
         }
-        else if (EVDW_PME(fr->vdwtype))
-        {
-            scale  = fr->nblists[0].table_vdw.scale;
-            vdwtab = fr->nblists[0].table_vdw.data;
-
-            ri0  = floor(fr->rvdw_switch*scale);
-            ri1  = ceil(fr->rvdw*scale);
-            r0   = ri0/scale;
-            r1   = ri1/scale;
-            rc3  = r0*r0*r0;
-            rc9  = rc3*rc3*rc3;
-
-            /* Calculate self-interaction coefficient (assuming that
-             * the reciprocal-space contribution is constant in the
-             * region that contributes to the self-interaction).
-             */
-            fr->enershiftsix = pow(fr->ewaldcoeff_lj, 6) / 6.0;
-
-            /* Add analytical corrections, C6 for the whole range, C12
-             * from rvdw_switch to infinity.
-             */
-
-            eners[0] += -pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3)/3.0;
-            eners[1] +=  4.0*M_PI/(9.0*rc9);
-            virs[0]  +=  pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3);
-            virs[1]  += -16.0*M_PI/(3.0*rc9);
-        }
-        else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER))
+        else if (fr->vdwtype == evdwCUT ||
+                 EVDW_PME(fr->vdwtype) ||
+                 fr->vdwtype == evdwUSER)
         {
             if (fr->vdwtype == evdwUSER && fplog)
             {
                 fprintf(fplog,
                         "WARNING: using dispersion correction with user tables\n");
             }
+
+            /* Note that with LJ-PME, the dispersion correction is multiplied
+             * by the difference between the actual C6 and the value of C6
+             * that would produce the combination rule.
+             * This means the normal energy and virial difference formulas
+             * can be used here.
+             */
+
             rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
             rc9  = rc3*rc3*rc3;
             /* Contribution beyond the cut-off */
@@ -2252,6 +2370,23 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                       "Dispersion correction is not implemented for vdw-type = %s",
                       evdw_names[fr->vdwtype]);
         }
+
+        /* TODO: remove this code once we have group LJ-PME kernels
+         * that calculate the exact, full LJ param C6/r^6 within the cut-off,
+         * as the current nbnxn kernels do.
+         */
+        if (fr->vdwtype == evdwPME && fr->cutoff_scheme == ecutsGROUP)
+        {
+            /* Calculate self-interaction coefficient (assuming that
+             * the reciprocal-space contribution is constant in the
+             * region that contributes to the self-interaction).
+             */
+            fr->enershiftsix = pow(fr->ewaldcoeff_lj, 6) / 6.0;
+
+            eners[0] += -pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3)/3.0;
+            virs[0]  +=  pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3);
+        }
+
         fr->enerdiffsix    = eners[0];
         fr->enerdifftwelve = eners[1];
         /* The 0.5 is due to the Gromacs definition of the virial */

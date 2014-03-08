@@ -57,13 +57,11 @@
 #include "orires.h"
 #include "force.h"
 #include "nonbonded.h"
+#include "restcbt.h"
 
-/* Include the SIMD macro file and then check for support */
-#include "gromacs/simd/macros.h"
-#if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_TRIGONOMETRIC
-#define SIMD_BONDEDS
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
-#endif
 
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
@@ -116,7 +114,7 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
     }
 }
 
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
 
 /* SIMD PBC data structure, containing 1/boxdiag and the box vectors */
 typedef struct {
@@ -191,7 +189,7 @@ pbc_dx_simd(gmx_simd_real_t *dx, gmx_simd_real_t *dy, gmx_simd_real_t *dz,
     *dx = gmx_simd_fnmadd_r(sh, pbc->bxx, *dx);
 }
 
-#endif /* SIMD_BONDEDS */
+#endif /* GMX_SIMD_HAVE_REAL */
 
 /*
  * Morse potential bond by Frank Everdij
@@ -1037,7 +1035,7 @@ real angles(int nbonds,
     return vtot;
 }
 
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
 
 /* As angles, but using SIMD to calculate many dihedrals at once.
  * This routines does not calculate energies and shift forces.
@@ -1202,7 +1200,7 @@ angles_noener_simd(int nbonds,
     }
 }
 
-#endif /* SIMD_BONDEDS */
+#endif /* GMX_SIMD_HAVE_REAL */
 
 real linear_angles(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -1502,7 +1500,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 }
 
 
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
 
 /* As dih_angle above, but calculates 4 dihedral angles at once using SIMD,
  * also calculates the pre-factor required for the dihedral force update.
@@ -1618,8 +1616,7 @@ dih_angle_simd(const rvec *x,
     *nrkj_n2_S = gmx_simd_mul_r(nrkj_S, gmx_simd_inv_r(iprn_S));
 
     /* Set sign of phi_S with the sign of ipr_S; phi_S is currently positive */
-    *phi_S     = gmx_cpsgn_nonneg_pr(ipr_S, *phi_S);
-
+    *phi_S     = gmx_simd_xor_sign_r(*phi_S, ipr_S);
     p_S        = gmx_simd_iprod_r(rijx_S, rijy_S, rijz_S,
                                   rkjx_S, rkjy_S, rkjz_S);
     p_S        = gmx_simd_mul_r(p_S, nrkj_2_S);
@@ -1632,7 +1629,7 @@ dih_angle_simd(const rvec *x,
     gmx_simd_store_r(q, q_S);
 }
 
-#endif /* SIMD_BONDEDS */
+#endif /* GMX_SIMD_HAVE_REAL */
 
 
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
@@ -1967,7 +1964,7 @@ pdihs_noener(int nbonds,
 }
 
 
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
 
 /* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
 static void
@@ -2097,7 +2094,7 @@ pdihs_noener_simd(int nbonds,
     }
 }
 
-#endif /* SIMD_BONDEDS */
+#endif /* GMX_SIMD_HAVE_REAL */
 
 
 real idihs(int nbonds,
@@ -2663,6 +2660,326 @@ real unimplemented(int gmx_unused nbonds,
     gmx_impl("*** you are using a not implemented function");
 
     return 0.0; /* To make the compiler happy */
+}
+
+real restrangles(int nbonds,
+                 const t_iatom forceatoms[], const t_iparams forceparams[],
+                 const rvec x[], rvec f[], rvec fshift[],
+                 const t_pbc *pbc, const t_graph *g,
+                 real gmx_unused lambda, real gmx_unused *dvdlambda,
+                 const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                 int gmx_unused *global_atom_index)
+{
+    int  i, d, ai, aj, ak, type, m;
+    int  t1, t2;
+    rvec r_ij, r_kj;
+    real v, vtot;
+    ivec jt, dt_ij, dt_kj;
+    rvec f_i, f_j, f_k;
+    real prefactor, ratio_ante, ratio_post;
+    rvec delta_ante, delta_post, vec_temp;
+
+    vtot = 0.0;
+    for (i = 0; (i < nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+
+        t1 = pbc_rvec_sub(pbc, x[ai], x[aj], vec_temp);
+        pbc_rvec_sub(pbc, x[aj], x[ai], delta_ante);
+        t2 = pbc_rvec_sub(pbc, x[ak], x[aj], delta_post);
+
+
+        /* This function computes factors needed for restricted angle potential.
+         * The restricted angle potential is used in coarse-grained simulations to avoid singularities
+         * when three particles align and the dihedral angle and dihedral potential
+         * cannot be calculated. This potential is calculated using the formula:
+           real restrangles(int nbonds,
+            const t_iatom forceatoms[],const t_iparams forceparams[],
+            const rvec x[],rvec f[],rvec fshift[],
+            const t_pbc *pbc,const t_graph *g,
+            real gmx_unused lambda,real gmx_unused *dvdlambda,
+            const t_mdatoms gmx_unused *md,t_fcdata gmx_unused *fcd,
+            int gmx_unused *global_atom_index)
+           {
+           int  i, d, ai, aj, ak, type, m;
+           int t1, t2;
+           rvec r_ij,r_kj;
+           real v, vtot;
+           ivec jt,dt_ij,dt_kj;
+           rvec f_i, f_j, f_k;
+           real prefactor, ratio_ante, ratio_post;
+           rvec delta_ante, delta_post, vec_temp;
+
+           vtot = 0.0;
+           for(i=0; (i<nbonds); )
+           {
+           type = forceatoms[i++];
+           ai   = forceatoms[i++];
+           aj   = forceatoms[i++];
+           ak   = forceatoms[i++];
+
+         * \f[V_{\rm ReB}(\theta_i) = \frac{1}{2} k_{\theta} \frac{(\cos\theta_i - \cos\theta_0)^2}
+         * {\sin^2\theta_i}\f] ({eq:ReB} and ref \cite{MonicaGoga2013} from the manual).
+         * For more explanations see comments file "restcbt.h". */
+
+        compute_factors_restangles(type, forceparams,  delta_ante, delta_post,
+                                   &prefactor, &ratio_ante, &ratio_post, &v);
+
+        /*   Forces are computed per component */
+        for (d = 0; d < DIM; d++)
+        {
+            f_i[d] = prefactor * (ratio_ante * delta_ante[d] - delta_post[d]);
+            f_j[d] = prefactor * ((ratio_post + 1.0) * delta_post[d] - (ratio_ante + 1.0) * delta_ante[d]);
+            f_k[d] = prefactor * (delta_ante[d] - ratio_post * delta_post[d]);
+        }
+
+        /*   Computation of potential energy   */
+
+        vtot += v;
+
+        /*   Update forces */
+
+        for (m = 0; (m < DIM); m++)
+        {
+            f[ai][m] += f_i[m];
+            f[aj][m] += f_j[m];
+            f[ak][m] += f_k[m];
+        }
+
+        if (g)
+        {
+            copy_ivec(SHIFT_IVEC(g, aj), jt);
+            ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
+            ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
+            t1 = IVEC2IS(dt_ij);
+            t2 = IVEC2IS(dt_kj);
+        }
+
+        rvec_inc(fshift[t1], f_i);
+        rvec_inc(fshift[CENTRAL], f_j);
+        rvec_inc(fshift[t2], f_k);
+    }
+    return vtot;
+}
+
+
+real restrdihs(int nbonds,
+               const t_iatom forceatoms[], const t_iparams forceparams[],
+               const rvec x[], rvec f[], rvec fshift[],
+               const t_pbc *pbc, const t_graph *g,
+               real gmx_unused lambda, real gmx_unused *dvlambda,
+               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+               int gmx_unused *global_atom_index)
+{
+    int  i, d, type, ai, aj, ak, al;
+    rvec f_i, f_j, f_k, f_l;
+    rvec dx_jl;
+    ivec jt, dt_ij, dt_kj, dt_lj;
+    int  t1, t2, t3;
+    real v, vtot;
+    rvec delta_ante,  delta_crnt, delta_post, vec_temp;
+    real factor_phi_ai_ante, factor_phi_ai_crnt, factor_phi_ai_post;
+    real factor_phi_aj_ante, factor_phi_aj_crnt, factor_phi_aj_post;
+    real factor_phi_ak_ante, factor_phi_ak_crnt, factor_phi_ak_post;
+    real factor_phi_al_ante, factor_phi_al_crnt, factor_phi_al_post;
+    real prefactor_phi;
+
+
+    vtot = 0.0;
+    for (i = 0; (i < nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+        al   = forceatoms[i++];
+
+        t1 = pbc_rvec_sub(pbc, x[ai], x[aj], vec_temp);
+        pbc_rvec_sub(pbc, x[aj], x[ai], delta_ante);
+        t2 = pbc_rvec_sub(pbc, x[ak], x[aj], delta_crnt);
+        t3 = pbc_rvec_sub(pbc, x[ak], x[al], vec_temp);
+        pbc_rvec_sub(pbc, x[al], x[ak], delta_post);
+
+        /* This function computes factors needed for restricted angle potential.
+         * The restricted angle potential is used in coarse-grained simulations to avoid singularities
+         * when three particles align and the dihedral angle and dihedral potential cannot be calculated.
+         * This potential is calculated using the formula:
+         * \f[V_{\rm ReB}(\theta_i) = \frac{1}{2} k_{\theta}
+         * \frac{(\cos\theta_i - \cos\theta_0)^2}{\sin^2\theta_i}\f]
+         * ({eq:ReB} and ref \cite{MonicaGoga2013} from the manual).
+         * For more explanations see comments file "restcbt.h" */
+
+        compute_factors_restrdihs(type, forceparams,
+                                  delta_ante, delta_crnt, delta_post,
+                                  &factor_phi_ai_ante, &factor_phi_ai_crnt, &factor_phi_ai_post,
+                                  &factor_phi_aj_ante, &factor_phi_aj_crnt, &factor_phi_aj_post,
+                                  &factor_phi_ak_ante, &factor_phi_ak_crnt, &factor_phi_ak_post,
+                                  &factor_phi_al_ante, &factor_phi_al_crnt, &factor_phi_al_post,
+                                  &prefactor_phi, &v);
+
+
+        /*      Computation of forces per component */
+        for (d = 0; d < DIM; d++)
+        {
+            f_i[d] = prefactor_phi * (factor_phi_ai_ante * delta_ante[d] + factor_phi_ai_crnt * delta_crnt[d] + factor_phi_ai_post * delta_post[d]);
+            f_j[d] = prefactor_phi * (factor_phi_aj_ante * delta_ante[d] + factor_phi_aj_crnt * delta_crnt[d] + factor_phi_aj_post * delta_post[d]);
+            f_k[d] = prefactor_phi * (factor_phi_ak_ante * delta_ante[d] + factor_phi_ak_crnt * delta_crnt[d] + factor_phi_ak_post * delta_post[d]);
+            f_l[d] = prefactor_phi * (factor_phi_al_ante * delta_ante[d] + factor_phi_al_crnt * delta_crnt[d] + factor_phi_al_post * delta_post[d]);
+        }
+        /*      Computation of the energy */
+
+        vtot += v;
+
+
+
+        /*    Updating the forces */
+
+        rvec_inc(f[ai], f_i);
+        rvec_inc(f[aj], f_j);
+        rvec_inc(f[ak], f_k);
+        rvec_inc(f[al], f_l);
+
+
+        /* Updating the fshift forces for the pressure coupling */
+        if (g)
+        {
+            copy_ivec(SHIFT_IVEC(g, aj), jt);
+            ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
+            ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
+            ivec_sub(SHIFT_IVEC(g, al), jt, dt_lj);
+            t1 = IVEC2IS(dt_ij);
+            t2 = IVEC2IS(dt_kj);
+            t3 = IVEC2IS(dt_lj);
+        }
+        else if (pbc)
+        {
+            t3 = pbc_rvec_sub(pbc, x[al], x[aj], dx_jl);
+        }
+        else
+        {
+            t3 = CENTRAL;
+        }
+
+        rvec_inc(fshift[t1], f_i);
+        rvec_inc(fshift[CENTRAL], f_j);
+        rvec_inc(fshift[t2], f_k);
+        rvec_inc(fshift[t3], f_l);
+
+    }
+
+    return vtot;
+}
+
+
+real cbtdihs(int nbonds,
+             const t_iatom forceatoms[], const t_iparams forceparams[],
+             const rvec x[], rvec f[], rvec fshift[],
+             const t_pbc *pbc, const t_graph *g,
+             real gmx_unused lambda, real gmx_unused *dvdlambda,
+             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+             int gmx_unused *global_atom_index)
+{
+    int  type, ai, aj, ak, al, i, d;
+    int  t1, t2, t3;
+    real v, vtot;
+    rvec vec_temp;
+    rvec f_i, f_j, f_k, f_l;
+    ivec jt, dt_ij, dt_kj, dt_lj;
+    rvec dx_jl;
+    rvec delta_ante, delta_crnt, delta_post;
+    rvec f_phi_ai, f_phi_aj, f_phi_ak, f_phi_al;
+    rvec f_theta_ante_ai, f_theta_ante_aj, f_theta_ante_ak;
+    rvec f_theta_post_aj, f_theta_post_ak, f_theta_post_al;
+
+
+
+
+    vtot = 0.0;
+    for (i = 0; (i < nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+        al   = forceatoms[i++];
+
+
+        t1 = pbc_rvec_sub(pbc, x[ai], x[aj], vec_temp);
+        pbc_rvec_sub(pbc, x[aj], x[ai], delta_ante);
+        t2 = pbc_rvec_sub(pbc, x[ak], x[aj], vec_temp);
+        pbc_rvec_sub(pbc, x[ak], x[aj], delta_crnt);
+        t3 = pbc_rvec_sub(pbc, x[ak], x[al], vec_temp);
+        pbc_rvec_sub(pbc, x[al], x[ak], delta_post);
+
+        /* \brief Compute factors for CBT potential
+         * The combined bending-torsion potential goes to zero in a very smooth manner, eliminating the numerical
+         * instabilities, when three coarse-grained particles align and the dihedral angle and standard
+         * dihedral potentials cannot be calculated. The CBT potential is calculated using the formula:
+         * \f[V_{\rm CBT}(\theta_{i-1}, \theta_i, \phi_i) = k_{\phi} \sin^3\theta_{i-1} \sin^3\theta_{i}
+         * \sum_{n=0}^4 { a_n \cos^n\phi_i}\f] ({eq:CBT} and ref \cite{MonicaGoga2013} from the manual).
+         * It contains in its expression not only the dihedral angle \f$\phi\f$
+         * but also \f[\theta_{i-1}\f] (theta_ante bellow) and \f[\theta_{i}\f] (theta_post bellow)
+         * --- the adjacent bending angles.
+         * For more explanations see comments file "restcbt.h". */
+
+        compute_factors_cbtdihs(type, forceparams, delta_ante, delta_crnt, delta_post,
+                                f_phi_ai, f_phi_aj, f_phi_ak, f_phi_al,
+                                f_theta_ante_ai, f_theta_ante_aj, f_theta_ante_ak,
+                                f_theta_post_aj, f_theta_post_ak, f_theta_post_al,
+                                &v);
+
+
+        /*      Acumulate the resuts per beads */
+        for (d = 0; d < DIM; d++)
+        {
+            f_i[d] = f_phi_ai[d] + f_theta_ante_ai[d];
+            f_j[d] = f_phi_aj[d] + f_theta_ante_aj[d] + f_theta_post_aj[d];
+            f_k[d] = f_phi_ak[d] + f_theta_ante_ak[d] + f_theta_post_ak[d];
+            f_l[d] = f_phi_al[d] + f_theta_post_al[d];
+        }
+
+        /*      Compute the potential energy */
+
+        vtot += v;
+
+
+        /*  Updating the forces */
+        rvec_inc(f[ai], f_i);
+        rvec_inc(f[aj], f_j);
+        rvec_inc(f[ak], f_k);
+        rvec_inc(f[al], f_l);
+
+
+        /* Updating the fshift forces for the pressure coupling */
+        if (g)
+        {
+            copy_ivec(SHIFT_IVEC(g, aj), jt);
+            ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
+            ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
+            ivec_sub(SHIFT_IVEC(g, al), jt, dt_lj);
+            t1 = IVEC2IS(dt_ij);
+            t2 = IVEC2IS(dt_kj);
+            t3 = IVEC2IS(dt_lj);
+        }
+        else if (pbc)
+        {
+            t3 = pbc_rvec_sub(pbc, x[al], x[aj], dx_jl);
+        }
+        else
+        {
+            t3 = CENTRAL;
+        }
+
+        rvec_inc(fshift[t1], f_i);
+        rvec_inc(fshift[CENTRAL], f_j);
+        rvec_inc(fshift[t2], f_k);
+        rvec_inc(fshift[t3], f_l);
+    }
+
+    return vtot;
 }
 
 real rbdihs(int nbonds,
@@ -4162,7 +4479,7 @@ static real calc_one_bond(FILE *fplog, int thread,
                           pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                           md, fcd, global_atom_index);
         }
-#ifdef SIMD_BONDEDS
+#ifdef GMX_SIMD_HAVE_REAL
         else if (ftype == F_ANGLES &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
@@ -4179,10 +4496,10 @@ static real calc_one_bond(FILE *fplog, int thread,
                  !bCalcEnerVir && fr->efep == efepNO)
         {
             /* No energies, shift forces, dvdl */
-#ifndef SIMD_BONDEDS
-            pdihs_noener
-#else
+#ifdef GMX_SIMD_HAVE_REAL
             pdihs_noener_simd
+#else
+            pdihs_noener
 #endif
                 (nbn, idef->il[ftype].iatoms+nb0,
                 idef->iparams,

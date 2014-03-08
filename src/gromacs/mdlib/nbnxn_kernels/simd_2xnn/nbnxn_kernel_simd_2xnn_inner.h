@@ -52,13 +52,13 @@
  */
 
 
-/* When calculating RF or Ewald interactions we calculate the electrostatic
+/* When calculating RF or Ewald interactions we calculate the electrostatic/LJ
  * forces on excluded atom pairs here in the non-bonded loops.
  * But when energies and/or virial is required we calculate them
  * separately to as then it is easier to separate the energy and virial
  * contributions.
  */
-#if defined CHECK_EXCLS && defined CALC_COULOMB
+#if defined CHECK_EXCLS && (defined CALC_COULOMB || defined LJ_EWALD_GEOM)
 #define EXCL_FORCES
 #endif
 
@@ -200,7 +200,7 @@
     gmx_simd_real_t  c6s_j_S, c12s_j_S;
 #endif
 
-#if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+#if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
     /* Index for loading LJ parameters, complicated when interleaving */
     int         aj2;
 #endif
@@ -246,7 +246,7 @@
 
     /* Atom indices (of the first atom in the cluster) */
     aj            = cj*UNROLLJ;
-#if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB)
+#if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM)
 #if UNROLLJ == STRIDE
     aj2           = aj*2;
 #else
@@ -342,8 +342,8 @@
 
 #ifdef CHECK_EXCLS
     /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = gmx_masknot_add_pr(interact_S0, rsq_S0, avoid_sing_S);
-    rsq_S2      = gmx_masknot_add_pr(interact_S2, rsq_S2, avoid_sing_S);
+    rsq_S0      = gmx_simd_add_r(rsq_S0, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S0));
+    rsq_S2      = gmx_simd_add_r(rsq_S2, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S2));
 #endif
 
     /* Calculate 1/r */
@@ -397,6 +397,11 @@
     rinv_S0     = gmx_simd_blendzero_r(rinv_S0, wco_S0);
     rinv_S2     = gmx_simd_blendzero_r(rinv_S2, wco_S2);
 #else
+    /* This needs to be modified: It makes assumptions about the internal storage
+     * of the SIMD representation, in particular that the blendv instruction always
+     * selects based on the sign bit. If the performance is really critical, it
+     * should be turned into a function that is platform-specific.
+     */
     /* We only need to mask for the cut-off: blendv is faster */
     rinv_S0     = gmx_simd_blendv_r(rinv_S0, zero_S, gmx_simd_sub_r(rc2_S, rsq_S0));
     rinv_S2     = gmx_simd_blendv_r(rinv_S2, zero_S, gmx_simd_sub_r(rc2_S, rsq_S2));
@@ -467,9 +472,9 @@
     /* Truncate scaled r to an int */
     ti_S0       = gmx_simd_cvtt_r2i(rs_S0);
     ti_S2       = gmx_simd_cvtt_r2i(rs_S2);
-#ifdef GMX_SIMD_HAVE_FLOOR
-    rf_S0       = gmx_simd_floor_r(rs_S0);
-    rf_S2       = gmx_simd_floor_r(rs_S2);
+#ifdef GMX_SIMD_HAVE_TRUNC
+    rf_S0       = gmx_simd_trunc_r(rs_S0);
+    rf_S2       = gmx_simd_trunc_r(rs_S2);
 #else
     rf_S0       = gmx_simd_cvt_i2r(ti_S0);
     rf_S2       = gmx_simd_cvt_i2r(ti_S2);
@@ -555,8 +560,8 @@
 #endif
 #endif
 
-#ifndef LJ_FORCE_SWITCH
-    /* We have plain LJ with simple C6/6 C12/12 coefficients */
+#if defined LJ_CUT || defined LJ_POT_SWITCH
+    /* We have plain LJ or LJ-PME with simple C6/6 C12/12 coefficients */
     FrLJ6_S0    = gmx_simd_mul_r(c6_S0, rinvsix_S0);
 #ifndef HALF_LJ
     FrLJ6_S2    = gmx_simd_mul_r(c6_S2, rinvsix_S2);
@@ -658,8 +663,9 @@
     frLJ_S2     = gmx_simd_sub_r(FrLJ12_S2, FrLJ6_S2);
 #endif
 
-#if defined CALC_ENERGIES && !defined LJ_POT_SWITCH
-#ifndef LJ_FORCE_SWITCH
+#if (defined LJ_CUT || defined LJ_FORCE_SWITCH) && defined CALC_ENERGIES
+
+#ifdef LJ_CUT
     /* Calculate the LJ energies, with constant potential shift */
     VLJ6_S0     = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S0, p6_cpot_S, FrLJ6_S0));
 #ifndef HALF_LJ
@@ -669,8 +675,9 @@
 #ifndef HALF_LJ
     VLJ12_S2    = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S2, p12_cpot_S, FrLJ12_S2));
 #endif
-#else
+#endif /* LJ_CUT */
 
+#ifdef LJ_FORCE_SWITCH
 #define v_fswitch_pr(rsw, rsw2, c0, c3, c4) gmx_simd_fmadd_r(gmx_simd_fmadd_r(c4, rsw, c3), gmx_simd_mul_r(rsw2, rsw), c0)
 
     VLJ6_S0     = gmx_simd_mul_r(c6_S0, gmx_simd_fmadd_r(sixth_S, rinvsix_S0, v_fswitch_pr(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
@@ -689,7 +696,8 @@
 #ifndef HALF_LJ
     VLJ_S2      = gmx_simd_sub_r(VLJ12_S2, VLJ6_S2);
 #endif
-#endif /* CALC_ENERGIES && !LJ_POT_SWITCH */
+
+#endif /* (LJ_CUT || LJ_FORCE_SWITCH) && CALC_ENERGIES */
 
 #ifdef LJ_POT_SWITCH
     /* We always need the potential, since it is needed for the force */
@@ -729,6 +737,93 @@
     }
 #endif /* LJ_POT_SWITCH */
 
+#if defined CALC_ENERGIES && defined CHECK_EXCLS
+    /* The potential shift should be removed for excluded pairs */
+    VLJ_S0      = gmx_simd_blendzero_r(VLJ_S0, interact_S0);
+#ifndef HALF_LJ
+    VLJ_S2      = gmx_simd_blendzero_r(VLJ_S2, interact_S2);
+#endif
+#endif
+
+#ifdef LJ_EWALD_GEOM
+    {
+        gmx_simd_real_t c6s_j_S;
+        gmx_simd_real_t c6grid_S0, rinvsix_nm_S0, cr2_S0, expmcr2_S0, poly_S0;
+#ifndef HALF_LJ
+        gmx_simd_real_t c6grid_S2, rinvsix_nm_S2, cr2_S2, expmcr2_S2, poly_S2;
+#endif
+#ifdef CALC_ENERGIES
+        gmx_simd_real_t sh_mask_S0;
+#ifndef HALF_LJ
+        gmx_simd_real_t sh_mask_S2;
+#endif
+#endif
+
+        /* Determine C6 for the grid using the geometric combination rule */
+        gmx_loaddh_pr(&c6s_j_S,  ljc+aj2+0);
+        c6grid_S0       = gmx_simd_mul_r(c6s_S0, c6s_j_S);
+#ifndef HALF_LJ
+        c6grid_S2       = gmx_simd_mul_r(c6s_S2, c6s_j_S);
+#endif
+
+#ifdef CHECK_EXCLS
+        /* Recalculate rinvsix without exclusion mask (compiler might optimize) */
+        rinvsix_nm_S0 = gmx_simd_mul_r(rinvsq_S0, gmx_simd_mul_r(rinvsq_S0, rinvsq_S0));
+#ifndef HALF_LJ
+        rinvsix_nm_S2 = gmx_simd_mul_r(rinvsq_S2, gmx_simd_mul_r(rinvsq_S2, rinvsq_S2));
+#endif
+#else
+        /* We didn't use a mask, so we can copy */
+        rinvsix_nm_S0 = rinvsix_S0;
+#ifndef HALF_LJ
+        rinvsix_nm_S2 = rinvsix_S2;
+#endif
+#endif
+
+        cr2_S0        = gmx_simd_mul_r(lje_c2_S, rsq_S0);
+#ifndef HALF_LJ
+        cr2_S2        = gmx_simd_mul_r(lje_c2_S, rsq_S2);
+#endif
+        expmcr2_S0    = gmx_simd_exp_r(gmx_simd_mul_r(mone_S, cr2_S0));
+#ifndef HALF_LJ
+        expmcr2_S2    = gmx_simd_exp_r(gmx_simd_mul_r(mone_S, cr2_S2));
+#endif
+
+        /* 1 + cr2 + 1/2*cr2^2 */
+        poly_S0       = gmx_simd_fmadd_r(gmx_simd_fmadd_r(half_S, cr2_S0, one_S), cr2_S0, one_S);
+#ifndef HALF_LJ
+        poly_S2       = gmx_simd_fmadd_r(gmx_simd_fmadd_r(half_S, cr2_S2, one_S), cr2_S2, one_S);
+#endif
+
+        /* We calculate LJ F*r = (6*C6)*(r^-6 - F_mesh/6), we use:
+         * r^-6*cexp*(1 + cr2 + cr2^2/2 + cr2^3/6) = cexp*(r^-6*poly + c^6/6)
+         */
+        frLJ_S0       = gmx_simd_fmadd_r(c6grid_S0, gmx_simd_fnmadd_r(expmcr2_S0, gmx_simd_fmadd_r(rinvsix_nm_S0, poly_S0, lje_c6_6_S), rinvsix_nm_S0), frLJ_S0);
+#ifndef HALF_LJ
+        frLJ_S2       = gmx_simd_fmadd_r(c6grid_S2, gmx_simd_fnmadd_r(expmcr2_S2, gmx_simd_fmadd_r(rinvsix_nm_S2, poly_S2, lje_c6_6_S), rinvsix_nm_S2), frLJ_S2);
+#endif
+
+#ifdef CALC_ENERGIES
+#ifdef CHECK_EXCLS
+        sh_mask_S0    = gmx_simd_blendzero_r(lje_vc_S, interact_S0);
+#ifndef HALF_LJ
+        sh_mask_S2    = gmx_simd_blendzero_r(lje_vc_S, interact_S2);
+#endif
+#else
+        sh_mask_S0    = lje_vc_S;
+#ifndef HALF_LJ
+        sh_mask_S2    = lje_vc_S;
+#endif
+#endif
+
+        VLJ_S0        = gmx_simd_fmadd_r(gmx_simd_mul_r(sixth_S, c6grid_S0), gmx_simd_fmadd_r(rinvsix_nm_S0, gmx_simd_fnmadd_r(expmcr2_S0, poly_S0, one_S), sh_mask_S0), VLJ_S0);
+#ifndef HALF_LJ
+        VLJ_S2        = gmx_simd_fmadd_r(gmx_simd_mul_r(sixth_S, c6grid_S2), gmx_simd_fmadd_r(rinvsix_nm_S2, gmx_simd_fnmadd_r(expmcr2_S2, poly_S2, one_S), sh_mask_S2), VLJ_S2);
+#endif
+#endif /* CALC_ENERGIES */
+    }
+#endif /* LJ_EWALD_GEOM */
+
 #if defined VDW_CUTOFF_CHECK
     /* frLJ is multiplied later by rinvsq, which is masked for the Coulomb
      * cut-off, but if the VdW cut-off is shorter, we need to mask with that.
@@ -746,15 +841,6 @@
     VLJ_S2      = gmx_simd_blendzero_r(VLJ_S2, wco_vdw_S2);
 #endif
 #endif
-
-#if defined CALC_ENERGIES && defined CHECK_EXCLS
-    /* The potential shift should be removed for excluded pairs */
-    VLJ_S0      = gmx_simd_blendzero_r(VLJ_S0, interact_S0);
-#ifndef HALF_LJ
-    VLJ_S2      = gmx_simd_blendzero_r(VLJ_S2, interact_S2);
-#endif
-#endif
-
 
 #endif /* CALC_LJ */
 

@@ -95,13 +95,27 @@ set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PR
 mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
+include(gmxBuildTypeThreadSanitizer)
+include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert." FORCE)
+    # There's no need to offer a user the choice of ThreadSanitizer
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo")
-endif(NOT CMAKE_BUILD_TYPE)
+        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert")
+endif()
+if(CMAKE_CONFIGURATION_TYPES)
+    # Add appropriate GROMACS-specific build types for the Visual
+    # Studio generator (Debug, Release, MinSizeRel and RelWithDebInfo
+    # are already present by default).
+    list(APPEND CMAKE_CONFIGURATION_TYPES "RelWithAssert" "Reference")
+    list(REMOVE_DUPLICATES CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING
+        "List of configuration types"
+        FORCE)
+endif()
+set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL)
 
 enable_language(C)
 enable_language(CXX)
@@ -190,11 +204,17 @@ include(gmxManageGPU)
 # SIMD.
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
-include(gmxDetectSimd)
-gmx_detect_simd(GMX_SUGGESTED_SIMD)
-if("${GMX_SUGGESTED_SIMD}" STREQUAL "AVX2_256")
-    message(STATUS "Changing acceleration from AVX2 to AVX (until AVX2 patches commited).")
-    set(GMX_SUGGESTED_SIMD "AVX_256")
+
+if(GMX_CPU_ACCELERATION)
+    # Stay compatible with old Jenkins command line options for specific SIMD acceleration
+    set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
+endif(GMX_CPU_ACCELERATION)
+
+if(NOT GMX_TARGET_MIC)
+    include(gmxDetectSimd)
+    gmx_detect_simd(GMX_SUGGESTED_SIMD)
+else()
+    set(GMX_SUGGESTED_SIMD "None")
 endif()
 
 gmx_option_multichoice(
@@ -227,8 +247,10 @@ gmx_option_multichoice(
     None
     none gaussian mopac gamess orca)
 
-gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_TYPE "Reference kernel type (4xn or 2xnn)" STRING "4xn" "GMX_SIMD STREQUAL REFERENCE")
-gmx_dependent_cache_variable(GMX_NBNXN_REF_KERNEL_WIDTH "Reference kernel width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
+gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
+gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
+
+# This should be moved to a separate NBNXN cmake module when that code is cleaned up and modularized
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
@@ -460,6 +482,10 @@ if(GMX_THREAD_MPI)
     set(MPI_IN_PLACE_EXISTS 1)
 endif(GMX_THREAD_MPI)
 tmpi_get_source_list(THREAD_MPI_SRC)
+# If atomics are manually disabled a define is needed because atomics.h doesn't depend on config.h
+if (TMPI_ATOMICS_DISABLED)
+   add_definitions(-DTMPI_ATOMICS_DISABLED)
+endif()
 
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
@@ -693,15 +719,6 @@ endif()
 if(HAVE_LIBM)
     list(APPEND GMX_EXTRA_LIBRARIES m)
 endif(HAVE_LIBM)
-if (${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
-    check_library_exists(mass_simd atan2f4 "" HAVE_MASS_SIMD)
-    if(HAVE_MASS_SIMD)
-        list(APPEND GMX_EXTRA_LIBRARIES mass_simd)
-    else()
-        message(FATAL_ERROR "Could not link to the SIMD version of the IBM MASS library. Please adjust your CMAKE_PREFIX_PATH to contain it")
-    endif()
-endif()
-
 
 option(GMX_NACL "Configure for Native Client builds" OFF)
 if (GMX_NACL)
@@ -822,6 +839,9 @@ endif()
 
 if(GMX_USE_TNG)
     find_package(ZLIB)
+    include(gmxTestZLib)
+    gmx_test_zlib(HAVE_ZLIB)
+    set(TNG_BUILD_WITH_ZLIB ${HAVE_ZLIB} CACHE BOOL  "Build TNG with zlib compression")
     set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
     set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
     set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")

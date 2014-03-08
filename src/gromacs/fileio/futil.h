@@ -51,18 +51,13 @@ extern "C" {
 
 /* Native windows uses backslash path separators.
  * Cygwin and everybody else in the world use slash.
- * When reading the PATH environment variable, Unix separates entries
- * with colon, while windows uses semicolon.
  */
 #include "../utility/gmx_header_config.h"
 #ifdef GMX_NATIVE_WINDOWS
 #define DIR_SEPARATOR '\\'
-#define PATH_SEPARATOR ";"
 #else
 #define DIR_SEPARATOR '/'
-#define PATH_SEPARATOR ":"
 #endif
-
 
 /* Now get the maximum path size. */
 #ifdef PATH_MAX
@@ -73,20 +68,7 @@ extern "C" {
 #  define GMX_PATH_MAX 4096
 #endif
 
-
-#ifdef HAVE_FSEEKO
-typedef off_t              gmx_off_t;
-#elif defined HAVE__FSEEKI64
-typedef __int64            gmx_off_t;
-#else
-/* cmake checked that if fseeko and fseeki64 aren't avaiable that long is 64bit */
-#if GMX_INT64_MAX != LONG_MAX
-#error "Configuration error. fseeko or fseeki64 or 64bit long should be available."
-#endif
-typedef long               gmx_off_t;
-#endif
-
-
+typedef gmx_int64_t    gmx_off_t;
 
 void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
@@ -166,9 +148,6 @@ gmx_directory_nextfile(gmx_directory_t gmxdir, char *name, int maxlength_name);
 int
 gmx_directory_close(gmx_directory_t gmxdir);
 
-
-
-void get_libdir(char *libdir);
 
 char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
 

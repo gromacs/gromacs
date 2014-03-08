@@ -5,14 +5,14 @@
   <OutputData Name="Data">
     <AnalysisData Name="freevolume">
       <DataFrame Name="Frame0">
-        <Real Name="X">0.000000</Real>
+        <Real Name="X">0</Real>
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">38.779182</Real>
+            <Real Name="Value">38.779181961956446</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">68.921501</Real>
+            <Real Name="Value">68.921500176686038</Real>
           </DataValue>
         </DataValues>
       </DataFrame>

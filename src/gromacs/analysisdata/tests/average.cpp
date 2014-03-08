@@ -232,6 +232,24 @@ TEST_F(AverageModuleTest, CanCustomizeXAxis)
     ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
+TEST_F(AverageModuleTest, CanCustomizeNonUniformXAxis)
+{
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
+    gmx::AnalysisDataAverageModulePointer module(new gmx::AnalysisDataAverageModule());
+    data.addModule(module);
+    module->setXAxisValue(0, 2.0);
+    module->setXAxisValue(1, 3.0);
+    module->setXAxisValue(2, 5.0);
+
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("Average", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+}
+
 /********************************************************************
  * Tests for gmx::AnalysisDataFrameAverageModule.
  */
