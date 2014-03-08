@@ -115,6 +115,7 @@ gmx_uint64_t calculateUlpDifference(const FloatingPoint<FloatType> &value1,
  */
 template <typename FloatType>
 void initDifference(FloatType raw1, FloatType raw2, double *absoluteDifference,
+                    double *relativeDifference,
                     gmx_uint64_t *ulpDifference, bool *bSignDifference)
 {
     FloatingPoint<FloatType> value1(raw1);
@@ -123,11 +124,13 @@ void initDifference(FloatType raw1, FloatType raw2, double *absoluteDifference,
     if (value1.is_nan() || value2.is_nan())
     {
         *absoluteDifference = std::numeric_limits<double>::quiet_NaN();
+        *relativeDifference = std::numeric_limits<double>::quiet_NaN();
         *bSignDifference    = false;
         *ulpDifference      = 0;
         return;
     }
     *absoluteDifference = std::fabs(raw1 - raw2);
+    *relativeDifference = *absoluteDifference * 2.0 / (std::fabs(raw1) + std::fabs(raw2));
     *bSignDifference    = (value1.sign_bit() != value2.sign_bit());
     *ulpDifference      = calculateUlpDifference(value1, value2);
 }
@@ -144,14 +147,16 @@ void initDifference(FloatType raw1, FloatType raw2, double *absoluteDifference,
 FloatingPointDifference::FloatingPointDifference(float value1, float value2)
 {
     initDifference(value1, value2,
-                   &absoluteDifference_, &ulpDifference_, &bSignDifference_);
+                   &absoluteDifference_, &relativeDifference_,
+                   &ulpDifference_, &bSignDifference_);
     bDouble_ = false;
 }
 
 FloatingPointDifference::FloatingPointDifference(double value1, double value2)
 {
     initDifference(value1, value2,
-                   &absoluteDifference_, &ulpDifference_, &bSignDifference_);
+                   &absoluteDifference_, &relativeDifference_,
+                   &ulpDifference_, &bSignDifference_);
     bDouble_ = true;
 }
 
@@ -162,8 +167,8 @@ bool FloatingPointDifference::isNaN() const
 
 std::string FloatingPointDifference::toString() const
 {
-    return formatString("%g (%" GMX_PRIu64 " %s-prec. ULPs)%s",
-                        absoluteDifference_, ulpDifference_,
+    return formatString("%g (relative difference %g; %" GMX_PRIu64 " %s-prec. ULPs)%s",
+                        absoluteDifference_, relativeDifference_, ulpDifference_,
                         bDouble_ ? "double" : "single",
                         bSignDifference_ ? ", signs differ" : "");
 }
@@ -185,6 +190,11 @@ bool FloatingPointTolerance::isWithin(
         return false;
     }
 
+    if (difference.asRelative() < relativeTolerance_)
+    {
+        return true;
+    }
+
     if (difference.asAbsolute() < absoluteTolerance_)
     {
         return true;
@@ -204,6 +214,14 @@ std::string FloatingPointTolerance::toString() const
     if (absoluteTolerance_ > 0.0)
     {
         result.append(formatString("abs. %g", absoluteTolerance_));
+    }
+    if (relativeTolerance_ > 0.0)
+    {
+        if (!result.empty())
+        {
+            result.append(", ");
+        }
+        result.append(formatString("rel. %g", relativeTolerance_));
     }
     if (ulpTolerance_ >= 0)
     {

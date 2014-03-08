@@ -205,6 +205,8 @@ class FloatingPointDifference
          * If this returns `true`, other accessors return meaningless values.
          */
         bool isNaN() const;
+        //! Returns the difference as a relative number (always non-negative).
+        double asRelative() const { return relativeDifference_; }
         //! Returns the difference as an absolute number (always non-negative).
         double asAbsolute() const { return absoluteDifference_; }
         /*! \brief
@@ -228,6 +230,8 @@ class FloatingPointDifference
     private:
         //! Stores the absolute difference, or NaN if one or both values were NaN.
         double       absoluteDifference_;
+        //! Stores the relative difference, or NaN if one or both values were NaN.
+        double       relativeDifference_;
         gmx_uint64_t ulpDifference_;
         bool         bSignDifference_;
         /*! \brief
@@ -247,6 +251,10 @@ class FloatingPointDifference
  *    the given tolerance for the check to pass.
  *    Setting the absolute tolerance to zero disables the absolute tolerance
  *    check.
+ *  - _relative tolerance_: difference between the values must be smaller than
+ *    the given tolerance for the check to pass.
+ *    Setting the relative tolerance to zero disables the relative tolerance
+ *    check.
  *  - _ULP tolerance_: ULP (units of least precision) difference between the
  *    values must be smaller than the given tolerance for the check to pass.
  *    Setting the ULP tolerance to zero requires exact match.
@@ -256,11 +264,11 @@ class FloatingPointDifference
  *    check (note that this also applies to `0.0` and `-0.0`: a value with a
  *    different sign than the zero will fail the check).
  *
- * Either an absolute or a ULP tolerance must always be specified.
- * If both are specified, then the check passes if either of the tolerances is
+ * Either an absolute, relative, or a ULP tolerance must always be specified.
+ * If more than one is specified, then the check passes if any of the tolerances is
  * satisfied.
  *
- * Any combination of absolute and ULP tolerance can be combined with the sign
+ * Any combination of relative, absolute and ULP tolerance can be combined with the sign
  * check.  In this case, the sign check must succeed for the check to pass,
  * even if other tolerances are satisfied.
  *
@@ -285,12 +293,17 @@ class FloatingPointTolerance
          * Creates a tolerance with the specified values.
          *
          * \param[in] absolute       Allowed absolute difference.
+         * \param[in] relative       Allowed relative difference.
          * \param[in] ulp            Allowed ULP difference.
          * \param[in] bSignMustMatch Whether sign mismatch fails the comparison.
          */
-        FloatingPointTolerance(double absolute, int ulp,
-                               bool bSignMustMatch)
-            : absoluteTolerance_(absolute), ulpTolerance_(ulp),
+        FloatingPointTolerance(double absolute,
+                               double relative,
+                               int    ulp,
+                               bool   bSignMustMatch)
+            : absoluteTolerance_(absolute),
+              relativeTolerance_(relative),
+              ulpTolerance_(ulp),
               bSignMustMatch_(bSignMustMatch)
         {
         }
@@ -307,6 +320,7 @@ class FloatingPointTolerance
 
     private:
         double       absoluteTolerance_;
+        double       relativeTolerance_;
         int          ulpTolerance_;
         bool         bSignMustMatch_;
 };
@@ -319,8 +333,53 @@ class FloatingPointTolerance
 static inline FloatingPointTolerance
 ulpTolerance(gmx_int64_t ulpDiff)
 {
-    return FloatingPointTolerance(0.0, ulpDiff, false);
+    return FloatingPointTolerance(0.0, 0.0, ulpDiff, false);
 }
+
+/*! \brief Creates a tolerance that allows a difference in two
+ * compared values that is relative to the sum of their magnitudes
+ *
+ * \param[in] magnitude  Magnitude of the numbers the computation operates in
+ * \param[in] tolerance  Relative tolerance permitted (e.g. 1e-4)
+ *
+ * Disables the ULP comparison mode.
+ *
+ * In addition to setting the relative tolerance, this sets the
+ * absolute tolerance such that values close to zero (in general,
+ * smaller than \p magnitude) do not fail the check if they differ by
+ * less than \p tolerance evaluated at \p magnitude. This accounts for
+ * potential loss of precision for small values, and should be used
+ * when accuracy of values much less than \p magnitude do not matter
+ * for correctness.
+ *
+ * \related FloatingPointTolerance
+ */
+static inline FloatingPointTolerance
+relativeTolerance(double magnitude, double tolerance)
+{
+    return FloatingPointTolerance(magnitude*tolerance, tolerance, -1, false);
+}
+
+// TODO The names of relativeTolerance and relativeRealTolerance are
+// in partial conflict. The use of ulpDiff in relativeRealTolerance
+// means that many uses of it will require ulpDiff to be versioned by
+// the value of GMX_DOUBLE (e.g. for the only current example, see
+// src/gromacs/fft/tests/fft.cpp). GMX_DOUBLE in GROMACS tends to
+// improve the (confidence in the) accuracy with which partial sums
+// are computed, but the gain in accuracy in the result is normally
+// modest. The difference in ulp tolerance when computed in single vs
+// double precision can be many orders of magnitude (e.g. comparing
+// total energy formed from real + reciprocal space sum via two
+// different methods requires very different ULP tolerance in single
+// vs double precision).
+//
+// I've demonstrated that the fft case can be handled approximately as
+// well with relativeTolerance. A few commits later, I will be able to
+// show code that uses relativeTolerance for showing that the Verlet-
+// and group-scheme implementations of LJ-PME are now equivalent. Is
+// that sufficient usefuless? Are there use cases we can think of for
+// relativeRealTolerance? Or a better name for either function so that
+// people can easily use them the right way?
 
 /*! \brief
  * Creates a tolerance that allows a relative difference in a complex
@@ -332,16 +391,16 @@ ulpTolerance(gmx_int64_t ulpDiff)
  * In addition to setting the ULP tolerance, this sets the absolute tolerance
  * such that values close to zero (in general, smaller than \p magnitude) do
  * not fail the check if they differ by less than \p ulpDiff evaluated at
- * \p magniture.  This accounts for potential loss of precision for small
+ * \p magnitude.  This accounts for potential loss of precision for small
  * values, and should be used when accuracy of values much less than
- * \p magniture do not matter for correctness.
+ * \p magnitude do not matter for correctness.
  *
  * \related FloatingPointTolerance
  */
 static inline FloatingPointTolerance
 relativeRealTolerance(double magnitude, gmx_int64_t ulpDiff)
 {
-    return FloatingPointTolerance(magnitude*ulpDiff*GMX_REAL_EPS, ulpDiff, false);
+    return FloatingPointTolerance(magnitude*ulpDiff*GMX_REAL_EPS, 0.0, ulpDiff, false);
 }
 
 /*! \brief
