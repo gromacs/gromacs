@@ -398,7 +398,7 @@ static void read_ter_db_file(char *fn,
     nb++;
     srenew(tb, nb);
 
-    ffclose(in);
+    gmx_ffclose(in);
 
     *ntbptr = nb;
     *tbptr  = tb;

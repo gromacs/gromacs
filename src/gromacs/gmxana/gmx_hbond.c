@@ -2229,7 +2229,7 @@ static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bC
         integral += x1;
     }
     integral *= dt;
-    ffclose(fp);
+    gmx_ffclose(fp);
     printf("%s lifetime = %.2f ps\n", bContact ? "Contact" : "HB", integral);
     printf("Note that the lifetime obtained in this manner is close to useless\n");
     printf("Use the -ac option instead and check the Forward lifetime\n");
@@ -2253,7 +2253,7 @@ static void dump_ac(t_hbdata *hb, gmx_bool oneHB, int nDump)
     {
         return;
     }
-    fp = ffopen("debug-ac.xvg", "w");
+    fp = gmx_ffopen("debug-ac.xvg", "w");
     for (j = 0; (j < nframes); j++)
     {
         fprintf(fp, "%10.3f", hb->time[j]);
@@ -2293,7 +2293,7 @@ static void dump_ac(t_hbdata *hb, gmx_bool oneHB, int nDump)
         }
         fprintf(fp, "\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 static real calc_dg(real tau, real temp)
@@ -3415,7 +3415,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                 fprintf(fp, "%10g  %10g  %10g  %10g  %10g\n",
                         hb->time[j]-hb->time[0], ct[j], cct[j], ght[j], kt[j]);
             }
-            ffclose(fp);
+            gmx_ffclose(fp);
 
             analyse_corr(nn, hb->time, ct, ght, kt, NULL, NULL, NULL,
                          fit_start, temp, smooth_tail_start, oenv);
@@ -3521,7 +3521,7 @@ static void dump_hbmap(t_hbdata *hb,
     fp = opt2FILE("-hbn", nfile, fnm, "w");
     if (opt2bSet("-g", nfile, fnm))
     {
-        fplog = ffopen(opt2fn("-g", nfile, fnm), "w");
+        fplog = gmx_ffopen(opt2fn("-g", nfile, fnm), "w");
         fprintf(fplog, "# %10s  %12s  %12s\n", "Donor", "Hydrogen", "Acceptor");
     }
     else
@@ -3614,10 +3614,10 @@ static void dump_hbmap(t_hbdata *hb,
             }
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     if (fplog)
     {
-        ffclose(fplog);
+        gmx_ffclose(fplog);
     }
 }
 
@@ -4595,7 +4595,7 @@ int gmx_hbond(int argc, char *argv[])
     close_trj(status);
     if (fpnhb)
     {
-        ffclose(fpnhb);
+        gmx_ffclose(fpnhb);
     }
 
     /* Compute maximum possible number of different hbonds */
@@ -4661,7 +4661,7 @@ int gmx_hbond(int argc, char *argv[])
         aver_nhb  += hb->nhb[i];
         aver_dist += hb->ndist[i];
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     aver_nhb  /= nframes;
     aver_dist /= nframes;
     /* Print HB distance distribution */
@@ -4684,7 +4684,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             fprintf(fp, "%10g %10g\n", (i+0.5)*rbin, rdist[i]/(rbin*(real)sum));
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     /* Print HB angle distribution */
@@ -4705,7 +4705,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             fprintf(fp, "%10g %10g\n", (i+0.5)*abin, adist[i]/(abin*(real)sum));
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     /* Print HB in alpha-helix */
@@ -4723,7 +4723,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     if (!bNN)
     {
@@ -4834,7 +4834,7 @@ int gmx_hbond(int argc, char *argv[])
                 }
                 fp = opt2FILE("-hbm", NFILE, fnm, "w");
                 write_xpm_m(fp, mat);
-                ffclose(fp);
+                gmx_ffclose(fp);
                 for (x = 0; x < mat.nx; x++)
                 {
                     sfree(mat.matrix[x]);
@@ -4919,7 +4919,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     return 0;

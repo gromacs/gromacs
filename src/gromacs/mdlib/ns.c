@@ -2046,26 +2046,36 @@ static void get_cutoff2(t_forcerec *fr, gmx_bool bDoLongRange,
 
     if (bDoLongRange && fr->bTwinRange)
     {
-        /* The VdW and elec. LR cut-off's could be different,
+        /* With plain cut-off or RF we need to make the list exactly
+         * up to the cut-off and the cut-off's can be different,
          * so we can not simply set them to rlistlong.
+         * To keep this code compatible with (exotic) old cases,
+         * we also create lists up to rvdw/rcoulomb for PME and Ewald.
+         * The interaction check should correspond to:
+         * !ir_vdw/coulomb_might_be_zero_at_cutoff from inputrec.c.
          */
-        if (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(fr->vdwtype) &&
-            fr->rvdw > fr->rlist)
-        {
-            *rvdw2  = sqr(fr->rlistlong);
-        }
-        else
+        if (((fr->vdwtype == evdwCUT || fr->vdwtype == evdwPME) &&
+             fr->vdw_modifier == eintmodNONE) ||
+            fr->rvdw <= fr->rlist)
         {
             *rvdw2  = sqr(fr->rvdw);
         }
-        if (EEL_MIGHT_BE_ZERO_AT_CUTOFF(fr->eeltype) &&
-            fr->rcoulomb > fr->rlist)
+        else
         {
-            *rcoul2 = sqr(fr->rlistlong);
+            *rvdw2  = sqr(fr->rlistlong);
+        }
+        if (((fr->eeltype == eelCUT ||
+              (EEL_RF(fr->eeltype) && fr->eeltype != eelRF_ZERO) ||
+              fr->eeltype == eelPME ||
+              fr->eeltype == eelEWALD) &&
+             fr->coulomb_modifier == eintmodNONE) ||
+            fr->rcoulomb <= fr->rlist)
+        {
+            *rcoul2 = sqr(fr->rcoulomb);
         }
         else
         {
-            *rcoul2 = sqr(fr->rcoulomb);
+            *rcoul2 = sqr(fr->rlistlong);
         }
     }
     else
@@ -2667,7 +2677,6 @@ void init_ns(FILE *fplog, const t_commrec *cr,
     ns->bexcl     = NULL;
     if (!DOMAINDECOMP(cr))
     {
-        /* This could be reduced with particle decomposition */
         ns_realloc_natoms(ns, mtop->natoms);
     }
 
@@ -2771,14 +2780,8 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         }
         debug_gmx();
 
-        /* Don't know why this all is... (DvdS 3/99) */
-#ifndef SEGV
         start = 0;
         end   = cgs->nr;
-#else
-        start = fr->cg0;
-        end   = (cgs->nr+1)/2;
-#endif
 
         if (DOMAINDECOMP(cr))
         {
@@ -2792,12 +2795,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             fill_grid(NULL, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
             grid->icg0 = fr->cg0;
             grid->icg1 = fr->hcg;
-            debug_gmx();
-
-            if (PARTDECOMP(cr))
-            {
-                mv_grid(cr, grid);
-            }
             debug_gmx();
         }
 

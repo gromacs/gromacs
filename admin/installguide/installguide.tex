@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -425,6 +425,45 @@ also do this kind of thing with \verb+ccmake+, but you should avoid
 this, because the options set with '\verb+-D+' will not be able to be
 changed interactively in that run of \verb+ccmake+.
 
+\subsection{SIMD support}
+\gromacs{} has extensive support for detecting and using the SIMD
+capabilities of nearly all modern HPC CPUs. If you are building
+\gromacs{} on the same hardware you will run it on, then you don't
+need to read more about this. Otherwise, you may wish to choose the
+value of \verb+GMX_SIMD+ to much the execution environment. If you
+make no choice, the default will be based on the computer on which you
+are running \cmake{}. Valid values are listed below, and the
+applicable value lowest on the list is generally the one you should
+choose:
+\begin{enumerate}
+\item \verb+None+ For use only on an architecture either lacking SIMD,
+  or to which \gromacs{} has not yet been ported and none of the
+  options below are applicable.
+\item \verb+SSE2+ Essentially all x86 machines in existence have this
+\item \verb+SSE4.1+ More recent x86 have this
+\item \verb+AVX_128_FMA+ More recent AMD x86 have this
+\item \verb+AVX_256+ More recent Intel x86 have this
+\item \verb+AVX2_256+ Yet more recent Intel x86 have this
+\item \verb+IBM_QPX + BlueGene/Q A2 cores have this
+\item \verb+Sparc64_HPC_ACE+ Fujitsu machines like the K computer have this
+\end{enumeration}
+The \cmake{} configure system will check that the compiler you have
+chosen can target the architecture you have chosen. mdrun will check
+further at runtime, so if in doubt, choose the lowest setting you
+think might work, and see what mdrun says. The configure system also
+works around many known issues in many versions of common HPC
+compilers.
+
+A further \verb+GMX_SIMD=Reference+ option exists, which is a special
+SIMD-like implementation written in plain C that developers can use
+when developing support in GROMACS for new SIMD architectures. It is
+not designed for use in production simulations, but if you are using
+an architecture with SIMD support to which \gromacs{} has not yet been
+ported, you may wish to try the performance of this option, in case
+the auto-vectorization in your compiler does a good job. And post on
+the \gromacs{} mailing lists, because \gromacs{} can probably be
+ported for new SIMD architectures in a few days.
+
 \subsection{CMake advanced options}
 The options that can be seen with \verb+ccmake+ are ones that we
 think a reasonable number of users might want to consider
@@ -765,8 +804,8 @@ parallel job execution.
 
 \subsubsection{BlueGene/P}
 
-There is currently no native acceleration on this platform and no
-plans to make one. The default plain C kernels will work.
+There is currently no SIMD support on this platform and no plans to
+add it. The default plain C kernels will work.
 
 \subsubsection{BlueGene/Q}
 

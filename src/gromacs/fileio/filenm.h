@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,9 @@ extern "C" {
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {
     efMDP,
-    efTRX, efTRO, efTRN, efTRR, efTRJ, efCOMPRESSED, efXTC, efTNG, efG87,
+    efTRX, efTRO, efTRN, efTRR, efTRJ, efCOMPRESSED, efXTC, efTNG,
     efEDR,
-    efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR, efXYZ,
+    efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR,
     efCPT,
     efLOG, efXVG, efOUT,
     efNDX,
@@ -138,7 +138,7 @@ int opt2fns(char **fns[], const char *opt, int nfile,
 /* Return the filenames belonging to cmd-line option opt, or NULL when
  * no such option. */
 
-#define opt2FILE(opt, nfile, fnm, mode) ffopen(opt2fn(opt, nfile, fnm), mode)
+#define opt2FILE(opt, nfile, fnm, mode) gmx_ffopen(opt2fn(opt, nfile, fnm), mode)
 /* Return a file pointer from the filename (see above) */
 
 int fn2ftp(const char *fn);
@@ -151,7 +151,7 @@ int ftp2fns(char **fns[], int ftp, int nfile, const t_filenm fnm[]);
 /* Return the number of files for the first option with type ftp
    and the files in **fns[] (will be allocated), or NULL when none found. */
 
-#define ftp2FILE(ftp, nfile, fnm, mode) ffopen(ftp2fn(ftp, nfile, fnm), mode)
+#define ftp2FILE(ftp, nfile, fnm, mode) gmx_ffopen(ftp2fn(ftp, nfile, fnm), mode)
 /* Return a file pointer from the filename (see above) */
 
 gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[]);

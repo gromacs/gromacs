@@ -47,10 +47,13 @@
 #include "molprop_xml.hpp"
 #include "molprop_tables.hpp"
 #include "molprop_util.hpp"
+#include "composition.hpp"
 
-int check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
+bool check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
 {
     int nrownew = nrow;
+    
+    //printf("check_matrix called with nrow = %d ncol = %d\n", nrow, ncol);
     for (int i = 0; (i < ncol); i++)
     {
         for (int j = i+1; (j < ncol); j++)
@@ -62,6 +65,7 @@ int check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
             }
             if (bSame)
             {
+                return false;
                 gmx_fatal(FARGS, "Columns %d (%s) and %d (%s) are linearly dependent",
                           i, atype[i], j, atype[j]);
             }
@@ -74,11 +78,12 @@ int check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
         {
             if (a[i][i] == 0)
             {
+                return false;
                 gmx_fatal(FARGS, "a[%d][%d] = 0. Atom type = %s", i, i, atype[i]);
             }
         }
     }
-    return nrow;
+    return true;
     for (int i = 0; (i < nrownew); i++)
     {
         for (int j = i+1; (j < nrownew); j++)
@@ -116,7 +121,8 @@ static void dump_csv(gmx_poldata_t pd,
                      double **a,
                      double **at)
 {
-    FILE *csv = ffopen("out.csv", "w");
+    alexandria::CompositionSpecs cs;
+    FILE *csv = gmx_ffopen("out.csv", "w");
 
     fprintf(csv, "\"molecule\",\"formula\",");
     for (int i = 0; (i < ntest); i++)
@@ -129,7 +135,7 @@ static void dump_csv(gmx_poldata_t pd,
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++, j++)
     {
         alexandria::MolecularCompositionIterator mci =
-            mpi->SearchMolecularComposition((char *)"spoel");
+            mpi->SearchMolecularComposition(cs.searchCS(alexandria::iCalexandria)->name());
         fprintf(csv, "\"%d %s\",\"%s\",",
                 nn, mpi->GetMolname().c_str(), mpi->GetFormula().c_str());
         int *count;
@@ -192,7 +198,9 @@ static int decompose_frag(FILE *fplog,
     int     *test = NULL, ntest[2], ntmax, row, cur = 0;
     bool     bUseMol, *bUseAtype;
 #define prev (1-cur)
-
+    alexandria::CompositionSpecs cs;
+    const char *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    
     snew(x, mp.size()+1);
     ntmax = gmx_poldata_get_nptypes(pd);
     snew(bUseAtype, ntmax);
@@ -224,11 +232,12 @@ static int decompose_frag(FILE *fplog,
         {
             iMolSelect ims  = gmx_molselect_status(gms, mpi->GetIupac().c_str());
 
+            pol             = 0;
             bool       bPol = mpi->GetProp(MPO_POLARIZABILITY,
                                            bQM ? iqmBoth : iqmExp,
                                            lot, NULL, NULL, &pol);
             alexandria::MolecularCompositionIterator mci =
-                mpi->SearchMolecularComposition((char *)"spoel");
+                mpi->SearchMolecularComposition(alex);
 
             bUseMol = ((imsTrain == ims) && bPol && (pol > 0) &&
                        (mci != mpi->EndMolecularComposition()));
@@ -279,6 +288,9 @@ static int decompose_frag(FILE *fplog,
             }
             else
             {
+                fprintf(fplog, "Removing %s. bPol = %s pol = %g composition found = %s\n",
+                        mpi->GetMolname().c_str(), bool_names[bPol], pol,
+                        (mci == mpi->EndMolecularComposition()) ? "true" : "false");
                 mpi = mp.erase(mpi);
             }
         }
@@ -294,17 +306,19 @@ static int decompose_frag(FILE *fplog,
                 for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++, j++)
                 {
                     alexandria::MolecularCompositionIterator mci =
-                        mpi->SearchMolecularComposition((char *)"spoel");
+                        mpi->SearchMolecularComposition(alex);
                     for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
                          ani < mci->EndAtomNum(); ani++)
                     {
                         if (strcmp(ptype,
                                    gmx_poldata_atype_to_ptype(pd, ani->GetAtom().c_str())) == 0)
                         {
-                            test[ntp] += ani->GetNumber();
+                            test[ntp] ++;
+                            break;
                         }
                     }
                 }
+                printf("iter %2d ptype %s test[%d] = %d\n", iter, ptype, ntp, test[ntp]);
                 bUseAtype[ntp] = (test[ntp] >= mindata);
                 if (bUseAtype[ntp])
                 {
@@ -341,7 +355,11 @@ static int decompose_frag(FILE *fplog,
         printf("No polarization types to optimize. Check your input.\n");
         return 0;
     }
-
+    else if (ntest[cur] < ntmax)
+    {
+        printf("Reduced number of atomtypes from %d to %d\n", ntmax, ntest[cur]);
+    }
+    // Compact the arrays
     for (int i = 0; (i < ntmax); i++)
     {
         for (int j = i+1; !bUseAtype[i] && (j < ntmax); j++)
@@ -381,7 +399,10 @@ static int decompose_frag(FILE *fplog,
     }
 
     // Check for linear dependencies
-    nusemol = check_matrix(a, x, nusemol, ntest[cur], atype);
+    if (!check_matrix(a, x, nusemol, ntest[cur], atype))
+    {
+        fprintf(stderr, "Matrix is linearly dependent. Sorry.\n");
+    }
     
     // Now loop over the number of bootstrap loops
     gmx_stats_t *polstats;
@@ -407,17 +428,20 @@ static int decompose_frag(FILE *fplog,
         snew(x_copy, nUseBootStrap);
         for(int ii=0; (ii<nUseBootStrap); ii++)
         {
+            // Pick random molecule uu out of stack
             unsigned int uu = gmx_rng_uniform_uint32(rng) % nUseBootStrap;
+            
             for(int jj=0; (jj<ntest[cur]); jj++)
             {
-                a_copy[ii][jj] = at_copy[jj][ii] =a[uu][jj];
+                // Make row ii equal to uu in the original matrix
+                a_copy[ii][jj] = at_copy[jj][ii] = a[uu][jj];
+                // Make experimenal (QM) value equal to the original
                 x_copy[ii] = x[uu];
             }
         }
-        matrix_multiply(fplog, nUseBootStrap, ntest[cur], a_copy, at_copy, ata);
-        (void) check_matrix(ata, x_copy, ntest[cur], ntest[cur], atype);
-
-        if ((row = matrix_invert(fplog, ntest[cur], ata)) == 0)
+        matrix_multiply(debug, nUseBootStrap, ntest[cur], a_copy, at_copy, ata);
+        if (check_matrix(ata, x_copy, ntest[cur], ntest[cur], atype) &&
+            ((row = matrix_invert(debug, ntest[cur], ata)) == 0))
         {
             snew(atx, ntest[cur]);
             snew(fpp, ntest[cur]);
@@ -648,7 +672,7 @@ int alex_tune_pol(int argc, char *argv[])
     gmx_molprop_atomtype_table(tp, true, pd, mp, lot, exp_type);
     fclose(tp);
 
-    ffclose(fplog);
+    gmx_ffclose(fplog);
     
     const char *mpfn = opt2fn_null("-o", NFILE, fnm);
     if (NULL != mpfn) 

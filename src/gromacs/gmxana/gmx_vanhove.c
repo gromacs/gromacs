@@ -425,11 +425,11 @@ int gmx_vanhove(int argc, char *argv[])
         {
             ticky[i] = i*rbin;
         }
-        fp = ffopen(matfile, "w");
+        fp = gmx_ffopen(matfile, "w");
         write_xpm(fp, MAT_SPATIAL_Y, "Van Hove function", "G (1/nm)",
                   sbin == 0 ? "time (ps)" : "sqrt(time) (ps^1/2)", "r (nm)",
                   mat_nx, nbin, tickx, ticky, mat, 0, matmax, rlo, rhi, &nlev);
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     if (orfile)
@@ -453,7 +453,7 @@ int gmx_vanhove(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     if (otfile)
@@ -465,7 +465,7 @@ int gmx_vanhove(int argc, char *argv[])
         {
             fprintf(fp, "%g %g\n", f*dt, (real)pt[f]/(tcount[f]*isize));
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     do_view(oenv, matfile, NULL);

@@ -62,7 +62,6 @@
 #include "repl_ex.h"
 #include "qmmm.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "coulomb.h"
 #include "constr.h"
 #include "mvdata.h"
@@ -77,6 +76,7 @@
 #include "membed.h"
 #include "macros.h"
 #include "gmx_thread_affinity.h"
+#include "inputrec.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdlib/nbnxn_search.h"
@@ -708,7 +708,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
         verletbuf_list_setup_t ls;
         real                   rlist_new;
 
-        /* Here we assume CPU acceleration is on. But as currently
+        /* Here we assume SIMD-enabled kernels are being used. But as currently
          * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
          * and 4x2 gives a larger buffer than 4x4, this is ok.
          */
@@ -762,26 +762,33 @@ static void convert_to_verlet_scheme(FILE *fplog,
     {
         gmx_fatal(FARGS, "User non-bonded potentials are not (yet) supported with the Verlet scheme");
     }
-    else if (EVDW_SWITCHED(ir->vdwtype) || EEL_SWITCHED(ir->coulombtype))
+    else if (ir_vdw_switched(ir) || ir_coulomb_switched(ir))
     {
-        md_print_warn(NULL, fplog, "Converting switched or shifted interactions to a shifted potential (without force shift), this will lead to slightly different interaction potentials");
-
-        if (EVDW_SWITCHED(ir->vdwtype))
+        if (ir_vdw_switched(ir) && ir->vdw_modifier == eintmodNONE)
         {
             ir->vdwtype = evdwCUT;
+
+            switch (ir->vdwtype)
+            {
+                case evdwSHIFT:  ir->vdw_modifier = eintmodFORCESWITCH; break;
+                case evdwSWITCH: ir->vdw_modifier = eintmodPOTSWITCH; break;
+                default: gmx_fatal(FARGS, "The Verlet scheme does not support Van der Waals interactions of type '%s'", evdw_names[ir->vdwtype]);
+            }
         }
-        if (EEL_SWITCHED(ir->coulombtype))
+        if (ir_coulomb_switched(ir) && ir->coulomb_modifier == eintmodNONE)
         {
             if (EEL_FULL(ir->coulombtype))
             {
                 /* With full electrostatic only PME can be switched */
-                ir->coulombtype = eelPME;
+                ir->coulombtype      = eelPME;
+                ir->coulomb_modifier = eintmodPOTSHIFT;
             }
             else
             {
                 md_print_warn(NULL, fplog, "NOTE: Replacing %s electrostatics with reaction-field with epsilon-rf=inf\n", eel_names[ir->coulombtype]);
-                ir->coulombtype = eelRF;
-                ir->epsilon_rf  = 0.0;
+                ir->coulombtype      = eelRF;
+                ir->epsilon_rf       = 0.0;
+                ir->coulomb_modifier = eintmodPOTSHIFT;
             }
         }
 
@@ -1141,6 +1148,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             bUseGPU = (hwinfo->gpu_info.ncuda_dev_compatible > 0 ||
                        getenv("GMX_EMULATE_GPU") != NULL);
 
+            if (bUseGPU && (inputrec->vdw_modifier == eintmodFORCESWITCH ||
+                            inputrec->vdw_modifier == eintmodPOTSWITCH))
+            {
+                md_print_warn(cr, fplog, "LJ switch functions are not yet supported on the GPU, falling back to CPU-only");
+                bUseGPU = FALSE;
+            }
+
             prepare_verlet_scheme(fplog, cr,
                                   inputrec, nstlist_cmdline, mtop, state->box,
                                   bUseGPU);
@@ -1270,14 +1284,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(cr, inputrec, mtop);
-
-        /* This check needs to happen after get_nthreads_mpi() */
-        if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
-        {
-            gmx_fatal_collective(FARGS, cr, NULL,
-                                 "The Verlet cut-off scheme is not supported with particle decomposition.\n"
-                                 "You can achieve the same effect as particle decomposition by running in parallel using only OpenMP threads.");
-        }
     }
     if (fplog != NULL)
     {
@@ -1313,27 +1319,17 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
     }
 
-    if (can_use_allvsall(inputrec, TRUE, cr, fplog) && PAR(cr))
+    if (can_use_allvsall(inputrec, TRUE, cr, fplog) && DOMAINDECOMP(cr))
     {
-        /* Simple neighbour searching and (also?) all-vs-all loops
-         * do not work with domain decomposition. */
-        Flags |= MD_PARTDEC;
+        gmx_fatal(FARGS, "All-vs-all loops do not work with domain decomposition, use a single MPI rank");
     }
 
-    if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)) || (Flags & MD_PARTDEC))
+    if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
     {
         if (cr->npmenodes > 0)
         {
-            if (!EEL_PME(inputrec->coulombtype) && !EVDW_PME(inputrec->vdwtype))
-            {
-                gmx_fatal_collective(FARGS, cr, NULL,
-                                     "PME nodes are requested, but the system does not use PME electrostatics or LJ-PME");
-            }
-            if (Flags & MD_PARTDEC)
-            {
-                gmx_fatal_collective(FARGS, cr, NULL,
-                                     "PME nodes are requested, but particle decomposition does not support separate PME nodes");
-            }
+            gmx_fatal_collective(FARGS, cr, NULL,
+                                 "PME nodes are requested, but the system does not use PME electrostatics or LJ-PME");
         }
 
         cr->npmenodes = 0;
@@ -1356,10 +1352,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog, mtop, inputrec, cr, Flags & MD_PARTDEC, fcd, state, repl_ex_nst > 0);
+    init_disres(fplog, mtop, inputrec, cr, fcd, state, repl_ex_nst > 0);
 
     init_orires(fplog, mtop, state->x, inputrec, cr, &(fcd->orires),
-                state, Flags & MD_PARTDEC);
+                state);
 
     if (DEFORM(*inputrec))
     {
@@ -1392,7 +1388,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (gmx_fexist_master(opt2fn_master("-cpi", nfile, fnm, cr), cr) )
         {
             load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                            cr, Flags & MD_PARTDEC, ddxyz,
+                            cr, ddxyz,
                             inputrec, state, &bReadRNG, &bReadEkin,
                             (Flags & MD_APPENDFILES),
                             (Flags & MD_APPENDFILESSET));
@@ -1441,8 +1437,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         ed = ed_open(mtop->natoms, &state->edsamstate, nfile, fnm, Flags, oenv, cr);
     }
 
-    if (PAR(cr) && !((Flags & MD_PARTDEC) ||
-                     EI_TPI(inputrec->eI) ||
+    if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, rdd, rconstr,
@@ -1464,11 +1459,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         cr->duty      = (DUTY_PP | DUTY_PME);
         npme_major    = 1;
         npme_minor    = 1;
-        /* NM and TPI perform single node energy calculations in parallel */
-        if (!(inputrec->eI == eiNM || EI_TPI(inputrec->eI)))
-        {
-            npme_major = cr->nnodes;
-        }
 
         if (inputrec->ePBC == epbcSCREW)
         {
@@ -1537,7 +1527,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->gpu_opt.ncuda_dev_use = 0;
     }
 
-    /* check consistency of CPU acceleration and number of GPUs selected */
+    /* check consistency across ranks of things like SIMD
+     * support and number of GPUs selected */
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
 
     if (DOMAINDECOMP(cr))
@@ -1570,20 +1561,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     snew(nrnb, 1);
     if (cr->duty & DUTY_PP)
     {
-        /* For domain decomposition we allocate dynamically
-         * in dd_partition_system.
-         */
-        if (DOMAINDECOMP(cr))
-        {
-            bcast_state_setup(cr, state);
-        }
-        else
-        {
-            if (PAR(cr))
-            {
-                bcast_state(cr, state, TRUE);
-            }
-        }
+        bcast_state(cr, state);
 
         /* Initiate forcerecord */
         fr          = mk_forcerec();

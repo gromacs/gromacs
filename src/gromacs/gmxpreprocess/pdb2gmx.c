@@ -1458,7 +1458,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     {
         fp = fflib_open(rrn[i]);
         read_rtprename(rrn[i], fp, &nrtprename, &rtprename);
-        ffclose(fp);
+        gmx_ffclose(fp);
         sfree(rrn[i]);
     }
     sfree(rrn);

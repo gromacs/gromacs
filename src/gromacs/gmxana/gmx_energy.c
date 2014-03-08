@@ -560,7 +560,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
         fprintf(vout, "%10d  %10.5e\n", j, mypow(violaver[j]/nframes, minthird));
     }
 #endif
-    ffclose(vout);
+    gmx_ffclose(vout);
 
     fprintf(stdout, "\nSum of violations averaged over simulation: %g nm\n",
             sumt);
@@ -629,8 +629,8 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
         }
         fprintf(fp1, "\n");
     }
-    ffclose(fp0);
-    ffclose(fp1);
+    gmx_ffclose(fp0);
+    gmx_ffclose(fp1);
 }
 
 typedef struct {
@@ -1414,7 +1414,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                 intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
                 fprintf(fp, "%10g  %10g  %10g\n", (i*Dt), integral, intBulk);
             }
-            ffclose(fp);
+            gmx_ffclose(fp);
         }
         else if (bCorr)
         {
@@ -1571,7 +1571,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
     }
     if (fp)
     {
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     sfree(fr);
 }
@@ -2697,21 +2697,21 @@ int gmx_energy(int argc, char *argv[])
     close_enx(fp);
     if (out)
     {
-        ffclose(out);
+        gmx_ffclose(out);
     }
 
     if (bDRAll)
     {
-        ffclose(fp_pairs);
+        gmx_ffclose(fp_pairs);
     }
 
     if (bORT)
     {
-        ffclose(fort);
+        gmx_ffclose(fort);
     }
     if (bODT)
     {
-        ffclose(fodt);
+        gmx_ffclose(fodt);
     }
     if (bORA)
     {
@@ -2726,7 +2726,7 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr);
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     if (bODA)
     {
@@ -2741,7 +2741,7 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr-oobs[i]);
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     if (bODR)
     {
@@ -2756,11 +2756,11 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], sqrt(odrms[i]/norfr));
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
     if (bOTEN)
     {
-        ffclose(foten);
+        gmx_ffclose(foten);
     }
 
     if (bDisRe)
@@ -2772,7 +2772,7 @@ int gmx_energy(int argc, char *argv[])
     {
         if (fp_dhdl)
         {
-            ffclose(fp_dhdl);
+            gmx_ffclose(fp_dhdl);
             printf("\n\nWrote %d lambda values with %d samples as ",
                    dh_lambdas, dh_samples);
             if (dh_hists > 0)

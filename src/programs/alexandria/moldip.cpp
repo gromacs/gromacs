@@ -941,7 +941,7 @@ void MolDip::CalcDeviation()
             {
                 split_shell_charges(mymol->mtop_, &mymol->ltop_->idef);
                 atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
-                         mymol->mtop_->natoms, mymol->md_);
+                         mymol->md_);
                 (void)
                     relax_shell_flexcon(debug, _cr, FALSE, 0,
                                         mymol->inputrec_, TRUE,

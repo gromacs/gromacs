@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -167,7 +167,7 @@ static __m128 gmx_mm256_sum4h_m128(__m256 x, __m256 y)
 
 
 static void
-gmx_mm_printxmm_ps(const char *s, __m128 xmm)
+gmx_simd_real_tintxmm_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
@@ -177,7 +177,7 @@ gmx_mm_printxmm_ps(const char *s, __m128 xmm)
 
 
 static void
-gmx_mm_printxmmsum_ps(const char *s, __m128 xmm)
+gmx_simd_real_tintxmmsum_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
@@ -187,7 +187,7 @@ gmx_mm_printxmmsum_ps(const char *s, __m128 xmm)
 
 
 static void
-gmx_mm_printxmm_pd(const char *s, __m128d xmm)
+gmx_simd_real_tintxmm_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
@@ -196,7 +196,7 @@ gmx_mm_printxmm_pd(const char *s, __m128d xmm)
 }
 
 static void
-gmx_mm_printxmmsum_pd(const char *s, __m128d xmm)
+gmx_simd_real_tintxmmsum_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
@@ -206,7 +206,7 @@ gmx_mm_printxmmsum_pd(const char *s, __m128d xmm)
 
 
 static void
-gmx_mm_printxmm_epi32(const char *s, __m128i xmmi)
+gmx_simd_real_tintxmm_epi32(const char *s, __m128i xmmi)
 {
     int i[4];
 
@@ -287,7 +287,7 @@ static int gmx_mm_check_and_reset_overflow(void)
 }
 
 /* Work around gcc bug with wrong type for mask formal parameter to maskload/maskstore */
-#ifdef GMX_X86_AVX_GCC_MASKLOAD_BUG
+#ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 #    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), _mm_castsi128_ps(mask))
 #    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), _mm_castsi128_ps(mask), (x))
 #    define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), _mm256_castsi256_ps(mask))

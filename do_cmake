@@ -13,6 +13,9 @@ setenv OMPI_MPICXX $CXX
 setenv MPICC       `which mpicc`
 setenv MPICXX      `which mpicxx`
 
+if ( -d build ) then
+   rm -rf build
+endif
 mkdir build
 cd build
 

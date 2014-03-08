@@ -93,7 +93,7 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
                 fprintf(stderr, "\rAtomtype %d", nratt+1);
             }
         }
-        ffclose(in);
+        gmx_ffclose(in);
         sfree(file[f]);
     }
     fprintf(stderr, "\n");
@@ -539,7 +539,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
             }
         }
     }
-    ffclose(in);
+    gmx_ffclose(in);
     /* give back unused memory */
     srenew(rrtp, nrtp);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -354,17 +354,17 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             if (bRKout)
             {
-                ffclose(rkfp);
+                gmx_ffclose(rkfp);
             }
 
             if (bDatout)
             {
-                ffclose(datfp);
+                gmx_ffclose(datfp);
             }
 
             if (bInstEffout)
             {
-                ffclose(iefp);
+                gmx_ffclose(iefp);
             }
 
 
@@ -415,7 +415,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                     fprintf(rhfp, "%12.7f %12.7f\n", (i + 0.5) * rincr + rmin,
                             rhist[i]);
                 }
-                ffclose(rhfp);
+                gmx_ffclose(rhfp);
             }
 
             if (bKhistout)
@@ -452,7 +452,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                     fprintf(khfp, "%12.7f %12.7f\n", (i + 0.5) * kincr + kmin,
                             khist[i]);
                 }
-                ffclose(khfp);
+                gmx_ffclose(khfp);
             }
 
             printf("\nAverages:\n");

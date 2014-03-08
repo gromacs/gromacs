@@ -161,7 +161,7 @@ c
 c
 c  N.B. The TNG output file should be modified according to needs
 c      
-      call tng_output_file_set(traj, "/tmp/tng_md_out_f77.tng")
+      call tng_output_file_set(traj, TNG_EXAMPLE_FILES_DIR "tng_md_out_f77.tng")
 
       write ( *, '(a)' ) '  Creating molecules in trajectory.'
       tng_n_particles = np

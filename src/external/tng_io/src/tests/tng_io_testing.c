@@ -474,11 +474,7 @@ static tng_function_status tng_test_write_and_read_traj(tng_trajectory_t *traj)
 
     tng_trajectory_destroy(traj);
     tng_trajectory_init(traj);
-#ifdef TNG_EXAMPLE_FILES_DIR
     tng_input_file_set(*traj, TNG_EXAMPLE_FILES_DIR "tng_test.tng");
-#else
-    tng_input_file_set(*traj, "/tmp/tng_test.tng");
-#endif
 
     stat = tng_file_headers_read(*traj, TNG_SKIP_HASH);
 
@@ -592,13 +588,8 @@ int main()
 
     printf("Creation time: %s\n", time_str);
 
-#ifdef TNG_EXAMPLE_FILES_DIR
     tng_input_file_set(traj, TNG_EXAMPLE_FILES_DIR "tng_example.tng");
     tng_output_file_set(traj, TNG_EXAMPLE_FILES_DIR "tng_example_out.tng");
-#else
-    tng_input_file_set(traj, "tng_example.tng");
-    tng_output_file_set(traj, "/tmp/tng_example_out.tng");
-#endif
 
 
     if(tng_test_read_and_write_file(traj) == TNG_CRITICAL)
@@ -633,11 +624,7 @@ int main()
     }
 
 
-#ifdef TNG_EXAMPLE_FILES_DIR
     tng_output_file_set(traj, TNG_EXAMPLE_FILES_DIR "tng_test.tng");
-#else
-    tng_output_file_set(traj, "/tmp/tng_test.tng");
-#endif
 
     if(tng_test_write_and_read_traj(&traj) == TNG_CRITICAL)
     {
@@ -671,11 +658,8 @@ int main()
     }
 
 
-#ifdef TNG_EXAMPLE_FILES_DIR
     stat = tng_util_trajectory_open(TNG_EXAMPLE_FILES_DIR "tng_test.tng", 'r', &traj);
-#else
-    stat = tng_util_trajectory_open("/tmp/tng_test.tng", 'r', &traj);
-#endif
+
     if(stat != TNG_SUCCESS)
     {
         printf("Test Utility function open:\t\t\tFailed. %s: %d.\n",

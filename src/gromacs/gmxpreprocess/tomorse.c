@@ -94,7 +94,7 @@ static t_2morse *read_dissociation_energies(int *n2morse)
         /* If we did not read three items, quit reading */
     }
     while (nread == 3);
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     /* Set the return values */
     *n2morse = n2m;

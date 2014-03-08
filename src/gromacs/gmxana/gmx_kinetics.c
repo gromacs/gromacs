@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -725,7 +725,7 @@ static void dump_remd_parameters(FILE *gp, t_remd_data *d, const char *fn,
                         (d->sumft[i]-d->sumfct[i])*norm);
             }
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     if (!d->bSum && rfn)
     {
@@ -751,7 +751,7 @@ static void dump_remd_parameters(FILE *gp, t_remd_data *d, const char *fn,
                 fprintf(fp, "\n");
             }
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
 
     if (fn2 && (d->nstate > 2))
@@ -768,7 +768,7 @@ static void dump_remd_parameters(FILE *gp, t_remd_data *d, const char *fn,
                         (d->sumit[i]-d->sumict[i])*norm);
             }
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     if (mfn)
     {
@@ -784,7 +784,7 @@ static void dump_remd_parameters(FILE *gp, t_remd_data *d, const char *fn,
                 DG   = BOLTZ*i*log(fff/(1-fff));
                 fprintf(fp, "%5d  %8.3f  %8.3f\n", i, fff, DG);
             }
-            ffclose(fp);
+            gmx_ffclose(fp);
         }
     }
 
@@ -816,7 +816,7 @@ static void dump_remd_parameters(FILE *gp, t_remd_data *d, const char *fn,
             }
             fprintf(hp, "&\n");
         }
-        ffclose(hp);
+        gmx_ffclose(hp);
         for (i = 0; (i < d->nparams); i++)
         {
             d->params[i] = params[i];
@@ -960,7 +960,7 @@ int gmx_kinetics(int argc, char *argv[])
     dfile   = opt2fn("-d", NFILE, fnm);
     dfile2  = opt2fn_null("-d2", NFILE, fnm);
 
-    fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
+    fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
     remd.temp = read_xvg_time(tfile, bHaveT,
                               opt2parg_bSet("-b", NPA, pa), tb,
@@ -1069,7 +1069,7 @@ int gmx_kinetics(int argc, char *argv[])
         optimize_remd_parameters(&remd, maxiter, tol);
         dump_remd_parameters(fp, &remd, "test1.xvg", NULL, NULL, NULL, NULL, skip, tref, oenv);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     view_all(oenv, NFILE, fnm);
 

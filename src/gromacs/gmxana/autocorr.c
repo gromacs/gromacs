@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -340,12 +340,12 @@ void dump_tmp(char *s, int n, real c[])
     FILE *fp;
     int   i;
 
-    fp = ffopen(s, "w");
+    fp = gmx_ffopen(s, "w");
     for (i = 0; (i < n); i++)
     {
         fprintf(fp, "%10d  %10g\n", i, c[i]);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 }
 
 real print_and_integrate(FILE *fp, int n, real dt, real c[], real *fit, int nskip)
@@ -950,7 +950,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
         }
         if (debug)
         {
-            ffclose(gp);
+            gmx_ffclose(gp);
         }
         if (nitem > 1)
         {
@@ -963,7 +963,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
     }
     if (fp)
     {
-        ffclose(fp);
+        gmx_ffclose(fp);
     }
     sfree(fit);
 }

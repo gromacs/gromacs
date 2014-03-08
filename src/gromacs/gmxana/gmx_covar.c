@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -422,7 +422,7 @@ int gmx_covar(int argc, char *argv[])
 
     if (asciifile)
     {
-        out = ffopen(asciifile, "w");
+        out = gmx_ffopen(asciifile, "w");
         for (j = 0; j < ndim; j++)
         {
             for (i = 0; i < ndim; i += 3)
@@ -431,7 +431,7 @@ int gmx_covar(int argc, char *argv[])
                         mat[ndim*j+i], mat[ndim*j+i+1], mat[ndim*j+i+2]);
             }
         }
-        ffclose(out);
+        gmx_ffclose(out);
     }
 
     if (xpmfile)
@@ -462,12 +462,12 @@ int gmx_covar(int argc, char *argv[])
         rlo.r   = 0; rlo.g = 0; rlo.b = 1;
         rmi.r   = 1; rmi.g = 1; rmi.b = 1;
         rhi.r   = 1; rhi.g = 0; rhi.b = 0;
-        out     = ffopen(xpmfile, "w");
+        out     = gmx_ffopen(xpmfile, "w");
         nlevels = 80;
         write_xpm3(out, 0, "Covariance", bM ? "u nm^2" : "nm^2",
                    "dim", "dim", ndim, ndim, axis, axis,
                    mat2, min, 0.0, max, rlo, rmi, rhi, &nlevels);
-        ffclose(out);
+        gmx_ffclose(out);
         sfree(axis);
         sfree(mat2);
     }
@@ -509,12 +509,12 @@ int gmx_covar(int argc, char *argv[])
         rlo.r   = 0; rlo.g = 0; rlo.b = 1;
         rmi.r   = 1; rmi.g = 1; rmi.b = 1;
         rhi.r   = 1; rhi.g = 0; rhi.b = 0;
-        out     = ffopen(xpmafile, "w");
+        out     = gmx_ffopen(xpmafile, "w");
         nlevels = 80;
         write_xpm3(out, 0, "Covariance", bM ? "u nm^2" : "nm^2",
                    "atom", "atom", ndim/DIM, ndim/DIM, axis, axis,
                    mat2, min, 0.0, max, rlo, rmi, rhi, &nlevels);
-        ffclose(out);
+        gmx_ffclose(out);
         sfree(axis);
         for (i = 0; i < ndim/DIM; i++)
         {
@@ -559,7 +559,7 @@ int gmx_covar(int argc, char *argv[])
     {
         fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
     }
-    ffclose(out);
+    gmx_ffclose(out);
 
     if (end == -1)
     {
@@ -597,7 +597,7 @@ int gmx_covar(int argc, char *argv[])
     write_eigenvectors(eigvecfile, natoms, mat, TRUE, 1, end,
                        WriteXref, x, bDiffMass1, xproj, bM, eigenvalues);
 
-    out = ffopen(logfile, "w");
+    out = gmx_ffopen(logfile, "w");
 
     time(&now);
     gmx_ctime_r(&now, timebuf, STRLEN);
@@ -648,7 +648,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(out, "Wrote average structure to %s and %s\n", averfile, eigvecfile);
     fprintf(out, "Wrote eigenvectors %d to %d to %s\n", 1, end, eigvecfile);
 
-    ffclose(out);
+    gmx_ffclose(out);
 
     fprintf(stderr, "Wrote the log to %s\n", logfile);
 

@@ -43,11 +43,11 @@
 extern "C" {
 #endif
 
-#ifdef GMX_SIMD_REFERENCE_PLAIN_C
+#ifdef GMX_SIMD_REFERENCE
 #define GMX_NBNXN_SIMD
 #endif
 
-#if (defined GMX_X86_SSE2) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if (defined GMX_SIMD_X86_SSE2_OR_HIGHER) || (defined GMX_SIMD_IBM_QPX)
 /* Use SIMD accelerated nbnxn search and kernels */
 #define GMX_NBNXN_SIMD
 
@@ -60,7 +60,7 @@ extern "C" {
  * 16-way SIMD: 4x8 setup, not used, but most of the kernel code is there
  */
 #define GMX_NBNXN_SIMD_4XN
-#if defined GMX_X86_AVX_256 && !(defined GMX_DOUBLE || defined GMX_NBNXN_HALF_WIDTH_SIMD)
+#if defined GMX_SIMD_X86_AVX_256_OR_HIGHER && !(defined GMX_DOUBLE || defined GMX_NBNXN_HALF_WIDTH_SIMD)
 #define GMX_NBNXN_SIMD_2XNN
 #endif
 

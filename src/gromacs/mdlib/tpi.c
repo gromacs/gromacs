@@ -63,7 +63,6 @@
 #include "force.h"
 #include "mdrun.h"
 #include "domdec.h"
-#include "partdec.h"
 #include "gromacs/random/random.h"
 #include "physics.h"
 #include "xvgr.h"
@@ -79,7 +78,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
-#ifdef GMX_X86_SSE2
+#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
 #include "gromacs/simd/general_x86_sse2.h"
 #endif
 
@@ -247,7 +246,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
         sscanf(dump_pdb, "%lf", &dump_ener);
     }
 
-    atoms2md(top_global, inputrec, 0, NULL, 0, top_global->natoms, mdatoms);
+    atoms2md(top_global, inputrec, 0, NULL, top_global->natoms, mdatoms);
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
     snew(enerd, 1);
@@ -439,7 +438,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     refvolshift = log(det(rerun_fr.box));
 
-#ifdef GMX_X86_SSE2
+#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
     /* Make sure we don't detect SSE overflow generated before this point */
     gmx_mm_check_and_reset_overflow();
 #endif
@@ -631,7 +630,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
                 epot               = enerd->term[F_EPOT];
                 bEnergyOutOfBounds = FALSE;
-#ifdef GMX_X86_SSE2
+#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
                 /* With SSE the energy can overflow, check for this */
                 if (gmx_mm_check_and_reset_overflow())
                 {

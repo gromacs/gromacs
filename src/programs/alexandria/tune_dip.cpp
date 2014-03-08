@@ -997,7 +997,7 @@ int alex_tune_dip(int argc, char *argv[])
 
     if (MASTER(cr))
     {
-        fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
+        fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
         time(&my_t);
         fprintf(fp, "# This file was created %s", ctime(&my_t));
@@ -1044,7 +1044,7 @@ int alex_tune_dip(int argc, char *argv[])
                    md._mymol, md._hfac,
                    dip_toler, quad_toler, q_toler, oenv);
 
-        ffclose(fp);
+        gmx_ffclose(fp);
 
         gmx_poldata_write(opt2fn("-o", NFILE, fnm), md._pd, compress);
     }

@@ -77,7 +77,7 @@ static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
             a = pgrp->pbcatom;
         }
 
-        if (a >= md->start && a < md->start+md->homenr)
+        if (a >= 0 && a < md->homenr)
         {
             copy_rvec(x[a], x_pbc);
         }
@@ -167,8 +167,8 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
         ga2la = cr->dd->ga2la;
     }
 
-    start = md->start;
-    end   = md->homenr + start;
+    start = 0;
+    end   = md->homenr;
 
     r0_2 = dsqr(pull->cyl_r0);
 

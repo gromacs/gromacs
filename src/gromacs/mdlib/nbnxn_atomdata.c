@@ -359,10 +359,8 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
     }
 }
 
-/* Determines the combination rule (or none) to be used, stores it,
- * and sets the LJ parameters required with the rule.
- */
-static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
+/* Stores the LJ parameter data in a format convenient for the SIMD kernels */
+static void set_ljparam_simd_data(nbnxn_atomdata_t *nbat)
 {
     int  nt, i, j;
     real c6, c12;
@@ -432,7 +430,7 @@ static void
 nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 {
     int       i, j;
-    const int simd_width = GMX_SIMD_WIDTH_HERE;
+    const int simd_width = GMX_SIMD_REAL_WIDTH;
     int       simd_excl_size;
     /* Set the diagonal cluster pair exclusion mask setup data.
      * In the kernel we check 0 < j - i to generate the masks.
@@ -482,7 +480,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
         nbat->simd_exclusion_filter2[j*2 + 1] = (1U << j);
     }
 
-#if (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#if (defined GMX_SIMD_IBM_QPX)
     /* The QPX kernels shouldn't do the bit masking that is done on
      * x86, because the SIMD units lack bit-wise operations. Instead,
      * we generate a vector of all 2^4 possible ways an i atom
@@ -497,7 +495,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
      * indices are used in the kernels. */
 
     simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
-    const int qpx_simd_width = GMX_SIMD_WIDTH_HERE;
+    const int qpx_simd_width = GMX_SIMD_REAL_WIDTH;
     snew_aligned(simd_interaction_array, simd_excl_size * qpx_simd_width, NBNXN_MEM_ALIGN);
     for (j = 0; j < simd_excl_size; j++)
     {
@@ -516,6 +514,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 void nbnxn_atomdata_init(FILE *fp,
                          nbnxn_atomdata_t *nbat,
                          int nb_kernel_type,
+                         gmx_bool bTryCombinationRule,
                          int ntype, const real *nbfp,
                          int n_energygroups,
                          int nout,
@@ -637,7 +636,7 @@ void nbnxn_atomdata_init(FILE *fp,
 
     simple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
 
-    if (simple)
+    if (bTryCombinationRule)
     {
         /* We prefer the geometic combination rule,
          * as that gives a slightly faster kernel than the LB rule.
@@ -669,14 +668,17 @@ void nbnxn_atomdata_init(FILE *fp,
                         nbat->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
             }
         }
-
-        set_combination_rule_data(nbat);
     }
     else
     {
         nbat->comb_rule = ljcrNONE;
 
         nbat->free(nbat->nbfp_comb);
+    }
+
+    if (simple)
+    {
+        set_ljparam_simd_data(nbat);
     }
 
     nbat->natoms  = 0;
@@ -1158,33 +1160,33 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
 /* The SIMD width here is actually independent of that in the kernels,
  * but we use the same width for simplicity (usually optimal anyhow).
  */
-    int       i, s;
-    gmx_mm_pr dest_SSE, src_SSE;
+    int             i, s;
+    gmx_simd_real_t dest_SSE, src_SSE;
 
     if (bDestSet)
     {
-        for (i = i0; i < i1; i += GMX_SIMD_WIDTH_HERE)
+        for (i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
         {
-            dest_SSE = gmx_load_pr(dest+i);
+            dest_SSE = gmx_simd_load_r(dest+i);
             for (s = 0; s < nsrc; s++)
             {
-                src_SSE  = gmx_load_pr(src[s]+i);
-                dest_SSE = gmx_add_pr(dest_SSE, src_SSE);
+                src_SSE  = gmx_simd_load_r(src[s]+i);
+                dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
             }
-            gmx_store_pr(dest+i, dest_SSE);
+            gmx_simd_store_r(dest+i, dest_SSE);
         }
     }
     else
     {
-        for (i = i0; i < i1; i += GMX_SIMD_WIDTH_HERE)
+        for (i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
         {
-            dest_SSE = gmx_load_pr(src[0]+i);
+            dest_SSE = gmx_simd_load_r(src[0]+i);
             for (s = 1; s < nsrc; s++)
             {
-                src_SSE  = gmx_load_pr(src[s]+i);
-                dest_SSE = gmx_add_pr(dest_SSE, src_SSE);
+                src_SSE  = gmx_simd_load_r(src[s]+i);
+                dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
             }
-            gmx_store_pr(dest+i, dest_SSE);
+            gmx_simd_store_r(dest+i, dest_SSE);
         }
     }
 #endif

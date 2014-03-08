@@ -69,7 +69,7 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp)
 
     if (NULL != fn)
     {
-        fp = ffopen(fn, "r");
+        fp = gmx_ffopen(fn, "r");
         while (!feof(fp))
         {
             fgets2(buf, STRLEN-1, fp);
@@ -128,7 +128,7 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp)
 
     if (NULL != fn)
     {
-        fp = ffopen(fn, "r");
+        fp = gmx_ffopen(fn, "r");
         while (!feof(fp))
         {
             fgets2(buf, STRLEN-1, fp);

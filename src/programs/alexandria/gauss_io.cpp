@@ -529,7 +529,7 @@ static int get_lib_file(const char *db,char ***strings)
         i++;
     }
     nstr=i;
-    ffclose(in);
+    gmx_ffclose(in);
     srenew(ptr,nstr);
     *strings=ptr;
   

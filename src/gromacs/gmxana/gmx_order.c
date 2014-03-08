@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -327,8 +327,8 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     sfree(index);
     sfree(isize);
 
-    ffclose(fpsg);
-    ffclose(fpsk);
+    gmx_ffclose(fpsg);
+    gmx_ffclose(fpsk);
 
     fpsg = xvgropen(sgslfn,
                     "S\\sg\\N Angle Order Parameter / Slab", "(nm)", "S\\sg\\N",
@@ -343,8 +343,8 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
         fprintf(fpsk, "%10g  %10g\n", (i+0.5)*box[slice_dim][slice_dim]/nslice,
                 sk_slice_tot[i]/nframes);
     }
-    ffclose(fpsg);
-    ffclose(fpsk);
+    gmx_ffclose(fpsg);
+    gmx_ffclose(fpsk);
 }
 
 
@@ -832,8 +832,8 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
                                                         0.333 * order[atom][YY]));
         }
 
-        ffclose(ord);
-        ffclose(slOrd);
+        gmx_ffclose(ord);
+        gmx_ffclose(slOrd);
     }
 }
 

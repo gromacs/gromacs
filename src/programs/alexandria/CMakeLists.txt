@@ -67,6 +67,7 @@ set(ALEXANDRIA_SOURCES
 	poldata.cpp
 	poldata_xml.cpp
 	gmx_simple_comm.c
+        composition.cpp
 	molselect.cpp
 	gmx_resp.cpp
 	gentop_qgen.cpp

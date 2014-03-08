@@ -610,7 +610,7 @@ extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
         }
     }
 
-    ffclose (fp);
+    gmx_ffclose (fp);
 }
 
 

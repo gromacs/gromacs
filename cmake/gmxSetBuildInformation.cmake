@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ macro(gmx_set_build_information)
     endif(CMAKE_HOST_UNIX)
 
     if(NOT CMAKE_CROSSCOMPILING)
-        # Get CPU acceleration information
+        # Get CPU information, e.g. for deciding what SIMD support exists
         set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders -DGMX_CPUID_STANDALONE")
         if(GMX_TARGET_X86)
             set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")

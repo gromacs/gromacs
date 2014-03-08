@@ -3938,7 +3938,7 @@ int gmx_bar(int argc, char *argv[])
     {
         lambda_vec_print_short(results[nresults-1].b->native_lambda, buf);
         fprintf(fpi, xvg2format, buf, dg_tot);
-        ffclose(fpi);
+        gmx_ffclose(fpi);
     }
 
     do_view(oenv, opt2fn_null("-o", NFILE, fnm), "-xydy");

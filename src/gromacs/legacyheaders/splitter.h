@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,18 +44,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void split_top(FILE *fp, int nnodes, gmx_localtop_t *top,
-               t_inputrec *ir, t_block *mols,
-               real *capacity, int *mulitnr_cgs, int **multinr_nre,
-               int *left_range, int *right_range);
-/* Split the topology (blocks and forces, based on charge groups
- * and shake blocks.
- * The capacity is releated to the capacity of each node. If all numbers are
- * equal, load will be distributed equally. If not some (the higher ones)
- * will get more than others. The sum of capacities should be 1.
- * Info is written to the file pointer fp.
- */
 
 void gen_sblocks(FILE *fp, int at_start, int at_end,
                  t_idef *idef, t_blocka *sblock,

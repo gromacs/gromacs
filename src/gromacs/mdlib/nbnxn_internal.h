@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,7 @@ extern "C" {
 
 #ifdef GMX_NBNXN_SIMD
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
-#define NBNXN_MEM_ALIGN  (GMX_SIMD_WIDTH_HERE*sizeof(real))
+#define NBNXN_MEM_ALIGN  (GMX_SIMD_REAL_WIDTH*sizeof(real))
 #else
 /* No alignment required, but set it so we can call the same routines */
 #define NBNXN_MEM_ALIGN  32
@@ -153,16 +153,16 @@ typedef struct {
 
 typedef struct nbnxn_x_ci_simd_4xn {
     /* The i-cluster coordinates for simple search */
-    gmx_mm_pr ix_S0, iy_S0, iz_S0;
-    gmx_mm_pr ix_S1, iy_S1, iz_S1;
-    gmx_mm_pr ix_S2, iy_S2, iz_S2;
-    gmx_mm_pr ix_S3, iy_S3, iz_S3;
+    gmx_simd_real_t ix_S0, iy_S0, iz_S0;
+    gmx_simd_real_t ix_S1, iy_S1, iz_S1;
+    gmx_simd_real_t ix_S2, iy_S2, iz_S2;
+    gmx_simd_real_t ix_S3, iy_S3, iz_S3;
 } nbnxn_x_ci_simd_4xn_t;
 
 typedef struct nbnxn_x_ci_simd_2xnn {
     /* The i-cluster coordinates for simple search */
-    gmx_mm_pr ix_S0, iy_S0, iz_S0;
-    gmx_mm_pr ix_S2, iy_S2, iz_S2;
+    gmx_simd_real_t ix_S0, iy_S0, iz_S0;
+    gmx_simd_real_t ix_S2, iy_S2, iz_S2;
 } nbnxn_x_ci_simd_2xnn_t;
 
 #endif

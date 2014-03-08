@@ -1245,7 +1245,7 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
             fprintf(fp, "\n");
         }
         printf("Wrote cumulative distribution functions to %s\n", fn);
-        ffclose(fp);
+        gmx_ffclose(fp);
         sfree(fn);
         sfree(buf);
     }
@@ -1471,7 +1471,7 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
         fprintf(fp, "\n");
     }
 
-    ffclose(fp);
+    gmx_ffclose(fp);
     printf("Wrote %s\n", fn);
     if (bs_index >= 0)
     {
@@ -1715,7 +1715,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         }
         fprintf(fp, "&\n");
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     /* write average and stddev */
     fp = xvgropen(fnres, "Average and stddev from bootstrapping", "z", ylabel, opt->oenv);
@@ -1728,7 +1728,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         stddev             = (tmp >= 0.) ? sqrt(tmp) : 0.; /* Catch rouding errors */
         fprintf(fp, "%e\t%e\t%e\n", (i+0.5)*opt->dz+opt->min, bsProfiles_av [i], stddev);
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     printf("Wrote boot strap result to %s\n", fnres);
 }
 
@@ -1764,7 +1764,7 @@ void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
     int    nread, sizenow, i, block = 1;
     FILE  *fp;
 
-    fp      = ffopen(fn, "r");
+    fp      = gmx_ffopen(fn, "r");
     nread   = 0;
     sizenow = 0;
     while (fgets(tmp, sizeof(tmp), fp) != NULL)
@@ -1861,7 +1861,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
     }
     else
     {
-        pipe       = ffopen(fn, "r");
+        pipe       = gmx_ffopen(fn, "r");
         *bPipeOpen = FALSE;
     }
 
@@ -1874,7 +1874,7 @@ void pdo_close_file(FILE *fp)
 #ifdef HAVE_PIPES
     pclose(fp);
 #else
-    ffclose(fp);
+    gmx_ffclose(fp);
 #endif
 }
 
@@ -1927,7 +1927,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
             }
             else
             {
-                ffclose(file);
+                gmx_ffclose(file);
             }
         }
         printf("\n");
@@ -1965,7 +1965,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
         }
         else
         {
-            ffclose(file);
+            gmx_ffclose(file);
         }
     }
     printf("\n");
@@ -2703,7 +2703,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
     printf(" done\n");
     if (fpcorr)
     {
-        ffclose(fpcorr);
+        gmx_ffclose(fpcorr);
     }
 
     /* plot IACT along reaction coordinate */
@@ -2742,7 +2742,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
             }
         }
     }
-    ffclose(fp);
+    gmx_ffclose(fp);
     printf("Wrote %s\n", fn);
 }
 
@@ -2981,7 +2981,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
         {
             fprintf(fp, "%g  %g\n", (j+0.5)*dz+opt->min, pot[j]);
         }
-        ffclose(fp);
+        gmx_ffclose(fp);
         printf("verbose mode: wrote %s with PMF from interated forces\n", "pmfintegrated.xvg");
     }
 
@@ -3035,7 +3035,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
     char  fmt[1024], fmtign[1024];
     int   block = 1, sizenow;
 
-    fp            = ffopen(opt->fnGroupsel, "r");
+    fp            = gmx_ffopen(opt->fnGroupsel, "r");
     opt->groupsel = NULL;
 
     snew(tmpbuf, len);
@@ -3500,7 +3500,7 @@ int gmx_wham(int argc, char *argv[])
         }
         fprintf(histout, "\n");
     }
-    ffclose(histout);
+    gmx_ffclose(histout);
     printf("Wrote %s\n", opt2fn("-hist", NFILE, fnm));
     if (opt.bHistOnly)
     {
@@ -3601,7 +3601,7 @@ int gmx_wham(int argc, char *argv[])
     {
         fprintf(profout, "%e\t%e\n", (double)(i+0.5)/opt.bins*(opt.max-opt.min)+opt.min, profile[i]);
     }
-    ffclose(profout);
+    gmx_ffclose(profout);
     printf("Wrote %s\n", opt2fn("-o", NFILE, fnm));
 
     /* Bootstrap Method */

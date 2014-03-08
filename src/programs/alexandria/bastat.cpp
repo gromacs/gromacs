@@ -523,7 +523,7 @@ int alex_bastat(int argc, char *argv[])
         iModel = eqgAXg;
     }
 
-    fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
+    fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
@@ -709,7 +709,7 @@ int alex_bastat(int argc, char *argv[])
     printf("Extracted %d bondtypes, %d angletypes, %d dihedraltypes and %d impropertypes.\n",
            b->nbond, b->nangle, b->ndih, b->nimp);
 
-    ffclose(fp);
+    gmx_ffclose(fp);
 
     return 0;
 }

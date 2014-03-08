@@ -52,7 +52,8 @@ typedef struct gmx_mdoutf *gmx_mdoutf_t;
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(int                nfile,
+gmx_mdoutf_t init_mdoutf(FILE              *fplog,
+                         int                nfile,
                          const t_filenm     fnm[],
                          int                mdrun_flags,
                          const t_commrec   *cr,

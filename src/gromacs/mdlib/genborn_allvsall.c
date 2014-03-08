@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
 #include "vec.h"
 #include "smalloc.h"
 
-#include "partdec.h"
 #include "network.h"
 #include "physics.h"
 #include "genborn.h"
@@ -350,7 +349,6 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
                                   gmx_genborn_t *        born,
                                   gmx_localtop_t *       top,
                                   real *                 x,
-                                  t_commrec *            cr,
                                   void *                 work)
 {
     gmx_allvsallgb2_data_t *aadata;
@@ -372,8 +370,8 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
     real                    term, prod, icf4, icf6, gpi2, factor, sinq;
 
     natoms              = mdatoms->nr;
-    ni0                 = mdatoms->start;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
     factor              = 0.5*ONE_4PI_EPS0;
     n                   = 0;
 
@@ -536,11 +534,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
         born->gpol_still_work[i] += gpi;
     }
 
-    /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, born->gpol_still_work, cr);
-    }
+    /* Parallel summations would go here if ever implemented with DD */
 
     /* Calculate the radii */
     for (i = 0; i < natoms; i++)
@@ -566,7 +560,6 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                                     int                    gb_algorithm,
                                     gmx_localtop_t *       top,
                                     real *                 x,
-                                    t_commrec *            cr,
                                     void *                 work)
 {
     gmx_allvsallgb2_data_t *aadata;
@@ -589,8 +582,8 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
     real                    rad, min_rad;
 
     natoms              = mdatoms->nr;
-    ni0                 = mdatoms->start;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
 
     n       = 0;
     prod    = 0;
@@ -893,11 +886,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
         born->gpol_hct_work[i] += sum_ai;
     }
 
-    /* Parallel summations */
-    if (PARTDECOMP(cr))
-    {
-        gmx_sum(natoms, born->gpol_hct_work, cr);
-    }
+    /* Parallel summations would go here if ever implemented with DD */
 
     if (gb_algorithm == egbHCT)
     {
@@ -978,8 +967,8 @@ genborn_allvsall_calc_chainrule(t_forcerec *           fr,
     real              *     dadx;
 
     natoms              = mdatoms->nr;
-    ni0                 = mdatoms->start;
-    ni1                 = mdatoms->start+mdatoms->homenr;
+    ni0                 = 0;
+    ni1                 = mdatoms->homenr;
     dadx                = fr->dadx;
 
     aadata = (gmx_allvsallgb2_data_t *)work;

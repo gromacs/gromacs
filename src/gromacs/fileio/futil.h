@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,20 +101,20 @@ gmx_bool gmx_eof(FILE *fp);
 /* Return TRUE on end-of-file, FALSE otherwise */
 
 gmx_bool is_pipe(FILE *fp);
-/* Check whether the file (opened by ffopen) is a pipe */
+/* Check whether the file (opened by gmx_ffopen) is a pipe */
 
 /*  Make a backup of file if necessary.
     Return false if there was a problem.
  */
 gmx_bool make_backup(const char * file);
 
-FILE *ffopen(const char *file, const char *mode);
+FILE *gmx_ffopen(const char *file, const char *mode);
 /* Return a valid file pointer when successful, exits otherwise
  * If the file is in compressed format, open a pipe which uncompresses
- * the file! Therefore, files must be closed with ffclose (see below)
+ * the file! Therefore, files must be closed with gmx_ffclose (see below)
  */
 
-int ffclose(FILE *fp);
+int gmx_ffclose(FILE *fp);
 /* Close files or pipes */
 
 

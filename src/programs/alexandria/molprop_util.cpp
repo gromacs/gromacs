@@ -49,17 +49,20 @@
 #include "molprop_xml.hpp"
 #include "gentop_vsite.hpp"
 #include "gentop_core.hpp"
+#include "composition.hpp"
 
 void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
 {
     int nOK = 0;
     alexandria::MolPropIterator mpi;
+    alexandria::CompositionSpecs cs;
     
     for(mpi=mp.begin(); (mpi<mp.end()); mpi++) 
     {
-        mpi->DeleteComposition("spoel");
-        mpi->DeleteComposition("miller");
-        mpi->DeleteComposition("bosque");
+        for(alexandria::CompositionSpecIterator csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
+        {
+            mpi->DeleteComposition(csi->name());
+        }
         if (true == mpi->GenerateComposition(pd))
         {
             nOK++;
@@ -73,7 +76,7 @@ void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
     if (mp.size() > 1)
     {
         printf("Generated composition for %d out of %d molecules.\n",
-               nOK+1, (int)mp.size());
+               nOK, (int)mp.size());
     }
 }
 
@@ -89,7 +92,8 @@ alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,
                                     gmx_atomprop_t ap)
 {
     alexandria::MolProp mp;
-    alexandria::MolecularComposition mci("spoel");
+    alexandria::CompositionSpecs cs;
+    alexandria::MolecularComposition mci(cs.searchCS(alexandria::iCalexandria)->name());
     int i;
         
     mp.SetMolname(molname);

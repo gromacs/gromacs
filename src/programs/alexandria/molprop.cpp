@@ -29,6 +29,7 @@
 #include "poldata.hpp"
 #include "gmx_simple_comm.h"
 #include "molprop.hpp"
+#include "composition.hpp"
       
 const char *mpo_name[MPO_NR] = 
 { 
@@ -619,53 +620,65 @@ bool MolProp::GenerateComposition(gmx_poldata_t pd)
 {
     CalculationIterator ci;
     CalcAtomIterator cai;
-    const char *spoel = "spoel", *bosque = "bosque", *miller = "miller";
-    MolecularComposition mci_bosque(bosque),mci_spoel(spoel),mci_miller(miller);
-    AtomNumIterator ani;
+    CompositionSpecs cs;
+    MolecularComposition mci_bosque(cs.searchCS(iCbosque)->name());
+    MolecularComposition mci_alexandria(cs.searchCS(iCalexandria)->name());
+    MolecularComposition mci_miller(cs.searchCS(iCmiller)->name());
     
-    DeleteComposition(spoel);
-    DeleteComposition(bosque);
-    DeleteComposition(miller);
-    for(ci=BeginCalculation(); (mci_spoel.CountAtoms() <= 0) && (ci<EndCalculation()); ci++) 
+    // Why was this again?
+    //DeleteComposition(alexandria);
+    //DeleteComposition(bosque);
+    //DeleteComposition(miller);
+    
+    int natoms = 0;
+    for(ci=BeginCalculation(); (mci_alexandria.CountAtoms() <= 0) && (ci<EndCalculation()); ci++) 
     {
         /* This assumes we have either all atoms or none. 
          * A consistency check could be
          * to compare the number of atoms to the formula */
+        int nat = 0;
         for(cai=ci->BeginAtom(); (cai<ci->EndAtom()); cai++)
         {
-            AtomNum anb(cai->GetName(),1),ans(cai->GetObtype(),1);
-            mci_bosque.AddAtom(anb);
-            mci_spoel.AddAtom(ans);
+            nat++;
+            AtomNum ans(cai->GetObtype(),1);
+            mci_alexandria.AddAtom(ans);
             
             const char *ptype = gmx_poldata_atype_to_ptype(pd,cai->GetObtype().c_str());
             if (NULL != ptype)
             {
-                const char *miller = gmx_poldata_ptype_to_miller(pd,ptype);
-                                                 
-                if (NULL != miller)
+                const char *bos_type = gmx_poldata_ptype_to_bosque(pd,ptype);
+                if (NULL != bos_type)
                 {
-                    AtomNum anm(miller,1);
+                    AtomNum anb(bos_type,1);
+                    mci_bosque.AddAtom(anb);
+                }
+                const char *mil_type = gmx_poldata_ptype_to_miller(pd,ptype);
+                                                 
+                if (NULL != mil_type)
+                {
+                    AtomNum anm(mil_type,1);
                     mci_miller.AddAtom(anm);
                 }
             }
         }
+        natoms = std::max(natoms, nat);
     }
     
-    if (mci_bosque.CountAtoms() > 0)
+    if (natoms == mci_bosque.CountAtoms())
     {
         AddComposition(mci_bosque);
     }
-    if (mci_miller.CountAtoms() > 0)
+    if (natoms == mci_miller.CountAtoms())
     {
         AddComposition(mci_miller);
     }
-    if (mci_spoel.CountAtoms() > 0)
+    if (natoms == mci_alexandria.CountAtoms())
     {
-        AddComposition(mci_spoel);
+        AddComposition(mci_alexandria);
         if (NULL != debug) 
         {
             fprintf(debug,"LO_COMP: ");
-            for(ani = mci_spoel.BeginAtomNum(); (ani < mci_spoel.EndAtomNum()); ani++)
+            for(AtomNumIterator ani = mci_alexandria.BeginAtomNum(); (ani < mci_alexandria.EndAtomNum()); ani++)
             {
                 fprintf(debug," %s:%d",ani->GetAtom().c_str(),ani->GetNumber());
             }

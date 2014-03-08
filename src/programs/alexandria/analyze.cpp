@@ -45,6 +45,7 @@
 #include "molprop_util.hpp"
 #include "molprop_xml.hpp"
 #include "molprop_tables.hpp"
+#include "composition.hpp"
 
 static void calc_frag_miller(gmx_poldata_t pd,
                              std::vector<alexandria::MolProp> &mp,
@@ -56,7 +57,8 @@ static void calc_frag_miller(gmx_poldata_t pd,
     char       *null = (char *)"0", *empirical = (char *)"empirical", *minimum = (char *)"minimum", *minus = (char *)"-", *nofile = (char *)"none";
     const char *program;
     const char *ang3;
-
+    alexandria::CompositionSpecs cs;
+    
     ang3    = unit2string(eg2cAngstrom3);
     program = ShortProgram();
     if (0 == gmx_poldata_get_bosque_pol(pd, null, &bos0))
@@ -70,16 +72,11 @@ static void calc_frag_miller(gmx_poldata_t pd,
         ims = gmx_molselect_status(gms, iupac);
         if ((ims == imsTrain) || (ims == imsTest))
         {
-            enum iComp {
-                iCspoel, iCbosque, iCmiller, iCnr
-            };
-            const char *comps[3] = { "spoel", "bosque", "miller" };
-            const char *crefs[3] = { "Maaren2014a", "Bosque2002a", "Miller1990a" };
-            const char *ctype[3] = { "AX", "BS", "MK" };
-
-            for (int ic = iCspoel; (ic < iCnr); ic++)
+            for(alexandria::CompositionSpecIterator csi=cs.beginCS(); (csi<cs.endCS()); ++csi)
             {
-                alexandria::MolecularCompositionIterator mci = mpi->SearchMolecularComposition(comps[ic]);
+                alexandria::iComp ic = csi->iC();
+                alexandria::MolecularCompositionIterator mci = 
+                    mpi->SearchMolecularComposition(csi->name());
                 if (mci != mpi->EndMolecularComposition())
                 {
                     double p         = 0, sp = 0;
@@ -92,27 +89,27 @@ static void calc_frag_miller(gmx_poldata_t pd,
                         int         natom    = ani->GetNumber();
                         switch (ic)
                         {
-                            case iCspoel:
-                                bSupport = (gmx_poldata_get_atype_pol(pd, (char *)atomname, &polar, &sig_pol) == 1);
-                                break;
-                            case iCbosque:
-                                bSupport = (gmx_poldata_get_bosque_pol(pd, (char *)atomname, &polar) == 1);
-                                sig_pol  = 0;
-                                break;
-                            case iCmiller:
-                                double tau_ahc, alpha_ahp;
-                                int    atomnumber;
-                                bSupport = (gmx_poldata_get_miller_pol(pd, (char *)atomname, &atomnumber, &tau_ahc, &alpha_ahp) == 1);
+                        case alexandria::iCalexandria:
+                            bSupport = (gmx_poldata_get_atype_pol(pd, (char *)atomname, &polar, &sig_pol) == 1);
+                            break;
+                        case alexandria::iCbosque:
+                            bSupport = (gmx_poldata_get_bosque_pol(pd, (char *)atomname, &polar) == 1);
+                            sig_pol  = 0;
+                            break;
+                        case alexandria::iCmiller:
+                            double tau_ahc, alpha_ahp;
+                            int    atomnumber;
+                            bSupport = (gmx_poldata_get_miller_pol(pd, (char *)atomname, &atomnumber, &tau_ahc, &alpha_ahp) == 1);
 
-                                ahc   += tau_ahc*natom;
-                                ahp   += alpha_ahp*natom;
-                                Nelec += atomnumber*natom;
-                                break;
-                            default:
-                                gmx_incons("Out of range");
+                            ahc   += tau_ahc*natom;
+                            ahp   += alpha_ahp*natom;
+                            Nelec += atomnumber*natom;
+                            break;
+                        default:
+                            gmx_incons("Out of range");
                         }
 
-                        if (bSupport && (ic != iCmiller))
+                        if (bSupport && (ic != alexandria::iCmiller))
                         {
                             p         += polar*natom;
                             sp        += sqr(sig_pol)*natom;
@@ -122,25 +119,28 @@ static void calc_frag_miller(gmx_poldata_t pd,
                     sp = sqrt(sp/natom_tot);
                     if (bSupport)
                     {
-                        if (ic == iCmiller)
+                        const char *type = csi->abbreviation();
+                        const char *ref  = csi->reference();
+                            
+                        if (ic == alexandria::iCmiller)
                         {
-                            alexandria::Calculation calc1(program, ctype[ic], (char *)"ahc",
-                                                          crefs[ic], minimum, nofile);
+                            alexandria::Calculation calc1(program, type, (char *)"ahc",
+                                                          ref, minimum, nofile);
                             ahc = 4*sqr(ahc)/Nelec;
                             alexandria::MolecularDipPolar md1(empirical, ang3, 0, 0, 0, ahc, 0);
                             calc1.AddPolar(md1);
                             mpi->AddCalculation(calc1);
 
-                            alexandria::Calculation       calc2(program, ctype[ic], (char *)"ahp",
-                                                                crefs[ic], minimum, nofile);
+                            alexandria::Calculation       calc2(program, type, (char *)"ahp",
+                                                                ref, minimum, nofile);
                             alexandria::MolecularDipPolar md2(empirical, ang3, 0, 0, 0, ahp, 0);
                             calc2.AddPolar(md2);
                             mpi->AddCalculation(calc2);
                         }
                         else
                         {
-                            alexandria::Calculation       calc(program, ctype[ic], minus,
-                                                               crefs[ic], minimum, nofile);
+                            alexandria::Calculation       calc(program, type, minus,
+                                                               ref, minimum, nofile);
                             alexandria::MolecularDipPolar md(empirical, ang3, 0, 0, 0, p, sp);
                             calc.AddPolar(md);
                             mpi->AddCalculation(calc);
@@ -337,7 +337,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     }
     printf("--------------------------------------------------\n");
 
-    fp = ffopen(texfn, "w");
+    fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
         gmx_molprop_stats_table(fp, prop, mp, qmc, exp_type, outlier, gms, imsTrain);

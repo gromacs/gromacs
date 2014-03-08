@@ -65,7 +65,7 @@ static void gmx_molprop_csv(const char *fn,
     }
     printf("--------------------------------------------------\n");
 
-    fp = ffopen(fn, "w");
+    fp = gmx_ffopen(fn, "w");
     fprintf(fp, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
             "Molecule", "Formula", "InChi", "Charge", "Multiplicity", "Mass");
     for (k = 0; (k < NEMP); k++)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,7 +154,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
     int   g, s, i;
     real  min, max, xsp, ysp;
 
-    out = ffopen(file, "w");
+    out = gmx_ffopen(file, "w");
     if (output_env_get_xvg_format(oenv) == exvgXMGRACE)
     {
         fprintf(out, "@ autoscale onread none\n");
@@ -272,7 +272,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
             }
         }
     }
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 static void
@@ -446,10 +446,10 @@ static void inprod_matrix(const char *matfile, int natoms,
     rlo.r   = 1; rlo.g = 1; rlo.b = 1;
     rhi.r   = 0; rhi.g = 0; rhi.b = 0;
     nlevels = 41;
-    out     = ffopen(matfile, "w");
+    out     = gmx_ffopen(matfile, "w");
     write_xpm(out, 0, "Eigenvector inner-products", "in.prod.", "run 1", "run 2",
               nx, ny, t_x, t_y, mat, 0.0, max, rlo, rhi, &nlevels);
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 static void overlap(const char *outfile, int natoms,
@@ -489,7 +489,7 @@ static void overlap(const char *outfile, int natoms,
         fprintf(out, "%5d  %5.3f\n", eignr2[x]+1, overlap/noutvec);
     }
 
-    ffclose(out);
+    gmx_ffclose(out);
 }
 
 static void project(const char *trajfile, t_topology *top, int ePBC, matrix topbox,
@@ -675,7 +675,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             }
             fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec-1][i]);
         }
-        ffclose(xvgrout);
+        gmx_ffclose(xvgrout);
     }
 
     if (threedplotfile)
@@ -748,7 +748,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             strcpy(pdbform, get_pdbformat());
             strcat(pdbform, "%8.4f%8.4f\n");
 
-            out = ffopen(threedplotfile, "w");
+            out = gmx_ffopen(threedplotfile, "w");
             fprintf(out, "HEADER    %s\n", str);
             if (b4D)
             {
@@ -771,7 +771,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                 j++;
             }
             fprintf(out, "TER\n");
-            ffclose(out);
+            gmx_ffclose(out);
         }
         else
         {
@@ -1277,6 +1277,11 @@ int gmx_anaeig(int argc, char *argv[])
             snew(xrefp, atoms->nr);
             if (xref1 != NULL)
             {
+                /* Safety check between selected fit-group and reference structure read from the eigenvector file */
+                if (natoms != nfit)
+                {
+                    gmx_fatal(FARGS, "you selected a group with %d elements instead of %d, your selection does not fit the reference structure in the eigenvector file.", nfit, natoms);
+                }
                 for (i = 0; (i < nfit); i++)
                 {
                     copy_rvec(xref1[i], xrefp[ifit[i]]);

@@ -132,7 +132,7 @@ real numerical_deriv(int nx, real x[], real y[], real fity[], real combined[], r
         }
     }
 
-    tmpfp        = ffopen("integral_smth.xvg", "w");
+    tmpfp        = gmx_ffopen("integral_smth.xvg", "w");
     integralSmth = print_and_integrate(tmpfp, nx, x[1]-x[0], combined, NULL, 1);
     printf("SMOOTH integral = %10.5e\n", integralSmth);
 
@@ -224,8 +224,8 @@ void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
     }
     printf("MAXEPS = %10.5e at frequency %10.5e GHz (tauD = %8.1f ps)\n",
            maxeps, numax, 1000/(2*M_PI*numax));
-    ffclose(fp);
-    ffclose(cp);
+    gmx_ffclose(fp);
+    gmx_ffclose(cp);
     sfree(tmp);
 }
 
