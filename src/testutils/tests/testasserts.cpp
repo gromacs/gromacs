@@ -137,4 +137,86 @@ TEST(FloatingPointDifferenceTest, HandlesNaN)
     EXPECT_TRUE(diff.isNaN());
 }
 
+using gmx::test::ulpRealTolerance;
+using gmx::test::relativeRealToleranceAsFloatingPoint;
+using gmx::test::relativeRealToleranceAsUlp;
+
+namespace Single
+{
+
+const float ten          = 10.0;
+const float eleven       = 11.0;
+const float tenPlusDelta = 10.00001;
+
+TEST(FloatingPointToleranceTest, UlpRealToleranceWorks)
+{
+    EXPECT_FLOAT_EQ_TOL(ten, ten, ulpRealTolerance(0));
+    EXPECT_FLOAT_NE_TOL(ten, tenPlusDelta, ulpRealTolerance(1));
+    EXPECT_FLOAT_EQ_TOL(ten, tenPlusDelta, ulpRealTolerance(100));
+    EXPECT_FLOAT_NE_TOL(ten, eleven, ulpRealTolerance(100));
+}
+
+TEST(FloatingPointToleranceTest, RelativeRealToleranceAsFloatingPoint)
+{
+    EXPECT_FLOAT_EQ_TOL(ten, ten, relativeRealToleranceAsFloatingPoint(ten, 1e-2));
+    EXPECT_FLOAT_EQ_TOL(ten, ten, relativeRealToleranceAsFloatingPoint(ten, 1e-7));
+    EXPECT_FLOAT_EQ_TOL(ten, tenPlusDelta, relativeRealToleranceAsFloatingPoint(ten, 1e-5));
+    EXPECT_FLOAT_NE_TOL(ten, tenPlusDelta, relativeRealToleranceAsFloatingPoint(ten, 1e-9));
+    EXPECT_FLOAT_EQ_TOL(ten, eleven, relativeRealToleranceAsFloatingPoint(ten, 2e-1));
+    EXPECT_FLOAT_NE_TOL(ten, eleven, relativeRealToleranceAsFloatingPoint(ten, 1e-5));
+}
+
+TEST(FloatingPointToleranceTest, RelativeRealToleranceAsUlp)
+{
+    EXPECT_FLOAT_EQ_TOL(ten, ten, relativeRealToleranceAsUlp(ten, 0));
+    EXPECT_FLOAT_NE_TOL(ten, tenPlusDelta, relativeRealToleranceAsUlp(ten, 1));
+    EXPECT_FLOAT_EQ_TOL(ten, tenPlusDelta, relativeRealToleranceAsUlp(ten, 100));
+    EXPECT_FLOAT_NE_TOL(ten, eleven, relativeRealToleranceAsUlp(ten, 100000));
+}
+
+}   // namespace Single
+
+namespace Double
+{
+
+const double ten                 = 10.0;
+const double eleven              = 11.0;
+const double tenPlusDelta        = 10.00001;
+const double tenPlusSmallerDelta = 10.000000000001;
+
+TEST(FloatingPointToleranceTest, UlpRealToleranceWorks)
+{
+    EXPECT_DOUBLE_EQ_TOL(ten, ten, ulpRealTolerance(0));
+    EXPECT_DOUBLE_NE_TOL(ten, tenPlusDelta, ulpRealTolerance(1));
+    EXPECT_DOUBLE_EQ_TOL(ten, tenPlusDelta, ulpRealTolerance(10000000000UL));
+    EXPECT_DOUBLE_NE_TOL(ten, tenPlusSmallerDelta, ulpRealTolerance(1));
+    EXPECT_DOUBLE_EQ_TOL(ten, tenPlusSmallerDelta, ulpRealTolerance(1000));
+    EXPECT_DOUBLE_NE_TOL(ten, eleven, ulpRealTolerance(100));
+}
+
+TEST(FloatingPointToleranceTest, RelativeRealToleranceAsFloatingPoint)
+{
+    EXPECT_DOUBLE_EQ_TOL(ten, ten, relativeRealToleranceAsFloatingPoint(ten, 1e-2));
+    EXPECT_DOUBLE_EQ_TOL(ten, ten, relativeRealToleranceAsFloatingPoint(ten, 1e-7));
+    EXPECT_DOUBLE_EQ_TOL(ten, tenPlusDelta, relativeRealToleranceAsFloatingPoint(ten, 1e-5));
+    EXPECT_DOUBLE_NE_TOL(ten, tenPlusDelta, relativeRealToleranceAsFloatingPoint(ten, 1e-9));
+    EXPECT_DOUBLE_EQ_TOL(ten, tenPlusSmallerDelta, relativeRealToleranceAsFloatingPoint(ten, 1e-5));
+    EXPECT_DOUBLE_NE_TOL(ten, tenPlusSmallerDelta, relativeRealToleranceAsFloatingPoint(ten, 1e-13));
+    EXPECT_DOUBLE_EQ_TOL(ten, eleven, relativeRealToleranceAsFloatingPoint(ten, 2.0));
+    EXPECT_DOUBLE_NE_TOL(ten, eleven, relativeRealToleranceAsFloatingPoint(ten, 1e-5));
+}
+
+TEST(FloatingPointToleranceTest, RelativeRealToleranceAsUlp)
+{
+    EXPECT_DOUBLE_EQ_TOL(ten, ten, relativeRealToleranceAsUlp(ten, 0));
+    EXPECT_DOUBLE_NE_TOL(ten, tenPlusDelta, relativeRealToleranceAsUlp(ten, 1));
+    EXPECT_DOUBLE_NE_TOL(ten, tenPlusDelta, relativeRealToleranceAsUlp(ten, 100));
+    EXPECT_DOUBLE_EQ_TOL(ten, tenPlusDelta, relativeRealToleranceAsUlp(ten, 10000000000UL));
+    EXPECT_DOUBLE_NE_TOL(ten, tenPlusSmallerDelta, relativeRealToleranceAsUlp(ten, 100));
+    EXPECT_DOUBLE_EQ_TOL(ten, tenPlusSmallerDelta, relativeRealToleranceAsUlp(ten, 10000));
+    EXPECT_DOUBLE_NE_TOL(ten, eleven, relativeRealToleranceAsUlp(ten, 100000));
+}
+
+} // namespace Double
+
 } // namespace
