@@ -67,7 +67,7 @@ namespace gmx
 namespace test
 {
 
-//! \addtogroup module_testutils
+//! \libinternal \addtogroup module_testutils
 //! \{
 
 /*! \name Assertions for exceptions

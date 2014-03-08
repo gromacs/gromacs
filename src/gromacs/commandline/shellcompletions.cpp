@@ -34,6 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Implements gmx::ShellCompletionWriter.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \ingroup module_commandline
+ */
 #include "gromacs/commandline/shellcompletions.h"
 
 #include <cstdio>

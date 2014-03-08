@@ -32,15 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 /*! \internal \file
  * \brief
  * Implements functions in swapcoords.h.
  *
  * \author Carsten Kutzner <ckutzne@gwdg.de>
- * \ingroup group_mdrun
+ * \ingroup module_swap
  */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -80,16 +78,20 @@ enum {
 };                                                                           /**< Group identifier */
 static char* GrpString[eGrpNr] = { "ion", "split0", "split1", "solvent" };   /**< Group name */
 
-/*! Keep track of through which channel the ions have passed */
+/** Keep track of through which channel the ions have passed */
 enum eChannelHistory {
     eChHistPassedNone, eChHistPassedCh0, eChHistPassedCh1, eChHistNr
 };
 static char* ChannelString[eChHistNr] = { "none", "channel0", "channel1" };  /**< Name for the channels */
 
-/*! Keep track of from which compartment the ions came before passing the channel */
+/*! \brief Domain identifier.
+ *
+ * Keeps track of from which compartment the ions came before passing the
+ * channel.
+ */
 enum eDomain {
     eDomainNotset, eDomainA, eDomainB, eDomainNr
-};                                                                                 /**< Domain identifier */
+};
 static char* DomainString[eDomainNr] = { "not_assigned", "Domain_A", "Domain_B" }; /**< Name for the domains */
 
 

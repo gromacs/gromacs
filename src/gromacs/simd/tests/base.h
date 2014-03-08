@@ -61,15 +61,15 @@ namespace gmx
 namespace test
 {
 
-/*! \cond internal */
-/*! \addtogroup module_simd */
-/*! \{ */
-
-/*! \brief Base class for SIMD test fixtures.
+/*! \internal
+ * \brief
+ * Base class for SIMD test fixtures.
  *
  * This class contains settings that are common for SIMD and SIMD4 tests,
  * and it is thus not used directly for any tests, but derived separately
  * in simd.h and simd4.h.
+ *
+ * \ingroup module_simd
  */
 class SimdBaseTest : public ::testing::Test
 {
@@ -174,9 +174,6 @@ class SimdBaseTest : public ::testing::Test
         real                   absTol_;       //!< Current absolute tolerance.
         std::pair<real, real>  range_;        //!< Range for math function tests.
 };
-
-/*! \} */
-/*! \endcond */
 
 }      // namespace
 }      // namespace

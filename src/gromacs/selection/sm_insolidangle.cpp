@@ -351,7 +351,7 @@ static const char *help_insolidangle[] = {
     "of these cones. The cutoff determines the width of the cones.",
 };
 
-/** \internal Selection method data for the \p insolidangle method. */
+/** Selection method data for the \p insolidangle method. */
 gmx_ana_selmethod_t sm_insolidangle = {
     "insolidangle", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_insolidangle), smparams_insolidangle,

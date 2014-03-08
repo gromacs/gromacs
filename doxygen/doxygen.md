@@ -224,6 +224,20 @@ The group page also provides a natural place for overview documentation about
 the module, and can be navigated to directly from the "Modules" tab in the
 generated documentation.
 
+Some notes about using \c \\addtogroup are in order:
+* \c \\addtogroup only adds the elements that it directly contains into the
+  group.  If it contains a namespace declaration, only the namespace is added
+  to the group, but none of the namespace contents are.  For this reason,
+  \c \\addtogroup should go within the innermost scope, around the members that
+  should actually be added.
+* If the module should not appear in the public API documentation, its
+  definition (\c \\defgroup) should be prefixed with a \c \\libinternal.
+  In this case, also all \c \\addtogroup commands for this module should be
+  similarly prefixed.  Otherwise, they create the group in the public API
+  documentation, but without any of the content from the \c \\defgroup
+  definition.  This may also cause the contents of the \c \\addtogroup section
+  to appear in the public API documentation, even if it otherwise would not.
+
 Public API and library API groups
 ---------------------------------
 
@@ -464,13 +478,14 @@ Common mistakes
 ---------------
 
 The most common mistake, in particular in C code, is to forget to document the
-file.  This causes Doxygen to ignore most of the comments in the file, so it
+file.  This causes Doxygen to ignore most comments in the file, so it
 does not validate the contents of the comments either, nor is it possible to
 actually check how the generated documentation looks like.
 
-The following example shows some other common mistakes that do not produce
-correct documentation.  The issues are explained in normal comments above each
-code fragment.
+The following example shows some other common mistakes (and some less common)
+that do not produce correct documentation, as well as Doxygen "features"/bugs
+that can be confusing.
+The issues are explained in normal comments above each code fragment.
 
 \includelineno doxygen-example-issues.cpp
 
