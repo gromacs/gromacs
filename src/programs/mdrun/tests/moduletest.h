@@ -32,7 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_mdrun_integration_tests Integration test utilities
+/*! \libinternal
+ * \defgroup module_mdrun_integration_tests Integration test utilities
  * \ingroup group_mdrun
  *
  * \brief Functionality for testing mdrun as a whole
@@ -135,7 +136,9 @@ class MdrunTestFixture : public IntegrationTestFixture
         //@}
 };
 
-/*! \brief Parameterized test fixture for mdrun integration tests */
+/*! \libinternal \brief
+ * Parameterized test fixture for mdrun integration tests
+ */
 class ParameterizedMdrunTestFixture : public gmx::test::MdrunTestFixture,
                                       public ::testing::WithParamInterface<const char *>
 {

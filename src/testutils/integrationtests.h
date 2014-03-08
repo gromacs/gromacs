@@ -75,12 +75,12 @@ class IntegrationTestFixture : public ::testing::Test
          */
         void redirectStringToStdin(const char* theString);
 
-        /*! Discards stdout while running a test
+        /*! \brief Discards stdout while running a test
          *
          * \todo Implement this when the output routines are
          * sufficiently modular to permit it to work. */
         void redirectStdoutToDevNull();
-        /*! Discards stderr while running a test
+        /*! \brief Discards stderr while running a test
          *
          * \todo Implement this when the output routines are
          * sufficiently modular to permit it to work. */

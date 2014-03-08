@@ -86,7 +86,9 @@ extern const gmx_simd4_real_t rSimd4_Bits4; //!< Pattern 0C repeated to fill sin
 extern const gmx_simd4_real_t rSimd4_Bits5; //!< Pattern FC repeated to fill single/double.
 extern const gmx_simd4_real_t rSimd4_Bits6; //!< Pattern 3C repeated to fill single/double.
 
-/*! \brief Test fixture for SIMD4 tests - contains test settings.
+/*! \internal
+ * \brief
+ * Test fixture for SIMD4 tests - contains test settings.
  *
  * This is a very simple test fixture that basically just takes the common
  * SIMD/SIMD4 functionality from SimdBaseTest and creates wrapper routines

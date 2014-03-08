@@ -1501,7 +1501,7 @@ gmx_simd4_align_d(double *p)
  */
 #    define gmx_simd4_reduce_r               gmx_simd4_reduce_f
 
-/*! Align real memory for SIMD4 usage.
+/*! \brief Align real memory for SIMD4 usage.
  *
  * \copydetails gmx_simd4_align_f
  */

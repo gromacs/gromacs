@@ -55,7 +55,7 @@
 #if CUDA_VERSION >= 5000
 #define TEXOBJ_SUPPORTED
 #else  /* CUDA_VERSION */
-/*! This typedef allows us to define only one version of struct cu_nbparam */
+/** This typedef allows us to define only one version of struct cu_nbparam */
 typedef int cudaTextureObject_t;
 #endif /* CUDA_VERSION */
 

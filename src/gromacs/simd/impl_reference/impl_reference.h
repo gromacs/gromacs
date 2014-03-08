@@ -176,7 +176,7 @@
  */
 typedef struct
 {
-    float r[GMX_SIMD_FLOAT_WIDTH]; /*!< Implementation dependent. Don't touch. */
+    float r[GMX_SIMD_FLOAT_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_float_t;
 
@@ -186,7 +186,7 @@ gmx_simd_float_t;
  */
 typedef struct
 {
-    double r[GMX_SIMD_DOUBLE_WIDTH]; /*!< Implementation dependent. Don't touch. */
+    double r[GMX_SIMD_DOUBLE_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_double_t;
 
@@ -196,7 +196,7 @@ gmx_simd_double_t;
  */
 typedef struct
 {
-    gmx_int32_t i[GMX_SIMD_FINT32_WIDTH]; /*!< Implementation dependent. Don't touch. */
+    gmx_int32_t i[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_fint32_t;
 
@@ -206,7 +206,7 @@ gmx_simd_fint32_t;
  */
 typedef struct
 {
-    gmx_int32_t i[GMX_SIMD_DINT32_WIDTH]; /*!< Implementation dependent. Don't touch. */
+    gmx_int32_t i[GMX_SIMD_DINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_dint32_t;
 
@@ -217,7 +217,7 @@ gmx_simd_dint32_t;
  */
 typedef struct
 {
-    gmx_int32_t b[GMX_SIMD_FLOAT_WIDTH]; /*!< Implementation dependent. Don't touch. */
+    gmx_int32_t b[GMX_SIMD_FLOAT_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_fbool_t;
 
@@ -228,14 +228,14 @@ gmx_simd_fbool_t;
  */
 typedef struct
 {
-    gmx_int32_t b[GMX_SIMD_DOUBLE_WIDTH]; /*!< Implementation dependent. Don't touch. */
+    gmx_int32_t b[GMX_SIMD_DOUBLE_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_dbool_t;
 
 /*! \brief Boolean type for integer datatypes corresponding to float SIMD. */
 typedef struct
 {
-    gmx_int32_t b[GMX_SIMD_FINT32_WIDTH]; /*!< Implementation dependent. Don't touch. */
+    gmx_int32_t b[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_fibool_t;
 
@@ -246,7 +246,7 @@ gmx_simd_fibool_t;
  */
 typedef struct
 {
-    gmx_int32_t b[GMX_SIMD_DINT32_WIDTH]; /*!< Implementation dependent. Don't touch. */
+    gmx_int32_t b[GMX_SIMD_DINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_dibool_t;
 

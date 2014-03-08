@@ -55,7 +55,9 @@
 namespace
 {
 
-/*! Test fixture for replica exchange */
+/*! \brief
+ * Test fixture for replica exchange
+ */
 class ReplicaExchangeTest : public gmx::test::ParameterizedMdrunTestFixture
 {
     public:

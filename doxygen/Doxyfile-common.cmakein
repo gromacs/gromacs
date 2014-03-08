@@ -4,6 +4,10 @@ LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/DoxygenLayout.xml
 INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@ \
                          @CMAKE_SOURCE_DIR@/src \
                          @CMAKE_SOURCE_DIR@/share/template
+FILE_PATTERNS          = *.c *.cpp *.h *.md
+# CUDA files could be included like this, but currently produce a lot of
+# warnings.
+# FILE_PATTERNS         += *.cu *.cuh
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
 EXCLUDE                = @CMAKE_SOURCE_DIR@/doxygen/examples \
@@ -11,6 +15,7 @@ EXCLUDE                = @CMAKE_SOURCE_DIR@/doxygen/examples \
                          @CMAKE_SOURCE_DIR@/src/external \
                          @CMAKE_SOURCE_DIR@/src/gromacs/legacyheaders/thread_mpi/atomic \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.h \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/scanner.cpp @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
 EXCLUDE_SYMBOLS        = YY* yy* _gmx_sel_yy*
 EXCLUDE_SYMBOLS       += TEST TEST_F TEST_P TYPED_TEST_CASE TYPED_TEST INSTANTIATE_TEST_CASE_P
