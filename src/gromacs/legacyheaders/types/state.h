@@ -39,6 +39,7 @@
 
 
 #include "simple.h"
+#include "gromacs/swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {
