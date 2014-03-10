@@ -77,10 +77,10 @@ typedef gmx::test::ImdTestFixture ImdTest;
 TEST_F(ImdTest, ImdCanRun)
 {
     std::string name = "spc2";
-    useTopGroAndNdxFromDatabase(name.c_str());
-    mdpInputFileName = fileManager_.getInputFilePath((name + "-IMD.mdp").c_str());
+    runner_.useTopGroAndNdxFromDatabase(name.c_str());
+    runner_.mdpInputFileName_ = fileManager_.getInputFilePath((name + "-IMD.mdp").c_str());
 
-    EXPECT_EQ(0, callGrompp());
+    EXPECT_EQ(0, runner_.callGrompp());
 
     ::gmx::test::CommandLine imdCaller;
     imdCaller.append("mdrun");
@@ -91,7 +91,7 @@ TEST_F(ImdTest, ImdCanRun)
     imdCaller.append("-noimdterm");
 
     // Do an mdrun with IMD enabled
-    ASSERT_EQ(0, callMdrun(imdCaller));
+    ASSERT_EQ(0, runner_.callMdrun(imdCaller));
 }
 
 
