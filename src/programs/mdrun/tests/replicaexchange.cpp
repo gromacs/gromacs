@@ -105,9 +105,9 @@ class ReplicaExchangeTest : public gmx::test::ParameterizedMdrunTestFixture
 
             /* Prepare grompp output filenames inside the new
                temporary directory */
-            mdpInputFileName  = fileManager_.getTemporaryFilePath("input.mdp");
-            mdpOutputFileName = fileManager_.getTemporaryFilePath("output.mdp");
-            tprFileName       = fileManager_.getTemporaryFilePath(".tpr");
+            runner_.mdpInputFileName_  = fileManager_.getTemporaryFilePath("input.mdp");
+            runner_.mdpOutputFileName_ = fileManager_.getTemporaryFilePath("output.mdp");
+            runner_.tprFileName_       = fileManager_.getTemporaryFilePath(".tpr");
 
             mdrunCaller.addOption("-deffnm", fileManager_.getTestSpecificFileNameRoot());
         }
@@ -151,7 +151,7 @@ class ReplicaExchangeTest : public gmx::test::ParameterizedMdrunTestFixture
                        occur. */
                     std::max(baseTemperature - 10 * rank, real(0)),
                     controlVariable);
-            useStringAsMdpFile(mdpFileContents);
+            runner_.useStringAsMdpFile(mdpFileContents);
         }
 
         //! MPI process set size
@@ -183,10 +183,10 @@ TEST_P(ReplicaExchangeTest, ExitsNormally)
     organizeMultidir();
     const char *pcoupl = GetParam();
     organizeMdpFile(pcoupl);
-    useTopGroAndNdxFromDatabase("spc2");
+    runner_.useTopGroAndNdxFromDatabase("spc2");
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
-    EXPECT_EQ(0, callGromppOnThisRank());
+    EXPECT_EQ(0, runner_.callGromppOnThisRank());
 
     mdrunCaller.addOption("-replex", 1);
     ASSERT_EQ(0, gmx_mdrun(mdrunCaller.argc(), mdrunCaller.argv()));
