@@ -186,6 +186,7 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
+    { 96, F_ANISO_POL         }
 };
 #define NFTUPD asize(ftupd)
 
@@ -1893,6 +1894,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->anharm_polarize.drcut);
             gmx_fio_do_real(fio, iparams->anharm_polarize.khyp);
             break;
+        case F_ANISO_POL:
+            gmx_fio_do_real(fio, iparams->daniso.a11);
+            gmx_fio_do_real(fio, iparams->daniso.a22);
+            gmx_fio_do_real(fio, iparams->daniso.a33);
         case F_WATER_POL:
             if (file_version < 31)
             {

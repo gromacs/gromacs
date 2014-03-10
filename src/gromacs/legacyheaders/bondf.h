@@ -153,7 +153,7 @@ t_ifunc bonds, g96bonds, morse_bonds, cubic_bonds, FENE_bonds, restraint_bonds;
 t_ifunc angles, g96angles, cross_bond_bond, cross_bond_angle, urey_bradley, quartic_angles, linear_angles;
 t_ifunc pdihs, idihs, rbdihs;
 t_ifunc tab_bonds, tab_angles, tab_dihs;
-t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
+t_ifunc polarize, anharm_polarize, aniso_pol, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
 
 
 /* Divided the bonded interactions over the threads, count=fr->nthreads

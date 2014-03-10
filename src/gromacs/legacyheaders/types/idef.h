@@ -103,6 +103,7 @@ enum {
     F_LJ_RECIP,
     F_DPD,
     F_POLARIZATION,
+    F_ANISO_POL,
     F_WATER_POL,
     F_THOLE_POL,
     F_ANHARM_POL,
@@ -204,6 +205,10 @@ typedef union
     struct {
         real al_x, al_y, al_z, rOH, rHH, rOD;
     } wpol;
+    /* general anisotropic polarizability for Drude */
+    struct {
+        real a11, a22, a33;
+    } daniso;
     struct {
         real a, alpha1, alpha2, rfac;
     } thole;

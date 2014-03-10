@@ -1186,6 +1186,10 @@ void pr_iparams(FILE *fp, t_functype ftype, t_iparams *iparams)
                     iparams->thole.a, iparams->thole.alpha1, iparams->thole.alpha2,
                     iparams->thole.rfac);
             break;
+        case F_ANISO_POL:
+            fprintf(fp, "a11=%15.8e, a22=%15.8e, a33=%15.8e\n",
+                    iparams->daniso.a11, iparams->daniso.a22, iparams->daniso.a33);
+            break;
         case F_WATER_POL:
             fprintf(fp, "al_x=%15.8e, al_y=%15.8e, al_z=%15.8e, rOH=%9.6f, rHH=%9.6f, rOD=%9.6f\n",
                     iparams->wpol.al_x, iparams->wpol.al_y, iparams->wpol.al_z,

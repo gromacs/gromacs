@@ -279,7 +279,12 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
         case F_CMAP:
             f = 1;
             break;
-
+        case F_ANISO_POL:
+            f = 1;
+            break;
+        case F_THOLE_POL:
+            f = 1;
+            break;
         default:
             bDih = FALSE;
     }

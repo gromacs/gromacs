@@ -720,6 +720,160 @@ real anharm_polarize(int nbonds,
     return vtot;
 }
 
+real aniso_pol(int nbonds,
+               const t_iatom forceatoms[], const t_iparams forceparams[],
+               const rvec x[], rvec f[], rvec gmx_unused fshift[],
+               const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
+               real gmx_unused lambda, real gmx_unused *dvdlambda,
+               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+               int gmx_unused *global_atom_index)
+{
+    /* This routine implements generic anisotropic polarizibility */ 
+    /* The coordinate frame defined by the local geometry is converted
+     * to Cartesian space to apply forces along x, y, and z */
+    /* Mapping
+              Z1
+             /
+        X---Y-(S)    
+             \
+              Z2
+     */
+    int  i, m, aS, aX, aY, aZ1, aZ2, type, type0;
+    rvec dyz1, dyz2, dz1z2, dxy, dys, nW, kk, dx, kdx, proj;
+#ifdef DEBUG
+    rvec df;
+#endif
+    real vtot, fij, r_22, r_11, r_nW, tx, ty, tz, qS;
+
+    /* 
+     * gmx_ffparams_t  *ffparams;
+     * ffparams = &mtop->ffparams;
+     */
+
+    /* Mapping within forceatoms[]
+     *   0 = function type
+     *   1 = shell/Drude
+     *   2 = heavy atom bonded to shell/Drude
+     *   3 = bonded to 2
+     *   4 = bonded to 3 (usually a lone pair)
+     *   5 = bonded to 3 (usually a lone pair)
+     */
+    vtot = 0.0;
+    if (nbonds > 0)
+    {
+        type0  = forceatoms[0];
+        aS     = forceatoms[1];
+        qS     = md->chargeA[aS];
+        /* we can get the force constants from ffpararms or just re-calculate */
+        kk[XX] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type0].daniso.a11;
+        kk[YY] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type0].daniso.a22;
+        kk[ZZ] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type0].daniso.a33;
+        if (debug)
+        {
+            fprintf(debug, "ANISOPOL: qS  = %10.5f aS = %5d\n", qS, aS);
+            fprintf(debug, "ANISOPOL: kk  = %10.3f        %10.3f        %10.3f\n",
+                    kk[XX], kk[YY], kk[ZZ]);
+        }
+        for (i = 0; (i < nbonds); i += 6)
+        {
+            type = forceatoms[i];
+            if (type != type0)
+            {
+                gmx_fatal(FARGS, "Sorry, type = %d, type0 = %d, file = %s, line = %d",
+                          type, type0, __FILE__, __LINE__);
+            }
+            aS   = forceatoms[i+1];
+            aY   = forceatoms[i+2];
+            aX   = forceatoms[i+3];
+            aZ1  = forceatoms[i+4];
+            aZ2  = forceatoms[i+5];
+
+            /* Inverse length of the 2 axis */
+            r_22   = 1.0/sqrt(distance2(x[aZ1], x[aZ2]));
+            /* r_OD defines the inverse length of the 1 axis */
+            r_11   = 1.0/sqrt(distance2(x[aX], x[aY]));
+
+            /* Compute vectors describing the local molecular frame */
+            rvec_sub(x[aZ1], x[aY], dyz1);
+            rvec_sub(x[aZ2], x[aY], dyz2);
+            rvec_sub(x[aZ2], x[aZ1], dz1z2);
+            rvec_sub(x[aY], x[aX], dxy);
+            rvec_sub(x[aS], x[aY], dys);
+            cprod(dyz1, dyz2, nW);
+
+            /* Compute inverse length of normal vector */
+            r_nW = gmx_invsqrt(iprod(nW, nW));
+            /* This is for precision, but does not make a big difference,
+             * it can go later.
+             */
+            r_11 = gmx_invsqrt(iprod(dxy, dxy));
+
+            /* Normalize the vectors in the local molecular frame */
+            svmul(r_nW, nW, nW);
+            svmul(r_22, dz1z2, dz1z2);
+            svmul(r_11, dxy, dxy);
+
+            /* Compute displacement of shell along components of the vector */
+            dx[ZZ] = iprod(dys, dxy);
+            /* Compute projection on the XY plane: dDS - dx[ZZ]*dxy */
+            for (m = 0; (m < DIM); m++)
+            {
+                proj[m] = dys[m]-dx[ZZ]*dxy[m];
+            }
+
+            dx[XX] = iprod(proj, nW);
+            for (m = 0; (m < DIM); m++)
+            {
+                proj[m] -= dx[XX]*nW[m];
+            }
+            dx[YY] = iprod(proj, dz1z2);
+            /*#define DEBUG*/
+#ifdef DEBUG
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: dx2=%10g  dy2=%10g  dz2=%10g  sum=%10g  dDS^2=%10g\n",
+                        sqr(dx[XX]), sqr(dx[YY]), sqr(dx[ZZ]), iprod(dx, dx), iprod(dys, dys));
+                fprintf(debug, "ANISOPOL: dz1z2=(%10g,%10g,%10g)\n", dz1z2[XX], dz1z2[YY], dz1z2[ZZ]);
+                fprintf(debug, "ANISOPOL: dxy=(%10g,%10g,%10g), 1/r_11 = %10g\n",
+                        dxy[XX], dxy[YY], dxy[ZZ], 1/r_11);
+                fprintf(debug, "ANISOPOL: nW =(%10g,%10g,%10g), 1/r_nW = %10g\n",
+                        nW[XX], nW[YY], nW[ZZ], 1/r_nW);
+                fprintf(debug, "ANISOPOL: dx  =%10g, dy  =%10g, dz  =%10g\n",
+                        dx[XX], dx[YY], dx[ZZ]);
+                fprintf(debug, "ANISOPOL: dysx=%10g, dysy=%10g, dysz=%10g\n",
+                        dys[XX], dys[YY], dys[ZZ]);
+            }
+#endif
+            /* Now compute the forces and energy */
+            kdx[XX] = kk[XX]*dx[XX];
+            kdx[YY] = kk[YY]*dx[YY];
+            kdx[ZZ] = kk[ZZ]*dx[ZZ];
+            vtot   += iprod(dx, kdx);
+            for (m = 0; (m < DIM); m++)
+            {
+                /* This is a tensor operation but written out for speed */
+                tx        = nW[m]*kdx[XX];
+                ty        = dz1z2[m]*kdx[YY];
+                tz        = dxy[m]*kdx[ZZ];
+                fij       = -tx-ty-tz;
+#ifdef DEBUG
+                df[m] = fij;
+#endif
+                f[aS][m] += fij;
+                f[aY][m] -= fij;
+            }
+#ifdef DEBUG
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: vpol=%g\n", 0.5*iprod(dx, kdx));
+                fprintf(debug, "ANISOPOL: df = (%10g, %10g, %10g)\n", df[XX], df[YY], df[ZZ]);
+            }
+#endif
+        }
+    }
+    return 0.5*vtot;
+}
+
 real water_pol(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const rvec x[], rvec f[], rvec gmx_unused fshift[],

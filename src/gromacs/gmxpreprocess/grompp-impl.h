@@ -132,6 +132,7 @@ typedef enum {
     d_constraints,
     d_settles,
     d_polarization,
+    d_aniso_polarization,
     d_water_polarization,
     d_thole_polarization,
     d_system,
