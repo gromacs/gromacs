@@ -64,16 +64,16 @@ class MdrunRerun : public gmx::test::MdrunTestFixture,
 /* Among other things, this test ensures mdrun can read a trajectory. */
 TEST_P(MdrunRerun, WithDifferentInputFormats)
 {
-    useEmptyMdpFile();
-    useTopGroAndNdxFromDatabase("spc2");
-    EXPECT_EQ(0, callGrompp());
+    runner_.useEmptyMdpFile();
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    EXPECT_EQ(0, runner_.callGrompp());
 
     std::string rerunFileName = fileManager_.getInputFilePath(GetParam());
 
     ::gmx::test::CommandLine rerunCaller;
     rerunCaller.append("mdrun");
     rerunCaller.addOption("-rerun", rerunFileName);
-    ASSERT_EQ(0, callMdrun(rerunCaller));
+    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
 }
 
 /*! \brief Helper array of input files present in the source repo
