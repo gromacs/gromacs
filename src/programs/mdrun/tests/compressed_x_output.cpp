@@ -63,16 +63,16 @@ TEST_P(CompressedXOutputTest, ExitsNormally)
                         "nsteps = 1\n"
                         "nstxout-compressed = 1\n");
     mdpFile += GetParam();
-    useStringAsMdpFile(mdpFile.c_str());
-    useTopGroAndNdxFromDatabase("spc2");
-    ASSERT_EQ(0, callGrompp());
+    runner_.useStringAsMdpFile(mdpFile.c_str());
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    ASSERT_EQ(0, runner_.callGrompp());
 
-    reducedPrecisionTrajectoryFileName = fileManager_.getTemporaryFilePath(".xtc");
-    ASSERT_EQ(0, callMdrun());
+    runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath(".xtc");
+    ASSERT_EQ(0, runner_.callMdrun());
 
     ::gmx::test::CommandLine checkCaller;
     checkCaller.append("check");
-    checkCaller.addOption("-f", reducedPrecisionTrajectoryFileName);
+    checkCaller.addOption("-f", runner_.reducedPrecisionTrajectoryFileName_);
     ASSERT_EQ(0, gmx_check(checkCaller.argc(), checkCaller.argv()));
 }
 

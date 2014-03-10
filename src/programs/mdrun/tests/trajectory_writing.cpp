@@ -67,13 +67,13 @@ class TrajectoryWritingTest :
         //! Execute the trajectory writing test
         void runTest()
         {
-            useStringAsMdpFile(theMdpFile);
-            useTopGroAndNdxFromDatabase("spc-and-methanol");
-            EXPECT_EQ(0, callGrompp());
+            runner_.useStringAsMdpFile(theMdpFile);
+            runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+            EXPECT_EQ(0, runner_.callGrompp());
 
-            fullPrecisionTrajectoryFileName    = fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
-            reducedPrecisionTrajectoryFileName = fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
-            ASSERT_EQ(0, callMdrun());
+            runner_.fullPrecisionTrajectoryFileName_    = fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
+            runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
+            ASSERT_EQ(0, runner_.callMdrun());
             // TODO When there is a way to sense something like the
             // output of gmx check, compare the result with that from
             // writing .trr and .xtc and assert the behaviour is
