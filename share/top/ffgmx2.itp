@@ -1,1 +1,1 @@
-#error   This top-level .itp file has been removed. Edit your topology to include it from your force field directory instead, e.g. "gmx2.ff/forcefield.itp" etc.
+#error   The gmx force field has been deprecated, and later removed. Please use another force field

@@ -2792,35 +2792,6 @@ select we recommend \gromosv{96} for united-atom setups and OPLS-AA/L for
 all-atom parameters. That said, we describe the available options in
 some detail.
 
-\subsection{GROMOS87\index{GROMOS87 force field}}
-The \gromosv{87} suite of programs and corresponding force
-field~\cite{biomos} formed the basis for the development of {\gromacs}
-in the early 1990s.  The original GROMOS87 force field is not
-available in {\gromacs}. In previous versions ($<$ 3.3.2) there used
-to be the so-called ``{\gromacs} force field,'' which was based on
-\gromosv{87}~\cite{biomos}\index{GROMOS87}, with a small modification
-concerning the interaction between water oxygens and carbon
-atoms~\cite{Buuren93b,Mark94}, as well as 10 extra atom
-types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}. Whenever
-using this force field, please cite the above references, and {\bf do not}
-call it the ``{\gromacs} force field,'' instead name it
-\gromosv{87}~\cite{biomos} with corrections as detailed
-in~\cite{Buuren93b,Mark94}.  As noted by {\tt pdb2gmx}, this force field is
-``deprecated,'' indicating that newer, perhaps more reliable, versions of this
-parameter set are available.  For backwards compatibility, it is maintained 
-in the current release.  Should you have a justifiable reason to use this
-force field, all necessary files are provided in the {\tt gmx.ff} sub-directory
-of the {\gromacs} library.  See also the note in~\ssecref{atomtype}.
-
-\subsubsection{All-hydrogen force field}
-The \gromosv{87}-based all-hydrogen force field is almost identical to the
-normal \gromosv{87} force field, since the extra hydrogens have no
-Lennard-Jones interaction and zero charge. The only differences are in
-the bond angle and improper dihedral angle terms. This force field is
-only useful when you need the exact hydrogen positions, for instance
-for distance restraints derived from NMR measurements. When citing
-this force field please read the previous paragraph.
-
 \subsection{\gromosv{96}\index{GROMOS96 force field}}
 {\gromacs} supports the \gromosv{96} force fields~\cite{gromos96}.
 All parameters for the 43A1, 43A2 (development, improved alkane
