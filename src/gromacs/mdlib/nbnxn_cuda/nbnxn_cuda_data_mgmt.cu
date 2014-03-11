@@ -126,7 +126,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
     table_spline3_fill_ewald_lr(ftmp, NULL, NULL, tabsize,
-                                1/tabscale, nbp->ewald_beta);
+                                1/tabscale, nbp->ewald_beta, v_q_ewald_lr);
 
     /* If the table pointer == NULL the table is generated the first time =>
        the array pointer will be saved to nbparam and the texture is bound.
