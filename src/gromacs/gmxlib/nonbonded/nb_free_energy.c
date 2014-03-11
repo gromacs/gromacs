@@ -72,7 +72,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          Vvdw6, Vvdw12, vvtot;
     real          ix, iy, iz, fix, fiy, fiz;
     real          dx, dy, dz, rsq, rinv;
-    real          c6[NSTATES], c12[NSTATES];
+    real          c6[NSTATES], c12[NSTATES], c6grid[NSTATES];
     real          LFC[NSTATES], LFV[NSTATES], DLF[NSTATES];
     double        dvdl_coul, dvdl_vdw;
     real          lfac_coul[NSTATES], dlfac_coul[NSTATES], lfac_vdw[NSTATES], dlfac_vdw[NSTATES];
@@ -103,8 +103,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const real *  chargeA;
     const real *  chargeB;
     real          sigma6_min, sigma6_def, lam_power, sc_power, sc_r_power;
-    real          alpha_coul, alpha_vdw, lambda_coul, lambda_vdw, ewc;
-    const real *  nbfp;
+    real          alpha_coul, alpha_vdw, lambda_coul, lambda_vdw, ewc_lj;
+    const real *  nbfp, *nbfp_grid;
     real *        dvdl;
     real *        Vv;
     real *        Vc;
@@ -116,6 +116,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          rcutoff, rcutoff2, rswitch, d, d2, swV3, swV4, swV5, swF2, swF3, swF4, sw, dsw, rinvcorr;
     const real *  tab_ewald_F;
     const real *  tab_ewald_V;
+    const real *  tab_ewald_F_lj;
+    const real *  tab_ewald_V_lj;
     real          tab_ewald_scale, tab_ewald_halfsp;
 
     x                   = xx[0];
@@ -138,12 +140,13 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     facel               = fr->epsfac;
     krf                 = fr->k_rf;
     crf                 = fr->c_rf;
-    ewc                 = fr->ewaldcoeff_q;
+    ewc_lj              = fr->ewaldcoeff_lj;
     Vc                  = kernel_data->energygrp_elec;
     typeA               = mdatoms->typeA;
     typeB               = mdatoms->typeB;
     ntype               = fr->ntype;
     nbfp                = fr->nbfp;
+    nbfp_grid           = fr->ljpme_c6grid;
     Vv                  = kernel_data->energygrp_vdw;
     lambda_coul         = kernel_data->lambda[efptCOUL];
     lambda_vdw          = kernel_data->lambda[efptVDW];
@@ -167,6 +170,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     tab_ewald_F         = fr->ic->tabq_coul_F;
     tab_ewald_V         = fr->ic->tabq_coul_V;
     tab_ewald_scale     = fr->ic->tabq_scale;
+    tab_ewald_F_lj      = fr->ic->tabq_vdw_F;
+    tab_ewald_V_lj      = fr->ic->tabq_vdw_V;
     tab_ewald_halfsp    = 0.5/tab_ewald_scale;
 
     if (fr->coulomb_modifier == eintmodPOTSWITCH || fr->vdw_modifier == eintmodPOTSWITCH)
@@ -199,8 +204,14 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         const interaction_const_t *ic;
 
         ic = fr->ic;
-
-        ivdw             = GMX_NBKERNEL_VDW_LENNARDJONES;
+        if (EVDW_PME(ic->vdwtype))
+        {
+            ivdw         = GMX_NBKERNEL_VDW_LJEWALD;
+        }
+        else
+        {
+            ivdw         = GMX_NBKERNEL_VDW_LENNARDJONES;
+        }
 
         if (ic->eeltype == eelCUT || EEL_RF(ic->eeltype))
         {
@@ -364,11 +375,15 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
             {
                 tj[STATE_A]      = ntiA+2*typeA[jnr];
                 tj[STATE_B]      = ntiB+2*typeB[jnr];
-
+                c6[STATE_A]      = nbfp[tj[STATE_A]];
+                c6[STATE_B]      = nbfp[tj[STATE_B]];
+                if (ivdw == GMX_NBKERNEL_VDW_LJEWALD)
+                {
+                    c6grid[STATE_A] = nbfp_grid[tj[STATE_A]];
+                    c6grid[STATE_B] = nbfp_grid[tj[STATE_B]];
+                }
                 for (i = 0; i < NSTATES; i++)
                 {
-
-                    c6[i]              = nbfp[tj[i]];
                     c12[i]             = nbfp[tj[i]+1];
                     if ((c6[i] > 0) && (c12[i] > 0))
                     {
@@ -524,11 +539,14 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                         }
 
                         if ((c6[i] != 0 || c12[i] != 0) &&
-                            !(bExactVdwCutoff && rV >= rvdw))
+                            !(bExactVdwCutoff &&
+                              ((ivdw != GMX_NBKERNEL_VDW_LJEWALD && rV >= rvdw) ||
+                               (ivdw == GMX_NBKERNEL_VDW_LJEWALD && r >= rvdw))))
                         {
                             switch (ivdw)
                             {
                                 case GMX_NBKERNEL_VDW_LENNARDJONES:
+                                case GMX_NBKERNEL_VDW_LJEWALD:
                                     /* cutoff LJ */
                                     if (sc_r_power == 6.0)
                                     {
@@ -683,6 +701,27 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     Fscal      -= LFC[i]*qq[i]*FF;
                     dvdl_coul  -= (DLF[i]*qq[i])*VV;
                 }
+            }
+
+            if (ivdw == GMX_NBKERNEL_VDW_LJEWALD &&
+                !(bExactVdwCutoff && r >= rvdw))
+            {
+                real rs, frac, f_lr;
+                int  ri;
+
+                rs     = rsq*rinv*tab_ewald_scale;
+                ri     = (int)rs;
+                frac   = rs - ri;
+                f_lr   = (1 - frac)*tab_ewald_F_lj[ri] + frac*tab_ewald_F_lj[ri+1];
+                FF     = f_lr*rinv;
+                VV     = tab_ewald_V_lj[ri] - tab_ewald_halfsp*frac*(tab_ewald_F_lj[ri] + f_lr);
+                for (i = 0; i < NSTATES; i++)
+                {
+                    vvtot      += LFV[i]*c6grid[i]*VV*(1.0/6.0);
+                    Fscal      += LFV[i]*c6grid[i]*FF*(1.0/6.0);
+                    dvdl_vdw   += (DLF[i]*c6grid[i])*VV*(1.0/6.0);
+                }
+
             }
 
             if (bDoForces)
