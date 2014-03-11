@@ -304,13 +304,10 @@ typedef struct gmx_pme {
     int        nthread;       /* The number of threads doing PME on our rank */
 
     gmx_bool   bPPnode;       /* Node also does particle-particle forces */
-
     gmx_bool   bFEP;          /* Compute Free energy contribution */
     gmx_bool   bFEP_q;
     gmx_bool   bFEP_lj;
-
     int        nkx, nky, nkz; /* Grid dimensions */
-
     gmx_bool   bP3M;          /* Do P3M: optimize the influence function */
     int        pme_order;
     real       epsilon_r;
@@ -4680,14 +4677,12 @@ do_redist_x_q(gmx_pme_t pme, t_commrec *cr, int start, int homenr,
     }
 }
 
-/* TODO: when adding free-energy support, sigmaB will no longer be
- * unused */
 int gmx_pme_do(gmx_pme_t pme,
                int start,       int homenr,
                rvec x[],        rvec f[],
                real *chargeA,   real *chargeB,
                real *c6A,       real *c6B,
-               real *sigmaA,    real gmx_unused *sigmaB,
+               real *sigmaA,    real *sigmaB,
                matrix box, t_commrec *cr,
                int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
@@ -4698,7 +4693,7 @@ int gmx_pme_do(gmx_pme_t pme,
                real *dvdlambda_q, real *dvdlambda_lj,
                int flags)
 {
-    int     q, d, i, j, ntot, npme, qmax;
+    int     q, d, i, j, k, ntot, npme, qmax;
     int     nx, ny, nz;
     int     n_d, local_ny;
     pme_atomcomm_t *atc = NULL;
@@ -5016,227 +5011,258 @@ int gmx_pme_do(gmx_pme_t pme,
 
     if ((flags & GMX_PME_DO_LJ) && pme->ljpme_combination_rule == eljpmeLB)
     {
-        real *local_c6 = NULL, *local_sigma = NULL;
-        if (pme->nnodes == 1)
+        /* Loop over A- and B-state if we are doing FEP */
+        for (k = 0; k < ((pme->bFEP_lj) ? 2 : 1); ++k)
         {
-            if (pme->lb_buf1 == NULL)
+            real *local_c6 = NULL, *local_sigma = NULL, *RedistC6 = NULL, *RedistSigma = NULL;
+
+            if (pme->nnodes == 1)
             {
-                pme->lb_buf_nalloc = pme->atc[0].n;
-                snew(pme->lb_buf1, pme->lb_buf_nalloc);
-            }
-            pme->atc[0].q = pme->lb_buf1;
-            local_c6      = c6A;
-            local_sigma   = sigmaA;
-        }
-        else
-        {
-            atc = &pme->atc[0];
-
-            wallcycle_start(wcycle, ewcPME_REDISTXF);
-
-            do_redist_x_q(pme, cr, start, homenr, bFirst, x, c6A);
-            if (pme->lb_buf_nalloc < atc->n)
-            {
-                pme->lb_buf_nalloc = atc->nalloc;
-                srenew(pme->lb_buf1, pme->lb_buf_nalloc);
-                srenew(pme->lb_buf2, pme->lb_buf_nalloc);
-            }
-            local_c6 = pme->lb_buf1;
-            for (i = 0; i < atc->n; ++i)
-            {
-                local_c6[i] = atc->q[i];
-            }
-            where();
-
-            do_redist_x_q(pme, cr, start, homenr, FALSE, x, sigmaA);
-            local_sigma = pme->lb_buf2;
-            for (i = 0; i < atc->n; ++i)
-            {
-                local_sigma[i] = atc->q[i];
-            }
-            where();
-
-            wallcycle_stop(wcycle, ewcPME_REDISTXF);
-        }
-        calc_initial_lb_coeffs(pme, local_c6, local_sigma);
-
-        /*Seven terms in LJ-PME with LB, q < 2 reserved for electrostatics*/
-        for (q = 2; q < 9; ++q)
-        {
-            /* Unpack structure */
-            pmegrid    = &pme->pmegrid[q];
-            fftgrid    = pme->fftgrid[q];
-            cfftgrid   = pme->cfftgrid[q];
-            pfft_setup = pme->pfft_setup[q];
-            calc_next_lb_coeffs(pme, local_sigma);
-            grid = pmegrid->grid.grid;
-            where();
-
-            if (flags & GMX_PME_SPREAD_Q)
-            {
-                wallcycle_start(wcycle, ewcPME_SPREADGATHER);
-                /* Spread the charges on a grid */
-                spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines);
-
-                if (bFirst)
+                if (pme->lb_buf1 == NULL)
                 {
-                    inc_nrnb(nrnb, eNR_WEIGHTS, DIM*atc->n);
+                    pme->lb_buf_nalloc = pme->atc[0].n;
+                    snew(pme->lb_buf1, pme->lb_buf_nalloc);
                 }
-                inc_nrnb(nrnb, eNR_SPREADQBSP,
-                         pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
-                if (pme->nthread == 1)
+                pme->atc[0].q = pme->lb_buf1;
+                switch (k)
                 {
-                    wrap_periodic_pmegrid(pme, grid);
-
-                    /* sum contributions to local grid from other nodes */
-#ifdef GMX_MPI
-                    if (pme->nnodes > 1)
-                    {
-                        gmx_sum_qgrid_dd(pme, grid, GMX_SUM_QGRID_FORWARD);
-                        where();
-                    }
-#endif
-                    copy_pmegrid_to_fftgrid(pme, grid, fftgrid, q);
-                }
-
-                wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
-            }
-
-            /*Here we start a large thread parallel region*/
-#pragma omp parallel num_threads(pme->nthread) private(thread)
-            {
-                thread = gmx_omp_get_thread_num();
-                if (flags & GMX_PME_SOLVE)
-                {
-                    /* do 3d-fft */
-                    if (thread == 0)
-                    {
-                        wallcycle_start(wcycle, ewcPME_FFT);
-                    }
-
-                    gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
-                                               thread, wcycle);
-                    if (thread == 0)
-                    {
-                        wallcycle_stop(wcycle, ewcPME_FFT);
-                    }
-                    where();
+                    case 0:
+                        local_c6      = c6A;
+                        local_sigma   = sigmaA;
+                        break;
+                    case 1:
+                        local_c6      = c6B;
+                        local_sigma   = sigmaB;
+                        break;
+                    default:
+                        gmx_incons("k too large in LJ-PME routine");
                 }
             }
-            bFirst = FALSE;
-        }
-        if (flags & GMX_PME_SOLVE)
-        {
-            int loop_count;
-            /* solve in k-space for our local cells */
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+            else
             {
-                thread = gmx_omp_get_thread_num();
-                if (thread == 0)
+                atc = &pme->atc[0];
+
+                switch (k)
                 {
-                    wallcycle_start(wcycle, ewcLJPME);
+                    case 0:
+                        RedistC6      = c6A;
+                        RedistSigma   = sigmaA;
+                        break;
+                    case 1:
+                        RedistC6      = c6B;
+                        RedistSigma   = sigmaB;
+                        break;
+                    default:
+                        gmx_incons("k too large in LJ-PME routine");
                 }
 
-                loop_count =
-                    solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE, ewaldcoeff_lj,
-                                     box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
-                                     bCalcEnerVir,
-                                     pme->nthread, thread);
-                if (thread == 0)
+                wallcycle_start(wcycle, ewcPME_REDISTXF);
+
+                do_redist_x_q(pme, cr, start, homenr, bFirst, x, RedistC6);
+                if (pme->lb_buf_nalloc < atc->n)
                 {
-                    wallcycle_stop(wcycle, ewcLJPME);
-                    where();
-                    inc_nrnb(nrnb, eNR_SOLVEPME, loop_count);
+                    pme->lb_buf_nalloc = atc->nalloc;
+                    srenew(pme->lb_buf1, pme->lb_buf_nalloc);
+                    srenew(pme->lb_buf2, pme->lb_buf_nalloc);
                 }
+                local_c6 = pme->lb_buf1;
+                for (i = 0; i < atc->n; ++i)
+                {
+                    local_c6[i] = atc->q[i];
+                }
+                where();
+
+                do_redist_x_q(pme, cr, start, homenr, FALSE, x, RedistSigma);
+                local_sigma = pme->lb_buf2;
+                for (i = 0; i < atc->n; ++i)
+                {
+                    local_sigma[i] = atc->q[i];
+                }
+                where();
+
+                wallcycle_stop(wcycle, ewcPME_REDISTXF);
             }
-        }
-
-        if (bCalcEnerVir)
-        {
-            /* This should only be called on the master thread and
-             * after the threads have synchronized.
-             */
-            get_pme_ener_vir_lj(pme, pme->nthread, &energy_AB[2], vir_AB[2]);
-        }
-
-        if (bCalcF)
-        {
-            bFirst = !(flags & GMX_PME_DO_COULOMB);
             calc_initial_lb_coeffs(pme, local_c6, local_sigma);
-            for (q = 8; q >= 2; --q)
+
+            /*Seven terms in LJ-PME with LB, q < 2 reserved for electrostatics*/
+            for (q = 2; q < 9; ++q)
             {
                 /* Unpack structure */
                 pmegrid    = &pme->pmegrid[q];
                 fftgrid    = pme->fftgrid[q];
                 cfftgrid   = pme->cfftgrid[q];
                 pfft_setup = pme->pfft_setup[q];
-                grid       = pmegrid->grid.grid;
                 calc_next_lb_coeffs(pme, local_sigma);
+                grid = pmegrid->grid.grid;
                 where();
+
+                if (flags & GMX_PME_SPREAD_Q)
+                {
+                    wallcycle_start(wcycle, ewcPME_SPREADGATHER);
+                    /* Spread the charges on a grid */
+                    spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines);
+
+                    if (bFirst)
+                    {
+                        inc_nrnb(nrnb, eNR_WEIGHTS, DIM*atc->n);
+                    }
+                    inc_nrnb(nrnb, eNR_SPREADQBSP,
+                             pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
+                    if (pme->nthread == 1)
+                    {
+                        wrap_periodic_pmegrid(pme, grid);
+
+                        /* sum contributions to local grid from other nodes */
+#ifdef GMX_MPI
+                        if (pme->nnodes > 1)
+                        {
+                            gmx_sum_qgrid_dd(pme, grid, GMX_SUM_QGRID_FORWARD);
+                            where();
+                        }
+#endif
+                        copy_pmegrid_to_fftgrid(pme, grid, fftgrid, q);
+                    }
+
+                    wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
+                }
+
+                /*Here we start a large thread parallel region*/
 #pragma omp parallel num_threads(pme->nthread) private(thread)
                 {
                     thread = gmx_omp_get_thread_num();
-                    /* do 3d-invfft */
-                    if (thread == 0)
+                    if (flags & GMX_PME_SOLVE)
                     {
-                        where();
-                        wallcycle_start(wcycle, ewcPME_FFT);
-                    }
-
-                    gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
-                                               thread, wcycle);
-                    if (thread == 0)
-                    {
-                        wallcycle_stop(wcycle, ewcPME_FFT);
-
-                        where();
-
-                        if (pme->nodeid == 0)
+                        /* do 3d-fft */
+                        if (thread == 0)
                         {
-                            ntot  = pme->nkx*pme->nky*pme->nkz;
-                            npme  = ntot*log((real)ntot)/log(2.0);
-                            inc_nrnb(nrnb, eNR_FFT, 2*npme);
+                            wallcycle_start(wcycle, ewcPME_FFT);
                         }
-                        wallcycle_start(wcycle, ewcPME_SPREADGATHER);
+
+                        gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
+                                                   thread, wcycle);
+                        if (thread == 0)
+                        {
+                            wallcycle_stop(wcycle, ewcPME_FFT);
+                        }
+                        where();
+                    }
+                }
+                bFirst = FALSE;
+            }
+
+            if (flags & GMX_PME_SOLVE)
+            {
+                int loop_count;
+                /* solve in k-space for our local cells */
+#pragma omp parallel num_threads(pme->nthread) private(thread)
+                {
+                    thread = gmx_omp_get_thread_num();
+                    if (thread == 0)
+                    {
+                        wallcycle_start(wcycle, ewcLJPME);
                     }
 
-                    copy_fftgrid_to_pmegrid(pme, fftgrid, grid, q, pme->nthread, thread);
+                    loop_count =
+                        solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE, ewaldcoeff_lj,
+                                         box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
+                                         bCalcEnerVir,
+                                         pme->nthread, thread);
+                    if (thread == 0)
+                    {
+                        wallcycle_stop(wcycle, ewcLJPME);
+                        where();
+                        inc_nrnb(nrnb, eNR_SOLVEPME, loop_count);
+                    }
+                }
+            }
 
-                } /*#pragma omp parallel*/
+            if (bCalcEnerVir)
+            {
+                /* This should only be called on the master thread and
+                 * after the threads have synchronized.
+                 */
+                get_pme_ener_vir_lj(pme, pme->nthread, &energy_AB[2+k], vir_AB[2+k]);
+            }
 
-                /* distribute local grid to all nodes */
+            if (bCalcF)
+            {
+                bFirst = !(flags & GMX_PME_DO_COULOMB);
+                calc_initial_lb_coeffs(pme, local_c6, local_sigma);
+                for (q = 8; q >= 2; --q)
+                {
+                    /* Unpack structure */
+                    pmegrid    = &pme->pmegrid[q];
+                    fftgrid    = pme->fftgrid[q];
+                    cfftgrid   = pme->cfftgrid[q];
+                    pfft_setup = pme->pfft_setup[q];
+                    grid       = pmegrid->grid.grid;
+                    calc_next_lb_coeffs(pme, local_sigma);
+                    where();
+#pragma omp parallel num_threads(pme->nthread) private(thread)
+                    {
+                        thread = gmx_omp_get_thread_num();
+                        /* do 3d-invfft */
+                        if (thread == 0)
+                        {
+                            where();
+                            wallcycle_start(wcycle, ewcPME_FFT);
+                        }
+
+                        gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
+                                                   thread, wcycle);
+                        if (thread == 0)
+                        {
+                            wallcycle_stop(wcycle, ewcPME_FFT);
+
+                            where();
+
+                            if (pme->nodeid == 0)
+                            {
+                                ntot  = pme->nkx*pme->nky*pme->nkz;
+                                npme  = ntot*log((real)ntot)/log(2.0);
+                                inc_nrnb(nrnb, eNR_FFT, 2*npme);
+                            }
+                            wallcycle_start(wcycle, ewcPME_SPREADGATHER);
+                        }
+
+                        copy_fftgrid_to_pmegrid(pme, fftgrid, grid, q, pme->nthread, thread);
+
+                    } /*#pragma omp parallel*/
+
+                    /* distribute local grid to all nodes */
 #ifdef GMX_MPI
-                if (pme->nnodes > 1)
-                {
-                    gmx_sum_qgrid_dd(pme, grid, GMX_SUM_QGRID_BACKWARD);
-                }
+                    if (pme->nnodes > 1)
+                    {
+                        gmx_sum_qgrid_dd(pme, grid, GMX_SUM_QGRID_BACKWARD);
+                    }
 #endif
-                where();
+                    where();
 
-                unwrap_periodic_pmegrid(pme, grid);
+                    unwrap_periodic_pmegrid(pme, grid);
 
-                /* interpolate forces for our local atoms */
-                where();
-                bClearF = (bFirst && PAR(cr));
-                scale   = pme->bFEP ? (q < 9 ? 1.0-lambda_lj : lambda_lj) : 1.0;
-                scale  *= lb_scale_factor[q-2];
+                    /* interpolate forces for our local atoms */
+                    where();
+                    bClearF = (bFirst && PAR(cr));
+                    scale   = pme->bFEP ? (k < 1 ? 1.0-lambda_lj : lambda_lj) : 1.0;
+                    scale  *= lb_scale_factor[q-2];
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
-                for (thread = 0; thread < pme->nthread; thread++)
-                {
-                    gather_f_bsplines(pme, grid, bClearF, &pme->atc[0],
-                                      &pme->atc[0].spline[thread],
-                                      scale);
-                }
-                where();
+                    for (thread = 0; thread < pme->nthread; thread++)
+                    {
+                        gather_f_bsplines(pme, grid, bClearF, &pme->atc[0],
+                                          &pme->atc[0].spline[thread],
+                                          scale);
+                    }
+                    where();
 
-                inc_nrnb(nrnb, eNR_GATHERFBSP,
-                         pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
-                wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
+                    inc_nrnb(nrnb, eNR_GATHERFBSP,
+                             pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+                    wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
 
-                bFirst = FALSE;
-            } /*for (q = 8; q >= 2; --q)*/
-        }     /*if (bCalcF)*/
-    }         /*if ((flags & GMX_PME_DO_LJ) && pme->ljpme_combination_rule == eljpmeLB) */
+                    bFirst = FALSE;
+                } /* for (q = 8; q >= 2; --q) */
+            }     /* if (bCalcF) */
+        }         /* for (k = 0; k < ((pme->bFEP_lj)... */
+    }
 
     if (bCalcF && pme->nnodes > 1)
     {
