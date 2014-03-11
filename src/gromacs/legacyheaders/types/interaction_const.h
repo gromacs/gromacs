@@ -117,6 +117,16 @@ typedef struct {
        entry quadruplets are: F[i], F[i+1]-F[i], V[i], 0,
        this is used with single precision x86 SIMD for aligned loads */
     real *tabq_coul_FDV0;
+
+    /* Vdw force table for LJ-PME, size of array is tabq_size (when used) */
+    real *tabq_vdw_F;
+    /* Vdw energy table for LJ-PME, size of array is tabq_size (when used) */
+    real *tabq_vdw_V;
+    /* Vdw force+energy table for LJ-PME, size of array is tabq_size*4, entry
+       quadruplets are: F[i], F[i+1]-F[i], V[i], 0, this is used with
+       single precision x86 SIMD for aligned loads */
+    real *tabq_vdw_FDV0;
+
 } interaction_const_t;
 
 #ifdef __cplusplus

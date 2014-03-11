@@ -44,12 +44,18 @@ extern "C" {
 }
 #endif
 
-void table_spline3_fill_ewald_lr(real *table_F,
-                                 real *table_V,
-                                 real *table_FDV0,
-                                 int   ntab,
-                                 real  dx,
-                                 real  beta);
+typedef double (*real_space_grid_contribution_computer)(double, double);
+/* Function pointer used to tell table_spline3_fill_ewald_lr whether it
+ * should calculate the grid contribution for electrostatics or LJ.
+ */
+
+void table_spline3_fill_ewald_lr(real                                 *table_F,
+                                 real                                 *table_V,
+                                 real                                 *table_FDV0,
+                                 int                                   ntab,
+                                 real                                  dx,
+                                 real                                  beta,
+                                 real_space_grid_contribution_computer v_lr);
 /* Fill tables of ntab points with spacing dr with the ewald long-range
  * (mesh) force.
  * There are three separate tables with format FDV0, F, and V.
@@ -61,6 +67,11 @@ void table_spline3_fill_ewald_lr(real *table_F,
 real ewald_spline3_table_scale(real ewaldcoeff, real rc);
 /* Return the scaling for the Ewald quadratic spline tables. */
 
+double v_q_ewald_lr(double beta, double r);
+/* Return the real space grid contribution for Ewald*/
+
+double v_lj_ewald_lr(double beta, double r);
+/* Return the real space grid contribution for LJ-Ewald*/
 
 #ifdef __cplusplus
 }
