@@ -132,8 +132,7 @@ typedef struct {
 #define pow4(x) ((x)*(x)*(x)*(x))
 #define pow5(x) ((x)*(x)*(x)*(x)*(x))
 
-
-static double v_ewald_lr(double beta, double r)
+double v_ewald_lr(double beta, double r)
 {
     if (r == 0)
     {
@@ -145,12 +144,31 @@ static double v_ewald_lr(double beta, double r)
     }
 }
 
+double v_lj_ewald_lr(double beta, double r)
+{
+    double br, br2, br4, r6, factor;
+    if (r == 0)
+    {
+        return pow(beta, 6)/6;
+    }
+    else
+    {
+        br     = beta*r;
+        br2    = br*br;
+        br4    = br2*br2;
+        r6     = pow(r, 6.0);
+        factor = (1.0 - exp(-br2)*(1 + br2 + 0.5*br4))/r6;
+        return factor;
+    }
+}
+
 void table_spline3_fill_ewald_lr(real *table_f,
                                  real *table_v,
                                  real *table_fdv0,
                                  int   ntab,
                                  real  dx,
-                                 real  beta)
+                                 real  beta,
+                                 double (*v_lr)(double, double))
 {
     real     tab_max;
     int      i, i_inrange;
@@ -158,6 +176,10 @@ void table_spline3_fill_ewald_lr(real *table_f,
     gmx_bool bOutOfRange;
     double   v_r0, v_r1, v_inrange, vi, a0, a1, a2dx;
     double   x_r0;
+
+    /* This function is called using either v_ewald_lr or v_lj_ewald_lr as a function argument
+     * depending on wether we should create electrostatic or Lennard-Jones Ewald tables.
+     */
 
     if (ntab < 2)
     {
@@ -184,7 +206,7 @@ void table_spline3_fill_ewald_lr(real *table_f,
     {
         x_r0 = i*dx;
 
-        v_r0 = v_ewald_lr(beta, x_r0);
+        v_r0 = (*v_lr)(beta, x_r0);
 
         if (!bOutOfRange)
         {
@@ -210,7 +232,7 @@ void table_spline3_fill_ewald_lr(real *table_f,
         }
 
         /* Get the potential at table point i-1 */
-        v_r1 = v_ewald_lr(beta, (i-1)*dx);
+        v_r1 = (*v_lr)(beta, (i-1)*dx);
 
         if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
         {
@@ -222,7 +244,7 @@ void table_spline3_fill_ewald_lr(real *table_f,
             /* Calculate the average second derivative times dx over interval i-1 to i.
              * Using the function values at the end points and in the middle.
              */
-            a2dx = (v_r0 + v_r1 - 2*v_ewald_lr(beta, x_r0-0.5*dx))/(0.25*dx);
+            a2dx = (v_r0 + v_r1 - 2*(*v_lr)(beta, x_r0-0.5*dx))/(0.25*dx);
             /* Set the derivative of the spline to match the difference in potential
              * over the interval plus the average effect of the quadratic term.
              * This is the essential step for minimizing the error in the force.

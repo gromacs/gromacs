@@ -1955,11 +1955,6 @@ int gmx_grompp(int argc, char *argv[])
        potentially conflict if not handled correctly. */
     if (ir->efep != efepNO)
     {
-        if (EVDW_PME(ir->vdwtype))
-        {
-            gmx_fatal(FARGS, "LJ-PME not implemented together with free energy calculations!");
-        }
-
         state.fep_state = ir->fepvals->init_fep_state;
         for (i = 0; i < efptNR; i++)
         {

@@ -1886,12 +1886,28 @@ static void init_ewald_f_table(interaction_const_t *ic,
     sfree_aligned(ic->tabq_coul_F);
     sfree_aligned(ic->tabq_coul_V);
 
-    /* Create the original table data in FDV0 */
-    snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
-    snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
-    snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
-    table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q);
+    sfree_aligned(ic->tabq_vdw_FDV0);
+    sfree_aligned(ic->tabq_vdw_F);
+    sfree_aligned(ic->tabq_vdw_V);
+
+    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    {
+        /* Create the original table data in FDV0 */
+        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
+        snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
+        snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
+        table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
+                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_ewald_lr);
+    }
+
+    if (EVDW_PME(ic->vdwtype))
+    {
+        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size*4, 32);
+        snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
+        snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
+        table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
+                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+    }
 }
 
 void init_interaction_const_tables(FILE                *fp,
@@ -1901,7 +1917,7 @@ void init_interaction_const_tables(FILE                *fp,
 {
     real spacing;
 
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
         init_ewald_f_table(ic, bUsesSimpleTables, rtab);
 

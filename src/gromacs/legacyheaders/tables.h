@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,8 @@ void table_spline3_fill_ewald_lr(real *table_F,
                                  real *table_FDV0,
                                  int   ntab,
                                  real  dx,
-                                 real  beta);
+                                 real  beta,
+                                 double (*v_lr)(double, double));
 /* Fill tables of ntab points with spacing dr with the ewald long-range
  * (mesh) force.
  * There are three separate tables with format FDV0, F, and V.
@@ -61,6 +62,11 @@ void table_spline3_fill_ewald_lr(real *table_F,
 real ewald_spline3_table_scale(real ewaldcoeff, real rc);
 /* Return the scaling for the Ewald quadratic spline tables. */
 
+double v_ewald_lr(double beta, double r);
+/* Return the real space grid contribution for Ewald*/
+
+double v_lj_ewald_lr(double beta, double r);
+/* Return the real space grid contribution for LJ-Ewald*/
 
 #ifdef __cplusplus
 }
