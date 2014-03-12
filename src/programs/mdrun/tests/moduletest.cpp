@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -160,10 +160,9 @@ SimulationRunner::useGroFromDatabase(const char *name)
 }
 
 int
-SimulationRunner::callGromppOnThisRank()
+SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
 {
-    CommandLine caller;
-    caller.append("grompp");
+    CommandLine caller(callerRef);
     caller.addOption("-f", mdpInputFileName_);
     caller.addOption("-n", ndxFileName_);
     caller.addOption("-p", topFileName_);
@@ -176,7 +175,15 @@ SimulationRunner::callGromppOnThisRank()
 }
 
 int
-SimulationRunner::callGrompp()
+SimulationRunner::callGromppOnThisRank()
+{
+    CommandLine caller;
+    caller.append("grompp");
+    return callGromppOnThisRank(caller);
+}
+
+int
+SimulationRunner::callGrompp(const CommandLine &callerRef)
 {
     int returnValue = 0;
 #ifdef GMX_LIB_MPI
@@ -186,7 +193,7 @@ SimulationRunner::callGrompp()
     if (0 == gmx_node_rank())
 #endif
     {
-        returnValue = callGromppOnThisRank();
+        returnValue = callGromppOnThisRank(callerRef);
     }
 #ifdef GMX_LIB_MPI
     // Make sure rank zero has written the .tpr file before other
@@ -195,6 +202,14 @@ SimulationRunner::callGrompp()
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     return returnValue;
+}
+
+int
+SimulationRunner::callGrompp()
+{
+    CommandLine caller;
+    caller.append("grompp");
+    return callGrompp(caller);
 }
 
 int
