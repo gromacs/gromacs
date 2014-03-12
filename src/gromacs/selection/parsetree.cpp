@@ -1164,38 +1164,12 @@ _gmx_sel_parser_should_finish(yyscan_t scanner)
     return (int)sc->sel.size() == _gmx_sel_lexer_exp_selcount(scanner);
 }
 
-/*!
- * \param[in] scanner Scanner data structure.
- */
 void
-_gmx_sel_handle_empty_cmd(yyscan_t scanner)
+_gmx_sel_handle_empty_cmd(yyscan_t /*scanner*/)
 {
-    gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
-    gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
-    int                      i;
-
-    if (!_gmx_sel_is_lexer_interactive(scanner))
-    {
-        return;
-    }
-
-    if (grps)
-    {
-        fprintf(stderr, "Available index groups:\n");
-        gmx_ana_indexgrps_print(stderr, _gmx_sel_lexer_indexgrps(scanner), 0);
-    }
-    if (sc->nvars > 0 || !sc->sel.empty())
-    {
-        fprintf(stderr, "Currently provided selections:\n");
-        for (i = 0; i < sc->nvars; ++i)
-        {
-            fprintf(stderr, "     %s\n", sc->varstrs[i]);
-        }
-        for (i = 0; i < (int)sc->sel.size(); ++i)
-        {
-            fprintf(stderr, " %2d. %s\n", i+1, sc->sel[i]->selectionText());
-        }
-    }
+    // This is now handled outside the actual parser, in
+    // selectioncollection.cpp.  This stub will be removed as part of later
+    // refactoring related to the selection parser.
 }
 
 /*!
