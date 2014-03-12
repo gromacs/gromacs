@@ -160,7 +160,7 @@ SimulationRunner::useGroFromDatabase(const char *name)
 }
 
 int
-SimulationRunner::callGromppOnThisRank()
+SimulationRunner::callGromppOnThisRank(unsigned int numberOfExpectedWarnings /*= 0*/)
 {
     CommandLine caller;
     caller.append("grompp");
@@ -172,11 +172,13 @@ SimulationRunner::callGromppOnThisRank()
     caller.addOption("-po", mdpOutputFileName_);
     caller.addOption("-o", tprFileName_);
 
+    caller.addOption("-maxwarn", (int) numberOfExpectedWarnings);
+
     return gmx_grompp(caller.argc(), caller.argv());
 }
 
 int
-SimulationRunner::callGrompp()
+SimulationRunner::callGrompp(unsigned int numberOfExpectedWarnings /*= 0*/)
 {
     int returnValue = 0;
 #ifdef GMX_LIB_MPI
@@ -186,7 +188,7 @@ SimulationRunner::callGrompp()
     if (0 == gmx_node_rank())
 #endif
     {
-        returnValue = callGromppOnThisRank();
+        returnValue = callGromppOnThisRank(numberOfExpectedWarnings);
     }
 #ifdef GMX_LIB_MPI
     // Make sure rank zero has written the .tpr file before other
