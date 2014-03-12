@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -207,6 +207,40 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
 }
 
 /*! \brief
+ * Print current status in response to empty line in interactive input.
+ *
+ * \param[in] sc             Selection collection data structure.
+ * \param[in] grps           Available index groups.
+ * \param[in] firstSelection Index of first selection from this interactive
+ *     session.
+ *
+ * Prints the available index groups and currently provided selections.
+ */
+void printCurrentStatus(gmx_ana_selcollection_t *sc, gmx_ana_indexgrps_t *grps,
+                        size_t firstSelection)
+{
+    if (grps != NULL)
+    {
+        std::fprintf(stderr, "Available static index groups:\n");
+        gmx_ana_indexgrps_print(stderr, grps, 0);
+    }
+    if (sc->nvars > 0 || sc->sel.size() > firstSelection)
+    {
+        std::fprintf(stderr, "Currently provided selections:\n");
+        for (int i = 0; i < sc->nvars; ++i)
+        {
+            std::fprintf(stderr, "     %s\n", sc->varstrs[i]);
+        }
+        for (size_t i = firstSelection; i < sc->sel.size(); ++i)
+        {
+            std::fprintf(stderr, " %2d. %s\n",
+                         static_cast<int>(i - firstSelection + 1),
+                         sc->sel[i]->selectionText());
+        }
+    }
+}
+
+/*! \brief
  * Helper function that runs the parser once the tokenizer has been
  * initialized.
  *
@@ -230,8 +264,8 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr)
     MessageStringCollector   errors;
     _gmx_sel_set_lexer_error_reporter(scanner, &errors);
 
-    int  oldCount = sc->sel.size();
-    bool bOk      = false;
+    size_t oldCount = sc->sel.size();
+    bool   bOk      = false;
     {
         boost::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
@@ -243,6 +277,15 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr)
             int         status;
             while (promptLine(&stdinFile, bInteractive, &line))
             {
+                if (bInteractive)
+                {
+                    if (line.empty())
+                    {
+                        printCurrentStatus(sc, _gmx_sel_lexer_indexgrps(scanner),
+                                           oldCount);
+                        continue;
+                    }
+                }
                 line.append("\n");
                 _gmx_sel_set_lex_input_str(scanner, line.c_str());
                 status = runParserLoop(scanner, parserState.get(), true);

@@ -314,7 +314,8 @@ SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
             }
             std::fprintf(stderr, " for option '%s' (%s):\n",
                          request.name().c_str(), request.description().c_str());
-            std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
+            std::fprintf(stderr,
+                         "(one per line, <enter> for status/groups, 'help' for help%s)\n",
                          request.count() < 0 ? ", Ctrl-D to end" : "");
         }
         SelectionList selections
