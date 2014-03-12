@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -198,11 +198,14 @@ void CommandLine::addOption(const char *name, double value)
 
 void CommandLine::merge(const CommandLine &args)
 {
-    // Skip first argument if it is the module name.
-    const int firstArg = (args.arg(0)[0] == '-' ? 0 : 1);
-    for (int i = firstArg; i < args.argc(); ++i)
+    if (args.argc() > 0)
     {
-        append(args.arg(i));
+        // Skip first argument if it is the module name.
+        const int firstArg = (args.arg(0)[0] == '-' ? 0 : 1);
+        for (int i = firstArg; i < args.argc(); ++i)
+        {
+            append(args.arg(i));
+        }
     }
 }
 
@@ -224,6 +227,7 @@ const char *const *CommandLine::argv() const
 }
 const char *CommandLine::arg(int i) const
 {
+    GMX_RELEASE_ASSERT(i < argc(), formatString("Attempted to look up command-line argument %d, but only %d exist", i, argc()).c_str());
     return impl_->argv_[i];
 }
 
