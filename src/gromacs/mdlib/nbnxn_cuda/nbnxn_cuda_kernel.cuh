@@ -51,9 +51,10 @@
 #define EL_EWALD_ANY
 #endif
 
-#if defined EL_EWALD_ANY || defined EL_RF || defined LJ_EWALD
+#if defined EL_EWALD_ANY || defined EL_RF || defined LJ_EWALD || (defined EL_CUTOFF && defined CALC_ENERGIES)
 /* Macro to control the calculation of exclusion forces in the kernel
- * We do that with Ewald (elec/vdw) and RF.
+ * We do that with Ewald (elec/vdw) and RF. Cut-off only has exclusion
+ * energy terms.
  *
  * Note: convenience macro, needs to be undef-ed at the end of the file.
  */
@@ -223,7 +224,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         /* we have the diagonal: add the charge and LJ self interaction energy term */
         for (i = 0; i < NCL_PER_SUPERCL; i++)
         {
-#if defined EL_EWALD_ANY || defined EL_RF
+#if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
             qi    = xqib[i * CL_SIZE + tidxi].w;
             E_el += qi*qi;
 #endif
@@ -244,14 +245,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         E_lj *= 0.5f*ONE_SIXTH_F*lje_coeff6_6;
 #endif  /* LJ_EWALD */
 
-#if defined EL_EWALD_ANY || defined EL_RF
+#if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
         E_el /= CL_SIZE;
-#ifdef EL_RF
+#if defined EL_RF || defined EL_CUTOFF
         E_el *= -nbparam.epsfac*0.5f*c_rf;
 #else
         E_el *= -nbparam.epsfac*beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #endif
-#endif                                                 /* EL_EWALD_ANY || defined EL_RF */
+#endif                                                 /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
     }
 #endif                                                 /* EXCLUSION_FORCES */
 
@@ -308,7 +309,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     fcj_buf = make_float3(0.0f);
 
                     /* The PME and RF kernels don't unroll with CUDA <v4.1. */
-#if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && (defined EL_EWALD_ANY || defined EL_RF))
+#if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && defined EXCLUSION_FORCES)
 #pragma unroll 8
 #endif
                     for (i = 0; i < NCL_PER_SUPERCL; i++)
@@ -436,7 +437,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 
 #ifdef EL_CUTOFF
+#ifdef EXCLUSION_FORCES
+                                F_invr  += qi * qj_f * int_bit * inv_r2 * inv_r;
+#else
                                 F_invr  += qi * qj_f * inv_r2 * inv_r;
+#endif
 #endif
 #ifdef EL_RF
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
@@ -455,7 +460,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifdef CALC_ENERGIES
 #ifdef EL_CUTOFF
-                                E_el    += qi * qj_f * (inv_r - c_rf);
+                                E_el    += qi * qj_f * (int_bit*inv_r - c_rf);
 #endif
 #ifdef EL_RF
                                 E_el    += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
