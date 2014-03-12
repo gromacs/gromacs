@@ -90,9 +90,9 @@ class SimulationRunner
         //! Use a standard .gro file as input to grompp
         void useGroFromDatabase(const char *name);
         //! Calls grompp (on rank 0) to prepare for the mdrun test
-        int callGrompp();
+        int callGrompp(unsigned int numberOfExpectedWarnings = 0);
         //! Calls grompp (on this rank) to prepare for the mdrun test
-        int callGromppOnThisRank();
+        int callGromppOnThisRank(unsigned int numberOfExpectedWarnings = 0);
         //! Calls mdrun for testing with a customized command line
         int callMdrun(const CommandLine &callerRef);
         /*! \brief Convenience wrapper for calling mdrun for testing
