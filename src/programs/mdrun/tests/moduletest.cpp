@@ -160,10 +160,11 @@ SimulationRunner::useGroFromDatabase(const char *name)
 }
 
 int
-SimulationRunner::callGromppOnThisRank()
+SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
 {
     CommandLine caller;
     caller.append("grompp");
+    caller.merge(callerRef);
     caller.addOption("-f", mdpInputFileName_);
     caller.addOption("-n", ndxFileName_);
     caller.addOption("-p", topFileName_);
@@ -176,7 +177,13 @@ SimulationRunner::callGromppOnThisRank()
 }
 
 int
-SimulationRunner::callGrompp()
+SimulationRunner::callGromppOnThisRank()
+{
+    return callGromppOnThisRank(CommandLine());
+}
+
+int
+SimulationRunner::callGrompp(const CommandLine &callerRef)
 {
     int returnValue = 0;
 #if GMX_LIB_MPI
@@ -186,7 +193,7 @@ SimulationRunner::callGrompp()
     if (0 == gmx_node_rank())
 #endif
     {
-        returnValue = callGromppOnThisRank();
+        returnValue = callGromppOnThisRank(callerRef);
     }
 #if GMX_LIB_MPI
     // Make sure rank zero has written the .tpr file before other
@@ -198,6 +205,12 @@ SimulationRunner::callGrompp()
 }
 
 int
+SimulationRunner::callGrompp()
+{
+    return callGrompp(CommandLine());
+}
+
+int
 SimulationRunner::callMdrun(const CommandLine &callerRef)
 {
     /* Conforming to style guide by not passing a non-const reference
@@ -205,7 +218,9 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
        easier to write code that incorrectly re-uses callerRef after
        the call to this function. */
 
-    CommandLine caller(callerRef);
+    CommandLine caller;
+    caller.append("mdrun");
+    caller.merge(callerRef);
     caller.addOption("-s", tprFileName_);
 
     caller.addOption("-g", logFileName_);
@@ -270,9 +285,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
 int
 SimulationRunner::callMdrun()
 {
-    CommandLine caller;
-    caller.append("mdrun");
-    return callMdrun(caller);
+    return callMdrun(CommandLine());
 }
 
 // ====
