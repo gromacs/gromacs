@@ -381,7 +381,7 @@ typedef struct gmx_pme {
 } t_gmx_pme;
 
 static void calc_interpolation_idx(gmx_pme_t pme, pme_atomcomm_t *atc,
-                                   int start, int end, int thread)
+                                   int start, int grid_index, int end, int thread)
 {
     int             i;
     int            *idxptr, tix, tiy, tiz;
@@ -411,9 +411,9 @@ static void calc_interpolation_idx(gmx_pme_t pme, pme_atomcomm_t *atc,
     rzy = pme->recipbox[ZZ][YY];
     rzz = pme->recipbox[ZZ][ZZ];
 
-    g2tx = pme->pmegrid[PME_GRID_QA].g2t[XX];
-    g2ty = pme->pmegrid[PME_GRID_QA].g2t[YY];
-    g2tz = pme->pmegrid[PME_GRID_QA].g2t[ZZ];
+    g2tx = pme->pmegrid[grid_index].g2t[XX];
+    g2ty = pme->pmegrid[grid_index].g2t[YY];
+    g2tz = pme->pmegrid[grid_index].g2t[ZZ];
 
     bThreads = (atc->nthread > 1);
     if (bThreads)
@@ -3772,8 +3772,8 @@ int gmx_pme_reinit(gmx_pme_t *         pmedata,
 }
 
 
-static void copy_local_grid(gmx_pme_t pme,
-                            pmegrids_t *pmegrids, int thread, real *fftgrid)
+static void copy_local_grid(gmx_pme_t pme, pmegrids_t *pmegrids,
+                            int grid_index, int thread, real *fftgrid)
 {
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
     int  fft_my, fft_mz;
@@ -3784,7 +3784,7 @@ static void copy_local_grid(gmx_pme_t pme,
     pmegrid_t *pmegrid;
     real *grid_th;
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[PME_GRID_QA],
+    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
                                    local_fft_ndata,
                                    local_fft_offset,
                                    local_fft_size);
@@ -3828,7 +3828,8 @@ static void copy_local_grid(gmx_pme_t pme,
 static void
 reduce_threadgrid_overlap(gmx_pme_t pme,
                           const pmegrids_t *pmegrids, int thread,
-                          real *fftgrid, real *commbuf_x, real *commbuf_y)
+                          real *fftgrid, real *commbuf_x, real *commbuf_y,
+                          int grid_index)
 {
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
     int  fft_nx, fft_ny, fft_nz;
@@ -3846,7 +3847,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     const real *grid_th;
     real *commbuf = NULL;
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[PME_GRID_QA],
+    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
                                    local_fft_ndata,
                                    local_fft_offset,
                                    local_fft_size);
@@ -4056,7 +4057,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
 }
 
 
-static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid)
+static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid, int grid_index)
 {
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
     pme_overlap_t *overlap;
@@ -4077,7 +4078,7 @@ static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid)
      * communication setup.
      */
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[PME_GRID_QA],
+    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
                                    local_fft_ndata,
                                    local_fft_offset,
                                    local_fft_size);
@@ -4211,7 +4212,7 @@ static void sum_fftgrid_dd(gmx_pme_t pme, real *fftgrid)
 static void spread_on_grid(gmx_pme_t pme,
                            pme_atomcomm_t *atc, pmegrids_t *grids,
                            gmx_bool bCalcSplines, gmx_bool bSpread,
-                           real *fftgrid, gmx_bool bDoSplines )
+                           real *fftgrid, gmx_bool bDoSplines, int q)
 {
     int nthread, thread;
 #ifdef PME_TIME_THREADS
@@ -4240,7 +4241,7 @@ static void spread_on_grid(gmx_pme_t pme,
             /* Compute fftgrid index for all atoms,
              * with help of some extra variables.
              */
-            calc_interpolation_idx(pme, atc, start, end, thread);
+            calc_interpolation_idx(pme, atc, start, q, end, thread);
         }
     }
 #ifdef PME_TIME_THREADS
@@ -4303,7 +4304,7 @@ static void spread_on_grid(gmx_pme_t pme,
 
             if (pme->bUseThreads)
             {
-                copy_local_grid(pme, grids, thread, fftgrid);
+                copy_local_grid(pme, grids, q, thread, fftgrid);
             }
 #ifdef PME_TIME_SPREAD
             ct1a          = omp_cyc_end(ct1a);
@@ -4327,7 +4328,8 @@ static void spread_on_grid(gmx_pme_t pme,
             reduce_threadgrid_overlap(pme, grids, thread,
                                       fftgrid,
                                       pme->overlap[0].sendbuf,
-                                      pme->overlap[1].sendbuf);
+                                      pme->overlap[1].sendbuf,
+                                      q);
         }
 #ifdef PME_TIME_THREADS
         c3   = omp_cyc_end(c3);
@@ -4340,7 +4342,7 @@ static void spread_on_grid(gmx_pme_t pme,
              * For this communication call we need to check pme->bUseThreads
              * to have all ranks communicate here, regardless of pme->nthread.
              */
-            sum_fftgrid_dd(pme, fftgrid);
+            sum_fftgrid_dd(pme, fftgrid, q);
         }
     }
 
@@ -4435,7 +4437,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
     grid = &pme->pmegrid[PME_GRID_QA];
 
     /* Only calculate the spline coefficients, don't actually spread */
-    spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE);
+    spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
 
     *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
@@ -4839,7 +4841,7 @@ int gmx_pme_do(gmx_pme_t pme,
             wallcycle_start(wcycle, ewcPME_SPREADGATHER);
 
             /* Spread the charges on a grid */
-            spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines);
+            spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, q);
 
             if (bFirst)
             {
@@ -5076,7 +5078,7 @@ int gmx_pme_do(gmx_pme_t pme,
             {
                 wallcycle_start(wcycle, ewcPME_SPREADGATHER);
                 /* Spread the charges on a grid */
-                spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines);
+                spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, q);
 
                 if (bFirst)
                 {
