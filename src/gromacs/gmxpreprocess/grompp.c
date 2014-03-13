@@ -355,15 +355,23 @@ static void check_vel(gmx_mtop_t *mtop, rvec v[])
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
     int                     a;
+    float                   mass;
 
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
     {
+        mass = atom->m;
+
         if (atom->ptype == eptShell ||
             atom->ptype == eptBond  ||
             atom->ptype == eptVSite)
         {
-            clear_rvec(v[a]);
+            /* we don't want to reset velocities of Drudes, so here we distinguish if 
+             * shells (Drudes) have mass */
+            if (mass == 0)
+            {
+                clear_rvec(v[a]);
+            }
         }
     }
 }
@@ -617,7 +625,8 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             useed = (int)gmx_rng_make_seed();
             fprintf(stderr, "Setting gen_seed to %u\n", useed);
         }
-        maxwell_speed(opts->tempi, useed, sys, state->v);
+        /* TODO: add fix for Drude velocity generation at ir->drude_t */
+        maxwell_speed(opts->tempi, useed, sys, state->v, ir);
 
         stop_cm(stdout, state->natoms, mass, state->x, state->v);
         sfree(mass);
@@ -1681,6 +1690,14 @@ int gmx_grompp(int argc, char *argv[])
         {
             warning_note(wi, "Drude temperature > 1.0, could be unstable!");
         }
+        else if (ir->drude->drude_t == 0)
+        {
+            if (ir->drude->drudemode == edrudeLagrangian)
+            {
+                gmx_fatal(FARGS, "Cannot do extended Lagrangian with temperature = 0. ",
+                                 "Reset drude_mode to SCF.");
+            }
+        }
 
         if (ir->drude->bHardWall)
         {
@@ -1688,6 +1705,13 @@ int gmx_grompp(int argc, char *argv[])
             {
                 warning_note(wi, "Drude hard wall radius > 0.02, could be unstable!");
             }
+
+            /* Hard wall relies on velocities */
+            if (ir->drude->drudemode == edrudeSCF)
+            {
+                gmx_fatal(FARGS, "Cannot do hard wall with SCF. Please use extended Lagrangian.");
+            }
+
         }
         else
         {
@@ -1717,6 +1741,13 @@ int gmx_grompp(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Cannot run Drude simulation with integrator = %s.", ei_names[ir->eI]);
         }
+
+        /* Drude and freezing are incompatible for now, can be added later */
+        if (ir->opts.ngfrz > 0)
+        {
+            gmx_fatal(FARGS, "Cannot use freezegrps with Drude.");
+        }
+
     }
 
     /* Check for errors in the input now, since they might cause problems

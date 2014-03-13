@@ -50,10 +50,11 @@ extern "C" {
  * \param[in] tempi Temperature to generate around
  * \param[in] seed  Random number generator seed
  * \param[in] mtop  Molecular Topology
+ * \param[in] ir    Input record, used in case of Drudes
  * \param[out] v    Velocities
  */
 void maxwell_speed(real tempi, unsigned int seed,
-                   gmx_mtop_t *mtop, rvec v[]);
+                   gmx_mtop_t *mtop, rvec v[], t_inputrec *ir);
 
 /*! \brief
  * Remove the center of mass motion in a set of coordinates.

@@ -49,33 +49,55 @@
 #include "mtop_util.h"
 
 static void low_mspeed(real tempi,
-                       gmx_mtop_t *mtop, rvec v[], gmx_rng_t rng)
+                       gmx_mtop_t *mtop, rvec v[], gmx_rng_t rng, t_inputrec *ir)
 {
     int                     i, m, nrdf;
     real                    boltz, sd;
     real                    ekin, temp, mass, scal;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
+    int                     ptype;
 
-    boltz = BOLTZ*tempi;
     ekin  = 0.0;
     nrdf  = 0;
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
         mass = atom->m;
+        ptype = atom->ptype;
         if (mass > 0)
         {
-            sd = sqrt(boltz/mass);
-            for (m = 0; (m < DIM); m++)
+            if (ptype == eptAtom)
             {
-                v[i][m] = sd*gmx_rng_gaussian_real(rng);
-                ekin   += 0.5*mass*v[i][m]*v[i][m];
+                /* moved inside while-loop because of new decision between eptAtom and eptShell */
+                boltz = BOLTZ*tempi;
+                
+                sd = sqrt(boltz/mass);
+                for (m = 0; (m < DIM); m++)
+                {
+                    v[i][m] = sd*gmx_rng_gaussian_real(rng);
+                    ekin   += 0.5*mass*v[i][m]*v[i][m];
+                }
+                nrdf += DIM;
             }
-            nrdf += DIM;
+            /* use special Drude temperature for thermalized Drudes */
+            else if ((ptype == eptShell) && (ir->drude->drudemode == edrudeLagrangian))
+            {
+                boltz = BOLTZ*(ir->drude->drude_t);
+                sd = sqrt(boltz/mass);
+                for (m = 0; (m < DIM); m++)
+                {
+                    v[i][m] = sd*gmx_rng_gaussian_real(rng);
+                    ekin   += 0.5*mass*v[i][m]*v[i][m];
+                }
+                nrdf += DIM;
+            }
         }
     }
+
+    /* TODO: may need to adjust scaling to account for Drudes */ 
     temp = (2.0*ekin)/(nrdf*BOLTZ);
+
     if (temp > 0)
     {
         scal = sqrt(tempi/temp);
@@ -87,8 +109,16 @@ static void low_mspeed(real tempi,
             }
         }
     }
+
     fprintf(stderr, "Velocities were taken from a Maxwell distribution at %g K\n",
             tempi);
+
+    if (ir->bDrude)
+    {
+        fprintf(stderr, "Drude velocities were taken from a Maxwell distribution at %g K\n",
+                ir->drude->drude_t);
+    }
+
     if (debug)
     {
         fprintf(debug,
@@ -98,7 +128,7 @@ static void low_mspeed(real tempi,
     }
 }
 
-void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[])
+void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[], t_inputrec *ir)
 {
     atom_id  *dummy;
     int       i;
@@ -112,7 +142,7 @@ void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[])
 
     rng = gmx_rng_init(seed);
 
-    low_mspeed(tempi, mtop, v, rng);
+    low_mspeed(tempi, mtop, v, rng, ir);
 
     gmx_rng_destroy(rng);
 }
