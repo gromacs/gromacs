@@ -63,7 +63,7 @@
     for (ithx = 0; (ithx < 4); ithx++)
     {
         index_x = (i0+ithx)*pny*pnz;
-        valx    = qn*thx[ithx];
+        valx    = coefficient*thx[ithx];
 
         vx_S   = gmx_simd4_set1_r(valx);
 
@@ -193,7 +193,7 @@
     for (ithx = 0; (ithx < PME_ORDER); ithx++)
     {
         index = (i0+ithx)*pny*pnz + j0*pnz + k0 - offset;
-        valx  = qn*thx[ithx];
+        valx  = coefficient*thx[ithx];
 
         vx_S   = gmx_simd4_set1_r(valx);
 

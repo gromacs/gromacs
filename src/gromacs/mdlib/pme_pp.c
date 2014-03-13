@@ -160,7 +160,7 @@ gmx_pme_pp_t gmx_pme_pp_init(t_commrec gmx_unused *cr)
 /* This should be faster with a real non-blocking MPI implementation */
 /* #define GMX_PME_DELAYED_WAIT */
 
-static void gmx_pme_send_params_coords_wait(gmx_domdec_t gmx_unused *dd)
+static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t gmx_unused *dd)
 {
 #ifdef GMX_MPI
     if (dd->nreq_pme)
@@ -171,7 +171,7 @@ static void gmx_pme_send_params_coords_wait(gmx_domdec_t gmx_unused *dd)
 #endif
 }
 
-static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
+static void gmx_pme_send_coeffs_coords(t_commrec *cr, int flags,
                                        real gmx_unused *chargeA, real gmx_unused *chargeB,
                                        real gmx_unused *c6A, real gmx_unused *c6B,
                                        real gmx_unused *sigmaA, real gmx_unused *sigmaB,
@@ -197,7 +197,7 @@ static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
 
 #ifdef GMX_PME_DELAYED_WAIT
     /* When can not use cnb until pending communication has finished */
-    gmx_pme_send_params_coords_wait(dd);
+    gmx_pme_send_coeffs_coords_wait(dd);
 #endif
 
     if (dd->pme_receive_vir_ener)
@@ -288,7 +288,7 @@ static void gmx_pme_send_params_coords(t_commrec *cr, int flags,
     /* We can skip this wait as we are sure x and q will not be modified
      * before the next call to gmx_pme_send_x_q or gmx_pme_receive_f.
      */
-    gmx_pme_send_params_coords_wait(dd);
+    gmx_pme_send_coeffs_coords_wait(dd);
 #endif
 #endif
 }
@@ -319,7 +319,7 @@ void gmx_pme_send_parameters(t_commrec *cr,
         flags |= (flags << 1);
     }
 
-    gmx_pme_send_params_coords(cr, flags,
+    gmx_pme_send_coeffs_coords(cr, flags,
                                chargeA, chargeB,
                                sqrt_c6A, sqrt_c6B, sigmaA, sigmaB,
                                NULL, NULL, 0, 0, maxshift_x, maxshift_y, -1);
@@ -346,7 +346,7 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
     {
         flags |= PP_PME_ENER_VIR;
     }
-    gmx_pme_send_params_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL,
+    gmx_pme_send_coeffs_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL,
                                box, x, lambda_q, lambda_lj, 0, 0, step);
 }
 
@@ -356,7 +356,7 @@ void gmx_pme_send_finish(t_commrec *cr)
 
     flags = PP_PME_FINISH;
 
-    gmx_pme_send_params_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, -1);
+    gmx_pme_send_coeffs_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, -1);
 }
 
 void gmx_pme_send_switchgrid(t_commrec gmx_unused *cr,
@@ -400,7 +400,7 @@ void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_int64_t gmx_unused
 #endif
 }
 
-int gmx_pme_recv_params_coords(struct gmx_pme_pp          *pme_pp,
+int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp          *pme_pp,
                                int                        *natoms,
                                real                      **chargeA,
                                real                      **chargeB,
@@ -700,7 +700,7 @@ void gmx_pme_receive_f(t_commrec *cr,
 
 #ifdef GMX_PME_DELAYED_WAIT
     /* Wait for the x request to finish */
-    gmx_pme_send_params_coords_wait(cr->dd);
+    gmx_pme_send_coeffs_coords_wait(cr->dd);
 #endif
 
     natoms = cr->dd->nat_home;
