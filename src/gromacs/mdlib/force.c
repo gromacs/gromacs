@@ -587,7 +587,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                 assert(fr->n_tpi >= 0);
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
-                    pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                    pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
                     if (EEL_PME(fr->eeltype))
                     {
                         pme_flags     |= GMX_PME_DO_COULOMB;
