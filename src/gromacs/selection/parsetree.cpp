@@ -229,8 +229,6 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 
-#include "gromacs/onlinehelp/helpmanager.h"
-#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
@@ -243,7 +241,6 @@
 #include "parsetree.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
-#include "selhelp.h"
 #include "symrec.h"
 
 #include "scanner.h"
@@ -1162,48 +1159,4 @@ _gmx_sel_parser_should_finish(yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     return (int)sc->sel.size() == _gmx_sel_lexer_exp_selcount(scanner);
-}
-
-void
-_gmx_sel_handle_empty_cmd(yyscan_t /*scanner*/)
-{
-    // This is now handled outside the actual parser, in
-    // selectioncollection.cpp.  This stub will be removed as part of later
-    // refactoring related to the selection parser.
-}
-
-/*!
- * \param[in] topic   Topic for which help was requested, or NULL for general
- *                    help.
- * \param[in] scanner Scanner data structure.
- *
- * \p topic is freed by this function.
- */
-void
-_gmx_sel_handle_help_cmd(const gmx::SelectionParserValueListPointer &topic,
-                         yyscan_t                                    scanner)
-{
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-
-    if (sc->rootHelp.get() == NULL)
-    {
-        sc->rootHelp = gmx::createSelectionHelpTopic();
-    }
-    gmx::HelpWriterContext context(&gmx::File::standardError(),
-                                   gmx::eHelpOutputFormat_Console);
-    gmx::HelpManager       manager(*sc->rootHelp, context);
-    try
-    {
-        SelectionParserValueList::const_iterator value;
-        for (value = topic->begin(); value != topic->end(); ++value)
-        {
-            manager.enterTopic(value->stringValue());
-        }
-    }
-    catch (const gmx::InvalidInputError &ex)
-    {
-        fprintf(stderr, "%s\n", ex.what());
-        return;
-    }
-    manager.writeCurrentTopic();
 }

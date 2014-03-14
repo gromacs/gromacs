@@ -455,12 +455,6 @@ TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
                      gmx::InvalidInputError);
 }
 
-TEST_F(SelectionCollectionTest, HandlesHelpKeywordInInvalidContext)
-{
-    EXPECT_THROW_GMX(sc_.parseFromString("resname help"),
-                     gmx::InvalidInputError);
-}
-
 // TODO: Tests for more parser errors
 
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser1)

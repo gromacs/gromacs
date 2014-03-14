@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,6 +79,21 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
     return str;
 }
 
+std::string stripString(const std::string &str)
+{
+    std::string::const_iterator start = str.begin();
+    std::string::const_iterator end   = str.end();
+    while (start != end && std::isspace(*start))
+    {
+        ++start;
+    }
+    while (start != end && std::isspace(*(end - 1)))
+    {
+        --end;
+    }
+    return std::string(start, end);
+}
+
 std::string formatString(const char *fmt, ...)
 {
     va_list           ap;
@@ -110,6 +125,30 @@ std::string formatString(const char *fmt, ...)
         dynamicBuf.resize(length);
         buf = &dynamicBuf[0];
     }
+}
+
+std::vector<std::string> splitString(const std::string &str)
+{
+    std::vector<std::string>          result;
+    std::string::const_iterator       currPos = str.begin();
+    const std::string::const_iterator end     = str.end();
+    while (currPos != end)
+    {
+        while (currPos != end && std::isspace(*currPos))
+        {
+            ++currPos;
+        }
+        const std::string::const_iterator startPos = currPos;
+        while (currPos != end && !std::isspace(*currPos))
+        {
+            ++currPos;
+        }
+        if (startPos != end)
+        {
+            result.push_back(std::string(startPos, currPos));
+        }
+    }
+    return result;
 }
 
 std::string concatenateStrings(const char *const *sarray, size_t count)
