@@ -41,7 +41,11 @@
  */
 #include "selectioncollection.h"
 
+#include <cctype>
 #include <cstdio>
+
+#include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -49,6 +53,8 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/xvgr.h"
 
+#include "gromacs/onlinehelp/helpmanager.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
@@ -271,6 +277,42 @@ void printCurrentStatus(gmx_ana_selcollection_t *sc, gmx_ana_indexgrps_t *grps,
 }
 
 /*! \brief
+ * Prints selection help in interactive selection input.
+ *
+ * \param[in] sc    Selection collection data structure.
+ * \param[in] line  Line of user input requesting help (starting with `help`).
+ *
+ * Initializes the selection help if not yet initialized, and finds the help
+ * topic based on words on the input line.
+ */
+void printHelp(gmx_ana_selcollection_t *sc, const std::string &line)
+{
+    if (sc->rootHelp.get() == NULL)
+    {
+        sc->rootHelp = createSelectionHelpTopic();
+    }
+    HelpWriterContext context(&File::standardError(),
+                              eHelpOutputFormat_Console);
+    HelpManager       manager(*sc->rootHelp, context);
+    try
+    {
+        std::vector<std::string>                 topic = splitString(line);
+        std::vector<std::string>::const_iterator value;
+        // First item in the list is the 'help' token.
+        for (value = topic.begin() + 1; value != topic.end(); ++value)
+        {
+            manager.enterTopic(*value);
+        }
+    }
+    catch (const InvalidInputError &ex)
+    {
+        fprintf(stderr, "%s\n", ex.what());
+        return;
+    }
+    manager.writeCurrentTopic();
+}
+
+/*! \brief
  * Helper function that runs the parser once the tokenizer has been
  * initialized.
  *
@@ -316,9 +358,16 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
             {
                 if (bInteractive)
                 {
+                    line = stripString(line);
                     if (line.empty())
                     {
                         printCurrentStatus(sc, grps, oldCount, maxnr, context, false);
+                        continue;
+                    }
+                    if (startsWith(line, "help")
+                        && (line[4] == 0 || std::isspace(line[4])))
+                    {
+                        printHelp(sc, line);
                         continue;
                     }
                 }
