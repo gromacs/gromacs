@@ -1796,7 +1796,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_hardware_info_free(hwinfo);
 
     /* Does what it says */
-    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
 
     /* Close logfile already here if we were appending to it */
