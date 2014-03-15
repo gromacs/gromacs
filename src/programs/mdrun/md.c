@@ -128,7 +128,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     *step_rel      = 0;
     wallcycle_start(wcycle, ewcRUN);
     walltime_accounting_start(walltime_accounting);
-    print_date_and_time(fplog, cr->nodeid, "Restarted time", walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
 double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
