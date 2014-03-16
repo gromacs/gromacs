@@ -606,7 +606,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     int                  *a_con;
     int                   ftype;
     int                   ia;
-    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bFEP;
+    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bHavePerturbedAtoms;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb, mtop->nmolblock);
@@ -720,11 +720,11 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 /* bExclIntraAll: all intra cg interactions excluded
                  * bExclInter:    any inter cg interactions excluded
                  */
-                bExclIntraAll = TRUE;
-                bExclInter    = FALSE;
-                bHaveVDW      = FALSE;
-                bHaveQ        = FALSE;
-                bFEP          = FALSE;
+                bExclIntraAll       = TRUE;
+                bExclInter          = FALSE;
+                bHaveVDW            = FALSE;
+                bHaveQ              = FALSE;
+                bHavePerturbedAtoms = FALSE;
                 for (ai = a0; ai < a1; ai++)
                 {
                     /* Check VDW and electrostatic interactions */
@@ -733,7 +733,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     bHaveQ  = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
                                             molt->atoms.atom[ai].qB != 0);
 
-                    bFEP    = bFEP || (PERTURBED(molt->atoms.atom[ai]) != 0);
+                    bHavePerturbedAtoms = bHavePerturbedAtoms || (PERTURBED(molt->atoms.atom[ai]) != 0);
 
                     /* Clear the exclusion list for atom ai */
                     for (aj = a0; aj < a1; aj++)
@@ -795,7 +795,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 {
                     SET_CGINFO_HAS_Q(cginfo[cgm+cg]);
                 }
-                if (bFEP)
+                if (bHavePerturbedAtoms && fr->efep != efepNO)
                 {
                     SET_CGINFO_FEP(cginfo[cgm+cg]);
                     *bFEP_NonBonded = TRUE;
