@@ -993,6 +993,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
         }
     }
+    else
+    {
+        if (ir->epc == epcMTTK)
+        {
+            warning_error(wi, "MTTK pressure coupling requires a Velocity-verlet integrator");
+        }
+    }
 
     /* ELECTROSTATICS */
     /* More checks are in triple check (grompp.c) */
@@ -3750,6 +3757,11 @@ void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr, warninp_t wi)
         {
             warning_error(wi, "MTTK not compatible with lincs -- use shake instead.");
         }
+    }
+
+    if (bConstr && ir->epc == epcMTTK)
+    {
+        warning_note(wi, "MTTK with constraints is deprecated, and will be removed in GROMACS 5.1");
     }
 
     if (ir->LincsWarnAngle > 90.0)
