@@ -243,8 +243,8 @@ void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift);
 void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f);
 
 void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
-                           rvec *x0, rvec *x1);
-/* Move x0 and also x1 if x1!=NULL */
+                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord);
+/* Move x0 and also x1 if x1!=NULL. bX1IsCoord tells if to do PBC on x1 */
 
 void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x);
 

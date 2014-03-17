@@ -631,7 +631,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                 /* Communicate the corrected non-local coordinates */
                 if (DOMAINDECOMP(cr))
                 {
-                    dd_move_x_constraints(cr->dd, box, xp, NULL);
+                    dd_move_x_constraints(cr->dd, box, xp, NULL, FALSE);
                 }
                 else
                 {

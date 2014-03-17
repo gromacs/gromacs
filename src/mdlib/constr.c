@@ -415,7 +415,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
      */
     if (cr->dd)
     {
-        dd_move_x_constraints(cr->dd, box, x, xprime);
+        dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
     }
     else if (PARTDECOMP(cr))
     {
