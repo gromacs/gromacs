@@ -716,13 +716,22 @@ void push_bt(directive d, t_params bt[], int nral,
     }
     for (i = 0; (i < nral); i++)
     {
-        if (at && ((p.a[i] = get_atomtype_type(alc[i], at)) == NOTSET))
+        /* Drude FF uses X for all bonds involving Drude, so enable bonds
+         * to use wildcards just like dihedrals do */
+        if (!strcmp(alc[i], "X"))
         {
-            gmx_fatal(FARGS, "Unknown atomtype %s\n", alc[i]);
+            p.a[i] = -1;
         }
-        else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
+        else
         {
-            gmx_fatal(FARGS, "Unknown bond_atomtype %s\n", alc[i]);
+            if (at && ((p.a[i] = get_atomtype_type(alc[i], at)) == NOTSET))
+            {
+                gmx_fatal(FARGS, "Unknown atomtype %s\n", alc[i]);
+            }
+            else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
+            {
+                gmx_fatal(FARGS, "Unknown bond_atomtype %s\n", alc[i]);
+            }
         }
     }
     for (i = 0; (i < nrfp); i++)
@@ -1646,6 +1655,24 @@ static gmx_bool default_params(int ftype, t_params bt[],
                 }
                 /* nparam_found will be increased as long as the numbers match */
             }
+        }
+    }
+    /* Drude FF uses wildcards for bonds */
+    else if (ftype == F_BONDS)
+    {
+        for (i = 0; ((i < nr) && !bFound); i++)
+        {
+            pi = &(bt[ftype].param[i]);
+            bFound = 
+                (
+                    ((pi->AI == -1) || (get_atomtype_batype(at->atom[p->AI].type, atype) == pi->AI)) &&
+                    ((pi->AJ == -1) || (get_atomtype_batype(at->atom[p->AJ].type, atype) == pi->AJ))
+                );
+        }
+
+        if (bFound)
+        {
+            nparam_found = 1;
         }
     }
     else   /* Not a dihedral */
