@@ -518,8 +518,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                 sw               = 1.0+d2*d*(swV3+d*(swV4+d*swV5));
                                 dsw              = d2*(swF2+d*(swF3+d*swF4));
 
-                                Vcoul[i]  *= sw;
-                                FscalC[i]  = FscalC[i]*sw + Vcoul[i]*dsw;
+                                FscalC[i]        = FscalC[i]*sw - rC*Vcoul[i]*dsw;
+                                Vcoul[i]        *= sw;
                             }
                         }
 
@@ -600,8 +600,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                 sw         = 1.0+d2*d*(swV3+d*(swV4+d*swV5));
                                 dsw        = d2*(swF2+d*(swF3+d*swF4));
 
+                                FscalV[i]  = FscalV[i]*sw - rV*Vvdw[i]*dsw;
                                 Vvdw[i]   *= sw;
-                                FscalV[i]  = FscalV[i]*sw + Vvdw[i]*dsw;
 
                                 FscalV[i]  = (rV < rvdw) ? FscalV[i] : 0.0;
                                 Vvdw[i]    = (rV < rvdw) ? Vvdw[i] : 0.0;
