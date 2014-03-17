@@ -154,7 +154,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
     bExactElecCutoff    = (fr->coulomb_modifier != eintmodNONE) || fr->eeltype == eelRF_ZERO;
     bExactVdwCutoff     = (fr->vdw_modifier != eintmodNONE);
-    bExactCutoff        = bExactElecCutoff || bExactVdwCutoff;
+    bExactCutoff        = bExactElecCutoff && bExactVdwCutoff;
 
     if (bExactCutoff)
     {
@@ -222,7 +222,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             velec            = 0;
             vvdw             = 0;
 
-            if (bExactCutoff && rsq > rcutoff2)
+            if (bExactCutoff && rsq >= rcutoff2)
             {
                 continue;
             }
@@ -251,6 +251,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         /* Vanilla cutoff coulomb */
                         velec            = qq*rinv;
                         felec            = velec*rinvsq;
+                        /* The shift for the Coulomb potential is stored in
+                         * the RF parameter c_rf, which is 0 without shift
+                         */
+                        velec           -= qq*fr->ic->c_rf;
                         break;
 
                     case GMX_NBKERNEL_ELEC_REACTIONFIELD:
@@ -309,8 +313,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 }
                 if (bExactElecCutoff)
                 {
-                    felec            = (rsq <= rcoulomb2) ? felec : 0.0;
-                    velec            = (rsq <= rcoulomb2) ? velec : 0.0;
+                    felec            = (rsq < rcoulomb2) ? felec : 0.0;
+                    velec            = (rsq < rcoulomb2) ? velec : 0.0;
                 }
                 vctot           += velec;
             } /* End of coulomb interactions */
@@ -408,8 +412,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 }
                 if (bExactVdwCutoff)
                 {
-                    fvdw             = (rsq <= rvdw2) ? fvdw : 0.0;
-                    vvdw             = (rsq <= rvdw2) ? vvdw : 0.0;
+                    fvdw             = (rsq < rvdw2) ? fvdw : 0.0;
+                    vvdw             = (rsq < rvdw2) ? vvdw : 0.0;
                 }
                 vvdwtot         += vvdw;
             } /* end VdW interactions */
