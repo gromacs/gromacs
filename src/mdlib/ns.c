@@ -301,13 +301,12 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
             if ((fr->bEwald) && (fr->sc_alphacoul > 0)) /* need to handle long range differently if using softcore */
             {
                 ielecf    = GMX_NBKERNEL_ELEC_EWALD;
-                ielecmodf = eintmodNONE;
             }
             else
             {
                 ielecf    = ielec;
-                ielecmodf = ielecmod;
             }
+            ielecmodf = ielecmod;
 
             init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_FREE], &nbl->nlist_lr[eNL_VDWQQ_FREE],
                         maxsr, maxlr, ivdw, ivdwmod, ielecf, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);

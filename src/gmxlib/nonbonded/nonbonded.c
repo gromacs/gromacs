@@ -293,10 +293,9 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
                 nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
             }
         }
-
-        /* Give up. If this was a water kernel, leave the pointer as NULL, which
-         * will disable water optimization in NS. If it is a particle kernel, set
-         * the pointer to the generic NB kernel.
+        /* Give up, pick a generic one instead.
+         * We only do this for particle-particle kernels; by leaving the water-optimized kernel
+         * pointers to NULL, the water optimization will automatically be disabled for this interaction.
          */
         if (nl->kernelptr_vf == NULL && !gmx_strcasecmp_min(geom,"Particle-Particle"))
         {
@@ -308,13 +307,11 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
                 fprintf(debug,
                         "WARNING - Slow generic NB kernel used for neighborlist with\n"
                         "    Elec: '%s', Modifier: '%s'\n"
-                        "    Vdw:  '%s', Modifier: '%s'\n"
-                        "    Geom: '%s', Other: '%s'\n\n",
-                        elec, elec_mod, vdw, vdw_mod, geom, other);
+                        "    Vdw:  '%s', Modifier: '%s'\n",
+                        elec, elec_mod, vdw, vdw_mod);
             }
         }
     }
-
     return;
 }
 
@@ -422,10 +419,14 @@ void do_nonbonded(t_commrec *cr, t_forcerec *fr,
                         /* We don't need the non-perturbed interactions */
                         continue;
                     }
-                    /* Neighborlists whose kernelptr==NULL will always be empty */
+
                     if(kernelptr != NULL)
                     {
                         (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Non-empty neighborlist does not have any kernel pointer assigned.");
                     }
                 }
             }
