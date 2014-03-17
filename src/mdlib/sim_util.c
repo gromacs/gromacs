@@ -2159,7 +2159,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if ((fr->vdwtype == evdwSWITCH) || (fr->vdwtype == evdwSHIFT))
+        if ((fr->vdwtype == evdwSWITCH) || (fr->vdw_modifier == eintmodPOTSWITCH) ||
+            (fr->vdwtype == evdwSHIFT)  || (fr->vdw_modifier == eintmodPOTSHIFT))
         {
             if (fr->rvdw_switch == 0)
             {
@@ -2179,7 +2180,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
-            if (fr->vdwtype == evdwSHIFT)
+            if (fr->vdwtype == evdwSHIFT || fr->vdw_modifier == eintmodPOTSHIFT)
             {
                 /* Determine the constant energy shift below rvdw_switch.
                  * Table has a scale factor since we have scaled it down to compensate

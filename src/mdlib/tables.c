@@ -752,9 +752,13 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
 
     bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) ||
                (tp == etabCOULSwitch) ||
-               (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch));
+               (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch) ||
+               (fr->coulomb_modifier == eintmodPOTSWITCH) ||
+               (fr->vdw_modifier == eintmodPOTSWITCH));
     bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) ||
-               (tp == etabShift));
+               (tp == etabShift) ||
+               (fr->coulomb_modifier == eintmodPOTSHIFT) ||
+               (fr->vdw_modifier == eintmodPOTSHIFT));
 
     reppow = fr->reppow;
 

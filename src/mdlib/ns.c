@@ -196,7 +196,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
      * cache trashing.
      */
     int        maxsr, maxsr_wat, maxlr, maxlr_wat;
-    int        ielec, ielecf, ivdw, ielecmod, ielecmodf, ivdwmod, type;
+    int        ielec, ivdw, ielecmod, ivdwmod, type;
     int        solvent;
     int        igeometry_def, igeometry_w, igeometry_ww;
     int        i;
@@ -298,23 +298,12 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
 
         if (fr->efep != efepNO)
         {
-            if ((fr->bEwald) && (fr->sc_alphacoul > 0)) /* need to handle long range differently if using softcore */
-            {
-                ielecf    = GMX_NBKERNEL_ELEC_EWALD;
-                ielecmodf = eintmodNONE;
-            }
-            else
-            {
-                ielecf    = ielec;
-                ielecmodf = ielecmod;
-            }
-
             init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_FREE], &nbl->nlist_lr[eNL_VDWQQ_FREE],
-                        maxsr, maxlr, ivdw, ivdwmod, ielecf, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
+                        maxsr, maxlr, ivdw, ivdwmod, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
             init_nblist(log, &nbl->nlist_sr[eNL_VDW_FREE], &nbl->nlist_lr[eNL_VDW_FREE],
                         maxsr, maxlr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
             init_nblist(log, &nbl->nlist_sr[eNL_QQ_FREE], &nbl->nlist_lr[eNL_QQ_FREE],
-                        maxsr, maxlr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielecf, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
+                        maxsr, maxlr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY);
         }
     }
     /* QMMM MM list */
