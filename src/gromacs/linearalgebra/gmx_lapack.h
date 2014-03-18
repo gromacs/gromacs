@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,6 +72,11 @@
 #ifdef GMX_CYGWIN
 #undef toupper
 #endif
+
+#undef min
+#define min(a,b) ((a) <= (b) ? (a) : (b))
+#undef max
+#define max(a,b) ((a) >= (b) ? (a) : (b))
 
 #ifdef __cplusplus
 extern "C" {
@@ -857,6 +862,30 @@ void
     F77_FUNC(sgeqrf, SGEQRF) (int *m, int *n, float *a, int *lda, float *tau,
                               float *work, int *lwork, int *info);
 
+void
+	F77_FUNC(dgels, DGELS) (char *trans, int *m, int *n, int *nrhs, double *a, int *lda, double *b,
+						 	 int *ldb,	double *work, int *lwork, int *info);
+
+void
+	F77_FUNC(dlabad, DLABAD) (double *small, double *large);
+
+double
+	F77_FUNC(dlamch, DLAMCH) (char *cmach);
+
+int
+	F77_FUNC(ilaenv, ILAENV) (int *ispec, char *name__, char *opts, int *n1,
+								int *n2, int *n3, int *n4);
+
+int
+	F77_FUNC(dtrtrs, DTRTRS) (char *uplo, char *trans, char *diag, int *n,
+								int *nrhs, double *a, int *lda, double *b, int *
+								ldb, int *info);
+void
+	F77_FUNC(xerbla, XERBLA) (char *srname, int *info);
+
+int
+	F77_FUNC(iparmq, IPARMQ) (int *ispec, char *name__, char *opts, int *n, int
+								*ilo, int *ihi, int *lwork);
 
 #ifdef __cplusplus
 }
