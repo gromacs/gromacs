@@ -201,7 +201,7 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
                                              FileNameOptionManager *manager)
     : MyBase(settings), info_(this), manager_(manager), fileType_(-1),
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
-      bLibrary_(settings.bLibrary_)
+      bLibrary_(settings.bLibrary_), defaultExtension_ (settings.defaultExtension_)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for file name options");
@@ -386,6 +386,10 @@ bool FileNameOptionStorage::isTrajectoryOption() const
 
 const char *FileNameOptionStorage::defaultExtension() const
 {
+    if (defaultExtension_ != NULL)
+    {
+    	return defaultExtension_;
+    }
     FileTypeHandler typeHandler(fileType_);
     if (typeHandler.extensionCount() == 0)
     {
