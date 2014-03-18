@@ -1047,7 +1047,31 @@ groups and gives a plot of the density against a box
 axis. This is useful for looking at the distribution of groups or
 atoms across the interface.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Functional Mode Analysis
+
+\section{Functional Mode Analysis}
+\label{sec:FMA}\index{FMA}\index{Functional Mode Analysis}
+
+Functional Mode Analysis (FMA) \cite{HubdeGroot2009,KrivobokovaEtAl2012} is a 
+method aimed at finding collective modes that best correlate with an observable 
+$f$ which is assumed to depend on the structure $\mathbf{x}$ of the system 
+under consideration. In mathematical terms, FMA tries to minimize the 
+residuals $\mathbf{\epsilon}$ in the regression problem
+
+\begin{equation}
+ \label{eqn:fma}
+\mathbf{f} = \mathbf{X}\mathbf{\beta} + \epsilon
+\end{equation}
+
+where $\mathbf{f}$ is the vector containing the functional values, 
+$\mathbf{X}$ is the Cartesian coordinate matrix containing the corresponding 
+structures and $\mathbf{\beta}$ is a one-dimensional set of coefficients, that 
+represents a collective mode of fluctuation that best captures the 
+fluctuations in f.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Chemical shifts
+
 
 % \section{Chemical shifts}
 % {\tt total, do_shift}\\
