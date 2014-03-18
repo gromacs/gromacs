@@ -74,8 +74,9 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), optionType_(eftUnknown), legacyType_(-1),
-              defaultBasename_(NULL), bLegacyOptionalBehavior_(false),
-              bRead_(false), bWrite_(false), bLibrary_(false)
+              defaultBasename_(NULL), defaultExtension_ (NULL),
+              bLegacyOptionalBehavior_(false), bRead_(false),
+              bWrite_(false), bLibrary_(false)
         {
         }
 
@@ -159,6 +160,13 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          */
         MyClass &defaultBasename(const char *basename)
         { defaultBasename_ = basename; return me(); }
+        /*! \brief
+         * For filetypes that can have different file extensions (e.g. trajectories)
+         * the default file extension is the first in the list in fileio/filenm.c .
+         * This method allows to override this rather arbitrary choice.
+         */
+        MyClass &defaultExtension(const char *extension)
+        { defaultExtension_ = extension; return me(); }
 
     private:
         // Use defaultBasename() instead.
@@ -172,6 +180,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         OptionFileType          optionType_;
         int                     legacyType_;
         const char             *defaultBasename_;
+        const char             *defaultExtension_;
         bool                    bLegacyOptionalBehavior_;
         bool                    bRead_;
         bool                    bWrite_;

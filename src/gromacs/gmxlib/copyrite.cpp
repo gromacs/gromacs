@@ -569,7 +569,17 @@ void please_cite(FILE *fp, const char *key)
           "N. Goga and A. J. Rzepiela and A. H. de Vries and S. J. Marrink and H. J. C. Berendsen",
           "Efficient Algorithms for Langevin and DPD Dynamics",
           "J. Chem. Theory Comput.",
-          8, 2012, "3637--3649"}
+          8, 2012, "3637--3649"},
+        { "HubdeGroot2009",
+          "J. S. Hub and B. L. de Groot",
+          "Detection of Functional Modes in Protein Dynamics",
+          "PLoS Comput. Biol.",
+          5, 2009, "e1000480"},
+        { "KrivobokovaEtAl2012",
+          "T. Krivobokova, R. Briones, J. S. Hub, A. Munk and B. L. de Groot",
+          "Partial Least-Squares Functional Mode Analysis: Application to the Membrane Proteins AQP1, Aqy1, and CLC-ec1",
+          "Biophys. J.",
+          103, 2012, "786-796"}
     };
 #define NSTR (int)asize(citedb)
 
