@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB LINEARALGEBRA_SOURCES *.c)
+file(GLOB LINEARALGEBRA_SOURCES *.c *.cpp)
 
 if (NOT GMX_EXTERNAL_BLAS)
     file(GLOB BLAS_SOURCES gmx_blas/*.c)
@@ -51,5 +51,7 @@ set(LIBGROMACS_SOURCES
 set(LINEARALGEBRA_PUBLIC_HEADERS
     eigensolver.h
     matrix.h
-    sparsematrix.h)
+    mtxio.h
+    sparsematrix.h
+    pls.h)
 gmx_install_headers(linearalgebra ${LINEARALGEBRA_PUBLIC_HEADERS})

@@ -107,6 +107,7 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         bool                    bRead_;
         bool                    bWrite_;
         bool                    bLibrary_;
+        const char             *defaultExtension_;
 };
 
 } // namespace gmx
