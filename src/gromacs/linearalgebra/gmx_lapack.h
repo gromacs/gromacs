@@ -73,6 +73,11 @@
 #undef toupper
 #endif
 
+#undef min
+#define min(a,b) ((a) <= (b) ? (a) : (b))
+#undef max
+#define max(a,b) ((a) >= (b) ? (a) : (b))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -857,6 +862,30 @@ void
     F77_FUNC(sgeqrf, SGEQRF) (int *m, int *n, float *a, int *lda, float *tau,
                               float *work, int *lwork, int *info);
 
+void
+	F77_FUNC(dgels, DGELS) (char *trans, int *m, int *n, int *nrhs, double *a, int *lda, double *b,
+						 	 int *ldb,	double *work, int *lwork, int *info);
+
+void
+	F77_FUNC(dlabad, DLABAD) (double *small, double *large);
+
+double
+	F77_FUNC(dlamch, DLAMCH) (char *cmach);
+
+int
+	F77_FUNC(ilaenv, ILAENV) (int *ispec, char *name__, char *opts, int *n1,
+								int *n2, int *n3, int *n4);
+
+int
+	F77_FUNC(dtrtrs, DTRTRS) (char *uplo, char *trans, char *diag, int *n,
+								int *nrhs, double *a, int *lda, double *b, int *
+								ldb, int *info);
+void
+	F77_FUNC(xerbla, XERBLA) (char *srname, int *info);
+
+int
+	F77_FUNC(iparmq, IPARMQ) (int *ispec, char *name__, char *opts, int *n, int
+								*ilo, int *ihi, int *lwork);
 
 #ifdef __cplusplus
 }
