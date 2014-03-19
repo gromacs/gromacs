@@ -47,13 +47,13 @@ void read_drude_opts(int *ninp_p, t_inpfile **inp_p, t_drude *drude, warninp_t w
     inp    = *inp_p;
 
     EETYPE("drude-mode", drude->drudemode, edrude_modes);
-    RTYPE("drude-t", drude->drude_t, 1.0);
-    /* recommended tau_t for m_Drude = 0.4 amu is 5.0 fs */
-    RTYPE("drude-tau-t", drude->drude_tau_t, 0.005);
+    RTYPE ("drude-t", drude->drude_t, 1.0);
+    RTYPE ("drude-tau-t", drude->drude_tau_t, 0.005);
     EETYPE("drude-hardwall", drude->bHardWall, yesno_names);
-    RTYPE("drude-r", drude->drude_r, 0.02);
-    RTYPE("drude-khyp", drude->drude_khyp, 16736000.0);
-    RTYPE("nbtholecut", drude->nbtholecut, 0.0);
+    RTYPE ("drude-r", drude->drude_r, 0.02);
+    RTYPE ("drude-khyp", drude->drude_khyp, 418400.00);
+    RTYPE ("nbtholecut", drude->nbtholecut, 0.0);
+    ITYPE ("drude-tsteps", drude->tsteps, 20);
 
     *ninp_p   = ninp;
     *inp_p    = inp;

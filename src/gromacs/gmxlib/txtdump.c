@@ -1054,6 +1054,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
             PR("drude-r", ir->drude->drude_r);
             PR("drude-khyp", ir->drude->drude_khyp);
             PR("nbtholecut", ir->drude->nbtholecut);
+            PI("drude-tsteps", ir->drude->tsteps);
         }
 
         PI("userint1", ir->userint1);

@@ -2182,6 +2182,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* Drude options */
+    CCTYPE ("Drude parameters");
     EETYPE("drude", ir->bDrude, yesno_names);
     if (ir->bDrude)
     {
@@ -2655,7 +2656,9 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
         nrdf2[i] = 0;
-        if (atom->ptype == eptAtom || atom->ptype == eptNucleus)
+        /* special accommodation for Shell particle that has mass, i.e.
+         * it is a Drude */
+        if (atom->ptype == eptAtom || atom->ptype == eptNucleus || ((atom->m > 0 && atom->ptype == eptShell)))
         {
             g = ggrpnr(groups, egcFREEZE, i);
             /* Double count nrdf for particle i */
@@ -3197,7 +3200,8 @@ void do_index(const char* mdparin, const char *ndx,
         nstcmin = tcouple_min_integration_steps(ir->etc);
         if (nstcmin > 1)
         {
-            if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
+            /* For Drude, we need very small tau_t sometimes */
+            if ((tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin) && (ir->bDrude == FALSE))
             {
                 sprintf(warn_buf, "For proper integration of the %s thermostat, tau-t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
                         ETCOUPLTYPE(ir->etc),

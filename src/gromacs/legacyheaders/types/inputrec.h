@@ -327,6 +327,9 @@ typedef struct {
     real        nbtholecut;     /* Radius for screened Coulomb correction of Thole for
                                  * non-excluded nonbonded Drude pairs. Set to 0.5 for
                                  * highly charged systems (default is 0.0) */
+    int         tsteps;         /* number of sub-steps into which each time step is divided
+                                 * to integrate thermostat variables. Default is 20, for 
+                                 * non-polarizable systems it would be 1 */
 } t_drude;
 
 typedef struct {

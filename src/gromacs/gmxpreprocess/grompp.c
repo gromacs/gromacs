@@ -991,7 +991,8 @@ static int nrdf_internal(t_atoms *atoms)
     {
         /* Vsite ptype might not be set here yet, so also check the mass */
         if ((atoms->atom[i].ptype == eptAtom ||
-             atoms->atom[i].ptype == eptNucleus)
+             atoms->atom[i].ptype == eptNucleus ||
+             atoms->atom[i].ptype == eptShell)
             && atoms->atom[i].m > 0)
         {
             nmass++;
@@ -1723,6 +1724,12 @@ int gmx_grompp(int argc, char *argv[])
         if (ir->delta_t > 0.001)
         {
             warning_note(wi, "dt is very large, recommend 0.001 for stability.");
+        }
+
+        /* Recommended subdivision of time steps is 20 for Drude systems */
+        if (ir->drude->tsteps < 20)
+        {
+            warning_note(wi, "Check drude-tsteps: Thermostat integration should be done with at least 20 substeps!");
         }
 
         /* Note that free energy and pull code are completely untested...should work? */

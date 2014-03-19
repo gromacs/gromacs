@@ -1503,6 +1503,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             gmx_fio_do_real(fio, ir->drude->drude_r);
             gmx_fio_do_real(fio, ir->drude->drude_khyp);
             gmx_fio_do_real(fio, ir->drude->nbtholecut);
+            gmx_fio_do_int(fio, ir->drude->tsteps);
         }
     }
     else
