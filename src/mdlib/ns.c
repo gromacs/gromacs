@@ -290,7 +290,10 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
             )
         {
             fr->solvent_opt = esolNO;
-            fprintf(log, "Note: The available nonbonded kernels do not support water optimization - disabling.\n");
+            if (log != NULL)
+            {
+                fprintf(log, "Note: The available nonbonded kernels do not support water optimization - disabling.\n");
+            }
         }
 
         if (fr->efep != efepNO)
