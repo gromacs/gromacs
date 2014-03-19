@@ -294,8 +294,11 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
             }
         }
 
-        /* Give up, pick a generic one instead */
-        if (nl->kernelptr_vf == NULL)
+        /* Give up. If this was a water kernel, leave the pointer as NULL, which
+         * will disable water optimization in NS. If it is a particle kernel, set
+         * the pointer to the generic NB kernel.
+         */
+        if (nl->kernelptr_vf == NULL && !gmx_strcasecmp_min(geom,"Particle-Particle"))
         {
             nl->kernelptr_vf       = (void *) gmx_nb_generic_kernel;
             nl->kernelptr_f        = (void *) gmx_nb_generic_kernel;
@@ -419,7 +422,11 @@ void do_nonbonded(t_commrec *cr, t_forcerec *fr,
                         /* We don't need the non-perturbed interactions */
                         continue;
                     }
-                    (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                    /* Neighborlists whose kernelptr==NULL will always be empty */
+                    if(kernelptr != NULL)
+                    {
+                        (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                    }
                 }
             }
         }
