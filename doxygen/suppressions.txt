@@ -20,6 +20,8 @@ src/gromacs/gmxana/gmx_wham.cpp: error: NFILE: is documented, but does not have 
 src/gromacs/swap/swapcoords.c: error: *: is documented, but does not have brief description
 src/gromacs/utility/gmxmpi.h: error: non-installed header has public documentation
 src/testutils/unittest_main.cpp: error: source file documentation appears outside full documentation
+*: warning: included file "*/commandline/pargs.h" is not documented as exposed outside its module
+src/gromacs/legacyheaders/types/*.h: warning: included file "../../swap/enums.h" is not documented as exposed outside its module
 
 # Perhaps thread_mpi documentation should just be excluded, and generated separately...
 src/gromacs/legacyheaders/thread_mpi.h: error: non-installed header has public documentation
@@ -27,3 +29,18 @@ src/gromacs/legacyheaders/thread_mpi/*.h: error: non-installed header has public
 src/gromacs/legacyheaders/thread_mpi/*.h: error: *: is documented, but does not have brief description
 src/gromacs/legacyheaders/thread_mpi/*.h: error: *: has public documentation, but is not in installed header
 src/gromacs/legacyheaders/tmpi.h: error: non-installed header has public documentation
+src/gromacs/gmxlib/thread_mpi/*.c: warning: includes non-local file as "tmpi_config.h"
+
+# These would be nice to fix, but can wait for later
+*: warning: includes local file as <config.h>
+src/programs/view/*: warning: includes local file as <*.h>
+src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd/math_x86_*.h" is not documented as exposed outside its module
+src/gromacs/gmxlib/copyrite.cpp: warning: included file "gromacs/utility/gitversion.h" is not documented as exposed outside its module
+
+# These are specific to Folding@Home, and easiest to suppress here
+*: warning: includes non-local file as "corewrap.h"
+src/config.h.cmakein: warning: includes non-local file as "swindirect.h"
+
+# These are limitations in the current script
+src/gromacs/version.h.cmakein: warning: includes local file as <gromacs/version.h>
+src/gromacs/utility/gmx_header_config.h: warning: includes non-local file as "gmx_header_config_gen.h"
