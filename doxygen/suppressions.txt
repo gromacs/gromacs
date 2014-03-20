@@ -27,3 +27,19 @@ src/gromacs/legacyheaders/thread_mpi/*.h: error: non-installed header has public
 src/gromacs/legacyheaders/thread_mpi/*.h: error: *: is documented, but does not have brief description
 src/gromacs/legacyheaders/thread_mpi/*.h: error: *: has public documentation, but is not in an installed header
 src/gromacs/legacyheaders/tmpi.h: error: non-installed header has public documentation
+
+# These would be nice to fix, but can wait for later
+*: warning: includes a local file as <config.h>
+src/programs/view/*: warning: includes a local file as <*.h>
+
+# These are specific to Folding@Home, and easiest to suppress here
+*: warning: includes a non-local file as "corewrap.h"
+src/config.h.cmakein: warning: includes a non-local file as "swindirect.h"
+
+src/gromacs/gmxlib/thread_mpi/*.c: warning: includes a non-local file as "tmpi_config.h"
+src/gromacs/version.h.cmakein: warning: includes a local file as <gromacs/version.h>
+src/gromacs/utility/gmx_header_config.h: warning: includes a non-local file as "gmx_header_config_gen.h"
+*: warning: included file "*/commandline/pargs.h" is not documented as exposed outside its module
+src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd/math_x86_*.h" is not documented as exposed outside its module
+src/gromacs/gmxlib/copyrite.cpp: warning: included file "gromacs/utility/gitversion.h" is not documented as exposed outside its module
+src/gromacs/legacyheaders/types/*.h: warning: included file "../../swap/enums.h" is not documented as exposed outside its module

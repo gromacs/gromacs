@@ -137,6 +137,9 @@ if (DOXYGEN_FOUND)
     endif()
 
     if (USE_PYTHON_SCRIPTS)
+        # TODO: Consider whether this is the best name and location for this
+        # code, since not all of it is Doxygen-specific (but nearly all of it
+        # relies on the Doxygen XML documentation).
         set(doc_check_command
             ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-check.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
@@ -165,32 +168,4 @@ if (USE_PYTHON_SCRIPTS)
         -DMODE=GRAPHS
         -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
         COMMENT "Generating include dependency graphs" VERBATIM)
-    # TODO: This should be moved away from here and preferably made into
-    # a CTest test.
-    # TODO: To do the above, issues found by the script should be fixed.
-    # A suppression system would also be good to have, since it would be
-    # nice to include also legacyheaders in the checks, but those generate
-    # a lot of errors about missing documentation.  The script is also
-    # currently quite strict, so I don't know whether we really want to
-    # enforce all the rules.
-    # TODO: Would be nice to not generate the file lists for each of these,
-    # but what would be a good shared location for the intermediate files?
-    add_custom_target(depcheck
-        ${CMAKE_COMMAND}
-        -DSRCDIR=${CMAKE_SOURCE_DIR}
-        -DBUILDDIR=${CMAKE_BINARY_DIR}
-        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
-        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-        -DMODE=CHECK
-        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
-        COMMENT "Checking include dependencies" VERBATIM)
-    add_custom_target(doccheck
-        ${CMAKE_COMMAND}
-        -DSRCDIR=${CMAKE_SOURCE_DIR}
-        -DBUILDDIR=${CMAKE_BINARY_DIR}
-        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
-        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-        -DMODE=CHECKDOC
-        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
-        COMMENT "Checking some aspects of Doxygen documentation" VERBATIM)
 endif()
