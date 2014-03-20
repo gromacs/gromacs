@@ -108,6 +108,43 @@ def check_file(fileobj, reporter):
                     "is not documented in any module, but {0} exists"
                     .format(expectedmod.get_name()))
 
+def check_include(fileobj, includedfile, reporter):
+    """Check an #include directive."""
+    if includedfile.is_system():
+        if includedfile.get_file():
+            reporter.code_issue(includedfile,
+                    "includes local file as {0}".format(includedfile))
+    else:
+        otherfile = includedfile.get_file()
+        if not otherfile:
+            reporter.code_issue(includedfile,
+                    "includes non-local file as {0}".format(includedfile))
+        elif fileobj.is_installed() and not includedfile.is_relative():
+            reporter.code_issue(includedfile,
+                    "installed header includes {0} using non-relative path"
+                    .format(includedfile))
+        if not otherfile:
+            return
+        if fileobj.is_installed() and not otherfile.is_installed():
+            reporter.code_issue(includedfile,
+                    "installed header includes non-installed {0}"
+                    .format(includedfile))
+        filemodule = fileobj.get_module()
+        othermodule = otherfile.get_module()
+        if fileobj.is_documented() and otherfile.is_documented():
+            filetype = fileobj.get_documentation_type()
+            othertype = otherfile.get_documentation_type()
+            if filetype > othertype:
+                reporter.code_issue(includedfile,
+                        "{0} file includes {1} file {2}"
+                        .format(filetype, othertype, includedfile))
+        check_api = (othermodule and othermodule.is_documented() and
+                filemodule != othermodule)
+        if check_api and otherfile.get_api_type() < DocType.library:
+            reporter.code_issue(includedfile,
+                    "included file {0} is not documented as exposed outside its module"
+                    .format(includedfile))
+
 def check_entity(entity, reporter):
     """Check documentation for a code construct."""
     if entity.is_documented():
@@ -174,6 +211,9 @@ def main():
     tree = GromacsTree(options.source_root, options.build_root, reporter)
     tree.set_installed_file_list(installedlist)
     if not options.quiet:
+        sys.stderr.write('Reading source files...\n')
+    tree.scan_files()
+    if not options.quiet:
         sys.stderr.write('Reading Doxygen XML files...\n')
     tree.load_xml()
 
@@ -184,6 +224,8 @@ def main():
 
     for fileobj in tree.get_files():
         check_file(fileobj, reporter)
+        for includedfile in fileobj.get_includes():
+            check_include(fileobj, includedfile, reporter)
 
     for classobj in tree.get_classes():
         check_class(classobj, reporter)
@@ -191,8 +233,6 @@ def main():
     for memberobj in tree.get_members():
         if memberobj.is_visible() or options.check_ignored:
             check_member(memberobj, reporter)
-
-    # TODO: Check #include statements, like old 'make doccheck'
 
     reporter.write_pending()
     reporter.report_unused_filters()

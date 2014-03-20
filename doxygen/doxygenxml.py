@@ -90,7 +90,7 @@ class DocType(object):
     """Documentation visibility in the generated documentation."""
 
     # Mapping to string representations for the internal integer values
-    _names = ['none', 'internal', 'library', 'public']
+    _names = ['undocumented', 'internal', 'library', 'public']
 
     def __init__(self, value):
         """Initialize a DocType instance.

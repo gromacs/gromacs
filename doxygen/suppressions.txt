@@ -13,3 +13,18 @@ share/template/template.cpp: error: source file documentation appears outside fu
 src/gromacs/imd/imd.c: error: source file documentation appears outside full documentation
 src/gromacs/imd/imdsocket.c: error: source file documentation appears outside full documentation
 src/gromacs/imd/imd.h: note: init_IMD: has in-body comments, which are ignored
+src/gromacs/legacyheaders/types/*.h: warning: included file "../../swap/enums.h" is not documented as exposed outside its module
+
+# These would be nice to fix, but can wait for later
+*: warning: includes local file as <config.h>
+src/programs/view/*: warning: includes local file as <*.h>
+src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd/math_x86_*.h" is not documented as exposed outside its module
+src/gromacs/gmxlib/copyrite.cpp: warning: included file "gromacs/utility/gitversion.h" is not documented as exposed outside its module
+
+# These are specific to Folding@Home, and easiest to suppress here
+*: warning: includes non-local file as "corewrap.h"
+src/config.h.cmakein: warning: includes non-local file as "swindirect.h"
+
+# These are limitations in the current script
+src/gromacs/version.h.cmakein: warning: includes local file as <gromacs/version.h>
+src/gromacs/utility/gmx_header_config.h: warning: includes non-local file as "gmx_header_config_gen.h"

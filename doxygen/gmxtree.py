@@ -52,6 +52,7 @@ customizations will be added.
 
 import os
 import os.path
+import re
 
 import doxygenxml as xml
 import reporter
@@ -70,6 +71,37 @@ def _get_api_type_for_compound(grouplist):
             # TODO: Check for multiple group membership
     return result
 
+class IncludedFile(object):
+
+    """Information about an #include directive in a file."""
+
+    def __init__(self, path, lineno, included_file, included_path, is_relative, is_system):
+        self._path = path
+        self._line_number = lineno
+        self._included_file = included_file
+        self._included_path = included_path
+        #self._used_include_path = used_include_path
+        self._is_relative = is_relative
+        self._is_system = is_system
+
+    def __str__(self):
+        if self._is_system:
+            return '<{0}>'.format(self._included_path)
+        else:
+            return '"{0}"'.format(self._included_path)
+
+    def is_system(self):
+        return self._is_system
+
+    def is_relative(self):
+        return self._is_relative
+
+    def get_file(self):
+        return self._included_file
+
+    def get_reporter_location(self):
+        return reporter.Location(self._path, self._line_number)
+
 class File(object):
 
     """Source/header file in the GROMACS tree."""
@@ -84,6 +116,7 @@ class File(object):
         self._sourcefile = (extension in ('.c', '.cc', '.cpp', '.cu'))
         self._apitype = DocType.none
         self._modules = set()
+        self._includes = []
 
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the file."""
@@ -102,11 +135,43 @@ class File(object):
         """Mark the file installed."""
         self._installed = True
 
+    def _process_include(self, lineno, is_system, includedpath, sourcetree):
+        """Process #include directive during scan()."""
+        is_relative = False
+        if is_system:
+            fileobj = sourcetree.find_include_file(includedpath)
+        else:
+            fullpath = os.path.join(self._dir.get_path(), includedpath)
+            fullpath = os.path.abspath(fullpath)
+            if os.path.exists(fullpath):
+                is_relative = True
+                fileobj = sourcetree.get_file(fullpath)
+            else:
+                fileobj = sourcetree.find_include_file(includedpath)
+        self._includes.append(IncludedFile(self.get_path(), lineno, fileobj, includedpath,
+                is_relative, is_system))
+
+    def scan_contents(self, sourcetree):
+        """Scan the file contents and initialize information based on it."""
+        # TODO: Consider a more robust regex.
+        include_re = r'^#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
+        with open(self._path, 'r') as scanfile:
+            for lineno, line in enumerate(scanfile, 1):
+                match = re.match(include_re, line)
+                if match:
+                    is_system = (match.group('quote') == '<')
+                    includedpath = match.group('path')
+                    self._process_include(lineno, is_system, includedpath,
+                            sourcetree)
+
     def get_reporter_location(self):
         return reporter.Location(self._path, None)
 
     def is_installed(self):
         return self._installed
+
+    def is_external(self):
+        return self._dir.is_external()
 
     def is_source_file(self):
         return self._sourcefile
@@ -137,6 +202,15 @@ class File(object):
     def get_doc_modules(self):
         return self._modules
 
+    def get_module(self):
+        module = self.get_expected_module()
+        if not module and len(self._modules) == 1:
+            module = list(self._modules)[0]
+        return module
+
+    def get_includes(self):
+        return self._includes
+
 class GeneratedFile(File):
     pass
 
@@ -155,6 +229,10 @@ class Directory(object):
         if parent and parent.is_test_directory() or \
                 os.path.basename(path) in ('tests', 'legacytests'):
             self._is_test_dir = True
+        self._is_external = False
+        if parent and parent.is_external() or \
+                os.path.basename(path) == 'external':
+            self._is_external = True
         self._subdirs = set()
         if parent:
             parent._subdirs.add(self)
@@ -175,8 +253,14 @@ class Directory(object):
     def get_reporter_location(self):
         return reporter.Location(self._path, None)
 
+    def get_path(self):
+        return self._path
+
     def is_test_directory(self):
         return self._is_test_dir
+
+    def is_external(self):
+        return self._is_external
 
     def get_module(self):
         if self._module:
@@ -263,6 +347,13 @@ class GromacsTree(object):
     set_installed_file_list() can be called to set the list of installed
     files.
 
+    scan_files() can be called to read all the files and initialize #include
+    dependencies between the files based on the information.  This is done like
+    this instead of relying on Doxygen-extracted include files to make the
+    dependency graph independent from preprocessor macro definitions
+    (Doxygen only sees those #includes that the preprocessor sees, which
+    depends on what #defines it has seen).
+
     load_xml() can be called to load information from Doxygen XML data in
     the build tree (the Doxygen XML data must have been built separately).
     """
@@ -313,7 +404,7 @@ class GromacsTree(object):
                     continue
                 relpath = self._get_rel_path(fullpath)
                 self._dirs[relpath] = Directory(fullpath, currentdir)
-            extensions = ('.h', '.cuh', '.hpp', '.c', '.cc', '.cpp', '.cu')
+            extensions = ('.h', '.cuh', '.hpp', '.c', '.cc', '.cpp', '.cu', '.bm')
             for filename in filenames:
                 basename, extension = os.path.splitext(filename)
                 if extension in extensions:
@@ -334,6 +425,12 @@ class GromacsTree(object):
         moduleobj = Module(name, rootdir)
         rootdir.set_module(moduleobj)
         self._modules[name] = moduleobj
+
+    def scan_files(self):
+        """Read source files to initialize #include dependencies."""
+        for fileobj in self._files.itervalues():
+            if not fileobj.is_external():
+                fileobj.scan_contents(self)
 
     def load_xml(self):
         """Load Doxygen XML information."""
@@ -421,6 +518,17 @@ class GromacsTree(object):
     def _get_dir(self, relpath):
         """Get directory object for a path relative to source tree root."""
         return self._dirs.get(relpath)
+
+    def get_file(self, path):
+        """Get file object for a path relative to source tree root."""
+        return self._files.get(self._get_rel_path(path))
+
+    def find_include_file(self, includedpath):
+        """Find a file object corresponding to an include path."""
+        for testdir in ('src', 'src/gromacs/legacyheaders', 'src/external/thread_mpi/include'):
+            testpath = os.path.join(testdir, includedpath)
+            if testpath in self._files:
+                return self._files[testpath]
 
     def set_installed_file_list(self, installedfiles):
         """Set list of installed files."""
