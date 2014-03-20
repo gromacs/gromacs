@@ -505,91 +505,6 @@ def _is_legacy_module(module):
     return False
 
 
-class IncludeFileChecker(object):
-    def __init__(self, deps, options):
-        self._deps = deps
-        self._options = options
-
-    def _check_file(self, checkfile, reporter):
-        if not self._options.check_doc:
-            return
-        if not checkfile.is_documented():
-            if self._options.warn_undoc:
-                is_legacy = _is_legacy_module(checkfile.module)
-                is_external = checkfile.module.name in ('gmx_lapack', 'gmx_blas', 'thread_mpi')
-                if not is_legacy and not is_external:
-                    reporter.error(checkfile.path, 'file not documented')
-        elif checkfile.doctype == 'implementation' and \
-                checkfile.type in ('publicheader', 'libheader'):
-            reporter.error(checkfile.path,
-                    'file documentation visibility incorrect')
-        elif checkfile.doctype == 'library' and checkfile.type == 'publicheader':
-            reporter.error(checkfile.path,
-                    'file documentation visibility incorrect')
-        elif checkfile.installed and checkfile.doctype not in ('public', 'unknown'):
-            reporter.error(checkfile.path,
-                    'installed header has no public documentation')
-        elif not checkfile.installed and checkfile.doctype == 'public':
-            reporter.error(checkfile.path,
-                    'non-installed file has public documentation')
-        selfmodfullname = checkfile.module.fullname
-        docmodule = checkfile.docmodule
-        if docmodule and \
-                not selfmodfullname.startswith('module_' + docmodule) and \
-                not selfmodfullname.startswith('module_gromacs_' + docmodule) and \
-                not checkfile.name == docmodule + '.h':
-            reporter.error(checkfile.path,
-                    'file documented in incorrect module "{0}"'
-                        .format(docmodule))
-
-    def _check_included_file(self, checkfile, includedfile, reporter):
-        otherfile = includedfile._included_file
-        if includedfile._is_system:
-            # TODO: This doesn't report errors with files not listed in
-            # the input files, although those could be included.
-            # That would produce a massive amount of errors for <config.h>.
-            if otherfile:
-                reporter.error(checkfile.path,
-                        'local file included as <{0}>'
-                            .format(includedfile._included_path))
-        elif not includedfile._is_relative and checkfile.installed:
-            if not includedfile._included_path == 'gmx_header_config_gen.h':
-                reporter.error(checkfile.path,
-                        'installed header includes "{0}", '
-                        'which is not found using relative path'
-                            .format(includedfile._included_path))
-        if not otherfile:
-            return
-        if checkfile.installed and not otherfile.installed:
-            reporter.error(checkfile.path,
-                    'installed header includes '
-                    'non-installed header "{0}"'
-                        .format(includedfile._included_path))
-        if not otherfile.is_documented():
-            return
-        if not self._options.check_doc:
-            return
-        intramodule = \
-                (checkfile.module.get_top_level_module() == \
-                 otherfile.module.get_top_level_module())
-        if otherfile.type not in ('publicheader', 'libheader', 'test'):
-            if not intramodule and not _is_legacy_module(otherfile.module):
-                reporter.error(checkfile.path,
-                        'included file "{0}" is missing API definition'
-                            .format(otherfile.path))
-        elif checkfile.type == 'publicheader':
-            if not otherfile.type == 'publicheader' and not otherfile.doctype == 'public':
-                reporter.error(checkfile.path,
-                        'public API file includes non-public header "{0}"'
-                            .format(otherfile.path))
-
-    def check_all(self, reporter):
-        for checkfile in sorted(self._deps.files.values()):
-            self._check_file(checkfile, reporter)
-            for includedfile in checkfile.get_included_files():
-                self._check_included_file(checkfile, includedfile, reporter)
-
-
 class GraphBuilder(object):
     def __init__(self, deps):
         self._deps = deps
@@ -782,12 +697,6 @@ def main():
     #parser.add_option('--external-at-bottom', action='store_true',
     #                  help='Force external dependencies files at the bottom '
     #                       'of the graph')
-    parser.add_option('--check', action='store_true',
-                      help='Check for problems in include file dependencies')
-    parser.add_option('--check-doc', action='store_true',
-                      help='Check for problems in Doxygen documentation')
-    parser.add_option('--warn-undoc', action='store_true',
-                      help='Warn for files that do not have Doxygen documentation')
     parser.add_option('--left-to-right', action='store_true',
                       help='Lay out from left to right')
     parser.add_option('--file-graph',
@@ -797,10 +706,6 @@ def main():
     parser.add_option('--module-file-graphs', action='store_true',
                       help='Write file graphs for each module')
     options, args = parser.parse_args()
-
-    if not options.file_graph and not options.module_graph and \
-            not options.module_file_graphs:
-        options.check = True
 
     # Constructs lists of files
     filelist = []
@@ -826,10 +731,6 @@ def main():
         deps.add_file(filename, reporter)
 
     deps.scan_files(ignorelist, reporter)
-
-    if options.check or options.check_doc:
-        checker = IncludeFileChecker(deps, options)
-        checker.check_all(reporter)
 
     #if options.with_external:
     #    for filename in extrafiles:
