@@ -222,7 +222,7 @@ typedef struct
     int              fep_state;       /* indicates which of the alchemical states we are in                 */
     real            *lambda;          /* lambda vector                               */
     matrix           box;             /* box vector coordinates                         */
-    matrix           box_rel;         /* Relitaive box vectors to preserve shape        */
+    matrix           box_rel;         /* Relative box vectors to preserve shape        */
     matrix           boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
     matrix           pres_prev;       /* Pressure of the previous step for pcoupl  */
     matrix           svir_prev;       /* Shake virial for previous step for pcoupl */
