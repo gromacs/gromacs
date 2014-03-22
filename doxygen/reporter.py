@@ -151,17 +151,20 @@ class Reporter(object):
 
     """Collect and write out issues found by checker scripts."""
 
-    def __init__(self, logfile=None):
+    def __init__(self, logfile=None, quiet=False):
         """Initialize the reporter.
 
         If logfile is set to a file name, all issues will be written to this
         file in addition to stderr.
+
+        If quiet is set to True, the reporter will suppress all output.
         """
         self._logfp = None
         if logfile:
             self._logfp = open(logfile, 'w')
         self._messages = []
         self._filters = []
+        self._quiet = quiet
 
     def _write(self, message):
         """Implement actual message writing."""
@@ -178,6 +181,8 @@ class Reporter(object):
 
     def _report(self, message):
         """Handle a single reporter message."""
+        if self._quiet:
+            return
         for filterobj in self._filters:
             if filterobj.matches(message):
                 return

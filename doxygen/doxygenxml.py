@@ -1016,6 +1016,11 @@ class DocumentationSet(object):
     This constructs relations between compound entities, and initializes other
     attributes for the entities.
 
+    load_file_details() does the same as load_details(), except that it leaves
+    those compound XML files unloaded that do not affect file objects or their
+    parent hierarchy.  This saves some time if details for actual code
+    constructs like namespaces, classes or members are not necessary.
+
     merge_duplicates() can then be called to remove members with different IDs,
     but that actually reference the same code entity.  For some reason, Doxygen
     seems to produce these in certain cases.
@@ -1068,6 +1073,14 @@ class DocumentationSet(object):
                     self._members[refid] = member
                 member.add_parent_compound(compound)
                 compound.add_member(member)
+
+    def load_file_details(self):
+        """Load detailed XML files for all files and possible parents of files."""
+        for compound in self._compounds.itervalues():
+            if isinstance(compound, (File, Directory, Group)):
+                compound.load_details()
+                if isinstance(compound, File):
+                    self._files[compound.get_path()] = compound
 
     def load_details(self):
         """Load detailed XML files for each compound."""

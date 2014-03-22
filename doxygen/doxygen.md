@@ -346,20 +346,83 @@ issues in the comments, like invalid Doxygen syntax.  The messages from the XML
 parsing are stored in `doxygen/doxygen-xml.log` in the build tree, similar to
 other Doxygen runs.
 
-There is an additional target `depgraphs` that generates include dependency
-graphs.  This is in the process of getting rewritten to take advantage of the
-mechanisms used for `doc-check`.  One graph is
-produced that shows all the modules under `src/gromacs/`, and their include
-dependencies.  Additionally, a file-level graph is produced for each module,
-showing the include dependencies within that module.  Currently, these are
-mostly for eye candy, but they can also be used for analyzing problematic
-dependencies to clean up the architecture.  A legend for the graphs is
-currently included as comments in `admin/includedeps.py`.  The output is put in
-`doxygen/depgraphs/`.
+The `doc-check` target requires Python 2.7 (other versions may work, but have
+not been tested).
 
-These targets require Python 2.7 (other versions may work, but have not been
-tested); the graph generation additionally requires `graphviz`.
+Include dependency graphs
+-------------------------
 
+The build system also provides an `dep-graphs` target that generates include
+dependency graphs with some additional annotations.
+One graph is produced that shows all the modules under `src/gromacs/`, and
+their include dependencies.  Additionally, a file-level graph is produced for
+each module, showing the include dependencies within that module.  Currently,
+these are mostly for eye candy, but they can also be used for analyzing
+problematic dependencies to clean up the architecture.
+The output is put in `doxygen/depgraphs/` in the build tree.
+
+As with `doc-check`, Python 2.7 is required (other versions may work, but have
+not been tested).  To get `.png` versions of the graphs, `graphviz` is
+additionally required.
+
+### Module graph ###
+
+The graph is written into `module-deps.dot.png`.
+
+Node colors:
+<dl>
+<dt>gray background</dt>
+<dd>undocumented module</dd>
+<dt>orange background</dt>
+<dd>documented utility modules</dd>
+<dt>red background</dt>
+<dd>documented analysis modules</dd>
+<dt>violet background</dt>
+<dd>documented MD execution modules</dd>
+<dt>light blue border</dt>
+<dd>module contains public API (installed) headers</dd>
+</dl>
+
+Edge colors (an edge with a certain color indicates that types above it in the
+list are not present):
+<dl>
+<dt>red</dt>
+<dd>invalid dependency</dd>
+<dt>gray</dt>
+<dd>legacy dependency
+(dependency on undocumented file, or to undocumented directories)</dd>
+<dt>solid black</dt>
+<dd>public header depends on the other module</dd>
+<dt>solid blue</dt>
+<dd>library header depends on the other module</dd>
+<dt>dashed blue</dt>
+<dd>source file depends on library header in the other module</dd>
+<dt>dashed black</dt>
+<dd>source file depends on public header in the other module</dd>
+<dt>dashed green</dt>
+<dd>test file depends on the other module</dd>
+</dl>
+
+### File graph ###
+
+The graphs are written to <em>module_name</em>`-deps.dot.png`.
+
+Node colors:
+<dl>
+<dt>light blue</dt>
+<dd>public API (installed) headers</dd>
+<dt>dark blue</dt>
+<dd>library API headers</dd>
+<dt>gray</dt>
+<dd>source files</dd>
+<dt>light green</dt>
+<dd>test files</dd>
+<dt>white</dt>
+<dd>other files</dd>
+</dl>
+
+Each edge signifies an include dependency; there is no additional information
+currently included.
 
 Documenting specific code constructs
 ====================================
