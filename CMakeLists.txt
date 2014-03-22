@@ -804,7 +804,7 @@ else()
 endif()
 
 if(GMX_USE_TNG)
-    find_package(ZLIB)
+    find_package(ZLIB QUIET)
     include(gmxTestZLib)
     gmx_test_zlib(HAVE_ZLIB)
     set(TNG_BUILD_WITH_ZLIB ${HAVE_ZLIB} CACHE BOOL  "Build TNG with zlib compression")

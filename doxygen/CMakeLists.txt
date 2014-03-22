@@ -34,7 +34,7 @@
 
 include(gmxOptionUtilities)
 
-find_package(Doxygen)
+find_package(Doxygen QUIET)
 if (DOXYGEN_FOUND)
     # This logic closely follows that found in FindDoxygen.cmake for dot,
     # except that the PATH variable is not cached.
