@@ -75,8 +75,8 @@ class IncludedFile(object):
 
     """Information about an #include directive in a file."""
 
-    def __init__(self, path, lineno, included_file, included_path, is_relative, is_system):
-        self._path = path
+    def __init__(self, abspath, lineno, included_file, included_path, is_relative, is_system):
+        self._abspath = abspath
         self._line_number = lineno
         self._included_file = included_file
         self._included_path = included_path
@@ -100,23 +100,25 @@ class IncludedFile(object):
         return self._included_file
 
     def get_reporter_location(self):
-        return reporter.Location(self._path, self._line_number)
+        return reporter.Location(self._abspath, self._line_number)
 
 class File(object):
 
     """Source/header file in the GROMACS tree."""
 
-    def __init__(self, path, directory):
+    def __init__(self, abspath, relpath, directory):
         """Initialize a file representation with basic information."""
-        self._path = path
+        self._abspath = abspath
+        self._relpath = relpath
         self._dir = directory
         self._rawdoc = None
         self._installed = False
-        extension = os.path.splitext(path)[1]
+        extension = os.path.splitext(abspath)[1]
         self._sourcefile = (extension in ('.c', '.cc', '.cpp', '.cu'))
         self._apitype = DocType.none
         self._modules = set()
         self._includes = []
+        directory.add_file(self)
 
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the file."""
@@ -141,21 +143,21 @@ class File(object):
         if is_system:
             fileobj = sourcetree.find_include_file(includedpath)
         else:
-            fullpath = os.path.join(self._dir.get_path(), includedpath)
+            fullpath = os.path.join(self._dir.get_abspath(), includedpath)
             fullpath = os.path.abspath(fullpath)
             if os.path.exists(fullpath):
                 is_relative = True
                 fileobj = sourcetree.get_file(fullpath)
             else:
                 fileobj = sourcetree.find_include_file(includedpath)
-        self._includes.append(IncludedFile(self.get_path(), lineno, fileobj, includedpath,
+        self._includes.append(IncludedFile(self.get_abspath(), lineno, fileobj, includedpath,
                 is_relative, is_system))
 
     def scan_contents(self, sourcetree):
         """Scan the file contents and initialize information based on it."""
         # TODO: Consider a more robust regex.
         include_re = r'^#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
-        with open(self._path, 'r') as scanfile:
+        with open(self._abspath, 'r') as scanfile:
             for lineno, line in enumerate(scanfile, 1):
                 match = re.match(include_re, line)
                 if match:
@@ -165,7 +167,7 @@ class File(object):
                             sourcetree)
 
     def get_reporter_location(self):
-        return reporter.Location(self._path, None)
+        return reporter.Location(self._abspath, None)
 
     def is_installed(self):
         return self._installed
@@ -185,8 +187,14 @@ class File(object):
     def has_brief_description(self):
         return self._rawdoc and self._rawdoc.has_brief_description()
 
-    def get_path(self):
-        return self._path
+    def get_abspath(self):
+        return self._abspath
+
+    def get_relpath(self):
+        return self._relpath
+
+    def get_name(self):
+        return os.path.basename(self._abspath)
 
     def get_documentation_type(self):
         if not self._rawdoc:
@@ -218,49 +226,70 @@ class Directory(object):
 
     """(Sub)directory in the GROMACS tree."""
 
-    def __init__(self, path, parent):
+    def __init__(self, abspath, relpath, parent):
         """Initialize a file representation with basic information."""
-        self._path = path
-        self._name = os.path.basename(path)
+        self._abspath = abspath
+        self._relpath = relpath
+        self._name = os.path.basename(abspath)
         self._parent = parent
         self._rawdoc = None
         self._module = None
         self._is_test_dir = False
         if parent and parent.is_test_directory() or \
-                os.path.basename(path) in ('tests', 'legacytests'):
+                self._name in ('tests', 'legacytests'):
             self._is_test_dir = True
         self._is_external = False
-        if parent and parent.is_external() or \
-                os.path.basename(path) == 'external':
+        if parent and parent.is_external() or self._name == 'external':
             self._is_external = True
         self._subdirs = set()
         if parent:
             parent._subdirs.add(self)
+        self._files = set()
+        self._has_installed_files = None
 
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the directory."""
         assert self._rawdoc is None
-        assert self._path == rawdoc.get_path().rstrip('/')
+        assert self._abspath == rawdoc.get_path().rstrip('/')
         self._rawdoc = rawdoc
 
     def set_module(self, module):
         assert self._module is None
         self._module = module
 
+    def add_file(self, fileobj):
+        self._files.add(fileobj)
+
     def get_name(self):
         return self._name
 
     def get_reporter_location(self):
-        return reporter.Location(self._path, None)
+        return reporter.Location(self._abspath, None)
 
-    def get_path(self):
-        return self._path
+    def get_abspath(self):
+        return self._abspath
+
+    def get_relpath(self):
+        return self._relpath
 
     def is_test_directory(self):
         return self._is_test_dir
 
     def is_external(self):
         return self._is_external
+
+    def has_installed_files(self):
+        if self._has_installed_files is None:
+            self._has_installed_files = False
+            for subdir in self._subdirs:
+                if subdir.has_installed_files():
+                    self._has_installed_files = True
+                    return True
+            for fileobj in self._files:
+                if fileobj.is_installed():
+                    self._has_installed_files = True
+                    return True
+        return self._has_installed_files
 
     def get_module(self):
         if self._module:
@@ -271,6 +300,13 @@ class Directory(object):
 
     def get_subdirectories(self):
         return self._subdirs
+
+    def get_files(self):
+        for subdir in self._subdirs:
+            for fileobj in subdir.get_files():
+                yield fileobj
+        for fileobj in self._files:
+            yield fileobj
 
 class Module(object):
 
@@ -287,17 +323,35 @@ class Module(object):
         self._name = name
         self._rawdoc = None
         self._rootdir = rootdir
+        self._group = None
 
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the module."""
         assert self._rawdoc is None
         self._rawdoc = rawdoc
+        if self._rawdoc.is_documented():
+            groups = list(self._rawdoc.get_groups())
+            if len(groups) == 1:
+                groupname = groups[0].get_name()
+                if groupname.startswith('group_'):
+                    self._group = groupname[6:]
 
     def is_documented(self):
         return self._rawdoc is not None
 
     def get_name(self):
         return self._name
+
+    def get_root_dir(self):
+        return self._rootdir
+
+    def get_files(self):
+        # TODO: Include public API convenience headers?
+        return self._rootdir.get_files()
+
+    def get_group(self):
+        return self._group
+
 
 class Class(object):
 
@@ -379,9 +433,9 @@ class GromacsTree(object):
     def _get_rel_path(self, path):
         assert os.path.isabs(path)
         if path.startswith(self._build_root):
-            return path[len(self._build_root)+1:]
+            return os.path.relpath(path, self._build_root)
         if path.startswith(self._source_root):
-            return path[len(self._source_root)+1:]
+            return os.path.relpath(path, self._source_root)
         raise ValueError("path not under build nor source tree: {0}".format(path))
 
     def _walk_dir(self, rootpath):
@@ -389,7 +443,7 @@ class GromacsTree(object):
         assert os.path.isabs(rootpath)
         assert rootpath not in self._dirs
         relpath = self._get_rel_path(rootpath)
-        self._dirs[relpath] = Directory(rootpath, None)
+        self._dirs[relpath] = Directory(rootpath, relpath, None)
         for dirpath, dirnames, filenames in os.walk(rootpath):
             if 'contrib' in dirnames:
                 dirnames.remove('contrib')
@@ -403,21 +457,21 @@ class GromacsTree(object):
                     dirnames.remove(dirname)
                     continue
                 relpath = self._get_rel_path(fullpath)
-                self._dirs[relpath] = Directory(fullpath, currentdir)
+                self._dirs[relpath] = Directory(fullpath, relpath, currentdir)
             extensions = ('.h', '.cuh', '.hpp', '.c', '.cc', '.cpp', '.cu', '.bm')
             for filename in filenames:
                 basename, extension = os.path.splitext(filename)
                 if extension in extensions:
                     fullpath = os.path.join(dirpath, filename)
                     relpath = self._get_rel_path(fullpath)
-                    self._files[relpath] = File(fullpath, currentdir)
+                    self._files[relpath] = File(fullpath, relpath, currentdir)
                 elif extension == '.cmakein':
                     extension = os.path.splitext(basename)[1]
                     if extension in extensions:
                         fullpath = os.path.join(dirpath, basename)
                         relpath = self._get_rel_path(fullpath)
                         fullpath = os.path.join(dirpath, filename)
-                        self._files[relpath] = GeneratedFile(fullpath, currentdir)
+                        self._files[relpath] = GeneratedFile(fullpath, relpath, currentdir)
 
     def _create_module(self, rootdir):
         """Create module for a subdirectory."""
@@ -432,16 +486,24 @@ class GromacsTree(object):
             if not fileobj.is_external():
                 fileobj.scan_contents(self)
 
-    def load_xml(self):
-        """Load Doxygen XML information."""
+    def load_xml(self, only_files=False):
+        """Load Doxygen XML information.
+
+        If only_files is True, XML data is not loaded for code constructs, but
+        only for files, directories, and their potential parents.
+        """
         xmldir = os.path.join(self._build_root, 'doxygen', 'xml')
         self._docset = xml.DocumentationSet(xmldir, self._reporter)
-        self._docset.load_details()
-        self._docset.merge_duplicates()
+        if only_files:
+            self._docset.load_file_details()
+        else:
+            self._docset.load_details()
+            self._docset.merge_duplicates()
         self._load_dirs()
         self._load_modules()
         self._load_files()
-        self._load_classes()
+        if not only_files:
+            self._load_classes()
 
     def _load_dirs(self):
         """Load Doxygen XML directory information."""
@@ -460,7 +522,7 @@ class GromacsTree(object):
         relpath = self._get_rel_path(path)
         dirobj = self._dirs.get(relpath)
         if not dirobj:
-            dirobj = Directory(path, parent)
+            dirobj = Directory(path, relpath, parent)
             self._dirs[relpath] = dirobj
         dirobj.set_doc_xml(dirdoc, self)
         self._docmap[dirdoc] = dirobj
@@ -501,7 +563,7 @@ class GromacsTree(object):
             relpath = self._get_rel_path(path)
             fileobj = self._files.get(relpath)
             if not fileobj:
-                fileobj = File(path, self._docmap[dirdoc])
+                fileobj = File(path, relpath, self._docmap[dirdoc])
                 self._files[relpath] = fileobj
             fileobj.set_doc_xml(filedoc, self)
             self._docmap[filedoc] = fileobj
@@ -552,6 +614,10 @@ class GromacsTree(object):
     def get_files(self):
         """Get iterable for all files in the source tree."""
         return self._files.itervalues()
+
+    def get_modules(self):
+        """Get iterable for all modules in the source tree."""
+        return self._modules.itervalues()
 
     def get_classes(self):
         """Get iterable for all classes in the source tree."""

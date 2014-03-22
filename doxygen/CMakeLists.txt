@@ -149,23 +149,31 @@ if (DOXYGEN_FOUND)
         add_custom_target(doc-check COMMAND ${doc_check_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
         add_dependencies(doc-check doc-xml find-installed-headers)
-        # This target is the same as doc-check, but it doesn't rerun the
+
+        set(graphdir ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
+        set(dep_graphs_command_python
+            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
+            -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
+            --installed ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
+            -o ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
+        set(dep_graphs_command_dot
+            ${CMAKE_COMMAND} -DGRAPHDIR=${graphdir}
+            -DDOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/generateGraphs.cmake)
+        add_custom_target(dep-graphs
+            COMMAND ${dep_graphs_command_python}
+            COMMAND ${dep_graphs_command_dot}
+            COMMENT "Generating include dependency graphs" VERBATIM)
+        add_dependencies(dep-graphs doc-xml find-installed-headers)
+
+        # These targets are the same as above, but they don't rerun the
         # dependencies each time, making it faster and more convenient for
         # testing.
         add_custom_target(doc-check-fast COMMAND ${doc_check_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
+        add_custom_target(dep-graphs-fast
+            COMMAND ${dep_graphs_command_python}
+            COMMAND ${dep_graphs_command_dot}
+            COMMENT "Generating include dependency graphs" VERBATIM)
     endif()
-endif()
-
-if (USE_PYTHON_SCRIPTS)
-    add_custom_target(depgraphs
-        ${CMAKE_COMMAND}
-        -DSRCDIR=${CMAKE_SOURCE_DIR}
-        -DBUILDDIR=${CMAKE_BINARY_DIR}
-        -DOUTDIR=${CMAKE_BINARY_DIR}/doxygen/depgraphs
-        -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-        -DDOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
-        -DMODE=GRAPHS
-        -P ${CMAKE_SOURCE_DIR}/admin/includedeps.cmake
-        COMMENT "Generating include dependency graphs" VERBATIM)
 endif()
