@@ -41,7 +41,7 @@
 #  GSL_FOUND        - True if gsl found.
 #
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 
 pkg_check_modules(PC_GSL gsl)
 find_path(GSL_INCLUDE_DIR gsl/gsl_linalg.h HINTS ${PC_GSL_INCLUDE_DIRS})
