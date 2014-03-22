@@ -1,8 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009-2011, by the VOTCA Development Team (http://www.votca.org)
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2009-2011, by the VOTCA Development Team (http://www.votca.org).
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #  GSL_FOUND        - True if gsl found.
 #
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 
 pkg_check_modules(PC_GSL gsl)
 find_path(GSL_INCLUDE_DIR gsl/gsl_linalg.h HINTS ${PC_GSL_INCLUDE_DIRS})

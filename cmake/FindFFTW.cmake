@@ -60,7 +60,7 @@ else()
   message(FATAL_ERROR "We do not support finding ${FFTW_FIND_COMPONENTS}, go and implement it ;-)")
 endif()
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 if(NOT __pkg_config_checked_PC_${FFTW} OR NOT ${FFTW}_LIBRARY)
   pkg_check_modules(PC_${FFTW} "${${FFTW}_PKG}")
   if(NOT PC_${FFTW}_FOUND)
