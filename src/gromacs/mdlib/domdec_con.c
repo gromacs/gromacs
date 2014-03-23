@@ -237,7 +237,9 @@ void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f)
 }
 
 static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
-                             matrix box, rvec *x0, rvec *x1)
+                             matrix box,
+                             rvec *x0,
+                             rvec *x1, gmx_bool bX1IsCoord)
 {
     gmx_specatsend_t *spas;
     rvec             *x, *vbuf, *rbuf;
@@ -246,7 +248,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     rvec              shift = {0, 0, 0};
 
     nvec = 1;
-    if (x1)
+    if (x1 != NULL)
     {
         nvec++;
     }
@@ -286,7 +288,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                 {
                     x = (v == 0 ? x0 : x1);
                     /* Copy the required coordinates to the send buffer */
-                    if (!bPBC)
+                    if (!bPBC || (v == 1 && !bX1IsCoord))
                     {
                         /* Only copy */
                         for (i = 0; i < spas->nsend; i++)
@@ -415,11 +417,12 @@ static void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
-void dd_move_x_constraints(gmx_domdec_t *dd, matrix box, rvec *x0, rvec *x1)
+void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
+                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord)
 {
     if (dd->constraint_comm)
     {
-        dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1);
+        dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1, bX1IsCoord);
     }
 }
 
@@ -427,7 +430,7 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
 {
     if (dd->vsite_comm)
     {
-        dd_move_x_specat(dd, dd->vsite_comm, box, x, NULL);
+        dd_move_x_specat(dd, dd->vsite_comm, box, x, NULL, FALSE);
     }
 }
 
