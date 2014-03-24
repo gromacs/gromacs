@@ -107,7 +107,7 @@ extern "C"
    Some compatible compilers, like icc on linux+mac will take this path,
    too */
 #if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && \
-    (!defined(__xlc__)) && (!defined(TMPI_TEST_NO_ATOMICS)) )
+    (!defined(__xlc__)) && (!defined(_CRAYC)) && (!defined(TMPI_TEST_NO_ATOMICS)) )
 
 #ifdef __GNUC__
 #define TMPI_GCC_VERSION (__GNUC__ * 10000 \
@@ -171,7 +171,10 @@ extern "C"
 /* Fujitsu FX10 SPARC compiler requires gcc compatibility with -Xg */
 #error Atomics support for Fujitsu FX10 compiler requires -Xg (gcc compatibility)
 
+#elif defined(_CRAYC)
 
+/* Cray compiler */
+#include "atomic/cce.h"
 #else
 
 #ifndef DOXYGEN
