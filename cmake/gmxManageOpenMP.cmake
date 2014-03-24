@@ -45,6 +45,10 @@ if(GMX_OPENMP)
         message(STATUS "OpenMP multithreading not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled")
         set(GMX_OPENMP OFF CACHE BOOL
             "OpenMP multithreading not not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled!" FORCE)
+    elseif(CMAKE_C_COMPILER_ID MATCHES "Cray" AND CMAKE_VERSION VERSION_LESS 3)
+        message(STATUS "OpenMP multithreading is not detected correctly for the Cray compiler with CMake before version 3.0 (see http://public.kitware.com/Bug/view.php?id=14567)")
+        set(GMX_OPENMP OFF CACHE BOOL
+            "OpenMP multithreading is not detected correctly for the Cray compiler with CMake before version 3.0 (see http://public.kitware.com/Bug/view.php?id=14567)" FORCE)
     else()
         # We should do OpenMP detection if we get here
         # OpenMP check must come before other CFLAGS!
