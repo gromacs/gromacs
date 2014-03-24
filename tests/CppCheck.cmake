@@ -74,8 +74,6 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --quiet
         ${_outputopt})
     set(_c_flags
-        -I src/gromacs/gmxpreprocess
-        -I src/programs/mdrun
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
         --suppress=unusedVariable
@@ -84,7 +82,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidscanf
         --suppress=sizeofCalculation
         --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
-	--suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
+        --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
         --inline-suppr)
     set(_cxx_flags
         -D__cplusplus

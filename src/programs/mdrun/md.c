@@ -71,7 +71,7 @@
 #include "coulomb.h"
 #include "constr.h"
 #include "shellfc.h"
-#include "compute_io.h"
+#include "gromacs/gmxpreprocess/compute_io.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"

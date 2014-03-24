@@ -72,7 +72,7 @@
 #include "txtdump.h"
 #include "gmx_detect_hardware.h"
 #include "gmx_omp_nthreads.h"
-#include "calc_verletbuf.h"
+#include "gromacs/gmxpreprocess/calc_verletbuf.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
 #include "macros.h"

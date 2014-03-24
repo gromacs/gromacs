@@ -35,8 +35,6 @@
 set(testname "MdrunTests")
 set(exename "mdrun-test")
 
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
-
 gmx_build_unit_test(
     ${testname}
     ${exename}
