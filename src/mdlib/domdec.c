@@ -3139,8 +3139,15 @@ static void check_box_size(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
     }
 }
 
+enum { setcellsizeslbLOCAL, setcellsizeslbMASTER, setcellsizeslbPULSE_ONLY };
+
+/* Set the domain boundaries. Use for static (or no) load balancing,
+ * and also for the starting state for dynamic load balancing.
+ * setmode determine if and where the boundaries are stored, use enum above.
+ * Returns the number communication pulses in npulse.
+ */
 static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
-                                  gmx_bool bMaster, ivec npulse)
+                                  int setmode, ivec npulse)
 {
     gmx_domdec_comm_t *comm;
     int                d, j;
@@ -3157,20 +3164,23 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
         {
             /* Uniform grid */
             cell_dx = ddbox->box_size[d]/dd->nc[d];
-            if (bMaster)
+            switch (setmode)
             {
-                for (j = 0; j < dd->nc[d]+1; j++)
-                {
-                    dd->ma->cell_x[d][j] = ddbox->box0[d] + j*cell_dx;
-                }
-            }
-            else
-            {
-                comm->cell_x0[d] = ddbox->box0[d] + (dd->ci[d]  )*cell_dx;
-                comm->cell_x1[d] = ddbox->box0[d] + (dd->ci[d]+1)*cell_dx;
+                case setcellsizeslbMASTER:
+                    for (j = 0; j < dd->nc[d]+1; j++)
+                    {
+                        dd->ma->cell_x[d][j] = ddbox->box0[d] + j*cell_dx;
+                    }
+                    break;
+                case setcellsizeslbLOCAL:
+                    comm->cell_x0[d] = ddbox->box0[d] + (dd->ci[d]  )*cell_dx;
+                    comm->cell_x1[d] = ddbox->box0[d] + (dd->ci[d]+1)*cell_dx;
+                    break;
+                default:
+                    break;
             }
             cellsize = cell_dx*ddbox->skew_fac[d];
-            while (cellsize*npulse[d] < comm->cutoff && npulse[d] < dd->nc[d]-1)
+            while (cellsize*npulse[d] < comm->cutoff)
             {
                 npulse[d]++;
             }
@@ -3183,7 +3193,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
              * all cell borders in a loop to obtain identical values
              * to the master distribution case and to determine npulse.
              */
-            if (bMaster)
+            if (setmode == setcellsizeslbMASTER)
             {
                 cell_x = dd->ma->cell_x[d];
             }
@@ -3204,10 +3214,13 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
                 }
                 cellsize_min[d] = min(cellsize_min[d], cellsize);
             }
-            if (!bMaster)
+            if (setmode == setcellsizeslbLOCAL)
             {
                 comm->cell_x0[d] = cell_x[dd->ci[d]];
                 comm->cell_x1[d] = cell_x[dd->ci[d]+1];
+            }
+            if (setmode != setcellsizeslbMASTER)
+            {
                 sfree(cell_x);
             }
         }
@@ -3218,12 +3231,23 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
         if (d < ddbox->npbcdim &&
             dd->nc[d] > 1 && npulse[d] >= dd->nc[d])
         {
-            gmx_fatal_collective(FARGS, NULL, dd,
-                                 "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
-                                 dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
-                                 comm->cutoff,
-                                 dd->nc[d], dd->nc[d],
-                                 dd->nnodes > dd->nc[d] ? "cells" : "processors");
+            char error_string[STRLEN];
+
+            sprintf(error_string,
+                     "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
+                    dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
+                    comm->cutoff,
+                    dd->nc[d], dd->nc[d],
+                    dd->nnodes > dd->nc[d] ? "cells" : "processors");
+
+            if (setmode == setcellsizeslbLOCAL)
+            {
+                gmx_fatal_collective(FARGS, NULL, dd, error_string);
+            }
+            else
+            {
+                gmx_fatal(FARGS, error_string);
+            }
         }
     }
 
@@ -3833,7 +3857,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,
     }
     else
     {
-        set_dd_cell_sizes_slb(dd, ddbox, FALSE, npulse);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbLOCAL, npulse);
         realloc_comm_ind(dd, npulse);
     }
 
@@ -4100,6 +4124,7 @@ static void get_cg_distribution(FILE *fplog, gmx_large_int_t step, gmx_domdec_t 
     int                  i, cg_gl;
     int                 *ibuf, buf2[2] = { 0, 0 };
     gmx_bool             bMaster = DDMASTER(dd);
+
     if (bMaster)
     {
         ma = dd->ma;
@@ -4109,7 +4134,7 @@ static void get_cg_distribution(FILE *fplog, gmx_large_int_t step, gmx_domdec_t 
             check_screw_box(box);
         }
 
-        set_dd_cell_sizes_slb(dd, ddbox, TRUE, npulse);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbMASTER, npulse);
 
         distribute_cg(fplog, step, box, ddbox->tric_dir, cgs, pos, dd);
         for (i = 0; i < dd->nnodes; i++)
@@ -7241,7 +7266,7 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
     }
     else
     {
-        set_dd_cell_sizes_slb(dd, ddbox, FALSE, np);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbPULSE_ONLY, np);
         fprintf(fplog, "The initial number of communication pulses is:");
         for (d = 0; d < dd->ndim; d++)
         {
