@@ -46,5 +46,8 @@ if(TNG_BUILD_DOCUMENTATION)
                                         SOURCES ${PROJECT_BINARY_DIR}/Doxyfile)
   # IF you do NOT want the documentation to be generated EVERY time you build the project
   # then leave out the 'ALL' keyword from the above command.
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Documentation/
+      DESTINATION ${DATA_INSTALL_DIR}/tng_documentation
+      )
 endif()
 
