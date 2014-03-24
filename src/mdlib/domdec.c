@@ -3170,7 +3170,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
                 comm->cell_x1[d] = ddbox->box0[d] + (dd->ci[d]+1)*cell_dx;
             }
             cellsize = cell_dx*ddbox->skew_fac[d];
-            while (cellsize*npulse[d] < comm->cutoff && npulse[d] < dd->nc[d]-1)
+            while (cellsize*npulse[d] < comm->cutoff)
             {
                 npulse[d]++;
             }
@@ -3218,12 +3218,23 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
         if (d < ddbox->npbcdim &&
             dd->nc[d] > 1 && npulse[d] >= dd->nc[d])
         {
-            gmx_fatal_collective(FARGS, NULL, dd,
-                                 "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
-                                 dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
-                                 comm->cutoff,
-                                 dd->nc[d], dd->nc[d],
-                                 dd->nnodes > dd->nc[d] ? "cells" : "processors");
+            char error_string[STRLEN];
+
+            sprintf(error_string,
+                     "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
+                    dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
+                    comm->cutoff,
+                    dd->nc[d], dd->nc[d],
+                    dd->nnodes > dd->nc[d] ? "cells" : "processors");
+
+            if (bMaster)
+            {
+                gmx_fatal(FARGS, error_string);
+            }
+            else
+            {
+                gmx_fatal_collective(FARGS, NULL, dd, error_string);
+            }
         }
     }
 
@@ -7241,7 +7252,7 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
     }
     else
     {
-        set_dd_cell_sizes_slb(dd, ddbox, FALSE, np);
+        set_dd_cell_sizes_slb(dd, ddbox, TRUE, np);
         fprintf(fplog, "The initial number of communication pulses is:");
         for (d = 0; d < dd->ndim; d++)
         {
