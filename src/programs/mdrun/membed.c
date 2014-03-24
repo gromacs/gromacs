@@ -56,7 +56,7 @@
 #include "membed.h"
 #include "pbc.h"
 #include "readinp.h"
-#include "readir.h"
+#include "gromacs/gmxpreprocess/readir.h"
 
 /* information about scaling center */
 typedef struct {

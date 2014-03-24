@@ -90,8 +90,8 @@ that do not follow the above rules.  The installed headers for these are in
 directories and move code into proper modules.
 
 For similar historical reasons, the include path also includes
-`src/gromacs/legacyheaders/` and `src/gromacs/gmxpreprocess/` (the latter only
-for part of the source).  New code should not depend on these.
+`src/gromacs/legacyheaders/`.  It is preferred that new code does not depend on
+this.
 
 Documentation organization
 ==========================
