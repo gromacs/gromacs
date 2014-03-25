@@ -1674,7 +1674,7 @@ int gmx_grompp(int argc, char *argv[])
         {
             warning_error(wi, "AdResS contant weighting function should be between 0 and 1\n\n");
         }
-        /** \TODO check size of ex+hy width against box size */
+        /** TODO check size of ex+hy width against box size */
     }
 
     /* Check for errors in the input now, since they might cause problems

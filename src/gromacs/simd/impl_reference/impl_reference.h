@@ -172,7 +172,7 @@
  * \name SIMD implementation data types
  * \{
  */
-/*! \brief Float SIMD variable. Supported with GMX_SIMD_HAVE_FLOAT.
+/*! \libinternal \brief Float SIMD variable. Supported with GMX_SIMD_HAVE_FLOAT.
  */
 typedef struct
 {
@@ -180,7 +180,7 @@ typedef struct
 }
 gmx_simd_float_t;
 
-/*! \brief Floating-point SIMD variable type in double precision.
+/*! \libinternal \brief Floating-point SIMD variable type in double precision.
  *
  * Supported with GMX_SIMD_HAVE_DOUBLE.
  */
@@ -190,7 +190,7 @@ typedef struct
 }
 gmx_simd_double_t;
 
-/*! \brief Integer SIMD variable type to use for conversions to/from float.
+/*! \libinternal \brief Integer SIMD variable type to use for conversions to/from float.
  *
  * This is also the widest integer SIMD type.
  */
@@ -200,7 +200,7 @@ typedef struct
 }
 gmx_simd_fint32_t;
 
-/*! \brief Integer SIMD variable type to use for conversions to/from double.
+/*! \libinternal \brief Integer SIMD variable type to use for conversions to/from double.
  *
  * Available with GMX_SIMD_HAVE_DINT32.
  */
@@ -210,7 +210,7 @@ typedef struct
 }
 gmx_simd_dint32_t;
 
-/*! \brief Boolean type for float SIMD data.
+/*! \libinternal \brief Boolean type for float SIMD data.
  *
  * You should likely use gmx_simd_bool_t
  * (for gmx_simd_real_t) instead, unless you really know what you are doing.
@@ -221,7 +221,7 @@ typedef struct
 }
 gmx_simd_fbool_t;
 
-/*! \brief Boolean type for double precision SIMD data.
+/*! \libinternal \brief Boolean type for double precision SIMD data.
  *
  * Use the generic gmx_simd_bool_t
  * (for gmx_simd_real_t) instead, unless you really know what you are doing.
@@ -232,14 +232,14 @@ typedef struct
 }
 gmx_simd_dbool_t;
 
-/*! \brief Boolean type for integer datatypes corresponding to float SIMD. */
+/*! \libinternal \brief Boolean type for integer datatypes corresponding to float SIMD. */
 typedef struct
 {
     gmx_int32_t b[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_fibool_t;
 
-/*! \brief Boolean type for integer datatypes corresponding to double SIMD.
+/*! \libinternal \brief Boolean type for integer datatypes corresponding to double SIMD.
  *
  * You should likely use gmx_simd_ibool_t (for gmx_simd_int32_t) instead,
  * unless you really know what you are doing.

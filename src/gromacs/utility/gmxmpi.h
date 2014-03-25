@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Wraps <mpi.h> usage in Gromacs.
  *
@@ -42,11 +42,6 @@
  * In the absence of MPI, this header still declares some types for
  * convenience.  It also disables MPI C++ bindings that can cause compilation
  * issues.
- *
- * \todo
- * This header is installed because commrec.h depends on it; it would be good
- * to encapsulate this dependency within the library, making the public
- * interface less dependent on the compilation options.
  *
  * \inlibraryapi
  * \ingroup module_utility
