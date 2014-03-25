@@ -148,11 +148,12 @@ gmx_rng_destroy(gmx_rng_t rng);
 
 /*! \brief Get the state of a RNG
  *
- *  This routine stores the random state in mt and mti, mt should have
- *  a size of at least 624, mt of 1.
+ * This routine stores the random state in \p mt and \p mti.
  *
- *  \param rng Handle to random number generator previously returned by
- *		       gmx_rng_init() or gmx_rng_init_array().
+ * \param[in]  rng Handle to random number generator previously returned by
+ *     gmx_rng_init() or gmx_rng_init_array().
+ * \param[out] mt  Array of at least 624 integers to receive state.
+ * \param[out] mti Pointer to an integer to receive state.
  */
 void
 gmx_rng_get_state(gmx_rng_t rng, unsigned int *mt, int *mti);
@@ -160,11 +161,12 @@ gmx_rng_get_state(gmx_rng_t rng, unsigned int *mt, int *mti);
 
 /*! \brief Set the state of a RNG
  *
- *  This routine sets the random state from mt and mti, mt should have
- *  a size of at least 624.
+ * This routine sets the random state from \p mt and \p mti.
  *
- *  \param rng Handle to random number generator previously returned by
- *		       gmx_rng_init() or gmx_rng_init_array().
+ * \param rng Handle to random number generator previously returned by
+ *     gmx_rng_init() or gmx_rng_init_array().
+ * \param[in]  mt  Array of at least 624 integers.
+ * \param[in]  mti Additional integer.
  */
 void
 gmx_rng_set_state(gmx_rng_t rng, unsigned int *mt, int mti);

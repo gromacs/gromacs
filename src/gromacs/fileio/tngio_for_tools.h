@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,8 @@ void gmx_prepare_tng_writing(const char              *filename,
 
 /*! \brief Write a trxframe to a TNG file
  *
+ * \param output Trajectory to write to
+ * \param frame  Frame data to write
  * \param natoms Number of atoms to actually write
  *
  * The natoms field in frame is the number of atoms in the system. The

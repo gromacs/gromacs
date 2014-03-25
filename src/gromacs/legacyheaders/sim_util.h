@@ -91,7 +91,7 @@ void print_time(FILE *out, gmx_walltime_accounting_t walltime_accounting,
  * in time.
  *
  * \param[in] log       logfile, or NULL to suppress output
- * \param[in] nodeid    MPI rank to include in the output
+ * \param[in] rank      MPI rank to include in the output
  * \param[in] title     Description to include in the output
  * \param[in] the_time  Seconds since the epoch, e.g. as reported by gmx_gettime
  */

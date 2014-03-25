@@ -3100,7 +3100,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 //! Boolean XOR
 #define WHAMBOOLXOR(a, b) ( ((!(a)) && (b)) || ((a) && (!(b))))
 
-/*! Number of elements in fnm (used for command line parsing) */
+//! Number of elements in fnm (used for command line parsing)
 #define NFILE asize(fnm)
 
 //! The main g_wham routine

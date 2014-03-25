@@ -166,7 +166,7 @@ static char *sscan(int argc, char *argv[], int *i)
     return argv[++(*i)];
 }
 
-gmx_bool is_hidden(t_pargs *pa)
+static gmx_bool is_hidden(t_pargs *pa)
 {
     return (strstr(pa->desc, "HIDDEN") != NULL);
 }
@@ -336,7 +336,7 @@ int opt2parg_int(const char *option, int nparg, t_pargs pa[])
     return 0;
 }
 
-gmx_bool opt2parg_gmx_bool(const char *option, int nparg, t_pargs pa[])
+gmx_bool opt2parg_bool(const char *option, int nparg, t_pargs pa[])
 {
     int i;
 

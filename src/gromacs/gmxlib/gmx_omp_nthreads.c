@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,8 +86,8 @@ static const char *mod_name[emntNR] =
 
 /** Number of threads for each algorithmic module.
  *
- *  File-scope global variable that gets set once in \init_module_nthreads
- *  and queried via gmx_omp_nthreads_get.
+ *  File-scope global variable that gets set once in pick_module_nthreads()
+ *  and queried via gmx_omp_nthreads_get().
  *
  *  All fields are initialized to 0 which should result in errors if
  *  the init call is omitted.
@@ -95,9 +95,9 @@ static const char *mod_name[emntNR] =
 static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
 
 
-/** Determine the number of threads for module \mod.
+/** Determine the number of threads for module \p mod.
  *
- *  \m takes values form the module_nth_t enum and maps these to the
+ *  \p m takes values form the module_nth_t enum and maps these to the
  *  corresponding value in modth_env_var.
  *
  *  Each number of threads per module takes the default value unless
