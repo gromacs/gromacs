@@ -56,12 +56,13 @@
 #include <sys/sysmp.h>
 #endif
 
+#include "thread_mpi/threads.h"
+
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"

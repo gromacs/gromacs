@@ -70,6 +70,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
     set(_common_flags
         --enable=style -DLINUX
         -I src/gromacs/legacyheaders -I src
+        -I src/external/thread_mpi/include
         -I ${CMAKE_BINARY_DIR}/src -I ${CMAKE_BINARY_DIR}/src/gromacs/utility
         --quiet
         ${_outputopt})

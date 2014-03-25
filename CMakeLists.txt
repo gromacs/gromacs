@@ -442,9 +442,8 @@ if (GMX_X11)
 endif()
 
 include(ThreadMPI)
-set(THREAD_MPI_LIB thread_mpi)
 # Enable core threading facilities
-tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders")
+tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include")
 # Enable tMPI C++ support
 tmpi_enable_cxx()
 if(GMX_THREAD_MPI)
@@ -453,7 +452,6 @@ if(GMX_THREAD_MPI)
     set(GMX_MPI 1)
     set(MPI_IN_PLACE_EXISTS 1)
 endif()
-tmpi_get_source_list(THREAD_MPI_SRC)
 # If atomics are manually disabled a define is needed because atomics.h doesn't depend on config.h
 if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
@@ -538,6 +536,7 @@ endif()
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(${CMAKE_BINARY_DIR}/src)
 # Required for gmx_header_config_gen.h to be found before installation
