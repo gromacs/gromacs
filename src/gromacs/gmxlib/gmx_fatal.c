@@ -43,6 +43,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "thread_mpi/threads.h"
+
 #include "main.h"
 #include "types/commrec.h"
 #include "network.h"
@@ -55,8 +57,6 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/gmxmpi.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 static gmx_bool            bDebug         = FALSE;
 static char               *fatal_tmp_file = NULL;

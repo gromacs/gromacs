@@ -53,7 +53,7 @@
 #endif
 
 #ifdef DEBUG
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
+#include "thread_mpi/threads.h"
 
 static void log_action(int bMal, const char *what, const char *file, int line,
                        int nelem, int size, void *ptr)

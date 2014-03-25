@@ -38,10 +38,11 @@
 #include <config.h>
 #endif
 
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "thread_mpi/threads.h"
+
 #include "typedefs.h"
 #include "txtdump.h"
 #include "smalloc.h"

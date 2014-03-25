@@ -65,6 +65,8 @@
 #include <windows.h>
 #endif
 
+#include "thread_mpi/threads.h"
+
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/network.h"
@@ -76,8 +78,6 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 /* we keep a linked list of all files opened through pipes (i.e.
    compressed or .gzipped files. This way we can distinguish between them

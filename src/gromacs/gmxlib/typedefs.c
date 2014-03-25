@@ -39,6 +39,8 @@
 #include <config.h>
 #endif
 
+#include "thread_mpi/threads.h"
+
 #include "smalloc.h"
 #include "symtab.h"
 #include "vec.h"
@@ -46,8 +48,6 @@
 #include "macros.h"
 #include <string.h>
 #include "gromacs/random/random.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */

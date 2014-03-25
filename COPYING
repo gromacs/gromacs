@@ -995,8 +995,7 @@ available at http://www.gnu.org/licenses/lgpl-3.0.txt.
 5. thread_mpi
 =============
 
-   Files: src/gromacs/legacyheaders/thread_mpi/
-          src/gromacs/gmxlib/thread_mpi/
+   Files: src/external/thread_mpi/
 
 Copyright (c) 2009-2012, Sander Pronk & Erik Lindahl.
 All rights reserved.

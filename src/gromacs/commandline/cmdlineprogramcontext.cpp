@@ -53,7 +53,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/thread_mpi/mutex.h"
+#include "thread_mpi/mutex.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
