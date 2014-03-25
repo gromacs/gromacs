@@ -48,6 +48,8 @@
 #include <unistd.h>
 #endif
 
+#include "thread_mpi/threads.h"
+
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "smalloc.h"
@@ -56,8 +58,6 @@
 #include "string2.h"
 #include "gmxfio.h"
 #include "md5.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include "gmxfio_int.h"
 

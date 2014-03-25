@@ -69,11 +69,6 @@ give an overview of some of the topics that are documented:
  - \subpage page_simd <br/>
    Documentation about the new SIMD module that makes it possible to write
    highly accelerated CPU code that is still portable.
- - \subpage thread_mpi <br/>
-   This code is used internally for threading support, and also provides a
-   (partial) MPI implementation that allows compiling a "thread-MPI" version of
-   \Gromacs that can run on a single node with most of the functionality of a
-   real MPI version.
 \endif
 
 This list will hopefully expand over time.

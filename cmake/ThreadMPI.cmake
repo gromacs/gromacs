@@ -168,36 +168,36 @@ MACRO(TMPI_ENABLE)
 ENDMACRO(TMPI_ENABLE)
 
 
-MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
+MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
     set(${SRC_VARIABLE}
-        thread_mpi/errhandler.c
-        thread_mpi/tmpi_malloc.c
-        thread_mpi/atomic.c
-        thread_mpi/lock.c)
+        ${SRC_ROOT}/errhandler.c
+        ${SRC_ROOT}/tmpi_malloc.c
+        ${SRC_ROOT}/atomic.c
+        ${SRC_ROOT}/lock.c)
 
     if (THREAD_PTHREADS)
-        list(APPEND ${SRC_VARIABLE} thread_mpi/pthreads.c)
+        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/pthreads.c)
     elseif (THREAD_WINDOWS)
-        list(APPEND ${SRC_VARIABLE} thread_mpi/winthreads.c)
+        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/winthreads.c)
     endif ()
 
     if (TMPI_CXX_LIB)
-        list(APPEND ${SRC_VARIABLE} thread_mpi/system_error.cpp)
+        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/system_error.cpp)
     endif ()
 
     if (TMPI_ENABLED)
         list(APPEND ${SRC_VARIABLE}
-             thread_mpi/alltoall.c      thread_mpi/p2p_protocol.c
-             thread_mpi/barrier.c       thread_mpi/p2p_send_recv.c
-             thread_mpi/bcast.c         thread_mpi/p2p_wait.c
-             thread_mpi/collective.c    thread_mpi/profile.c
-             thread_mpi/comm.c          thread_mpi/reduce.c
-             thread_mpi/event.c         thread_mpi/reduce_fast.c
-             thread_mpi/gather.c        thread_mpi/scatter.c
-             thread_mpi/group.c         thread_mpi/tmpi_init.c
-             thread_mpi/topology.c      thread_mpi/list.c
-             thread_mpi/type.c          thread_mpi/scan.c
-             thread_mpi/numa_malloc.c   thread_mpi/once.c)
+             ${SRC_ROOT}/alltoall.c      ${SRC_ROOT}/p2p_protocol.c
+             ${SRC_ROOT}/barrier.c       ${SRC_ROOT}/p2p_send_recv.c
+             ${SRC_ROOT}/bcast.c         ${SRC_ROOT}/p2p_wait.c
+             ${SRC_ROOT}/collective.c    ${SRC_ROOT}/profile.c
+             ${SRC_ROOT}/comm.c          ${SRC_ROOT}/reduce.c
+             ${SRC_ROOT}/event.c         ${SRC_ROOT}/reduce_fast.c
+             ${SRC_ROOT}/gather.c        ${SRC_ROOT}/scatter.c
+             ${SRC_ROOT}/group.c         ${SRC_ROOT}/tmpi_init.c
+             ${SRC_ROOT}/topology.c      ${SRC_ROOT}/list.c
+             ${SRC_ROOT}/type.c          ${SRC_ROOT}/scan.c
+             ${SRC_ROOT}/numa_malloc.c   ${SRC_ROOT}/once.c)
     endif()
 ENDMACRO(TMPI_GET_SOURCE_LIST)
 
