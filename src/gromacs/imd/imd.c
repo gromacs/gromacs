@@ -752,7 +752,7 @@ static void keep_old_values(t_gmx_IMD_setup *IMDsetup)
 
 
 /*! \brief Returns TRUE if any component of the two rvecs differs. */
-static inline gmx_bool rvecs_differ(const rvec v1, const rvec v2)
+static gmx_inline gmx_bool rvecs_differ(const rvec v1, const rvec v2)
 {
     int i;
 
