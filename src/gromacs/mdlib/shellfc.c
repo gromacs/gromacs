@@ -58,7 +58,6 @@
 #include "chargegroup.h"
 #include "macros.h"
 
-
 typedef struct {
     int     nnucl;
     atom_id shell;               /* The shell id				*/
@@ -229,7 +228,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     }
 }
 
-gmx_shellfc_t init_shell_flexcon(FILE *fplog,
+gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
                                  gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x)
@@ -446,20 +445,38 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                             case F_BONDS:
                             case F_HARMONIC:
                                 shell[nsi].k    += ffparams->iparams[type].harmonic.krA;
+                                if (debug)
+                                {
+                                    fprintf(debug, "INIT SHELL HARM: Setting k for bond to Drude %d to %f\n", nsi, shell[nsi].k);
+                                }
                                 break;
                             case F_CUBICBONDS:
                                 shell[nsi].k    += ffparams->iparams[type].cubic.kb;
                                 break;
                             case F_POLARIZATION:
                             case F_ANHARM_POL:
-                                /* TODO: our k value is precomputed
-                                 * May need to add F_CHARMM_POL or something */
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
                                 {
                                     gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
                                 }
-                                shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
-                                    ffparams->iparams[type].polarize.alpha;
+                                /* Assume CHARMM if we are using extended Lagrangian */
+                                if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+                                {
+                                    /* In principle, k can be re-calculated from alpha, but for some reason it 
+                                     * is not exactly matching CHARMM, so we turn to .mdp settings instead */
+                                    /* shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0_CHARMM/ffparams->iparams[type].polarize.alpha; */
+                                    /* TODO: This is really ugly, so in reality this should be a harmonic interaction
+                                     * defined above. To do this requires modification to toppush.c */
+                                    shell[nsi].k    += ir->drude->drude_khyp;
+                                    if (debug)
+                                    {
+                                        fprintf(debug, "INIT SHELL POL: Setting k for bond to Drude %d to %f\n", nsi, shell[nsi].k);
+                                    }
+                                }
+                                else
+                                {
+                                    shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/ffparams->iparams[type].polarize.alpha;
+                                }
                                 break;
                             case F_ANISO_POL:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
@@ -519,6 +536,12 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
     shfc->shell_index_gl = shell_index;
 
     shfc->bPredict     = (getenv("GMX_NOPREDICT") == NULL);
+    /* Do not predict shells with extended Lagrangian for Drude */
+    if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+    {
+        shfc->bPredict = FALSE;
+    }
+
     shfc->bRequireInit = FALSE;
     if (!shfc->bPredict)
     {
@@ -935,6 +958,286 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
               NULL, NULL, nrnb, econqDeriv_FlexCon, FALSE, 0, 0);
 }
 
+/* Drude hard wall restraint
+ *
+ * Avoids polarization catastrophe by imposing a limit on the bond
+ * length between a Drude and its bonded heavy atom.  If the bond
+ * length is greater than the limit, the length will be set to that
+ * limit and the velocities along the bond vector are scaled 
+ * down according to the Drude temperature set in the .mdp file
+ */
+void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[])
+{
+
+    if (debug)
+    {
+        fprintf(debug, "HARDWALL: Entering hard wall function...\n");
+    }
+
+    int     i;
+    atom_id ia, ib;                 /* heavy atom and drude, respectively */
+    real    ma, mb, mtot;           /* masses of drude and heavy atom, and their sum */
+    real    dt, max_t;
+    real    fac;
+    real    rab2;                   /* squared distance */
+    real    rab;                    /* total distance */
+    real    rwall, rwall2;          /* wall distance, and squared distance */
+    real    dr;                     /* difference between rab and rwall */
+    real    dr_a, dr_b;             
+    real    dprod_vr1, dprod_vr2;   
+    real    vbcom;                  /* velocity of the COM of the drude-heavy atom bond */
+    real    vbond;                  /* relative velocity between drude and heavy atom */
+    rvec    vecab, tmpvecab;        /* vector between drude and heavy atom */
+    rvec    xa, xb;                 /* coordinates of heavy atom and drude, respectively */
+    rvec    vinita, vinitb;         /* original velocities of heavy atom and drude, respectively */
+    rvec    vnewa, vnewb;           /* new velocities on heavy atom and drude, respectively */
+    rvec    va, vb;                 /* velocities of heavy atom and drude, respectively */
+    rvec    vb1, vp1;               /* Bond and particle velocities for heavy atom */ 
+    rvec    vb2, vp2;               /* Bond and particle velocities for Drude */ 
+    rvec    diff_vr12;
+    rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
+
+    const real kbt = BOLTZ * ir->drude->drude_t;
+    max_t = 2.0 * ir->delta_t;
+
+    rwall = ir->drude->drude_r;
+    rwall2 = rwall * rwall;
+
+    if (debug)
+    {
+        fprintf(debug, "HARDWALL: rwall = %f  rwall2 = %f\n", rwall, rwall2);
+    }
+
+    /* find which particles are Drudes */
+    for (i = 1; i < md->homenr; i++)
+    {
+        if (md->ptype[i] == eptShell)
+        {
+            /* it is a drude, so the preceding atom is a heavy atom */
+            ia = i-1;
+            ib = i;
+
+            if (debug)
+            {
+                fprintf(debug, "HARDWALL: Drude atom %d connected to heavy atom %d\n", ib, ia);
+            }
+
+            /* copy current positions and velocities for manipulation */
+            copy_rvec(state->x[ia], xa);
+            copy_rvec(state->x[ib], xb);
+
+            if (debug)
+            {
+                fprintf(debug, "HARDWALL: x[ia]: %f %f %f\n", xa[0], xa[1], xa[2]);
+                fprintf(debug, "HARDWALL: x[ib]: %f %f %f\n", xb[0], xb[1], xb[2]);
+            }
+
+            /* do_em_step() seg faults here because there are no velocities
+             * EM + hard wall explicitly disabled in grompp */ 
+            copy_rvec(state->v[ia], va);
+            copy_rvec(state->v[ib], vb);
+
+            if (debug)
+            {
+                fprintf(debug, "HARDWALL: v[ia]: %f %f %f\n", va[0], va[1], va[2]);
+                fprintf(debug, "HARDWALL: v[ib]: %f %f %f\n", vb[0], vb[1], vb[2]);
+            }
+
+            /* save original velocities for later use */
+            copy_rvec(state->v[ia], vinita);
+            copy_rvec(state->v[ib], vinitb);
+
+            /* get vector between atom b (Drude) and a (heavy atom) */
+            rvec_sub(xb, xa, vecab);
+
+            if (debug)
+            {
+                fprintf(debug, "HARDWALL: vecab b4 hardwall check: %f %f %f\n", vecab[0], vecab[1], vecab[2]);
+            }
+
+            rab2 = norm2(vecab);
+
+            /* impose hardwall if the Drude has strayed too far */
+            if (rab2 > rwall2)
+            {
+                rab = sqrt(rab2);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: Imposing restraint on atom %d rab2 = %f\n", ib, rab2);
+                }
+
+                /* Make sure nothing catastrophic is going on */
+                if (rab > (2.0*rwall))
+                {
+                    gmx_fatal(FARGS, "Drude atom %d is too far (r = %f) from its heavy atom %d.\n"
+                        "Cannot apply hardwall.\n", ib, rab, ia);
+                }
+
+                /* scale distance between drude and heavy atom */
+                svmul((1.0/rab), vecab, vecab);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: scaled vecab: %f %f %f\n", vecab[0], vecab[1], vecab[2]);
+                }
+
+                /* Here, we assume both atoms are free to move (no freezing)
+                 * since freezegrps were defined as incompatible in grompp (could fix this later).
+                 * Restraint potentials are defined elsewhere */
+
+                /* First, get masses */
+                ma = md->massT[ia];
+                mb = md->massT[ib];
+                mtot = ma + mb;
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: masses ma = %f mb = %f mtot = %f\n", ma, mb, mtot);
+                }
+
+                /* scale velocity of heavy atom */
+                dprod_vr1 = iprod(va, vecab);
+                svmul(dprod_vr1, vecab, vb1);
+                rvec_sub(va, vb1, vp1);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: dprod_vr1 = %f\n", dprod_vr1);
+                    fprintf(debug, "HARDWALL: vb1 = %f %f %f\n", vb1[0], vb1[1], vb1[2]);
+                }
+
+                /* scale velocity of drude */
+                dprod_vr2 = iprod(vb, vecab);
+                svmul(dprod_vr2, vecab, vb2);
+                rvec_sub(vb, vb2, vp2);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: dprod_vr2 = %f\n", dprod_vr2);
+                    fprintf(debug, "HARDWALL: vb2 = %f %f %f\n", vb2[0], vb2[1], vb2[2]);
+                }
+
+                /* scale velocity of COM */
+                vbcom = (ma*dprod_vr1 + mb*dprod_vr2)/mtot;
+                dprod_vr1 -= vbcom;
+                dprod_vr2 -= vbcom;
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: vbcom: %f\n", vbcom);
+                    fprintf(debug, "HARDWALL: dprod_vr1 - vbcom = %f\n", dprod_vr1);
+                    fprintf(debug, "HARDWALL: dprod_vr2 - vbcom = %f\n", dprod_vr2);
+                }
+
+                dr = rab - rwall;
+
+                if (dprod_vr1 == dprod_vr2)
+                {
+                    dt = max_t; 
+                }
+                else
+                {
+                    dt = dr / abs(dprod_vr1 - dprod_vr2); 
+                    /* sanity check */
+                    if (dt > max_t)
+                    {
+                        dt = max_t;
+                    }
+                }
+
+                /* relative velocity between ia and ib */
+                vbond = sqrt(kbt/mb);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: vbond = %f\n", vbond);
+                }
+
+                /* reflect the velocity along the bond vector, scale down */
+                dprod_vr1 = ((-1.0)*dprod_vr1*vbond*mb) / (abs(dprod_vr1)*mtot);
+                dprod_vr2 = ((-1.0)*dprod_vr2*vbond*ma) / (abs(dprod_vr2)*mtot);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: dprod_vr1 after reflect: %f\n", dprod_vr1);
+                    fprintf(debug, "HARDWALL: dprod_vr2 after reflect: %f\n", dprod_vr2);
+                }
+
+                dr_a = (dr*mb)/mtot + (dt*dprod_vr1); 
+                dr_b = (-1.0*dr*ma)/mtot + (dt*dprod_vr2); 
+
+                /* correct the positions */
+                svmul(dr_a, vecab, tmpvecab);
+                rvec_inc(xa, tmpvecab);
+                clear_rvec(tmpvecab);
+
+                svmul(dr_b, vecab, tmpvecab);
+                rvec_inc(xb, tmpvecab);
+                clear_rvec(tmpvecab);
+ 
+                /* correct the velocities */
+                dprod_vr1 += vbcom;
+                dprod_vr2 += vbcom;
+            
+                svmul(dprod_vr1, vecab, vb1); 
+                svmul(dprod_vr2, vecab, vb2);
+
+                rvec_inc(va, vb1);
+                rvec_inc(vb, vb2);
+
+                /* copy new positions back */
+                copy_rvec(xa, state->x[ia]);
+                copy_rvec(xa, state->x[ib]);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: New position x[ia]: %f %f %f\n", xa[0], xa[1], xa[2]);
+                    fprintf(debug, "HARDWALL: New position x[ib]: %f %f %f\n", xb[0], xb[1], xa[2]);
+                }
+
+                /* copy new velocities back */
+                copy_rvec(va, vnewa);
+                copy_rvec(vb, vnewb);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: New velocity v[ia]: %f %f %f\n", va[0], va[1], va[2]);
+                    fprintf(debug, "HARDWALL: New velocity v[ib]: %f %f %f\n", vb[0], vb[1], vb[2]);
+                }
+
+                copy_rvec(va, state->v[ia]);
+                copy_rvec(vb, state->v[ib]);
+
+                /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
+
+                /* Update force on heavy atom */
+                rvec_sub(vnewa, vinita, dva);
+                fac = ma*(1.0/(dt*0.5));
+                svmul(fac, dva, f[ia]);
+
+                /* Update force on Drude */
+                rvec_sub(vnewb, vinitb, dvb);
+                fac = mb*(1.0/(dt*0.5));
+                svmul(fac, dvb, f[ib]);
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: New force f[ia]: %f %f %f\n", f[ia][0], f[ia][1], f[ia][2]);
+                    fprintf(debug, "HARDWALL: New force f[ib]: %f %f %f\n", f[ib][0], f[ib][1], f[ib][2]);
+                }
+
+                /* TODO? NAMD and CHARMM have more code here related to the virial corrections */
+                /* mdrun should take care of this */
+
+            } /* end of hard wall conditions */
+
+        } /* end of (ptype == eptShell) */
+
+    } /* end of loop over all atoms */
+
+} 
+
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         gmx_int64_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
@@ -954,7 +1257,10 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         gmx_bool *bConverged,
                         gmx_vsite_t *vsite,
                         FILE *fp_field,
-                        int *count)
+                        int *count,
+                        gmx_bool bInitStep,
+                        gmx_update_t upd,
+                        gmx_ekindata_t *ekind)
 {
     int        nshell;
     t_shell   *shell;
@@ -970,6 +1276,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     int        start = 0, homenr = md->homenr, end = start+homenr, cg0, cg1;
     int        nflexcon, g, number_steps, d, Min = 0;
 #define  Try (1-Min)             /* At start Try = 1 */
+
+    real       mdrude, matom, mratio = 0;
 
     bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
     bInit        = (mdstep == inputrec->init_step) || shfc->bRequireInit;
@@ -1081,6 +1389,10 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
+    /* Now, update shell/Drude positions. There are two methods to do this:
+     *  1. The energy minimization/SCF approach
+     *  2. Extended Lagrangian to integrate positions
+     */
     if ((inputrec->drude->drudemode==edrudeSCF) || EI_ENERGY_MINIMIZATION(inputrec->eI))
     {
         sf_dir = 0;
@@ -1124,7 +1436,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
         if (bVerbose && MASTER(cr))
         {
-            print_epot(stdout, mdstep, 0, Epot[Min], df[Min], nflexcon, sf_dir);
+            *count = 0;
+            print_epot(stdout, mdstep, count, Epot[Min], df[Min], nflexcon, sf_dir);
         }
 
         if (debug)
@@ -1281,7 +1594,49 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
     else if (inputrec->drude->drudemode==edrudeLagrangian) 
     {
-        /* TODO: here will be the Drude Lagrangian update function */
+        /* Step 1. Apply forces to Drudes and update their velocities */
+        update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
+                      f, FALSE, fr->f_twin, fcd,
+                      ekind, NULL, upd, bInitStep, etrtVELOCITY1,
+                      cr, nrnb, constr, idef, TRUE);
+
+        /* Scale Drude velocities according to multi-step thermostat */
+        /* scale_drude_vel(inputrec, md, state); */
+
+        /* Step 2. Update Drude positions */
+        update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
+                      f, FALSE, fr->f_twin, fcd,
+                      ekind, NULL, upd, bInitStep, etrtPOSITION,
+                      cr, nrnb, constr, idef, TRUE);
+
+        /* Step 3. Apply hard wall, if requested, to make sure the Drude hasn't gone too far */
+        if (inputrec->drude->bHardWall)
+        {
+            apply_drude_hardwall(inputrec, md, state, f);
+        }
+
+        /* At this point, Drude positions have been updated and then 
+         * corrected using hard wall (if requested), so we evaluate
+         * the forces again so integration of heavy atoms can proceed
+         */
+        do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle,
+                 top, groups, state->box, state->x, &state->hist,
+                 f, force_vir,
+                 md, enerd, fcd, state->lambda, graph,
+                 fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
+                 force_flags);
+
+        if (debug)
+        {
+            /* check to make sure everything is OK after do_force() */
+            fprintf(debug, "RELAX SHELL FLEXCON: after do_force()\n");
+            for (i=0; i<md->nr; i++)
+            {
+                fprintf(debug, "RELAX SHELL FLEXCON: v of atom %d: %f %f %f\n", i, state->v[i][XX],
+                        state->v[i][YY], state->v[i][ZZ]);
+            }
+        }
+
     }
     else
     {

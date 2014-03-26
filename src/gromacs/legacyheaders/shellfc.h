@@ -42,10 +42,13 @@
 extern "C" {
 #endif
 
+/* Drude hard wall restraint */
+void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[]);
+
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
-gmx_shellfc_t init_shell_flexcon(FILE *fplog,
+gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
                                  gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x);
@@ -74,7 +77,10 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_bool *bConverged,
                         gmx_vsite_t *vsite,
                         FILE *fp_field,
-                        int *count);
+                        int *count,
+                        gmx_bool bInitStep,
+                        gmx_update_t upd,
+                        gmx_ekindata_t *ekind);
 
 
 #ifdef __cplusplus

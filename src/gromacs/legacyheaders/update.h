@@ -43,7 +43,7 @@
 #include "tgroup.h"
 #include "network.h"
 #include "vec.h"
-
+#include "vcm.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,7 +101,8 @@ void update_coords(FILE             *fplog,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
                    t_nrnb           *nrnb,
                    gmx_constr_t      constr,
-                   t_idef           *idef);
+                   t_idef           *idef,
+                   gmx_bool          bUpdateDrude);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -240,6 +241,13 @@ void correct_ekin(FILE *log, int start, int end, rvec v[],
                   rvec vcm, real mass[], real tmass, tensor ekin);
 /* Correct ekin for vcm */
 
+
+void scale_drude_vel(t_inputrec *ir, t_mdatoms *md, t_state *state, t_extmass *MassQ, t_vcm *vcm);
+/* special scaling for Drudes */
+
+void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind,
+                   t_extmass *MassQ, t_vcm *vcm);
+/* calculates KE for Nose-Hoover based on relative motion */
 
 #ifdef __cplusplus
 }

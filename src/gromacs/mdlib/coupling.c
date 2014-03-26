@@ -58,7 +58,7 @@
 /* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
 /* for n=1, w0 = 1 */
 /* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
-/* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
+/* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w2 = 1-4*w0 */
 
 #define MAX_SUZUKI_YOSHIDA_NUM 5
 #define SUZUKI_YOSHIDA_NUM  5
@@ -91,6 +91,11 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                         double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
 
 {
+    if (debug)
+    {
+        fprintf(debug, "NHC TROTTER: Entering NHC_trotter() function...\n");
+    }
+
     /* general routine for both barostat and thermostat nose hoover chains */
 
     int           i, j, mi, mj, jmax;
@@ -146,6 +151,12 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                 Ekin = 2*trace(tcstat->ekinh)*tcstat->ekinscaleh_nhc;
             }
         }
+
+        if (debug)
+        {
+            fprintf(debug, "NHC TROTTER: i = %d Ekin = %f\n", i, Ekin);
+        }
+
         kT = BOLTZ*reft;
 
         for (mi = 0; mi < mstepsi; mi++)
@@ -177,6 +188,11 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                 {
                     Efac      = exp(-0.125*dt*ivxi[j]);
                     ivxi[j-1] = Efac*(ivxi[j-1]*Efac + 0.25*dt*GQ[j-1]);
+
+                    if (debug)
+                    {
+                        fprintf(debug, "NHC TROTTER: Efac = %f, ivxi[%d] = %f\n", Efac, (j-1), ivxi[j-1]);
+                    }
                 }
 
                 Efac = exp(-0.5*dt*ivxi[0]);
@@ -188,6 +204,13 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                 {
                     scalefac[i] *= Efac;
                 }
+
+                if (debug)
+                {
+                    fprintf(debug, "NHC TROTTER: Efac = %f\n", Efac);
+                    fprintf(debug, "NHC TROTTER: scalefac[%d] = %f\n", i, scalefac[i]);
+                }
+
                 Ekin *= (Efac*Efac);
 
                 /* Issue - if the KE is an average of the last and the current temperatures, then we might not be
@@ -195,6 +218,12 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                    think about this a bit more . . . */
 
                 GQ[0] = iQinv[0]*(Ekin - nd*kT);
+
+                if (debug)
+                {
+                    fprintf(debug, "NHC TROTTER: GQ[0] = %f, iQinv[0] = %f, Ekin = %f, nd = %f, kT = %f\n",
+                            GQ[0], iQinv[0], Ekin, nd, kT);
+                }
 
                 /* update thermostat positions */
                 for (j = 0; j < nh; j++)
@@ -216,6 +245,13 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                     }
                 }
                 ivxi[nh-1] += 0.25*dt*GQ[nh-1];
+
+                if (debug)
+                {
+                    fprintf(debug, "NHC TROTTER: End of mstepsj loop: mstepsi = %d, mstepsj = %d\n", mi, mj);
+                    fprintf(debug, "NHC TROTTER: GQ[0] = %f\n", GQ[0]);
+                    fprintf(debug, "NHC TROTTER: ivxi[%d] = %f\n", (nh-1), ivxi[nh-1]);
+                }
             }
         }
     }
@@ -271,6 +307,531 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     *veta += 0.5*dt*GW;
 }
 
+/* CHARMM function RelativeTstat */
+/* Thermostat for relative motion */
+static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extmass *MassQ, 
+                           t_vcm *vcm, gmx_bool bSwitch, gmx_bool bComputeCM)
+{
+
+    if (debug)
+    {
+        fprintf(debug, "REL TSTAT: entering relative thermostat function...\n");
+        if (bSwitch)
+        {
+            fprintf(debug, "REL TSTAT: bSwitch/bComputeCM = TRUE, first call\n");
+        }
+        else
+        {
+            fprintf(debug, "REL TSTAT: bSwitch/bComputeCM = FALSE, second call\n");
+        }
+    }
+
+    int         g, i, j, m;
+    int         ti;                 /* NH thermostat index */
+    real        mass;               /* mass of an atom */
+    rvec        v;                  /* velocity of an atom */
+    rvec        p;                  /* linear momentum */
+    double     *vxi;                /* for ease of referencing */
+    t_grpopts  *opts;
+
+    opts = &(ir->opts);
+
+    if (bComputeCM)
+    {
+        for (i=0; i<opts->ngtc; i++)
+        {
+            /* initialize velocities */
+            vxi = &state->nosehoover_vxi[i];
+            clear_dvec(vxi);
+        }
+
+        /* if we are doing COM motion removal, initialize */
+        if (vcm->mode != ecmNO)
+        {
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: initializing vcm to zero\n");
+            }
+
+            for (g=0; g<vcm->nr; g++)
+            {
+                clear_rvec(vcm->group_v[g]);
+            }
+        }
+
+        for (j = 0; j < md->homenr; j++)
+        {
+            /* The purpose here is to find the NH thermostat to which heavy atoms belong.
+             * If we find a Drude, the preceding atom is a heavy atom so we store its
+             * thermostat index.  Similarly, if we find a heavy atom directly, store its
+             * index.
+             */
+            if (md->ptype[j] == eptShell)
+            {
+                ti = md->cTC[j-1];
+                if (debug)
+                {
+                    fprintf(debug, "REL TSTAT: atom %d is Drude, ti = %d\n", j, ti);
+                }
+            }
+            else
+            {
+                ti = md->cTC[j];
+                if (debug)
+                {
+                    fprintf(debug, "REL TSTAT: atom %d is not a Drude, ti = %d\n", j, ti);
+                }
+            }
+
+            /* do relative velocity correction based on momentum */
+            vxi = &state->nosehoover_vxi[ti];
+            copy_rvec(state->v[j], v);
+
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: atom state->v[%d] = %f %f %f\n", j, v[XX], v[YY], v[ZZ]);
+            }
+            mass = md->massT[j];
+            svmul(mass, v, p);
+
+            for (m=0; m<DIM; m++)
+            {
+                vxi[m] += p[m];
+            }
+
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: vxi + p = %f %f %f\n", vxi[XX], vxi[YY], vxi[ZZ]);
+            }
+        } /* end if (bComputeCM) */
+
+        /* Scale relative velocities */
+        for (i=0; i<opts->ngtc; i++)
+        {
+            vxi = &state->nosehoover_vxi[i];
+
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: vxi b4 scale: %f %f %f\n", vxi[XX], vxi[YY], vxi[ZZ]);
+            }
+
+            /* scale thermostat by mass */
+            dsvmul(MassQ->Qinv[i], vxi, vxi);
+
+            /* TODO: check */
+            for (g=0; g<vcm->nr; g++)
+            {
+                if (debug)
+                {
+                    fprintf(debug, "REL TSTAT: vcm->group_v[%d] b4 scale: %f %f %f\n", g, vcm->group_v[g][XX],
+                            vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
+                }
+
+                for (m=0; m<DIM; m++)
+                {
+                    vcm->group_v[g][m] += vxi[m];
+                }
+
+                if (debug)
+                {
+                    fprintf(debug, "REL TSTAT: vcm->group_v[%d] after scale: %f %f %f\n", g, vcm->group_v[g][XX],
+                            vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
+                }
+            }
+        }
+
+        /* Scale absolute velocities */
+        /* TODO: check */
+        for (g=0; g<vcm->nr; g++)
+        {
+            for (m=0; m<DIM; m++)
+            {
+                vcm->group_v[g][m] /= vcm->group_mass[g];
+
+                if (debug)
+                {
+                    fprintf(debug, "REL TSTAT: vcm->group_v[%d][%d] after div by mass: %f\n", g, m, vcm->group_v[g][m]);
+                }
+            }
+        }
+    }
+
+    /* loop back over the particles and remove drift associated with the thermostat */
+    for (j = 0; j < md->homenr; j++)
+    {
+
+        /* get COM motion removal group to which particle belongs */
+        if (md->cVCM)
+        {
+            g = md->cVCM[j];
+        }
+        else
+        {
+            g = 0;
+        }
+
+        /* get current velocity */
+        copy_rvec(state->v[j], v);
+
+        if (bSwitch)
+        {
+            /* subtract absolute velocity */
+            rvec_sub(v, vcm->group_v[g], state->v[j]);
+
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: subtracting vcm from each v...\n");
+                fprintf(debug, "REL TSTAT: v[%d] = %f %f %f\n", j, v[XX], v[YY], v[ZZ]);
+            }
+        }
+        else
+        {
+            /* add absolute velocity and copy back */
+            rvec_inc(v, vcm->group_v[g]);
+            copy_rvec(v, state->v[j]);
+
+            if (debug)
+            {
+                fprintf(debug, "REL TSTAT: adding vcm to each v...\n");
+                fprintf(debug, "REL TSTAT: v[%d] = %f %f %f\n", j, v[XX], v[YY], v[ZZ]);
+            }
+        }
+
+        clear_rvec(v);
+    }
+
+    if (!bSwitch)
+    {
+        if (vcm->mode != ecmNO)
+        {
+            for (g=0; g<vcm->nr+1; g++)
+            {
+                clear_rvec(vcm->group_v[g]);
+            }
+        }
+    }
+}
+
+/* CHARMM function KineticEFNH */
+/* Calculates the KE of a NH thermostat based on relative motion */
+/* Note that this function does not actually scale any velocities, since
+ * in the extended Lagrangian formalism, the thermostats are integrated based
+ * on relative motion of atom-Drude pairs. Other functions take care of the
+ * actual velocity scaling. */
+void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind,
+                   t_extmass *MassQ, t_vcm *vcm)
+{
+
+    int             i, j, m;
+    int             ti;             /* thermostat index */
+    int             ngtc;
+    real            ma;             /* mass of any atom */ 
+    real            mi, mj, mtot;   /* masses of Drude, atom, and pair */
+    real            invmtot;        /* 1/mtot */
+    real            mrel;           /* relative mass */
+    real            mv2;            /* running values of KE for each atom */
+                                    /* NOTE that these are different from CHARMM, which tracks
+                                     * 2 x KE in "kin2" and "mv2" - here they are the actual KE */
+    rvec            va;             /* velocity of any atom */
+    rvec            vi, vj, vcom;   /* velocities of Drude, atom, and their COM */
+    rvec            vrel;           /* relative velocity of atom-Drude pair */
+    t_grpopts      *opts;
+    /* t_grp_tcstat   *tcstat; */
+
+    opts = &(ir->opts);
+    ngtc = opts->ngtc;
+
+    for (i=0; i<ngtc; i++)
+    {
+        /* TODO: check to make sure - this function should only ever deal in half-step velocities */
+        /* tcstat = &ekind->tcstat[i]; */
+        clear_mat(ekind->tcstat[i].ekinh);
+    }
+
+    relative_tstat(state, md, ir, MassQ, vcm, TRUE, TRUE);
+
+    mv2 = 0;
+    for (i=0; i<md->homenr; i++)
+    {
+        /* default to normal atom */
+        ma = md->massT[i];
+        copy_rvec(state->v[i], va);
+        mv2 = norm2(va);
+        mv2 *= (0.5 * ma);
+
+        /* get thermostat index */
+        ti = md->cTC[i];
+
+        /* calculate special scaled KE for Drudes or polarizable atoms */
+        if (md->ptype[i] == eptShell)
+        {
+            /* we have found a Drude so the KE is for internal motion */
+            j = i-1;
+            mi = md->massT[i];  /* mass of Drude */
+            mj = md->massT[j];  /* mass of heavy atom */
+            mrel = (mi * mj)/(mi + mj);
+
+            copy_rvec(state->v[i], vi);
+            copy_rvec(state->v[i], vj);
+            rvec_sub(vi, vj, vrel);
+
+            mv2 = norm2(vrel);
+            mv2 *= (0.5 * mrel);
+        }
+        else if ((i != md->homenr-1) && (md->ptype[i+1] == eptShell))
+        {
+            /* we have found a polarizable heavy atom so the KE is for COM motion */
+            j = i + 1;
+            mi = md->massT[i];  /* mass of heavy atom */
+            mj = md->massT[j];  /* mass of Drude */
+            mtot = mi + mj;
+            invmtot = 1.0/mtot;
+
+            copy_rvec(state->v[i], vi);
+            copy_rvec(state->v[i], vj);
+            svmul(mi, vi, vi);
+            svmul(mj, vj, vj);
+            rvec_add(vi, vj, vcom);
+            svmul(invmtot, vcom, vcom);
+
+            mv2 = norm2(vcom);
+            mv2 *= (0.5 * mtot);
+        }
+
+        /* add KE to thermostat */
+        /* NOTE that unlike CHARMM, we are not modifying the global (system) KE on the fly
+         * here, that will be done later, outside this function */
+        for (m=0; m<DIM; m++)
+        {
+            ekind->tcstat[ti].ekinh[m][m] += mv2;
+        }
+    }
+
+    relative_tstat(state, md, ir, MassQ, vcm, FALSE, FALSE);
+
+}
+
+/* CHARMM function PropagateTFP */
+/* Updates velocities of the actual particles */
+void scale_drude_vel(t_inputrec *ir, t_mdatoms *md, t_state *state, t_extmass *MassQ, t_vcm *vcm)
+{
+
+    if (debug)
+    {
+        fprintf(debug, "SCALE DRUDE VEL: entering v-scaling function...\n");
+    }
+
+    int             i, j, n;
+    int             nc;                     /* time steps for thermostat */
+    int             ti;                     /* thermostat index */
+    atom_id         ia, ib;                 /* atom indices */
+    real            dt;                     /* time step */
+    double          dtsy;                   /* subdivided time step */
+    double         *expfac;                 /* array of factors for (size: ngtc) */
+    double          fac_int, fac_ext;       /* internal and extenral scaling factors */
+    real            ma, mb, mtot, invmtot;  /* stuff related to masses */
+    rvec            va, vb;                 /* velocities of atoms */
+    rvec            vcom, vtot;             /* center-of-mass and total velocity of Drude-atom pair */
+    rvec            vcomscale;              /* scaled COM velocity of Drude-atom pair */
+    rvec            vdiff;                  /* difference in velocity, used as temp variable */
+    rvec            vdiffscale;             /* scaled difference in velocity */
+    t_grpopts      *opts;
+
+    nc = ir->drude->tsteps;
+
+    if (debug)
+    {
+        fprintf(debug, "SCALE DRUDE VEL: value of nc is %d\n", nc);
+    }
+
+    opts = &(ir->opts);
+
+    dtsy = (double)(ir->delta_t)/(double)nc;
+
+    if (debug)
+    {
+        fprintf(debug, "SCALE DRUDE VEL: value of dtsy is %f\n", dtsy);
+    }
+
+    snew(expfac, opts->ngtc);
+
+    for (n=0; n<nc; n++)
+    {
+
+        relative_tstat(state, md, ir, MassQ, vcm, TRUE, TRUE);
+
+        /* get forces and velocities on all thermostats */
+        /* NOTE: state->nosehoover_xi is NH positions, state->nosehoover_vxi is NH velocities */
+        for (i=0; i<opts->ngtc; i++)
+        {
+            /* In CHARMM, we calculate the velocity and force acting on each NH
+             * thermostat on the fly, but this is already taken care of in NHC_trotter(),
+             * so at this point, the necessary information should already by in state */
+            /* copy_dvec(state->nosehoover_vxi[i], vxi);
+             * vxi2 = diprod(vxi, vxi);
+             * nhf[i] = 2*(vxi2/MassQ->Qinv[i]) - (opts->nrdf[i] * BOLTZ * opts->ref_t[i]);
+             * nhv[i] += (0.25 * dtsy) * (nhf[i] * MassQ->Qinv[i]);
+             * expfac[i] = exp((-1.0)*nhv[i] * (0.5)*dtsy);
+             */
+            expfac[i] = exp((-1.0)*state->nosehoover_vxi[i] * (0.5)*dtsy);
+
+            if (debug)
+            {
+                fprintf(debug, "SCALE DRUDE VEL: vxi[%d] = %f\n", i, state->nosehoover_vxi[i]);
+                fprintf(debug, "SCALE DRUDE VEL: expfac[%d] = %f\n", i, expfac[i]);
+            }
+        }
+
+        /* Now do the actual velocity scaling for each particle */
+        for (i=0; i<md->homenr; i++)
+        {
+            /* Drude scaling */
+            if (md->ptype[i] == eptShell)
+            {
+                ia = i-1;
+                ib = i;
+
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: atom i is a Drude\n");
+                    fprintf(debug, "SCALE DRUDE VEL: found Drude atom %d\n", ib);
+                }
+
+                /* Here, we have to assume that if it is a Drude, the corresponding
+                 * heavy atom is in the previous tc-grp. This may not be a totally
+                 * robust assumption. */
+                ti = md->cTC[i];
+                fac_int = expfac[ti];
+                fac_ext = expfac[ti-1];
+
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: ti = %d, fac_int = %f, fac_ext = %f\n", ti, fac_int, 
+fac_ext);
+                }
+
+                ma = md->massT[ia];  /* mass of heavy atom connected to Drude */
+                mb = md->massT[ib];  /* mass of Drude */
+                mtot = ma + mb;
+                invmtot = (1.0)/mtot;
+
+                /* get velocities */
+                copy_rvec(state->v[ia], va);
+                copy_rvec(state->v[ib], vb);
+
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: heavy atom v = %f %f %f\n", va[XX], va[YY], va[ZZ]);
+                    fprintf(debug, "SCALE DRUDE VEL: Drude v = %f %f %f\n", vb[XX], vb[YY], vb[ZZ]);
+                }
+
+                /* scale center-of-mass velocity */
+                rvec_add(va, vb, vtot);
+                svmul(invmtot, vtot, vcom);
+
+                /* scale velocity of the Drude */
+                rvec_sub(vb, vcom, vdiff);
+                svmul(fac_ext, vcom, vcomscale);
+                svmul(fac_int, vdiff, vdiffscale);
+                rvec_add(vcomscale, vdiffscale, vb);
+
+                /* copy new velocity back to state */
+                copy_rvec(vb, state->v[ib]);
+
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: Drude scaled v = %f %f %f\n", vb[XX], vb[YY], vb[ZZ])
+;
+                    fprintf(debug, "SCALE DRUDE VEL: Drude scaled v from state = %f %f %f\n", state->v[ib][XX],
+                            state->v[ib][YY], state->v[ib][ZZ]);
+                }
+            }
+            /* Polarizable heavy atom scaling */
+            else if ((i != md->homenr-1) && (md->ptype[i+1] == eptShell))
+            {
+                ia = i;
+                ib = i+1;
+
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: atom i+1 is a Drude\n");
+                    fprintf(debug, "SCALE DRUDE VEL: found a Drude atom %d\n", ib);
+                }
+
+                /* get thermostat index and computed scaling factors */
+                ti = md->cTC[i];
+                fac_int = expfac[ti];
+                fac_ext = expfac[ti+1];
+
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: ti = %d, fac_int = %f, fac_ext = %f\n", ti, fac_int, 
+fac_ext);
+                }
+
+                ma = md->massT[ia];
+                mb = md->massT[ib];
+                mtot = ma + mb;
+                invmtot = (1.0)/mtot;
+
+                /* get velocities */
+                copy_rvec(state->v[ia], va);
+                copy_rvec(state->v[ib], vb);
+
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: heavy atom v = %f %f %f\n", va[XX], va[YY], va[ZZ]);
+                    fprintf(debug, "SCALE DRUDE VEL: Drude v = %f %f %f\n", vb[XX], vb[YY], vb[ZZ]);
+                }
+
+                /* scale center-of-mass velocity */
+                rvec_add(va, vb, vtot);
+                svmul(invmtot, vtot, vcom);
+
+                /* scale velocity of the heavy atom */
+                rvec_sub(va, vcom, vdiff);
+                svmul(fac_ext, vcom, vcomscale);
+                svmul(fac_int, vdiff, vdiffscale);
+                rvec_add(vcomscale, vdiffscale, va);
+
+                /* copy new velocity back to state */
+                copy_rvec(va, state->v[ia]);
+
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: Polarizable atom v = %f %f %f\n", va[XX], va[YY], va[
+ZZ]);
+                    fprintf(debug, "SCALE DRUDE VEL: Polarizable atom v from state = %f %f %f\n", state->v[ia][XX],
+                            state->v[ia][YY], state->v[ia][ZZ]);
+                }
+            }
+            /* Normal scaling, nonpolarizable atom */
+            else
+            {
+                if (debug)
+                {
+                    fprintf(debug, "SCALE DRUDE VEL: atom i is not polarizable.\n");
+                }
+
+                ti = md->cTC[i];
+                fac_ext = expfac[ti];
+
+                /* get velocity */
+                copy_rvec(state->v[i], va);
+
+                /* just scale the velocity */
+                svmul(fac_ext, va, va);
+
+                /* copy new velocity back to state */
+                copy_rvec(va, state->v[i]);
+            }
+        }    
+
+        relative_tstat(state, md, ir, MassQ, vcm, FALSE, FALSE);
+
+    } /* end for-loop over thermostat subdivided time steps */
+}
+
 /*
  * This file implements temperature and pressure coupling algorithms:
  * For now only the Weak coupling and the modified weak coupling.
@@ -297,11 +858,19 @@ real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
          */
 
         fac = PRESFAC*2.0/det(box);
+        if (debug)
+        {
+            fprintf(debug, "CALC PRES: fac = %f\n", fac);
+        }
         for (n = 0; (n < DIM); n++)
         {
             for (m = 0; (m < DIM); m++)
             {
                 pres[n][m] = (ekin[n][m] - vir[n][m])*fac;
+                if (debug)
+                {
+                    fprintf(debug, "CALC PRES: n = %d m = %d pres[%d][%d] = %f\n", n, m, n, m, pres[n][m]);
+                }
             }
         }
 
@@ -836,7 +1405,6 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
         step_eff = step-1;  /* the velocity verlet calls are actually out of order -- the first half step
                                is actually the last half step from the previous step.  Thus the first half step
                                actually corresponds to the n-1 step*/
-
     }
     else
     {
@@ -857,11 +1425,26 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
     ngtc = opts->ngtc;
     assert(ngtc > 0);
     snew(scalefac, opts->ngtc);
+
+    if (debug)
+    {
+        fprintf(debug, "TROTTER: ngtc = %d\n", opts->ngtc);
+    }
+
     for (i = 0; i < ngtc; i++)
     {
         scalefac[i] = 1;
     }
     /* execute the series of trotter updates specified in the trotterpart array */
+
+    if (debug)
+    {
+        fprintf(debug, "TROTTER: b4 NHC_trotter: \n");
+        for (i = 0; i < ngtc; i++)
+        {
+            fprintf(debug, "TROTTER: scalefac[%d] = %f\n", i, scalefac[i]);
+        }
+    }
 
     for (i = 0; i < NTROTTERPARTS; i++)
     {
@@ -879,49 +1462,71 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
         {
             case etrtBAROV:
             case etrtBAROV2:
+                /* TODO: remove debug stuff, just for me to trace through */
+                if (debug)
+                {
+                    fprintf(debug, "TROTTER: calling boxv_trotter\n");
+                }
                 boxv_trotter(ir, &(state->veta), dt, state->box, ekind, vir,
                              enerd->term[F_PDISPCORR], MassQ);
                 break;
             case etrtBARONHC:
             case etrtBARONHC2:
+                /* TODO: remove me */
+                if (debug)
+                {
+                    fprintf(debug, "TROTTER: calling NHC_trotter for barostat\n");
+                }
                 NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
                             state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE);
                 break;
             case etrtNHC:
             case etrtNHC2:
+                /* TODO: remove me */
+                if (debug)
+                {
+                    fprintf(debug, "TROTTER: calling NHC_trotter for thermostat\n");
+                    fprintf(debug, "TROTTER: there are %d tc-grps\n", opts->ngtc);
+                }
                 NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
                             state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
                 /* need to rescale the kinetic energies and velocities here.  Could
                    scale the velocities later, but we need them scaled in order to
                    produce the correct outputs, so we'll scale them here. */
 
-                for (i = 0; i < ngtc; i++)
+                /* Scaling applies only to real atoms and applies to absolute velocities; 
+                 * Drude systems have relative velocitiess that are scaled elsewhere, 
+                 * before thermotsat variables were updated, so we don't re-scale here. */
+                if (!(ir->bDrude && ir->drude->drudemode == edrudeLagrangian))
                 {
-                    tcstat                  = &ekind->tcstat[i];
-                    tcstat->vscale_nhc      = scalefac[i];
-                    tcstat->ekinscaleh_nhc *= (scalefac[i]*scalefac[i]);
-                    tcstat->ekinscalef_nhc *= (scalefac[i]*scalefac[i]);
-                }
-                /* now that we've scaled the groupwise velocities, we can add them up to get the total */
-                /* but do we actually need the total? */
-
-                /* modify the velocities as well */
-                for (n = 0; n < md->homenr; n++)
-                {
-                    if (md->cTC) /* does this conditional need to be here? is this always true?*/
+                    for (i = 0; i < ngtc; i++)
                     {
-                        gc = md->cTC[n];
+                        tcstat                  = &ekind->tcstat[i];
+                        tcstat->vscale_nhc      = scalefac[i];
+                        tcstat->ekinscaleh_nhc *= (scalefac[i]*scalefac[i]);
+                        tcstat->ekinscalef_nhc *= (scalefac[i]*scalefac[i]);
                     }
-                    for (d = 0; d < DIM; d++)
-                    {
-                        state->v[n][d] *= scalefac[gc];
-                    }
+                    /* now that we've scaled the groupwise velocities, we can add them up to get the total */
+                    /* but do we actually need the total? */
 
-                    if (debug)
+                    /* modify the velocities as well */
+                    for (n = 0; n < md->homenr; n++)
                     {
+                        if (md->cTC) /* does this conditional need to be here? is this always true?*/
+                        {
+                            gc = md->cTC[n];
+                        }
                         for (d = 0; d < DIM; d++)
                         {
-                            sumv[d] += (state->v[n][d])/md->invmass[n];
+                            state->v[n][d] *= scalefac[gc];
+                        }
+
+                        if (debug)
+                        {
+                            for (d = 0; d < DIM; d++)
+                            {
+                                sumv[d] += (state->v[n][d])/md->invmass[n];
+                            }
                         }
                     }
                 }

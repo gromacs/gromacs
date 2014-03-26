@@ -263,7 +263,7 @@ static void do_update_md(int start, int nrend, double dt,
 static void do_update_vv_vel(int start, int nrend, double dt,
                              rvec accel[], ivec nFreeze[], real invmass[],
                              unsigned short ptype[], unsigned short cFREEZE[],
-                             unsigned short cACC[], rvec v[], rvec f[],
+                             unsigned short cACC[], real m[], rvec v[], rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
     double imass, w_dt;
@@ -300,15 +300,114 @@ static void do_update_vv_vel(int start, int nrend, double dt,
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
-                v[n][d]             = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
+                v[n][d] = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
+            }
+            /* Drudes may have velocities, just not being updated
+             * Include check for mass here in case of massless shells,
+             * which should have v reset to zero */
+            else if ((ptype[n] == eptShell) && (m[n] > 0) && !nFreeze[gf][d])
+            {
+                v[n][d] = v[n][d];
             }
             else
             {
-                v[n][d]        = 0.0;
+                v[n][d] = 0.0;
             }
         }
     }
 } /* do_update_vv_vel */
+
+static void do_update_drude_vv_vel(int start, int nrend, double dt,
+                                   rvec accel[], ivec nFreeze[], real invmass[],
+                                   unsigned short ptype[], unsigned short cFREEZE[],
+                                   unsigned short cACC[], real m[], rvec v[], rvec f[],
+                                   gmx_bool bExtended, real veta, real alpha)
+{
+    double imass, w_dt;
+    int    gf = 0, ga = 0;
+    rvec   vrel;
+    real   u, vn, vv, va, vb, vnrel;
+    int    n, d;
+    double g, mv1, mv2;
+
+    if (debug)
+    {
+        fprintf(debug, "DRUDE VV VEL: Entering update function\n");
+    }
+
+    if (bExtended)
+    {
+        g        = 0.25*dt*veta*alpha;
+        mv1      = exp(-g);
+        mv2      = series_sinhx(g);
+    }
+    else
+    {
+        mv1      = 1.0;
+        mv2      = 1.0;
+    }
+    for (n = start; n < nrend; n++)
+    {
+        w_dt = invmass[n]*dt;
+
+        if (debug)
+        {
+            fprintf(debug, "DRUDE VV VEL: Value of w_dt for at %d: %f\n", n, w_dt);
+        }
+
+        if (cFREEZE)
+        {
+            gf   = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga   = cACC[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            /* Update the velocities of Drudes only
+             * In principle, these can never be frozen (disabled in grompp),
+             * but for future flexibility, will leave the infrastructure in place because
+             * freezing could be added very easily, we're just not interested in it right now
+             */
+            if ((ptype[n] == eptShell) && (m[n] > 0) && !nFreeze[gf][d])
+            {
+
+                if (debug)
+                {
+                    fprintf(debug, "DRUDE VV VEL: Found shell atom %d: v[%d][%d] = %f b4 update\n", n, n, d, v[n][d]);
+                    fprintf(debug, "DRUDE VV VEL: Force on shell atom %d: f[%d][%d] = %f\n", n, n, d, f[n][d]);                    
+                    fprintf(debug, "DRUDE VV VEL: Accel on shell atom %d: accel[%d][%d] = %f\n", n, n, d, accel[n][d]);
+                }
+
+                v[n][d] = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
+
+                if (debug)
+                {
+                    fprintf(debug, "DRUDE VV VEL: After vel update on atom %d: v[%d][%d] = %f.\n", n, n, d, v[n][d]);
+                }
+
+            }
+            else if ((ptype[n] == eptAtom || ptype[n] == eptNucleus) && (!nFreeze[gf][d]))
+            {
+
+                if (debug)
+                {
+                    fprintf(debug, "DRUDE VV VEL: Found atom %d: v[%d][%d] = %f.\n", n, n, d, v[n][d]);
+                }
+                /* leave the atoms alone for now */
+                v[n][d] = v[n][d];
+            }
+            /* frozen groups, v-sites */
+            else
+            {
+                v[n][d] = 0.0;
+            }
+        }
+    }
+} /* do_update_drude_vv_vel */
+
 
 static void do_update_vv_pos(int start, int nrend, double dt,
                              ivec nFreeze[],
@@ -355,6 +454,75 @@ static void do_update_vv_pos(int start, int nrend, double dt,
         }
     }
 } /* do_update_vv_pos */
+
+static void do_update_drude_vv_pos(int start, int nrend, double dt,
+                                   ivec nFreeze[],
+                                   unsigned short ptype[], unsigned short cFREEZE[],
+                                   rvec x[], rvec xprime[], rvec v[],
+                                   gmx_bool bExtended, real veta)
+{
+    double imass, w_dt;
+    int    gf = 0;
+    int    n, d;
+    double g, mr1, mr2;
+
+    if (debug)
+    {
+        fprintf(debug, "DRUDE VV POS: Entering update function.\n");
+    }
+
+    /* Would it make more sense if Parrinello-Rahman was put here? */
+    if (bExtended)
+    {
+        g        = 0.5*dt*veta;
+        mr1      = exp(g);
+        mr2      = series_sinhx(g);
+    }
+    else
+    {
+        mr1      = 1.0;
+        mr2      = 1.0;
+    }
+
+    for (n = start; n < nrend; n++)
+    {
+
+        if (cFREEZE)
+        {
+            gf   = cFREEZE[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            /* Only update Drudes here */
+            /* Again, leaving in place the ability to freeze */
+            if ((ptype[n] == eptShell) && !nFreeze[gf][d])
+            {
+
+                if (debug)
+                {
+                    fprintf(debug, "DRUDE VV POS: x of Drude %d b4 x update: x[%d][%d]: %f\n", n, n, d, x[n][d]);
+                }
+
+                /* Drudes are not subject to constraints, so we update them directly */ 
+                x[n][d] = mr1*(mr1*x[n][d]+mr2*dt*v[n][d]);
+                /* xprime[n][d] = mr1*(mr1*x[n][d]+mr2*dt*v[n][d]); */
+                xprime[n][d] = x[n][d];
+
+                if (debug)
+                {
+                    fprintf(debug, "DRUDE VV POS: x of Drude %d after x update: x[%d][%d]: %f\n", n, n, d, x[n][d]);
+                }
+
+            }
+            else
+            {
+                /* remainder of coordinates may be subject to constraints */
+                xprime[n][d] = x[n][d];
+            }
+        }
+    }
+} /* do_update_drude_vv_pos */
 
 static void do_update_visc(int start, int nrend, double dt,
                            t_grp_tcstat *tcstat,
@@ -958,6 +1126,11 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
             if (md->cTC)
             {
                 gt = md->cTC[n];
+                /* TODO: remove me */
+                if (debug)
+                {
+                    fprintf(debug, "UPDATE KE PART: gt = %d for n = %d\n", gt, n);
+                }
             }
             hm   = 0.5*md->massT[n];
 
@@ -965,12 +1138,24 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
             {
                 v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
             }
+
+            /* TODO: remove me */
+            if (debug)
+            {
+                fprintf(debug, "UPDATE KE PART: v_corrt = %f %f %f\n", v_corrt[XX], v_corrt[YY], v_corrt[ZZ]);
+            }
+
             for (d = 0; (d < DIM); d++)
             {
                 for (m = 0; (m < DIM); m++)
                 {
                     /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
                     ekin_sum[gt][m][d] += hm*v_corrt[m]*v_corrt[d];
+                    /* TODO: remove me */
+                    if (debug)
+                    {
+                        fprintf(debug, "UPDATE KE PART: ekin_sum[%d][%d][%d] = %f\n", gt, m, d, ekin_sum[gt][m][d]);
+                    }
                 }
             }
             if (md->nMassPerturbed && md->bPerturbed[n])
@@ -1736,7 +1921,8 @@ void update_coords(FILE             *fplog,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
                    t_nrnb           *nrnb,
                    gmx_constr_t      constr,
-                   t_idef           *idef)
+                   t_idef           *idef,
+                   gmx_bool          bUpdateDrude)
 {
     gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE;
     double            dt, alpha;
@@ -1894,19 +2080,51 @@ void update_coords(FILE             *fplog,
                 {
                     case etrtVELOCITY1:
                     case etrtVELOCITY2:
-                        do_update_vv_vel(start_th, end_th, dt,
-                                         inputrec->opts.acc, inputrec->opts.nFreeze,
-                                         md->invmass, md->ptype,
-                                         md->cFREEZE, md->cACC,
-                                         state->v, force,
-                                         (bNH || bPR), state->veta, alpha);
+                        /* Rather than hacking existing do_update_vv_vel to put in
+                         * several layers of conditionals, I decided to just basically copy the
+                         * function and adjust it as needed
+                         * Use of bUpdateDrude should imply ir->drude->drudemode == edrudeLagrangian
+                         * since bUpdateDrude is only TRUE when called from relax_shell_flexcon() when
+                         * we are using extended Lagrangian to integrate Drude positions, so there
+                         * is no need to check drudemode here.
+                         */
+                        if (bUpdateDrude) 
+                        {
+                            do_update_drude_vv_vel(start_th, end_th, dt,
+                                                   inputrec->opts.acc, inputrec->opts.nFreeze,
+                                                   md->invmass, md->ptype,
+                                                   md->cFREEZE, md->cACC,
+                                                   md->massT, state->v, force,
+                                                   (bNH || bPR), state->veta, alpha);
+                        }
+                        else
+                        {
+                            do_update_vv_vel(start_th, end_th, dt,
+                                             inputrec->opts.acc, inputrec->opts.nFreeze,
+                                             md->invmass, md->ptype,
+                                             md->cFREEZE, md->cACC,
+                                             md->massT, state->v, force,
+                                             (bNH || bPR), state->veta, alpha);
+                        }
                         break;
                     case etrtPOSITION:
-                        do_update_vv_pos(start_th, end_th, dt,
-                                         inputrec->opts.nFreeze,
-                                         md->ptype, md->cFREEZE,
-                                         state->x, xprime, state->v,
-                                         (bNH || bPR), state->veta);
+                        /* same as above, somewhat duplicitous but otherwise effective */
+                        if (bUpdateDrude)
+                        {
+                            do_update_drude_vv_pos(start_th, end_th, dt,
+                                                   inputrec->opts.nFreeze,
+                                                   md->ptype, md->cFREEZE,
+                                                   state->x, xprime, state->v,
+                                                   (bNH || bPR), state->veta);
+                        }
+                        else
+                        {
+                            do_update_vv_pos(start_th, end_th, dt,
+                                             inputrec->opts.nFreeze,
+                                             md->ptype, md->cFREEZE,
+                                             state->x, xprime, state->v,
+                                             (bNH || bPR), state->veta);
+                        }
                         break;
                 }
                 break;

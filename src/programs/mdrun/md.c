@@ -322,7 +322,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     debug_gmx();
 
     /* Check for polarizable models and flexible constraints */
-    shellfc = init_shell_flexcon(fplog, fr->cutoff_scheme == ecutsVERLET,
+    shellfc = init_shell_flexcon(fplog, ir, fr->cutoff_scheme == ecutsVERLET,
                                  top_global, n_flexible_constraints(constr),
                                  (ir->bContinuation ||
                                   (DOMAINDECOMP(cr) && !MASTER(cr))) ?
@@ -1037,7 +1037,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, bBornRadii, t, mu_tot,
                                 &bConverged, vsite,
-                                mdoutf_get_fp_field(outf), &count);
+                                mdoutf_get_fp_field(outf), &count,
+                                bInitStep, upd, ekind);
             tcount += count;
 
             if (bConverged)
@@ -1075,8 +1076,20 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
             else
             {
+                /* special scaling for Drudes before update of thermostat variables */
+                if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, "MD: step = %d, applying Drude velocity scaling #1\n", (int)step);
+                    }
+                    nosehoover_KE(ir, mdatoms, state, ekind, &MassQ, vcm);
+                    scale_drude_vel(ir, mdatoms, state, &MassQ, vcm);
+                }
+
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
+
             }
 
             /* If we are using twin-range interactions where the long-range component
@@ -1090,7 +1103,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
                           f, bUpdateDoLR, fr->f_twin, fcd,
                           ekind, M, upd, bInitStep, etrtVELOCITY1,
-                          cr, nrnb, constr, &top->idef);
+                          cr, nrnb, constr, &top->idef, FALSE);
 
             if (bIterativeCase && do_per_step(step-1, ir->nstpcouple) && !bInitStep)
             {
@@ -1123,6 +1136,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                            !(first time), we start with the previous value
                            of veta.  */
 
+                        /* special scaling for Drudes before update of thermostat variables */
+                        if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+                        {
+                            if (debug)
+                            {
+                                fprintf(debug, "MD: step = %d, applying Drude velocity scaling #2\n", (int)step);
+                            }
+                            scale_drude_vel(ir, mdatoms, state, &MassQ, vcm);
+                        }
+
                         veta_save = state->veta;
                         trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ0);
                         vetanew     = state->veta;
@@ -1141,7 +1164,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     if (!bOK)
                     {
-                        gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
+                        gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constraints");
                     }
 
                 }
@@ -1197,8 +1220,28 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     if (bTrotter)
                     {
+                        /* special scaling for Drudes before update of thermostat variables */
+                        if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+                        {
+                            if (debug)
+                            {
+                                fprintf(debug, "MD: step = %d, applying Drude velocity scaling #3\n", (int)step);
+                            }
+                            nosehoover_KE(ir, mdatoms, state, ekind, &MassQ, vcm);
+                            scale_drude_vel(ir, mdatoms, state, &MassQ, vcm);
+                        }
+
                         m_add(force_vir, shake_vir, total_vir); /* we need the un-dispersion corrected total vir here */
                         trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ2);
+
+                        if (debug)
+                        {
+                            fprintf(debug, "MD: After Trotter ettTSEQ2\n");
+                            for (i=0; i < mdatoms->nr; i++)
+                            {
+                                fprintf(debug, "MD: v on atom %d = %f %f %f\n", i, state->v[i][XX], state->v[i][YY], state->v[i][ZZ]);
+                            }
+                        }
                     }
                     else
                     {
@@ -1462,6 +1505,17 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         m_add(force_vir, shake_vir, total_vir);
                         clear_mat(shake_vir);
                     }
+
+                    /* special scaling for Drudes before update of thermostat variables */
+                    if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+                    {
+                        if (debug)
+                        {
+                            fprintf(debug, "MD: step = %d, applying Drude velocity scaling #4\n", (int)step);
+                        }
+                        scale_drude_vel(ir, mdatoms, state, &MassQ, vcm);
+                    }
+
                     trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ3);
                     /* We can only do Berendsen coupling after we have summed
                      * the kinetic energy or virial. Since the happens
@@ -1483,7 +1537,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, fcd,
                                   ekind, M, upd, FALSE, etrtVELOCITY2,
-                                  cr, nrnb, constr, &top->idef);
+                                  cr, nrnb, constr, &top->idef, FALSE);
                 }
 
                 /* Above, initialize just copies ekinh into ekin,
@@ -1499,7 +1553,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                               bUpdateDoLR, fr->f_twin, fcd,
-                              ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
+                              ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef, FALSE);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
                 update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
@@ -1519,7 +1573,19 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     cglo_flags | CGLO_TEMPERATURE
                                     );
                     wallcycle_start(wcycle, ewcUPDATE);
+
+                    /* special scaling for Drudes before update of thermostat variables */
+                    if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+                    {
+                        if (debug)
+                        {
+                            fprintf(debug, "MD: step = %d, applying Drude velocity scaling #5\n", (int)step);
+                        }
+                        scale_drude_vel(ir, mdatoms, state, &MassQ, vcm);
+                    }
+
                     trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
+
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf, state->x, 0, state->natoms);
 
@@ -1527,7 +1593,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, fcd,
-                                  ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
+                                  ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef, FALSE);
                     wallcycle_stop(wcycle, ewcUPDATE);
 
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
@@ -1544,7 +1610,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 if (!bOK)
                 {
-                    gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
+                    gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constraints");
                 }
 
                 if (fr->bSepDVDL && fplog && do_log)

@@ -337,7 +337,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         else
         {
-
             calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel, bIterate);
         }
 
@@ -380,6 +379,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                             *bSumEkinhOld, flags);
                 wallcycle_stop(wcycle, ewcMoveE);
             }
+
+            /* TODO: remove me. Check here indicates velocities are good */
+
             if (gs != NULL)
             {
                 if (MULTISIM(cr) && bInterSimGS)
@@ -454,6 +456,12 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
+    }
+
+    if (debug)
+    {
+        fprintf(debug, "GLOBALS: T after sum_ekin = %f\n", enerd->term[F_TEMP]);
+        fprintf(debug, "GLOBALS: KE after sum_ekin = %f\n", enerd->term[F_EKIN]);
     }
 
     /* ##########  Long range energy information ###### */
