@@ -1702,7 +1702,7 @@ int gmx_grompp(int argc, char *argv[])
 
         if (ir->drude->bHardWall)
         {
-            if (ir->drude->drude_r > 0.02)
+            if (ir->drude->drude_r > 0.02 && ir->drude->drudemode == edrudeLagrangian)
             {
                 warning_note(wi, "Drude hard wall radius > 0.02, could be unstable!");
             }
