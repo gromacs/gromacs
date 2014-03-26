@@ -76,6 +76,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xdr_datatype.h"
+#include "gromacs/utility/baseversion.h"
 
 #include "buildinfo.h"
 
@@ -1617,7 +1618,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
      * the same version, user, time, and build host!
      */
 
-    version = gmx_strdup(VERSION);
+    version = gmx_strdup(gmx_version());
     btime   = gmx_strdup(BUILD_TIME);
     buser   = gmx_strdup(BUILD_USER);
     bhost   = gmx_strdup(BUILD_HOST);
@@ -1791,7 +1792,7 @@ static void check_match(FILE *fplog,
 
     mm = FALSE;
 
-    check_string(fplog, "Version", VERSION, version, &mm);
+    check_string(fplog, "Version", gmx_version(), version, &mm);
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
     check_string(fplog, "Build user", BUILD_USER, buser, &mm);
     check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);

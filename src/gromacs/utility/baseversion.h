@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,8 +32,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/utility/gitversion.h"
+/*! \libinternal \file
+ * \brief
+ * Declares functions to get basic version information.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_BASEVERSION_H
+#define GMX_UTILITY_BASEVERSION_H
 
-const char _gmx_ver_string[] = "VERSION @GMX_PROJECT_VERSION_STR@";
-const char _gmx_full_git_hash[] = "@GMX_GIT_HEAD_HASH@";
-const char _gmx_central_base_hash[] = "@GMX_GIT_REMOTE_HASH@";
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*! \brief
+ * Version string, containing the version, date, and abbreviated hash.
+ *
+ * This can be a plain version if git version info was disabled during the
+ * build.
+ * The returned string starts with a literal word `VERSION`.
+ *
+ * \ingroup module_utility
+ */
+const char *gmx_version(void);
+/*! \brief
+ * Full git hash of the latest commit.
+ *
+ * If git version info was disabled during the build, returns an empty string.
+ *
+ * \ingroup module_utility
+ */
+const char *gmx_version_git_full_hash(void);
+/*! \brief
+ * Full git hash of the latest commit in a central \Gromacs repository.
+ *
+ * If git version info was disabled during the build, returns an empty string.
+ * Also, if the latest commit was from a central repository, the return value
+ * is an empty string.
+ *
+ * \ingroup module_utility
+ */
+const char *gmx_version_git_central_base_hash(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

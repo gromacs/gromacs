@@ -62,6 +62,7 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
@@ -601,17 +602,9 @@ void please_cite(FILE *fp, const char *key)
     fflush(fp);
 }
 
-#ifdef GMX_GIT_VERSION_INFO
-/* Version information generated at compile time. */
-#include "gromacs/utility/gitversion.h"
-#else
-/* Fall back to statically defined version. */
-static const char _gmx_ver_string[] = "VERSION " VERSION;
-#endif
-
 const char *GromacsVersion()
 {
-    return _gmx_ver_string;
+    return gmx_version();
 }
 
 const char *ShortProgram(void)
@@ -638,18 +631,17 @@ extern void gmx_print_version_info_gpu(FILE *fp);
 
 static void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Gromacs version:    %s\n", _gmx_ver_string);
-#ifdef GMX_GIT_VERSION_INFO
-    fprintf(fp, "GIT SHA1 hash:      %s\n", _gmx_full_git_hash);
-    /* Only print out the branch information if present.
-     * The generating script checks whether the branch point actually
-     * coincides with the hash reported above, and produces an empty string
-     * in such cases. */
-    if (_gmx_central_base_hash[0] != 0)
+    fprintf(fp, "Gromacs version:    %s\n", gmx_version());
+    const char *const git_hash = gmx_version_git_full_hash();
+    if (git_hash[0] != '\0')
     {
-        fprintf(fp, "Branched from:      %s\n", _gmx_central_base_hash);
+        fprintf(fp, "GIT SHA1 hash:      %s\n", git_hash);
     }
-#endif
+    const char *const base_hash = gmx_version_git_central_base_hash();
+    if (base_hash[0] != '\0')
+    {
+        fprintf(fp, "Branched from:      %s\n", base_hash);
+    }
 
 #ifdef GMX_DOUBLE
     fprintf(fp, "Precision:          double\n");
@@ -790,13 +782,13 @@ void printBinaryInformation(FILE                            *fp,
         // Gromacs binary or some other binary that is calling Gromacs; we
         // could then print "%s is part of GROMACS" or some alternative text.
         fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
-                GromacsVersion(), precisionString, suffix);
+                gmx_version(), precisionString, suffix);
         fprintf(fp, "\n");
         printCopyright(fp);
         fprintf(fp, "\n");
     }
     fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
-            GromacsVersion(), precisionString, suffix);
+            gmx_version(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
     if (binaryPath != NULL && binaryPath[0] != '\0')
     {

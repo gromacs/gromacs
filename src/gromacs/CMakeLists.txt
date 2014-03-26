@@ -90,27 +90,33 @@ configure_file(version.h.cmakein version.h)
 gmx_install_headers("" ${LIBGROMACS_HEADERS})
 gmx_install_headers("" ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
-# Add target that generates gitversion.c every time make is run
-# if git version info is requested
+# Add target that generates baseversion-gen.c every time make is run
+# if git version info is requested, or create it statically.
 # This code is here instead of utility/CMakeLists.txt because CMake
 # ignores set_source_file_properties from subdirectories.
+set(GENERATED_VERSION_FILE
+    ${CMAKE_CURRENT_BINARY_DIR}/utility/baseversion-gen.c)
+set(GENERATED_VERSION_FILE_SOURCE
+    ${CMAKE_CURRENT_SOURCE_DIR}/utility/baseversion-gen.c.cmakein)
 if (GMX_GIT_VERSION_INFO)
-    set(GENERATED_VERSION_FILE ${CMAKE_CURRENT_BINARY_DIR}/utility/gitversion.c)
     add_custom_target(gmx-version ALL
             COMMAND ${CMAKE_COMMAND}
                 -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-                -D VERSION_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein"
+                -D VERSION_CMAKEIN=${GENERATED_VERSION_FILE_SOURCE}
                 -D VERSION_OUT=${GENERATED_VERSION_FILE}
                 -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein
+            DEPENDS ${GENERATED_VERSION_FILE_SOURCE}
             COMMENT "Generating git version information")
     set_source_files_properties(${GENERATED_VERSION_FILE}
                                 PROPERTIES GENERATED true)
-    list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
+else()
+    set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
+    configure_file(${GENERATED_VERSION_FILE_SOURCE} ${GENERATED_VERSION_FILE})
 endif()
+list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
 # apply gcc 4.4.x bug workaround
 if(GMX_USE_GCC44_BUG_WORKAROUND)
