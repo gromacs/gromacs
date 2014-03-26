@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "genconf.h"
 
 #include "gromacs/math/utilities.h"
 #include "macros.h"
@@ -52,7 +50,6 @@
 #include "readinp.h"
 #include "names.h"
 #include "sortwater.h"
-#include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],

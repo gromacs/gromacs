@@ -37,9 +37,9 @@
  * Implements functions in path.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_utility
+ * \ingroup module_fileio
  */
-#include "gromacs/utility/path.h"
+#include "path.h"
 
 #include <cctype>
 #include <cerrno>
@@ -65,9 +65,6 @@
 namespace
 {
 
-//! \addtogroup module_utility
-//! \{
-
 //! Directory separator to use when joining paths.
 const char cDirSeparator = '/';
 //! Directory separators to use when parsing paths.
@@ -90,8 +87,6 @@ bool isDirSeparator(char chr)
 {
     return std::strchr(cDirSeparators, chr);
 }
-
-//! \}
 
 } // namespace
 

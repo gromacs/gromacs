@@ -38,10 +38,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_fileio
  */
-#ifndef GMX_UTILITY_PATH_H
-#define GMX_UTILITY_PATH_H
+#ifndef GMX_FILEIO_PATH_H
+#define GMX_FILEIO_PATH_H
 
 #include <string>
 #include <utility>
