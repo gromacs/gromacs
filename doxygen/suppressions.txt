@@ -19,7 +19,6 @@ src/gromacs/legacyheaders/types/*.h: warning: included file "../../swap/enums.h"
 *: warning: includes local file as <config.h>
 src/programs/view/*: warning: includes local file as <*.h>
 src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd/math_x86_*.h" is not documented as exposed outside its module
-src/gromacs/gmxlib/copyrite.cpp: warning: included file "gromacs/utility/gitversion.h" is not documented as exposed outside its module
 
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"

@@ -46,12 +46,6 @@
 /* TODO: For now, disable Doxygen warnings from here */
 /*! \cond */
 
-/* Version number of package (translate from cmake to autoconf macro name) */
-#define VERSION  "@PROJECT_VERSION@"
-
-/* Use extra version information generated with git */
-#cmakedefine GMX_GIT_VERSION_INFO
-
 /* Default location of data files */
 #define GMXLIB_SEARCH_DIR "@GMXLIB_SEARCH_DIR@"
 

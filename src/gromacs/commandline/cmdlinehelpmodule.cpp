@@ -47,8 +47,6 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/copyrite.h"
-
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
@@ -59,6 +57,7 @@
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
@@ -452,8 +451,7 @@ void HelpExportMan::exportModuleHelp(
     // TODO: It would be nice to remove the VERSION prefix from the version
     // string to make it shorter.
     file.writeLine(formatString(".TH %s 1 \"\" \"%s\" \"GROMACS Manual\"\n",
-                                tag.c_str(),
-                                GromacsVersion()));
+                                tag.c_str(), gmx_version()));
     file.writeLine(".SH NAME");
     file.writeLine(formatString("%s - %s", tag.c_str(),
                                 module.shortDescription()));
@@ -479,7 +477,7 @@ void HelpExportMan::startModuleGroupExport()
                        "gromacs.7.in must contain a @PROGMANPAGES@ line");
     std::string header = man7Template.substr(0, index);
     man7Footer_ = man7Template.substr(index + std::strlen(programListPlaceholder));
-    header      = replaceAll(header, "@VERSION@", GromacsVersion());
+    header      = replaceAll(header, "@VERSION@", gmx_version());
     man7File_.reset(new File("man7/gromacs.7", "w"));
     man7File_->writeLine(header);
 }
@@ -565,7 +563,7 @@ HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
 void HelpExportHtml::setupHeaderAndFooter()
 {
     header_ = gmx::File::readToString("header.html.in");
-    header_ = replaceAll(header_, "@VERSION@", GromacsVersion());
+    header_ = replaceAll(header_, "@VERSION@", gmx_version());
     gmx::File::writeFileFromString("header.html", header_);
     header_ = replaceAll(header_, "@ROOTPATH@", "../");
     footer_ = gmx::File::readToString("footer.html");
