@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,47 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Tests for file I/O routines
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_fileio
- */
-#include <gtest/gtest.h>
-#include <string>
+#ifndef GMX_GMXPREPROCESS_GENCONF_H
+#define GMX_GMXPREPROCESS_GENCONF_H
 
-#include "gromacs/fileio/path.h"
-#include "gromacs/fileio/tngio.h"
-#include "gromacs/fileio/tngio_for_tools.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "testutils/testfilemanager.h"
+int gmx_genconf(int argc, char *argv[]);
 
-namespace
-{
-
-class TngTest : public ::testing::Test
-{
-    public:
-        TngTest()
-        {
-        }
-        gmx::test::TestFileManager      fileManager_;
-};
-
-TEST_F(TngTest, CanOpenTngFile)
-{
-    tng_trajectory_t tng;
-    gmx_tng_open(fileManager_.getInputFilePath("spc2-traj.tng").c_str(),
-                 'r',
-                 &tng);
-    gmx_tng_close(&tng);
+#ifdef __cplusplus
 }
+#endif
 
-TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
-{
-    tng_trajectory_t tng = NULL;
-    gmx_tng_close(&tng);
-}
-
-} // namespace
+#endif

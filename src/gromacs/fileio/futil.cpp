@@ -74,8 +74,8 @@
 #include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/path.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
