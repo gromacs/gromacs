@@ -78,10 +78,24 @@ extern "C" {
 #define CGLO_SCALEEKIN      (1<<13)
 
 
-/* return the number of steps between global communcations */
+/* Return the number of steps that will take place between
+ * intra-simulation communications, given the constraints of the
+ * inputrec and the value of mdrun -intrasignal. */
 GMX_LIBMD_EXPORT
-int check_nstglobalcomm(FILE *fplog, t_commrec *cr,
-                        int nstglobalcomm, t_inputrec *ir);
+int check_nst_signal_intra(FILE *fplog,
+                           t_commrec *cr,
+                           int nst_signal_intra,
+                           t_inputrec *ir);
+
+/* Return the number of steps that will take place between
+ * inter-simulation communications, given the degree of parallelism
+ * and the period between intra-simulation communication. */
+GMX_LIBMD_EXPORT
+int check_nst_signal_inter(FILE *fplog,
+                           t_commrec *cr,
+                           int nst_signal_inter,
+                           const t_inputrec *ir,
+                           real max_hours);
 
 /* check whether an 'nst'-style parameter p is a multiple of nst, and
    set it to be one if not, with a warning. */
@@ -118,9 +132,14 @@ int multisim_nstsimsync(const t_commrec *cr,
 /* Determine the interval for inter-simulation communication */
 
 GMX_LIBMD_EXPORT
-void init_global_signals(globsig_t *gs, const t_commrec *cr,
-                         const t_inputrec *ir, int repl_ex_nst);
-/* Constructor for globsig_t */
+void init_signals(FILE             *fplog,
+                  gmx_signal       *signal,
+                  t_commrec        *cr,
+                  const t_inputrec *ir,
+                  int               nst_signal_intra,
+                  int               nst_signal_inter,
+                  real              max_hours);
+/* Constructor for gmx_signal. */
 
 GMX_LIBMD_EXPORT
 void copy_coupling_state(t_state *statea, t_state *stateb,
@@ -134,7 +153,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
-                     globsig_t *gs, gmx_bool bInterSimGS,
+                     gmx_signal *signal, gmx_bool bIntraSimSignal, gmx_bool bInterSimSignal,
                      matrix box, gmx_mtop_t *top_global, real *pcurr,
                      int natoms, gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */

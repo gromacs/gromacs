@@ -251,13 +251,21 @@ int cmain(int argc, char *argv[])
         "the value of [TT]-dds[tt] might need to be adjusted to account for",
         "high or low spatial inhomogeneity of the system.",
         "[PAR]",
-        "The option [TT]-gcom[tt] can be used to only do global communication",
-        "every n steps.",
+        "The option [TT]-intrasignal[tt] can be used to constrain global",
+        "intra-simulation communication to occur only every n steps.",
         "This can improve performance for highly parallel simulations",
         "where this global communication step becomes the bottleneck.",
-        "For a global thermostat and/or barostat the temperature",
-        "and/or pressure will also only be updated every [TT]-gcom[tt] steps.",
-        "By default it is set to the minimum of nstcalcenergy and nstlist.[PAR]",
+        "For a global thermostat and/or barostat the temperature and/or",
+        "pressure will also only be updated every [TT]-intrasignal[tt] steps.",
+        "By default it is set to the minimum of nstcalcenergy and nstlist.",
+        "It can be modified by mdrun after it is set here.[PAR]",
+        "The option [TT]-intersignal[tt] is used particularly in [TT]-multi[tt]",
+        "simulations to control the period between inter-simulation",
+        "synchronization needed to deal with things like checkpointing and",
+        "orderly run termination. The value can be modified by mdrun to",
+        "ensure that it is a multiple of the value of [TT]nstcalcenergy[tt]",
+        "that is being used in the simulation. For non-multi-simulations,",
+        "it defaults to the value used for intra-simulation communication.[PAR]",
         "With [TT]-rerun[tt] an input trajectory can be given for which ",
         "forces and energies will be (re)calculated. Neighbor searching will be",
         "performed for every frame, unless [TT]nstlist[tt] is zero",
@@ -434,15 +442,16 @@ int cmain(int argc, char *argv[])
     gmx_bool      bConfout      = TRUE;
     gmx_bool      bReproducible = FALSE;
 
-    int           npme          = -1;
-    int           nmultisim     = 0;
-    int           nstglobalcomm = -1;
-    int           repl_ex_nst   = 0;
-    int           repl_ex_seed  = -1;
-    int           repl_ex_nex   = 0;
-    int           nstepout      = 100;
-    int           resetstep     = -1;
-    gmx_large_int_t nsteps      = -2; /* the value -2 means that the mdp option will be used */
+    int           npme             = -1;
+    int           nmultisim        = 0;
+    int           nst_signal_intra = -1;
+    int           nst_signal_inter = -1;
+    int           repl_ex_nst      = 0;
+    int           repl_ex_seed     = -1;
+    int           repl_ex_nex      = 0;
+    int           nstepout         = 100;
+    int           resetstep        = -1;
+    gmx_large_int_t nsteps         = -2; /* the value -2 means that the mdp option will be used */
 
     rvec          realddxyz          = {0, 0, 0};
     const char   *ddno_opt[ddnoNR+1] =
@@ -513,8 +522,10 @@ int cmain(int argc, char *argv[])
           "HIDDENThe DD cell sizes in y" },
         { "-ddcsz",   FALSE, etSTR, {&ddcsz},
           "HIDDENThe DD cell sizes in z" },
-        { "-gcom",    FALSE, etINT, {&nstglobalcomm},
-          "Global communication frequency" },
+        { "-intrasignal", FALSE, etINT, {&nst_signal_intra},
+          "Intra-simulation communication frequency" },
+        { "-intersignal", FALSE, etINT, {&nst_signal_inter},
+          "Inter-simulation communication frequency" },
         { "-nb",      FALSE, etENUM, {&nbpu_opt},
           "Calculate non-bonded interactions on" },
         { "-tunepme", FALSE, etBOOL, {&bTunePME},
@@ -751,7 +762,7 @@ int cmain(int argc, char *argv[])
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
-                  nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
+                  nst_signal_intra, nst_signal_inter, ddxyz, dd_node_order, rdd, rconstr,
                   dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
                   nbpu_opt[0],
                   nsteps, nstepout, resetstep,

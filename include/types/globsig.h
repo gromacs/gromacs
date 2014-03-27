@@ -47,20 +47,55 @@ extern "C" {
 /* Hack to make automatic indenting work */
 #endif
 
-/* simulation conditions to transmit. Keep in mind that they are
-   transmitted to other nodes through an MPI_Reduce after
-   casting them to a real (so the signals can be sent together with other
-   data). This means that the only meaningful values are positive,
-   negative or zero. */
+/*! \brief Enumeration of the types of inter-process signal that can
+ *         occur during a simulation.
+ *
+ * The esignalXXX_NR elements allow for looping over only some types
+ * of signal.
+ */
 enum {
-    eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR
+    /* Intra-simulation signal types that are local to this
+     * simulation. These used to be called "global" signals. */
+    esignalNABNSB,
+    esignalRESETCOUNTERS,
+    esignalINTRA_NR,
+    /* Inter-simulation signal types that might require coordinating
+     * multiple simulations. */
+    esignalCHKPT = esignalINTRA_NR,
+    esignalSTOPCOND,
+    esignalINTER_NR,
+    esignalNR = esignalINTER_NR
 };
 
+/*! \brief Under various conditions, processes may need to signal
+ *         others. This can occur in an inter-simulation or
+ *         intra-simulation sense.
+ *
+ * Keep in mind that they are transmitted to other processes through
+ * an MPI_Reduce after casting them to a real (so the signals can be
+ * sent together with other data). This means that the only meaningful
+ * input values are positive, negative or zero, because the output
+ * values are sums over the local values of these.
+ */
+
 typedef struct {
-    int nstms;       /* The frequency for intersimulation communication */
-    int sig[eglsNR]; /* The signal set by one process in do_md */
-    int set[eglsNR]; /* The communicated signal, equal for all processes */
-} globsig_t;
+    int nst_signal_intra;
+    /* The number of steps between intra-simulation communication. */
+    int nst_signal_inter;
+    /* The number of steps between inter-simulation communication. */
+
+    /* The next two data members are arrays of signal values. These
+     * are 0 when not set. */
+
+    int init[esignalNR];
+    /* The signal initiated by this process, which will be transferred
+     * to the set array during inter-simulation communication, and
+     * then reset to zero here. */
+    int set[esignalNR];
+    /* The communicated signal, always equal for all
+     * processes. Updated only during inter-simulation
+     * communication. */
+} gmx_signal;
 
 #ifdef __cplusplus
 }
