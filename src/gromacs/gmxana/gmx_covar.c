@@ -59,7 +59,6 @@
 #include "gromacs/fileio/trnio.h"
 #include "mshift.h"
 #include "xvgr.h"
-#include "do_fit.h"
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "gromacs/fileio/matio.h"
@@ -70,6 +69,7 @@
 #include "gromacs/fileio/trxio.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
 
 int gmx_covar(int argc, char *argv[])
 {

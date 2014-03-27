@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "domdec.h"
 #include "smalloc.h"
 #include "network.h"
@@ -50,7 +51,6 @@
 #include "names.h"
 #include "mtop_util.h"
 #include "names.h"
-#include "nrjac.h"
 #include "vec.h"
 #include "gmx_ga2la.h"
 #include "xvgr.h"
@@ -60,6 +60,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/qsort_threadsafe.h"

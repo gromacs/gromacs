@@ -58,7 +58,6 @@
 #include "index.h"
 #include "vec.h"
 #include "gromacs/fileio/xtcio.h"
-#include "do_fit.h"
 #include "rmpbc.h"
 #include "pbc.h"
 #include "xvgr.h"

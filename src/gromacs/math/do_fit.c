@@ -34,20 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "do_fit.h"
 
 #include "gromacs/math/utilities.h"
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "nrjac.h"
 #include "vec.h"
 #include "txtdump.h"
 #include "smalloc.h"
-#include "do_fit.h"
 
-#define EPS 1.0e-09
+#include "gromacs/linearalgebra/nrjac.h"
 
 real calc_similar_ind(gmx_bool bRho, int nind, atom_id *index, real mass[],
                       rvec x[], rvec xp[])
