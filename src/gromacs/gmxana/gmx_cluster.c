@@ -58,12 +58,12 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "cmat.h"
-#include "do_fit.h"
 #include "gromacs/fileio/trnio.h"
 #include "viewit.h"
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
 static gmx_inline

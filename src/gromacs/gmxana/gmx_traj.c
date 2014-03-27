@@ -55,10 +55,10 @@
 #include "gromacs/fileio/trxio.h"
 #include "rmpbc.h"
 #include "physics.h"
-#include "nrjac.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
+#include "gromacs/linearalgebra/nrjac.h"
 
 static void low_print_data(FILE *fp, real time, rvec x[], int n, atom_id *index,
                            gmx_bool bDim[], const char *sffmt)

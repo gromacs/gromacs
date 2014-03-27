@@ -51,11 +51,11 @@
 #include "gmx_fatal.h"
 #include "gstat.h"
 #include "pbc.h"
-#include "do_fit.h"
 #include "gmx_ana.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/math/do_fit.h"
 
 int gmx_helixorient(int argc, char *argv[])
 {

@@ -35,17 +35,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include "smalloc.h"
-#include "gmx_fatal.h"
 #include "nrjac.h"
 
+#include <math.h>
+
+#include "gmx_fatal.h"
+#include "smalloc.h"
 
 static gmx_inline
 void do_rotate(double **a, int i, int j, int k, int l, double tau, double s)

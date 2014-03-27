@@ -60,7 +60,6 @@
 #include "gromacs/fileio/matio.h"
 #include "mshift.h"
 #include "xvgr.h"
-#include "do_fit.h"
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"

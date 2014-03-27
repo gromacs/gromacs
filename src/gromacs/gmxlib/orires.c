@@ -41,15 +41,16 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "nrjac.h"
 #include "types/commrec.h"
 #include "network.h"
 #include "orires.h"
-#include "do_fit.h"
 #include "main.h"
 #include "copyrite.h"
 #include "pbc.h"
 #include "mtop_util.h"
+
+#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/do_fit.h"
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec xref[],

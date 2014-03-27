@@ -55,13 +55,13 @@
 #include "mdrun.h"
 #include "update.h"
 #include "physics.h"
-#include "nrjac.h"
 #include "mtop_util.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "xvgr.h"
 #include "gromacs/mdlib/groupcoord.h"
 
+#include "gromacs/linearalgebra/nrjac.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))

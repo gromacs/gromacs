@@ -52,13 +52,13 @@
 #include "pbc.h"
 #include "gmx_fatal.h"
 #include "gromacs/fileio/futil.h"
-#include "do_fit.h"
 #include "princ.h"
 #include "rmpbc.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
+#include "gromacs/math/do_fit.h"
 
 static real find_pdb_bfac(t_atoms *atoms, t_resinfo *ri, char *atomnm)
 {

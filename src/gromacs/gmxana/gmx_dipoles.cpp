@@ -60,12 +60,12 @@
 #include "physics.h"
 #include "calcmu.h"
 #include "gromacs/fileio/enxio.h"
-#include "nrjac.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "copyrite.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programcontext.h"
 

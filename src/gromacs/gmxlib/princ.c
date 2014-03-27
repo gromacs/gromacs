@@ -42,9 +42,10 @@
 #include "typedefs.h"
 #include "vec.h"
 #include "smalloc.h"
-#include "nrjac.h"
 #include "txtdump.h"
 #include "princ.h"
+
+#include "gromacs/linearalgebra/nrjac.h"
 
 static void m_op(matrix mat, rvec x)
 {

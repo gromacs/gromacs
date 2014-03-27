@@ -59,12 +59,13 @@
 #include "index.h"
 #include "vec.h"
 #include "gromacs/fileio/xtcio.h"
-#include "do_fit.h"
 #include "rmpbc.h"
 #include "pbc.h"
 #include "viewit.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
+
+#include "gromacs/math/do_fit.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

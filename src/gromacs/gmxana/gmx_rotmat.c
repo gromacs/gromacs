@@ -53,9 +53,9 @@
 #include "rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "do_fit.h"
 #include "gmx_ana.h"
 
+#include "gromacs/math/do_fit.h"
 
 static void get_refx(output_env_t oenv, const char *trxfn, int nfitdim, int skip,
                      int gnx, int *index,

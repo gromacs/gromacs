@@ -54,9 +54,9 @@
 #include "rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "nrjac.h"
 #include "gmx_ana.h"
 
+#include "gromacs/linearalgebra/nrjac.h"
 
 static void gyro_eigen(double **gyr, double *eig, double **eigv, int *ord)
 {
