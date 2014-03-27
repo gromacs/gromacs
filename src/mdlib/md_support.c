@@ -51,9 +51,6 @@
 #include "md_logging.h"
 #include "md_support.h"
 
-/* Is the signal in one simulation independent of other simulations? */
-gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
-
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */
 gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
@@ -168,28 +165,37 @@ int multisim_nstsimsync(const t_commrec *cr,
     return nmin;
 }
 
-void init_global_signals(globsig_t *gs, const t_commrec *cr,
-                         const t_inputrec *ir, int repl_ex_nst)
+void
+init_signals(FILE             *fplog,
+             gmx_signal       *signal,
+             t_commrec        *cr,
+             const t_inputrec *ir,
+             int               nst_signal_intra,
+             int               nst_signal_inter,
+             real              max_hours)
 {
     int i;
 
+    /* We always communicate intra-simulation signals */
+    signal->nst_signal_intra = 1;
+
     if (MULTISIM(cr))
     {
-        gs->nstms = multisim_nstsimsync(cr, ir, repl_ex_nst);
+        signal->nst_signal_inter = check_nst_signal_inter(fplog, cr, nst_signal_inter, ir, max_hours);
         if (debug)
         {
-            fprintf(debug, "Syncing simulations for checkpointing and termination every %d steps\n", gs->nstms);
+            fprintf(debug, "Syncing simulations for checkpointing and termination every %d steps\n", signal->nst_signal_inter);
         }
     }
     else
     {
-        gs->nstms = 1;
+        signal->nst_signal_inter = nst_signal_intra;
     }
 
-    for (i = 0; i < eglsNR; i++)
+    for (i = 0; i < esignalNR; i++)
     {
-        gs->sig[i] = 0;
-        gs->set[i] = 0;
+        signal->init[i] = 0;
+        signal->set[i]  = 0;
     }
 }
 
@@ -283,12 +289,14 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
-                     globsig_t *gs, gmx_bool bInterSimGS,
+                     gmx_signal *signal,
+                     gmx_bool    bIntraSimSignal,
+                     gmx_bool    bInterSimSignal,
                      matrix box, gmx_mtop_t *top_global, real *pcurr,
                      int natoms, gmx_bool *bSumEkinhOld, int flags)
 {
-    int      i, gsi;
-    real     gs_buf[eglsNR];
+    int      i, signal_value, nsignals;
+    real     signal_buf[esignalNR];
     tensor   corr_vir, corr_pres, shakeall_vir;
     gmx_bool bEner, bPres, bTemp, bVV;
     gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
@@ -358,57 +366,104 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
              * so signal that we still have to do it.
              */
             *bSumEkinhOld = TRUE;
-
         }
         else
         {
-            if (gs != NULL)
+            /* Handle inter- and intra-simulation signals. Even when
+             * there is only one simulation, the "inter-simulation"
+             * signals (checkpointing, termination) still have to be
+             * handled.
+             */
+
+            /* First, construct a buffer containing the signal values. */
+            if (NULL != signal)
             {
-                for (i = 0; i < eglsNR; i++)
+                for (i = 0; i < esignalINTRA_NR; i++)
                 {
-                    gs_buf[i] = gs->sig[i];
+                    signal_buf[i] = bIntraSimSignal ? signal->init[i] : 0.0;
+                }
+
+                /* i value carries over from above loop */
+                for (; i < esignalINTER_NR; i++)
+                {
+                    signal_buf[i] = bInterSimSignal ? signal->init[i] : 0.0;
+                }
+
+                if (bInterSimSignal && MULTISIM(cr) && MASTER(cr))
+                {
+                    /* Communicate the inter-simulation signals
+                     * between the simulations - but only the
+                     * inter-simulation part of the buffer should be
+                     * communicated. */
+                    gmx_sum_sim(esignalINTER_NR - esignalINTRA_NR, signal_buf + esignalINTRA_NR, cr->ms);
+                }
+
+                if (bInterSimSignal || bIntraSimSignal)
+                {
+                    nsignals = esignalNR;
+                }
+                else
+                {
+                    nsignals = 0;
                 }
             }
+            else
+            {
+                nsignals = 0;
+            }
+
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                             ir, ekind, constr, bStopCM ? vcm : NULL,
-                            gs != NULL ? eglsNR : 0, gs_buf,
+                            nsignals, signal_buf,
                             top_global, state,
                             *bSumEkinhOld, flags);
                 GMX_MPE_LOG(ev_global_stat_finish);
                 wallcycle_stop(wcycle, ewcMoveE);
             }
-            if (gs != NULL)
+            if (NULL != signal)
             {
-                if (MULTISIM(cr) && bInterSimGS)
+                /* We set the communicated signals only when they are
+                 * non-zero, since signals might not be processed at
+                 * each MD step.
+                 */
+
+                /* First, the intra-simulation signals, only when wanted: */
+                if (bIntraSimSignal)
                 {
-                    if (MASTER(cr))
+                    for (i = 0; i < esignalINTRA_NR; i++)
                     {
-                        /* Communicate the signals between the simulations */
-                        gmx_sum_sim(eglsNR, gs_buf, cr->ms);
-                    }
-                    /* Communicate the signals form the master to the others */
-                    gmx_bcast(eglsNR*sizeof(gs_buf[0]), gs_buf, cr);
-                }
-                for (i = 0; i < eglsNR; i++)
-                {
-                    if (bInterSimGS || gs_simlocal[i])
-                    {
-                        /* Set the communicated signal only when it is non-zero,
-                         * since signals might not be processed at each MD step.
-                         */
-                        gsi = (gs_buf[i] >= 0 ?
-                               (int)(gs_buf[i] + 0.5) :
-                               (int)(gs_buf[i] - 0.5));
-                        if (gsi != 0)
+                        signal_value = (signal_buf[i] >= 0 ?
+                                        (int)(signal_buf[i] + 0.5) :
+                                        (int)(signal_buf[i] - 0.5));
+                        if (signal_value != 0)
                         {
-                            gs->set[i] = gsi;
+                            signal->set[i] = signal_value;
                         }
                         /* Turn off the local signal */
-                        gs->sig[i] = 0;
+                        signal->init[i] = 0;
+                    }
+                }
+
+                /* Then, the inter-simulation signals, only when
+                 * wanted. Again, the i value carries over from the
+                 * above loop.*/
+                if (bInterSimSignal)
+                {
+                    for (; i < esignalINTER_NR; i++)
+                    {
+                        signal_value = (signal_buf[i] >= 0 ?
+                                        (int)(signal_buf[i] + 0.5) :
+                                        (int)(signal_buf[i] - 0.5));
+                        if (signal_value != 0)
+                        {
+                            signal->set[i] = signal_value;
+                        }
+                        /* Turn off the local signal */
+                        signal->init[i] = 0;
                     }
                 }
             }
@@ -618,7 +673,7 @@ static int lcd4(int i1, int i2, int i3, int i4)
     min_zero(&nst, i4);
     if (nst == 0)
     {
-        gmx_incons("All 4 inputs for determininig nstglobalcomm are <= 0");
+        gmx_incons("All 4 inputs for determininig nst_signal_intra are <= 0");
     }
 
     while (nst > 1 && ((i1 > 0 && i1 % nst != 0)  ||
@@ -632,77 +687,171 @@ static int lcd4(int i1, int i2, int i3, int i4)
     return nst;
 }
 
-int check_nstglobalcomm(FILE *fplog, t_commrec *cr,
-                        int nstglobalcomm, t_inputrec *ir)
+int check_nst_signal_intra(FILE *fplog, t_commrec *cr,
+                           int nst_signal_intra, t_inputrec *ir)
 {
     if (!EI_DYNAMICS(ir->eI))
     {
-        nstglobalcomm = 1;
+        nst_signal_intra = 1;
     }
 
-    if (nstglobalcomm == -1)
+    if (nst_signal_intra == -1)
     {
         if (!(ir->nstcalcenergy > 0 ||
               ir->nstlist > 0 ||
               ir->etc != etcNO ||
               ir->epc != epcNO))
         {
-            nstglobalcomm = 10;
-            if (ir->nstenergy > 0 && ir->nstenergy < nstglobalcomm)
+            nst_signal_intra = 10;
+            if (ir->nstenergy > 0 && ir->nstenergy < nst_signal_intra)
             {
-                nstglobalcomm = ir->nstenergy;
+                nst_signal_intra = ir->nstenergy;
             }
         }
         else
         {
-            /* Ensure that we do timely global communication for
-             * (possibly) each of the four following options.
+            /* Ensure that we do timely intra-simulation communication
+             * for (possibly) each of the four following options.
              */
-            nstglobalcomm = lcd4(ir->nstcalcenergy,
-                                 ir->nstlist,
-                                 ir->etc != etcNO ? ir->nsttcouple : 0,
-                                 ir->epc != epcNO ? ir->nstpcouple : 0);
+            nst_signal_intra = lcd4(ir->nstcalcenergy,
+                                    ir->nstlist,
+                                    ir->etc != etcNO ? ir->nsttcouple : 0,
+                                    ir->epc != epcNO ? ir->nstpcouple : 0);
         }
     }
     else
     {
         if (ir->nstlist > 0 &&
-            nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
+            nst_signal_intra > ir->nstlist && nst_signal_intra % ir->nstlist != 0)
         {
-            nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
-            md_print_warn(cr, fplog, "WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n", nstglobalcomm);
+            char *buf = NULL;
+
+            nst_signal_intra = (nst_signal_intra / ir->nstlist)*ir->nstlist;
+            sprintf(buf, "WARNING: nst_signal_intra is larger than nstlist, but not a multiple, setting it to %d\n", nst_signal_intra);
+            md_print_warn(cr, fplog, buf);
         }
         if (ir->nstcalcenergy > 0)
         {
-            check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+            check_nst_param(fplog, cr, "-intrasignal", nst_signal_intra,
                             "nstcalcenergy", &ir->nstcalcenergy);
         }
         if (ir->etc != etcNO && ir->nsttcouple > 0)
         {
-            check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+            check_nst_param(fplog, cr, "-intrasignal", nst_signal_intra,
                             "nsttcouple", &ir->nsttcouple);
         }
         if (ir->epc != epcNO && ir->nstpcouple > 0)
         {
-            check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+            check_nst_param(fplog, cr, "-intrasignal", nst_signal_intra,
                             "nstpcouple", &ir->nstpcouple);
         }
 
-        check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+        check_nst_param(fplog, cr, "-intrasignal", nst_signal_intra,
                         "nstenergy", &ir->nstenergy);
 
-        check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+        check_nst_param(fplog, cr, "-intrasignal", nst_signal_intra,
                         "nstlog", &ir->nstlog);
     }
 
-    if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
+    if (ir->comm_mode != ecmNO && ir->nstcomm < nst_signal_intra)
     {
-        md_print_warn(cr, fplog, "WARNING: Changing nstcomm from %d to %d\n",
-                      ir->nstcomm, nstglobalcomm);
-        ir->nstcomm = nstglobalcomm;
+        char *buf = NULL;
+
+        sprintf(buf, "WARNING: Changing nstcomm from %d to %d\n",
+                ir->nstcomm, nst_signal_intra);
+        md_print_warn(cr, fplog, buf);
+        ir->nstcomm = nst_signal_intra;
     }
 
-    return nstglobalcomm;
+    if (fplog)
+    {
+        fprintf(fplog, "Intra-simulation communication will occur every %d steps.\n", nst_signal_intra);
+    }
+    return nst_signal_intra;
+}
+
+int
+check_nst_signal_inter(FILE             *fplog,
+                       t_commrec        *cr,
+                       int               nst_signal_inter,
+                       const t_inputrec *ir,
+                       real              max_hours)
+{
+    char buf[STRLEN];
+    int  new_nst_signal_inter;
+
+    if (-1 == nst_signal_inter)
+    {
+        real temp_nst_signal_inter = ir->nstcalcenergy;
+        /* The inter-simulation communication is used for things like
+         * synchronizing checkpointing, dealing with Unix signals, and
+         * run termination. Accordingly its frequency does not need to
+         * reflect nstlist, nstcalcenergy, the -intrasignal setting or the
+         * number of processors. Ideally, we want it to take place at
+         * a constant time interval, but we do not know when a
+         * simulation starts how long each time step will take, and we
+         * probably do not want to be polling for system time either.
+         *
+         * So, if we have to guess how often to do inter-simulation
+         * synchronization, we may as well make the asymptotic cost of
+         * synchronization constant. Assuming a tree implementation of
+         * global communication, the synchronization cost has
+         * components that scale
+         *
+         *   as O(nsim * log(nsim)) for the phase that broadcasts
+         * across the simulation masters, and
+         *
+         *   as O(nnodes * log(nnodes)) for the subsequent
+         * intra-simulation broadcast phase.
+         *
+         * However, we would like to be confident that a signal check
+         * will occur in the interval between 0.99 * max_hours and
+         * max_hours, so that that termination mechanism works. Same
+         * for checkpoint intervals. However it's hard to see a
+         * general way of doing that, since we can't know a priori how
+         * much walltime will elapse for a given number of simulation
+         * steps. The user can always set nst_signal_inter by hand if
+         * they have problems with the default, and we provide a hint
+         * when that might be necessary. */
+        if (1 < cr->nnodes)
+        {
+            /* MSVC doesn't provide log2() */
+            temp_nst_signal_inter *= cr->nnodes * log((double)cr->nnodes) / log(2.0);
+        }
+        if (NULL != cr->ms && 1 < cr->ms->nsim)
+        {
+            temp_nst_signal_inter *= cr->ms->nsim * log((double)cr->ms->nsim) / log(2.0);
+        }
+        /* So for dt = 0.002, nstcalcenergy = 10 and 512 processors, we
+         * transmit inter-simulation signals every 92ps. This seems
+         * like it might be a bit too infrequent.
+         *
+         * Hence we use a fudge factor, which we can adjust to taste
+         * as hardware gets faster. */
+        temp_nst_signal_inter *= 1;
+        new_nst_signal_inter   = (int) temp_nst_signal_inter;
+    }
+    else
+    {
+        new_nst_signal_inter = nst_signal_inter;
+    }
+
+    /* We want to do inter-simulation communication at times when
+     * intra-simulation communication is already happening, so as not
+     * to introduce barriers. */
+    check_nst_param(fplog, cr, "nstcalcenergy", ir->nstcalcenergy,
+                    "-intersignal", &new_nst_signal_inter);
+    if (fplog && 0 < max_hours)
+    {
+        fprintf(fplog, "If you have problems with the mdrun -maxh mechanism not stopping runs in time,\n inter-simulation signalling may be too infrequent");
+        if (nst_signal_inter != new_nst_signal_inter)
+        {
+            fprintf(fplog, " (mdrun chose an interval of %d steps)", new_nst_signal_inter);
+        }
+        fprintf(fplog, ".\n Try a smaller value with mdrun -intersignal.\n\n");
+    }
+
+    return new_nst_signal_inter;
 }
 
 void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,

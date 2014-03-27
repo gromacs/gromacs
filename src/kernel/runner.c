@@ -120,7 +120,8 @@ struct mdrunner_arglist
     output_env_t    oenv;
     gmx_bool        bVerbose;
     gmx_bool        bCompact;
-    int             nstglobalcomm;
+    int             nst_signal_intra;
+    int             nst_signal_inter;
     ivec            ddxyz;
     int             dd_node_order;
     real            rdd;
@@ -171,7 +172,8 @@ static void mdrunner_start_fn(void *arg)
     }
 
     mda->ret = mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-                        mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
+                        mc.bVerbose, mc.bCompact, mc.nst_signal_intra,
+                        mc.nst_signal_inter,
                         mc.ddxyz, mc.dd_node_order, mc.rdd,
                         mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                         mc.ddcsx, mc.ddcsy, mc.ddcsz,
@@ -188,7 +190,7 @@ static void mdrunner_start_fn(void *arg)
 static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
                                          const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-                                         gmx_bool bCompact, int nstglobalcomm,
+                                         gmx_bool bCompact, int nst_signal_intra, int nst_signal_inter,
                                          ivec ddxyz, int dd_node_order, real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
@@ -215,40 +217,40 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     fnmn = dup_tfn(nfile, fnm);
 
     /* fill the data structure to pass as void pointer to thread start fn */
-    /* hw_opt contains pointers, which should all be NULL at this stage */
-    mda->hw_opt         = *hw_opt;
-    mda->fplog          = fplog;
-    mda->cr             = cr;
-    mda->nfile          = nfile;
-    mda->fnm            = fnmn;
-    mda->oenv           = oenv;
-    mda->bVerbose       = bVerbose;
-    mda->bCompact       = bCompact;
-    mda->nstglobalcomm  = nstglobalcomm;
-    mda->ddxyz[XX]      = ddxyz[XX];
-    mda->ddxyz[YY]      = ddxyz[YY];
-    mda->ddxyz[ZZ]      = ddxyz[ZZ];
-    mda->dd_node_order  = dd_node_order;
-    mda->rdd            = rdd;
-    mda->rconstr        = rconstr;
-    mda->dddlb_opt      = dddlb_opt;
-    mda->dlb_scale      = dlb_scale;
-    mda->ddcsx          = ddcsx;
-    mda->ddcsy          = ddcsy;
-    mda->ddcsz          = ddcsz;
-    mda->nbpu_opt       = nbpu_opt;
-    mda->nsteps_cmdline = nsteps_cmdline;
-    mda->nstepout       = nstepout;
-    mda->resetstep      = resetstep;
-    mda->nmultisim      = nmultisim;
-    mda->repl_ex_nst    = repl_ex_nst;
-    mda->repl_ex_nex    = repl_ex_nex;
-    mda->repl_ex_seed   = repl_ex_seed;
-    mda->pforce         = pforce;
-    mda->cpt_period     = cpt_period;
-    mda->max_hours      = max_hours;
-    mda->deviceOptions  = deviceOptions;
-    mda->Flags          = Flags;
+    mda->hw_opt           = *hw_opt;
+    mda->fplog            = fplog;
+    mda->cr               = cr;
+    mda->nfile            = nfile;
+    mda->fnm              = fnmn;
+    mda->oenv             = oenv;
+    mda->bVerbose         = bVerbose;
+    mda->bCompact         = bCompact;
+    mda->nst_signal_intra = nst_signal_intra;
+    mda->nst_signal_inter = nst_signal_inter;
+    mda->ddxyz[XX]        = ddxyz[XX];
+    mda->ddxyz[YY]        = ddxyz[YY];
+    mda->ddxyz[ZZ]        = ddxyz[ZZ];
+    mda->dd_node_order    = dd_node_order;
+    mda->rdd              = rdd;
+    mda->rconstr          = rconstr;
+    mda->dddlb_opt        = dddlb_opt;
+    mda->dlb_scale        = dlb_scale;
+    mda->ddcsx            = ddcsx;
+    mda->ddcsy            = ddcsy;
+    mda->ddcsz            = ddcsz;
+    mda->nbpu_opt         = nbpu_opt;
+    mda->nsteps_cmdline   = nsteps_cmdline;
+    mda->nstepout         = nstepout;
+    mda->resetstep        = resetstep;
+    mda->nmultisim        = nmultisim;
+    mda->repl_ex_nst      = repl_ex_nst;
+    mda->repl_ex_nex      = repl_ex_nex;
+    mda->repl_ex_seed     = repl_ex_seed;
+    mda->pforce           = pforce;
+    mda->cpt_period       = cpt_period;
+    mda->max_hours        = max_hours;
+    mda->deviceOptions    = deviceOptions;
+    mda->Flags            = Flags;
 
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
@@ -1005,7 +1007,7 @@ static void free_gpu_resources(FILE             *fplog,
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm,
+             gmx_bool bCompact, int nst_signal_intra, int nst_signal_inter,
              ivec ddxyz, int dd_node_order, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
@@ -1173,7 +1175,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             /* now start the threads. */
             cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
-                                        oenv, bVerbose, bCompact, nstglobalcomm,
+                                        oenv, bVerbose, bCompact, nst_signal_intra,
+                                        nst_signal_inter,
                                         ddxyz, dd_node_order, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                         nbpu_opt,
@@ -1702,7 +1705,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Now do whatever the user wants us to do (how flexible...) */
         integrator[inputrec->eI].func(fplog, cr, nfile, fnm,
                                       oenv, bVerbose, bCompact,
-                                      nstglobalcomm,
+                                      nst_signal_intra,
+                                      nst_signal_inter,
                                       vsite, constr,
                                       nstepout, inputrec, mtop,
                                       fcd, state,
