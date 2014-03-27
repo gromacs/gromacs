@@ -52,7 +52,6 @@
 #include "gromacs/fileio/futil.h"
 #include "princ.h"
 #include "rmpbc.h"
-#include "do_fit.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -60,6 +59,7 @@
 #include "viewit.h"
 #include "gmx_ana.h"
 
+#include "gromacs/math/do_fit.h"
 
 static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
                        rvec *x)

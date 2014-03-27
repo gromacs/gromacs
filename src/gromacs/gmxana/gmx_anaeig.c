@@ -56,12 +56,13 @@
 #include "gromacs/fileio/matio.h"
 #include "mshift.h"
 #include "xvgr.h"
-#include "do_fit.h"
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
 #include "physics.h"
 #include "gmx_ana.h"
+
+#include "gromacs/math/do_fit.h"
 
 static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip)
 {

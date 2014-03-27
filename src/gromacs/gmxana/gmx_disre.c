@@ -45,7 +45,6 @@
 #include "mshift.h"
 #include "xvgr.h"
 #include "vec.h"
-#include "do_fit.h"
 #include "gromacs/fileio/confio.h"
 #include "smalloc.h"
 #include "nrnb.h"
@@ -65,6 +64,7 @@
 #include "mtop_util.h"
 #include "gmx_ana.h"
 
+#include "gromacs/math/do_fit.h"
 
 typedef struct {
     int  n;

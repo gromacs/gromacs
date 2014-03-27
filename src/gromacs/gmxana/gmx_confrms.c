@@ -55,11 +55,11 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "txtdump.h"
-#include "do_fit.h"
 #include "viewit.h"
 #include "rmpbc.h"
 #include "gmx_ana.h"
 
+#include "gromacs/math/do_fit.h"
 
 void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
