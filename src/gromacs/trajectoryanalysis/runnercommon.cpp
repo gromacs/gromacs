@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "analysissettings-impl.h"
@@ -347,7 +348,7 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
     }
     time_unit_t time_unit
         = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
-    output_env_init(&impl_->oenv_, 0, NULL, time_unit, FALSE, exvgNONE, 0, 0);
+    output_env_init(&impl_->oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0, 0);
 
     int frflags = impl_->settings_.frflags();
     frflags |= TRX_NEED_X;
