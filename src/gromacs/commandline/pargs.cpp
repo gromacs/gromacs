@@ -74,6 +74,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 /* The source code in this file should be thread-safe.
@@ -786,7 +787,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     get_pargs(argc, argv, npall, all_pa);
 
     /* set program name, command line, and default values for output options */
-    output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
+    output_env_init(oenv, gmx::getProgramContext(), (time_unit_t)nenum(time_units), bView,
                     (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
     /* Parse the file args */
