@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \libinternal \file
+/*! \internal \file
  *
  * \brief
  * Implements functions of imd.h.
@@ -43,7 +43,6 @@
  *
  * \author Martin Hoefling, Carsten Kutzner <ckutzne@gwdg.de>
  *
- * \inlibraryapi
  * \ingroup module_imd
  */
 
@@ -86,13 +85,13 @@
 #define IMDVERSION 2
 
 /*! \brief Broadcast d to all nodes */
-#define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
+#define  block_bc(cr, d) gmx_bcast(sizeof(d), &(d), (cr))
 
 /*! \brief Broadcast nr elements of d to all nodes */
 #define  nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
 
 
-/*! \libinternal
+/*! \internal
  * \brief
  * IMD (interactive molecular dynamics) energy record.
  *
@@ -116,7 +115,7 @@ typedef struct
 } IMDEnergyBlock;
 
 
-/*! \libinternal
+/*! \internal
  * \brief IMD (interactive molecular dynamics) communication structure.
  *
  * This structure defines the IMD communication message header & protocol version.
@@ -128,7 +127,7 @@ typedef struct
 } IMDHeader;
 
 
-/*! \libinternal
+/*! \internal
  * \brief IMD (interactive molecular dynamics) main data structure.
  *
  * Contains private IMD data
@@ -195,7 +194,7 @@ typedef struct gmx_IMD
 } t_gmx_IMD_setup;
 
 
-/*! \libinternal
+/*! \internal
  * \brief Enum for types of IMD messages.
  *
  * We use the same records as the NAMD/VMD IMD implementation.
@@ -216,7 +215,7 @@ typedef enum IMDType_t
 } IMDMessageType;
 
 
-/*! \libinternal
+/*! \internal
  * \brief Names of the IMDType for error messages.
  */
 const char *eIMDType_names[IMD_NR + 1] = {
@@ -1361,9 +1360,11 @@ extern void init_IMD(
     imd_check_integrator_parallel(ir, cr);
 
 
-    /*******************************************************/
-    /** From here on we assume that IMD is turned on      **/
-    /*******************************************************/
+    /*
+     *****************************************************
+     * From here on we assume that IMD is turned on      *
+     *****************************************************
+     */
 
 #ifdef GMX_IMD
     nat_total = top_global->natoms;
