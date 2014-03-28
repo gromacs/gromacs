@@ -10,7 +10,6 @@ share/template/template.cpp: error: source file documentation appears outside fu
 : error: no matching directory for module: module_mdrun_integration_tests
 
 # These are real documentation issues that should be fixed
-src/gromacs/legacyheaders/types/*.h: warning: included file "../../swap/enums.h" is not documented as exposed outside its module
 
 # These would be nice to fix, but can wait for later
 *: warning: includes local file as <config.h>
