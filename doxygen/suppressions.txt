@@ -10,6 +10,9 @@ share/template/template.cpp: error: source file documentation appears outside fu
 : error: no matching directory for module: module_mdrun_integration_tests
 
 # These are real documentation issues that should be fixed
+src/gromacs/imd/imd.c: error: source file documentation appears outside full documentation
+src/gromacs/imd/imdsocket.c: error: source file documentation appears outside full documentation
+src/gromacs/imd/imd.h: note: init_IMD: has in-body comments, which are ignored
 src/gromacs/legacyheaders/types/*.h: warning: included file "../../swap/enums.h" is not documented as exposed outside its module
 
 # These would be nice to fix, but can wait for later
