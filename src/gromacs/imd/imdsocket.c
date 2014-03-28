@@ -33,7 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \libinternal \file
+/*! \internal \file
  *
  * \brief
  * Implements functions of imdsocket.h.
@@ -43,7 +43,6 @@
  *
  * \author Martin Hoefling, Carsten Kutzner <ckutzne@gwdg.de>
  *
- * \inlibraryapi
  * \ingroup module_imd
  */
 

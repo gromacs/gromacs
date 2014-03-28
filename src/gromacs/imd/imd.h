@@ -33,7 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \defgroup module_imd Interactive molecular dynamics (IMD)
+/*! \libinternal
+ * \defgroup module_imd Interactive molecular dynamics (IMD)
  * \ingroup group_mdrun
  *
  * \brief
