@@ -39,7 +39,9 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
+
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"

@@ -227,7 +227,6 @@
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"

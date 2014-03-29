@@ -48,7 +48,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "string2.h"
 #include "gromacs/fileio/strdb.h"
 #include "vec.h"
 #include "macros.h"

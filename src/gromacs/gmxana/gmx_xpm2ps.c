@@ -41,12 +41,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "string2.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
-#include "string2.h"
 #include "viewit.h"
 #include "gmx_ana.h"
 

@@ -42,7 +42,6 @@
 #include <time.h>
 #include <math.h>
 #include "sysstuff.h"
-#include "string2.h"
 #include "network.h"
 #include "smalloc.h"
 #include "nrnb.h"

@@ -48,7 +48,6 @@
 #include "smalloc.h"
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
-#include "string2.h"
 #include "index.h"
 #include "vec.h"
 #include "typedefs.h"

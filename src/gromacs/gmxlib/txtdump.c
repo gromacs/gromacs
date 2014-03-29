@@ -46,7 +46,6 @@
 #include "types/commrec.h"
 #include "names.h"
 #include "txtdump.h"
-#include "string2.h"
 #include "vec.h"
 #include "macros.h"
 
