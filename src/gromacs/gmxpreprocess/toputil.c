@@ -39,12 +39,11 @@
 #endif
 
 #include <math.h>
+#include <string.h>
+
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "macros.h"
-#include "string2.h"
-#include "topdirs.h"
-#include "toputil.h"
 #include "topdirs.h"
 #include "toputil.h"
 #include "symtab.h"

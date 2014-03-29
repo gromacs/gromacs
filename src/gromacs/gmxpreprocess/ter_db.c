@@ -38,6 +38,9 @@
 #include <config.h>
 #endif
 
+#include <ctype.h>
+#include <string.h>
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"

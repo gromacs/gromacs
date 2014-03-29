@@ -40,8 +40,9 @@
 #include <config.h>
 #endif
 
+#include <string.h>
 #include <time.h>
-#include <ctype.h>
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"

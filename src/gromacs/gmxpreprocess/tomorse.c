@@ -39,9 +39,10 @@
 #include <config.h>
 #endif
 
-#include <stdlib.h>
 #include <math.h>
-#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "string2.h"
 #include "grompp-impl.h"

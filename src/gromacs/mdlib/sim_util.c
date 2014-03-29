@@ -38,12 +38,13 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#include <math.h>
-#include <assert.h>
 
 #include "typedefs.h"
 #include "string2.h"

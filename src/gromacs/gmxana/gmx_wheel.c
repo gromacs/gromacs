@@ -41,9 +41,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include "sysstuff.h"
 #include "physics.h"
-#include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"

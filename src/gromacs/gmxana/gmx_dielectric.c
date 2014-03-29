@@ -44,7 +44,6 @@
 
 #include "copyrite.h"
 #include "typedefs.h"
-#include "string2.h"
 #include "gstat.h"
 #include "smalloc.h"
 #include "macros.h"

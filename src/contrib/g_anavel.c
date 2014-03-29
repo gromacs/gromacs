@@ -48,7 +48,6 @@
 #include "gromacs/fileio/futil.h"
 #include "copyrite.h"
 #include "xvgr.h"
-#include "string2.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"
 

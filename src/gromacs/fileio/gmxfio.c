@@ -38,9 +38,9 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
@@ -55,7 +55,6 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "filenm.h"
-#include "string2.h"
 #include "gmxfio.h"
 #include "md5.h"
 
