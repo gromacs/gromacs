@@ -245,7 +245,7 @@ _gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
     }
     if (!d->type && type)
     {
-        d->type  = strdup(type);
+        d->type  = gmx_strdup(type);
         /* FIXME: It would be better not to have the string here hardcoded. */
         if (type[0] != 'a')
         {

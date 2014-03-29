@@ -47,7 +47,6 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
-#include "string2.h"
 #include "gromacs/fileio/strdb.h"
 #include "index.h"
 #include "vec.h"

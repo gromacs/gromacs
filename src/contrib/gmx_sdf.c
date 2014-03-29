@@ -22,7 +22,6 @@
 
 #include <math.h>
 #include <ctype.h>
-#include "string2.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"

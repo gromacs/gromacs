@@ -46,7 +46,6 @@
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "typedefs.h"
-#include "string2.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"

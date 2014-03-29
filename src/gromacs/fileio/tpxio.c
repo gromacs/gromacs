@@ -40,7 +40,8 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include <ctype.h>
+#include <string.h>
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "string2.h"
