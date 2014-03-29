@@ -48,7 +48,6 @@
 
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/string2.h"
 #include "gromacs/fileio/path.h"
 #include "gromacs/utility/stringutil.h"
 

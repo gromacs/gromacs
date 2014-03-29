@@ -38,8 +38,10 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
 #include <ctype.h>
+#include <string.h>
+
+#include "sysstuff.h"
 #include "string2.h"
 #include "gromacs/fileio/futil.h"
 #include "smalloc.h"

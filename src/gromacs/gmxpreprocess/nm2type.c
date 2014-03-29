@@ -39,6 +39,8 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+
 #include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "bondf.h"

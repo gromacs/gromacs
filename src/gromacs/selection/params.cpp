@@ -43,7 +43,6 @@
 #include <string>
 
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/position.h"

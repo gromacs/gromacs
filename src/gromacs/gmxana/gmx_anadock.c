@@ -38,6 +38,8 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+
 #include "gromacs/fileio/confio.h"
 #include "copyrite.h"
 #include "gromacs/fileio/futil.h"

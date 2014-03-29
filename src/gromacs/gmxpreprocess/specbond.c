@@ -38,8 +38,9 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
 #include <math.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
