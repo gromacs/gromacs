@@ -40,14 +40,13 @@
 
 #include <math.h>
 #include <string.h>
-#include <ctype.h>
+
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
-#include "string2.h"
 #include "gromacs/fileio/strdb.h"
 #include "index.h"
 #include "vec.h"

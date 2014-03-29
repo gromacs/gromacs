@@ -40,6 +40,8 @@
 
 #include <string.h>
 #include <stdlib.h>
+
+#include "string2.h"
 #include "sysstuff.h"
 #include "princ.h"
 #include "gromacs/fileio/futil.h"
@@ -53,7 +55,6 @@
 #include "symtab.h"
 #include "readinp.h"
 #include "readir.h"
-#include <string.h>
 #include "mdatoms.h"
 #include "pbc.h"
 #include "gromacs/pulling/pull.h"

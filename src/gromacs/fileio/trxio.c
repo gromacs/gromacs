@@ -40,16 +40,14 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <math.h>
 #include <assert.h>
+#include <math.h>
 
 #include "sysstuff.h"
 #include "typedefs.h"
 #ifdef GMX_USE_PLUGINS
 #include "vmdio.h"
 #endif
-#include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
 #include "gmxfio.h"

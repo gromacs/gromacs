@@ -41,7 +41,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "string2.h"
 #include "force.h"
 #include "smalloc.h"
 #include "types/commrec.h"

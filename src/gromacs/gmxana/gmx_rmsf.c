@@ -44,7 +44,6 @@
 #include "typedefs.h"
 #include "xvgr.h"
 #include "gromacs/commandline/pargs.h"
-#include "string2.h"
 #include "vec.h"
 #include "index.h"
 #include "gromacs/fileio/pdbio.h"

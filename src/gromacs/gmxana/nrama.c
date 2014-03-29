@@ -42,7 +42,6 @@
 #include <math.h>
 #include "sysstuff.h"
 #include "smalloc.h"
-#include "string2.h"
 #include "typedefs.h"
 #include "bondf.h"
 #include "gromacs/fileio/futil.h"

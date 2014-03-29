@@ -36,8 +36,8 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
 #include <string.h>
+
 #include "gromacs/random/random.h"
 #include "smalloc.h"
 #include "sysstuff.h"

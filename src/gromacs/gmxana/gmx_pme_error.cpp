@@ -41,7 +41,6 @@
 #include "vec.h"
 #include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
 #include "readinp.h"
 #include "calcgrid.h"
 #include "checkpoint.h"

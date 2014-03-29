@@ -39,7 +39,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
-#include "string2.h"
 #include "smalloc.h"
 #include "names.h"
 #include "gromacs/fileio/confio.h"

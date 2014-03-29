@@ -43,7 +43,6 @@
 #include "smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "macros.h"
-#include "string2.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "gromacs/fileio/trxio.h"

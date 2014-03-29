@@ -38,9 +38,9 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif

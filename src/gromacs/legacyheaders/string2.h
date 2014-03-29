@@ -49,13 +49,9 @@
  *
  */
 
-
-#include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
 #include <time.h>
-#include <errno.h>
+
 #include "../utility/gmx_header_config.h"
 
 #include "types/simple.h"
@@ -63,6 +59,8 @@
 /* Suppress Cygwin compiler warnings from using newlib version of
  * ctype.h */
 #ifdef GMX_CYGWIN
+#include <ctype.h>
+
 #undef isdigit
 #undef isstring
 #undef isspace
@@ -153,6 +151,9 @@ char *gmx_strndup(const char *src, int n);
  */
 int gmx_wcmatch(const char *pattern, const char *str);
 
+/** Return value for gmx_wcmatch() when there is no match. */
+#define GMX_NO_WCMATCH 1
+
 /** Magic hash initialization number from Dan J. Bernstein. */
 extern const unsigned int
     gmx_string_hash_init;
@@ -186,9 +187,6 @@ gmx_string_fullhash_func(const char *s, unsigned int hash_init);
 unsigned int
 gmx_string_hash_func(const char *s, unsigned int hash_init);
 
-/** Return value for gmx_wcmatch() when there is no match. */
-#define GMX_NO_WCMATCH 1
-
 /*! \brief
  * Wraps lines, optionally indenting lines.
  *
@@ -200,9 +198,6 @@ gmx_string_hash_func(const char *s, unsigned int hash_init);
  */
 char *wrap_lines(const char *buf, int line_width, int indent,
                  gmx_bool bIndentFirst);
-
-/** Implementation of the well-known Perl function split. */
-char **split(char sep, const char *str);
 
 /*! \brief
  * Convert a string to gmx_int64_t.

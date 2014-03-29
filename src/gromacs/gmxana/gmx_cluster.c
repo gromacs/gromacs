@@ -37,9 +37,10 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
 #include <string.h>
-#include <ctype.h>
+
 #include "macros.h"
 #include "smalloc.h"
 #include "typedefs.h"

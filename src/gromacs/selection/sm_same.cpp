@@ -43,7 +43,6 @@
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"

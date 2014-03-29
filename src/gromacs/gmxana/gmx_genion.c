@@ -39,6 +39,8 @@
 #endif
 
 #include <ctype.h>
+#include <string.h>
+
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"

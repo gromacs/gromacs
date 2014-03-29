@@ -43,7 +43,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "sysstuff.h"
-#include "string2.h"
 #include "network.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"

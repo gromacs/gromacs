@@ -50,7 +50,6 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "string2.h"
 #include "readir.h"
 #include "toputil.h"
 #include "topio.h"

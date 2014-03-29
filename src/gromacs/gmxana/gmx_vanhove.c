@@ -38,9 +38,8 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-#include <ctype.h>
 #include <math.h>
+#include <string.h>
 
 #include "sysstuff.h"
 #include "smalloc.h"

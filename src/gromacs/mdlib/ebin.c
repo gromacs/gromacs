@@ -45,7 +45,6 @@
 #include "smalloc.h"
 #include "typedefs.h"
 #include "gmx_fatal.h"
-#include "string2.h"
 #include "ebin.h"
 #include "main.h"
 #include "gromacs/math/utilities.h"
