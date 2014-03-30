@@ -42,6 +42,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
+
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "macros.h"
