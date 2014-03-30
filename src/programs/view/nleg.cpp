@@ -40,6 +40,8 @@
 
 #include <string.h>
 
+#include <algorithm>
+
 #include "macros.h"
 #include "smalloc.h"
 
