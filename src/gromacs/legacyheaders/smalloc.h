@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,240 +34,316 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \file
+ * \brief
+ * C memory allocation routines for \Gromacs.
+ *
+ * This header provides macros snew(), srenew(), smalloc(), and sfree() for
+ * C memory management.  Additionally, snew_aligned() and sfree_aligned() are
+ * provided for managing memory with a specified byte alignment.
+ *
+ * If an allocation fails, the program is halted by calling gmx_fatal(), which
+ * outputs source file and line number and the name of the variable involved.
+ * This frees calling code from the trouble of checking the result of the
+ * allocations everywhere.  It also provides a location for centrally logging
+ * memory allocations for diagnosing memory usage (currently can only enabled
+ * by changing the source code).  Additionally, sfree() works also with a
+ * `NULL` parameter, which standard free() does not.
+ *
+ * The macros forward the calls to functions save_malloc(), save_calloc(),
+ * save_realloc(), save_free(), save_calloc_aligned(), and save_free_aligned().
+ * There are a few low-level locations in \Gromacs that call these directly,
+ * but generally the macros should be used.
+ * save_malloc_aligned() exists for this purpose, although there is no macro to
+ * invoke it.
+ *
+ * \if internal
+ * As an implementation detail, the macros need a different internal
+ * implementation for C and C++ code.  This is because C accepts conversions
+ * from `void *` to any pointer type, but C++ doesn't.  And in order to cast
+ * the returned pointer to a correct type, a C++ template needs to be used to
+ * get access to the type.
+ * \endif
+ *
+ * \inpublicapi
+ */
 #ifndef _smalloc_h
 #define _smalloc_h
 
-#include <stdlib.h>
-
-/*
- * Memory allocation routines in gromacs:
- *
- * If an allocation fails, the program is halted by means of the
- * fatal_error routine, which outputs source file and line number
- * and the name of the variable involved.
- *
- * Macro's which can be used:
- *
- * snew(ptr,nelem)
- *    Allocates memory for nelem elements and returns this in ptr.
- *    The allocated memory is initialized to zeros.
- *
- * srenew(ptr,nelem)
- *    Reallocates memory for nelem elements and returns this in ptr.
- *
- * smalloc(ptr,size)
- *    Allocates memory for size bytes and returns this in ptr.
- *
- * scalloc(ptr,nelem,elsize)
- *    Allocates memory for nelem elements of size elsize and returns
- *    this in ptr.
- *
- * srealloc(ptr,size)
- *    Reallocates memory for size bytes and returns this in ptr.
- *
- * sfree(ptr)
- *    Frees memory referenced by ptr.
- *
- * snew_aligned(ptr,nelem,alignment)
- *    Allocates memory for nelem elements and returns this in ptr.
- *    The allocated memory is initialized to zeroes.
- *    alignment=n will constrain ptr to be n-byte aligned.
- *    This pointer should only be freed with sfree_aligned, since
- *    it may not be the value returned by the underlying malloc.
- *
- * sfree_aligned(ptr)
- *    Frees aligned memory referenced by ptr.
- *
- ****************************************************************************
- *
- * Functions which are used by the macro's:
- *
- * extern void *save_malloc(char *name,char *file,int line,int size);
- *    Like alloc, returns a pointer to the allocated space, uses name, file
- *    and line to generate an error message when allocation failed.
- *
- * extern void *save_calloc(char *name,char *file,int line,
- *                          size_t nelem,size_t elsize);
- *    Like calloc, returns a pointer to the allocated space, uses name, file
- *    and line to generate an error message when allocation failed.
- *
- * extern void *save_realloc(char *name,char *file,int line,
- *                           void *ptr,size_t size);
- *    Like realloc, returns a pointer to the allocated space, uses name, file
- *    and line to generate an error message when allocation failed.
- *    If ptr equals NULL, malloc is called in stead of realloc, in this way
- *    it is possible to combine first and later allocations.
- *
- * extern void save_free(char *name,char *file,int line, void *ptr);
- *    Like free, uses name, file and line to generate an error message when
- *    the free failed.
- *
- * extern size_t maxavail();
- *    Returns the maximum available allocation unit, by applying a binary
- *    search on the largest block of memory available. After allocation
- *    it invokes free to restore the original state. So it is important
- *    that free can undo the effect of a malloc.
- *
- * extern size_t memavail();
- *    Returns the total of available allocation unit, by applying maxavail
- *    until no space is left, it then frees all allocated space and returns
- *    the sum of the previously allocated space. As mentioned with maxavail,
- *    it is important that free can undo the effect of a malloc.
- *
- * extern void *save_malloc_aligned(char *name,char *file,int line,size_t size,size_t alignment);
- *    Like alloc, returns a pointer to the allocated space, uses name, file
- *    and line to generate an error message when allocation failed.
- *    The returned pointer will be n-byte aligned, where n=alignment.
- *    The pointer should only be freed with a call to save_free.
- *
- * extern void save_free_aligned(char *name,char *file,int line, void *ptr);
- *    Like free, uses name, file and line to generate an error message when
- *    the free failed. This function is intended to be called for
- *    pointers allocated with save_malloc_aligned, and may not work
- *    on normal pointers.
- */
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/*! \brief
+ * \Gromacs wrapper for malloc().
+ *
+ * \param[in] name   Variable name identifying the allocation.
+ * \param[in] file   Source code file where the allocation originates from.
+ * \param[in] line   Source code line where the allocation originates from.
+ * \param[in] size   Number of bytes to allocate.
+ * \returns   Pointer to the allocated space.
+ *
+ * This should generally be called through smalloc(), not directly.
+ */
 void *save_malloc(const char *name, const char *file, int line, size_t size);
+/*! \brief
+ * \Gromacs wrapper for calloc().
+ *
+ * \param[in] name   Variable name identifying the allocation.
+ * \param[in] file   Source code file where the allocation originates from.
+ * \param[in] line   Source code line where the allocation originates from.
+ * \param[in] nelem  Number of elements to allocate.
+ * \param[in] elsize Number of bytes per element.
+ * \returns   Pointer to the allocated space.
+ *
+ * This should generally be called through snew(), not directly.
+ */
 void *save_calloc(const char *name, const char *file, int line,
                   size_t nelem, size_t elsize);
+/*! \brief
+ * \Gromacs wrapper for realloc().
+ *
+ * \param[in] name   Variable name identifying the allocation.
+ * \param[in] file   Source code file where the allocation originates from.
+ * \param[in] line   Source code line where the allocation originates from.
+ * \param[in] ptr    Pointer to the previously allocated memory (can be NULL).
+ * \param[in] nelem  Number of elements to allocate.
+ * \param[in] elsize Number of bytes per element.
+ * \returns   Pointer to the allocated space.
+ *
+ * As with realloc(), if \p ptr is NULL, memory is allocated as if malloc() was
+ * called.
+ * This should generally be called through srenew(), not directly.
+ *
+ * Note that the allocated memory is not initialized to zero.
+ */
 void *save_realloc(const char *name, const char *file, int line,
                    void *ptr, size_t nelem, size_t elsize);
+/*! \brief
+ * \Gromacs wrapper for free().
+ *
+ * \param[in] name   Variable name identifying the deallocation.
+ * \param[in] file   Source code file where the deallocation originates from.
+ * \param[in] line   Source code line where the deallocation originates from.
+ * \param[in] ptr    Pointer to the allocated memory (can be NULL).
+ *
+ * If \p ptr is NULL, does nothing.
+ * This should generally be called through sfree(), not directly.
+ * This never fails.
+ */
 void save_free(const char *name, const char *file, int line, void *ptr);
-size_t maxavail(void);
-size_t memavail(void);
 
-/* Aligned-memory counterparts */
-
+/*! \brief
+ * \Gromacs wrapper for allocating aligned memory.
+ *
+ * \param[in] name   Variable name identifying the allocation.
+ * \param[in] file   Source code file where the allocation originates from.
+ * \param[in] line   Source code line where the allocation originates from.
+ * \param[in] nelem  Number of elements to allocate.
+ * \param[in] elsize Number of bytes per element.
+ * \param[in] alignment Requested alignment in bytes.
+ * \returns   Pointer to the allocated space, aligned at `alignment`-byte
+ *     boundary.
+ *
+ * There is no macro that invokes this function.
+ *
+ * The returned pointer should only be freed with a call to save_free_aligned().
+ */
 void *save_malloc_aligned(const char *name, const char *file, int line,
-                          unsigned nelem, size_t elsize, size_t alignment);
+                          size_t nelem, size_t elsize, size_t alignment);
+/*! \brief
+ * \Gromacs wrapper for allocating zero-initialized aligned memory.
+ *
+ * \param[in] name   Variable name identifying the allocation.
+ * \param[in] file   Source code file where the allocation originates from.
+ * \param[in] line   Source code line where the allocation originates from.
+ * \param[in] nelem  Number of elements to allocate.
+ * \param[in] elsize Number of bytes per element.
+ * \param[in] alignment Requested alignment in bytes.
+ * \returns   Pointer to the allocated space, aligned at `alignment`-byte
+ *     boundary.
+ *
+ * This should generally be called through snew_aligned(), not directly.
+ *
+ * The returned pointer should only be freed with a call to save_free_aligned().
+ */
 void *save_calloc_aligned(const char *name, const char *file, int line,
-                          unsigned nelem, size_t elsize, size_t alignment);
+                          size_t nelem, size_t elsize, size_t alignment);
+/*! \brief
+ * \Gromacs wrapper for freeing aligned memory.
+ *
+ * \param[in] name   Variable name identifying the deallocation.
+ * \param[in] file   Source code file where the deallocation originates from.
+ * \param[in] line   Source code line where the deallocation originates from.
+ * \param[in] ptr    Pointer to the allocated memory (can be NULL).
+ *
+ * If \p ptr is NULL, does nothing.
+ * \p ptr should have been allocated with save_malloc_aligned() or
+ * save_calloc_aligned().
+ * This should generally be called through sfree_aligned(), not directly.
+ * This never fails.
+ */
 void save_free_aligned(const char *name, const char *file, int line, void *ptr);
 
 #ifdef __cplusplus
 }
+#endif
 
-/* Use of sizeof(T) in _snew() and _srenew() can cause obscure bugs if
- * several files define distinct data structures with identical names and
- * allocate memory for them using the macros below.  Note that by the standard,
- * such declarations cause undefined behavior.
- * The C versions work fine in such cases, but when compiled with a C++
- * compiler (and if the compiler does not inline the calls), the linker cannot
- * tell that data structures with identical names are actually different and
- * links calls to these template functions incorrectly, which can result in
- * allocation of an incorrect amount of memory if the element size is computed
- * within the function.
+#ifdef __cplusplus
+/*! \cond internal */
+/*! \name Implementation templates for C++ memory allocation macros
  *
- * This could be solved by passing the size as a parameter, but this has other
- * issues: it provokes warnings from cppcheck for some invokations.
- * Even with the size passed as a parameter, incorrect linkage will occur.
- * When converting files to C++, locally declared structs should be enclosed in
- * anonymous namespaces or some other means taken to ensure they are unique.
+ * These templates are used to implement the snew() etc. macros for C++, where
+ * an explicit cast is needed from `void *` (the return value of the allocation
+ * wrapper functions) to the thpe of \p ptr.
+ *
+ * Having these as `static` avoid some obscure bugs if several files define
+ * distinct data structures with identical names and allocate memory for them
+ * using snew().  By the C++ standard, such declarations cause undefined
+ * behavior, but can be difficult to spot in the existing C code.
+ * Without the `static` (and if the compiler does not inline the calls), the
+ * linker cannot that data structures with identical names are actually
+ * different and links calls to these template functions incorrectly, which can
+ * result in allocation of an incorrect amount of memory if the element size is
+ * computed within the function.
+ *
+ * The size cannot be passed as a parameter to the function either, since that
+ * provokes warnings from cppcheck for some invocations, where a complex
+ * expression is passed as \p ptr.
  */
-template <typename T> inline
-void _snew(const char *name, const char *file, int line,
-           T * &ptr, size_t nelem)
+/*! \{ */
+/** C++ helper for snew(). */
+template <typename T> static inline
+void gmx_snew_impl(const char *name, const char *file, int line,
+                   T * &ptr, size_t nelem)
 {
     ptr = (T *)save_calloc(name, file, line, nelem, sizeof(T));
 }
-template <typename T> inline
-void _srenew(const char *name, const char *file, int line,
-             T * &ptr, size_t nelem)
+/** C++ helper for srenew(). */
+template <typename T> static inline
+void gmx_srenew_impl(const char *name, const char *file, int line,
+                     T * &ptr, size_t nelem)
 {
     ptr = (T *)save_realloc(name, file, line, ptr, nelem, sizeof(T));
 }
-template <typename T> inline
-void _smalloc(const char *name, const char *file, int line, T * &ptr, size_t size)
+/** C++ helper for smalloc(). */
+template <typename T> static inline
+void gmx_smalloc_impl(const char *name, const char *file, int line,
+                      T * &ptr, size_t size)
 {
     ptr = (T *)save_malloc(name, file, line, size);
 }
-template <typename T> inline
-void _srealloc(const char *name, const char *file, int line, T * &ptr, size_t size)
-{
-    ptr = (T *)save_realloc(name, file, line, ptr, size, sizeof(char));
-}
-template <typename T> inline
-void _snew_aligned(const char *name, const char *file, int line,
-                   T * &ptr, size_t nelem, size_t alignment)
+/** C++ helper for snew_aligned(). */
+template <typename T> static inline
+void gmx_snew_aligned_impl(const char *name, const char *file, int line,
+                           T * &ptr, size_t nelem, size_t alignment)
 {
     ptr = (T *)save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment);
 }
-
-#define snew(ptr, nelem) _snew(#ptr, __FILE__, __LINE__, (ptr), (nelem))
-#define srenew(ptr, nelem) _srenew(#ptr, __FILE__, __LINE__, (ptr), (nelem))
-#define smalloc(ptr, size) _smalloc(#ptr, __FILE__, __LINE__, (ptr), (size))
-#define srealloc(ptr, size) _srealloc(#ptr, __FILE__, __LINE__, (ptr), (size))
-#define snew_aligned(ptr, nelem, alignment) _snew_aligned(#ptr, __FILE__, __LINE__, (ptr), (nelem), alignment)
-
-#else /* __cplusplus */
-
-/* These macros work in C, not in C++ */
-#define snew(ptr, nelem) (ptr) = save_calloc(#ptr, __FILE__, __LINE__, \
-                                             (nelem), sizeof(*(ptr)))
-#define srenew(ptr, nelem) (ptr) = save_realloc(#ptr, __FILE__, __LINE__, \
-                                                (ptr), (nelem), sizeof(*(ptr)))
-#define smalloc(ptr, size) (ptr) = save_malloc(#ptr, __FILE__, __LINE__, size)
-#define scalloc(ptr, nelem, elsize) \
-    (ptr) = save_calloc(#ptr, __FILE__, __LINE__, nelem, elsize)
-#define srealloc(ptr, size) (ptr) = save_realloc(#ptr, __FILE__, __LINE__, \
-                                                 (ptr), size, 1)
-#define snew_aligned(ptr, nelem, alignment) (ptr) = save_calloc_aligned(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)), alignment)
+/*! \] */
+/*! \endcond */
 #endif /* __cplusplus */
 
-#define sfree(ptr) save_free(#ptr, __FILE__, __LINE__, (ptr))
-
-/* call this ONLY with a pointer obtained through snew_aligned or
-   smalloc_aligned: */
-#define sfree_aligned(ptr) save_free_aligned(#ptr, __FILE__, __LINE__, (ptr))
-
+/*! \def snew
+ * \brief
+ * Allocates memory for a given number of elements.
+ *
+ * \param[out] ptr   Pointer to allocate.
+ * \param[in]  nelem Number of elements to allocate.
+ *
+ * Allocates memory for \p nelem elements of type \p *ptr and sets this to
+ * \p ptr.  The allocated memory is initialized to zeros.
+ *
+ * \hideinitializer
+ */
+/*! \def srenew
+ * \brief
+ * Reallocates memory for a given number of elements.
+ *
+ * \param[in,out] ptr   Pointer to allocate/reallocate.
+ * \param[in]     nelem Number of elements to allocate.
+ *
+ * (Re)allocates memory for \p ptr such that it can hold \p nelem elements of
+ * type \p *ptr, and sets the new pointer to \p ptr.
+ * If \p ptr is `NULL`, memory is allocated as if it was new.
+ * If \p nelem is zero, \p ptr is freed (if not `NULL`).
+ * Note that the allocated memory is not initialized, unlike with snew().
+ *
+ * \hideinitializer
+ */
+/*! \def smalloc
+ * \brief
+ * Allocates memory for a given number of bytes.
+ *
+ * \param[out] ptr  Pointer to allocate.
+ * \param[in]  size Number of bytes to allocate.
+ *
+ * Allocates memory for \p size bytes and sets this to \p ptr.
+ * The allocated memory is not initialized.
+ *
+ * \hideinitializer
+ */
+/*! \def snew_aligned
+ * \brief
+ * Allocates aligned memory for a given number of elements.
+ *
+ * \param[out] ptr       Pointer to allocate.
+ * \param[in]  nelem     Number of elements to allocate.
+ * \param[in]  alignment Requested alignment in bytes.
+ *
+ * Allocates memory for \p nelem elements of type \p *ptr and sets this to
+ * \p ptr.  The returned pointer is `alignment`-byte aligned.
+ * The allocated memory is initialized to zeros.
+ *
+ * The returned pointer should only be freed with sfree_aligned().
+ *
+ * \hideinitializer
+ */
 #ifdef __cplusplus
 
-#include "../utility/common.h"
+/* C++ implementation */
+#define snew(ptr, nelem) \
+    gmx_snew_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem))
+#define srenew(ptr, nelem) \
+    gmx_srenew_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem))
+#define smalloc(ptr, size) \
+    gmx_smalloc_impl(#ptr, __FILE__, __LINE__, (ptr), (size))
+#define snew_aligned(ptr, nelem, alignment) \
+    gmx_snew_aligned_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem), alignment)
 
-namespace gmx
-{
+#else
+
+/* C implementation */
+#define snew(ptr, nelem) \
+    (ptr) = save_calloc(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)))
+#define srenew(ptr, nelem) \
+    (ptr) = save_realloc(#ptr, __FILE__, __LINE__, (ptr), (nelem), sizeof(*(ptr)))
+#define smalloc(ptr, size) \
+    (ptr) = save_malloc(#ptr, __FILE__, __LINE__, size)
+#define snew_aligned(ptr, nelem, alignment) \
+    (ptr) = save_calloc_aligned(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)), alignment)
+
+#endif
 
 /*! \brief
- * Stripped-down version of scoped_ptr that uses sfree().
+ * Frees memory referenced by \p ptr.
  *
- * Currently only implements constructor from a pointer value and destructor;
- * other operations can be added if they become necessary.
+ * \p ptr is allowed to be NULL, in which case nothing is done.
  *
- * This is currently in smalloc.h, as this header also declares sfree().
- * If more flexible guards/smart pointers are needed for C pointers, this class
- * should be moved to a separate header under src/gromacs/utility/ together
- * with that more flexible implementation.
- * Currently, boost::shared_ptr is used in a few locations, but is not suitable
- * for all cases.  A scoped_ptr with deleter support would be a general enough
- * implementation for all uses.  C++11 unique_ptr has this, but for non-C++11
- * suppoer we need something else.
- *
- * Methods in this class do not throw.
+ * \hideinitializer
  */
-class scoped_ptr_sfree
-{
-    public:
-        /*! \brief
-         * Initializes a scoped_ptr that frees \p ptr on scope exit.
-         *
-         * \param[in] ptr  Pointer to use for initialization.
-         */
-        explicit scoped_ptr_sfree(void *ptr) : ptr_(ptr) {}
-        //! Frees the pointer passed to the constructor.
-        ~scoped_ptr_sfree() { sfree(ptr_); }
+#define sfree(ptr) save_free(#ptr, __FILE__, __LINE__, (ptr))
 
-    private:
-        void                   *ptr_;
+/*! \brief
+ * Frees aligned memory referenced by \p ptr.
+ *
+ * This must only be called with a pointer obtained through snew_aligned().
+ * \p ptr is allowed to be NULL, in which case nothing is done.
+ *
+ * \hideinitializer
+ */
+#define sfree_aligned(ptr) save_free_aligned(#ptr, __FILE__, __LINE__, (ptr))
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(scoped_ptr_sfree);
-};
-
-}      // namespace gmx
-#endif /* __cplusplus */
-
-#endif /* _smalloc_h */
+#endif
