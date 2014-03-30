@@ -243,46 +243,6 @@ void save_free(const char gmx_unused *name, const char gmx_unused *file, int gmx
     }
 }
 
-size_t maxavail(void)
-{
-    char  *ptr;
-    size_t low, high, size;
-
-    low  = 0;
-    high = 256e6;
-    while ((high-low) > 4)
-    {
-        size = (high+low)/2;
-        if ((ptr = (char *)malloc((size_t)size)) == NULL)
-        {
-            high = size;
-        }
-        else
-        {
-            free(ptr);
-            low = size;
-        }
-    }
-    return low;
-}
-
-size_t memavail(void)
-{
-    char  *ptr;
-    size_t size;
-
-    size = maxavail();
-    if (size != 0)
-    {
-        if ((ptr = (char *)malloc((size_t)size)) != NULL)
-        {
-            size += memavail();
-            free(ptr);
-        }
-    }
-    return size;
-}
-
 /* If we don't have useful routines for allocating aligned memory,
  * then we have to use the old-style GROMACS approach bitwise-ANDing
  * pointers to ensure alignment. We store the pointer to the originally
@@ -301,7 +261,7 @@ size_t memavail(void)
  * freeing memory that needed to be adjusted to achieve
  * the necessary alignment. */
 void *save_malloc_aligned(const char *name, const char *file, int line,
-                          unsigned nelem, size_t elsize, size_t alignment)
+                          size_t nelem, size_t elsize, size_t alignment)
 {
     void   **aligned  = NULL;
     void    *malloced = NULL;
@@ -366,7 +326,7 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
 }
 
 void *save_calloc_aligned(const char *name, const char *file, int line,
-                          unsigned nelem, size_t elsize, size_t alignment)
+                          size_t nelem, size_t elsize, size_t alignment)
 {
     void *aligned = save_malloc_aligned(name, file, line, nelem, elsize, alignment);
     if (aligned != NULL)

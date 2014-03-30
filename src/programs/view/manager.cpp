@@ -41,6 +41,10 @@
 #include <ctype.h>
 #include <string.h>
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h> // for usleep()
+#endif
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"

@@ -234,7 +234,7 @@ static void lambda_components_add(lambda_components_t *lc,
     while (lc->N + 1 > lc->Nalloc)
     {
         lc->Nalloc = (lc->Nalloc == 0) ? 2 : 2*lc->Nalloc;
-        srealloc( lc->names, lc->Nalloc );
+        srenew(lc->names, lc->Nalloc);
     }
     snew(lc->names[lc->N], name_length+1);
     strncpy(lc->names[lc->N], name, name_length);

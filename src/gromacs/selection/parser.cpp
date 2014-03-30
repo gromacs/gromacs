@@ -85,7 +85,7 @@
  *
  * \ingroup module_selection
  */
-#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/utility/scoped_ptr_sfree.h"
 
 #include "parser_internal.h"
 

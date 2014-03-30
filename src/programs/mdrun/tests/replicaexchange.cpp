@@ -44,6 +44,8 @@
 
 #include <math.h>
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/network.h"
