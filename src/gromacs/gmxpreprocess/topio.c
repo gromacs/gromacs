@@ -74,13 +74,8 @@
 #include "genborn.h"
 #include "gromacs/math/utilities.h"
 
-#define CPPMARK     '#' /* mark from cpp			*/
-#define OPENDIR     '[' /* starting sign for directive		*/
-#define CLOSEDIR    ']' /* ending sign for directive		*/
-
-#define PM()  \
-    printf("line: %d, maxavail: %d\n", __LINE__, maxavail()); \
-    fflush(stdout)
+#define OPENDIR     '[' /* starting sign for directive */
+#define CLOSEDIR    ']' /* ending sign for directive   */
 
 static void free_nbparam(t_nbparam **param, int nr)
 {
