@@ -49,8 +49,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trxio.h"
 #include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -59,6 +57,8 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/lifetime.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
@@ -68,6 +68,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/scoped_ptr_sfree.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
