@@ -69,6 +69,7 @@
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/scoped_ptr_sfree.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "nsc.h"
