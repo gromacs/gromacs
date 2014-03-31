@@ -61,6 +61,7 @@
 #include "perf_est.h"
 #include "inputrec.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/math/utilities.h"
 
 
 /* Enum for situations that can occur during log file parsing, the
@@ -1170,22 +1171,6 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
 }
 
 
-/* Returns the largest common factor of n1 and n2 */
-static int largest_common_factor(int n1, int n2)
-{
-    int factor, nmax;
-
-    nmax = min(n1, n2);
-    for (factor = nmax; factor > 0; factor--)
-    {
-        if (0 == (n1 % factor) && 0 == (n2 % factor) )
-        {
-            return(factor);
-        }
-    }
-    return 0; /* one for the compiler */
-}
-
 enum {
     eNpmeAuto, eNpmeAll, eNpmeReduced, eNpmeSubset, eNpmeNr
 };
@@ -1272,7 +1257,7 @@ static void make_npme_list(
                 gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");
                 break;
         }
-        if (largest_common_factor(npp, npme) >= min_factor)
+        if (gmx_greatest_common_divisor(npp, npme) >= min_factor)
         {
             (*nPMEnodes)[nlist] = npme;
             nlist++;
