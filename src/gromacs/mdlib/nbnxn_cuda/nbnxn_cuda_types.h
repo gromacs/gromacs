@@ -46,10 +46,13 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
+#include <cuda.h>
+
 #include "types/interaction_const.h"
 #include "types/nbnxn_pairlist.h"
 #include "types/nbnxn_cuda_types_ext.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
+#include "../nbnxn_consts.h"
 
 /* CUDA versions from 5.0 above support texture objects. */
 #if CUDA_VERSION >= 5000
@@ -58,6 +61,10 @@
 /** This typedef allows us to define only one version of struct cu_nbparam */
 typedef int cudaTextureObject_t;
 #endif /* CUDA_VERSION */
+
+/* Convenience defines */
+#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
 #ifdef __cplusplus
 extern "C" {
