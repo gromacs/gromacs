@@ -48,7 +48,17 @@
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/timing/gpu_timing.h"
+
+
+/* TODO: consider moving this to kernel_utils */
+/* Convenience defines */
+/*! \brief number of clusters per supercluster. */
+#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+/*! \brief cluster size = number of atoms per cluster. */
+#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
 #ifdef __cplusplus
 extern "C" {
