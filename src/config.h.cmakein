@@ -367,6 +367,8 @@
 /* Define if we have zlib */
 #cmakedefine HAVE_ZLIB
 
+#cmakedefine GMX_CUDA_KERNELS_SINGLE_COMPILATION_UNIT
+
 /*! \endcond */
 
 #endif
