@@ -426,10 +426,10 @@ void gmx_init_intranode_counters(t_commrec *cr)
                 rank_intranode++;
             }
         }
-        if ((cr->duty & DUTY_PP) && num_pp[i] == mynum)
+        if (num_pp[i] == mynum)
         {
             nrank_pp_intranode++;
-            if (i < rank_world)
+            if ((cr->duty & DUTY_PP) && i < rank_world)
             {
                 rank_pp_intranode++;
             }
