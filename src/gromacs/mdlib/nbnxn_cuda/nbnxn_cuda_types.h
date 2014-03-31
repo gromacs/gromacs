@@ -50,12 +50,60 @@
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/timing/gpu_timing.h"
 
 #ifndef HAVE_CUDA_TEXOBJ_SUPPORT
 /** This typedef allows us to define only one version of struct cu_nbparam */
 typedef int cudaTextureObject_t;
 #endif
+
+/* TODO: consider moving this to kernel_utils */
+/* Convenience defines */
+/*! \brief number of clusters per supercluster. */
+#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+/*! \brief cluster size = number of atoms per cluster. */
+#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+
+/**@{*/
+/*! \brief Compute capability dependent definition of kernel launch configuration parameters.
+ *
+ * NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
+ * warp-pairs per block.
+ *
+ * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
+ * blocks/multiproc, is the fastest even though this setup gives low occupancy.
+ * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
+ * per multiprocessor is reduced proportionally to get the original number of max
+ * threads in flight (and slightly lower performance).
+ * - On CC 3.7 there are enough registers to double the number of threads; using
+ * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
+ * with low-register use).
+ *
+ * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
+ * shuffle-based reduction, hence CC >= 3.0.
+ */
+
+/* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
+ * determines the number of threads per block and it is chosen such that
+ * 16 blocks/multiprocessor can be kept in flight.
+ * - CC 2.x, 3.0, 3.5, 5.x: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
+ */
+#if __CUDA_ARCH__ == 370
+#define NTHREAD_Z           (2)
+#define MIN_BLOCKS_PER_MP   (16)
+#else
+#define NTHREAD_Z           (1)
+#define MIN_BLOCKS_PER_MP   (16)
+#endif
+#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
+
+#if (defined __CUDA_ARCH__) && (__CUDA_ARCH__ <= 210) && (NTHREAD_Z > 1)
+#error NTHREAD_Z > 1 will give incorrect results on CC 2.x
+#endif
+/**@}*/
 
 #ifdef __cplusplus
 extern "C" {
