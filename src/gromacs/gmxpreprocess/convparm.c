@@ -458,8 +458,8 @@ assign_param(t_functype ftype, t_iparams *newparam,
 }
 
 int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
-                 real forceparams[MAXFORCEPARAM],int comb,real reppow,
-                 int start,gmx_bool bAppend)
+                 real forceparams[MAXFORCEPARAM], int comb, real reppow,
+                 int start, gmx_bool bAppend)
 {
     t_iparams newparam;
     int       type;

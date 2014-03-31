@@ -534,22 +534,23 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
     int    i, atomnumber, len;
     size_t k;
     char   anm[6], anm_copy[6], *ptr;
-    char   nc='\0';
+    char   nc = '\0';
     real   eval;
-    
-    if (TRUE || !atoms->pdbinfo) {
+
+    if (TRUE || !atoms->pdbinfo)
+    {
         gmx_incons("Trying to deduce atomnumbers when no pdb information is present");
     }
-    for (i = 0; (i < atoms->nr); i++) 
+    for (i = 0; (i < atoms->nr); i++)
     {
         strcpy(anm, atoms->pdbinfo[i].atomnm);
         len = strlen(anm);
         if (len == 0)
         {
-            strcpy(anm,*atoms->atomname[i]);
+            strcpy(anm, *atoms->atomname[i]);
             len = strlen(anm);
         }
-        strcpy(anm_copy,anm);
+        strcpy(anm_copy, anm);
         atomnumber = NOTSET;
         if ((anm[0] != ' ') && ((len <= 2) || ((len > 2) && !isdigit(anm[2]))))
         {
@@ -558,7 +559,7 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
             {
                 atomnumber = gmx_nint(eval);
             }
-            else 
+            else
             {
                 anm_copy[1] = nc;
                 if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
@@ -586,7 +587,7 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
         strncpy(atoms->atom[i].elem, ptr == NULL ? "" : ptr, 4);
         if (debug)
         {
-            fprintf(debug,"Atomnumber for atom '%s' is %d\n", anm, atomnumber);
+            fprintf(debug, "Atomnumber for atom '%s' is %d\n", anm, atomnumber);
         }
     }
 }

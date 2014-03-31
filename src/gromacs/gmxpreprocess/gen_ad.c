@@ -418,7 +418,9 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
     if (bKeepAllGeneratedDihedrals)
     {
         if (NULL != debug)
-            fprintf(debug,"Keeping all generated dihedrals\n");
+        {
+            fprintf(debug, "Keeping all generated dihedrals\n");
+        }
         nind = *ndih;
         for (i = 0; i < nind; i++)
         {

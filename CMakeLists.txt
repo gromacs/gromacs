@@ -468,18 +468,6 @@ if (GMX_ALEXANDRIA)
   endif(OPENBABEL2_FOUND)
 endif (GMX_ALEXANDRIA)
 
-option(GMX_GSL "Add support for gsl" OFF)
-if (GMX_GSL)
-  find_package(GSL)
-  set(PKG_GSL "")
-  if(GSL_FOUND)
-    include_directories(${GSL_INCLUDE_DIR})
-    set(PKG_GSL gsl)
-    set(HAVE_LIBGSL 1)
-  endif()
-endif()
->>>>>>> master
-
 option(GMX_X11 "Use X window system" OFF)
 if (GMX_X11)
     find_package(X11)

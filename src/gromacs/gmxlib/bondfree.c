@@ -212,20 +212,21 @@ real morse_bonds(int nbonds,
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                  int gmx_unused *global_atom_index)
 {
-    const real one=1.0;
-    const real two=2.0;
-    real  dr,dr2,temp,omtemp,cbomtemp,fbond,vbond,fij,vtot;
-    real  b0,be,cb,b0A,beA,cbA,b0B,beB,cbB,L1;
-    rvec  dx;
-    int   i,m,ki,type,ai,aj;
-    ivec  dt;
-    
+    const real one = 1.0;
+    const real two = 2.0;
+    real       dr, dr2, temp, omtemp, cbomtemp, fbond, vbond, fij, vtot;
+    real       b0, be, cb, b0A, beA, cbA, b0B, beB, cbB, L1;
+    rvec       dx;
+    int        i, m, ki, type, ai, aj;
+    ivec       dt;
+
     vtot = 0.0;
-    for(i=0; (i<nbonds); ) {
+    for (i = 0; (i < nbonds); )
+    {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
-        
+
         b0A   = forceparams[type].morse.b0A;
         beA   = forceparams[type].morse.betaA;
         cbA   = forceparams[type].morse.cbA;
@@ -233,46 +234,48 @@ real morse_bonds(int nbonds,
         b0B   = forceparams[type].morse.b0B;
         beB   = forceparams[type].morse.betaB;
         cbB   = forceparams[type].morse.cbB;
-        
-        L1 = one-lambda;                      /* 1 */
-        b0 = L1*b0A + lambda*b0B;             /* 3 */
-        be = L1*beA + lambda*beB;             /* 3 */
-        cb = L1*cbA + lambda*cbB;             /* 3 */
-        
-        ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);            /*   3          */
-        dr2  = iprod(dx,dx);                            /*   5          */
-        dr   = dr2*gmx_invsqrt(dr2);                        /*  10          */
-        temp = exp(-be*(dr-b0));                        /*  12          */
-        
+
+        L1 = one-lambda;                            /* 1 */
+        b0 = L1*b0A + lambda*b0B;                   /* 3 */
+        be = L1*beA + lambda*beB;                   /* 3 */
+        cb = L1*cbA + lambda*cbB;                   /* 3 */
+
+        ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3          */
+        dr2  = iprod(dx, dx);                       /*   5          */
+        dr   = dr2*gmx_invsqrt(dr2);                /*  10          */
+        temp = exp(-be*(dr-b0));                    /*  12          */
+
         if (temp == one)
         {
-            /* bonds are constrained. This may _not_ include bond constraints 
-               if they are lambda dependent. 
+            /* bonds are constrained. This may _not_ include bond constraints
+               if they are lambda dependent.
                The bond energy should still be included in the total! */
-            vtot -= cb;
+            vtot       -= cb;
             *dvdlambda += cbB-cbA;
             continue;
         }
-        
-        omtemp   = one-temp;                               /*   1          */
-        cbomtemp = cb*omtemp;                              /*   1          */
-        vbond    = cbomtemp*omtemp;                        /*   1          */
-        fbond    = -two*be*temp*cbomtemp*gmx_invsqrt(dr2); /*   9          */
-        vtot     += vbond-cb;                              /*   2          */
+
+        omtemp    = one-temp;                                                                                        /*   1          */
+        cbomtemp  = cb*omtemp;                                                                                       /*   1          */
+        vbond     = cbomtemp*omtemp;                                                                                 /*   1          */
+        fbond     = -two*be*temp*cbomtemp*gmx_invsqrt(dr2);                                                          /*   9          */
+        vtot     += vbond-cb;                                                                                        /*   2          */
 
         *dvdlambda += (cbB - cbA) * omtemp * omtemp - (2-2*omtemp)*omtemp * cb * ((b0B-b0A)*be - (beB-beA)*(dr-b0)); /* 15 */
-        
-        if (g) {
-            ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+
+        if (g)
+        {
+            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        
-        for (m=0; (m<DIM); m++) {                          /*  15          */
-            fij=fbond*dx[m];
-            f[ai][m]+=fij;
-            f[aj][m]-=fij;
-            fshift[ki][m]+=fij;
-            fshift[CENTRAL][m]-=fij;
+
+        for (m = 0; (m < DIM); m++)                            /*  15          */
+        {
+            fij                 = fbond*dx[m];
+            f[ai][m]           += fij;
+            f[aj][m]           -= fij;
+            fshift[ki][m]      += fij;
+            fshift[CENTRAL][m] -= fij;
         }
     }                                           /*  83 TOTAL    */
     return vtot;

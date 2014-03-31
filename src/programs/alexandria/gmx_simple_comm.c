@@ -30,9 +30,7 @@
 #include <mpi.h>
 #endif
 
-#include "typedefs.h"
-#include "smalloc.h"
-#include "network.h"
+#include "gromacs/legacyheaders/smalloc.h"
 #include "gmx_simple_comm.h"
 	
 void gmx_send(const t_commrec *cr,int dest,void *buf,int bufsize)

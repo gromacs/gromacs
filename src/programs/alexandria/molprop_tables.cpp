@@ -47,6 +47,7 @@
 #include "molprop_util.hpp"
 #include "molprop_tables.hpp"
 #include "composition.hpp"
+#include "split.hpp"
 
 typedef struct 
 {
@@ -848,13 +849,13 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,
         
             snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
                      ptype,
-                     (nexp > 0)     ? gmx_itoa(nexp)     : "",
-                     (nqm > 0)      ? gmx_itoa(nqm)      : "",
-                     (alexandria_pol > 0)  ? gmx_ftoa(alexandria_pol)  : "",
-                     (sig_pol > 0)  ? gmx_ftoa(sig_pol) : "-",
-                     (ahc > 0)         ? gmx_ftoa(ahc)         : "",
-                     (ahp > 0)         ? gmx_ftoa(ahp)         : "",
-                     (bos_pol > 0)     ? gmx_ftoa(bos_pol)     : "");
+                     (nexp > 0)     ? gmx_itoa(nexp).c_str()     : "",
+                     (nqm > 0)      ? gmx_itoa(nqm).c_str()      : "",
+                     (alexandria_pol > 0)  ? gmx_ftoa(alexandria_pol).c_str()  : "",
+                     (sig_pol > 0)  ? gmx_ftoa(sig_pol).c_str() : "-",
+                     (ahc > 0)         ? gmx_ftoa(ahc).c_str()         : "",
+                     (ahp > 0)         ? gmx_ftoa(ahp).c_str()         : "",
+                     (bos_pol > 0)     ? gmx_ftoa(bos_pol).c_str()     : "");
             lt.printLine(longbuf);
         }
     }

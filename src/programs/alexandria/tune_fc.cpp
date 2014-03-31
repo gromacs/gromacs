@@ -484,9 +484,8 @@ void OptParam::List2Opt()
             {
                 _bad[i][j].param[p] = _param[n++];
                 strcat(buf, " ");
-                char *ptr = gmx_ftoa(_bad[i][j].param[p]);
+                const char *ptr = gmx_ftoa(_bad[i][j].param[p]).c_str();
                 strcat(buf, ptr);
-                sfree(ptr);
             }
             switch (i)
             {

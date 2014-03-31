@@ -26,11 +26,12 @@
 #include <string.h>
 #include <math.h>
 #include <string.h>
-#include "network.h"
-#include "string2.h"
-#include "smalloc.h"
-#include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/legacyheaders/string2.h"
 #include "poldata.hpp"
 #include "gmx_simple_comm.h"
 #include "split.hpp"

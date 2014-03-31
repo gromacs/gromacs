@@ -24,7 +24,9 @@
 #ifndef GMX_SIMPLE_COMM_H
 #define GMX_SIMPLE_COMM_H
 
-#include "network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
 
 #ifdef __cplusplus
 extern "C"

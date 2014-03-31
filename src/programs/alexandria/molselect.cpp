@@ -21,6 +21,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <string.h>
 #include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"

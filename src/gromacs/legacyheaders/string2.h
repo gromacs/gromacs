@@ -199,12 +199,6 @@ gmx_string_hash_func(const char *s, unsigned int hash_init);
 char *wrap_lines(const char *buf, int line_width, int indent,
                  gmx_bool bIndentFirst);
 
-/** return new pointer to a string with f printed. Pointer can be discarded after use. */ 
-extern char *gmx_ftoa(double f);
- 
-/** return new pointer to a string with f printed. Pointer can be discarded after use. */  
-extern char *gmx_itoa(int f);
-
 /*! \brief
  * Convert a string to gmx_int64_t.
  *

@@ -37,6 +37,7 @@
 #include "xml_util.h"
 #include "molprop.hpp"
 #include "molprop_xml.hpp"
+#include "split.hpp"
 
 extern int xmlDoValidityCheckingDefaultValue;
 	
@@ -495,18 +496,17 @@ static void add_exper_properties(xmlNodePtr exp,
                                  alexandria::Experiment &exper)
 {
     xmlNodePtr child;
-    char *ptr;
+    const char *ptr;
     double value,error,x,y,z,xx,yy,zz,xy,xz,yz;
     
     for(alexandria::MolecularEnergyIterator me_it = exper.BeginEnergy(); 
         (me_it < exper.EndEnergy()); me_it++) {
         me_it->Get(&value,&error);
       
-        ptr = gmx_ftoa(value);
+        ptr = gmx_ftoa(value).c_str();
         child = add_xml_child_val(exp,exml_names[exmlENERGY],ptr);
         add_xml_string(child,exml_names[exmlTYPE],me_it->GetType());
         add_xml_string(child,exml_names[exmlUNIT],me_it->GetUnit());
-        sfree(ptr);
     }
     
     for(alexandria::MolecularDipPolarIterator mdp_it = exper.BeginDipole();
@@ -517,23 +517,18 @@ static void add_exper_properties(xmlNodePtr exp,
         child = add_xml_child(exp,exml_names[exmlDIPOLE]);
         add_xml_string(child,exml_names[exmlTYPE],mdp_it->GetType());
         add_xml_string(child,exml_names[exmlUNIT],mdp_it->GetUnit());
-        ptr = gmx_ftoa(value);
+        ptr = gmx_ftoa(value).c_str();
         add_xml_child_val(child,exml_names[exmlAVERAGE],ptr);
-        sfree(ptr);
-        ptr = gmx_ftoa(error);
+        ptr = gmx_ftoa(error).c_str();
         add_xml_child_val(child,exml_names[exmlERROR],ptr);
-        sfree(ptr);
         if ((x != 0) || (y != 0) || (z != 0)) 
         {
-            ptr = gmx_ftoa(x);
+            ptr = gmx_ftoa(x).c_str();
             add_xml_child_val(child,exml_names[exmlX],ptr);
-            sfree(ptr);
-            ptr = gmx_ftoa(y);
+            ptr = gmx_ftoa(y).c_str();
             add_xml_child_val(child,exml_names[exmlY],ptr);
-            sfree(ptr);
-            ptr = gmx_ftoa(z);
+            ptr = gmx_ftoa(z).c_str();
             add_xml_child_val(child,exml_names[exmlZ],ptr);
-            sfree(ptr);
         }   
     }
     
@@ -543,23 +538,18 @@ static void add_exper_properties(xmlNodePtr exp,
         child = add_xml_child(exp,exml_names[exmlPOLARIZABILITY]);
         add_xml_string(child,exml_names[exmlTYPE],mdp_it->GetType());
         add_xml_string(child,exml_names[exmlUNIT],mdp_it->GetUnit());
-        ptr = gmx_ftoa(value);
+        ptr = gmx_ftoa(value).c_str();
         add_xml_child_val(child,exml_names[exmlAVERAGE],ptr);
-        sfree(ptr);
-        ptr = gmx_ftoa(error);
+        ptr = gmx_ftoa(error).c_str();
         add_xml_child_val(child,exml_names[exmlERROR],ptr);
-        sfree(ptr);
         if ((x != 0) || (y != 0) || (z != 0)) 
         {
-            ptr = gmx_ftoa(x);
+            ptr = gmx_ftoa(x).c_str();
             add_xml_child_val(child,exml_names[exmlXX],ptr);
-            sfree(ptr);
-            ptr = gmx_ftoa(y);
+            ptr = gmx_ftoa(y).c_str();
             add_xml_child_val(child,exml_names[exmlYY],ptr);
-            sfree(ptr);
-            ptr = gmx_ftoa(z);
+            ptr = gmx_ftoa(z).c_str();
             add_xml_child_val(child,exml_names[exmlZZ],ptr);
-            sfree(ptr);
         }   
     }
     
@@ -570,24 +560,18 @@ static void add_exper_properties(xmlNodePtr exp,
         child = add_xml_child(exp,exml_names[exmlQUADRUPOLE]);
         add_xml_string(child,exml_names[exmlTYPE],mq_it->GetType());
         add_xml_string(child,exml_names[exmlUNIT],mq_it->GetUnit());
-        ptr = gmx_ftoa(xx);
+        ptr = gmx_ftoa(xx).c_str();
         add_xml_child_val(child,exml_names[exmlXX],ptr);
-        sfree(ptr);
-        ptr = gmx_ftoa(yy);
+        ptr = gmx_ftoa(yy).c_str();
         add_xml_child_val(child,exml_names[exmlYY],ptr);
-        sfree(ptr);
-        ptr = gmx_ftoa(zz);
+        ptr = gmx_ftoa(zz).c_str();
         add_xml_child_val(child,exml_names[exmlZZ],ptr);
-        sfree(ptr);
-        ptr = gmx_ftoa(xy);
+        ptr = gmx_ftoa(xy).c_str();
         add_xml_child_val(child,exml_names[exmlXY],ptr);
-        sfree(ptr);
-        ptr = gmx_ftoa(xz);
+        ptr = gmx_ftoa(xz).c_str();
         add_xml_child_val(child,exml_names[exmlXZ],ptr);
-        sfree(ptr);
-        ptr = gmx_ftoa(yz);
+        ptr = gmx_ftoa(yz).c_str();
         add_xml_child_val(child,exml_names[exmlYZ],ptr);
-        sfree(ptr);
     }
 }
 
@@ -609,18 +593,14 @@ static void add_calc_properties(xmlNodePtr exp,
         add_xml_int(child,exml_names[exmlESPID],espid);
         if ((x != 0) || (y != 0) || (z != 0) || (V != 0)) 
         {
-            char *ptr = gmx_ftoa(x);
+            const char *ptr = gmx_ftoa(x).c_str();
             add_xml_child_val(child,exml_names[exmlX],ptr);
-            sfree(ptr);
-            ptr = gmx_ftoa(y);
+            ptr = gmx_ftoa(y).c_str();
             add_xml_child_val(child,exml_names[exmlY],ptr);
-            sfree(ptr);
-            ptr = gmx_ftoa(z);
+            ptr = gmx_ftoa(z).c_str();
             add_xml_child_val(child,exml_names[exmlZ],ptr);
-            sfree(ptr);
-            ptr = gmx_ftoa(V);
+            ptr = gmx_ftoa(V).c_str();
             add_xml_child_val(child,exml_names[exmlV],ptr);
-            sfree(ptr);
         }
         sfree(x_unit);
         sfree(v_unit);
@@ -687,25 +667,21 @@ static void add_xml_molprop(xmlNodePtr parent,
             double x,y,z;
             ca_it->GetCoords(&x,&y,&z);
             
-            char *p = gmx_ftoa(x);
+            const char *p = gmx_ftoa(x).c_str();
             xmlNodePtr baby = add_xml_child_val(grandchild,exml_names[exmlX],p);
-            sfree(p);
             add_xml_string(baby,exml_names[exmlUNIT],ca_it->GetUnit());
-            p = gmx_ftoa(y);
+            p = gmx_ftoa(y).c_str();
             baby = add_xml_child_val(grandchild,exml_names[exmlY],p);
-            sfree(p);
             add_xml_string(baby,exml_names[exmlUNIT],ca_it->GetUnit());
-            p = gmx_ftoa(z);
+            p = gmx_ftoa(z).c_str();
             baby = add_xml_child_val(grandchild,exml_names[exmlZ],p);
-            sfree(p);
             add_xml_string(baby,exml_names[exmlUNIT],ca_it->GetUnit());
             
             for(alexandria::AtomicChargeIterator q_it=ca_it->BeginQ(); 
                 (q_it<ca_it->EndQ()); q_it++)
             {
-                p = gmx_ftoa(q_it->GetQ());
+                p = gmx_ftoa(q_it->GetQ()).c_str();
                 xmlNodePtr atomptr = add_xml_child_val(grandchild,exml_names[exmlQ],p);
-                sfree(p);
                 add_xml_string(atomptr,exml_names[exmlTYPE],q_it->GetType());
                 add_xml_string(atomptr,exml_names[exmlUNIT],q_it->GetUnit());
             }

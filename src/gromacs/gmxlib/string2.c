@@ -627,27 +627,3 @@ char *gmx_strsep(char **stringp, const char *delim)
     return ret;
 }
 
-char *gmx_ftoa(double f)
-{
-    char a[32];
-  
-    if (fabs(f) < 100)
-    {
-        sprintf(a,"%.3f",f);
-    }
-    else
-    {
-        sprintf(a,"%g",f);
-    }
-    return strdup(a);
-}
-
-char *gmx_itoa(int f)
-{
-    char a[32];
-  
-    sprintf(a,"%d",f);
-    
-    return strdup(a);
-}
-
