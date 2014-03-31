@@ -22,7 +22,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "mtop_util.h"
-#include "string2.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -31,6 +30,7 @@
 #include "mdatoms.h"
 #include "force.h"
 #include "shellfc.h"
+#include "split.hpp"
 
 // Alexandria stuff
 #include "poldata_xml.hpp"
@@ -38,7 +38,7 @@
 #include "gmx_simple_comm.h"
 #include "moldip.hpp"
 
-static void add_index_count(t_index_count *ic, char *name, gmx_bool bConst)
+static void add_index_count(t_index_count *ic, const char *name, gmx_bool bConst)
 {
     int i;
 
@@ -264,6 +264,21 @@ static int clean_index_count(t_index_count *ic, int minimum_data, FILE *fp)
     return nremove;
 }
 
+static void update_index_count_bool(t_index_count *ic, gmx_poldata_t pd,
+                                    const char *string, gmx_bool bSet,
+                                    gmx_bool bAllowZero, ChargeGenerationModel iModel)
+{
+    std::vector<std::string> ptr = split(string, ' ');
+    for (std::vector<std::string>::iterator k = ptr.begin(); 
+         (k < ptr.end()); ++k)
+    {
+        if (gmx_poldata_have_eem_support(pd, iModel, k->c_str(), bAllowZero))
+        {
+            add_index_count(ic, k->c_str(), bSet);
+        }
+    }
+}
+
 static int check_data_sufficiency(FILE *fp,
                                   std::vector<alexandria::MyMol> mol,
                                   int minimum_data, gmx_poldata_t pd,
@@ -276,32 +291,18 @@ static int check_data_sufficiency(FILE *fp,
     int                     j, nremove, nsupported;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
-    char                  **ptr, *myname;
+    char                   *myname;
     int                     k, at_global;
     ChargeGenerationModel   mymodel;
 
     /* Parse opt_elem list to test which elements to optimize */
-    if (const_elem)
+    if (NULL != const_elem)
     {
-        ptr = split(' ', const_elem);
-        for (k = 0; (ptr[k]); k++)
-        {
-            if (gmx_poldata_have_eem_support(pd, iModel, ptr[k], FALSE))
-            {
-                add_index_count(ic, ptr[k], TRUE);
-            }
-        }
+        update_index_count_bool(ic, pd, const_elem, TRUE, FALSE, iModel);
     }
-    if (opt_elem)
+    if (NULL != opt_elem)
     {
-        ptr = split(' ', opt_elem);
-        for (k = 0; (ptr[k]); k++)
-        {
-            if (gmx_poldata_have_eem_support(pd, iModel, ptr[k], TRUE))
-            {
-                add_index_count(ic, ptr[k], FALSE);
-            }
-        }
+        update_index_count_bool(ic, pd, opt_elem, FALSE, TRUE, iModel);
     }
     else
     {

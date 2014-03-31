@@ -33,6 +33,7 @@
 #include "gmx_fatal.h"
 #include "poldata.hpp"
 #include "gmx_simple_comm.h"
+#include "split.hpp"
 
 typedef struct {
     char   *type, *miller, *bosque;
@@ -45,9 +46,9 @@ typedef struct {
 
 typedef struct {
     char    *elem, *rule, *type, *neighbors, *geometry;
-    char   **nb;
-    int      numbonds, numnb, iAromatic;
+    int      numbonds, iAromatic;
     double   valence;
+    std::vector<std::string> nb;
 } t_brule;
 
 typedef struct {
@@ -435,11 +436,7 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
             sp->neighbors      = strdup(neighbors);
             sp->valence        = valence;
             sp->iAromatic      = iAromatic;
-            sp->nb             = split(' ', neighbors);
-            for (sp->numnb = 0; (sp->nb[sp->numnb] != NULL); sp->numnb++)
-            {
-                ;
-            }
+            sp->nb             = split(neighbors, ' ');
             sp->geometry       = strdup(geometry);
             sp->numbonds       = numbonds;
         }
@@ -735,11 +732,11 @@ static gmx_bool strcasestr_start(char *needle, char *haystack)
 
 static int count_neighbors(t_brule *brule, int nbond, char *nbhybrid[], int *score)
 {
-    int i, j, ni = 0, *jj, i_found;
+    int j, ni = 0, *jj, i_found;
 
     *score = 0;
     snew(jj, nbond+1);
-    for (i = 0; (i < brule->numnb); i++)
+    for (unsigned int i = 0; (i < brule->nb.size()); i++)
     {
         i_found = 0;
         for (j = 0; (j < nbond); j++)
@@ -748,7 +745,7 @@ static int count_neighbors(t_brule *brule, int nbond, char *nbhybrid[], int *sco
                 (NULL != nbhybrid[j]) &&
                 (jj[j] == 0) &&
                 (i_found == 0) &&
-                strcasestr_start(brule->nb[i], nbhybrid[j])
+                strcasestr_start((char *)brule->nb[i].c_str(), nbhybrid[j])
                 )
             {
                 i_found = 1;
@@ -772,7 +769,8 @@ char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
                                      const char *geometry,
                                      int iAromatic)
 {
-    int    nnb, i, nptr = 0, best = -1, score;
+    unsigned int    nnb;
+    int i, nptr = 0, best = -1, score;
     char **ptr = NULL;
 
     for (i = 0; (i < pd->nbrule); i++)
@@ -783,7 +781,7 @@ char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
             (nbond == pd->brule[i].numbonds) &&
             ((iAromatic >= 0 && (iAromatic == pd->brule[i].iAromatic)) ||
              (iAromatic < 0)) &&
-            (nnb == pd->brule[i].numnb))
+            (nnb == pd->brule[i].nb.size()))
         {
             if (score > best)
             {
@@ -1921,7 +1919,8 @@ int gmx_poldata_search_symcharges(gmx_poldata_t pd, char *central,
 }
 
 /* Electrostatics properties */
-static t_eemprops *get_eep(gmx_poldata *pd, ChargeGenerationModel eqg_model, char *name)
+static t_eemprops *get_eep(gmx_poldata *pd, ChargeGenerationModel eqg_model, 
+                           const char *name)
 {
     int i;
 
@@ -1942,7 +1941,7 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_eemprops  *eep;
-    char       **sz, **sq, **sr;
+    std::vector<std::string> sz, sq, sr;
     int          n;
 
     eep = get_eep(pold, eqg_model, name);
@@ -1955,46 +1954,39 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
     strncpy(eep->name, name, EEMBUFSIZE-1);
     eep->name[EEMBUFSIZE-1] = '\0';
     eep->J0                 = J0;
-    sz = split(' ', zeta);
-    sq = split(' ', q);
-    sr = split(' ', row);
+    sz = split(zeta, ' ');
+    sq = split(q, ' ');
+    sr = split(row, ' ');
     strncpy(eep->zetastr, zeta, EEMBUFSIZE-1);
     strncpy(eep->qstr, q, EEMBUFSIZE-1);
     strncpy(eep->rowstr, row, EEMBUFSIZE-1);
-    n = 0;
-    while ((NULL != sz[n]) && (NULL != sq[n]) && (NULL != sr[n]))
+    unsigned int nn = std::min(sz.size(), std::min(sq.size(), sr.size()));
+    for(unsigned int n = 0; (n < nn); n++)
     {
         if (n < MAXZETA)
         {
-            eep->zeta[n] = atof(sz[n]);
-            eep->q[n]    = atof(sq[n]);
-            eep->row[n]  = atoi(sr[n]);
+            eep->zeta[n] = atof(sz[n].c_str());
+            eep->q[n]    = atof(sq[n].c_str());
+            eep->row[n]  = atoi(sr[n].c_str());
         }
-        sfree(sz[n]);
-        sfree(sq[n]);
-        sfree(sr[n]);
-        n++;
     }
-    if ((NULL != sz[n]) || (NULL != sq[n]) || (NULL != sr[n]))
+    if (sz.size() > nn)
     {
-        if (NULL != sz[n])
-        {
-            fprintf(stderr, "Warning: more zeta values than q/row values for %s n = %d\n", name, n);
-        }
-        if (NULL != sq[n])
-        {
-            fprintf(stderr, "Warning: more q values than zeta/row values for %s n = %d\n", name, n);
-        }
-        if (NULL != sr[n])
-        {
-            fprintf(stderr, "Warning: more row values than q/zeta values for %s n = %d\n", name, n);
-        }
+        fprintf(stderr, "Warning: more zeta values than q/row values for %s n = %d\n", 
+                name, nn);
     }
-    sfree(sz);
-    sfree(sq);
-    sfree(sr);
-    eep->nzeta = n;
-    if (n >= MAXZETA)
+    if (sq.size() > nn)
+    {
+        fprintf(stderr, "Warning: more q values than zeta/row values for %s n = %d\n", 
+                name, nn);
+    }
+    if (sr.size() > nn)
+    {
+        fprintf(stderr, "Warning: more row values than q/zeta values for %s n = %d\n",
+                name, nn);
+    }
+    eep->nzeta = nn;
+    if (nn >= MAXZETA)
     {
         fprintf(stderr, "More than %d zeta and/or q values for %s\n", MAXZETA, eep->name);
         eep->nzeta = MAXZETA;
@@ -2060,7 +2052,8 @@ int gmx_poldata_have_pol_support(gmx_poldata_t pd, const char *atype)
     return 0;
 }
 
-int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeGenerationModel eqg_model, char *name,
+int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeGenerationModel eqg_model, 
+                                 const char *name,
                                  gmx_bool bAllowZeroParameters)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;

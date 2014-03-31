@@ -58,6 +58,7 @@
 #include "poldata.hpp"
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"
+#include "split.hpp"
 
 bool gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,
@@ -145,7 +146,12 @@ gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
     gr->zmin      = zmin;
     gr->zmax      = zmax;
     gr->delta_z   = delta_z;
-    gr->dzatoms   = split(' ',dzatoms);
+    std::vector<std::string> ptr = split(dzatoms, ' ');
+    snew(gr->dzatoms, ptr.size());
+    for(unsigned int i = 0; (i<ptr.size()); ++i)
+    {
+        gr->dzatoms[i] = strdup(ptr[i].c_str());
+    }
     gr->pfac      = penalty_fac;
     gr->qmin      = -2;
     gr->qmax      = 2; /* e */

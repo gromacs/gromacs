@@ -49,7 +49,7 @@
 #include "shellfc.h"
 #include "mdatoms.h"
 #include "symtab.h"
-#include "string2.h"
+//#include "string2.h"
 #include "vec.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"
@@ -61,6 +61,7 @@
 #include "molprop_xml.hpp"
 #include "gauss_io.hpp"
 #include "mymol.hpp"
+#include "split.hpp"
 
 static const char *gentop_version = "gentop 0.98";
 
@@ -68,7 +69,7 @@ static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *ato
 {
     int    j, n, ft, k;
     double xx, sx, bo;
-    char  *params, **ptr;
+    char  *params;
 
 #define ATP(ii) ((char *)gmx_poldata_atype_to_btype(pd, *atoms->atomtype[ii]))
     ft = gmx_poldata_get_bond_ftype(pd);
@@ -79,17 +80,17 @@ static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *ato
                                         ATP(plist[ft].param[j].a[1]),
                                         &xx, &sx, NULL, &bo, &params))
         {
-            ptr                     = split(' ', params);
             plist[ft].param[j].c[0] = convert2gmx(xx, eg2cPm);
+            std::vector<std::string> ptr = split(params,' ');
             n = 0;
-            while ((n < MAXFORCEPARAM) && (NULL != ptr[n]))
+            for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
             {
-                plist[ft].param[j].c[1+n] = atof(ptr[n]);
-                sfree(ptr[n]);
-                n++;
+                if ((pi->length() > 0) && (n < MAXFORCEPARAM))
+                {
+                    plist[ft].param[j].c[1+n] = atof(pi->c_str());
+                    n++;
+                }
             }
-            sfree(ptr);
-            n++;
             for (; (n < MAXFORCEPARAM); n++)
             {
                 plist[ft].param[j].c[n] = NOTSET;
@@ -105,17 +106,17 @@ static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *ato
                                          ATP(plist[ft].param[j].a[2]),
                                          &xx, &sx, NULL, &params))
         {
-            ptr                     = split(' ', params);
             plist[ft].param[j].c[0] = xx;
+            std::vector<std::string> ptr = split(params,' ');
             n = 0;
-            while ((n < MAXFORCEPARAM) && (NULL != ptr[n]))
+            for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
             {
-                plist[ft].param[j].c[1+n] = atof(ptr[n]);
-                sfree(ptr[n]);
-                n++;
+                if ((pi->length() > 0) && (n < MAXFORCEPARAM))
+                {
+                    plist[ft].param[j].c[1+n] = atof(pi->c_str());
+                    n++;
+                }
             }
-            sfree(ptr);
-            n++;
             for (; (n < MAXFORCEPARAM); n++)
             {
                 plist[ft].param[j].c[n] = NOTSET;
@@ -134,17 +135,17 @@ static void get_force_constants(gmx_poldata_t pd, t_params plist[], t_atoms *ato
                                                 ATP(plist[ft].param[j].a[3]),
                                                 &xx, &sx, NULL, &params))
             {
-                ptr                     = split(' ', params);
                 plist[ft].param[j].c[0] = xx;
+                std::vector<std::string> ptr = split(params,' ');
                 n = 0;
-                while ((n < MAXFORCEPARAM) && (NULL != ptr[n]))
+                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    plist[ft].param[j].c[1+n] = atof(ptr[n]);
-                    sfree(ptr[n]);
-                    n++;
+                    if ((pi->length() > 0) && (n < MAXFORCEPARAM))
+                    {
+                        plist[ft].param[j].c[1+n] = atof(pi->c_str());
+                        n++;
+                    }
                 }
-                sfree(ptr);
-                n++;
                 for (; (n < MAXFORCEPARAM); n++)
                 {
                     plist[ft].param[j].c[n] = NOTSET;
@@ -1778,7 +1779,7 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
 {
     int    gt, i, tp, ai, aj, ak, al;
     int    ftb, fta, ftd;
-    char  *aai, *aaj, *aak, *aal, *params, **ptr;
+    char  *aai, *aaj, *aak, *aal, *params;
     int    lu;
     double value;
 
@@ -1798,18 +1799,23 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
             {
                 mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
 
-                ptr = split(' ', params);
-                if (NULL != ptr[0])
+                std::vector<std::string> ptr = split(params,' ');
+                int n = 0;
+                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    mtop_->ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
-                    sfree(ptr[0]);
+                    if (pi->length() > 0) 
+                    {
+                        if (n == 0)
+                        {
+                            mtop_->ffparams.iparams[tp].morse.cbA = atof(pi->c_str());
+                        }
+                        else 
+                        {
+                            mtop_->ffparams.iparams[tp].morse.betaA = atof(pi->c_str());
+                        }
+                        n++;
+                    }
                 }
-                if (NULL != ptr[1])
-                {
-                    mtop_->ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
-                    sfree(ptr[1]);
-                }
-                sfree(ptr);
                 if (NULL != params)
                 {
                     sfree(params);
@@ -1834,18 +1840,20 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
             aaj = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[aj]);
             aak = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ak]);
 
-            if ((gt = gmx_poldata_search_angle(pd, aai, aaj, aak, &value, NULL, NULL, &params)) != 0)
+            if ((gt = gmx_poldata_search_angle(pd, aai, aaj, aak, &value, 
+                                               NULL, NULL, &params)) != 0)
             {
                 mtop_->ffparams.iparams[tp].harmonic.rA     =
                     mtop_->ffparams.iparams[tp].harmonic.rB = value;
-                ptr = split(' ', params);
-                if (NULL != ptr[0])
+                std::vector<std::string> ptr = split(params,' ');
+                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    mtop_->ffparams.iparams[tp].harmonic.krA     =
-                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
-                    sfree(ptr[0]);
+                    if (pi->length() > 0)
+                    {
+                        mtop_->ffparams.iparams[tp].harmonic.krA     =
+                            mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+                    }
                 }
-                sfree(ptr);
                 if (NULL != params)
                 {
                     sfree(params);
@@ -1876,20 +1884,25 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
                                                   &value, NULL, NULL, &params)) != 0)
             {
                 mtop_->ffparams.iparams[tp].pdihs.phiA = value;
-                ptr = split(' ', params);
-                if (NULL != ptr[0])
+                std::vector<std::string> ptr = split(params,' ');
+                int n = 0;
+                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    mtop_->ffparams.iparams[tp].pdihs.cpA     =
-                        mtop_->ffparams.iparams[tp].pdihs.cpB =
-                            atof(ptr[0]);
-                    sfree(ptr[0]);
+                    if (pi->length() > 0)
+                    {
+                        if (n == 0)
+                        {
+                            mtop_->ffparams.iparams[tp].pdihs.cpA     =
+                                mtop_->ffparams.iparams[tp].pdihs.cpB =
+                                atof(pi->c_str());
+                        }
+                        else
+                        {
+                            mtop_->ffparams.iparams[tp].pdihs.mult = atof(pi->c_str());
+                        }
+                        n++;
+                    }
                 }
-                if (NULL != ptr[1])
-                {
-                    mtop_->ffparams.iparams[tp].pdihs.mult = atof(ptr[1]);
-                    sfree(ptr[1]);
-                }
-                sfree(ptr);
                 if (NULL != params)
                 {
                     sfree(params);
@@ -1921,14 +1934,13 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
             {
                 mtop_->ffparams.iparams[tp].harmonic.rA     =
                     mtop_->ffparams.iparams[tp].harmonic.rB = value;
-                ptr = split(' ', params);
-                if (NULL != ptr[0])
+                std::vector<std::string> ptr = split(params,' ');
+                std::vector<std::string>::iterator pi = ptr.begin();
+                if (pi->length() > 0)
                 {
                     mtop_->ffparams.iparams[tp].harmonic.krA     =
-                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
-                    sfree(ptr[0]);
+                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
                 }
-                sfree(ptr);
                 if (NULL != params)
                 {
                     sfree(params);

@@ -40,6 +40,7 @@
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "gauss_io.hpp"
+#include "split.hpp"
 
 using namespace std;
 
@@ -539,7 +540,7 @@ static int get_lib_file(const char *db,char ***strings)
 /* read composite method atom data */
 alexandria::GaussAtomProp::GaussAtomProp()
 {
-    char **strings=NULL,**ptr;
+    char **strings=NULL;
     int nstrings,i;
 
     nstrings = get_lib_file("atomization_energies.dat",&strings);
@@ -550,17 +551,15 @@ alexandria::GaussAtomProp::GaussAtomProp()
         if ( strings[i][0] == '#') {
             continue;
         } 
-
-        ptr = split('|', strings[i]);
-        if ((NULL != ptr) && 
-            (NULL != ptr[0]) && (NULL != ptr[1]) &&
-            (NULL != ptr[2]) && (NULL != ptr[3]) &&
-            (NULL != ptr[4]))
+        std::vector<std::string> ptr = split(strings[i], '|');
+        if ((ptr.size() >= 4) &&
+            (ptr[0].length() > 0) && (ptr[1].length() > 0) &&
+            (ptr[2].length() > 0) && (ptr[3].length() > 0) &&
+            (ptr[4].length() > 0))
         {
-            std::string elem(ptr[0]);
-            std::string method(ptr[1]);
-            std::string desc(ptr[2]);
-            alexandria::GaussAtomPropVal gapv(elem,method,desc,atof(ptr[3]),atof(ptr[4]));
+            alexandria::GaussAtomPropVal gapv(ptr[0],ptr[1],ptr[2],
+                                              atof(ptr[3].c_str()),
+                                              atof(ptr[4].c_str()));
             
             _gapv.push_back(gapv);
         }
@@ -662,101 +661,49 @@ static int gmx_molprop_add_dhform(alexandria::MolProp& mpt,
 /* Read a line from a G03/G09 composite method (G3, G4, etc) record */
 static gmx_bool gau_comp_meth_read_line(char *line,real *temp,real *pres)
 {
-    char **ptr1,**ptr2;
-    int i;
-    
-    ptr1 = split('=', line);
-    if ((NULL != ptr1) && (NULL != ptr1[1]))
+    std::vector<std::string> ptr1 = split(line, '=');
+    if ((ptr1.size() >= 2) && (ptr1[1].length() > 0))
     {
-        ptr2 = split(' ',ptr1[1]);
-        if ((NULL != ptr2) && (NULL != ptr2[0]) && (NULL != ptr1[2])) {
-            *temp = atof(ptr2[0]);
-            *pres = atof(ptr1[2]);
-            for(i=0; (ptr2[i] != NULL); i++)
-                sfree(ptr2[i]);
-            sfree(ptr2);
+        std::vector<std::string> ptr2 = split(ptr1[1], ' ');
+        if ((ptr2.size() >= 1) && 
+            (ptr2[0].length() > 0) &&
+            (ptr1[2].length() > 0))
+        {
+            *temp = atof(ptr2[0].c_str());
+            *pres = atof(ptr1[2].c_str());
         }
-        for(i=0; (ptr1[i] != NULL); i++)
-            sfree(ptr1[i]);
-        sfree(ptr1);
-        
         return TRUE;
     }
     return FALSE;
 }
 
-static gmx_bool read_polar(char *str,tensor T)
+static gmx_bool read_polar(char *str, tensor T)
 {
-    char **ptr;
-    int  k;
-    gmx_bool bRes;
-    
-    bRes = TRUE;
-    ptr = split(' ',str);
-    if (NULL == ptr)
-        return FALSE;
-        
-    if (NULL != ptr[2])
-        T[XX][XX] = atof(ptr[2]);
-    else 
-        bRes = FALSE;
-    if (NULL != ptr[3])
-        T[YY][XX] = T[XX][YY] = atof(ptr[3]);
-    else 
-        bRes = FALSE;
-    if (NULL != ptr[4])
-        T[YY][YY] = atof(ptr[4]);
-    else 
-        bRes = FALSE;
-    if (NULL != ptr[5])
-        T[XX][ZZ] = T[ZZ][XX] = atof(ptr[5]);
-    else 
-        bRes = FALSE;
-    if (NULL != ptr[6])
-        T[YY][ZZ] = T[ZZ][YY] = atof(ptr[6]);
-    else 
-        bRes = FALSE;
-    if (NULL != ptr[7])
-        T[ZZ][ZZ] = atof(ptr[7]);
-    else 
-        bRes = FALSE;
-    for(k=0; (k<=7); k++)
-        if (NULL != ptr[k])
-            sfree(ptr[k]);
-    sfree(ptr);
-    
-    return bRes;
+    std::vector<std::string> ptr = split(str, ' ');
+    if (ptr.size() >= 7)
+    {
+        T[XX][XX] = atof(ptr[2].c_str());
+        T[YY][XX] = T[XX][YY] = atof(ptr[3].c_str());
+        T[YY][YY] = atof(ptr[4].c_str());
+        T[XX][ZZ] = T[ZZ][XX] = atof(ptr[5].c_str());
+        T[YY][ZZ] = T[ZZ][YY] = atof(ptr[6].c_str());
+        T[ZZ][ZZ] = atof(ptr[7].c_str());
+        return TRUE;
+    }    
+    return FALSE;
 }
 
 static gmx_bool read_dipole(char *str,rvec mu)
 {
-    char **ptr;
-    int  k;
-    gmx_bool bRes;
-    
-    bRes = TRUE;
-    ptr = split(' ',str);
-    if (NULL == ptr)
-        return FALSE;
-        
-    if (NULL != ptr[1])
-        mu[XX] = atof(ptr[1]);
-    else 
-        bRes = FALSE;
-    if (NULL != ptr[3])
-        mu[YY] = atof(ptr[3]);
-    else 
-        bRes = FALSE;
-    if (NULL != ptr[5])
-        mu[ZZ] = atof(ptr[5]);
-    else 
-        bRes = FALSE;
-    for(k=0; (k<=7); k++)
-        if (NULL != ptr[k])
-            sfree(ptr[k]);
-    sfree(ptr);
-    
-    return bRes;
+    std::vector<std::string> ptr = split(str, ' ');
+    if (ptr.size() >= 5)
+    {
+        mu[XX] = atof(ptr[1].c_str());
+        mu[YY] = atof(ptr[3].c_str());
+        mu[ZZ] = atof(ptr[5].c_str());
+        return TRUE;
+    }    
+    return FALSE;
 }
 
 static gmx_bool read_quad(char *str1,char *str2,tensor Q)
@@ -764,15 +711,21 @@ static gmx_bool read_quad(char *str1,char *str2,tensor Q)
     gmx_bool bRes;
     rvec q1,q2;
     
+    clear_mat(Q);
     bRes = read_dipole(str1,q1);
-    bRes = bRes && read_dipole(str2,q2);
-    Q[XX][XX] = q1[XX];
-    Q[YY][YY] = q1[YY];
-    Q[ZZ][ZZ] = q1[ZZ];
-    Q[XX][YY] = Q[YY][XX] = q2[XX];
-    Q[XX][ZZ] = Q[ZZ][XX] = q2[YY];
-    Q[YY][ZZ] = Q[ZZ][YY] = q2[ZZ];
-    
+    if (bRes)
+    {
+        bRes = read_dipole(str2,q2);
+        if (bRes)
+        {
+            Q[XX][XX] = q1[XX];
+            Q[YY][YY] = q1[YY];
+            Q[ZZ][ZZ] = q1[ZZ];
+            Q[XX][YY] = Q[YY][XX] = q2[XX];
+            Q[XX][ZZ] = Q[ZZ][XX] = q2[YY];
+            Q[YY][ZZ] = Q[ZZ][YY] = q2[ZZ];
+        }
+    }
     return bRes;
 }
 
@@ -797,7 +750,7 @@ static void gmx_molprop_read_log(const char *fn,
     char *atomname,*ginc,*hfener,*mp2ener,*g2ener,*g3ener,*g4ener,*cbsener;
     char *reference = (char *)"This Work";
     char *program=NULL,*method=NULL,*basis=NULL;
-    char **ptr,**qtr,*mymeth;
+    char *mymeth;
     real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy;
     gmx_bool bEtherm = FALSE, bEzpe = FALSE, bTemp = FALSE;
     gmx_bool bPolar, bQuad, bDipole;
@@ -839,17 +792,19 @@ static void gmx_molprop_read_log(const char *fn,
         else if ((NULL != strstr(strings[i],"Standard basis:")) &&
                  (NULL == basisset))
         {
-            ptr = split(' ',strings[i]);
-            if (NULL != ptr[2]) 
+            std::vector<std::string> ptr = split(strings[i], ' ');
+            if (ptr.size() >= 2)
             {
-                basis = strdup(ptr[2]);
+                basis = strdup(ptr[2].c_str());
             }
         }
         else if (NULL != strstr(strings[i],"Temperature=")) 
         {
             status = gau_comp_meth_read_line(strings[i],&temp,&pres);
             if (bVerbose)
+            {
                 printf("na gau_(): temp %f pres %f status = %d\n",temp,pres,status);
+            }
             bTemp = TRUE;
         }
         else if (NULL != strstr(strings[i],"Exact polarizability")) 
@@ -870,31 +825,36 @@ static void gmx_molprop_read_log(const char *fn,
         {
             status = gau_comp_meth_read_line(strings[i],&ezpe2,&etherm2);
             if (bVerbose)
+            {
                 printf("na gau_(): ezpe2 %f etherm2 %f status=%d\n",
                        ezpe2,etherm2,status);
+            }
         }
         else if (NULL != strstr(strings[i],"Zero-point correction=")) 
         {
-            ptr = split(' ',strings[i]);
-            bEzpe = TRUE;
-            if (NULL != ptr[2]) 
+            std::vector<std::string> ptr = split(strings[i], ' ');
+            if (ptr.size() >= 2)
             {
-                ezpe = atof(strdup(ptr[2]));
+                ezpe  = atof(ptr[2].c_str());
+                bEzpe = TRUE;
             }
             if (bVerbose)
+            {
                 printf("na gau_(): ezpe %f \n", ezpe);
+            }
         }
         else if (NULL != strstr(strings[i],"Thermal correction to Enthalpy=")) 
         {
-          
-            ptr = split(' ',strings[i]);
-            if (NULL != ptr[4]) 
+            std::vector<std::string> ptr = split(strings[i], ' ');
+            if (ptr.size() >= 4)
             {
-                etherm = atof(strdup(ptr[4]));
+                etherm = atof(ptr[4].c_str());
+                bEtherm = TRUE;
             }
-            bEtherm = TRUE;
             if (bVerbose)
+            {
                 printf("na gau_(): etherm %f \n", etherm);
+            }
         }
         else if ((NULL != strstr(strings[i],"G2(0 K)=")) ||
                  (NULL != strstr(strings[i],"G3(0 K)=")) ||
@@ -928,32 +888,33 @@ static void gmx_molprop_read_log(const char *fn,
                 strncat(ginc,strings[k],80);
             }
             i = k-1;
-            ptr = split('\\',ginc);
-            for(j=0; (NULL != ptr[j]); j++) 
+            std::vector<std::string> ptr = split(ginc, '\\');
+            for(std::vector<std::string>::iterator j = ptr.begin(); (j < ptr.end()); ++j)
             {
-                if (NULL != strstr(ptr[j],"HF=")) 
+                const char *pj = j->c_str();
+                if (NULL != strstr(pj,"HF=")) 
                 {
-                    hfener = strdup(ptr[j]+3);
+                    hfener = strdup(pj+3);
                 }
-                if (NULL != strstr(ptr[j],"MP2=")) 
+                if (NULL != strstr(pj, "MP2=")) 
                 {
-                    mp2ener = strdup(ptr[j]+4);
+                    mp2ener = strdup(pj+4);
                 }
-                if (NULL != strstr(ptr[j],"G2=")) 
+                if (NULL != strstr(pj, "G2=")) 
                 {
-                    g2ener = strdup(ptr[j]+3);
+                    g2ener = strdup(pj+3);
                 }
-                if (NULL != strstr(ptr[j],"G3=")) 
+                if (NULL != strstr(pj,"G3=")) 
                 {
-                    g3ener = strdup(ptr[j]+3);
+                    g3ener = strdup(pj+3);
                 }
-                if (NULL != strstr(ptr[j],"G4=")) 
+                if (NULL != strstr(pj,"G4=")) 
                 {
-                    g4ener = strdup(ptr[j]+3);
+                    g4ener = strdup(pj+3);
                 }
-                if (NULL != strstr(ptr[j],"CBSQB3=")) 
+                if (NULL != strstr(pj,"CBSQB3=")) 
                 {
-                    cbsener = strdup(ptr[j]+7);
+                    cbsener = strdup(pj+7);
                 }
             }
         }
@@ -962,12 +923,13 @@ static void gmx_molprop_read_log(const char *fn,
             if (NULL == method) 
             {
                 /* The first method is the true method */
-                ptr = split(' ',strings[i]);
-                if (NULL != ptr[1]) {
-                    qtr = split('/',ptr[1]);
-                    if (NULL != qtr[0]) 
+                std::vector<std::string> ptr = split(strings[i], ' ');
+                if (ptr.size() >= 1)
+                {
+                    std::vector<std::string> qtr = split(ptr[1], '/');
+                    if (qtr.size() > 0) 
                     {
-                        method = strdup(qtr[0]);
+                        method = strdup(qtr[0].c_str());
                     }
                 }
             }

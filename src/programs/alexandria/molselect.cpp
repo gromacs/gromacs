@@ -26,6 +26,7 @@
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/fileio/strdb.h"
 #include "molselect.hpp"
+#include "split.hpp"
 
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
 
@@ -52,44 +53,43 @@ gmx_molselect_t gmx_molselect_init(const char *fn)
 {
     gmx_molselect *gms;
     char **strings;
-    char **tmp;
     int i,j;
   
     snew(gms,1);
     gms->nmol = get_file(fn,&strings);
     snew(gms->ims,gms->nmol);
     for(i=0; (i<gms->nmol); i++) {
-        tmp = split('|',strings[i]);
-        if (NULL != tmp[0])
+        std::vector<std::string> ptr = split(strings[i],'|');
+        if ((ptr.size() == 2) && (ptr[0].length() > 0))
         {
-            gms->ims[i].iupac = strdup(tmp[0]);
+            gms->ims[i].iupac = strdup(ptr[0].c_str());
             gms->ims[i].index   = i+1;
-            if (NULL != tmp[1]) {
+            if (ptr[1].length() > 0) {
                 for(j=0; (j<(int)imsNR); j++) 
-                    if (strcasecmp(ims_names[j],tmp[1]) == 0)
+                {
+                    if (strcasecmp(ims_names[j],ptr[1].c_str()) == 0)
+                    {
                         break;
+                    }
+                }
                 if (j < imsNR)
+                {
                     gms->ims[i].status = (iMolSelect)j;
+                }
                 else
                 {
                     gms->ims[i].status = imsUnknown;
                     fprintf(stderr,"Unknown status '%s' for molecule %s on line %d in file %s\n",
-                            tmp[1],tmp[0],i,fn);
+                            ptr[1].c_str(),ptr[0].c_str(),i,fn);
                 }
             }
             else {
                 gms->ims[i].status = imsUnknown;
                 fprintf(stderr,"No status field for molecule %s on line %d in file %s\n",
-                        tmp[0],i,fn);
+                        ptr[0].c_str(),i,fn);
             }
         }
         sfree(strings[i]);
-        j = 0;
-        while (NULL != tmp[j])
-        {
-            sfree(tmp[j]);
-            j++;
-        }
     }
     sfree(strings);
   

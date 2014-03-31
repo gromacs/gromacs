@@ -50,6 +50,7 @@
 #include "gentop_vsite.hpp"
 #include "gentop_core.hpp"
 #include "composition.hpp"
+#include "split.hpp"
 
 void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
 {
@@ -585,7 +586,6 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
     alexandria::CalculationIterator ci;
     
     const char *method,*basis;
-    char **qm,**ll;
     int  i,n;
     double value,error,vec[3];
     tensor quadrupole;
@@ -607,22 +607,27 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
     }
     if (NULL != fc_str) 
     {
-        qm = split(':',fc_str);
+        std::vector<std::string> qm = split(fc_str,':');
         n = 0;
-        while (NULL != qm[n])
+        for(std::vector<std::string>::iterator pqm = qm.begin(); (pqm < qm.end()); ++pqm)
         {
-            ll = split('/',qm[n]);
-            if ((NULL != ll[0]) && (NULL != ll[1]) && (NULL != ll[2])) 
+            if (pqm->length() > 0) 
             {
-                add_qmc_calc(qmc,ll[0],ll[1],ll[2]);
-                for(ti=types.begin(); (ti<types.end()); ti++)
+                std::vector<std::string> ll = split(pqm->c_str(), '/');
+                if (ll.size() == 3)
                 {
-                    if (0 == strcasecmp(ti->c_str(),ll[2]))
-                        break;
-                }
-                if (ti == types.end()) 
-                {
-                    types.push_back(ll[2]);
+                    add_qmc_calc(qmc,ll[0].c_str(),ll[1].c_str(),ll[2].c_str());
+                    for(ti=types.begin(); (ti<types.end()); ti++)
+                    {
+                        if (0 == strcasecmp(ti->c_str(),ll[2].c_str()))
+                        {
+                            break;
+                        }
+                    }
+                    if (ti == types.end()) 
+                    {
+                        types.push_back(ll[2].c_str());
+                    }
                 }
             }
             n++;

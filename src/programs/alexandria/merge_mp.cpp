@@ -41,6 +41,7 @@
 #include "molprop_util.hpp"
 #include "molprop_xml.hpp"
 #include "molprop_sqlite3.hpp"
+#include "split.hpp"
 
 typedef struct {
     const char *iupac;
@@ -64,7 +65,6 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp)
     int    nprop                   = 0;
     t_prop                     *tp = NULL, key, *tpp;
     char   buf[STRLEN];
-    char                      **ptr;
     int    nadd = 0;
 
     if (NULL != fn)
@@ -73,21 +73,16 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp)
         while (!feof(fp))
         {
             fgets2(buf, STRLEN-1, fp);
-            ptr = split('|', buf);
-            if ((NULL != ptr) &&
-                (NULL != ptr[0]) && (NULL != ptr[1]) &&
-                (NULL != ptr[2]) && (NULL != ptr[3]))
+            std::vector<std::string> ptr = split(buf, '|');
+            if ((ptr.size() >= 3) &&
+                (ptr[0].length() > 0) && (ptr[1].length() > 0) &&
+                (ptr[2].length() > 0) && (ptr[3].length() > 0))
             {
                 srenew(tp, ++nprop);
-                tp[nprop-1].iupac = strdup(ptr[0]);
-                tp[nprop-1].prop  = strdup(ptr[1]);
-                tp[nprop-1].value = strdup(ptr[2]);
-                tp[nprop-1].ref   = strdup(ptr[3]);
-                sfree(ptr[0]);
-                sfree(ptr[1]);
-                sfree(ptr[2]);
-                sfree(ptr[3]);
-                sfree(ptr);
+                tp[nprop-1].iupac = strdup(ptr[0].c_str());
+                tp[nprop-1].prop  = strdup(ptr[1].c_str());
+                tp[nprop-1].value = strdup(ptr[2].c_str());
+                tp[nprop-1].ref   = strdup(ptr[3].c_str());
             }
         }
         printf("Read in %d properties from %s.\n", nprop, fn);
@@ -123,7 +118,6 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp)
     int    nprop                   = 0;
     t_prop                     *tp = NULL, key, *tpp;
     char   buf[STRLEN];
-    char                      **ptr;
     int    nadd = 0;
 
     if (NULL != fn)
@@ -132,21 +126,16 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp)
         while (!feof(fp))
         {
             fgets2(buf, STRLEN-1, fp);
-            ptr = split('|', buf);
-            if ((NULL != ptr) &&
-                (NULL != ptr[0]) && (NULL != ptr[1]) &&
-                (NULL != ptr[2]) && (NULL != ptr[3]))
+            std::vector<std::string> ptr = split(buf, '|');
+            if ((ptr.size() >= 3) &&
+                (ptr[0].length() > 0) && (ptr[1].length() > 0) &&
+                (ptr[2].length() > 0) && (ptr[3].length() > 0))
             {
                 srenew(tp, ++nprop);
-                tp[nprop-1].iupac = strdup(ptr[0]);
-                tp[nprop-1].prop  = strdup(ptr[1]);
-                tp[nprop-1].value = strdup(ptr[2]);
-                tp[nprop-1].ref   = strdup(ptr[3]);
-                sfree(ptr[0]);
-                sfree(ptr[1]);
-                sfree(ptr[2]);
-                sfree(ptr[3]);
-                sfree(ptr);
+                tp[nprop-1].iupac = strdup(ptr[0].c_str());
+                tp[nprop-1].prop  = strdup(ptr[1].c_str());
+                tp[nprop-1].value = strdup(ptr[2].c_str());
+                tp[nprop-1].ref   = strdup(ptr[3].c_str());
             }
         }
         printf("Read in %d charge sets from %s.\n", nprop, fn);

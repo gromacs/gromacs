@@ -24,12 +24,12 @@
 #include <string>
 #include <vector>
 #include "gromacs/math/utilities.h"
-#include "string2.h"
 #include "smalloc.h"
 #include "poldata.hpp"
 #include "gmx_simple_comm.h"
 #include "molprop.hpp"
 #include "composition.hpp"
+#include "split.hpp"
       
 const char *mpo_name[MPO_NR] = 
 { 
@@ -949,16 +949,15 @@ CalculationIterator MolProp::GetLotPropType(const char *lot,
                                             MolPropObservable mpo,
                                             const char *type)
 {
-    char **ll;
     CalculationIterator ci;
     
-    ll = split('/',lot);
-    if ((NULL != ll[0]) && (NULL != ll[1])) 
+    std::vector<std::string> ll = split(lot, '/');
+    if ((ll[0].length() > 0) && (ll[1].length() > 0)) 
     {
         for(ci=BeginCalculation(); (ci < EndCalculation()); ci++)
         {
-            if ((strcasecmp(ci->GetMethod().c_str(),ll[0]) == 0) &&
-                (strcasecmp(ci->GetBasisset().c_str(),ll[1]) == 0))
+            if ((strcasecmp(ci->GetMethod().c_str(),ll[0].c_str()) == 0) &&
+                (strcasecmp(ci->GetBasisset().c_str(),ll[1].c_str()) == 0))
             {
                 bool done = false;
                 switch (mpo) {
@@ -1000,14 +999,6 @@ CalculationIterator MolProp::GetLotPropType(const char *lot,
                     break;
             }
         }
-        int k = 0;
-        while (ll[k] != NULL)
-        {
-            sfree(ll[k]);
-            k++;
-        }
-        sfree(ll);
-        
         return ci;
     }
     else
@@ -1018,28 +1009,19 @@ CalculationIterator MolProp::GetLotPropType(const char *lot,
 
 CalculationIterator MolProp::GetLot(const char *lot)
 {
-    char **ll;
     CalculationIterator ci;
     
-    ll = split('/',lot);
-    if ((NULL != ll[0]) && (NULL != ll[1])) 
+    std::vector<std::string> ll = split(lot, '/');
+    if ((ll[0].length() > 0) && (ll[1].length() > 0)) 
     {
         bool done = false;
         for(ci=BeginCalculation(); (!done) && (ci < EndCalculation()); ci++)
         {
-            done = ((strcasecmp(ci->GetMethod().c_str(),ll[0]) == 0) &&
-                    (strcasecmp(ci->GetBasisset().c_str(),ll[1]) == 0));
+            done = ((strcasecmp(ci->GetMethod().c_str(),ll[0].c_str()) == 0) &&
+                    (strcasecmp(ci->GetBasisset().c_str(),ll[1].c_str()) == 0));
             if (done)
                 break;
         }
-        int k = 0;
-        while (ll[k] != NULL)
-        {
-            sfree(ll[k]);
-            k++;
-        }
-        sfree(ll);
-        
         return ci;
     }
     else

@@ -353,7 +353,8 @@ extern int gmx_poldata_get_numprops(gmx_poldata_t pd,ChargeGenerationModel eqg_m
 
 extern int gmx_poldata_have_pol_support(gmx_poldata_t pd,const char *atype);
 
-extern int gmx_poldata_have_eem_support(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name,
+extern int gmx_poldata_have_eem_support(gmx_poldata_t pd,ChargeGenerationModel eqg_model,
+                                        const char *name,
                                         gmx_bool bAllowZeroParameters);
 
 extern double gmx_poldata_get_j00(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name);

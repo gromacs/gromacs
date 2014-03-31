@@ -32,7 +32,6 @@
 #include "macros.h"
 #include "copyrite.h"
 #include "bondf.h"
-#include "string2.h"
 #include "smalloc.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/confio.h"
@@ -61,10 +60,10 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/commandline/pargs.h"
-//#include "gen_ad.h"
 #include "mtop_util.h"
 #include "gmx_simple_comm.h"
 #include "nmsimplex.h"
+#include "string2.h"
 
 // alexandria stuff
 #include "molselect.hpp"
@@ -77,6 +76,7 @@
 #include "molprop_util.hpp"
 #include "mymol.hpp"
 #include "moldip.hpp"
+#include "split.hpp"
 
 typedef struct {
     int    nb[ebtsNR], *ngtb[ebtsNR];
@@ -473,7 +473,7 @@ void OptParam::Opt2List()
 void OptParam::List2Opt()
 {
     int  i, j, p, n;
-    char buf[STRLEN], *ptr;
+    char buf[STRLEN];
 
     for (i = n = 0; (i < ebtsNR); i++)
     {
@@ -484,7 +484,7 @@ void OptParam::List2Opt()
             {
                 _bad[i][j].param[p] = _param[n++];
                 strcat(buf, " ");
-                ptr = gmx_ftoa(_bad[i][j].param[p]);
+                char *ptr = gmx_ftoa(_bad[i][j].param[p]);
                 strcat(buf, ptr);
                 sfree(ptr);
             }
@@ -769,7 +769,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                        opt_mask_t *omt, real factor)
 {
     char   *ai[4];
-    char   *params, **ptr;
+    char   *params;
     int     gt, i, n, maxfc = 0;
     double *fc = NULL;
     double  bondorder;
@@ -786,17 +786,18 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
         {
             if (omt->ngtb[ebtsBONDS][gt-1] > 0)
             {
-                ptr = split(' ', params);
-                for (n = 0; (NULL != ptr[n]); n++)
+                std::vector<std::string> ptr = split(params,' ');
+                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    if (n >= maxfc)
+                    if (pi->length() > 0)
                     {
-                        srenew(fc, ++maxfc);
+                        if (n >= maxfc)
+                        {
+                            srenew(fc, ++maxfc);
+                        }
+                        fc[n] = atof(pi->c_str());
                     }
-                    fc[n] = atof(ptr[n]);
-                    sfree(ptr[n]);
                 }
-                sfree(ptr);
                 if (D0 > 0)
                 {
                     fc[0] = D0;
@@ -828,14 +829,17 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
         {
             if (omt->ngtb[ebtsANGLES][gt-1] > 0)
             {
-                ptr = split(' ', params);
-                for (n = 0; (NULL != ptr[n]); n++)
+                std::vector<std::string> ptr = split(params,' ');
+                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    if (n > maxfc)
+                    if (pi->length() > 0)
                     {
-                        srenew(fc, ++maxfc);
+                        if (n > maxfc)
+                        {
+                            srenew(fc, ++maxfc);
+                        }
+                        fc[n] = atof(pi->c_str());
                     }
-                    fc[n] = atof(ptr[n]);
                 }
                 Add(ebtsANGLES, 3, ai, n, fc, 0, gt);
                 *nparam += n;
@@ -861,21 +865,20 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
         {
             if (omt->ngtb[ebtsPDIHS][gt-1] > 0)
             {
-                ptr = split(' ', params);
-                for (n = 0; (NULL != ptr[n]); n++)
+                std::vector<std::string> ptr = split(params,' ');
+                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    if (n > maxfc)
+                    if (pi->length() > 0)
                     {
-                        srenew(fc, ++maxfc);
+                        if (n > maxfc)
+                        {
+                            srenew(fc, ++maxfc);
+                        }
+                        fc[n] = atof(pi->c_str());
                     }
-                    fc[n] = atof(ptr[n]);
                 }
                 Add(ebtsPDIHS, 4, ai, n, fc, 0, gt);
                 *nparam += n;
-            }
-            if (NULL != params)
-            {
-                sfree(params);
             }
             for (n = 0; (n < 4); n++)
             {
@@ -894,21 +897,20 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
         {
             if (omt->ngtb[ebtsIDIHS][gt-1] > 0)
             {
-                ptr = split(' ', params);
-                for (n = 0; (NULL != ptr[n]); n++)
+                std::vector<std::string> ptr = split(params,' ');
+                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
-                    if (n > maxfc)
+                    if (pi->length() > 0)
                     {
-                        srenew(fc, ++maxfc);
+                        if (n > maxfc)
+                        {
+                            srenew(fc, ++maxfc);
+                        }
+                        fc[n] = atof(pi->c_str());
                     }
-                    fc[n] = atof(ptr[n]);
                 }
                 Add(ebtsIDIHS, 4, ai, n, fc, 0, gt);
                 *nparam += n;
-            }
-            if (NULL != params)
-            {
-                sfree(params);
             }
             for (n = 0; (n < 4); n++)
             {

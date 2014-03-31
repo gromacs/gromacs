@@ -36,6 +36,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "molprop_sqlite3.hpp"
+#include "split.hpp"
 
 typedef struct {
     const char *molname, *iupac;
@@ -83,7 +84,6 @@ void ReadSqlite3(const char                       *sqlite_file,
     sqlite3_stmt               *stmt = NULL, *stmt2 = NULL;
     char sql_str[1024];
     const char                 *iupac, *cas, *csid, *prop, *unit, *ref, *classification, *source;
-    char                      **class_ptr;
     double                      value, error;
     int                         cidx, rc, nbind, nexp_prop;
     t_synonym                  *syn  = NULL, key, *keyptr;
@@ -259,12 +259,11 @@ void ReadSqlite3(const char                       *sqlite_file,
 
                         if (0 && (strlen(classification) > 0))
                         {
-                            class_ptr = split(';', classification);
-                            cidx      = 0;
-                            while (NULL != class_ptr[cidx])
+                            std::vector<std::string> class_ptr = split(classification, ';');
+                            for(std::vector<std::string>::iterator cp = class_ptr.begin();
+                                cp < class_ptr.end(); ++cp)
                             {
-                                mpi->AddCategory(class_ptr[cidx]);
-                                cidx++;
+                                mpi->AddCategory(cp->c_str());
                             }
                         }
                         if (strlen(cas) > 0)

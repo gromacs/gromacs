@@ -52,6 +52,7 @@
 #include "gentop_nm2type.hpp"
 #include "gentop_core.hpp"
 #include "gentop_vsite.hpp"
+#include "split.hpp"
 
 void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,
                       matrix box)
@@ -512,9 +513,9 @@ int *symmetrize_charges(gmx_bool bQsym,t_atoms *atoms,
                         t_params *bonds,gmx_poldata_t pd,
                         gmx_atomprop_t aps,const char *symm_string)
 {
-    char *central,*attached,**ss;
+    char *central,*attached;
     int nattached,i,j,nh,ai,aj,anri,anrj;
-    int is,anr_central,anr_attached,nrq;
+    int anr_central,anr_attached,nrq;
     int hs[8];
     double qaver,qsum;
     int *sc,hsmin;
@@ -528,17 +529,19 @@ int *symmetrize_charges(gmx_bool bQsym,t_atoms *atoms,
     {
         if ((NULL != symm_string) && (strlen(symm_string) > 0))
         {
-            ss = split(' ',symm_string);
-            is = 0;
-            while ((ss[is] != NULL) && (is < atoms->nr))
+            std::vector<std::string> ss = split(symm_string, ' ');
+            if ((int)ss.size() != atoms->nr)
             {
-                sc[is] = atoi(ss[is]);
-                is++;
+                gmx_fatal(FARGS,"Wrong number (%d) of atom-numbers in symm_string: expected %d",
+                          ss.size(), atoms->nr);
             }
-            while (NULL != ss[is])
-                is++;
-            if (is != atoms->nr)
-                gmx_fatal(FARGS,"Wrong number (%d) of atom-numbers in symm_string: expected %d",is,atoms->nr);
+            int ii = 0;
+            for(std::vector<std::string>::iterator is = ss.begin();
+                (is < ss.end()); ++is)
+            {
+                sc[ii] = atoi(is->c_str());
+                ii++;
+            }
         }
         else 
         {
