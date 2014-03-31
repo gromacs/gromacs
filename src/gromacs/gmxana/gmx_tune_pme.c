@@ -76,6 +76,8 @@ enum {
     eParselogTPXVersion,
     eParselogNotParallel,
     eParselogLargePrimeFactor,
+    eParselogMismatchOfNumberOfPPRanksAndAvailableGPUs,
+    eParselogGpuProblem,
     eParselogFatal,
     eParselogNr
 };
@@ -291,13 +293,25 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 }
                 break;
             case eFoundDDStr:
+                /* Even after the "Domain decomposition grid" string was found,
+                 * it could be that mdrun had to quit due to some error. */
+                if (str_starts(line, "Incorrect launch configuration: mismatching number of"))
+                {
+                    fclose(fp);
+                    return eParselogMismatchOfNumberOfPPRanksAndAvailableGPUs;
+                }
+                else if (str_starts(line, "Some of the requested GPUs do not exist"))
+                {
+                    fclose(fp);
+                    return eParselogGpuProblem;
+                }
                 /* Look for PME mesh/force balance (not necessarily present, though) */
-                if (str_starts(line, matchstrbal))
+                else if (str_starts(line, matchstrbal))
                 {
                     sscanf(&line[strlen(matchstrbal)], "%f", &(perfdata->PME_f_load[test_nr]));
                 }
                 /* Look for matchstring */
-                if (str_starts(line, matchstring))
+                else if (str_starts(line, matchstring))
                 {
                     iFound = eFoundAccountingStr;
                 }
@@ -617,12 +631,13 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
 }
 
 /* Check that the commands will run mdrun (perhaps via mpirun) by
- * running a very quick test simulation. Requires MPI environment to
- * be available if applicable. */
+ * running a very quick test simulation. Requires MPI environment or
+ * GPU support to be available if applicable. */
 static void check_mdrun_works(gmx_bool    bThreads,
                               const char *cmd_mpirun,
                               const char *cmd_np,
-                              const char *cmd_mdrun)
+                              const char *cmd_mdrun,
+                              gmx_bool    bNeedGpuSupport)
 {
     char      *command = NULL;
     char      *cp;
@@ -632,10 +647,12 @@ static void check_mdrun_works(gmx_bool    bThreads,
 
     /* This string should always be identical to the one in copyrite.c,
      * gmx_print_version_info() in the defined(GMX_MPI) section */
-    const char match_mpi[]    = "MPI library:        MPI";
-    const char match_mdrun[]  = "Executable: ";
-    gmx_bool   bMdrun         = FALSE;
-    gmx_bool   bMPI           = FALSE;
+    const char match_mpi[]     = "MPI library:        MPI";
+    const char match_mdrun[]   = "Executable: ";
+    const char match_gpu[]     = "GPU support:        enabled";
+    gmx_bool   bMdrun          = FALSE;
+    gmx_bool   bMPI            = FALSE;
+    gmx_bool   bHaveGpuSupport = FALSE;
 
     /* Run a small test to see whether mpirun + mdrun work  */
     fprintf(stdout, "Making sure that mdrun can be executed. ");
@@ -675,6 +692,10 @@ static void check_mdrun_works(gmx_bool    bThreads,
             {
                 bMPI = TRUE;
             }
+            if (str_starts(line, match_gpu) )
+            {
+                bHaveGpuSupport = TRUE;
+            }
         }
     }
     fclose(fp);
@@ -706,6 +727,11 @@ static void check_mdrun_works(gmx_bool    bThreads,
                   filename);
     }
 
+    if (bNeedGpuSupport && !bHaveGpuSupport)
+    {
+        gmx_fatal(FARGS, "The mdrun executable did not have the expected GPU support.");
+    }
+
     fprintf(stdout, "passed.\n");
 
     /* Clean up ... */
@@ -713,36 +739,102 @@ static void check_mdrun_works(gmx_bool    bThreads,
     sfree(command);
 }
 
+/*! \brief Helper struct so we can parse the string with eligible GPU
+    IDs outside do_the_tests. */
+typedef struct eligible_gpu_ids
+{
+    int  n;        /**< Length of ids */
+    int *ids;      /**< Array of length n. NULL if no GPUs in use */
+} t_eligible_gpu_ids;
+
+/* Handles the no-GPU case by emitting an empty string. */
+static char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const t_eligible_gpu_ids *gpu_ids)
+{
+    char *command_line, *flag = "-gpu_id ", *ptr;
+    int   flag_length;
+
+    /* Reserve enough room for the option name, enough single-digit
+       GPU ids (since that is currently all that is possible to use
+       with mdrun), and a terminating NULL. */
+    flag_length = strlen(flag);
+    snew(command_line, flag_length + numRanks + 1);
+    ptr = command_line;
+
+    /* If the user has given no eligible GPU IDs, or we're trying the
+     * default behaviour, then there is nothing for g_tune_pme to give
+     * to mdrun -gpu_id */
+    if (gpu_ids->n > 0 && numPmeRanks > -1)
+    {
+        int   numPpRanks, max_num_ranks_for_each_GPU;
+        int   gpu_id, rank;
+
+        /* Write the option flag */
+        strcpy(ptr, flag);
+        ptr += flag_length;
+
+        numPpRanks                 = numRanks - numPmeRanks;
+        max_num_ranks_for_each_GPU = numPpRanks / gpu_ids->n;
+        if (max_num_ranks_for_each_GPU * gpu_ids->n != numPpRanks)
+        {
+            /* Some GPUs will receive more work than others, which
+             * we choose to be those with the lowest indices */
+            max_num_ranks_for_each_GPU++;
+        }
+
+        /* Loop over all eligible GPU ids */
+        for (gpu_id = 0, rank = 0; gpu_id < gpu_ids->n; gpu_id++)
+        {
+            int rank_for_this_GPU;
+            /* Loop over all PP ranks for GPU with ID gpu_id, building the
+               assignment string. */
+            for (rank_for_this_GPU = 0;
+                 rank_for_this_GPU < max_num_ranks_for_each_GPU && rank < numPpRanks;
+                 rank++, rank_for_this_GPU++)
+            {
+                *ptr = '0' + gpu_ids->ids[gpu_id];
+                ptr++;
+            }
+        }
+    }
+    *ptr = '\0';
+
+    return command_line;
+}
 
 static void launch_simulation(
-        gmx_bool    bLaunch,        /* Should the simulation be launched? */
-        FILE       *fp,             /* General log file */
-        gmx_bool    bThreads,       /* whether to use threads */
-        char       *cmd_mpirun,     /* Command for mpirun */
-        char       *cmd_np,         /* Switch for -np or -ntmpi or empty */
-        char       *cmd_mdrun,      /* Command for mdrun */
-        char       *args_for_mdrun, /* Arguments for mdrun */
-        const char *simulation_tpr, /* This tpr will be simulated */
-        int         nPMEnodes)      /* Number of PME nodes to use */
+        gmx_bool                  bLaunch,        /* Should the simulation be launched? */
+        FILE                     *fp,             /* General log file */
+        gmx_bool                  bThreads,       /* whether to use threads */
+        char                     *cmd_mpirun,     /* Command for mpirun */
+        char                     *cmd_np,         /* Switch for -np or -ntmpi or empty */
+        char                     *cmd_mdrun,      /* Command for mdrun */
+        char                     *args_for_mdrun, /* Arguments for mdrun */
+        const char               *simulation_tpr, /* This tpr will be simulated */
+        int                       nnodes,         /* Number of ranks to use */
+        int                       nPMEnodes,      /* Number of PME ranks to use */
+        const t_eligible_gpu_ids *gpu_ids)        /* Struct containing GPU IDs for
+                                                   * constructing mdrun command lines */
 {
-    char  *command;
+    char  *command, *cmd_gpu_ids;
 
 
     /* Make enough space for the system call command,
-     * (100 extra chars for -npme ... etc. options should suffice): */
-    snew(command, strlen(cmd_mpirun)+strlen(cmd_mdrun)+strlen(cmd_np)+strlen(args_for_mdrun)+strlen(simulation_tpr)+100);
+     * (200 extra chars for -npme ... etc. options should suffice): */
+    snew(command, strlen(cmd_mpirun)+strlen(cmd_mdrun)+strlen(cmd_np)+strlen(args_for_mdrun)+strlen(simulation_tpr)+200);
+
+    cmd_gpu_ids = make_gpu_id_command_line(nnodes, nPMEnodes, gpu_ids);
 
     /* Note that the -passall options requires args_for_mdrun to be at the end
      * of the command line string */
     if (bThreads)
     {
-        sprintf(command, "%s%s-npme %d -s %s %s",
-                cmd_mdrun, cmd_np, nPMEnodes, simulation_tpr, args_for_mdrun);
+        sprintf(command, "%s%s-npme %d -s %s %s %s",
+                cmd_mdrun, cmd_np, nPMEnodes, simulation_tpr, args_for_mdrun, cmd_gpu_ids);
     }
     else
     {
-        sprintf(command, "%s%s%s -npme %d -s %s %s",
-                cmd_mpirun, cmd_np, cmd_mdrun, nPMEnodes, simulation_tpr, args_for_mdrun);
+        sprintf(command, "%s%s%s -npme %d -s %s %s %s",
+                cmd_mpirun, cmd_np, cmd_mdrun, nPMEnodes, simulation_tpr, args_for_mdrun, cmd_gpu_ids);
     }
 
     fprintf(fp, "%s this command line to launch the simulation:\n\n%s", bLaunch ? "Using" : "Please use", command);
@@ -1324,29 +1416,30 @@ static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp,
     sfree(msg    );
 }
 
-
 static void do_the_tests(
-        FILE           *fp,             /* General g_tune_pme output file         */
-        char          **tpr_names,      /* Filenames of the input files to test   */
-        int             maxPMEnodes,    /* Max fraction of nodes to use for PME   */
-        int             minPMEnodes,    /* Min fraction of nodes to use for PME   */
-        int             npme_fixed,     /* If >= -1, test fixed number of PME
-                                         * nodes only                             */
-        const char     *npmevalues_opt, /* Which -npme values should be tested    */
-        t_perf        **perfdata,       /* Here the performace data is stored     */
-        int            *pmeentries,     /* Entries in the nPMEnodes list          */
-        int             repeats,        /* Repeat each test this often            */
-        int             nnodes,         /* Total number of nodes = nPP + nPME     */
-        int             nr_tprs,        /* Total number of tpr files to test      */
-        gmx_bool        bThreads,       /* Threads or MPI?                        */
-        char           *cmd_mpirun,     /* mpirun command string                  */
-        char           *cmd_np,         /* "-np", "-n", whatever mpirun needs     */
-        char           *cmd_mdrun,      /* mdrun command string                   */
-        char           *cmd_args_bench, /* arguments for mdrun in a string        */
-        const t_filenm *fnm,            /* List of filenames from command line    */
-        int             nfile,          /* Number of files specified on the cmdl. */
-        int             presteps,       /* DLB equilibration steps, is checked    */
-        gmx_int64_t     cpt_steps)      /* Time step counter in the checkpoint    */
+        FILE                     *fp,             /* General g_tune_pme output file         */
+        char                    **tpr_names,      /* Filenames of the input files to test   */
+        int                       maxPMEnodes,    /* Max fraction of nodes to use for PME   */
+        int                       minPMEnodes,    /* Min fraction of nodes to use for PME   */
+        int                       npme_fixed,     /* If >= -1, test fixed number of PME
+                                                   * nodes only                             */
+        const char               *npmevalues_opt, /* Which -npme values should be tested    */
+        t_perf                  **perfdata,       /* Here the performace data is stored     */
+        int                      *pmeentries,     /* Entries in the nPMEnodes list          */
+        int                       repeats,        /* Repeat each test this often            */
+        int                       nnodes,         /* Total number of nodes = nPP + nPME     */
+        int                       nr_tprs,        /* Total number of tpr files to test      */
+        gmx_bool                  bThreads,       /* Threads or MPI?                        */
+        char                     *cmd_mpirun,     /* mpirun command string                  */
+        char                     *cmd_np,         /* "-np", "-n", whatever mpirun needs     */
+        char                     *cmd_mdrun,      /* mdrun command string                   */
+        char                     *cmd_args_bench, /* arguments for mdrun in a string        */
+        const t_filenm           *fnm,            /* List of filenames from command line    */
+        int                       nfile,          /* Number of files specified on the cmdl. */
+        int                       presteps,       /* DLB equilibration steps, is checked    */
+        gmx_int64_t               cpt_steps,      /* Time step counter in the checkpoint    */
+        const t_eligible_gpu_ids *gpu_ids)        /* Struct containing GPU IDs for
+                                                   * constructing mdrun command lines */
 {
     int      i, nr, k, ret, count = 0, totaltests;
     int     *nPMEnodes = NULL;
@@ -1356,7 +1449,7 @@ static void do_the_tests(
     char     buf[STRLEN];
     gmx_bool bResetProblem = FALSE;
     gmx_bool bFirst        = TRUE;
-
+    gmx_bool bUsingGpus    = 0 < gpu_ids->n;
 
     /* This string array corresponds to the eParselog enum type at the start
      * of this file */
@@ -1370,6 +1463,8 @@ static void do_the_tests(
         "TPX version conflict!",
         "mdrun was not started in parallel!",
         "Number of PP nodes has a prime factor that is too large.",
+        "The number of PP ranks did not suit the number of GPUs.",
+        "Some GPUs were not detected or are incompatible.",
         "An error occured."
     };
     char        str_PME_f_load[13];
@@ -1431,7 +1526,11 @@ static void do_the_tests(
         /* Loop over various numbers of PME nodes: */
         for (i = 0; i < *pmeentries; i++)
         {
+            char *cmd_gpu_ids = NULL;
+
             pd = &perfdata[k][i];
+
+            cmd_gpu_ids = make_gpu_id_command_line(nnodes, nPMEnodes[i], gpu_ids);
 
             /* Loop over the repeats for each scenario: */
             for (nr = 0; nr < repeats; nr++)
@@ -1442,8 +1541,8 @@ static void do_the_tests(
                  * the -passall (if set) options requires cmd_args_bench to be
                  * at the end of the command line string */
                 snew(pd->mdrun_cmd_line, cmdline_length);
-                sprintf(pd->mdrun_cmd_line, "%s-npme %d -s %s %s",
-                        cmd_stub, pd->nPMEnodes, tpr_names[k], cmd_args_bench);
+                sprintf(pd->mdrun_cmd_line, "%s-npme %d -s %s %s %s",
+                        cmd_stub, pd->nPMEnodes, tpr_names[k], cmd_args_bench, cmd_gpu_ids);
 
                 /* To prevent that all benchmarks fail due to a show-stopper argument
                  * on the mdrun command line, we make a quick check first */
@@ -1520,6 +1619,7 @@ static void do_the_tests(
                     break;
                 }
             } /* end of repeats loop */
+            sfree(cmd_gpu_ids);
         }     /* end of -npme loop */
     }         /* end of tpr file loop */
 
@@ -2037,6 +2137,13 @@ int gmx_tune_pme(int argc, char *argv[])
         "(options [TT]-b[tt]*), these will be automatically deleted after each test.[PAR]",
         "If you want the simulation to be started automatically with the",
         "optimized parameters, use the command line option [TT]-launch[tt].[PAR]",
+        "Basic support for GPU-enabled [TT]mdrun[tt] exists. Give a string containing the IDs",
+        "of the GPUs that you wish to use in the optimization in the [TT]-gpu_id[tt]",
+        "command-line argument. Unlike [TT]mdrun -gpu_id[tt], this does not imply a mapping",
+        "but merely the eligible set. [TT]g_tune_pme[tt] will construct calls to",
+        "mdrun that use this set appropriately, assuming that PP ranks with low indices",
+        "should map to GPUs with low indices, and increasing both monotonically",
+        "over the respective sets.[PAR]",
     };
 
     int             nnodes         = 1;
@@ -2066,16 +2173,19 @@ int gmx_tune_pme(int argc, char *argv[])
     int             sim_part = 1; /* For benchmarks with checkpoint files */
     char            bbuf[STRLEN];
 
-    /* Default program names if nothing else is found */
-    char         *cmd_mpirun = NULL, *cmd_mdrun = NULL;
-    char         *cmd_args_bench, *cmd_args_launch;
-    char         *cmd_np = NULL;
 
-    t_perf      **perfdata = NULL;
-    t_inputinfo  *info;
-    int           i;
-    FILE         *fp;
-    t_commrec    *cr;
+    /* Default program names if nothing else is found */
+    char               *cmd_mpirun = NULL, *cmd_mdrun = NULL;
+    char               *cmd_args_bench, *cmd_args_launch;
+    char               *cmd_np           = NULL;
+    char               *eligible_gpu_ids = NULL; /* IDs of GPUs that are eligible for computation */
+    t_eligible_gpu_ids *gpu_ids          = NULL;
+
+    t_perf            **perfdata = NULL;
+    t_inputinfo        *info;
+    int                 i;
+    FILE               *fp;
+    t_commrec          *cr;
 
     /* Print out how long the tuning took */
     double          seconds;
@@ -2197,6 +2307,8 @@ int gmx_tune_pme(int argc, char *argv[])
           "Launch the real simulation after optimization" },
         { "-bench",    FALSE, etBOOL, {&bBenchmark},
           "Run the benchmarks or just create the input [TT].tpr[tt] files?" },
+        { "-gpu_id",   FALSE, etSTR,  {&eligible_gpu_ids},
+          "List of GPU device id-s that are eligible for use (unlike mdrun, does not imply any mapping)" },
         /******************/
         /* mdrun options: */
         /******************/
@@ -2303,6 +2415,9 @@ int gmx_tune_pme(int argc, char *argv[])
                 maxPMEfraction, minPMEfraction, npme_fixed,
                 bench_nsteps, fnm, NFILE, sim_part, presteps,
                 asize(pa), pa);
+    /* Check any GPU IDs passed make sense, and fill the data structure for them */
+    snew(gpu_ids, 1);
+    parse_digits_from_plain_string(eligible_gpu_ids, &gpu_ids->n, &gpu_ids->ids);
 
     /* Determine the maximum and minimum number of PME nodes to test,
      * the actual list of settings is build in do_the_tests(). */
@@ -2349,7 +2464,7 @@ int gmx_tune_pme(int argc, char *argv[])
     get_program_paths(bThreads, &cmd_mpirun, &cmd_mdrun);
     if (bBenchmark && repeats > 0)
     {
-        check_mdrun_works(bThreads, cmd_mpirun, cmd_np, cmd_mdrun);
+        check_mdrun_works(bThreads, cmd_mpirun, cmd_np, cmd_mdrun, NULL != eligible_gpu_ids);
     }
 
     /* Print some header info to file */
@@ -2448,7 +2563,7 @@ int gmx_tune_pme(int argc, char *argv[])
     {
         do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, npme_fixed, npmevalues_opt[0], perfdata, &pmeentries,
                      repeats, nnodes, ntprs, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,
-                     cmd_args_bench, fnm, NFILE, presteps, cpt_steps);
+                     cmd_args_bench, fnm, NFILE, presteps, cpt_steps, gpu_ids);
 
         fprintf(fp, "\nTuning took%8.1f minutes.\n", (gmx_gettime()-seconds)/60.0);
 
@@ -2477,7 +2592,7 @@ int gmx_tune_pme(int argc, char *argv[])
 
         /* Now start the real simulation if the user requested it ... */
         launch_simulation(bLaunch, fp, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,
-                          cmd_args_launch, simulation_tpr, best_npme);
+                          cmd_args_launch, simulation_tpr, nnodes, best_npme, gpu_ids);
     }
     gmx_ffclose(fp);
 
