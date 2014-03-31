@@ -167,6 +167,16 @@ static gmx_bool is_equal(real a, real b)
 }
 
 
+static void remove_if_exists(const char *fn)
+{
+    if (gmx_fexist(fn))
+    {
+        fprintf(stdout, "Deleting %s\n", fn);
+        remove(fn);
+    }
+}
+
+
 static void finalize(const char *fn_out)
 {
     char  buf[STRLEN];
@@ -201,7 +211,6 @@ static int parse_logfile(const char *logfile, const char *errfile,
     const char      matchstring[] = "R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G";
     const char      errSIG[]      = "signal, stopping at the next";
     int             iFound;
-    int             procs;
     float           dum1, dum2, dum3, dum4;
     int             ndum;
     int             npme;
@@ -320,7 +329,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Already found matchstring - look for cycle data */
                 if (str_starts(line, "Total  "))
                 {
-                    sscanf(line, "Total %d %lf", &procs, &(perfdata->Gcycles[test_nr]));
+                    sscanf(line, "Total %lf", &(perfdata->Gcycles[test_nr]));
                     iFound = eFoundCycleStr;
                 }
                 break;
@@ -647,7 +656,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
     /* This string should always be identical to the one in copyrite.c,
      * gmx_print_version_info() in the defined(GMX_MPI) section */
     const char match_mpi[]    = "MPI library:        MPI";
-    const char match_mdrun[]  = "Program: ";
+    const char match_mdrun[]  = "Executable: ";
     gmx_bool   bMdrun         = FALSE;
     gmx_bool   bMPI           = FALSE;
 
@@ -1159,12 +1168,7 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
         /* Delete the files which are created for each benchmark run: (options -b*) */
         else if ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt, nfile, fnm) || !is_optional(&fnm[i])) )
         {
-            fn = opt2fn(opt, nfile, fnm);
-            if (gmx_fexist(fn))
-            {
-                fprintf(stdout, "Deleting %s\n", fn);
-                remove(fn);
-            }
+            remove_if_exists(opt2fn(opt, nfile, fnm));
         }
     }
 }
@@ -1315,8 +1319,10 @@ static void init_perfdata(t_perf *perfdata[], int ntprs, int datasets, int repea
 
 
 /* Check for errors on mdrun -h */
-static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp)
+static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp, 
+        const t_filenm *fnm, int nfile)
 {
+    const char *fn=NULL;
     char *command, *msg;
     int   ret;
 
@@ -1324,10 +1330,9 @@ static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp)
     snew(command, length +  15);
     snew(msg, length + 500);
 
-    fprintf(stdout, "Making sure the benchmarks can be executed ...\n");
-    /* FIXME: mdrun -h no longer actually does anything useful.
-     * It unconditionally prints the help, ignoring all other options. */
-    sprintf(command, "%s-h -quiet", mdrun_cmd_line);
+    fprintf(stdout, "Making sure the benchmarks can be executed by running just 1 step...\n");
+    sprintf(command, "%s -nsteps 1 -quiet", mdrun_cmd_line);
+    fprintf(stdout, "Executing '%s' ...\n", command);
     ret = gmx_system_call(command);
 
     if (0 != ret)
@@ -1345,6 +1350,14 @@ static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp)
 
         exit(ret);
     }
+    fprintf(stdout, "Benchmarks can be executed!\n");
+
+    /* Clean up the benchmark output files we just created */
+    fprintf(stdout, "Cleaning up ...\n");
+    remove_if_exists(opt2fn("-bc", nfile, fnm));
+    remove_if_exists(opt2fn("-be", nfile, fnm));
+    remove_if_exists(opt2fn("-bcpo", nfile, fnm));
+    remove_if_exists(opt2fn("-bg", nfile, fnm));
 
     sfree(command);
     sfree(msg    );
@@ -1472,10 +1485,10 @@ static void do_the_tests(
                         cmd_stub, pd->nPMEnodes, tpr_names[k], cmd_args_bench);
 
                 /* To prevent that all benchmarks fail due to a show-stopper argument
-                 * on the mdrun command line, we make a quick check with mdrun -h first */
+                 * on the mdrun command line, we make a quick check first */
                 if (bFirst)
                 {
-                    make_sure_it_runs(pd->mdrun_cmd_line, cmdline_length, fp);
+                    make_sure_it_runs(pd->mdrun_cmd_line, cmdline_length, fp, fnm, nfile);
                 }
                 bFirst = FALSE;
 
