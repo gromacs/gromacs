@@ -32,11 +32,24 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+if(GMX_CUDA_KERNELS_SINGLE_COMPILATION_UNIT)
+    set(SINGLE_COMPILATION_UNIT "-DGMX_CUDA_KERNELS_SINGLE_COMPILATION_UNIT")
+else()
+    set(NBNXN_CUDA_KERNEL_SOURCES
+            nbnxn_cuda_kernel_F_noprune.cu
+            nbnxn_cuda_kernel_F_prune.cu
+            nbnxn_cuda_kernel_VF_noprune.cu
+            nbnxn_cuda_kernel_VF_prune.cu)
+endif()
+
 if(GMX_GPU)
-    file(GLOB CUDA_NB_SOURCES *.cu)
+    set(NBNXN_CUDA_SOURCES
+         nbnxn_cuda.cu
+         nbnxn_cuda_data_mgmt.cu
+         ${NBNXN_CUDA_KERNEL_SOURCES})
     CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-    CUDA_ADD_LIBRARY(nbnxn_cuda STATIC ${CUDA_NB_SOURCES}
-            OPTIONS
+    CUDA_ADD_LIBRARY(nbnxn_cuda STATIC ${NBNXN_CUDA_SOURCES}
+        OPTIONS ${SINGLE_COMPILATION_UNIT}
             RELWITHDEBINFO -g
             DEBUG -g -D_DEBUG_=1)
     target_link_libraries(nbnxn_cuda cuda_tools)

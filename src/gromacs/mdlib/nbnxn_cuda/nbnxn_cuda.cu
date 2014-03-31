@@ -43,8 +43,6 @@
 #include <limits>
 #endif
 
-#include <cuda.h>
-
 #include "types/simple.h"
 #include "types/nbnxn_pairlist.h"
 #include "types/nb_verlet.h"
@@ -74,20 +72,16 @@ texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
-/* Convenience defines */
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+/***** The kernel definitions come here *****/
 
-/***** The kernels come here *****/
-#include "nbnxn_cuda_kernel_utils.cuh"
-
-/* Top-level kernel generation: will generate through multiple inclusion the
- * following flavors for all kernels:
+/* Top-level kernel definition generation: will generate through multiple
+ * inclusion the following flavors for all kernel definitions:
  * - force-only output;
  * - force and energy output;
  * - force-only with pair list pruning;
  * - force and energy output with pair list pruning.
  */
+#define FUNCTION_DEFINITION_ONLY
 /** Force only **/
 #include "nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
@@ -104,6 +98,15 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #include "nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
+#undef FUNCTION_DEFINITION_ONLY
+
+
+#ifdef GMX_CUDA_KERNELS_SINGLE_COMPILATION_UNIT
+#include "nbnxn_cuda_kernel_F_noprune.cu"
+#include "nbnxn_cuda_kernel_F_prune.cu"
+#include "nbnxn_cuda_kernel_VF_noprune.cu"
+#include "nbnxn_cuda_kernel_VF_prune.cu"
+#endif
 
 /*! Nonbonded kernel function pointer type */
 typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
