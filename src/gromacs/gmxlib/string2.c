@@ -589,3 +589,36 @@ str_to_int64_t(const char *str, char **endptr)
     return _strtoi64(str, endptr, 10);
 #endif
 }
+
+void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int **digitlist)
+{
+    int i;
+
+    if (NULL == digitstring)
+    {
+        *ndigits   = 0;
+        *digitlist = NULL;
+        return;
+    }
+
+    *ndigits = strlen(digitstring);
+
+    snew(*digitlist, *ndigits);
+
+    for (i = 0; i < *ndigits; i++)
+    {
+        if (digitstring[i] < '0' || digitstring[i] > '9')
+        {
+            gmx_fatal(FARGS, "Invalid character in digit-only string: '%c'\n",
+                      digitstring[i]);
+        }
+        (*digitlist)[i] = digitstring[i] - '0';
+    }
+}
+
+static void parse_digits_from_csv_string(const char gmx_unused *digitstring, int gmx_unused *ndigits, int gmx_unused *digitlist)
+{
+    /* TODO Implement csv format to support (e.g.) more than 10
+       different GPUs in a node. */
+    gmx_incons("Not implemented yet");
+}
