@@ -45,7 +45,6 @@
 #include <limits>
 #endif
 
-#include <cuda.h>
 
 #ifdef TMPI_ATOMICS
 #include "thread_mpi/atomic.h"
@@ -76,50 +75,16 @@ texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
-/* Convenience defines */
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+/***** The kernel definitions come here *****/
 
-/* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
- * warp-pairs per block.
- *
- * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
- * blocks/multiproc, is the fastest even though this setup gives low occupancy.
- * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
- * per multiprocessor is reduced proportionally to get the original number of max
- * threads in flight (and slightly lower performance).
- * - On CC 3.7 there are enough registers to double the number of threads; using
- * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
- * with low-register use).
- *
- * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
- * shuffle-based reduction, hence CC >= 3.0.
- */
-
-/* Kernel launch bounds as function of NTHREAD_Z.
- * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
- */
-#if __CUDA_ARCH__ == 370
-#define NTHREAD_Z           (2)
-#define MIN_BLOCKS_PER_MP   (16)
-#else
-#define NTHREAD_Z           (1)
-#define MIN_BLOCKS_PER_MP   (16)
-#endif
-#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
-
-
-/***** The kernels come here *****/
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
-
-/* Top-level kernel generation: will generate through multiple inclusion the
- * following flavors for all kernels:
+/* Top-level kernel definition generation: will generate through multiple
+ * inclusion the following flavors for all kernel definitions:
  * - force-only output;
  * - force and energy output;
  * - force-only with pair list pruning;
  * - force and energy output with pair list pruning.
  */
+#define FUNCTION_DEFINITION_ONLY
 /** Force only **/
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
@@ -136,6 +101,15 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
+#undef FUNCTION_DEFINITION_ONLY
+
+
+#ifdef GMX_CUDA_KERNELS_SINGLE_COMPILATION_UNIT
+#include "nbnxn_cuda_kernel_F_noprune.cu"
+#include "nbnxn_cuda_kernel_F_prune.cu"
+#include "nbnxn_cuda_kernel_VF_noprune.cu"
+#include "nbnxn_cuda_kernel_VF_prune.cu"
+#endif
 
 /*! Nonbonded kernel function pointer type */
 typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,

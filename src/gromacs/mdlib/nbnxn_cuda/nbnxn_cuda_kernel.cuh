@@ -98,6 +98,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
  const cu_nbparam_t nbparam,
  const cu_plist_t plist,
  bool bCalcFshift)
+#ifdef FUNCTION_DEFINITION_ONLY
+    ; /* Only do function definition, omit the function body. */
+#else
 {
     /* convenience variables */
     const nbnxn_sci_t *pl_sci       = plist.sci;
@@ -557,6 +560,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 #endif
 }
+#endif /* FUNCTION_DECLARATION_ONLY */
 
 #undef EL_EWALD_ANY
 #undef EXCLUSION_FORCES

@@ -135,6 +135,11 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         ")
     endif()
 
+    # with CUDA <v5.0 we need to use single compilation unit for kernels
+    if (CUDA_VERSION VERSION_LESS "5.0")
+        set(GMX_CUDA_KERNELS_SINGLE_COMPILATION_UNIT ON)
+    endif()
+
     # Set the CUDA GPU architectures to compile for:
     # - with CUDA >v4.2 compute capability 2.0, 2.1 is, but 3.0 is not supported:
     #     => compile sm_20 cubin, and compute_20 PTX
