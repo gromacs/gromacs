@@ -52,7 +52,6 @@
  */
 #include <string.h>
 
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/math/utilities.h"
@@ -62,6 +61,7 @@
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "evaluate.h"
 #include "mempool.h"

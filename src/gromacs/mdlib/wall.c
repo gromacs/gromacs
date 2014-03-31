@@ -45,7 +45,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "force.h"
 #include "gromacs/fileio/filenm.h"
 #include "nrnb.h"

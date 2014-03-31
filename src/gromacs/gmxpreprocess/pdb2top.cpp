@@ -43,7 +43,7 @@
 #include <ctype.h>
 
 #include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "symtab.h"
 #include "gromacs/fileio/futil.h"

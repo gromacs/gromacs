@@ -39,7 +39,7 @@
 #endif
 
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/math/utilities.h"
 #include "gmx_fatal.h"

@@ -36,7 +36,7 @@
 #include "gromacs/fileio/filenm.h"
 #include "macros.h"
 #include "pbc.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "xvgr.h"

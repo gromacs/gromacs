@@ -41,7 +41,7 @@
 #include <math.h>
 #include "sysstuff.h"
 #include <string.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "xutil.h"
 #include "gmx_fatal.h"

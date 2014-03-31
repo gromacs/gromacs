@@ -44,7 +44,7 @@
 #include "princ.h"
 #include "gromacs/fileio/futil.h"
 #include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "names.h"

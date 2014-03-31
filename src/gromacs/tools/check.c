@@ -53,7 +53,7 @@
 #include "pbc.h"
 #include "physics.h"
 #include "index.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "mtop_util.h"
 #include "gromacs/fileio/futil.h"

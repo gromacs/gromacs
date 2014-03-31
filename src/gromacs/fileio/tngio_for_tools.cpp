@@ -47,11 +47,12 @@
 #include "../../external/tng_io/include/tng_io.h"
 #endif
 
-#include "gromacs/utility/common.h"
 #include "gromacs/legacyheaders/types/atoms.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/physics.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
+
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/smalloc.h"
 
 void gmx_prepare_tng_writing(const char              *filename,
                              char                     mode,

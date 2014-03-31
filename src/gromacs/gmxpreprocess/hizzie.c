@@ -43,7 +43,7 @@
 #include <string.h>
 #include "typedefs.h"
 #include "gromacs/fileio/pdbio.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "physics.h"
 #include "toputil.h"

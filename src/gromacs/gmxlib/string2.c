@@ -62,7 +62,7 @@
 #include <assert.h>
 
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "main.h"

@@ -42,7 +42,7 @@
 
 #include <math.h>
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "physics.h"
 #include "pbc.h"

@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"

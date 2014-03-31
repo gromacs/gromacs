@@ -226,14 +226,13 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/fileio/futil.h"
-#include "gromacs/legacyheaders/smalloc.h"
-
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "keywords.h"

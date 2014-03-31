@@ -41,7 +41,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "topdirs.h"

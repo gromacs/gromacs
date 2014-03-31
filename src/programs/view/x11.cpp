@@ -41,7 +41,7 @@
 #include <string.h>
 #include "typedefs.h"
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "Xstuff.h"
 #include "x11.h"
 

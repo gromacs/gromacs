@@ -38,7 +38,7 @@
 #endif
 #include <assert.h>
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "constr.h"
 #include "types/commrec.h"

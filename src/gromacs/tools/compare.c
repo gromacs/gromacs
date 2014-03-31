@@ -44,7 +44,7 @@
 #include <string.h>
 #include "main.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/futil.h"
 #include "sysstuff.h"
 #include "txtdump.h"

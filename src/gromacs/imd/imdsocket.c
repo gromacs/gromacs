@@ -52,7 +52,7 @@
 
 
 #include <string.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_fatal.h"
 #include "imdsocket.h"
 #include "imd.h"

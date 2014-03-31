@@ -39,7 +39,7 @@
 #include <string.h>
 
 #include "gromacs/random/random.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "sysstuff.h"
 #include "vec.h"
 #include "nsfactor.h"

@@ -119,7 +119,6 @@
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/physics.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/math/utilities.h"
@@ -128,6 +127,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "selelem.h"
 

@@ -39,7 +39,7 @@
 #endif
 
 #include "cmat.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"
 #include "xvgr.h"

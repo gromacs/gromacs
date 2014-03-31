@@ -46,7 +46,7 @@
 #include "physics.h"
 #include "vec.h"
 #include "pbc.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"

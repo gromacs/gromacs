@@ -44,7 +44,7 @@
 
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "genborn.h"
 #include "vec.h"
 #include "gromacs/fileio/pdbio.h"

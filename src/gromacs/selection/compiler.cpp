@@ -276,7 +276,6 @@
 #include <math.h>
 #include <stdarg.h>
 
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/indexutil.h"
@@ -284,6 +283,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "evaluate.h"

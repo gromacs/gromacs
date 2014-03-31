@@ -41,7 +41,7 @@
 #include "typedefs.h"
 #include "vec.h"
 #include "txtdump.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "gromacs/linearalgebra/nrjac.h"
 

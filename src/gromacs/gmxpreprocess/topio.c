@@ -49,7 +49,7 @@
 #include "gromacs/fileio/futil.h"
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "txtdump.h"

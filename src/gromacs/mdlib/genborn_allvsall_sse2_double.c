@@ -42,7 +42,7 @@
 #include "types/simple.h"
 
 #include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "network.h"
 #include "physics.h"

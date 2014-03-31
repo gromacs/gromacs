@@ -39,7 +39,7 @@
 #endif
 
 #include "gromacs/commandline/pargs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/fileio/confio.h"
 #include "xvgr.h"

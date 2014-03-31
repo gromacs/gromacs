@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "types/hw_info.h"
 
 #include "gpu_utils.h"

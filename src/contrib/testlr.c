@@ -39,7 +39,7 @@
 #include "physics.h"
 #include "macros.h"
 #include "names.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/writeps.h"

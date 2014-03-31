@@ -52,7 +52,7 @@
 #include "gmx_fatal_collective.h"
 #include "md_logging.h"
 #include "gmx_cpuid.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gpu_utils.h"
 #include "copyrite.h"
 #include "gmx_detect_hardware.h"

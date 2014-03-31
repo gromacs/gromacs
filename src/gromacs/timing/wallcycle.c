@@ -42,7 +42,7 @@
 
 #include <string.h>
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_fatal.h"
 #include "md_logging.h"
 #include "string2.h"

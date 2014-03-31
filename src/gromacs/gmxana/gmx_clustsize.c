@@ -52,7 +52,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "index.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "physics.h"

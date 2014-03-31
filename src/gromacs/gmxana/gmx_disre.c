@@ -46,7 +46,7 @@
 #include "xvgr.h"
 #include "vec.h"
 #include "gromacs/fileio/confio.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
 #include "disre.h"
 #include "gromacs/commandline/pargs.h"

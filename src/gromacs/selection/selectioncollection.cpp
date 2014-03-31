@@ -50,7 +50,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/xvgr.h"
 
 #include "gromacs/onlinehelp/helpmanager.h"
@@ -62,6 +61,7 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "compiler.h"

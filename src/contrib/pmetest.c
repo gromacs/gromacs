@@ -38,7 +38,7 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
 #include "main.h"
 #include "nrnb.h"

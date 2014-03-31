@@ -48,7 +48,7 @@
 #ifdef GMX_USE_PLUGINS
 #include "vmdio.h"
 #endif
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "pbc.h"
 #include "gmxfio.h"
 #include "trxio.h"

@@ -48,7 +48,7 @@
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "txtdump.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"

@@ -45,7 +45,7 @@
 #include "sysstuff.h"
 #include "network.h"
 #include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

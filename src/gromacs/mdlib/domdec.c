@@ -45,7 +45,7 @@
 #include <assert.h>
 
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_fatal.h"
 #include "gmx_fatal_collective.h"
 #include "vec.h"

@@ -44,7 +44,7 @@
 #include "sysstuff.h"
 #include "string2.h"
 #include "network.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
 #include "main.h"
 #include "force.h"

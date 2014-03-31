@@ -34,22 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/utility/smalloc.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-/* This file is completely threadsafe - keep it that way! */
-
-#include "gromacs/utility/gmxmpi.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gmx_fatal.h"
-#include "smalloc.h"
-#include "main.h"
+
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
+#endif
+
+#include "gromacs/legacyheaders/gmx_fatal.h"
+
+#ifdef PRINT_ALLOC_KB
+#include "gromacs/utility/gmxmpi.h"
 #endif
 
 #ifdef DEBUG

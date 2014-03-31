@@ -42,7 +42,7 @@
 #include "sysstuff.h"
 #include <string.h>
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"
 #include "xvgr.h"

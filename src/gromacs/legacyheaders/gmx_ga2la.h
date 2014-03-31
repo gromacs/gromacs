@@ -39,7 +39,7 @@
 
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef __cplusplus
 extern "C" {

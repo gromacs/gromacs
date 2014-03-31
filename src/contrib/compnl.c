@@ -37,7 +37,7 @@
 #endif
 
 #include "ns.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "wnblist.h"
 #include "gromacs/fileio/futil.h"
 #include "macros.h"

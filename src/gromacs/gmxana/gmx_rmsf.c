@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include <math.h>
 #include "macros.h"
 #include "typedefs.h"

@@ -43,7 +43,7 @@
 #include "sysstuff.h"
 #include "physics.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"

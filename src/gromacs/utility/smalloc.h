@@ -67,8 +67,8 @@
  *
  * \inpublicapi
  */
-#ifndef _smalloc_h
-#define _smalloc_h
+#ifndef GMX_UTILITY_SMALLOC_H
+#define GMX_UTILITY_SMALLOC_H
 
 #include <stddef.h>
 
@@ -281,7 +281,7 @@ void gmx_snew_aligned_impl(const char *name, const char *file, int line,
  * \param[in]  size Number of bytes to allocate.
  *
  * Allocates memory for \p size bytes and sets this to \p ptr.
- * The allocated memory is not initialized.
+ * The allocated memory is initialized to zero.
  *
  * \hideinitializer
  */

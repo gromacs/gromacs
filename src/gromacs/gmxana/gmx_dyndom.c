@@ -40,7 +40,7 @@
 
 #include "gromacs/math/3dview.h"
 #include "gromacs/commandline/pargs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "index.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_fatal.h"

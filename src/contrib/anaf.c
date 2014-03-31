@@ -49,7 +49,7 @@
 #include "gmx_fatal.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/enxio.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"

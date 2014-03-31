@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "nrnb.h"
 #include "main.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     const char *name;

@@ -48,7 +48,7 @@
 #include "string2.h"
 #include "grompp-impl.h"
 #include "gromacs/fileio/futil.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "toputil.h"
 #include "gmx_fatal.h"
 #include "gpp_atomtype.h"

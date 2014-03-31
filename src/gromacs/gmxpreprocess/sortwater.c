@@ -40,7 +40,7 @@
 
 #include "typedefs.h"
 #include "gromacs/random/random.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "sortwater.h"
 

@@ -46,7 +46,7 @@
 #include "main.h"
 #include "mdrun.h"
 #include "nrnb.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "physics.h"
 #include "names.h"

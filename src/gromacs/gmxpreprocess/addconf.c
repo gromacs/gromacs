@@ -44,7 +44,7 @@
 #include <string.h>
 #include "vec.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "force.h"
 #include "names.h"

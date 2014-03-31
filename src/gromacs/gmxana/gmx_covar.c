@@ -49,7 +49,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"

@@ -43,7 +43,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "fgrid.h"
 #include "gromacs/fileio/futil.h"
 

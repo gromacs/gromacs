@@ -45,7 +45,7 @@
 #include "gmx_fatal.h"
 #include "string2.h"
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "xutil.h"
 #include "xdlghi.h"

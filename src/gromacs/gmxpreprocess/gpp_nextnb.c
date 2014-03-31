@@ -40,7 +40,7 @@
 #endif
 
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 /* #define DEBUG_NNB */
 #include "gpp_nextnb.h"

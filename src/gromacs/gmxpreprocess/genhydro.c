@@ -43,7 +43,7 @@
 
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "vec.h"

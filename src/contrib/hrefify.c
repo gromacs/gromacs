@@ -39,7 +39,7 @@
 #include <math.h>
 #include <string.h> 
 #include <ctype.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "string2.h"

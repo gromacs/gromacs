@@ -49,7 +49,7 @@
 #include "gromacs/fileio/confio.h"
 #include "typedefs.h"
 #include "index.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "index.h"
 

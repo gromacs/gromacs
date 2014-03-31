@@ -46,7 +46,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
 #include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "specbond.h"
 #include "pdb2top.h"
 #include "vec.h"

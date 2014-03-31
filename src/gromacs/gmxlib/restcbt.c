@@ -42,7 +42,7 @@
 #include "gromacs/math/utilities.h"
 #include "txtdump.h"
 #include "bondf.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "pbc.h"
 #include "ns.h"
 #include "macros.h"
