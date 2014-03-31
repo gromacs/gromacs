@@ -33,12 +33,26 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *  \brief
+ *  Utility constant and function declaration for the CUDA non-bonded kernels.
+ *  This header should be included once at the top level, just before the
+ *  kernels are included (has to be preceded by nbnxn_cuda_types.h).
+ *
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_mdlib
+ */
+
+
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
  */
+#include "config.h"
 
 #include "gromacs/gmxlib/cuda_tools/vectype_ops.cuh"
+
+#include "nbnxn_cuda_types.h"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
@@ -51,6 +65,23 @@
 #define ONE_SIXTH_F     0.16666667f
 #define ONE_TWELVETH_F  0.08333333f
 
+/* Use texture objects if supported by the compiler/RT and target hardware too. */
+#if defined HAVE_CUDA_TEXOBJ_SUPPORT && __CUDA_ARCH__ >= 300
+#define USE_TEXOBJ
+#endif
+
+/* With multiple compilation units this ensures that texture refs are available
+   in the the kernels' compilation units. */
+#ifndef GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+/*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
+extern texture<float, 1, cudaReadModeElementType> nbfp_texref;
+
+/*! Texture reference for LJ-PME parameters; bound to cu_nbparam_t.nbfp_comb */
+extern texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
+
+/*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
+extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
+#endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
