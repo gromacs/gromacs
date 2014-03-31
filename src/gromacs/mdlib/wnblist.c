@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "force.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "ns.h"
 #include "nrnb.h"

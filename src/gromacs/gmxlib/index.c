@@ -47,7 +47,7 @@
 #include "string2.h"
 #include "main.h"
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "invblock.h"
 #include "macros.h"
 #include "index.h"

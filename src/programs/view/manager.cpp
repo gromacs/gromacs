@@ -46,9 +46,8 @@
 #endif
 
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "smalloc.h"
 #include "macros.h"
 #include "atomprop.h"
 #include "names.h"

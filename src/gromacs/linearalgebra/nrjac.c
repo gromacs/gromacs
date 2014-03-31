@@ -40,7 +40,7 @@
 #include <math.h>
 
 #include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 static gmx_inline
 void do_rotate(double **a, int i, int j, int k, int l, double tau, double s)

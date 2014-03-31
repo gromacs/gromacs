@@ -51,7 +51,7 @@
 #include "gromacs/fileio/futil.h"
 #include "copyrite.h"
 #include "oenv.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "xvgr.h"
 #include "viewit.h"
 #include "vec.h"

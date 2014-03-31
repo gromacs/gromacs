@@ -43,7 +43,7 @@
 #include <algorithm>
 
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "buttons.h"
 #include "nleg.h"

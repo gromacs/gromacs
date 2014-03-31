@@ -42,7 +42,7 @@
 
 #include "futil.h"
 #include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmxfio.h"
 #include "enxio.h"
 #include "vec.h"

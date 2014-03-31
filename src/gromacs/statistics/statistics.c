@@ -40,7 +40,7 @@
 #endif
 #include <math.h>
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 
 static int gmx_dnint(double x)

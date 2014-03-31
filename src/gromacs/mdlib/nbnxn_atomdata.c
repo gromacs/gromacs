@@ -40,7 +40,7 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"
 #include "nbnxn_consts.h"

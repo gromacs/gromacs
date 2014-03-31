@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "domdec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "network.h"
 #include "pbc.h"
 #include "mdrun.h"

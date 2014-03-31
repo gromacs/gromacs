@@ -45,7 +45,7 @@
 #include "types/commrec.h"
 #include "vec.h"
 #include "coulomb.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "physics.h"
 #include "txtdump.h"
 #include "gromacs/fileio/futil.h"

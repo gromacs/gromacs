@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "physics.h"
 #include "names.h"

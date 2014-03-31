@@ -42,7 +42,7 @@
 #include "repl_ex.h"
 #include "network.h"
 #include "gromacs/random/random.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "physics.h"
 #include "copyrite.h"
 #include "macros.h"

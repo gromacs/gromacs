@@ -43,7 +43,7 @@
 #include <math.h>
 #include "sysstuff.h"
 #include "network.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
 #include "main.h"
 #include "chargegroup.h"

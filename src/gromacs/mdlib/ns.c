@@ -41,7 +41,7 @@
 #include <math.h>
 #include <string.h>
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"
 #include "vec.h"

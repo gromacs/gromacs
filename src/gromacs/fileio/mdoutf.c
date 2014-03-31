@@ -36,7 +36,6 @@
 
 #include "gromacs/legacyheaders/xvgr.h"
 #include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/mvdata.h"
 #include "gromacs/legacyheaders/domdec.h"
@@ -46,6 +45,8 @@
 #include "trajectory_writing.h"
 #include "checkpoint.h"
 #include "copyrite.h"
+
+#include "gromacs/utility/smalloc.h"
 
 struct gmx_mdoutf {
     t_fileio         *fp_trn;

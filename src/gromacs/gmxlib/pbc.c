@@ -48,7 +48,7 @@
 #include "gromacs/math/utilities.h"
 #include "main.h"
 #include "pbc.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
 #include "names.h"

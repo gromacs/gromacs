@@ -44,7 +44,7 @@
 #include "sysstuff.h"
 #include "string2.h"
 #include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "symtab.h"
 #include "pdbio.h"

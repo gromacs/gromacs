@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "physics.h"
 #include "macros.h"
 #include "vec.h"

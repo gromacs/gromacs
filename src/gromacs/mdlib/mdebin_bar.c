@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "gmx_fatal.h"
 #include "mdebin.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "mdebin_bar.h"

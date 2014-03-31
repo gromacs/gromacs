@@ -44,7 +44,7 @@
 
 #include "sysstuff.h"
 #include "gromacs/fileio/futil.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "index.h"
 #include "xdlghi.h"

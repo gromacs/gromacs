@@ -64,7 +64,6 @@
 
 #include "thread_mpi/mutex.h"
 
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
@@ -72,6 +71,7 @@
 #include "gromacs/selection/position.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {

@@ -52,7 +52,7 @@
 #include "copyrite.h"
 #include "macros.h"
 #include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"

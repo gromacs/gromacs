@@ -37,7 +37,7 @@
 #endif
 
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "random.h"

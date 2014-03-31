@@ -40,13 +40,13 @@
  * \ingroup module_selection
  */
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
 #include "selelem.h"

@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "network.h"
 #include "calcgrid.h"

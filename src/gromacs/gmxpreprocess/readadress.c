@@ -38,7 +38,7 @@
 #include "string2.h"
 #include "readir.h"
 #include "names.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_fatal.h"
 
 #define MAXPTR 254

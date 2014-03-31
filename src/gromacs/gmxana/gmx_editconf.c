@@ -44,7 +44,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "symtab.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/strdb.h"

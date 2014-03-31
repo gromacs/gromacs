@@ -44,7 +44,7 @@
 #include "copyrite.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "string2.h"
 #include "vec.h"
 #include "gromacs/statistics/statistics.h"

@@ -49,7 +49,6 @@
 
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/rmpbc.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fileio/timecontrol.h"
@@ -65,6 +64,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "analysissettings-impl.h"

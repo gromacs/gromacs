@@ -36,7 +36,7 @@
  */
 #include "oenv.h"
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/exceptions.h"

@@ -42,7 +42,7 @@
 #include <unistd.h> // for fork()
 #endif
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"

@@ -45,7 +45,7 @@
 
 #include "sysstuff.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "string2.h"
 #include "gromacs/fileio/confio.h"
 #include "vec.h"

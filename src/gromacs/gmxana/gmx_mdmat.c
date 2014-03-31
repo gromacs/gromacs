@@ -49,7 +49,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/matio.h"
 #include "xvgr.h"
 #include "index.h"

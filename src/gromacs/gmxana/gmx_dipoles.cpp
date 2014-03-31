@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "pbc.h"
 #include "bondf.h"

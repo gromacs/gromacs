@@ -41,7 +41,7 @@
 #include <string.h>
 #include "gmx_fatal.h"
 #include "main.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "network.h"
 #include "copyrite.h"

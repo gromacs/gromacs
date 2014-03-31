@@ -44,7 +44,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "physics.h"
 #include "force.h"

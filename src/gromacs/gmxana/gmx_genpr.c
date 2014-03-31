@@ -42,7 +42,7 @@
 #include "sysstuff.h"
 #include "gromacs/commandline/pargs.h"
 #include <string.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/futil.h"

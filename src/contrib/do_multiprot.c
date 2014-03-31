@@ -42,7 +42,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "mshift.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"

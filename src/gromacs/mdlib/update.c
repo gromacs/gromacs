@@ -44,7 +44,7 @@
 
 #include "types/commrec.h"
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "nrnb.h"
 #include "physics.h"

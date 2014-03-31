@@ -51,7 +51,7 @@
 #include "toppush.h"
 #include "toputil.h"
 #include "topdirs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_fatal.h"
 
 static void copy_bond (t_params *pr, int to, int from)

@@ -68,7 +68,7 @@
 #include "typedefs.h"
 #include "txtdump.h"
 #include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "coulomb.h"
 #include "gmx_fatal.h"
 #include "pme.h"

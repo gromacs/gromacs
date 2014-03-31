@@ -44,7 +44,7 @@
 #include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "physics.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
 #include "copyrite.h"

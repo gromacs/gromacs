@@ -39,7 +39,7 @@
 #endif
 
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "types/commrec.h"
 #include "network.h"

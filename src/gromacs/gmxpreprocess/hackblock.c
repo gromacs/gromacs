@@ -41,7 +41,7 @@
 
 #include <string.h>
 #include "hackblock.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "macros.h"
 
