@@ -371,9 +371,10 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
     }
 }
 
-/*! /brief Instances of this struct contain the data necessary to
- *         construct a single (protein) index group in
- *         analyse_prot(). */
+/*! \brief
+ * Cata necessary to construct a single (protein) index group in
+ * analyse_prot().
+ */
 typedef struct gmx_help_make_index_group
 {
     /** The set of atom names that will be used to form this index group */

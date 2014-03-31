@@ -92,7 +92,8 @@
  * The header file.h declares a gmx::File class for basic I/O support.
  *
  * The header path.h declares helpers for manipulating paths and for managing
- * directories.
+ * directories (this has been moved to src/gromacs/fileio/ to wait for
+ * resolution of #950).
  *
  * The fate of these headers depends on what is decided in Redmine issue #950.
  *

@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Wraps <mpi.h> usage in Gromacs.
  *
@@ -43,16 +43,15 @@
  * convenience.  It also disables MPI C++ bindings that can cause compilation
  * issues.
  *
- * \todo
- * This header is installed because commrec.h depends on it; it would be good
- * to encapsulate this dependency within the library, making the public
- * interface less dependent on the compilation options.
- *
  * \inlibraryapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_GMXMPI_H
 #define GMX_UTILITY_GMXMPI_H
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 /*! \cond */
 #ifdef GMX_LIB_MPI
@@ -76,8 +75,8 @@
 #endif /*MPI_INT64_T*/
 #else
 #ifdef GMX_THREAD_MPI
-#include "../legacyheaders/thread_mpi/tmpi.h"
-#include "../legacyheaders/thread_mpi/mpi_bindings.h"
+#include "thread_mpi/tmpi.h"
+#include "thread_mpi/mpi_bindings.h"
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;

@@ -203,7 +203,7 @@ typedef long
  *       one when later linking to the library it might happen that the
  *       library supports cyclecounters but not the headers, or vice versa.
  */
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
     (defined(__i386__) || defined(__x86_64__)))
 static __inline__ int gmx_cycles_have_counter(void)
 {
@@ -333,7 +333,7 @@ static int gmx_cycles_have_counter(void)
  *  routine.
  */
 #if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
-    (defined(__i386__) || defined(__x86_64__)))
+    (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* x86 with GCC inline assembly - pentium TSC register */
@@ -505,6 +505,13 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     return ret;
 }
 
+#elif defined(_CRAYC)
+#include <intrinsics.h>
+
+static __inline gmx_cycles_t gmx_cycles_read(void)
+{
+    return _rtc();
+}
 #else
 static gmx_cycles_t gmx_cycles_read(void)
 {

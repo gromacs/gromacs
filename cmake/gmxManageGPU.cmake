@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -64,11 +64,11 @@ if(GMX_GPU OR GMX_GPU_AUTO)
         # Noise is acceptable when there is a GPU or the user required one.
         set(FIND_CUDA_QUIETLY QUIET)
     endif()
-    # We support CUDA >=v3.2 on *nix, but <= v4.1 doesn't work with MSVC
+    # We support CUDA >=v4.0 on *nix, but <= v4.1 doesn't work with MSVC
     if(MSVC)
         find_package(CUDA 4.1 ${FIND_CUDA_QUIETLY})
     else()
-        find_package(CUDA 3.2 ${FIND_CUDA_QUIETLY})
+        find_package(CUDA 4.0 ${FIND_CUDA_QUIETLY})
     endif()
 endif()
 
@@ -115,10 +115,10 @@ ${_msg}")
     if (NOT CUDA_FOUND)
         if (GMX_GPU_AUTO)
             # Disable GPU acceleration in auto mode
-            message(STATUS "No compatible CUDA toolkit found (v3.2+), disabling native GPU acceleration")
+            message(STATUS "No compatible CUDA toolkit found (v4.0+), disabling native GPU acceleration")
             set_property(CACHE GMX_GPU PROPERTY VALUE OFF)
             set(CUDA_NOTFOUND_AUTO ON)
-        else ()
+        else()
             # the user requested CUDA, but it wasn't found
             message(FATAL_ERROR "${CUDA_NOTFOUND_MESSAGE}")
         endif()
@@ -168,11 +168,11 @@ macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
                 string(REGEX REPLACE "[ ]+" ";" _cxx_flags_nospace "${BUILD_CXXFLAGS}")
             endif()
             SET(${COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}; ${_cxx_flags_nospace}")
-        else ()
+        else()
             SET(${COMPILER_INFO} "N/A")
             SET(${COMPILER_FLAGS} "N/A")
-        endif ()
-    endif ()
+        endif()
+    endif()
 endmacro ()
 
 macro(gmx_gpu_setup)

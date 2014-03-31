@@ -43,19 +43,24 @@
 #include "moduletest.h"
 
 #include <math.h>
+
 #include <gtest/gtest.h>
-#include "testutils/cmdlinetest.h"
+
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/string2.h"
-#include "gromacs/utility/path.h"
+#include "gromacs/fileio/path.h"
 #include "gromacs/utility/stringutil.h"
+
 #include "../mdrun_main.h"
+
+#include "testutils/cmdlinetest.h"
 
 namespace
 {
 
-/*! Test fixture for replica exchange */
+/*! \brief
+ * Test fixture for replica exchange
+ */
 class ReplicaExchangeTest : public gmx::test::ParameterizedMdrunTestFixture
 {
     public:

@@ -38,12 +38,13 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#include <math.h>
-#include <assert.h>
 
 #include "typedefs.h"
 #include "string2.h"
@@ -89,7 +90,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
-
+#include "gromacs/imd/imd.h"
 #include "adress.h"
 #include "qmmm.h"
 
@@ -155,33 +156,29 @@ void print_time(FILE                     *out,
 }
 
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
-                         const gmx_walltime_accounting_t walltime_accounting)
+                         double the_time)
 {
-    int    i;
-    char   timebuf[STRLEN];
     char   time_string[STRLEN];
-    time_t tmptime;
 
-    if (fplog)
+    if (!fplog)
     {
-        if (walltime_accounting != NULL)
-        {
-            tmptime = (time_t) walltime_accounting_get_start_time_stamp(walltime_accounting);
-            gmx_ctime_r(&tmptime, timebuf, STRLEN);
-        }
-        else
-        {
-            tmptime = (time_t) gmx_gettime();
-            gmx_ctime_r(&tmptime, timebuf, STRLEN);
-        }
+        return;
+    }
+
+    {
+        int    i;
+        char   timebuf[STRLEN];
+        time_t temp_time = (time_t) the_time;
+
+        gmx_ctime_r(&temp_time, timebuf, STRLEN);
         for (i = 0; timebuf[i] >= ' '; i++)
         {
             time_string[i] = timebuf[i];
         }
         time_string[i] = '\0';
-
-        fprintf(fplog, "%s on node %d %s\n", title, nodeid, time_string);
     }
+
+    fprintf(fplog, "%s on node %d %s\n", title, nodeid, time_string);
 }
 
 void print_start(FILE *fplog, t_commrec *cr,
@@ -191,7 +188,8 @@ void print_start(FILE *fplog, t_commrec *cr,
     char buf[STRLEN];
 
     sprintf(buf, "Started %s", name);
-    print_date_and_time(fplog, cr->nodeid, buf, walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, buf,
+                        walltime_accounting_get_start_time_stamp(walltime_accounting));
 }
 
 static void sum_forces(int start, int end, rvec f[], rvec flr[])
@@ -1541,6 +1539,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
+    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+    IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
+
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
         /* In case of node-splitting, the PP nodes receive the long-range
@@ -2011,6 +2012,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
     }
+
+    /* Add forces from interactive molecular dynamics (IMD), if bIMD == TRUE. */
+    IMD_apply_forces(inputrec->bIMD, inputrec->imd, cr, f, wcycle);
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {

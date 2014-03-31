@@ -38,19 +38,6 @@
 #ifndef _simple_h
 #define _simple_h
 
-/* Dont remove this instance of HAVE_CONFIG_H!!!
- *
- * We dont _require_ config.h here, but IF one is
- * available it might contain valuable information about simple types
- * that helps us automate things better and avoid bailing out.
- *
- * Note that this does not have to be the gromacs config.h - several
- * package setups define these simple types.
- */
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 /* Information about integer data type sizes */
 #include <limits.h>
 #define __STDC_LIMIT_MACROS
@@ -208,75 +195,17 @@ typedef uint64_t gmx_uint64_t;
 #define GMX_UINT64_MAX UINT64_MAX
 #define GMX_UINT64_MIN UINT64_MIN
 
-#ifndef gmx_inline
-/* config.h tests for inline definitions and should work on a much wider range
- * of compilers, but does not work with installed headers. These compiler checks
- * still enable a real inline keyword for the most common compilers.
- */
-
-/* Try to define suitable inline keyword for gmx_inline.
- * Set it to empty if we cannot find one (and dont complain to the user)
- */
-#ifndef __cplusplus
-
-#ifdef __GNUC__
-/* GCC */
-#  define gmx_inline   __inline__
-#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
-/* ICC */
-#  define gmx_inline __inline__
-#elif defined(__PATHSCALE__)
-/* Pathscale */
-#  define gmx_inline __inline__
-#elif defined(__PGIC__)
-/* Portland */
-#  define gmx_inline __inline
-#elif defined _MSC_VER
-/* MSVC */
-#  define gmx_inline __inline
-#elif defined(__xlC__)
-/* IBM */
-#  define gmx_inline __inline
+#if !defined __cplusplus && _MSC_VER
+#define gmx_inline __inline
 #else
-#  define gmx_inline
+/* C++ or C99 */
+#define gmx_inline inline
 #endif
 
-#else
-/* C++ */
-#  define gmx_inline inline
-#endif
-
-#endif /* ifndef gmx_inline */
-
-
-/* Restrict keywords. Note that this has to be done for C++ too, unless
- * it was set from the more general checks if we had config.h (gmx internal)
- */
-#ifndef gmx_restrict
-
-#ifdef __GNUC__
-/* GCC */
-#  define gmx_restrict   __restrict__
-#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
-/* ICC */
-#  define gmx_restrict __restrict__
-#elif defined(__PATHSCALE__)
-/* Pathscale */
-#  define gmx_restrict __restrict
-#elif defined(__PGIC__)
-/* Portland */
-#  define gmx_restrict __restrict
-#elif defined _MSC_VER
-/* MSVC */
-#  define gmx_restrict __restrict
-#elif defined(__xlC__)
-/* IBM */
-#  define gmx_restrict __restrict
-#else
-#  define gmx_restrict
-#endif
-
-#endif
+/* ICC, GCC, MSVC, Pathscale, PGI, XLC support __restrict.
+ * Any other compiler can be added here. We cannot
+ * use restrict because it is in C99 but not in C++ */
+#define gmx_restrict __restrict
 
 /*
  * These attributes suppress compiler warnings about unused function arguments

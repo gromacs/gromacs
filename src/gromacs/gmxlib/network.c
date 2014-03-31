@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #include "gmx_fatal.h"
 #include "main.h"
 #include "smalloc.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "copyrite.h"
 #include <ctype.h>
@@ -774,7 +775,7 @@ void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gm
 
 
 #ifdef GMX_MPI
-void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
+static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 {
 #if defined(MPI_IN_PLACE_EXISTS)
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
@@ -797,7 +798,7 @@ void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 #endif
 
 #ifdef GMX_MPI
-void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
+static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 {
 #if defined(MPI_IN_PLACE_EXISTS)
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, mpi_comm);

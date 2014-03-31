@@ -43,4 +43,4 @@ gmx_install_headers(trajectoryanalysis ${TRAJECTORYANALYSIS_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
-endif (BUILD_TESTING)
+endif()

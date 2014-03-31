@@ -43,8 +43,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "sysstuff.h"
-#include "string2.h"
-#include "gromacs/fileio/futil.h"
 #include "network.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
@@ -55,8 +53,9 @@
 
 #include "fflibutil.h"
 
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/path.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 
 const char *fflib_forcefield_dir_ext()

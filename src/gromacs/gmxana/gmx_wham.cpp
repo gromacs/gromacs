@@ -44,8 +44,12 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <sstream>
 
 #include "gromacs/commandline/pargs.h"
@@ -58,7 +62,6 @@
 #include "gromacs/random/random.h"
 #include "gmx_ana.h"
 #include "macros.h"
-
 #include "string2.h"
 #include "xvgr.h"
 
@@ -3100,7 +3103,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 //! Boolean XOR
 #define WHAMBOOLXOR(a, b) ( ((!(a)) && (b)) || ((a) && (!(b))))
 
-/*! Number of elements in fnm (used for command line parsing) */
+//! Number of elements in fnm (used for command line parsing)
 #define NFILE asize(fnm)
 
 //! The main g_wham routine

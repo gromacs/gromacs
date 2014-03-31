@@ -178,6 +178,8 @@ The force derived from this potential is:
 \ve{F}_i(\rvij) = f \frac{q_i q_j}{\epsr\rij^2}\rnorm
 \eeq
 
+A plain Coulomb interaction should only be used without cut-off or when all pairs fall within the cut-off, since there is an abrupt, large change in the force at the cut-off. In case you do want to use a cut-off, the potential can be shifted by a constant to make the potential the integral of the force. With the group cut-off scheme, this shift is only applied to non-excluded pairs. With the Verlet cut-off scheme, the shift is also applied to excluded pairs and self interactions, which makes the potential equivalent to a reaction-field with $\epsrf=1$ (see below).
+
 In {\gromacs} the  relative \swapindex{dielectric}{constant} 
 \normindex{$\epsr$}
 may be set in the in the input for {\tt grompp}. 

@@ -73,7 +73,7 @@ gmx_mm_transpose_sum2_pr(__m128d in0, __m128d in1)
     return _mm_add_pd(tr0, tr1);
 }
 
-static inline __m128
+static gmx_inline __m128
 gmx_mm128_invsqrt_ps_single(__m128 x)
 {
     const __m128 half  = _mm_set_ps(0.5, 0.5, 0.5, 0.5);

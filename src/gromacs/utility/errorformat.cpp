@@ -49,8 +49,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/legacyheaders/copyrite.h"
-
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -76,7 +75,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     }
 
     std::fprintf(fp, "\n-------------------------------------------------------\n");
-    std::fprintf(fp, "Program:     %s, %s\n", programName, GromacsVersion());
+    std::fprintf(fp, "Program:     %s, %s\n", programName, gmx_version());
     if (file != NULL)
     {
         // TODO: Check whether this works on Windows. If it doesn't, perhaps

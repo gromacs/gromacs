@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,7 @@
 #ifndef GMX_HARDWARE_DETECT_H
 #define GMX_HARDWARE_DETECT_H
 
-#include "types/hw_info.h"
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,7 +48,6 @@ extern "C" {
 /* the init and consistency functions depend on commrec that may not be
    consistent in cuda because MPI types don't exist there.  */
 #ifndef __CUDACC__
-#include "types/commrec.h"
 /* return a pointer to a global hwinfo structure. */
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs);

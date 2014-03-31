@@ -126,7 +126,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
     table_spline3_fill_ewald_lr(ftmp, NULL, NULL, tabsize,
-                                1/tabscale, nbp->ewald_beta);
+                                1/tabscale, nbp->ewald_beta, v_q_ewald_lr);
 
     /* If the table pointer == NULL the table is generated the first time =>
        the array pointer will be saved to nbparam and the texture is bound.
@@ -259,18 +259,10 @@ static int pick_ewald_kernel_type(bool                   bTwinCut,
     return kernel_type;
 }
 
-
-/*! Initializes the nonbonded parameter data structure. */
-static void init_nbparam(cu_nbparam_t              *nbp,
-                         const interaction_const_t *ic,
-                         const nbnxn_atomdata_t    *nbat,
-                         const cuda_dev_info_t     *dev_info)
+/*! Copies all parameters related to the cut-off from ic to nbp */
+static void set_cutoff_parameters(cu_nbparam_t              *nbp,
+                                  const interaction_const_t *ic)
 {
-    cudaError_t stat;
-    int         ntypes, nnbfp, nnbfp_comb;
-
-    ntypes  = nbat->ntype;
-
     nbp->ewald_beta       = ic->ewaldcoeff_q;
     nbp->sh_ewald         = ic->sh_ewald;
     nbp->epsfac           = ic->epsfac;
@@ -287,6 +279,20 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     nbp->dispersion_shift = ic->dispersion_shift;
     nbp->repulsion_shift  = ic->repulsion_shift;
     nbp->vdw_switch       = ic->vdw_switch;
+}
+
+/*! Initializes the nonbonded parameter data structure. */
+static void init_nbparam(cu_nbparam_t              *nbp,
+                         const interaction_const_t *ic,
+                         const nbnxn_atomdata_t    *nbat,
+                         const cuda_dev_info_t     *dev_info)
+{
+    cudaError_t stat;
+    int         ntypes, nnbfp, nnbfp_comb;
+
+    ntypes  = nbat->ntype;
+
+    set_cutoff_parameters(nbp, ic);
 
     if (ic->vdwtype == evdwCUT)
     {
@@ -424,9 +430,7 @@ void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t           cu_nb,
 {
     cu_nbparam_t *nbp = cu_nb->nbparam;
 
-    nbp->rlist_sq       = ic->rlist * ic->rlist;
-    nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
-    nbp->ewald_beta     = ic->ewaldcoeff_q;
+    set_cutoff_parameters(nbp, ic);
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  cu_nb->dev_info);

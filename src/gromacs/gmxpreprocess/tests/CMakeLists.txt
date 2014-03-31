@@ -35,8 +35,6 @@
 set(testname "PreprocessingTests")
 set(exename "preprocessing-tools-test")
 
-#include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
-
 gmx_build_unit_test(
     ${testname}
     ${exename}

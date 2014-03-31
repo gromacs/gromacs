@@ -53,12 +53,12 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/thread_mpi/mutex.h"
+#include "thread_mpi/mutex.h"
 
+#include "gromacs/fileio/path.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

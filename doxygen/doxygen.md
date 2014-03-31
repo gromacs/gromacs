@@ -189,14 +189,16 @@ different mechanisms are used:
   declarations local to source files only in the full documentation.
   You can find the details from the `Doxyfile-*.cmakein` files, and some of
   them are also mentioned below on individual code constructs.
-* The standard Doxygen commands \c \\internal and \c \\endinternal mark the
-  documentation to be only extracted into the full documentation
-  (`INTERNAL_DOCS` is `ON` only for the full documentation).
-  In addition, \Gromacs specific custom Doxygen commands \c \\libinternal and
-  \c \\endlibinternal are provided, which only exclude the documentation from
-  the public API documentation.  These are implemented by expanding the
-  commands to either \c \\internal or to a no-op, depending on the
-  documentation level.
+* The standard Doxygen command \c \\internal marks the documentation to be only
+  extracted into the full documentation (`INTERNAL_DOCS` is `ON` only for the
+  full documentation).  This should be used as a first command in a comment
+  block to exclude all the documentation.  It is possible to use \c \\internal
+  and \c \\endinternal to exclude individual paragraphs, but \c \\if `internal`
+  is preferred (see below).
+  In addition, \Gromacs-specific custom Doxygen command \c \\libinternal is
+  provided, which should be used the same way to exclude the documentation from
+  the public API documentation.  This command expands to either \c \\internal
+  or to a no-op, depending on the documentation level.
 * Doxygen commands \c \\if and \c \\cond can be used with section names
   `libapi` and `internal` to only include the documentation in library API and
   the full documentation, respectively.  `libapi` is also defined in the full
@@ -224,6 +226,20 @@ The group page also provides a natural place for overview documentation about
 the module, and can be navigated to directly from the "Modules" tab in the
 generated documentation.
 
+Some notes about using \c \\addtogroup are in order:
+* \c \\addtogroup only adds the elements that it directly contains into the
+  group.  If it contains a namespace declaration, only the namespace is added
+  to the group, but none of the namespace contents are.  For this reason,
+  \c \\addtogroup should go within the innermost scope, around the members that
+  should actually be added.
+* If the module should not appear in the public API documentation, its
+  definition (\c \\defgroup) should be prefixed with a \c \\libinternal.
+  In this case, also all \c \\addtogroup commands for this module should be
+  similarly prefixed.  Otherwise, they create the group in the public API
+  documentation, but without any of the content from the \c \\defgroup
+  definition.  This may also cause the contents of the \c \\addtogroup section
+  to appear in the public API documentation, even if it otherwise would not.
+
 Public API and library API groups
 ---------------------------------
 
@@ -243,44 +259,170 @@ in such a case, the module group is preferred over the API group.
 Automatic dependency checking
 -----------------------------
 
-The build system provides three targets, `depcheck`, `doccheck`, and
-`depgraphs`, that depend on correct usage of the above commands, in particular
-the visibility and API definitions in file-level comments.
-These checks also provide some level of enforcement for rules about
-dependencies between the modules, but currently the checks are not run
-automatically.
+The build system provides a `doc-check` target that automatically checks some
+aspects of the documentation, as well as checking that header files are
+actually used according to their API specifications (i.e., an internal headers
+are not included from other modules).  The checks depend on correct usage of
+the commands listed above, in particular the visibility and API definitions in
+file-level comments.  These checks also provide some level of enforcement for
+rules about dependencies between the modules, but currently the checks are not
+run automatically.
 
-The `depcheck` target checks for issues that either completely or subtly break
-the installed headers: an installed header including a non-installed header, or
-an installed header installing another header using a path that does not
-resolve correctly when the headers are installed.  It also checks for
-consistent usage of
-\code
-#include "..." // This should be used for Gromacs headers
-\endcode
-versus
-\code
-#include <...> // This should be used for system and external headers.
-\endcode
+The checker currently checks for a few different types of issues:
+* For all Doxygen documentation (currently does not apply for members within
+  anonymous namespaces or members that do not appear in the documentation):
+   * If a member has documentation, it should have a brief description.
+   * A note is issued for in-body documentation for functions, since this is
+     ignored by our current settings.
+   * If a class has documentation, it should have public documentation only if
+     it appears in an installed header.
+   * If a class and its containing file has documentation, the class
+     documentation should not be visible if the file documentation is not.
+* For all files:
+   * Consistent usage of
 
-The `doccheck` target additionally checks that if an included file is
-documented, it is not used against the API definition specified in the
-file-level comment.  For example, including a file without any API definition
-from another module produces an error.  Another example of a check is that a
-non-installed header with public documentation triggers an error.
+         #include "..." // This should be used for Gromacs headers
 
-The `depgraphs` target generates include dependency graphs.  One graph is
-produced that shows all the modules under `src/gromacs/`, and their include
-dependencies.  Additionally, a file-level graph is produced for each module,
-showing the include dependencies within that module.  Currently, these are
-mostly for eye candy, but they can also be used for analyzing problematic
-dependencies to clean up the architecture.  A legend for the graphs is
-currently included as comments in `admin/includedeps.py`.  The output is put in
-`doxygen/depgraphs/`.
+     and
 
-These targets require Python 2.7; the graph generation additionally requires
-`graphviz`.
+         #include <...> // This should be used for system and external headers
 
+   * Installed headers must not include non-installed headers, and must include
+     all other \Gromacs headers using relative paths so that they resolve
+     correctly also when installed.
+* For documented files:
+   * Installed headers should have public documentation, and other files should
+     not.
+   * The API level specified for a file should not be higher than where its
+     documentation is visible.  For example, only publicly documented headers
+     should be specified as part of the public API.
+   * If an \c \\ingroup module_foo exists, it should match the subdirectory
+     that the file is actually part of in the file system.
+   * If a \c \\defgroup module_foo exists for the subdirectory where the file is,
+     the file should contain \c \\ingroup module_foo.
+   * Files should not include other files whose documentation visibility is
+     lower (if the included file is not documented, the check is skipped).
+* For files that are part of documented modules
+  (\c \\defgroup module_foo exists for the subdirectory):
+   * Such files should not be included from outside their module if they are
+     undocumented or are not specified as part of library or public API.
+
+The checker is based on extracting the Doxygen documentation in XML format.
+This information is then read using a Python script, and combined with
+information extracted from the file system and knowledge about the \Gromacs
+source tree layout.  The Python scripts are in the `doxygen/` folder.
+In addition to printing the issues, they are also written into
+`doxygen/doxygen-check.log` for later inspection.
+
+The script is not currently perfect (either because of unfinished
+implementation, or because Doxygen bugs or incompleteness of the Doxygen XML
+output), and the current code also contains issues that the script detects, but
+the authors have not fixed.  To allow the script to still be used,
+`doxygen/suppressions.txt` contains a list of issues that are filtered out from
+the report.  The syntax is simple:
+
+    <file>: <text>
+
+where `<file>` is a path to the file that reports the message, and `<text>` is
+the text reported.  Both support `*` as a wildcard.  If `<file>` is empty, the
+suppression matches only messages that do not have an associated file.
+`<file>` is matched against the trailing portion of the file name to make it
+work even though the script reports absolute paths.
+Empty lines and lines starting with `#` are ignored.
+
+To add suppression for an issue, the line that reports the issue can be copied
+into `suppressios.txt`, and the line number (if any) removed.  If the
+issue does not have a file name (or a pseudo-file) associated, a leading `:`
+must be added.  To cover many similar issues, parts of the line can then be
+replaced with wildcards.
+
+For some false positives from the script, the suppression mechanism is the
+easiest way to silence the script, but otherwise the goal would be to minimize
+the number of suppressions.
+
+As a side effect, the XML extraction makes Doxygen parse all comments in the
+code, even if they do not appear in the documentation.  This can reveal latent
+issues in the comments, like invalid Doxygen syntax.  The messages from the XML
+parsing are stored in `doxygen/doxygen-xml.log` in the build tree, similar to
+other Doxygen runs.
+
+The `doc-check` target requires Python 2.7 (other versions may work, but have
+not been tested).
+
+Include dependency graphs
+-------------------------
+
+The build system also provides an `dep-graphs` target that generates include
+dependency graphs with some additional annotations.
+One graph is produced that shows all the modules under `src/gromacs/`, and
+their include dependencies.  Additionally, a file-level graph is produced for
+each module, showing the include dependencies within that module.  Currently,
+these are mostly for eye candy, but they can also be used for analyzing
+problematic dependencies to clean up the architecture.
+The output is put in `doxygen/depgraphs/` in the build tree.
+
+As with `doc-check`, Python 2.7 is required (other versions may work, but have
+not been tested).  To get `.png` versions of the graphs, `graphviz` is
+additionally required.
+
+### Module graph ###
+
+The graph is written into `module-deps.dot.png`.
+
+Node colors:
+<dl>
+<dt>gray background</dt>
+<dd>undocumented module</dd>
+<dt>orange background</dt>
+<dd>documented utility modules</dd>
+<dt>red background</dt>
+<dd>documented analysis modules</dd>
+<dt>violet background</dt>
+<dd>documented MD execution modules</dd>
+<dt>light blue border</dt>
+<dd>module contains public API (installed) headers</dd>
+</dl>
+
+Edge colors (an edge with a certain color indicates that types above it in the
+list are not present):
+<dl>
+<dt>red</dt>
+<dd>invalid dependency</dd>
+<dt>gray</dt>
+<dd>legacy dependency
+(dependency on undocumented file, or to undocumented directories)</dd>
+<dt>solid black</dt>
+<dd>public header depends on the other module</dd>
+<dt>solid blue</dt>
+<dd>library header depends on the other module</dd>
+<dt>dashed blue</dt>
+<dd>source file depends on library header in the other module</dd>
+<dt>dashed black</dt>
+<dd>source file depends on public header in the other module</dd>
+<dt>dashed green</dt>
+<dd>test file depends on the other module</dd>
+</dl>
+
+### File graph ###
+
+The graphs are written to <em>module_name</em>`-deps.dot.png`.
+
+Node colors:
+<dl>
+<dt>light blue</dt>
+<dd>public API (installed) headers</dd>
+<dt>dark blue</dt>
+<dd>library API headers</dd>
+<dt>gray</dt>
+<dd>source files</dd>
+<dt>light green</dt>
+<dd>test files</dd>
+<dt>white</dt>
+<dd>other files</dd>
+</dl>
+
+Each edge signifies an include dependency; there is no additional information
+currently included.
 
 Documenting specific code constructs
 ====================================
@@ -464,13 +606,14 @@ Common mistakes
 ---------------
 
 The most common mistake, in particular in C code, is to forget to document the
-file.  This causes Doxygen to ignore most of the comments in the file, so it
+file.  This causes Doxygen to ignore most comments in the file, so it
 does not validate the contents of the comments either, nor is it possible to
 actually check how the generated documentation looks like.
 
-The following example shows some other common mistakes that do not produce
-correct documentation.  The issues are explained in normal comments above each
-code fragment.
+The following example shows some other common mistakes (and some less common)
+that do not produce correct documentation, as well as Doxygen "features"/bugs
+that can be confusing.
+The issues are explained in normal comments above each code fragment.
 
 \includelineno doxygen-example-issues.cpp
 

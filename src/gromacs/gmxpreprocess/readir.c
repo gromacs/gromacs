@@ -80,7 +80,8 @@ typedef struct t_inputrec_strings
          acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
          energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN],
          couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
-         wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN];
+         wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN],
+         imd_grp[STRLEN];
     char   fep_lambda[efptNR][STRLEN];
     char   lambda_weights[STRLEN];
     char **pull_grp;
@@ -1047,6 +1048,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
         }
     }
+    else
+    {
+        if (ir->epc == epcMTTK)
+        {
+            warning_error(wi, "MTTK pressure coupling requires a Velocity-verlet integrator");
+        }
+    }
 
     /* ELECTROSTATICS */
     /* More checks are in triple check (grompp.c) */
@@ -1214,6 +1222,18 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             sprintf(err_buf, "With vdwtype = %s, rvdw must be >= rlist unless you use a potential modifier", evdw_names[ir->vdwtype]);
             CHECK(ir->rlist > ir->rvdw);
+        }
+    }
+
+    if (ir->vdwtype == evdwPME)
+    {
+        if (!(ir->vdw_modifier == eintmodNONE || ir->vdw_modifier == eintmodPOTSHIFT))
+        {
+            sprintf(err_buf, "With vdwtype = %s, the only supported modifiers are %s a\
+nd %s",
+                    evdw_names[ir->vdwtype],
+                    eintmod_names[eintmodPOTSHIFT],
+                    eintmod_names[eintmodNONE]);
         }
     }
 
@@ -2044,6 +2064,16 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         snew(ir->rot, 1);
         is->rot_grp = read_rotparams(&ninp, &inp, ir->rot, wi);
+    }
+
+    /* Interactive MD */
+    ir->bIMD = FALSE;
+    CCTYPE("Group to display and/or manipulate in interactive MD session");
+    STYPE ("IMD-group", is->imd_grp, NULL);
+    if (is->imd_grp[0] != '\0')
+    {
+        snew(ir->imd, 1);
+        ir->bIMD = TRUE;
     }
 
     /* Refinement */
@@ -3049,6 +3079,27 @@ static void make_swap_groups(
 }
 
 
+void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
+{
+    int      ig = -1, i;
+
+
+    ig            = search_string(IMDgname, grps->nr, gnames);
+    IMDgroup->nat = grps->index[ig+1] - grps->index[ig];
+
+    if (IMDgroup->nat > 0)
+    {
+        fprintf(stderr, "Group '%s' with %d atoms can be activated for interactive molecular dynamics (IMD).\n",
+                IMDgname, IMDgroup->nat);
+        snew(IMDgroup->ind, IMDgroup->nat);
+        for (i = 0; i < IMDgroup->nat; i++)
+        {
+            IMDgroup->ind[i] = grps->a[grps->index[ig]+i];
+        }
+    }
+}
+
+
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
               gmx_bool bVerbose,
@@ -3376,6 +3427,12 @@ void do_index(const char* mdparin, const char *ndx,
     if (ir->eSwapCoords != eswapNO)
     {
         make_swap_groups(ir->swap, swapgrp, splitgrp0, splitgrp1, solgrp, grps, gnames);
+    }
+
+    /* Make indices for IMD session */
+    if (ir->bIMD)
+    {
+        make_IMD_group(ir->imd, is->imd_grp, grps, gnames);
     }
 
     nacc = str_nelem(is->acc, MAXPTR, ptr1);
@@ -4143,6 +4200,11 @@ void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr, warninp_t wi)
         {
             warning_error(wi, "MTTK not compatible with lincs -- use shake instead.");
         }
+    }
+
+    if (bConstr && ir->epc == epcMTTK)
+    {
+        warning_note(wi, "MTTK with constraints is deprecated, and will be removed in GROMACS 5.1");
     }
 
     if (ir->LincsWarnAngle > 90.0)

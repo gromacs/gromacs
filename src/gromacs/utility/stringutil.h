@@ -98,9 +98,17 @@ bool endsWith(const std::string &str, const char *suffix);
  * Returns \p str if \p suffix is NULL or empty.
  */
 std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
+/*! \brief
+ * Removes leading and trailing whitespace from a string.
+ *
+ * \param[in] str  String to process.
+ * \returns   \p str with leading and trailing whitespaces removed.
+ * \throws    std::bad_alloc if out of memory.
+ */
+std::string stripString(const std::string &str);
 
 /*! \brief
- * Format a string (snprintf() wrapper).
+ * Formats a string (snprintf() wrapper).
  *
  * \throws  std::bad_alloc if out of memory.
  *
@@ -109,6 +117,19 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * supported.
  */
 std::string formatString(const char *fmt, ...);
+
+/*! \brief
+ * Splits a string to whitespace separated tokens.
+ *
+ * \param[in] str  String to process.
+ * \returns   \p str split into tokens at each whitespace sequence.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * This function works like `split` in Python, i.e., leading and trailing
+ * whitespace is ignored, and consecutive whitespaces are treated as a single
+ * separator.
+ */
+std::vector<std::string> splitString(const std::string &str);
 
 /*! \brief
  * Joins strings from a range with a separator in between.

@@ -45,6 +45,7 @@
 #include "macros.h"
 #include "gromacs/math/utilities.h"
 #include "vec.h"
+#include "types/commrec.h"
 #include "network.h"
 #include "nsgrid.h"
 #include "force.h"
@@ -368,7 +369,7 @@ static void reset_neighbor_lists(t_forcerec *fr, gmx_bool bResetSR, gmx_bool bRe
 
 
 
-static inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int gid)
+static gmx_inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int gid)
 {
     int    i, k, nri, nshift;
 
@@ -415,7 +416,7 @@ static inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int 
     }
 }
 
-static inline void close_i_nblist(t_nblist *nlist)
+static gmx_inline void close_i_nblist(t_nblist *nlist)
 {
     int nri = nlist->nri;
     int len;
@@ -437,7 +438,7 @@ static inline void close_i_nblist(t_nblist *nlist)
     }
 }
 
-static inline void close_nblist(t_nblist *nlist)
+static gmx_inline void close_nblist(t_nblist *nlist)
 {
     /* Only close this nblist when it has been initialized.
      * Avoid the creation of i-lists with no j-particles.
@@ -459,7 +460,7 @@ static inline void close_nblist(t_nblist *nlist)
     }
 }
 
-static inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist)
+static gmx_inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist)
 {
     int n, i;
 
@@ -479,7 +480,7 @@ static inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnblist
 }
 
 
-static inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool bLR)
+static gmx_inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool bLR)
 {
     int nrj = nlist->nrj;
 
@@ -500,10 +501,10 @@ static inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool bLR
     nlist->nrj++;
 }
 
-static inline void add_j_to_nblist_cg(t_nblist *nlist,
-                                      atom_id j_start, int j_end,
-                                      t_excl *bexcl, gmx_bool i_is_j,
-                                      gmx_bool bLR)
+static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
+                                          atom_id j_start, int j_end,
+                                          t_excl *bexcl, gmx_bool i_is_j,
+                                          gmx_bool bLR)
 {
     int nrj = nlist->nrj;
     int j;
@@ -1877,8 +1878,8 @@ static int ns_simple_core(t_forcerec *fr,
  *
  ************************************************/
 
-static inline void get_dx(int Nx, real gridx, real rc2, int xgi, real x,
-                          int *dx0, int *dx1, real *dcx2)
+static gmx_inline void get_dx(int Nx, real gridx, real rc2, int xgi, real x,
+                              int *dx0, int *dx1, real *dcx2)
 {
     real dcx, tmp;
     int  xgi0, xgi1, i;
@@ -1930,9 +1931,9 @@ static inline void get_dx(int Nx, real gridx, real rc2, int xgi, real x,
     }
 }
 
-static inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
-                             int ncpddc, int shift_min, int shift_max,
-                             int *g0, int *g1, real *dcx2)
+static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
+                                 int ncpddc, int shift_min, int shift_max,
+                                 int *g0, int *g1, real *dcx2)
 {
     real dcx, tmp;
     int  g_min, g_max, shift_home;

@@ -344,7 +344,7 @@ class AnalysisDataHandle
         /*! \brief
          * Creates a new data handle associated with \p data.
          *
-         * \param  data Data to associate the handle with.
+         * \param  impl Data to associate the handle with.
          *
          * The constructor is private because data handles should only be
          * constructed through AnalysisData::startData().

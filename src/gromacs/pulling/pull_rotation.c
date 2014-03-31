@@ -65,6 +65,7 @@
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/math/utilities.h"
 
 static char *RotStr = {"Enforced rotation:"};
 
@@ -1972,7 +1973,7 @@ static real do_flex2_lowlevel(
              * However, since the atom is located directly on the pivot, this
              * slab's contribution to the force on that atom will be zero
              * anyway. Therefore, we directly move on to the next slab.       */
-            if (0 == norm(tmpvec2) )
+            if (gmx_numzero(norm(tmpvec2))) /* 0 == norm(xj - xcn) */
             {
                 continue;
             }
@@ -2200,21 +2201,21 @@ static real do_flex_lowlevel(
 
             rvec_sub(yj0, ycn, yj0_ycn); /* yj0_ycn = yj0 - ycn */
 
+            /* In rare cases, when an atom position coincides with a reference slab
+             * center (yj0_ycn == 0) we cannot compute the normal vector qjn.
+             * However, since the atom is located directly on the pivot, this
+             * slab's contribution to the force on that atom will be zero
+             * anyway. Therefore, we directly move on to the next slab.       */
+            if (gmx_numzero(norm(yj0_ycn))) /* 0 == norm(yj0 - ycn) */
+            {
+                continue;
+            }
+
             /* Rotate: */
             mvmul(erg->rotmat, yj0_ycn, tmpvec2); /* tmpvec2= Omega.(yj0-ycn) */
 
             /* Subtract the slab center from xj */
             rvec_sub(xj, xcn, xj_xcn);           /* xj_xcn = xj - xcn         */
-
-            /* In rare cases, when an atom position coincides with a slab center
-             * (xj_xcn == 0) we cannot compute the vector product for qjn.
-             * However, since the atom is located directly on the pivot, this
-             * slab's contribution to the force on that atom will be zero
-             * anyway. Therefore, we directly move on to the next slab.       */
-            if (0 == norm(xj_xcn) )
-            {
-                continue;
-            }
 
             /* Calculate qjn */
             cprod(rotg->vec, tmpvec2, tmpvec); /* tmpvec= v x Omega.(yj0-ycn) */
@@ -3346,7 +3347,7 @@ static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex
 /* Special version of copy_rvec:
  * During the copy procedure of xcurr to b, the correct PBC image is chosen
  * such that the copied vector ends up near its reference position xref */
-static inline void copy_correct_pbc_image(
+static gmx_inline void copy_correct_pbc_image(
         const rvec  xcurr,  /* copy vector xcurr ...                */
         rvec        b,      /* ... to b ...                         */
         const rvec  xref,   /* choosing the PBC image such that b ends up near xref */

@@ -56,12 +56,13 @@
 #include <sys/sysmp.h>
 #endif
 
+#include "thread_mpi/threads.h"
+
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
@@ -73,6 +74,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 /* The source code in this file should be thread-safe.
@@ -165,7 +167,7 @@ static char *sscan(int argc, char *argv[], int *i)
     return argv[++(*i)];
 }
 
-gmx_bool is_hidden(t_pargs *pa)
+static gmx_bool is_hidden(t_pargs *pa)
 {
     return (strstr(pa->desc, "HIDDEN") != NULL);
 }
@@ -335,7 +337,7 @@ int opt2parg_int(const char *option, int nparg, t_pargs pa[])
     return 0;
 }
 
-gmx_bool opt2parg_gmx_bool(const char *option, int nparg, t_pargs pa[])
+gmx_bool opt2parg_bool(const char *option, int nparg, t_pargs pa[])
 {
     int i;
 
@@ -785,7 +787,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     get_pargs(argc, argv, npall, all_pa);
 
     /* set program name, command line, and default values for output options */
-    output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
+    output_env_init(oenv, gmx::getProgramContext(), (time_unit_t)nenum(time_units), bView,
                     (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
     /* Parse the file args */

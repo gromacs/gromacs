@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,10 @@
 
 #ifndef _GPU_UTILS_H_
 #define _GPU_UTILS_H_
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "types/simple.h"
 #include "types/hw_info.h"

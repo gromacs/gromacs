@@ -63,7 +63,7 @@ set(CUSTOM_VERSION_STRING ""
 mark_as_advanced(CUSTOM_VERSION_STRING)
 if (CUSTOM_VERSION_STRING)
     set(PROJECT_VERSION ${CUSTOM_VERSION_STRING})
-endif (CUSTOM_VERSION_STRING)
+endif()
 set(LIBRARY_SOVERSION 0)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
 # It is a bit irritating, but this has to be set separately for now!
@@ -208,7 +208,7 @@ gmx_detect_target_architecture()
 if(GMX_CPU_ACCELERATION)
     # Stay compatible with old Jenkins command line options for specific SIMD acceleration
     set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
-endif(GMX_CPU_ACCELERATION)
+endif()
 
 if(NOT GMX_TARGET_MIC)
     include(gmxDetectSimd)
@@ -321,10 +321,22 @@ set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
     add_definitions(-DGMX_DOUBLE)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
-endif(GMX_DOUBLE)
+endif()
 if(GMX_SOFTWARE_INVSQRT)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
-endif(GMX_SOFTWARE_INVSQRT)
+endif()
+
+if(WIN32 AND NOT CYGWIN)
+    set(GMX_WSOCKLIB_PATH CACHE PATH "Path to winsock (wsock32.lib) library.")
+    mark_as_advanced(GMX_WSOCKLIB_PATH)
+    find_library(WSOCK32_LIBRARY NAMES wsock32 PATHS ${GMX_WSOCKLIB_PATH})
+    if(WSOCK32_LIBRARY)
+        list(APPEND GMX_EXTRA_LIBRARIES ${WSOCK32_LIBRARY})
+        add_definitions(-DGMX_HAVE_WINSOCK)
+    else()
+        message(STATUS "No winsock found. Cannot use interactive molecular dynamics (IMD).")
+    endif(WSOCK32_LIBRARY)
+endif()
 
 
 
@@ -411,6 +423,7 @@ mark_as_advanced(GMX_XML)
 #if(GMX_XML AND NOT HAVE_LIBXML2)
 #    message(FATAL_ERROR "libxml2 not found. Set GMX_XML=OFF to compile without XML support")
 #endif()
+
 if(GMX_XML)
     include_directories(${LIBXML2_INCLUDE_DIR})
     set(PKG_XML libxml-2.0)
@@ -455,6 +468,18 @@ if (GMX_ALEXANDRIA)
   endif(OPENBABEL2_FOUND)
 endif (GMX_ALEXANDRIA)
 
+option(GMX_GSL "Add support for gsl" OFF)
+if (GMX_GSL)
+  find_package(GSL)
+  set(PKG_GSL "")
+  if(GSL_FOUND)
+    include_directories(${GSL_INCLUDE_DIR})
+    set(PKG_GSL gsl)
+    set(HAVE_LIBGSL 1)
+  endif()
+endif()
+>>>>>>> master
+
 option(GMX_X11 "Use X window system" OFF)
 if (GMX_X11)
     find_package(X11)
@@ -466,22 +491,19 @@ if (GMX_X11)
                 "gmx view will not be available.")
     endif()
     include_directories(${X11_INCLUDE_DIR})
-endif(GMX_X11)
+endif()
 
 include(ThreadMPI)
-set(THREAD_MPI_LIB thread_mpi)
 # Enable core threading facilities
-tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders")
+tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include")
 # Enable tMPI C++ support
 tmpi_enable_cxx()
 if(GMX_THREAD_MPI)
     # enable MPI functions
     tmpi_enable()
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     set(GMX_MPI 1)
     set(MPI_IN_PLACE_EXISTS 1)
-endif(GMX_THREAD_MPI)
-tmpi_get_source_list(THREAD_MPI_SRC)
+endif()
 # If atomics are manually disabled a define is needed because atomics.h doesn't depend on config.h
 if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
@@ -490,11 +512,11 @@ endif()
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
     gmx_gpu_setup()
-endif(GMX_GPU)
+endif()
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)
-endif(CYGWIN)
+endif()
 
 if(WIN32 AND NOT CYGWIN)
     set(GMX_NATIVE_WINDOWS 1)
@@ -509,7 +531,7 @@ if(GMX_GIT_VERSION_INFO)
         message(FATAL_ERROR
             "Cannot generate git version information from source tree not under git. "
             "Set GMX_GIT_VERSION_INFO=OFF to proceed.")
-    endif ()
+    endif()
     # We need at least git v1.5.3 be able to parse git's date output. If not
     # found or the version is too small, we can't generate version information.
     find_package(Git)
@@ -566,6 +588,7 @@ endif()
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(${CMAKE_BINARY_DIR}/src)
 # Required for gmx_header_config_gen.h to be found before installation
@@ -609,12 +632,6 @@ gmx_test_large_files(GMX_LARGEFILES)
 include(gmxTestSignal)
 gmx_test_sigusr1(HAVE_SIGUSR1)
 
-include(gmxTestInline)
-gmx_test_inline(INLINE_KEYWORD)
-
-include(gmxTestRestrict)
-gmx_test_restrict(RESTRICT_KEYWORD)
-
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
@@ -641,7 +658,7 @@ include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 if(NOT GMX_SYSTEM_XDR)
     set(GMX_INTERNAL_XDR 1)
-endif(NOT GMX_SYSTEM_XDR)
+endif()
 
 
 ##################################################
@@ -706,7 +723,7 @@ if(GMX_LOAD_PLUGINS)
   else()
     set(PKG_DL_LIBS)
   endif()
-endif(GMX_LOAD_PLUGINS)
+endif()
 set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
 # Link real-time library for POSIX timers. The check for clock_gettime
@@ -718,7 +735,7 @@ endif()
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
     list(APPEND GMX_EXTRA_LIBRARIES m)
-endif(HAVE_LIBM)
+endif()
 
 option(GMX_NACL "Configure for Native Client builds" OFF)
 if (GMX_NACL)
@@ -733,7 +750,7 @@ if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING
       "Path to swindirect.h")
   include_directories(${COREWRAP_INCLUDE_DIR})
-endif(GMX_FAHCORE)
+endif()
 
 option(GMX_BUILD_HELP "Build man pages, HTML help, and completions automatically (requires that compiled binaries can be executed on the build host)" OFF)
 mark_as_advanced(GMX_BUILD_HELP)
@@ -752,7 +769,7 @@ if (NOT GMX_SKIP_DEFAULT_CFLAGS)
     set(CMAKE_C_FLAGS "${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
     message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
@@ -834,11 +851,11 @@ else()
         install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
                 DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
                 COMPONENT development)
-    endif ()
+    endif()
 endif()
 
 if(GMX_USE_TNG)
-    find_package(ZLIB)
+    find_package(ZLIB QUIET)
     include(gmxTestZLib)
     gmx_test_zlib(HAVE_ZLIB)
     set(TNG_BUILD_WITH_ZLIB ${HAVE_ZLIB} CACHE BOOL  "Build TNG with zlib compression")
@@ -864,7 +881,7 @@ if (GMX_BUILD_FOR_COVERAGE)
     # be triggered by using an API against its specification isn't usually
     # worth the effort.
     add_definitions(-DNDEBUG -DBOOST_DISABLE_ASSERTS -DGMX_DISABLE_ASSERTS)
-endif ()
+endif()
 
 if (BUILD_TESTING)
     # "tests" target builds all the separate test binaries.
@@ -885,7 +902,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(doxygen)
     add_subdirectory(share)
     add_subdirectory(scripts)
-endif ()
+endif()
 add_subdirectory(src)
 
 if (BUILD_TESTING)

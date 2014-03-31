@@ -53,7 +53,7 @@
 #endif
 
 #ifdef DEBUG
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
+#include "thread_mpi/threads.h"
 
 static void log_action(int bMal, const char *what, const char *file, int line,
                        int nelem, int size, void *ptr)
@@ -232,7 +232,7 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
     return p;
 }
 
-void save_free(const char gmx_unused *name, const char gmx_unused *file, int gmx_unused line, void gmx_unused *ptr)
+void save_free(const char gmx_unused *name, const char gmx_unused *file, int gmx_unused line, void *ptr)
 {
 #ifdef DEBUG
     log_action(0, name, file, line, 0, 0, ptr);

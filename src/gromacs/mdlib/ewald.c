@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vec.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"

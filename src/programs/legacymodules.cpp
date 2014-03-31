@@ -45,15 +45,16 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/gmxpreprocess/solvate.h"
 #include "gromacs/gmxpreprocess/insert-molecules.h"
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
 #include "gromacs/gmxpreprocess/protonate.h"
+#include "gromacs/gmxpreprocess/solvate.h"
 #include "gromacs/gmxpreprocess/x2top.h"
 #include "gromacs/tools/check.h"
-#include "gromacs/tools/dump.h"
 #include "gromacs/tools/convert_tpr.h"
+#include "gromacs/tools/dump.h"
 
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"

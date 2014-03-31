@@ -404,31 +404,6 @@ Example excerpts from such files follow:
 CP2     CP2     3       9.2789  12.156  -13.120 -3.0597 26.240  -31.495
 \end{verbatim}}
 
-%Also in this file are the
-%\normindex{Ryckaert-Bellemans}~\cite{Ryckaert78} parameters for the
-%CP2-CP2 dihedrals in alkanes or alkane tails with the following
-%constants:
-
-%\begin{center}
-%(kJ/mol)\\
-%\begin{tabular}{llrllrllr}
-%$C_0$ & $=$ & $~ 9.28$ & $C_2$ & $=$ & $-13.12$ & $C_4$ & $=$ & $ 26.24$ \\
-%$C_1$ & $=$ & $ 12.16$ & $C_3$ & $=$ & $~-3.06$ & $C_5$ & $=$ & $-31.5 $ \\
-%\end{tabular}
-%\end{center}
-
-%({\bf Note:} The use of this potential implies the exclusion of LJ interactions
-%between the first and the last atom of the dihedral, and $\psi$ is defined
-%according to the ``\swapindex{polymer}{convention}'' ($\psi_{trans}=0$)).
-
-%So there are three types of dihedrals in the {\gromacs} force field:
-%\begin{itemize}
-%\item \swapindex{proper}{dihedral} : funct = 1, with mult = multiplicity, so the
-%                                   number of possible angles
-%\item \swapindex{improper}{dihedral} : funct = 2
-%\item Ryckaert-Bellemans dihedral : funct = 3
-%\end{itemize}
-
 In the {\tt ffbonded.itp} file, you can add bonded parameters. If you
 want to include parameters for new atom types, make sure you define
 them in {\tt atomtypes.atp} as well.
@@ -1336,72 +1311,46 @@ Here is an example of a topology file, {\tt urea.top}:
 ;       Example topology file
 ;
 ; The force field files to be included
-#include "gmx.ff/forcefield.itp"
+#include "amber99.ff/forcefield.itp"
 
 [ moleculetype ]
 ; name  nrexcl
 Urea         3
 
 [ atoms ]
-;   nr    type   resnr  residu    atom    cgnr  charge
-     1       C       1    UREA      C1       1   0.683
-     2       O       1    UREA      O2       1  -0.683
-     3      NT       1    UREA      N3       2  -0.622
-     4       H       1    UREA      H4       2   0.346
-     5       H       1    UREA      H5       2   0.276
-     6      NT       1    UREA      N6       3  -0.622
-     7       H       1    UREA      H7       3   0.346
-     8       H       1    UREA      H8       3   0.276
+   1  C  1  URE      C      1     0.880229  12.01000   ; amber C  type
+   2  O  1  URE      O      2    -0.613359  16.00000   ; amber O  type
+   3  N  1  URE     N1      3    -0.923545  14.01000   ; amber N  type
+   4  H  1  URE    H11      4     0.395055   1.00800   ; amber H  type
+   5  H  1  URE    H12      5     0.395055   1.00800   ; amber H  type
+   6  N  1  URE     N2      6    -0.923545  14.01000   ; amber N  type
+   7  H  1  URE    H21      7     0.395055   1.00800   ; amber H  type
+   8  H  1  URE    H22      8     0.395055   1.00800   ; amber H  type
 
 [ bonds ]
-;  ai    aj funct           b0           kb
-    3     4     1 1.000000e-01 3.744680e+05 
-    3     5     1 1.000000e-01 3.744680e+05 
-    6     7     1 1.000000e-01 3.744680e+05 
-    6     8     1 1.000000e-01 3.744680e+05 
-    1     2     1 1.230000e-01 5.020800e+05 
-    1     3     1 1.330000e-01 3.765600e+05 
-    1     6     1 1.330000e-01 3.765600e+05 
+    1	2
+    1	3	
+    1   6
+    3	4
+    3	5
+    6	7
+    6	8
 
-[ pairs ]
-;  ai    aj funct           c6          c12
-    2     4     1 0.000000e+00 0.000000e+00 
-    2     5     1 0.000000e+00 0.000000e+00 
-    2     7     1 0.000000e+00 0.000000e+00 
-    2     8     1 0.000000e+00 0.000000e+00 
-    3     7     1 0.000000e+00 0.000000e+00 
-    3     8     1 0.000000e+00 0.000000e+00 
-    4     6     1 0.000000e+00 0.000000e+00 
-    5     6     1 0.000000e+00 0.000000e+00 
+[ dihedrals ] 
+;   ai    aj    ak    al funct  definition
+     2     1     3     4   9     
+     2     1     3     5   9     
+     2     1     6     7   9     
+     2     1     6     8   9     
+     3     1     6     7   9     
+     3     1     6     8   9     
+     6     1     3     4   9     
+     6     1     3     5   9     
 
-[ angles ]
-;  ai    aj    ak funct          th0          cth
-    1     3     4     1 1.200000e+02 2.928800e+02 
-    1     3     5     1 1.200000e+02 2.928800e+02 
-    4     3     5     1 1.200000e+02 3.347200e+02 
-    1     6     7     1 1.200000e+02 2.928800e+02 
-    1     6     8     1 1.200000e+02 2.928800e+02 
-    7     6     8     1 1.200000e+02 3.347200e+02 
-    2     1     3     1 1.215000e+02 5.020800e+02 
-    2     1     6     1 1.215000e+02 5.020800e+02 
-    3     1     6     1 1.170000e+02 5.020800e+02 
-
-[ dihedrals ]
-;  ai    aj    ak    al funct          phi           cp         mult
-    2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 
-    6     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 
-    2     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 
-    6     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 
-    2     1     6     7     1 1.800000e+02 3.347200e+01 2.000000e+00 
-    3     1     6     7     1 1.800000e+02 3.347200e+01 2.000000e+00 
-    2     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 
-    3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 
-
-[ dihedrals ]
-;  ai    aj    ak    al funct           q0           cq
-    3     4     5     1     2 0.000000e+00 1.673600e+02 
-    6     7     8     1     2 0.000000e+00 1.673600e+02 
-    1     3     6     2     2 0.000000e+00 1.673600e+02 
+[ dihedrals ] 
+     3     6     1     2   4     
+     1     4     3     5   4	 
+     1     7     6     8   4
 
 [ position_restraints ]
 ; you wouldn't normally use this for a molecule like Urea,
@@ -1411,8 +1360,8 @@ Urea         3
    2     1     1000       0    1000 ; Restrain to a line (Y-axis)
    3     1     1000       0       0 ; Restrain to a plane (Y-Z-plane)
 
-; Include SPC water topology
-#include "spc.itp"
+; Include TIP3P water topology
+#include "amber99/tip3p.itp"
 
 [ system ]
 Urea in Water
@@ -1424,6 +1373,32 @@ SOL              1000
 \end{verbatim}}
 
 Here follows the explanatory text.
+
+{\bf {\tt \#include "amber99.ff/forcefield.itp"} :} this includes the
+information for the force field you are using, including
+bonded and non-bonded parameters. This example uses the AMBER99 force
+field, but your simulation may use a different force field.
+{\tt grompp} will automatically go and find this file and copy-and-paste
+its content. That content can be seen in
+\linebreak {\tt share/top/amber99.ff/forcefield.itp}, and it is
+
+{\small
+\begin{verbatim}
+#define _FF_AMBER
+#define _FF_AMBER99
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               yes             0.5     0.8333
+
+#include "ffnonbonded.itp"
+#include "ffbonded.itp"
+#include "gbsa.itp"
+\end{verbatim}}
+
+The two {\tt \#define} statements set up the conditions so that
+future parts of the topology can know that the AMBER 99 force
+field is in use.
 
 {\bf {\tt [~defaults~]} :}
 \begin{itemize}
@@ -1447,13 +1422,13 @@ interaction functions are used
 {\tt fudgeQQ} is always used. However, if you
 want to specify $N$ you need to give a value for the other parameters as well.
 
+Then some other {\tt \#include} statements add in the large amount of data needed
+to describe the rest of the force field. We will skip these and return to {\tt urea.top}.
+There we will see
+
 % move these figures so they end up on facing pages 
 % (first figure on even page)
 %\input{topolfig}
-
-{\bf {\tt \#include "gmx.ff/forcefield.itp"} :} this includes the bonded and
-non-bonded force field parameters, the {\tt gmx} in {\tt gmx.ff} will be
-replaced by the name of the force field you are actually using.
 
 {\bf {\tt [~moleculetype~]} :} defines the name of your molecule in
 this {\tt *.top} and nrexcl = 3 stands for excluding non-bonded
@@ -1472,7 +1447,7 @@ here too.
 {\bf {\tt [~angles~]} :} no comment
 
 {\bf {\tt [~dihedrals~]} :} in this case there are 9 proper dihedrals
-(funct = 1), 3 improper (funct = 2) and no Ryckaert-Bellemans type
+(funct = 1), 3 improper (funct = 4) and no Ryckaert-Bellemans type
 dihedrals. If you want to include Ryckaert-Bellemans type dihedrals
 in a topology, do the following (in case of {\eg} decane):
 \begin{verbatim}
@@ -1494,7 +1469,7 @@ to reference positions (\ssecref{positionrestraint}).
 The reference positions are read from a 
 separate coordinate file by {\tt \normindex{grompp}}.
 
-{\bf {\tt \#include "spc.itp"} :} includes a topology file that was already
+{\bf {\tt \#include "tip3p.itp"} :} includes a topology file that was already
 constructed (see section~\ssecref{molitp}).
 
 {\bf {\tt [~system~]} :} title of your system, user-defined
@@ -1502,7 +1477,7 @@ constructed (see section~\ssecref{molitp}).
 {\bf {\tt [~molecules~]} :} this defines the total number of (sub)molecules
 in your system that are defined in this {\tt *.top}. In this
 example file, it stands for 1 urea molecule dissolved in 1000 water
-molecules. The molecule type SOL is defined in the {\tt spc.itp} file.
+molecules. The molecule type SOL is defined in the {\tt tip3p.itp} file.
 Each name here must correspond to a name given with {\tt [~moleculetype~]}
 earlier in the topology. The order of the blocks of molecule types and
 the numbers of such molecules must match the coordinate file that
@@ -1516,86 +1491,69 @@ have nothing to do with the definition of \normindex{groups}
 \subsection{Molecule.itp file}
 \label{subsec:molitp}
 If you construct a topology file you will use frequently (like the water
-molecule, {\tt spc.itp}, which is already constructed for you) it is
+molecule, {\tt tip3p.itp}, which is already constructed for you) it is
 good to make a {\tt molecule.itp} file. This only lists the
 information of one particular molecule and allows you to re-use the
 {\tt [ moleculetype ]} in multiple systems without re-invoking
-{\tt pdb2gmx} or manually copying and pasting. An example follows: 
+{\tt pdb2gmx} or manually copying and pasting. An example
+{\tt urea.itp} follows: 
 
 {\small
 \begin{verbatim}
 [ moleculetype ]
-; name  nrexcl
-Urea       3
+; molname	nrexcl
+URE		3
 
 [ atoms ]
-;   nr    type   resnr  residu    atom    cgnr  charge
-     1       C       1    UREA      C1       1   0.683  
-     .................
-     .................
-     8       H       1    UREA      H8       3   0.276
+   1  C  1  URE      C      1     0.880229  12.01000   ; amber C  type
+...
+   8  H  1  URE    H22      8     0.395055   1.00800   ; amber H  type
 
 [ bonds ]
-;  ai    aj funct           c0           c1
-    3     4     1 1.000000e-01 3.744680e+05 
-     .................
-     .................
-    1     6     1 1.330000e-01 3.765600e+05 
-
-[ pairs ]
-;  ai    aj funct           c0           c1
-    2     4     1 0.000000e+00 0.000000e+00 
-     .................
-     .................
-    5     6     1 0.000000e+00 0.000000e+00 
-
-[ angles ]
-;  ai    aj    ak funct           c0           c1
-    1     3     4     1 1.200000e+02 2.928800e+02 
-     .................
-     .................
-    3     1     6     1 1.170000e+02 5.020800e+02 
-
-[ dihedrals ]
-;  ai    aj    ak    al funct           c0           c1           c2
-    2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 
-     .................
-     .................
-    3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 
-
-[ dihedrals ]
-;  ai    aj    ak    al funct           c0           c1
-    3     4     5     1     2 0.000000e+00 1.673600e+02 
-    6     7     8     1     2 0.000000e+00 1.673600e+02 
-    1     3     6     2     2 0.000000e+00 1.673600e+02 
+    1	2
+...
+    6	8
+[ dihedrals ] 
+;   ai    aj    ak    al funct  definition
+     2     1     3     4   9     
+...
+     6     1     3     5   9     
+[ dihedrals ] 
+     3     6     1     2   4     
+     1     4     3     5   4	 
+     1     7     6     8   4
 \end{verbatim}}
 
 Using {\tt *.itp} files results in a very short {\tt *.top} file:
 
 {\small
 \begin{verbatim}
+;
+;       Example topology file
+;
 ; The force field files to be included
-#include "gmx.ff/forcefield.itp"
-        
-; Include urea topology
+#include "amber99.ff/forcefield.itp"
+
 #include "urea.itp"
 
-; Include SPC water topology
-#include "spc.itp"
+; Include TIP3P water topology
+#include "amber99/tip3p.itp"
 
 [ system ]
 Urea in Water
 
 [ molecules ]
-;molecule name  number
-Urea              1
-SOL               1000
+;molecule name   nr.
+Urea             1
+SOL              1000
 \end{verbatim}}
 
 \subsection{Ifdef statements}
 \label{subsec:ifdef}
 A very powerful feature in {\gromacs} is the use of {\tt \#ifdef}
 statements in your {\tt *.top} file. By making use of this statement,
+and associated {\tt \#define} statements like were seen in
+\linebreak {\tt amber99.ff/forcefield.itp} earlier,
 different parameters for one molecule can be used in the same
 {\tt *.top} file. An example is given for TFE, where there is an option to
 use different charges on the atoms: charges derived by De Loof
@@ -1837,7 +1795,7 @@ Methanes               1
 ;  ai    aj funct   length_A  length_B
     1     2     2        0.7       1.7
 
-#include "spc.itp"
+#include "gromos43a1.ff/spc.itp"
 
 [ system ]
 ; Name
@@ -1901,7 +1859,7 @@ tensor, not a vector.
 
 \subsection{Force field files}
 \label{subsec:fffiles}
-As of {\gromacs} version 4.5, 14 force fields are available by default.
+Many force fields are available by default.
 Force fields are detected by the presence of {\tt <name>.ff} directories
 in the {\gromacs} {\tt /share/top} sub-directory and/or the working directory.
 The information regarding the location of the force field files is printed
@@ -1911,51 +1869,29 @@ The force fields included with {\gromacs} are:
 
 {\small
 \begin{itemize}
- \item AMBER03 force field (Duan et al., J. Comp. Chem. 24, 1999-2012, 2003) 
- \item AMBER94 force field (Cornell et al., JACS 117, 5179-5197, 1995) 
- \item AMBER96 force field (Kollman et al., Acc. Chem. Res. 29, 461-469, 1996) 
- \item AMBER99 force field (Wang et al., J. Comp. Chem. 21, 1049-1074, 2000) 
- \item AMBER99SB force field (Hornak et al., Proteins 65, 712-725, 2006) 
- \item AMBER99SB-ILDN force field (Lindorff-Larsen et al., Proteins 78, 1950-58, 2010) 
- \item AMBERGS force field (Garcia \& Sanbonmatsu, PNAS 99, 2782-2787, 2002) 
- \item CHARMM27 all-atom force field (with CMAP) 
- \item GROMOS96 43A1 force field 
- \item GROMOS96 43A2 force field (improved alkane dihedrals) 
- \item GROMOS96 45A3 force field (Schuler JCC 2001 22 1205) 
- \item GROMOS96 53A5 force field (JCC 2004 vol 25 pag 1656) 
- \item GROMOS96 53A6 force field (JCC 2004 vol 25 pag 1656) 
- \item OPLS-AA/L all-atom force field (2001 aminoacid dihedrals) 
+ \item AMBER03 protein, nucleic AMBER94 (Duan et al., J. Comp. Chem. 24, 1999-2012, 2003)
+ \item AMBER94 force field (Cornell et al., JACS 117, 5179-5197, 1995)
+ \item AMBER96 protein, nucleic AMBER94 (Kollman et al., Acc. Chem. Res. 29, 461-469, 1996)
+ \item AMBER99 protein, nucleic AMBER94 (Wang et al., J. Comp. Chem. 21, 1049-1074, 2000)
+ \item AMBER99SB protein, nucleic AMBER94 (Hornak et al., Proteins 65, 712-725, 2006)
+ \item AMBER99SB-ILDN protein, nucleic AMBER94 (Lindorff-Larsen et al., Proteins 78, 1950-58, 2010)
+ \item AMBERGS force field (Garcia \& Sanbonmatsu, PNAS 99, 2782-2787, 2002)
+ \item CHARMM27 all-atom force field (CHARM22 plus CMAP for proteins)
+ \item GROMOS96 43a1 force field
+ \item GROMOS96 43a2 force field (improved alkane dihedrals)
+ \item GROMOS96 45a3 force field (Schuler JCC 2001 22 1205)
+ \item GROMOS96 53a5 force field (JCC 2004 vol 25 pag 1656)
+ \item GROMOS96 53a6 force field (JCC 2004 vol 25 pag 1656)
+ \item GROMOS96 54a7 force field (Eur. Biophys. J. (2011), 40,, 843-856, DOI: 10.1007/s00249-011-0700-9)
+ \item OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)
 \end{itemize}} 
- 
-There are also some additional deprecated force fields listed in the selection from
-{\tt pdb2gmx}, but we do not currently recommend that you use those for new simulations.
  
 A force field is included at the beginning of a topology file with an
 {\tt \#include} statement followed by {\tt <name>.ff/forcefield.itp}.
 This statement includes the force field file,
 which, in turn, may include other force field files. All the force fields
-are organized in the same way. As an example, we show the {\tt gromos43a1.ff/forcefield.itp}
-file:
-
-{\small
-\begin{verbatim}
-#define _FF_GROMOS96
-#define _FF_GROMOS43A1
-
-[ defaults ]
-; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
-  1		1		no		1.0	1.0
-
-#include "ffnonbonded.itp"
-#include "ffbonded.itp"
-\end{verbatim}}
-
-The first {\tt \#define} can be used in topologies to parse data which is
-specific for all {\gromacs} force fields, the second {\tt \#define} is to parse
-data specific to this force field. The {\tt [~defaults~]} section is
-explained in \ssecref{topfile}. The included file {\tt ffnonbonded.itp} contains
-all atom types and non-bonded parameters. The included file {\tt ffbonded.itp}
-contains all bonded parameters.
+are organized in the same way. An example of the
+{\tt amber99.ff/forcefield.itp} was shown in \ssecref{topfile}.
 
 For each force field, there several files which are only used by {\tt pdb2gmx}.
 These are: residue databases ({\tt .rtp}, see~\ssecref{rtp})

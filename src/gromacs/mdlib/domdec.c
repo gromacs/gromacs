@@ -42,6 +42,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
@@ -77,6 +79,7 @@
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/imd/imd.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
@@ -8684,6 +8687,7 @@ static void set_zones_size(gmx_domdec_t *dd,
                 corner[YY] -= corner[ZZ]*box[ZZ][YY]/box[ZZ][ZZ];
             }
             /* Apply the triclinic couplings */
+            assert(ddbox->npbcdim <= DIM);
             for (i = YY; i < ddbox->npbcdim; i++)
             {
                 for (j = XX; j < i; j++)
@@ -9767,6 +9771,9 @@ void dd_partition_system(FILE                *fplog,
         /* Update the local groups needed for ion swapping */
         dd_make_local_swap_groups(dd, ir->swap);
     }
+
+    /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
+    dd_make_local_IMD_atoms(ir->bIMD, dd, ir->imd);
 
     add_dd_statistics(dd);
 

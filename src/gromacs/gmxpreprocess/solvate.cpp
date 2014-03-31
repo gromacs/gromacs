@@ -40,6 +40,7 @@
 #include <config.h>
 #endif
 
+#include <string.h>
 
 #include "sysstuff.h"
 #include "typedefs.h"

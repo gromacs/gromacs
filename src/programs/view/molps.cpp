@@ -237,8 +237,6 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
 
     init_pbc(man->box);
 
-    /* create_visibility(man); */
-
     for (i = 0; (i < man->natom); i++)
     {
         if (man->bVis[i])

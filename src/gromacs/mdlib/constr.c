@@ -39,6 +39,7 @@
 #endif
 
 #include "gromacs/fileio/confio.h"
+#include "types/commrec.h"
 #include "constr.h"
 #include "copyrite.h"
 #include "invblock.h"
@@ -418,7 +419,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
      */
     if (cr->dd)
     {
-        dd_move_x_constraints(cr->dd, box, x, xprime);
+        dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
     }
 
     if (constr->lincsd != NULL)

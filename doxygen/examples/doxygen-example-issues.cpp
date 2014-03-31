@@ -39,3 +39,40 @@ int gmx_function();
  * what the function does and how it should be called.
  */
 int gmx_function();
+
+
+// This may be a Doxygen bug, but this does not produce any brief description.
+
+/** \internal Brief description. */
+int gmx_function();
+
+
+// If the first declaration below appears in a header, and the second in a
+// source file, then Doxygen does not associate them correctly and complains
+// about missing documentation for the latter.  The solution is to explicitly
+// add a namespace prefix also in the source file, even though the compiler
+// does not require it.
+
+// Header file
+//! Example function with a namespace-qualified parameter type.
+int gmx_function(const gmx::SomeClass &param);
+
+// Source file
+using gmx::SomeClass;
+
+int gmx_function(const SomeClass &param);
+
+
+// This puts the namespace into the mentioned module, instead of the contents
+// of the namespace.  \addtogroup should go within the innermost scope.
+
+//! \addtogroup module_example
+//! \{
+
+namespace gmx
+{
+
+//! Function intended to be part of module_example.
+int gmx_function();
+
+}

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -173,7 +173,7 @@ static const char *help_distance[] = {
     "returned as equal to the cutoff.",
 };
 
-/** \internal Selection method data for the \p distance method. */
+/** Selection method data for the \p distance method. */
 gmx_ana_selmethod_t sm_distance = {
     "distance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_distance), smparams_distance,
@@ -188,7 +188,7 @@ gmx_ana_selmethod_t sm_distance = {
     {"distance from POS [cutoff REAL]", asize(help_distance), help_distance},
 };
 
-/** \internal Selection method data for the \p distance method. */
+/** Selection method data for the \p distance method. */
 gmx_ana_selmethod_t sm_mindistance = {
     "mindistance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_mindistance), smparams_mindistance,
@@ -203,7 +203,7 @@ gmx_ana_selmethod_t sm_mindistance = {
     {"mindistance from POS_EXPR [cutoff REAL]", asize(help_distance), help_distance},
 };
 
-/** \internal Selection method data for the \p within method. */
+/** Selection method data for the \p within method. */
 gmx_ana_selmethod_t sm_within = {
     "within", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_within), smparams_within,

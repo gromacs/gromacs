@@ -62,7 +62,7 @@ namespace
 
 using ::testing::internal::FloatingPoint;
 
-//! \addtogroup module_testutils
+//! \internal \addtogroup module_testutils
 //! \{
 
 /*! \name Helper functions for computing floating-point differences

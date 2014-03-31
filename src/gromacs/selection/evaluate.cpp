@@ -465,9 +465,9 @@ SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
  * Evaluates each child of \p sel in \p g.
  */
 void
-_gmx_sel_evaluate_children(gmx_sel_evaluate_t                *data,
-                           const SelectionTreeElementPointer &sel,
-                           gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_children(gmx_sel_evaluate_t                     *data,
+                           const gmx::SelectionTreeElementPointer &sel,
+                           gmx_ana_index_t                        *g)
 {
     SelectionTreeElementPointer child = sel->child;
     while (child)
@@ -522,9 +522,9 @@ _gmx_sel_evaluate_static(gmx_sel_evaluate_t                      * /* data */,
  * full subexpression handling.
  */
 void
-_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t                *data,
-                                 const SelectionTreeElementPointer &sel,
-                                 gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t                     *data,
+                                 const gmx::SelectionTreeElementPointer &sel,
+                                 gmx_ana_index_t                        *g)
 {
     if (sel->child->evaluate)
     {
@@ -550,9 +550,9 @@ _gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t                *data,
  * not need full subexpression handling.
  */
 void
-_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t                *data,
-                                     const SelectionTreeElementPointer &sel,
-                                     gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t                     *data,
+                                     const gmx::SelectionTreeElementPointer &sel,
+                                     gmx_ana_index_t                        *g)
 {
     if (sel->u.cgrp.isize == 0)
     {
@@ -590,9 +590,9 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t                *data,
  * major problem.
  */
 void
-_gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t                *data,
-                          const SelectionTreeElementPointer &sel,
-                          gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t                     *data,
+                          const gmx::SelectionTreeElementPointer &sel,
+                          gmx_ana_index_t                        *g)
 {
     gmx_ana_index_t      gmiss;
 
@@ -703,9 +703,9 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t                *data,
  * other references.
  */
 void
-_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t                *data,
-                                    const SelectionTreeElementPointer &sel,
-                                    gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t                     *data,
+                                    const gmx::SelectionTreeElementPointer &sel,
+                                    gmx_ana_index_t                        *g)
 {
     if (g)
     {
@@ -742,9 +742,9 @@ _gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t                *data,
  * \ref SEL_SUBEXPRREF elements.
  */
 void
-_gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t                *data,
-                             const SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t                     *data,
+                             const gmx::SelectionTreeElementPointer &sel,
+                             gmx_ana_index_t                        *g)
 {
     int        i, j;
 
@@ -867,9 +867,9 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t                *data,
  * but is used internally.
  */
 void
-_gmx_sel_evaluate_method_params(gmx_sel_evaluate_t                *data,
-                                const SelectionTreeElementPointer &sel,
-                                gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_method_params(gmx_sel_evaluate_t                     *data,
+                                const gmx::SelectionTreeElementPointer &sel,
+                                gmx_ana_index_t                        *g)
 {
     SelectionTreeElementPointer child = sel->child;
     while (child)
@@ -908,9 +908,9 @@ _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t                *data,
  * \ref SEL_EXPRESSION elements.
  */
 void
-_gmx_sel_evaluate_method(gmx_sel_evaluate_t                *data,
-                         const SelectionTreeElementPointer &sel,
-                         gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_method(gmx_sel_evaluate_t                     *data,
+                         const gmx::SelectionTreeElementPointer &sel,
+                         gmx_ana_index_t                        *g)
 {
     _gmx_sel_evaluate_method_params(data, sel, g);
     if (sel->flags & SEL_INITFRAME)
@@ -950,9 +950,9 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t                *data,
  * \ref SEL_MODIFIER elements.
  */
 void
-_gmx_sel_evaluate_modifier(gmx_sel_evaluate_t                *data,
-                           const SelectionTreeElementPointer &sel,
-                           gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_modifier(gmx_sel_evaluate_t                     *data,
+                           const gmx::SelectionTreeElementPointer &sel,
+                           gmx_ana_index_t                        *g)
 {
     _gmx_sel_evaluate_method_params(data, sel, g);
     if (sel->flags & SEL_INITFRAME)
@@ -991,9 +991,9 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t                *data,
  * \ref SEL_BOOLEAN elements with \ref BOOL_NOT.
  */
 void
-_gmx_sel_evaluate_not(gmx_sel_evaluate_t                *data,
-                      const SelectionTreeElementPointer &sel,
-                      gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_not(gmx_sel_evaluate_t                     *data,
+                      const gmx::SelectionTreeElementPointer &sel,
+                      gmx_ana_index_t                        *g)
 {
     MempoolSelelemReserver reserver(sel->child, g->isize);
     sel->child->evaluate(data, sel->child, g);
@@ -1026,9 +1026,9 @@ _gmx_sel_evaluate_not(gmx_sel_evaluate_t                *data,
  * \ref SEL_BOOLEAN elements with \ref BOOL_AND.
  */
 void
-_gmx_sel_evaluate_and(gmx_sel_evaluate_t                *data,
-                      const SelectionTreeElementPointer &sel,
-                      gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_and(gmx_sel_evaluate_t                     *data,
+                      const gmx::SelectionTreeElementPointer &sel,
+                      gmx_ana_index_t                        *g)
 {
     SelectionTreeElementPointer child = sel->child;
     /* Skip the first child if it does not have an evaluation function. */
@@ -1079,9 +1079,9 @@ _gmx_sel_evaluate_and(gmx_sel_evaluate_t                *data,
  * \ref SEL_BOOLEAN elements with \ref BOOL_OR.
  */
 void
-_gmx_sel_evaluate_or(gmx_sel_evaluate_t                *data,
-                     const SelectionTreeElementPointer &sel,
-                     gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_or(gmx_sel_evaluate_t                     *data,
+                     const gmx::SelectionTreeElementPointer &sel,
+                     gmx_ana_index_t                        *g)
 {
     gmx_ana_index_t             tmp, tmp2;
 
@@ -1124,9 +1124,9 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t                *data,
  * \returns   0 on success, a non-zero error code on error.
  */
 void
-_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t                *data,
-                             const SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t                     *data,
+                             const gmx::SelectionTreeElementPointer &sel,
+                             gmx_ana_index_t                        *g)
 {
     int         n, i, i1, i2;
     real        lval, rval = 0., val = 0.;

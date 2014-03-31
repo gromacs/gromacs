@@ -138,8 +138,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
     common->initIndexGroups(selections, bUseDefaultGroups_);
 
-    // TODO: Check whether the input is a pipe.
-    const bool bInteractive = true;
+    const bool bInteractive = File::standardInput().isInteractive();
     seloptManager.parseRequestedFromStdin(bInteractive);
     common->doneIndexGroups(selections);
 

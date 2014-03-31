@@ -45,8 +45,8 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/fileio/path.h"
 #include "gromacs/utility/common.h"
-#include "gromacs/utility/path.h"
 #include "gromacs/utility/uniqueptr.h"
 
 #include "testutils/cmdlinetest.h"

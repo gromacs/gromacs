@@ -39,6 +39,8 @@
 #endif
 
 #include <ctype.h>
+#include <string.h>
+
 #include "sysstuff.h"
 #include "gromacs/fileio/futil.h"
 #include "macros.h"

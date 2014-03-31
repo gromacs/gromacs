@@ -39,7 +39,9 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
+
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -1928,7 +1930,7 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, struct gmx_edsam *ed)
 }
 
 
-static inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec is, rvec xu)
+static gmx_inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec is, rvec xu)
 {
     int tx, ty, tz;
 

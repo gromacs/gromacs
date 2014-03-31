@@ -41,6 +41,7 @@
 #include "simple.h"
 #include "enums.h"
 #include "../sysstuff.h"
+#include "../../swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -270,6 +271,14 @@ typedef struct {
     gmx_enfrot_t enfrot;     /* Stores non-inputrec enforced rotation data    */
 } t_rot;
 
+/* Abstract type for IMD only defined in IMD.c */
+typedef struct gmx_IMD *t_gmx_IMD;
+
+typedef struct {
+    int         nat;         /* Number of interactive atoms                   */
+    atom_id    *ind;         /* The global indices of the interactive atoms   */
+    t_gmx_IMD   setup;       /* Stores non-inputrec IMD data                  */
+} t_IMD;
 
 /* Abstract types for position swapping only defined in swapcoords.c */
 typedef struct swap *gmx_swapcoords_t;
@@ -442,6 +451,8 @@ typedef struct {
     t_rot          *rot;                     /* The data for enforced rotation potentials    */
     int             eSwapCoords;             /* Do ion/water position exchanges (CompEL)?    */
     t_swapcoords   *swap;
+    gmx_bool        bIMD;                    /* Allow interactive MD sessions for this .tpr? */
+    t_IMD          *imd;                     /* Interactive molecular dynamics               */
     real            cos_accel;               /* Acceleration for viscosity calculation       */
     tensor          deform;                  /* Triclinic deformation velocities (nm/ps)     */
     int             userint1;                /* User determined parameters                   */

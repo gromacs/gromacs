@@ -45,11 +45,11 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "string2.h"
 #include "readir.h"
 #include "toputil.h"
 #include "topio.h"
@@ -64,7 +64,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "splitter.h"
-#include "gromacs/gmxana/sortwater.h"
+#include "gromacs/gmxpreprocess/sortwater.h"
 #include "convparm.h"
 #include "gmx_fatal.h"
 #include "warninp.h"
@@ -84,8 +84,9 @@
 #include "mtop_util.h"
 #include "genborn.h"
 #include "calc_verletbuf.h"
-
 #include "tomorse.h"
+#include "gromacs/imd/imd.h"
+
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
@@ -887,6 +888,8 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
 
     if (rc_scaling != erscNO)
     {
+        assert(npbcdim <= DIM);
+
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
             molb     = &mtop->molblock[mb];
@@ -1486,6 +1489,7 @@ int gmx_grompp(int argc, char *argv[])
     warninp_t          wi;
     char               warn_buf[STRLEN];
     unsigned int       useed;
+    t_atoms            IMDatoms;   /* Atoms to be operated on interactively (IMD) */
 
     t_filenm           fnm[] = {
         { efMDP, NULL,  NULL,        ffREAD  },
@@ -1499,7 +1503,9 @@ int gmx_grompp(int argc, char *argv[])
         { efTPX, "-o",  NULL,        ffWRITE },
         { efTRN, "-t",  NULL,        ffOPTRD },
         { efEDR, "-e",  NULL,        ffOPTRD },
-        { efTRN, "-ref", "rotref",    ffOPTRW }
+        /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
+        { efGRO, "-imd", "imdgroup", ffOPTWR },
+        { efTRN, "-ref", "rotref",   ffOPTRW }
     };
 #define NFILE asize(fnm)
 
@@ -1667,7 +1673,7 @@ int gmx_grompp(int argc, char *argv[])
         {
             warning_error(wi, "AdResS contant weighting function should be between 0 and 1\n\n");
         }
-        /** \TODO check size of ex+hy width against box size */
+        /** TODO check size of ex+hy width against box size */
     }
 
     /* Check for errors in the input now, since they might cause problems
@@ -1955,11 +1961,6 @@ int gmx_grompp(int argc, char *argv[])
        potentially conflict if not handled correctly. */
     if (ir->efep != efepNO)
     {
-        if (EVDW_PME(ir->vdwtype))
-        {
-            gmx_fatal(FARGS, "LJ-PME not implemented together with free energy calculations!");
-        }
-
         state.fep_state = ir->fepvals->init_fep_state;
         for (i = 0; i < efptNR; i++)
         {
@@ -2041,6 +2042,9 @@ int gmx_grompp(int argc, char *argv[])
 
     done_warning(wi, FARGS);
     write_tpx_state(ftp2fn(efTPX, NFILE, fnm), ir, &state, sys);
+
+    /* Output IMD group, if bIMD is TRUE */
+    write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);
 
     done_atomtype(atype);
     done_mtop(sys, TRUE);

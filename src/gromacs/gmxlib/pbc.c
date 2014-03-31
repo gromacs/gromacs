@@ -39,8 +39,11 @@
 #endif
 
 #include <math.h>
+#include <assert.h>
+
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vec.h"
 #include "gromacs/math/utilities.h"
 #include "main.h"
@@ -395,6 +398,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                         pbc->dim = i;
                     }
                 }
+                assert(pbc->dim < DIM);
                 for (i = 0; i < pbc->dim; i++)
                 {
                     if (pbc->box[pbc->dim][i] != 0)

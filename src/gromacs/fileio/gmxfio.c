@@ -38,15 +38,17 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#include "thread_mpi/threads.h"
 
 #include "gmx_fatal.h"
 #include "macros.h"
@@ -56,8 +58,6 @@
 #include "string2.h"
 #include "gmxfio.h"
 #include "md5.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include "gmxfio_int.h"
 

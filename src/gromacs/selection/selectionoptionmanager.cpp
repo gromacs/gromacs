@@ -297,28 +297,12 @@ SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
     for (i = impl_->requests_.begin(); i != impl_->requests_.end(); ++i)
     {
         const Impl::SelectionRequest &request = *i;
-        if (bInteractive)
-        {
-            std::fprintf(stderr, "\nSpecify ");
-            if (request.count() < 0)
-            {
-                std::fprintf(stderr, "any number of selections");
-            }
-            else if (request.count() == 1)
-            {
-                std::fprintf(stderr, "a selection");
-            }
-            else
-            {
-                std::fprintf(stderr, "%d selections", request.count());
-            }
-            std::fprintf(stderr, " for option '%s' (%s):\n",
+        std::string                   context =
+            formatString("for option '%s'\n(%s)",
                          request.name().c_str(), request.description().c_str());
-            std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
-                         request.count() < 0 ? ", Ctrl-D to end" : "");
-        }
         SelectionList selections
-            = impl_->collection_.parseFromStdin(request.count(), bInteractive);
+            = impl_->collection_.parseFromStdin(request.count(), bInteractive,
+                                                context);
         request.storage_->addSelections(selections, true);
     }
 }

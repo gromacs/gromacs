@@ -306,29 +306,6 @@ int compare_obj(const void *a, const void *b)
     }
 }
 
-void create_visibility(t_manager *man)
-{
-    t_object *obj;
-    int       i;
-
-    for (i = 0, obj = man->obj; (i < man->nobj); i++, obj++)
-    {
-        if (obj->eV != eVHidden)
-        {
-            man->bVis[obj->ai] = true;
-            switch (obj->eO)
-            {
-                case eOBond:
-                case eOHBond:
-                    man->bVis[obj->aj] = true;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-}
-
 void z_fill(t_manager *man, real *zz)
 {
     t_object *obj;
@@ -590,8 +567,6 @@ void draw_mol(t_x11 *x11, t_manager *man)
     sy   = win->height/2*view->sc_y;
 
     my_init_pbc(man->box);
-
-    /* create_visibility(man); */
 
     for (i = 0; (i < man->natom); i++)
     {

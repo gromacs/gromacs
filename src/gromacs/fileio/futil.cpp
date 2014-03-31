@@ -65,18 +65,19 @@
 #include <windows.h>
 #endif
 
+#include "thread_mpi/threads.h"
+
 #include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/path.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 /* we keep a linked list of all files opened through pipes (i.e.
    compressed or .gzipped files. This way we can distinguish between them
@@ -585,7 +586,6 @@ gmx_directory_open(gmx_directory_t *p_gmxdir, const char *dirname)
     if (dirname != NULL && strlen(dirname) > 0)
     {
         char *     tmpname;
-        size_t     namelength;
         int        len;
 
         len = strlen(dirname);
@@ -827,7 +827,7 @@ FILE *libopen(const char *file)
 
 void gmx_tmpnam(char *buf)
 {
-    int i, len, fd;
+    int i, len;
 
     if ((len = strlen(buf)) < 7)
     {
@@ -844,7 +844,7 @@ void gmx_tmpnam(char *buf)
 #ifdef GMX_NATIVE_WINDOWS
     _mktemp(buf);
 #else
-    fd = mkstemp(buf);
+    int fd = mkstemp(buf);
 
     switch (fd)
     {

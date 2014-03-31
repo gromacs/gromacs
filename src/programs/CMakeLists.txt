@@ -32,8 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
-
 file(GLOB MDRUN_SOURCES mdrun/*.c mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
@@ -118,11 +116,11 @@ else()
         configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)
         set(CREATE_LINKS_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/CreateLinks.cmake)
         install(SCRIPT ${CREATE_LINKS_SCRIPT} COMPONENT links)
-    endif ()
+    endif()
 
     if(BUILD_TESTING)
         add_subdirectory(mdrun/tests)
-    endif(BUILD_TESTING)
+    endif()
 endif()
 
 if(GMX_ALEXANDRIA)

@@ -43,6 +43,7 @@
 #include <assert.h>
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "vec.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
@@ -155,6 +156,46 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
     }
 
     return nbfp;
+}
+
+static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
+{
+    int   i, j, k, atnr;
+    real  c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real *grid;
+
+    /* For LJ-PME simulations, we correct the energies with the reciprocal space
+     * inside of the cut-off. To do this the non-bonded kernels needs to have
+     * access to the C6-values used on the reciprocal grid in pme.c
+     */
+
+    atnr = idef->atnr;
+    snew(grid, 2*atnr*atnr);
+    for (i = k = 0; (i < atnr); i++)
+    {
+        for (j = 0; (j < atnr); j++, k++)
+        {
+            c6i  = idef->iparams[i*(atnr+1)].lj.c6;
+            c12i = idef->iparams[i*(atnr+1)].lj.c12;
+            c6j  = idef->iparams[j*(atnr+1)].lj.c6;
+            c12j = idef->iparams[j*(atnr+1)].lj.c12;
+            c6   = sqrt(c6i * c6j);
+            if (fr->ljpme_combination_rule == eljpmeLB
+                && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
+            {
+                sigmai = pow(c12i / c6i, 1.0/6.0);
+                sigmaj = pow(c12j / c6j, 1.0/6.0);
+                epsi   = c6i * c6i / c12i;
+                epsj   = c6j * c6j / c12j;
+                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+            }
+            /* Store the elements at the same relative positions as C6 in nbfp in order
+             * to simplify access in the kernels
+             */
+            grid[2*(atnr*i+j)] = c6*6.0;
+        }
+    }
+    return grid;
 }
 
 static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
@@ -606,7 +647,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     int                  *a_con;
     int                   ftype;
     int                   ia;
-    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bFEP;
+    gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bHavePerturbedAtoms;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb, mtop->nmolblock);
@@ -720,11 +761,11 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 /* bExclIntraAll: all intra cg interactions excluded
                  * bExclInter:    any inter cg interactions excluded
                  */
-                bExclIntraAll = TRUE;
-                bExclInter    = FALSE;
-                bHaveVDW      = FALSE;
-                bHaveQ        = FALSE;
-                bFEP          = FALSE;
+                bExclIntraAll       = TRUE;
+                bExclInter          = FALSE;
+                bHaveVDW            = FALSE;
+                bHaveQ              = FALSE;
+                bHavePerturbedAtoms = FALSE;
                 for (ai = a0; ai < a1; ai++)
                 {
                     /* Check VDW and electrostatic interactions */
@@ -733,7 +774,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     bHaveQ  = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
                                             molt->atoms.atom[ai].qB != 0);
 
-                    bFEP    = bFEP || (PERTURBED(molt->atoms.atom[ai]) != 0);
+                    bHavePerturbedAtoms = bHavePerturbedAtoms || (PERTURBED(molt->atoms.atom[ai]) != 0);
 
                     /* Clear the exclusion list for atom ai */
                     for (aj = a0; aj < a1; aj++)
@@ -795,7 +836,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 {
                     SET_CGINFO_HAS_Q(cginfo[cgm+cg]);
                 }
-                if (bFEP)
+                if (bHavePerturbedAtoms && fr->efep != efepNO)
                 {
                     SET_CGINFO_FEP(cginfo[cgm+cg]);
                     *bFEP_NonBonded = TRUE;
@@ -1846,12 +1887,28 @@ static void init_ewald_f_table(interaction_const_t *ic,
     sfree_aligned(ic->tabq_coul_F);
     sfree_aligned(ic->tabq_coul_V);
 
-    /* Create the original table data in FDV0 */
-    snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
-    snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
-    snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
-    table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q);
+    sfree_aligned(ic->tabq_vdw_FDV0);
+    sfree_aligned(ic->tabq_vdw_F);
+    sfree_aligned(ic->tabq_vdw_V);
+
+    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    {
+        /* Create the original table data in FDV0 */
+        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
+        snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
+        snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
+        table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
+                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
+    }
+
+    if (EVDW_PME(ic->vdwtype))
+    {
+        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size*4, 32);
+        snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
+        snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
+        table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
+                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+    }
 }
 
 void init_interaction_const_tables(FILE                *fp,
@@ -1861,7 +1918,7 @@ void init_interaction_const_tables(FILE                *fp,
 {
     real spacing;
 
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
         init_ewald_f_table(ic, bUsesSimpleTables, rtab);
 
@@ -1954,10 +2011,6 @@ init_interaction_const(FILE                       *fp,
             {
                 real crc2;
 
-                if (fr->cutoff_scheme == ecutsGROUP)
-                {
-                    gmx_fatal(FARGS, "Potential-shift is not (yet) implemented for LJ-PME with cutoff-scheme=group");
-                }
                 crc2            = sqr(ic->ewaldcoeff_lj*ic->rvdw);
                 ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, -6.0);
             }
@@ -2582,7 +2635,6 @@ void init_forcerec(FILE              *fp,
     switch (fr->vdwtype)
     {
         case evdwCUT:
-        case evdwPME:
             if (fr->bBHAM)
             {
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
@@ -2591,6 +2643,9 @@ void init_forcerec(FILE              *fp,
             {
                 fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LENNARDJONES;
             }
+            break;
+        case evdwPME:
+            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LJEWALD;
             break;
 
         case evdwSWITCH:
@@ -2616,8 +2671,8 @@ void init_forcerec(FILE              *fp,
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
-                          !gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS));
+        fr->bvdwtab    = ((fr->vdwtype != evdwCUT || !gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS))
+                          && !EVDW_PME(fr->vdwtype));
         /* We have special kernels for standard Ewald and PME, but the pme-switch ones are tabulated above */
         fr->bcoultab   = !(fr->eeltype == eelCUT ||
                            fr->eeltype == eelEWALD ||
@@ -2776,6 +2831,10 @@ void init_forcerec(FILE              *fp,
     {
         fr->ntype = mtop->ffparams.atnr;
         fr->nbfp  = mk_nbfp(&mtop->ffparams, fr->bBHAM);
+        if (EVDW_PME(fr->vdwtype))
+        {
+            fr->ljpme_c6grid  = make_ljpme_c6grid(&mtop->ffparams, fr);
+        }
     }
 
     /* Copy the energy group exclusions */

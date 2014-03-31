@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011, by the GROMACS development team, led by
+# Copyright (c) 2011,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,11 +37,11 @@ SET(CTEST_NIGHTLY_START_TIME "00:00:00 EST")
 
 IF(NOT DEFINED CTEST_DROP_METHOD)
   SET(CTEST_DROP_METHOD "http")
-ENDIF(NOT DEFINED CTEST_DROP_METHOD)
+ENDIF()
 
 IF(CTEST_DROP_METHOD STREQUAL "http")
   SET(CTEST_DROP_SITE "cdash.gromacs.org")
   SET(CTEST_DROP_LOCATION "/submit.php?project=Gromacs")
   SET(CTEST_DROP_SITE_CDASH TRUE)
-ENDIF(CTEST_DROP_METHOD STREQUAL "http")
+ENDIF()
 

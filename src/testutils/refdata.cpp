@@ -51,11 +51,11 @@
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
 
+#include "gromacs/fileio/path.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"

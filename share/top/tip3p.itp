@@ -1,11 +1,1 @@
-; This file is for backward compatibility only.
-; Please directly include the tip3p.itp file from your force field directory.
-#ifdef _FF_GROMACS
-#include "gmx.ff/tip3p.itp"
-#endif
-#ifdef _FF_GROMOS96
-#include "gromos43a1.ff/tip3p.itp"
-#endif
-#ifdef _FF_OPLS  
-#include "oplsaa.ff/tip3p.itp"
-#endif
+#error   This top-level .itp file has been removed. Edit your topology to include it from your force field directory instead, e.g. "oplsaa.ff/tip3p.itp"

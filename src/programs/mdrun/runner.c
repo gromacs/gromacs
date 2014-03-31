@@ -60,6 +60,7 @@
 #include "pme.h"
 #include "mdatoms.h"
 #include "repl_ex.h"
+#include "deform.h"
 #include "qmmm.h"
 #include "domdec.h"
 #include "coulomb.h"
@@ -71,7 +72,7 @@
 #include "txtdump.h"
 #include "gmx_detect_hardware.h"
 #include "gmx_omp_nthreads.h"
-#include "calc_verletbuf.h"
+#include "gromacs/gmxpreprocess/calc_verletbuf.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
 #include "macros.h"
@@ -109,6 +110,12 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 
 #ifdef GMX_THREAD_MPI
+/* The minimum number of atoms per tMPI thread. With fewer atoms than this,
+ * the number of threads will get lowered.
+ */
+#define MIN_ATOMS_PER_MPI_THREAD    90
+#define MIN_ATOMS_PER_GPU           900
+
 struct mdrunner_arglist
 {
     gmx_hw_opt_t    hw_opt;
@@ -142,6 +149,7 @@ struct mdrunner_arglist
     real            cpt_period;
     real            max_hours;
     const char     *deviceOptions;
+    int             imdport;
     unsigned long   Flags;
 };
 
@@ -177,7 +185,7 @@ static void mdrunner_start_fn(void *arg)
              mc.nbpu_opt, mc.nstlist_cmdline,
              mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
              mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
-             mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
+             mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.imdport, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including
@@ -1074,7 +1082,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             const char *deviceOptions, unsigned long Flags)
+             const char *deviceOptions, int imdport, unsigned long Flags)
 {
     gmx_bool                  bForceUseGPU, bTryUseGPU;
     double                    nodetime = 0, realtime;
@@ -1753,6 +1761,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       membed,
                                       cpt_period, max_hours,
                                       deviceOptions,
+                                      imdport,
                                       Flags,
                                       walltime_accounting);
 
@@ -1797,7 +1806,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_hardware_info_free(hwinfo);
 
     /* Does what it says */
-    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
 
     /* Close logfile already here if we were appending to it */

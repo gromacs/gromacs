@@ -38,15 +38,16 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+#include <string.h>
+
 #include "gromacs/fileio/filenm.h"
 #include "smalloc.h"
 #include "macros.h"
-#include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
 #include "vec.h"
 #include "index.h"
 #include "pbc.h"

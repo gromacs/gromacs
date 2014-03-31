@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,6 @@
 #define _domdec_h
 
 #include "typedefs.h"
-#include "types/commrec.h"
 #include "vsite.h"
 #include "genborn.h"
 
@@ -227,8 +226,8 @@ void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift);
 void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f);
 
 void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
-                           rvec *x0, rvec *x1);
-/* Move x0 and also x1 if x1!=NULL */
+                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord);
+/* Move x0 and also x1 if x1!=NULL. bX1IsCoord tells if to do PBC on x1 */
 
 void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x);
 

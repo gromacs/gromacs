@@ -106,6 +106,13 @@
    real trace(matrix m)                             = trace(m)
  */
 
+/* The file only depends on config.h for GMX_SOFTWARE_INVSQRT and
+   HAVE_*SQRT*. This is no problem with public headers because
+   it is OK if user code uses a different rsqrt implementation */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "types/simple.h"
 #include "../math/utilities.h"
 #include "typedefs.h"

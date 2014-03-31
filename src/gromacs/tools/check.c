@@ -38,12 +38,12 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
+
 #include "main.h"
 #include "macros.h"
-#include <math.h>
 #include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "txtdump.h"

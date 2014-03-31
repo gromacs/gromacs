@@ -98,7 +98,10 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     if (NOT MKL_MANUALLY)
         # The next line takes care of everything for MKL
         if (WIN32)
-            set(FFT_LINKER_FLAGS "/Qmkl=sequential")
+            # This works according to the Intel MKL 10.3 for Windows
+            # docs, but on Jenkins Win2k8, icl tries to interpret it
+            # as a file. Shrug.
+            set(FFT_LINKER_FLAGS "/Qmkl:sequential")
         else()
             set(FFT_LINKER_FLAGS "-mkl=sequential")
         endif()
@@ -144,9 +147,9 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     set(GMX_FFT_FFTPACK 1)
     set(FFT_STATUS_MESSAGE "Using internal FFT library - fftpack")
-else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+else()
     gmx_invalid_option_value(GMX_FFT_LIBRARY)
-endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+endif()
 gmx_check_if_changed(FFT_CHANGED GMX_FFT_LIBRARY)
 if (FFT_CHANGED)
     message(STATUS "${FFT_STATUS_MESSAGE}")

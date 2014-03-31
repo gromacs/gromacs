@@ -535,16 +535,17 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                     }
                     *dvdlt_q  = 0;
                     *dvdlt_lj = 0;
+
                     ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
                                        cr, t, fr,
                                        md->chargeA,
                                        md->nChargePerturbed ? md->chargeB : NULL,
                                        md->sqrt_c6A,
-                                       md->nChargePerturbed ? md->sqrt_c6B : NULL,
+                                       md->nTypePerturbed ? md->sqrt_c6B : NULL,
                                        md->sigmaA,
-                                       md->nChargePerturbed ? md->sigmaB : NULL,
+                                       md->nTypePerturbed ? md->sigmaB : NULL,
                                        md->sigma3A,
-                                       md->nChargePerturbed ? md->sigma3B : NULL,
+                                       md->nTypePerturbed ? md->sigma3B : NULL,
                                        ir->cutoff_scheme != ecutsVERLET,
                                        excl, x, bSB ? boxs : box, mu_tot,
                                        ir->ewald_geometry,
@@ -587,7 +588,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
                 assert(fr->n_tpi >= 0);
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
-                    pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                    pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
                     if (EEL_PME(fr->eeltype))
                     {
                         pme_flags     |= GMX_PME_DO_COULOMB;

@@ -42,7 +42,6 @@
 #include <time.h>
 #include <math.h>
 #include "sysstuff.h"
-#include "string2.h"
 #include "network.h"
 #include "smalloc.h"
 #include "nrnb.h"
@@ -125,6 +124,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               gmx_membed_t gmx_unused membed,
               real gmx_unused cpt_period, real gmx_unused max_hours,
               const char gmx_unused *deviceOptions,
+              int gmx_unused imdport,
               unsigned long gmx_unused Flags,
               gmx_walltime_accounting_t walltime_accounting)
 {

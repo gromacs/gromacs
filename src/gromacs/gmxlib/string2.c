@@ -39,10 +39,11 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <ctype.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <time.h>
 
@@ -579,50 +580,6 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
     return b2;
 }
 
-char **split(char sep, const char *str)
-{
-    char **ptr = NULL;
-    int    n, nn, nptr = 0;
-
-    if (str == NULL)
-    {
-        return NULL;
-    }
-    nn = strlen(str);
-    for (n = 0; (n < nn); n++)
-    {
-        if (str[n] == sep)
-        {
-            nptr++;
-        }
-    }
-    snew(ptr, nptr+2);
-    nptr = 0;
-    while (*str != '\0')
-    {
-        while ((*str != '\0') && (*str == sep))
-        {
-            str++;
-        }
-        if (*str != '\0')
-        {
-            snew(ptr[nptr], 1+strlen(str));
-            n = 0;
-            while ((*str != '\0') && (*str != sep))
-            {
-                ptr[nptr][n] = *str;
-                str++;
-                n++;
-            }
-            ptr[nptr][n] = '\0';
-            nptr++;
-        }
-    }
-    ptr[nptr] = NULL;
-
-    return ptr;
-}
-
 gmx_int64_t
 str_to_int64_t(const char *str, char **endptr)
 {
@@ -672,25 +629,25 @@ char *gmx_strsep(char **stringp, const char *delim)
 
 char *gmx_ftoa(double f)
 {
-    char a[32],*ptr;
+    char a[32];
   
-    if (f < 100)
+    if (fabs(f) < 100)
+    {
         sprintf(a,"%.3f",f);
+    }
     else
+    {
         sprintf(a,"%g",f);
-        
-    ptr = strdup(a);
-  
-    return ptr;
+    }
+    return strdup(a);
 }
 
 char *gmx_itoa(int f)
 {
-    char a[32],*ptr;
+    char a[32];
   
     sprintf(a,"%d",f);
-    ptr = strdup(a);
-  
-    return ptr;
+    
+    return strdup(a);
 }
 

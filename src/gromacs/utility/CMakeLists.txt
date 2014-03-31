@@ -48,7 +48,6 @@ set(UTILITY_PUBLIC_HEADERS
     flags.h
     gmx_header_config.h
     gmxassert.h
-    gmxmpi.h
     init.h
     programcontext.h
     stringutil.h
@@ -58,4 +57,4 @@ gmx_install_headers(utility ${GENERATED_HEADER_CONFIG})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
-endif (BUILD_TESTING)
+endif()

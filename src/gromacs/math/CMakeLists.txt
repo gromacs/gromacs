@@ -40,8 +40,8 @@ set(MATH_PUBLIC_HEADERS
     gmxcomplex.h
     utilities.h
     )
-gmx_install_headers(maths ${MATH_PUBLIC_HEADERS})
+gmx_install_headers(math ${MATH_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)
-endif (BUILD_TESTING)
+endif()

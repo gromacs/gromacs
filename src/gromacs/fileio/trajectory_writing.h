@@ -41,8 +41,7 @@
 #include <stdio.h>
 #include "filenm.h"
 #include "mdoutf.h"
-#include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/types/commrec.h"
+#include "../legacyheaders/typedefs.h"
 #include "../legacyheaders/mdebin.h"
 
 /*! \brief Wrapper routine for writing trajectories during mdrun

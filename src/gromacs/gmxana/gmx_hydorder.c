@@ -38,10 +38,9 @@
 #endif
 
 #include <math.h>
-#include <ctype.h>
+#include <string.h>
 
 #include "sysstuff.h"
-#include <string.h>
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "smalloc.h"

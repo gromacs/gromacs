@@ -2200,6 +2200,7 @@ static void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
                     /* Box relative coordinates are stored for dimensions with pbc */
                     posA *= pbc->box[m][m];
                     posB *= pbc->box[m][m];
+                    assert(npbcdim <= DIM);
                     for (d = m+1; d < npbcdim; d++)
                     {
                         posA += pos0A[d]*pbc->box[d][m];
@@ -2264,6 +2265,7 @@ real fbposres(int nbonds,
         clear_rvec(com_sc);
         for (m = 0; m < npbcdim; m++)
         {
+            assert(npbcdim <= DIM);
             for (d = m; d < npbcdim; d++)
             {
                 com_sc[m] += com[d]*pbc->box[d][m];
@@ -2389,6 +2391,7 @@ real posres(int nbonds,
         clear_rvec(comB_sc);
         for (m = 0; m < npbcdim; m++)
         {
+            assert(npbcdim <= DIM);
             for (d = m; d < npbcdim; d++)
             {
                 comA_sc[m] += comA[d]*pbc->box[d][m];

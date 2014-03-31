@@ -34,3 +34,5 @@
 
 file(GLOB SWAP_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SWAP_SOURCES} PARENT_SCOPE)
+
+gmx_install_headers(swap enums.h)

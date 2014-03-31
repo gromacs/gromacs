@@ -129,7 +129,7 @@ void init_block(t_block *block);
 void init_blocka(t_blocka *block);
 void init_atom (t_atoms *at);
 void init_mtop(gmx_mtop_t *mtop);
-void init_top (t_topology *top);
+void init_top(t_topology *top);
 void init_inputrec(t_inputrec *ir);
 void init_energyhistory(energyhistory_t * enerhist);
 void done_energyhistory(energyhistory_t * enerhist);
@@ -199,6 +199,13 @@ t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 
 real max_cutoff(real cutoff1, real cutoff2);
 /* Returns the maximum of the cut-off's, taking into account that 0=inf. */
+
+/* Following are forward declarations for structures in commrec.h */
+typedef struct t_commrec t_commrec;
+typedef struct gmx_domdec_t gmx_domdec_t;
+typedef struct gmx_multisim_t gmx_multisim_t;
+typedef struct gmx_domdec_zones_t gmx_domdec_zones_t;
+typedef struct gmx_ddbox_t gmx_ddbox_t;
 
 #ifdef __cplusplus
 }

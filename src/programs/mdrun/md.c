@@ -63,6 +63,7 @@
 #include "pme.h"
 #include "mdatoms.h"
 #include "repl_ex.h"
+#include "deform.h"
 #include "qmmm.h"
 #include "domdec.h"
 #include "domdec_network.h"
@@ -70,7 +71,7 @@
 #include "coulomb.h"
 #include "constr.h"
 #include "shellfc.h"
-#include "compute_io.h"
+#include "gromacs/gmxpreprocess/compute_io.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
@@ -93,6 +94,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
+#include "gromacs/imd/imd.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -128,7 +130,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     *step_rel      = 0;
     wallcycle_start(wcycle, ewcRUN);
     walltime_accounting_start(walltime_accounting);
-    print_date_and_time(fplog, cr->nodeid, "Restarted time", walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
 double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
@@ -145,6 +147,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t membed,
              real cpt_period, real max_hours,
              const char gmx_unused *deviceOptions,
+             int imdport,
              unsigned long Flags,
              gmx_walltime_accounting_t walltime_accounting)
 {
@@ -217,6 +220,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
     gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
+
+    /* Interactive MD */
+    gmx_bool          bIMDstep = FALSE;
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -388,6 +394,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         setup_bonded_threading(fr, &top->idef);
     }
 
+    /* Set up interactive MD (IMD) */
+    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, state_global->x,
+             nfile, fnm, oenv, imdport, Flags);
+
     if (DOMAINDECOMP(cr))
     {
         /* Distribute the charge groups over the nodes from the master node */
@@ -458,11 +468,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
-    /* PME tuning is only supported with GPUs or PME nodes and not with rerun or LJ-PME. */
+    /* PME tuning is only supported with GPUs or PME nodes and not with rerun.
+     * PME tuning is not supported with PME only for LJ and not for Coulomb.
+     */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
         ( (fr->cutoff_scheme == ecutsVERLET && fr->nbv->bUseGPU) || !(cr->duty & DUTY_PME)) &&
-        !bRerunMD && !EVDW_PME(fr->vdwtype))
+        !bRerunMD)
     {
         pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata);
         cycles_pmes = 0;
@@ -1287,6 +1299,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                  wcycle, &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
+        /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
+        bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);
 
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV)
@@ -1878,11 +1892,17 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                          step);
 
                     /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
-                    fr->ewaldcoeff_q = fr->ic->ewaldcoeff_q;
-                    fr->rlist        = fr->ic->rlist;
-                    fr->rlistlong    = fr->ic->rlistlong;
-                    fr->rcoulomb     = fr->ic->rcoulomb;
-                    fr->rvdw         = fr->ic->rvdw;
+                    fr->ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
+                    fr->ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
+                    fr->rlist         = fr->ic->rlist;
+                    fr->rlistlong     = fr->ic->rlistlong;
+                    fr->rcoulomb      = fr->ic->rcoulomb;
+                    fr->rvdw          = fr->ic->rvdw;
+
+                    if (ir->eDispCorr != edispcNO)
+                    {
+                        calc_enervirdiff(NULL, ir->eDispCorr, fr);
+                    }
                 }
                 cycles_pmes = 0;
             }
@@ -1905,6 +1925,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bResetCountersHalfMaxH    = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
         }
+
+        /* If bIMD is TRUE, the master updates the IMD energy record and sends positions to VMD client */
+        IMD_prep_energies_send_positions(ir->bIMD && MASTER(cr), bIMDstep, ir->imd, enerd, step, bCalcEner, wcycle);
 
     }
     /* End of main MD loop */
@@ -1960,6 +1983,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         print_replica_exchange_statistics(fplog, repl_ex);
     }
+
+    /* IMD cleanup, if bIMD is TRUE. */
+    IMD_finalize(ir->bIMD, ir->imd);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 

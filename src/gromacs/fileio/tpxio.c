@@ -40,7 +40,8 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include <ctype.h>
+#include <string.h>
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "string2.h"
@@ -84,9 +85,10 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  * below that does the right thing according to the value of
  * file_version. */
 enum tpxv {
-    tpxv_ComputationalElectrophysiology = 96,               /**< support for ion/water position swaps (computational electrophysiology) */
-    tpxv_Use64BitRandomSeed,                                /**< change ld_seed from int to gmx_int64_t */
-    tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials /**< potentials for supporting coarse-grained force fields */
+    tpxv_ComputationalElectrophysiology = 96,                /**< support for ion/water position swaps (computational electrophysiology) */
+    tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
+    tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
+    tpxv_InteractiveMolecularDynamics                        /**< interactive molecular dynamics (IMD) */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -100,7 +102,8 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials;
+static const int tpx_version = tpxv_InteractiveMolecularDynamics;
+
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -405,6 +408,16 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
             gmx_fio_ndo_real(fio, simtemp->temperatures, n_lambda);
         }
     }
+}
+
+static void do_imd(t_fileio *fio, t_IMD *imd, gmx_bool bRead)
+{
+    gmx_fio_do_int(fio, imd->nat);
+    if (bRead)
+    {
+        snew(imd->ind, imd->nat);
+    }
+    gmx_fio_ndo_int(fio, imd->ind, imd->nat);
 }
 
 static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int file_version)
@@ -1555,6 +1568,25 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->bRot = FALSE;
+    }
+
+    /* Interactive molecular dynamics */
+    if (file_version >= tpxv_InteractiveMolecularDynamics)
+    {
+        gmx_fio_do_int(fio, ir->bIMD);
+        if (TRUE == ir->bIMD)
+        {
+            if (bRead)
+            {
+                snew(ir->imd, 1);
+            }
+            do_imd(fio, ir->imd, bRead);
+        }
+    }
+    else
+    {
+        /* We don't support IMD sessions for old .tpr files */
+        ir->bIMD = FALSE;
     }
 
     /* grpopts stuff */

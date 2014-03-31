@@ -38,8 +38,10 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "macros.h"
 #include "typedefs.h"
 #include "physics.h"
@@ -50,7 +52,6 @@
 #include "names.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "string2.h"
 #include "correl.h"
 
 #define MODE(x) ((mode & (x)) == (x))

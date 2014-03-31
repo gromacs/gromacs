@@ -38,10 +38,11 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
 #include <string.h>
-#include <smalloc.h>
-#include <macros.h>
+
+#include "macros.h"
+#include "smalloc.h"
+
 #include "buttons.h"
 #include "nleg.h"
 
