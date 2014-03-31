@@ -28,49 +28,51 @@
 //#include "gromacs/gmxpreprocess/grompp.h"
 #include "poldata.h"
 #include "gmx_resp.h"
-	
-enum { eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR };
+
+enum {
+    eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR
+};
 
 typedef struct gentop_qgen *gentop_qgen_t;
 
-extern gentop_qgen_t 
-gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,
+extern gentop_qgen_t
+gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms,
                  gmx_atomprop_t aps,
-                 rvec *x,ChargeGenerationModel eqg_model,
-                 real hfac,int qtotal,
+                 rvec *x, ChargeGenerationModel eqg_model,
+                 real hfac, int qtotal,
                  real epsr);
 
-extern void 
+extern void
 gentop_qgen_done(gentop_qgen_t qgen);
 
-extern int 
-generate_charges_sm(FILE *fp,gentop_qgen_t qgen,
-                    gmx_poldata_t pd,t_atoms *atoms,
-                    real tol,int maxiter,gmx_atomprop_t aps,
+extern int
+generate_charges_sm(FILE *fp, gentop_qgen_t qgen,
+                    gmx_poldata_t pd, t_atoms *atoms,
+                    real tol, int maxiter, gmx_atomprop_t aps,
                     real *chieq);
 
-extern int 
+extern int
 generate_charges(FILE *fp,
                  gentop_qgen_t qgen,
-                 gmx_resp_t gr,const char *molname,
+                 gmx_resp_t gr, const char *molname,
                  gmx_poldata_t pd,
                  t_atoms *atoms,
-                 real tol,int maxiter,int maxcycle,
+                 real tol, int maxiter, int maxcycle,
                  gmx_atomprop_t aps);
 
-extern void 
-qgen_message(gentop_qgen_t qgen,int len,char buf[],gmx_resp_t gr);
+extern void
+qgen_message(gentop_qgen_t qgen, int len, char buf[], gmx_resp_t gr);
 
-extern gmx_bool 
+extern gmx_bool
 bSplitQ(ChargeGenerationModel iModel);
 
 /* The routines below return NOTSET if something is out of the ordinary */
-extern int gentop_qgen_get_nzeta(gentop_qgen_t qgen,int atom);
+extern int gentop_qgen_get_nzeta(gentop_qgen_t qgen, int atom);
 
-extern int gentop_qgen_get_row(gentop_qgen_t qgen,int atom,int z);
+extern int gentop_qgen_get_row(gentop_qgen_t qgen, int atom, int z);
 
-extern double gentop_qgen_get_q(gentop_qgen_t qgen,int atom,int z);
+extern double gentop_qgen_get_q(gentop_qgen_t qgen, int atom, int z);
 
-extern double gentop_qgen_get_zeta(gentop_qgen_t qgen,int atom,int z);
+extern double gentop_qgen_get_zeta(gentop_qgen_t qgen, int atom, int z);
 
 #endif

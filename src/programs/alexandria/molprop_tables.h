@@ -38,7 +38,7 @@ extern char *ftoa(double f);
 extern char *itoa(int f);
 
 /*! \brief
- * Generates a LaTeX table containing the statistics (RMSD from experiment) of a calculated property per molecule category 
+ * Generates a LaTeX table containing the statistics (RMSD from experiment) of a calculated property per molecule category
  *
  * \param[out] fp   File pointer to write to
  * \param[in] eprop The property of choice
@@ -53,10 +53,10 @@ extern char *itoa(int f);
  * \todo Transform iQM to enum
  * \ingroup module_alexandria
  */
-extern void gmx_molprop_stats_table(FILE *fp,MolPropObservable eprop,
+extern void gmx_molprop_stats_table(FILE *fp, MolPropObservable eprop,
                                     std::vector<alexandria::MolProp> mp,
-                                    t_qmcount *qmc,char *exp_type,
-                                    double outlier,gmx_molselect_t gms,iMolSelect ims);
+                                    t_qmcount *qmc, char *exp_type,
+                                    double outlier, gmx_molselect_t gms, iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the composition in atoms of each molecule
@@ -70,7 +70,7 @@ extern void gmx_molprop_stats_table(FILE *fp,MolPropObservable eprop,
  */
 extern void gmx_molprop_composition_table(FILE *fp,
                                           std::vector<alexandria::MolProp> mp,
-                                          gmx_molselect_t gms,iMolSelect ims);
+                                          gmx_molselect_t gms, iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the molecules in each molecule category
@@ -84,7 +84,7 @@ extern void gmx_molprop_composition_table(FILE *fp,
  */
 extern void gmx_molprop_category_table(FILE *fp,
                                        std::vector<alexandria::MolProp> mp,
-                                       gmx_molselect_t gms,iMolSelect ims);
+                                       gmx_molselect_t gms, iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing properties for molecules from different sources
@@ -104,13 +104,13 @@ extern void gmx_molprop_category_table(FILE *fp,
  * \todo Introduce enum to switch between absolute and relative tolerance
  * \ingroup module_alexandria
  */
-extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
-                                   real rel_toler,real abs_toler,
+extern void gmx_molprop_prop_table(FILE *fp, MolPropObservable eprop,
+                                   real rel_toler, real abs_toler,
                                    std::vector<alexandria::MolProp> mp,
                                    t_qmcount *qmc,
-                                   bool bPrintAll,bool bPrintBasis,
-                                   bool bPrintMultQ,gmx_molselect_t gms,iMolSelect ims);
-				   
+                                   bool bPrintAll, bool bPrintBasis,
+                                   bool bPrintMultQ, gmx_molselect_t gms, iMolSelect ims);
+
 /*! \brief
  * Generates a LaTeX table containing the atomtypes in Alexandria
  *
@@ -130,9 +130,9 @@ extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
  * \todo More explanation text
  * \ingroup module_alexandria
  */
-extern void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
+extern void gmx_molprop_atomtype_table(FILE *fp, bool bPolar,
                                        gmx_poldata_t pd,
                                        std::vector<alexandria::MolProp> mp,
-                                       char *lot,char *exp_type);
+                                       char *lot, char *exp_type);
 
 #endif

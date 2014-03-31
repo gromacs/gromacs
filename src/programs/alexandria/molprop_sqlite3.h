@@ -26,7 +26,7 @@
 
 #include "molprop.h"
 
-void ReadSqlite3(const char *sqlite_file,
-                 std::vector<alexandria::MolProp>& mp);
+void ReadSqlite3(const char                       *sqlite_file,
+                 std::vector<alexandria::MolProp> &mp);
 
 #endif

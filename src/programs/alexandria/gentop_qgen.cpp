@@ -853,7 +853,7 @@ static void qgen_update_pd(t_atoms *atoms, gmx_poldata_t pd, gentop_qgen_t qgen)
 
 int generate_charges_sm(FILE *fp,
                         gentop_qgen *qgen, gmx_poldata_t pd,
-                        t_atoms *atoms, 
+                        t_atoms *atoms,
                         real tol, int maxiter, gmx_atomprop_t aps,
                         real *chieq)
 {
@@ -959,7 +959,7 @@ static int generate_charges_bultinck(FILE *fp,
 int generate_charges(FILE *fp,
                      gentop_qgen_t qgen, gmx_resp_t gr,
                      const char *molname, gmx_poldata_t pd,
-                     t_atoms *atoms, 
+                     t_atoms *atoms,
                      real tol, int maxiter, int maxcycle,
                      gmx_atomprop_t aps)
 {
@@ -969,67 +969,67 @@ int generate_charges(FILE *fp,
     /* Generate charges */
     switch (qgen->iModel)
     {
-    case eqgRESP:
-        if (NULL == gr)
-        {
-            gmx_incons("No RESP data structure");
-        }
-        if (fp)
-        {
-            fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
-                    get_eemtype_name(qgen->iModel), molname);
-        }
-        for (cc = 0; (cc < maxcycle); cc++)
-        {
+        case eqgRESP:
+            if (NULL == gr)
+            {
+                gmx_incons("No RESP data structure");
+            }
             if (fp)
             {
-                fprintf(fp, "Cycle %d/%d\n", cc+1, maxcycle);
+                fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
+                        get_eemtype_name(qgen->iModel), molname);
             }
-            /* Fit charges to electrostatic potential */
-            qgen->eQGEN = gmx_resp_optimize_charges(fp, gr, maxiter, tol, &chi2);
-            if (qgen->eQGEN == eQGEN_OK)
+            for (cc = 0; (cc < maxcycle); cc++)
             {
-                eQGEN_min = qgen->eQGEN;
-                if (chi2 <= chi2min)
+                if (fp)
                 {
-                    gentop_qgen_save_params(qgen, gr);
-                    chi2min = chi2;
+                    fprintf(fp, "Cycle %d/%d\n", cc+1, maxcycle);
                 }
+                /* Fit charges to electrostatic potential */
+                qgen->eQGEN = gmx_resp_optimize_charges(fp, gr, maxiter, tol, &chi2);
+                if (qgen->eQGEN == eQGEN_OK)
+                {
+                    eQGEN_min = qgen->eQGEN;
+                    if (chi2 <= chi2min)
+                    {
+                        gentop_qgen_save_params(qgen, gr);
+                        chi2min = chi2;
+                    }
 
-                if (NULL != fp)
-                {
-                    fprintf(fp, "chi2 = %g kJ/mol e\n", chi2);
+                    if (NULL != fp)
+                    {
+                        fprintf(fp, "chi2 = %g kJ/mol e\n", chi2);
+                    }
+                    qgen_print(fp, atoms, qgen);
                 }
+            }
+            if (maxcycle > 1)
+            {
+                if (fp)
+                {
+                    fprintf(fp, "---------------------------------\nchi2 at minimum is %g\n", chi2min);
+                }
+                gentop_qgen_get_params(qgen, gr);
                 qgen_print(fp, atoms, qgen);
             }
-        }
-        if (maxcycle > 1)
-        {
+            qgen->eQGEN = eQGEN_min;
+            break;
+        default:
+            /* Use empirical algorithms */
             if (fp)
             {
-                fprintf(fp, "---------------------------------\nchi2 at minimum is %g\n", chi2min);
+                fprintf(fp, "Generating charges for %s using %s algorithm\n",
+                        molname, get_eemtype_name(qgen->iModel));
             }
-            gentop_qgen_get_params(qgen, gr);
-            qgen_print(fp, atoms, qgen);
-        }
-        qgen->eQGEN = eQGEN_min;
-        break;
-    default:
-        /* Use empirical algorithms */
-        if (fp)
-        {
-            fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                    molname, get_eemtype_name(qgen->iModel));
-        }
-        if (qgen->iModel == eqgBultinck)
-        {
-            (void) generate_charges_bultinck(fp, qgen, pd, atoms, aps);
-        }
-        else
-        {
-            (void) generate_charges_sm(fp, qgen, pd, atoms, tol, maxiter, aps, &chieq);
-        }
-        gentop_qgen_save_params(qgen, gr);
+            if (qgen->iModel == eqgBultinck)
+            {
+                (void) generate_charges_bultinck(fp, qgen, pd, atoms, aps);
+            }
+            else
+            {
+                (void) generate_charges_sm(fp, qgen, pd, atoms, tol, maxiter, aps, &chieq);
+            }
+            gentop_qgen_save_params(qgen, gr);
     }
     return qgen->eQGEN;
 }

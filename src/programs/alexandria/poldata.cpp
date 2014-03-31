@@ -46,9 +46,9 @@ typedef struct {
 } t_ffatype;
 
 typedef struct {
-    char    *elem, *rule, *type, *neighbors, *geometry;
-    int      numbonds, iAromatic;
-    double   valence;
+    char                    *elem, *rule, *type, *neighbors, *geometry;
+    int                      numbonds, iAromatic;
+    double                   valence;
     std::vector<std::string> nb;
 } t_brule;
 
@@ -771,8 +771,8 @@ char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
                                      int iAromatic)
 {
     unsigned int    nnb;
-    int i, nptr = 0, best = -1, score;
-    char **ptr = NULL;
+    int             i, nptr = 0, best = -1, score;
+    char          **ptr = NULL;
 
     for (i = 0; (i < pd->nbrule); i++)
     {
@@ -1920,7 +1920,7 @@ int gmx_poldata_search_symcharges(gmx_poldata_t pd, char *central,
 }
 
 /* Electrostatics properties */
-static t_eemprops *get_eep(gmx_poldata *pd, ChargeGenerationModel eqg_model, 
+static t_eemprops *get_eep(gmx_poldata *pd, ChargeGenerationModel eqg_model,
                            const char *name)
 {
     int i;
@@ -1940,10 +1940,10 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
                               ChargeGenerationModel eqg_model, char *name,
                               double J0, double chi0, char *zeta, char *q, char *row)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-    t_eemprops  *eep;
+    gmx_poldata             *pold = (gmx_poldata *) pd;
+    t_eemprops              *eep;
     std::vector<std::string> sz, sq, sr;
-    int          n;
+    int                      n;
 
     eep = get_eep(pold, eqg_model, name);
     if (NULL == eep)
@@ -1962,7 +1962,7 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
     strncpy(eep->qstr, q, EEMBUFSIZE-1);
     strncpy(eep->rowstr, row, EEMBUFSIZE-1);
     unsigned int nn = std::min(sz.size(), std::min(sq.size(), sr.size()));
-    for(unsigned int n = 0; (n < nn); n++)
+    for (unsigned int n = 0; (n < nn); n++)
     {
         if (n < MAXZETA)
         {
@@ -1973,12 +1973,12 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
     }
     if (sz.size() > nn)
     {
-        fprintf(stderr, "Warning: more zeta values than q/row values for %s n = %d\n", 
+        fprintf(stderr, "Warning: more zeta values than q/row values for %s n = %d\n",
                 name, nn);
     }
     if (sq.size() > nn)
     {
-        fprintf(stderr, "Warning: more q values than zeta/row values for %s n = %d\n", 
+        fprintf(stderr, "Warning: more q values than zeta/row values for %s n = %d\n",
                 name, nn);
     }
     if (sr.size() > nn)
@@ -2053,7 +2053,7 @@ int gmx_poldata_have_pol_support(gmx_poldata_t pd, const char *atype)
     return 0;
 }
 
-int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeGenerationModel eqg_model, 
+int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeGenerationModel eqg_model,
                                  const char *name,
                                  gmx_bool bAllowZeroParameters)
 {

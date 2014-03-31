@@ -31,39 +31,39 @@
 #include "poldata.h"
 #include "molselect.h"
 
-extern void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd);
-extern void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap);
+extern void generate_composition(std::vector<alexandria::MolProp> &mp, gmx_poldata_t pd);
+extern void generate_formula(std::vector<alexandria::MolProp> &mp, gmx_atomprop_t ap);
 
-alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,
+alexandria::MolProp atoms_2_molprop(char *molname, int natoms, char **smnames,
                                     gmx_atomprop_t ap);
 
 /* Return number of atoms, 0 means failure */
-extern bool molprop_2_topology2(alexandria::MolProp mp,gmx_atomprop_t ap,
-                                t_symtab *tab,const char *lot,
-                                t_topology **top,const char *q_algorithm,
-                                rvec **x,t_params plist[F_NRE],
-                                int nexcl,t_excls **excls);
+extern bool molprop_2_topology2(alexandria::MolProp mp, gmx_atomprop_t ap,
+                                t_symtab *tab, const char *lot,
+                                t_topology **top, const char *q_algorithm,
+                                rvec **x, t_params plist[F_NRE],
+                                int nexcl, t_excls **excls);
 
 extern void merge_doubles(std::vector<alexandria::MolProp> &mp,
-                          char *doubles,bool bForceMerge);
-				     				     
-extern void merge_xml(int nfile,char **infiles,
+                          char *doubles, bool bForceMerge);
+
+extern void merge_xml(int nfile, char **infiles,
                       std::vector<alexandria::MolProp> &mp,
-                      char *outf,char *sorted,char *doubles,
-                      gmx_atomprop_t ap,gmx_poldata_t pd,
+                      char *outf, char *sorted, char *doubles,
+                      gmx_atomprop_t ap, gmx_poldata_t pd,
                       bool bForceMerge);
 
 typedef struct {
-    int  n;
-    int  *count;
-    char **method,**basis,**type,**lot;
-    int  nconf;
+    int    n;
+    int   *count;
+    char **method, **basis, **type, **lot;
+    int    nconf;
     char **conf;
 } t_qmcount;
 
 /* Check the available molprops to see what kind of calculations are stored in there */
 extern t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
-                                    MolPropObservable mpo,const char *fc_str);
+                                    MolPropObservable mpo, const char *fc_str);
 
 /*! \brief
  * Enumerated type for MolPropSort function
@@ -71,10 +71,10 @@ extern t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum MolPropSortAlgorithm { 
-    MPSA_MOLNAME, 
-    MPSA_FORMULA, 
-    MPSA_COMPOSITION, 
+enum MolPropSortAlgorithm {
+    MPSA_MOLNAME,
+    MPSA_FORMULA,
+    MPSA_COMPOSITION,
     MPSA_SELECTION,
     MPSA_NR
 };
@@ -84,7 +84,7 @@ enum MolPropSortAlgorithm {
  *
  * Function that uses the std::sort routine and can apply different sorting
  * keys.
- * 
+ *
  * \param[inout]  mp        The vector of MolProp
  * \param[in]     mpsa      The algorithm used for sorting
  * \param[in]     apt       Database of atom properties
@@ -92,7 +92,7 @@ enum MolPropSortAlgorithm {
  * \ingroup module_alexandria
  */
 extern void MolPropSort(std::vector<alexandria::MolProp> &mp,
-                        MolPropSortAlgorithm mpsa,gmx_atomprop_t apt,
+                        MolPropSortAlgorithm mpsa, gmx_atomprop_t apt,
                         gmx_molselect_t gms);
 
 #endif

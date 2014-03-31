@@ -26,7 +26,8 @@
 
 #include "molprop.h"
 
-namespace alexandria {
+namespace alexandria
+{
 
 /*! \brief
  * Helper class for extracting atomization energies from Gaussian calcs.
@@ -34,41 +35,43 @@ namespace alexandria {
  * This contains data in order to extract enthalpy of
  * formation and Gibbs energy of formation from Thermochemistry methods
  * in Gaussian.
- * 
+ *
  * \inlibraryapi
  * \ingroup module_alexandria
  */
-class GaussAtomPropVal {
-private:
-    std::string _element,_method,_desc;
-    real _temp;
-    real _value;
-public:
-    //! Constructor initiating all the values stored
-    GaussAtomPropVal(std::string element,std::string method, std::string desc,
-                     real temp,real value) {
-        _element = element; _method = method; _desc = desc;
-        _temp = temp; _value = value;
-    }
+class GaussAtomPropVal
+{
+    private:
+        std::string _element, _method, _desc;
+        real        _temp;
+        real        _value;
+    public:
+        //! Constructor initiating all the values stored
+        GaussAtomPropVal(std::string element, std::string method, std::string desc,
+                         real temp, real value)
+        {
+            _element = element; _method = method; _desc = desc;
+            _temp    = temp; _value = value;
+        }
 
-    //! Default destructor
-    ~GaussAtomPropVal() {}
+        //! Default destructor
+        ~GaussAtomPropVal() {}
 
-    //! Return element name
-    std::string GetElement() { return _element; }
+        //! Return element name
+        std::string GetElement() { return _element; }
 
-    //! Return the method used
-    std::string GetMethod() { return _method; }
+        //! Return the method used
+        std::string GetMethod() { return _method; }
 
-    //! Return a description of the type of value stored
-    std::string GetDesc() { return _desc; }
+        //! Return a description of the type of value stored
+        std::string GetDesc() { return _desc; }
 
-    //! Return the temperature
-    real GetTemp() { return _temp; }
+        //! Return the temperature
+        real GetTemp() { return _temp; }
 
-    //! Return the actual value
-    real GetValue() { return _value; }
-}; 
+        //! Return the actual value
+        real GetValue() { return _value; }
+};
 
 /*! \brief
  * Class for extracting atomization energies from Gaussian calcs.
@@ -76,41 +79,42 @@ public:
  * This contains data in order to extract enthalpy of
  * formation and Gibbs energy of formation from Thermochemistry methods
  * in Gaussian. The method and description must match that in a library file.
- * 
+ *
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class GaussAtomProp {
-private:
-    std::vector<GaussAtomPropVal> _gapv;
-public:
-    //! Default constructor
-    GaussAtomProp();
+class GaussAtomProp
+{
+    private:
+        std::vector<GaussAtomPropVal> _gapv;
+    public:
+        //! Default constructor
+        GaussAtomProp();
 
-    //! Default destructor
-    ~GaussAtomProp() {}
-    
-    /*! \brief
-     * Look up the value corresponding to input variables
-     *
-     * \param[in] element  From the periodic table
-     * \param[in] method   Method used, e.g. G3, exp
-     * \param[in] desc     Which type of name is 
-     * \param[in] temp     Temperature
-     * \param[out] value   The energy value
-     * \return 1 on success, 0 otherwise
-     * \ingroup module_alexandria
-     */
-    int GetValue(const char *element,
-                 const char *method,
-                 const char *desc,
-                 double temp,
-                 double *value);
+        //! Default destructor
+        ~GaussAtomProp() {}
+
+        /*! \brief
+         * Look up the value corresponding to input variables
+         *
+         * \param[in] element  From the periodic table
+         * \param[in] method   Method used, e.g. G3, exp
+         * \param[in] desc     Which type of name is
+         * \param[in] temp     Temperature
+         * \param[out] value   The energy value
+         * \return 1 on success, 0 otherwise
+         * \ingroup module_alexandria
+         */
+        int GetValue(const char *element,
+                     const char *method,
+                     const char *desc,
+                     double      temp,
+                     double     *value);
 };
 }
 
 /*! \brief
- * Read a Gaussian log file either using home grown methods or using OpenBabel 
+ * Read a Gaussian log file either using home grown methods or using OpenBabel
  *
  *
  * \param[in] g98        The gaussian log file, or in case OpenBabel is used anything
@@ -130,24 +134,24 @@ public:
  * \ingroup module_alexandria
  */
 void ReadGauss(const char *g98,
-               alexandria::MolProp& mpt,
+               alexandria::MolProp &mpt,
                alexandria::GaussAtomProp &gap,
                gmx_bool bBabel,
-               gmx_atomprop_t aps,gmx_poldata_t pd,
-               char *molnm,char *iupac,char *conformation,
+               gmx_atomprop_t aps, gmx_poldata_t pd,
+               char *molnm, char *iupac, char *conformation,
                char *basisset,
-               int maxpot,gmx_bool bVerbose,
+               int maxpot, gmx_bool bVerbose,
                const char *forcefield);
 
 /*! \brief
  * Convert the OpenBabel atomtypes to atomtypes corresponding to a force field
  *
- * \param[out] atoms        Atoms structure containing the input and output types 
+ * \param[out] atoms        Atoms structure containing the input and output types
  * \param[out] symtab       String handling structure
  * \param[in]    forcefield   Name of the desired force field
  * \todo Improve error handling, e.g. in case a non-existing force field is selected.
  * \ingroup module_alexandria
  */
-void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield);
+void translate_atomtypes(t_atoms *atoms, t_symtab *tab, const char *forcefield);
 
 #endif

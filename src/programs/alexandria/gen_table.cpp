@@ -321,7 +321,7 @@ static void lo_do_DEC(double r, double xi, double xir,
    r /(4 xi )                     r
    E           Sqrt[Pi] r xi
  */
-void lo_do_DEC_qd_qd(double r, double xi, 
+void lo_do_DEC_qd_qd(double r, double xi,
                      double *vc, double *fc,
                      double *vd, double *fd,
                      double *vr, double *fr)
@@ -352,7 +352,7 @@ void lo_do_DEC_qd_qd(double r, double xi,
    r /(2 xi )               r
    E           r xi
  */
-void lo_do_DEC_q_qd(double r, double xi, 
+void lo_do_DEC_q_qd(double r, double xi,
                     double *vc, double *fc,
                     double *vd, double *fd,
                     double *vr, double *fr)

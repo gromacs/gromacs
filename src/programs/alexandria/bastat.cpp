@@ -507,7 +507,7 @@ int alex_bastat(int argc, char *argv[])
     gmx_atomprop_t        aps;
     int                   nfiles;
     char                **fns;
-    
+
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {

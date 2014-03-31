@@ -26,7 +26,9 @@
 
 typedef struct gmx_molselect *gmx_molselect_t;
 
-enum iMolSelect { imsTrain, imsTest, imsIgnore, imsUnknown, imsNR };
+enum iMolSelect {
+    imsTrain, imsTest, imsIgnore, imsUnknown, imsNR
+};
 
 extern const char *ims_names[imsNR];
 
@@ -34,8 +36,8 @@ gmx_molselect_t gmx_molselect_init(const char *fn);
 
 void gmx_molselect_done(gmx_molselect_t gms);
 
-iMolSelect gmx_molselect_status(gmx_molselect_t gms,const char *iupac);
+iMolSelect gmx_molselect_status(gmx_molselect_t gms, const char *iupac);
 
-int gmx_molselect_index(gmx_molselect_t gms,const char *iupac);
+int gmx_molselect_index(gmx_molselect_t gms, const char *iupac);
 
 #endif

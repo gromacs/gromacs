@@ -973,7 +973,7 @@ int alex_tune_dip(int argc, char *argv[])
     gmx_molselect_t       gms;
     time_t                my_t;
     char                  pukestr[STRLEN];
-    
+
     cr = init_commrec();
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
@@ -1028,7 +1028,7 @@ int alex_tune_dip(int argc, char *argv[])
             opt_elem, const_elem,
             lot, oenv, gms, watoms, TRUE, seed);
     printf("Read %d molecules\n", (int)md._mymol.size());
-    
+
     optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),
                     &md, maxiter, tol, nrun, step, seed,
                     bRandom, oenv);

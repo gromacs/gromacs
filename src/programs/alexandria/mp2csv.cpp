@@ -39,15 +39,15 @@ static void gmx_molprop_csv(const char *fn,
                             const char *dip_str, const char *pol_str, const char *ener_str)
 {
     alexandria::MolPropIterator mpi;
-    FILE             *fp;
-    int               i, j, k, ll;
-    double            d, err, vec[3];
-    tensor            quadrupole;
-    char             *ref;
+    FILE                       *fp;
+    int                         i, j, k, ll;
+    double                      d, err, vec[3];
+    tensor                      quadrupole;
+    char                       *ref;
 #define NEMP 3
-    MolPropObservable mpo[NEMP]   = { MPO_DIPOLE, MPO_POLARIZABILITY, MPO_ENERGY  };
-    const char       *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
-    t_qmcount        *qmc[NEMP];
+    MolPropObservable           mpo[NEMP]   = { MPO_DIPOLE, MPO_POLARIZABILITY, MPO_ENERGY  };
+    const char                 *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
+    t_qmcount                  *qmc[NEMP];
 
     qmc[0] = find_calculations(mp, mpo[0], dip_str);
     qmc[1] = find_calculations(mp, mpo[1], pol_str);

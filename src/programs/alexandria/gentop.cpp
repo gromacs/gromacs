@@ -157,7 +157,7 @@ int alex_gentop(int argc, char *argv[])
     alexandria::MyMol                mymol;
     immStatus                        imm;
 
-    t_filenm        fnm[] = {
+    t_filenm                         fnm[] = {
         { efSTX, "-f",    "conf", ffOPTRD },
         { efTOP, "-o",    "out",  ffOPTWR },
         { efITP, "-oi",   "out",  ffOPTWR },
@@ -178,16 +178,16 @@ int alex_gentop(int argc, char *argv[])
         { efPDB, "-pdbdiff", "pdbdiff", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static real     kb        = 4e5, kt = 400, kp = 5;
-    static real     btol      = 0.2, qtol = 1e-10, zmin = 5, zmax = 100, delta_z = -1;
-    static real     hfac      = 0, qweight = 1e-3, bhyper = 0.1;
-    static real     th_toler  = 170, ph_toler = 5, watoms = 0, spacing = 0.1;
-    static real     dbox      = 0.370424, penalty_fac = 1, epsr = 1;
-    static int      nexcl     = 2;
-    static int      maxiter   = 25000, maxcycle = 1;
-    static int      nmol      = 1;
-    static real     rDecrZeta = -1;
-    static gmx_bool bBabel    =
+    static real                      kb        = 4e5, kt = 400, kp = 5;
+    static real                      btol      = 0.2, qtol = 1e-10, zmin = 5, zmax = 100, delta_z = -1;
+    static real                      hfac      = 0, qweight = 1e-3, bhyper = 0.1;
+    static real                      th_toler  = 170, ph_toler = 5, watoms = 0, spacing = 0.1;
+    static real                      dbox      = 0.370424, penalty_fac = 1, epsr = 1;
+    static int                       nexcl     = 2;
+    static int                       maxiter   = 25000, maxcycle = 1;
+    static int                       nmol      = 1;
+    static real                      rDecrZeta = -1;
+    static gmx_bool                  bBabel    =
 #ifdef HAVE_LIBOPENBABEL2
         TRUE;
 #else
@@ -332,7 +332,7 @@ int alex_gentop(int argc, char *argv[])
         { "-kp",    FALSE, etREAL, {&kp},
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" }
     };
-    
+
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, asize(bugs), bugs, &oenv))
     {
@@ -344,7 +344,7 @@ int alex_gentop(int argc, char *argv[])
     choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
               forcefield, sizeof(forcefield),
               ffdir, sizeof(ffdir));
-    
+
     if (strlen(forcefield) > 0)
     {
         strcpy(ffname, forcefield);
@@ -462,7 +462,7 @@ int alex_gentop(int argc, char *argv[])
     mymol.SetForceField(forcefield);
 
     imm = mymol.GenerateTopology(aps, pd, lot, iModel, bAddShells, nexcl);
-    
+
     if ((immOK == imm)  && (eqgRESP == iModel))
     {
         if (0 == seed)
@@ -531,7 +531,7 @@ int alex_gentop(int argc, char *argv[])
     }
     else
     {
-        printf("\nWARNING: %s ended prematurely due to \"%s\"\n", 
+        printf("\nWARNING: %s ended prematurely due to \"%s\"\n",
                ShortProgram(), alexandria::immsg(imm));
     }
 

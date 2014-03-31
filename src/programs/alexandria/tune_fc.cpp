@@ -90,8 +90,8 @@ static void check_support(FILE                           *fp,
                           bool                            bOpt[])
 {
     int ntotal  = (int) mm.size();
-    int nlocal = 0;
-  
+    int nlocal  = 0;
+
     for (std::vector<alexandria::MyMol>::iterator mymol = mm.begin(); (mymol < mm.end()); )
     {
         if (mymol->eSupp != eSupportLocal)
@@ -192,7 +192,7 @@ static void check_support(FILE                           *fp,
             nlocal++;
         }
     }
-    if (PAR(cr)) 
+    if (PAR(cr))
     {
         gmx_sumi(1, &nlocal, cr);
     }
@@ -561,11 +561,11 @@ void OptParam::MkInvGt()
     }
 }
 
-static void dump_csv(int nD,
-                     char *ctest[],
+static void dump_csv(int                             nD,
+                     char                           *ctest[],
                      std::vector<alexandria::MyMol> &_mymol,
-                     double **a,
-                     double *x)
+                     double                        **a,
+                     double                         *x)
 {
     FILE *csv = gmx_ffopen("out.csv", "w");
     fprintf(csv, "\"\",");
@@ -658,21 +658,21 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
 
     //double chi22 = multi_regression(stderr, nD, x, nMol, a, fpp);
     //fprintf(stderr, "chi22 = %g\n", chi22);
-    
+
     matrix_multiply(debug, nMol, nD, a, at, ata);
     dump_csv(nD, ctest, _mymol, a, x);
     if ((row = matrix_invert(debug, nD, ata)) != 0)
     {
         int k = row - 1;
-        for(int m = 0; (m < nD); m++) 
+        for (int m = 0; (m < nD); m++)
         {
             if (m == k)
             {
                 continue;
             }
-            bool bSame = true;
+            bool   bSame = true;
             double bfac1 = 0, bfac2 = 0;
-            for(int l = 0; bSame && (l < nMol); l++)
+            for (int l = 0; bSame && (l < nMol); l++)
             {
                 if ((a[m][l] != 0) || (a[k][l] != 0))
                 {
@@ -785,8 +785,8 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
         {
             if (omt->ngtb[ebtsBONDS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(params,' ');
-                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                std::vector<std::string> ptr = split(params, ' ');
+                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
                     {
@@ -828,8 +828,8 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
         {
             if (omt->ngtb[ebtsANGLES][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(params,' ');
-                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                std::vector<std::string> ptr = split(params, ' ');
+                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
                     {
@@ -864,8 +864,8 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
         {
             if (omt->ngtb[ebtsPDIHS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(params,' ');
-                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                std::vector<std::string> ptr = split(params, ' ');
+                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
                     {
@@ -896,8 +896,8 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
         {
             if (omt->ngtb[ebtsIDIHS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(params,' ');
-                for(std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                std::vector<std::string> ptr = split(params, ' ');
+                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
                     {
@@ -1069,15 +1069,15 @@ double OptParam::CalcDeviation()
             if (mymol->shell_)
             {
                 (void)
-                    relax_shell_flexcon(debug, _cr, FALSE, 0,
-                                        mymol->inputrec_, TRUE, flags,
-                                        mymol->ltop_, NULL, &(mymol->enerd_),
-                                        NULL, &(mymol->state_),
-                                        mymol->f_, force_vir, mymol->md_,
-                                        &my_nrnb, wcycle, NULL,
-                                        &(mymol->mtop_->groups),
-                                        mymol->shell_, mymol->fr_, FALSE, t, mu_tot,
-                                        &bConverged, NULL, NULL);
+                relax_shell_flexcon(debug, _cr, FALSE, 0,
+                                    mymol->inputrec_, TRUE, flags,
+                                    mymol->ltop_, NULL, &(mymol->enerd_),
+                                    NULL, &(mymol->state_),
+                                    mymol->f_, force_vir, mymol->md_,
+                                    &my_nrnb, wcycle, NULL,
+                                    &(mymol->mtop_->groups),
+                                    mymol->shell_, mymol->fr_, FALSE, t, mu_tot,
+                                    &bConverged, NULL, NULL);
             }
             else
             {
@@ -1103,7 +1103,7 @@ double OptParam::CalcDeviation()
             mymol->Ecalc       = mymol->enerd_.term[F_EPOT];
             ener               = sqr(mymol->Ecalc-mymol->Emol);
             _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
-            
+
             if (NULL != debug)
             {
                 fprintf(debug, "%s ener %g Epot %g Force2 %g\n", mymol->GetMolname().c_str(), ener,
@@ -1470,11 +1470,11 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
                           const char *xvg, output_env_t oenv,
                           bool bCheckOutliers)
 {
-    FILE  *xfp;
-    int    i;
-    double msd;
+    FILE       *xfp;
+    int         i;
+    double      msd;
     gmx_stats_t gst;
-    
+
     gst = gmx_stats_init();
     if (NULL != xvg)
     {
@@ -1503,7 +1503,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         }
     }
     fprintf(fp, "\n");
-    fprintf(fp, "RMSD is %g kJ/mol for %d molecules.\n\n", 
+    fprintf(fp, "RMSD is %g kJ/mol for %d molecules.\n\n",
             sqrt(msd/_mymol.size()), (int)_mymol.size());
     fflush(fp);
     if (NULL != xvg)
@@ -1513,7 +1513,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
     }
     //! Do statistics
     real a, b, da, db, chi2, Rfit;
-    int N;
+    int  N;
     gmx_stats_get_ab(gst, 1, &a, &b, &da, &db, &chi2, &Rfit);
     gmx_stats_get_npoints(gst, &N);
     fprintf(fp, "Regression analysis fit to y = ax + b:\n");
@@ -1662,9 +1662,9 @@ int alex_tune_fc(int argc, char *argv[])
     time_t                my_t;
     char                  pukestr[STRLEN];
     opt_mask_t           *omt = NULL;
-    
+
     cr = init_commrec();
-    if (MASTER(cr)) 
+    if (MASTER(cr))
     {
         printf("There are %d threads/processes.\n", cr->nnodes);
     }
@@ -1751,9 +1751,9 @@ int alex_tune_fc(int argc, char *argv[])
     if (MASTER(cr))
     {
         print_moldip_mols(fp, opt._mymol, TRUE, FALSE);
-        opt.PrintSpecs(fp, (char *)"After optimization", 
+        opt.PrintSpecs(fp, (char *)"After optimization",
                        opt2fn("-x", NFILE, fnm), oenv, true);
-    
+
         gmx_poldata_write(opt2fn("-o", NFILE, fnm), opt._pd, compress);
 
         gmx_molselect_done(gms);

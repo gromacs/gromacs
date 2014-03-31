@@ -32,14 +32,14 @@
 #include "atomprop.h"
 #include "poldata_xml.h"
 
-int alex_molprop_test(int argc,char*argv[])
+int alex_molprop_test(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "molprop_test reads a molprop file and writes a new one.",
     };
-    output_env_t    oenv;
+    output_env_t                     oenv;
     std::vector<alexandria::MolProp> mpt;
-    t_filenm        fnm[] = {
+    t_filenm                         fnm[] = {
         { efDAT, "-f", "molin", ffREAD },
         { efDAT, "-o", "molout", ffWRITE }
     };
@@ -50,10 +50,10 @@ int alex_molprop_test(int argc,char*argv[])
     {
         return 0;
     }
-    
+
     MolPropRead(opt2fn("-f", NFILE, fnm), mpt);
-    printf("Read %d molecules from %s\n",(int)mpt.size(),argv[1]);
+    printf("Read %d molecules from %s\n", (int)mpt.size(), argv[1]);
     MolPropWrite(opt2fn("-o", NFILE, fnm), mpt, 1);
-    
+
     return 0;
 }

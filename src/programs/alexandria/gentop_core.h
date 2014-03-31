@@ -36,34 +36,36 @@
 extern "C" {
 #endif
 
-void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,matrix box);
-			     
-real calc_dip(t_atoms *atoms,rvec x[]);
+void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC, matrix box);
 
-void dump_hybridization(FILE *fp,t_atoms *atoms,int nbonds[]);
+real calc_dip(t_atoms *atoms, rvec x[]);
+
+void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[]);
 
 void reset_q(t_atoms *atoms);
 
-void print_rtp(const char *filenm,const char *title,t_atoms *atoms,
-               t_params plist[],int cgnr[],int nbts,int bts[]);
+void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
+               t_params plist[], int cgnr[], int nbts, int bts[]);
 
-void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
-                gpp_atomtype_t atype,t_params plist[],
-                rvec *x,t_symtab *symtab,t_excls **excls);
-		       
+void add_shells(gmx_poldata_t pd, int maxatom, t_atoms *atoms,
+                gpp_atomtype_t atype, t_params plist[],
+                rvec *x, t_symtab *symtab, t_excls **excls);
+
 int *symmetrize_charges(gmx_bool bQsym,
-                        t_atoms *atoms,t_params *bonds,gmx_poldata_t pd,
-                        gmx_atomprop_t aps,const char *symm_string);
-    
-enum eChargeGroup { ecgAtom, ecgGroup, ecgNeutral, ecgNR };
+                        t_atoms *atoms, t_params *bonds, gmx_poldata_t pd,
+                        gmx_atomprop_t aps, const char *symm_string);
 
-int *generate_charge_groups(eChargeGroup cgtp,t_atoms *atoms,
-                            t_params *bonds,t_params *pols,
+enum eChargeGroup {
+    ecgAtom, ecgGroup, ecgNeutral, ecgNR
+};
+
+int *generate_charge_groups(eChargeGroup cgtp, t_atoms *atoms,
+                            t_params *bonds, t_params *pols,
                             bool bUsePDBcharge,
-                            real *qtot,real *mtot);
+                            real *qtot, real *mtot);
 
-void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
-                           rvec x[],t_excls excls[],
+void sort_on_charge_groups(int *cgnr, t_atoms *atoms, t_params plist[],
+                           rvec x[], t_excls excls[],
                            const char *ndxout,
                            int nmol);
 #ifdef __cplusplus

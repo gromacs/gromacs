@@ -28,13 +28,13 @@
 #include "poldata_xml.h"
 #include "atomprop.h"
 
-int alex_poldata_test(int argc,char*argv[])
+int alex_poldata_test(int argc, char*argv[])
 {
     static const char               *desc[] = {
         "poldata_test reads a poldata (force field) file and writes a new one.",
     };
-    output_env_t   oenv;    
-    t_filenm        fnm[] = {
+    output_env_t                     oenv;
+    t_filenm                         fnm[] = {
         { efDAT, "-f", "pdin", ffREAD },
         { efDAT, "-o", "pdout", ffWRITE }
     };
@@ -45,10 +45,10 @@ int alex_poldata_test(int argc,char*argv[])
     {
         return 0;
     }
-    
-    gmx_atomprop_t aps = gmx_atomprop_init();
-    gmx_poldata_t pd   = gmx_poldata_read(opt2fn("-f", NFILE, fnm), aps);
+
+    gmx_atomprop_t aps  = gmx_atomprop_init();
+    gmx_poldata_t  pd   = gmx_poldata_read(opt2fn("-f", NFILE, fnm), aps);
     gmx_poldata_write(opt2fn("-o", NFILE, fnm), pd, 0);
-    
+
     return 0;
 }

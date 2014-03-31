@@ -27,7 +27,9 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "poldata.h"
 
-enum { egvtNO, egvtLINEAR, egvtPLANAR, egvtRING_PLANAR, egvtALL, egvtNR };
+enum {
+    egvtNO, egvtLINEAR, egvtPLANAR, egvtRING_PLANAR, egvtALL, egvtNR
+};
 
 typedef struct gentop_vsite *gentop_vsite_t;
 
@@ -35,17 +37,17 @@ extern gentop_vsite_t gentop_vsite_init(int egvt);
 
 extern void gentop_vsite_done(gentop_vsite_t *gvt);
 
-extern void gentop_vsite_add_linear(gentop_vsite_t gvt,int a1,int a2,int a3);
+extern void gentop_vsite_add_linear(gentop_vsite_t gvt, int a1, int a2, int a3);
 
-extern void gentop_vsite_add_planar(gentop_vsite_t gvt,int a1,int a2,int a3,int a4,int nbonds[]);
+extern void gentop_vsite_add_planar(gentop_vsite_t gvt, int a1, int a2, int a3, int a4, int nbonds[]);
 
-extern void gentop_vsite_add_ring_planar(gentop_vsite_t gvt,int natom,
-                                         int a[],int nbonds[]);
+extern void gentop_vsite_add_ring_planar(gentop_vsite_t gvt, int natom,
+                                         int a[], int nbonds[]);
 
-extern void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
-                                          t_atoms *atoms,rvec **x,
+extern void gentop_vsite_generate_special(gentop_vsite_t gvt, gmx_bool bGenVsites,
+                                          t_atoms *atoms, rvec **x,
                                           t_params plist[],
-                                          t_symtab *symtab,gpp_atomtype_t atype,
-                                          t_excls **excls,gmx_poldata_t pd);
+                                          t_symtab *symtab, gpp_atomtype_t atype,
+                                          t_excls **excls, gmx_poldata_t pd);
 
 #endif

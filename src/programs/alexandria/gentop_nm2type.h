@@ -31,24 +31,24 @@
 #include "poldata.h"
 #include "gentop_vsite.h"
 
-extern int nm2type(FILE *fp,const char *molname,
-		   gmx_poldata_t pd,gmx_atomprop_t aps,
-		   t_symtab *tab,t_atoms *atoms,gmx_bool bRing[],
+extern int nm2type(FILE *fp, const char *molname,
+                   gmx_poldata_t pd, gmx_atomprop_t aps,
+                   t_symtab *tab, t_atoms *atoms, gmx_bool bRing[],
                    double bondorder[],
-		   gpp_atomtype_t atype,int *nbonds,t_params *bond,
-		   char **smname,
-		   rvec x[],t_pbc *pbc,real th_toler,real phi_toler,
-		   gentop_vsite_t gvt);
-/* Try to determine the atomtype (force field dependent) for the atoms 
+                   gpp_atomtype_t atype, int *nbonds, t_params *bond,
+                   char **smname,
+                   rvec x[], t_pbc *pbc, real th_toler, real phi_toler,
+                   gentop_vsite_t gvt);
+/* Try to determine the atomtype (force field dependent) for the atoms
  * with help of the bond list and the coordinates!
  */
 
-gpp_atomtype_t set_atom_type(FILE *fp,const char *molname,
-                             t_symtab *tab,t_atoms *atoms,t_params *bonds,
-                             int nbonds[],gmx_bool bRing[],double bondorder[],
-                             gmx_poldata_t pd,gmx_atomprop_t aps,
-                             rvec x[],t_pbc *pbc,real th_toler,
-                             real ph_toler,gentop_vsite_t gvt);
-		     
- 
+gpp_atomtype_t set_atom_type(FILE *fp, const char *molname,
+                             t_symtab *tab, t_atoms *atoms, t_params *bonds,
+                             int nbonds[], gmx_bool bRing[], double bondorder[],
+                             gmx_poldata_t pd, gmx_atomprop_t aps,
+                             rvec x[], t_pbc *pbc, real th_toler,
+                             real ph_toler, gentop_vsite_t gvt);
+
+
 #endif

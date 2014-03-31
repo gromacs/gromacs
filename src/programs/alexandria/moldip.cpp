@@ -269,7 +269,7 @@ static void update_index_count_bool(t_index_count *ic, gmx_poldata_t pd,
                                     gmx_bool bAllowZero, ChargeGenerationModel iModel)
 {
     std::vector<std::string> ptr = split(string, ' ');
-    for (std::vector<std::string>::iterator k = ptr.begin(); 
+    for (std::vector<std::string>::iterator k = ptr.begin();
          (k < ptr.end()); ++k)
     {
         if (gmx_poldata_have_eem_support(pd, iModel, k->c_str(), bAllowZero))
@@ -288,12 +288,12 @@ static int check_data_sufficiency(FILE *fp,
 {
     std::vector<alexandria::MyMol>::iterator mmi;
 
-    int                     j, nremove, nsupported;
-    gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
-    char                   *myname;
-    int                     k, at_global;
-    ChargeGenerationModel   mymodel;
+    int                                      j, nremove, nsupported;
+    gmx_mtop_atomloop_all_t                  aloop;
+    t_atom                                  *atom;
+    char                                    *myname;
+    int                                      k, at_global;
+    ChargeGenerationModel                    mymodel;
 
     /* Parse opt_elem list to test which elements to optimize */
     if (NULL != const_elem)
@@ -490,7 +490,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                   int minimum_data,
                   gmx_bool bZero,
                   char *opt_elem, char *const_elem,
-                  char *lot, 
+                  char *lot,
                   output_env_t oenv, gmx_molselect_t gms,
                   real watoms, gmx_bool bCheckSupport,
                   unsigned int seed)
@@ -609,7 +609,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                         /* Send another molecule */
                         if (NULL != debug)
                         {
-                            fprintf(debug, "Going to send %s to cpu %d\n", 
+                            fprintf(debug, "Going to send %s to cpu %d\n",
                                     mpi->GetMolname().c_str(), dest);
                         }
                         gmx_send_int(_cr, dest, 1);
@@ -618,7 +618,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                         {
                             imm = immCommProblem;
                         }
-                        else 
+                        else
                         {
                             imm = (immStatus)gmx_recv_int(_cr, dest);
                         }
@@ -627,11 +627,11 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                             fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
                                     mpnew.GetMolname().c_str(), dest, alexandria::immsg(imm));
                         }
-                        else if (NULL != debug) 
+                        else if (NULL != debug)
                         {
                             fprintf(debug, "Succesfully beamed over %s\n", mpi->GetMolname().c_str());
                         }
-                        
+
                     }
                     else
                     {
@@ -679,7 +679,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             /* Receive another molecule */
             alexandria::MyMol mpnew;
 
-            if (NULL != debug) 
+            if (NULL != debug)
             {
                 fprintf(debug, "Going to retrieve new molecule\n");
             }
@@ -688,7 +688,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             {
                 imm = immCommProblem;
             }
-            else if (NULL != debug) 
+            else if (NULL != debug)
             {
                 fprintf(debug, "Succesfully retrieved %s\n", mpnew.GetMolname().c_str());
                 fflush(debug);
@@ -740,10 +740,10 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             gmx_send_int(_cr, 0, imm);
         }
     }
-    int nnn = nmol_cpu;
+    int  nnn = nmol_cpu;
     int *nmolpar;
-    
-    if (PAR(_cr)) 
+
+    if (PAR(_cr))
     {
         snew(nmolpar, _cr->nnodes);
         nmolpar[_cr->nodeid] = nnn;
@@ -756,9 +756,9 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
         int nmoltot = 0;
         if (PAR(_cr))
         {
-            for(i = 0; (i<_cr->nnodes); i++)
+            for (i = 0; (i < _cr->nnodes); i++)
             {
-                fprintf(fp, "node %d has %d molecules\n", i, nmolpar[i]); 
+                fprintf(fp, "node %d has %d molecules\n", i, nmolpar[i]);
                 nmoltot += nmolpar[i];
             }
         }
@@ -768,7 +768,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
         }
         fprintf(fp, "Made topologies for %d out of %d molecules.\n", n,
                 (MASTER(_cr)) ? nmoltot : nmol_cpu);
-        
+
         for (i = 0; (i < immNR); i++)
         {
             if (imm_count[i] > 0)
@@ -944,16 +944,16 @@ void MolDip::CalcDeviation()
                 atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
                          mymol->md_);
                 (void)
-                    relax_shell_flexcon(debug, _cr, FALSE, 0,
-                                        mymol->inputrec_, TRUE,
-                                        GMX_FORCE_ALLFORCES,
-                                        mymol->ltop_, NULL, NULL, NULL,
-                                        &(mymol->state_),
-                                        mymol->f_, force_vir, mymol->md_,
-                                        &my_nrnb, wcycle, NULL,
-                                        &(mymol->mtop_->groups),
-                                        mymol->shell_, mymol->fr_, FALSE, t, mu_tot,
-                                        &bConverged, NULL, NULL);
+                relax_shell_flexcon(debug, _cr, FALSE, 0,
+                                    mymol->inputrec_, TRUE,
+                                    GMX_FORCE_ALLFORCES,
+                                    mymol->ltop_, NULL, NULL, NULL,
+                                    &(mymol->state_),
+                                    mymol->f_, force_vir, mymol->md_,
+                                    &my_nrnb, wcycle, NULL,
+                                    &(mymol->mtop_->groups),
+                                    mymol->shell_, mymol->fr_, FALSE, t, mu_tot,
+                                    &bConverged, NULL, NULL);
             }
             /* Compute the molecular dipole */
             mymol->CalcMultipoles();
