@@ -211,6 +211,21 @@ gmx_int64_t str_to_int64_t(const char *str, char **endptr);
 #define snprintf _snprintf
 #endif
 
+/*! \brief Construct an array of digits found in the input string
+ *
+ * \param[in]  digitstring  String that must contain only digits
+ * \param[out] ndigits      Size of return array with the values of the digits
+ * \param[out] digistlist   Array of digits found in
+ *                          digitstring. Allocated by this function
+ *                          with size *ndigits. Calling code is
+ *                          responsible for deallocation.
+ *
+ * If digitstring is NULL, then ndigits is set to zero and digitlist
+ * to NULL. If digitstring contains a non-digit character, a fatal
+ * error results.
+ */
+void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int **digitlist);
+
 #ifdef __cplusplus
 }
 #endif
