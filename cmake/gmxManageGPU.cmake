@@ -198,16 +198,34 @@ macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
     endif()
 endmacro ()
 
+include(CMakeDependentOption)
+include(gmxOptionUtilities)
 macro(gmx_gpu_setup)
-    # set up nvcc options
-    include(gmxManageNvccConfig)
+    if(GMX_GPU)
+        # set up nvcc options
+        include(gmxManageNvccConfig)
 
-    # Atomic operations used for polling wait for GPU
-    # (to avoid the cudaStreamSynchronize + ECC bug).
-    # ThreadMPI is now always included. Thus, we don't check for Atomics anymore here.
+        # Atomic operations used for polling wait for GPU
+        # (to avoid the cudaStreamSynchronize + ECC bug).
+        # ThreadMPI is now always included. Thus, we don't check for Atomics anymore here.
 
-    # no OpenMP is no good!
-    if(NOT GMX_OPENMP)
-        message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. Without OpenMP a single CPU core can be used with a GPU which is not optimal. Note that with MPI multiple processes can be forced to use a single GPU, but this is typically inefficient. You need to set both C and C++ compilers that support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
+        # no OpenMP is no good!
+        if(NOT GMX_OPENMP)
+            message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. Without OpenMP a single CPU core can be used with a GPU which is not optimal. Note that with MPI multiple processes can be forced to use a single GPU, but this is typically inefficient. You need to set both C and C++ compilers that support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
+        endif()
+    endif()
+
+    cmake_dependent_option(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+        "Whether to compile the CUDA kernels in a single compilation unit." OFF
+        "GMX_GPU" ON)
+    mark_as_advanced(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
+
+    if (GMX_GPU)
+        # with CUDA <v5.0 we need to use single compilation unit for kernels
+        gmx_check_if_changed(CUDA_VERSION CUDA_VERSION_CHANGED)
+        if (CUDA_VERSION VERSION_LESS 5.0 AND CUDA_VERSION_CHANGED)
+            message(STATUS "Disabling multiple compilation units not supported by CUDA ${CUDA_VERSION}")
+            set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE ON)
+        endif()
     endif()
 endmacro()
