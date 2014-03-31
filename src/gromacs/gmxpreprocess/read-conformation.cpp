@@ -38,7 +38,7 @@
 #include "atomprop.h"
 #include "types/simple.h"
 #include "types/atoms.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
                              real defaultDistance, real scaleFactor)

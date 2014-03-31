@@ -46,7 +46,7 @@
 #include <algorithm>
 
 #include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "Xstuff.h"
 #include "xdlgitem.h"

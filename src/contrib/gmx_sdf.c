@@ -31,7 +31,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "index.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"

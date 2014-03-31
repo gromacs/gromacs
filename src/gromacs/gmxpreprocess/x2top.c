@@ -48,7 +48,7 @@
 #include "bondf.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "sysstuff.h"
 #include "gromacs/fileio/confio.h"
 #include "physics.h"

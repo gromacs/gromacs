@@ -38,7 +38,7 @@
 
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "sysstuff.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"

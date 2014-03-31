@@ -51,7 +51,7 @@
 #include "network.h"
 #include "gromacs/fileio/filenm.h"
 #include <string.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "pull.h"
 #include "xvgr.h"
 #include "names.h"

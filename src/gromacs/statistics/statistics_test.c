@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "gromacs/random/random.h"
 #include "statistics.h"

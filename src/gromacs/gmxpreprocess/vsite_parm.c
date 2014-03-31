@@ -43,7 +43,7 @@
 #include <assert.h>
 #include <string.h>
 #include "vsite_parm.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "resall.h"
 #include "add_par.h"
 #include "vec.h"

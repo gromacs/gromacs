@@ -37,7 +37,7 @@
 #endif
 
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "sysstuff.h"
 #include "vec.h"
 #include "sim_util.h"

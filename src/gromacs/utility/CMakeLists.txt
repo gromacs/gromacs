@@ -50,6 +50,7 @@ set(UTILITY_PUBLIC_HEADERS
     gmxassert.h
     init.h
     programcontext.h
+    smalloc.h
     stringutil.h
     uniqueptr.h)
 gmx_install_headers(utility ${UTILITY_PUBLIC_HEADERS})

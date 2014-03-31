@@ -40,7 +40,7 @@
 
 #include "fitahx.h"
 #include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "gromacs/math/do_fit.h"
 

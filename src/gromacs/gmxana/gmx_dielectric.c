@@ -45,7 +45,7 @@
 #include "copyrite.h"
 #include "typedefs.h"
 #include "gstat.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "xvgr.h"
 #include "correl.h"

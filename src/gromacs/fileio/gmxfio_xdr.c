@@ -47,7 +47,7 @@
 
 #include "gmx_fatal.h"
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "futil.h"
 #include "filenm.h"
 #include "gmxfio.h"

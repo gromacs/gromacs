@@ -47,7 +47,7 @@
 #include "gromacs/math/utilities.h"
 #include "physics.h"
 #include "index.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include <string.h>
 #include "sysstuff.h"

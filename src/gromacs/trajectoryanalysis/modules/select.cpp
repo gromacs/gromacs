@@ -49,8 +49,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/smalloc.h"
-
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
@@ -69,6 +67,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/scoped_ptr_sfree.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

@@ -44,7 +44,7 @@
 #include "network.h"
 #include "perf_est.h"
 #include "physics.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "names.h"

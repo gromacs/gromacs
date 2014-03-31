@@ -43,7 +43,7 @@
 #include "network.h"
 #include "pbc.h"
 #include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_ga2la.h"
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))

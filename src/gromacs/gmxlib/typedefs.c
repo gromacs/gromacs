@@ -41,7 +41,7 @@
 
 #include "thread_mpi/threads.h"
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "symtab.h"
 #include "vec.h"
 #include "pbc.h"

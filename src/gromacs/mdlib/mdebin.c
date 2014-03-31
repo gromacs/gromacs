@@ -42,7 +42,7 @@
 #include <float.h>
 #include "typedefs.h"
 #include "mdebin.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "physics.h"
 #include "gromacs/fileio/enxio.h"
 #include "vec.h"

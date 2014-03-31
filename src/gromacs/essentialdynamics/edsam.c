@@ -44,7 +44,7 @@
 
 #include "typedefs.h"
 #include "string2.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "gromacs/fileio/confio.h"
 #include "txtdump.h"

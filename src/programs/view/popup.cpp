@@ -44,7 +44,7 @@
 #include <algorithm>
 
 #include "macros.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "x11.h"
 #include "xutil.h"

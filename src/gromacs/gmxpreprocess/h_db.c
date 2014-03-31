@@ -42,7 +42,7 @@
 #include <string.h>
 #include "string2.h"
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/futil.h"
 #include "symtab.h"
 #include "h_db.h"

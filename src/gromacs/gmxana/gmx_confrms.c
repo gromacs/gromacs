@@ -42,7 +42,7 @@
 #include <string.h>
 
 #include "gromacs/fileio/filenm.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "typedefs.h"
 #include "xvgr.h"

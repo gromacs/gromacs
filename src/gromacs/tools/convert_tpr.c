@@ -42,7 +42,7 @@
 #include "index.h"
 #include "gmx_fatal.h"
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "names.h"
 #include "typedefs.h"

@@ -58,18 +58,18 @@
 /* This file is completely threadsafe - keep it that way! */
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/random/random.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "buildinfo.h"
 

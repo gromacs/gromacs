@@ -37,7 +37,7 @@
 #include <config.h>
 #endif
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/fft/fft.h"
 #include "gmx_fatal.h"
 #include "gromacs/fileio/futil.h"

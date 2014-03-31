@@ -46,7 +46,6 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
@@ -55,6 +54,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {

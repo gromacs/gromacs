@@ -41,7 +41,7 @@
 #include "nrama.h"
 #include <math.h>
 #include "sysstuff.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "bondf.h"
 #include "gromacs/fileio/futil.h"

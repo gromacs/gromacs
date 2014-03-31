@@ -51,7 +51,6 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/physics.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/symtab.h"
 #include "gromacs/legacyheaders/vec.h"
 
@@ -70,6 +69,7 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/scoped_ptr_sfree.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "nsc.h"

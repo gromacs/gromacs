@@ -39,7 +39,7 @@
 #endif
 
 #include <string.h>
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "vec.h"

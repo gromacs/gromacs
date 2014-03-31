@@ -45,7 +45,7 @@
 #include <string.h>
 
 #include "gmx_fatal.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "string2.h"
 
 #include "gromacs/fileio/futil.h"

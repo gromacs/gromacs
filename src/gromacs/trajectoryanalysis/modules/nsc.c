@@ -47,7 +47,7 @@
 #include "pbc.h"
 #include "macros.h"
 #include "vec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "nsc.h"
 
 #define TEST_NSC 0

@@ -45,7 +45,7 @@
 
 #include "typedefs.h"
 #include "txtdump.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "ns.h"
 #include "vec.h"
 #include "gromacs/math/utilities.h"
@@ -60,7 +60,6 @@
 #include "force.h"
 #include "bondf.h"
 #include "nrnb.h"
-#include "smalloc.h"
 #include "nonbonded.h"
 #include "gromacs/simd/simd.h"
 

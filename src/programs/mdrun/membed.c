@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "sysstuff.h"
 #include "vec.h"
 #include "macros.h"

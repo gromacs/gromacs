@@ -48,7 +48,7 @@
 #include <sys/time.h>
 #endif
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "gmx_fatal.h"
 #include "network.h"

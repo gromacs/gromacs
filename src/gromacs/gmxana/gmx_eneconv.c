@@ -41,7 +41,7 @@
 #include <math.h>
 
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "disre.h"
 #include "names.h"

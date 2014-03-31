@@ -40,7 +40,7 @@
 
 #include <math.h>
 #include "typedefs.h"
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "macros.h"
 #include "gromacs/fileio/futil.h"
