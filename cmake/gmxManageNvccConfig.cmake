@@ -196,6 +196,9 @@ else()
     else() # version >= 6.5
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=compute_50")
     endif()
+
+    # generating 2.x code, need single compilation unit
+    set(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT ON)
 endif()
 
 gmx_dependent_cache_variable(GMX_CUDA_TARGET_SM "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)" STRING "" GMX_CUDA_TARGET_SM)
