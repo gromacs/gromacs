@@ -59,6 +59,7 @@
 #include "main.h"
 #include "md_logging.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "thread_mpi/threads.h"
 
@@ -188,33 +189,6 @@ static void print_gpu_use_stats(FILE                 *fplog,
         }
     }
     md_print_info(cr, fplog, "%s\n\n", sbuf);
-}
-
-/* Parse a "plain" GPU ID string which contains a sequence of digits corresponding
- * to GPU IDs; the order will indicate the process/tMPI thread - GPU assignment. */
-static void parse_gpu_id_plain_string(const char *idstr, int *nid, int **idlist)
-{
-    int i;
-
-    *nid = strlen(idstr);
-
-    snew(*idlist, *nid);
-
-    for (i = 0; i < *nid; i++)
-    {
-        if (idstr[i] < '0' || idstr[i] > '9')
-        {
-            gmx_fatal(FARGS, "Invalid character in GPU ID string: '%c'\n%s\n",
-                      idstr[i], invalid_gpuid_hint);
-        }
-        (*idlist)[i] = idstr[i] - '0';
-    }
-}
-
-static void parse_gpu_id_csv_string(const char gmx_unused *idstr, int gmx_unused *nid, int gmx_unused *idlist)
-{
-    /* XXX implement cvs format to support more than 10 different GPUs in a box. */
-    gmx_incons("Not implemented yet");
 }
 
 /* Give a suitable fatal error or warning if the build configuration
@@ -724,9 +698,12 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
     /* parse GPU IDs if the user passed any */
     if (env != NULL)
     {
-        parse_gpu_id_plain_string(env,
-                                  &gpu_opt->ncuda_dev_use,
-                                  &gpu_opt->cuda_dev_use);
+        /* Parse a "plain" GPU ID string which contains a sequence of
+         * digits corresponding to GPU IDs; the order will indicate
+         * the process/tMPI thread - GPU assignment. */
+        parse_digits_from_plain_string(env,
+                                       &gpu_opt->ncuda_dev_use,
+                                       &gpu_opt->cuda_dev_use);
 
         if (gpu_opt->ncuda_dev_use == 0)
         {
