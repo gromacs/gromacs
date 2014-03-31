@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,8 +47,18 @@
 #define NBNXN_CUDA_TYPES_H
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/timing/gpu_timing.h"
+
+
+/* TODO: consider moving this to kernel_utils */
+/* Convenience defines */
+/*! \brief number of clusters per supercluster. */
+#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+/*! \brief cluster size = number of atoms per cluster. */
+#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
 #ifdef __cplusplus
 extern "C" {
