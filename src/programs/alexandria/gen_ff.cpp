@@ -34,7 +34,7 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "poldata.hpp"
 #include "poldata_xml.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 static int maxline = 30;
 

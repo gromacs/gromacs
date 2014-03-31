@@ -29,7 +29,7 @@
 #include "gmx_simple_comm.h"
 #include "molprop.hpp"
 #include "composition.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
       
 const char *mpo_name[MPO_NR] = 
 { 

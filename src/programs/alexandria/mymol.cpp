@@ -61,7 +61,7 @@
 #include "molprop_xml.hpp"
 #include "gauss_io.hpp"
 #include "mymol.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 static const char *gentop_version = "gentop 0.98";
 

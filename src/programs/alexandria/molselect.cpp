@@ -27,7 +27,7 @@
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/fileio/strdb.h"
 #include "molselect.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
 

@@ -41,7 +41,7 @@
 #include "molprop_util.hpp"
 #include "molprop_xml.hpp"
 #include "molprop_sqlite3.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 typedef struct {
     const char *iupac;

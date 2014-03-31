@@ -36,7 +36,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "molprop_sqlite3.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 typedef struct {
     const char *molname, *iupac;

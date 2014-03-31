@@ -58,7 +58,7 @@
 #include "poldata.hpp"
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 bool gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,

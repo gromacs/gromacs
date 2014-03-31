@@ -30,7 +30,7 @@
 #include "mdatoms.h"
 #include "force.h"
 #include "shellfc.h"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 // Alexandria stuff
 #include "poldata_xml.hpp"

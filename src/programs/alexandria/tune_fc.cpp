@@ -76,7 +76,7 @@
 #include "molprop_util.hpp"
 #include "mymol.hpp"
 #include "moldip.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 typedef struct {
     int    nb[ebtsNR], *ngtb[ebtsNR];

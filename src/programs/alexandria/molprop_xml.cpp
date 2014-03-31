@@ -37,7 +37,7 @@
 #include "xml_util.h"
 #include "molprop.hpp"
 #include "molprop_xml.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 extern int xmlDoValidityCheckingDefaultValue;
 	

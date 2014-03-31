@@ -50,7 +50,7 @@
 #include "gentop_vsite.hpp"
 #include "gentop_core.hpp"
 #include "composition.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
 {

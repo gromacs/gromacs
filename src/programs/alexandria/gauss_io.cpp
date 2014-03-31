@@ -40,7 +40,7 @@
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "gauss_io.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 using namespace std;
 

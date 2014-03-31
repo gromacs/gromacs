@@ -52,7 +52,7 @@
 #include "gentop_nm2type.hpp"
 #include "gentop_core.hpp"
 #include "gentop_vsite.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,
                       matrix box)

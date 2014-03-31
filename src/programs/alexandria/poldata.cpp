@@ -34,7 +34,7 @@
 #include "gromacs/legacyheaders/string2.h"
 #include "poldata.hpp"
 #include "gmx_simple_comm.h"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 typedef struct {
     char   *type, *miller, *bosque;

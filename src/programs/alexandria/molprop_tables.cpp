@@ -47,7 +47,7 @@
 #include "molprop_util.hpp"
 #include "molprop_tables.hpp"
 #include "composition.hpp"
-#include "split.hpp"
+#include "stringutil.hpp"
 
 typedef struct 
 {
