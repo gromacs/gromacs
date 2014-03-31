@@ -215,7 +215,7 @@ gmx_int64_t str_to_int64_t(const char *str, char **endptr);
  *
  * \param[in]  digitstring  String that must contain only digits
  * \param[out] ndigits      Size of return array with the values of the digits
- * \param[out] digistlist   Array of digits found in
+ * \param[out] digitlist    Array of digits found in
  *                          digitstring. Allocated by this function
  *                          with size *ndigits. Calling code is
  *                          responsible for deallocation.
