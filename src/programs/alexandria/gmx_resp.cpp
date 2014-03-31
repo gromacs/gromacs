@@ -55,10 +55,10 @@
 #include <atomprop.h>
 #include "nmsimplex.h"
 #include "coulombintegrals/coulombintegrals.h"
-#include "poldata.hpp"
-#include "gmx_resp.hpp"
-#include "gentop_qgen.hpp"
-#include "stringutil.hpp"
+#include "poldata.h"
+#include "gmx_resp.h"
+#include "gentop_qgen.h"
+#include "stringutil.h"
 
 bool gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,

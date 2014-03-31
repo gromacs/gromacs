@@ -40,14 +40,14 @@
 #include "gromacs/legacyheaders/gmx_statistics.h"
 #include "gromacs/random/random.h"
 #include "gromacs/legacyheaders/xvgr.h"
-#include "molselect.hpp"
-#include "poldata.hpp"
-#include "poldata_xml.hpp"
-#include "molprop.hpp"
-#include "molprop_xml.hpp"
-#include "molprop_tables.hpp"
-#include "molprop_util.hpp"
-#include "composition.hpp"
+#include "molselect.h"
+#include "poldata.h"
+#include "poldata_xml.h"
+#include "molprop.h"
+#include "molprop_xml.h"
+#include "molprop_tables.h"
+#include "molprop_util.h"
+#include "composition.h"
 
 bool check_matrix(double **a, double *x, int nrow, int ncol, char **atype)
 {

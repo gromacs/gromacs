@@ -35,7 +35,7 @@
 #include "string2.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "smalloc.h"
-#include "poldata_xml.hpp"
+#include "poldata_xml.h"
 #include "xml_util.h"
 
 extern int xmlDoValidityCheckingDefaultValue;

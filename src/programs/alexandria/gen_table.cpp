@@ -36,8 +36,8 @@
 #include "gromacs/legacyheaders/coulomb.h"
 #include "coulombintegrals/coulombintegrals.h"
 #include "atomprop.h"
-#include "poldata.hpp"
-#include "poldata_xml.hpp"
+#include "poldata.h"
+#include "poldata_xml.h"
 
 enum {
     mGuillot2001a, mAB1, mLjc, mMaaren, mSlater, mGuillot_Maple, mHard_Wall, mDEC, mDEC_pair, mDEC_qd_q, mDEC_qd_qd, mDEC_q_q, mNR

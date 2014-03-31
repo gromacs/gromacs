@@ -32,7 +32,7 @@
  * \inpublicapi
  * \ingroup module_alexandria
  */
-#include "composition.hpp"
+#include "composition.h"
 
 namespace alexandria
 {

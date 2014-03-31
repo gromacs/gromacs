@@ -32,8 +32,8 @@
  * \inpublicapi
  * \ingroup module_alexandria
  */
-#ifndef COMPOSITION_SPEC_HPP
-#define COMPOSITION_SPEC_HPP
+#ifndef COMPOSITION_H
+#define COMPOSITION_H
 
 #include <string>
 #include <vector>

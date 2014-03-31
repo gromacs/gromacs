@@ -30,13 +30,13 @@
 #include "mdatoms.h"
 #include "force.h"
 #include "shellfc.h"
-#include "stringutil.hpp"
+#include "stringutil.h"
 
 // Alexandria stuff
-#include "poldata_xml.hpp"
-#include "molprop_xml.hpp"
+#include "poldata_xml.h"
+#include "molprop_xml.h"
 #include "gmx_simple_comm.h"
-#include "moldip.hpp"
+#include "moldip.h"
 
 static void add_index_count(t_index_count *ic, const char *name, gmx_bool bConst)
 {

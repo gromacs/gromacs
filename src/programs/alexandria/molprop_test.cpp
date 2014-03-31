@@ -26,11 +26,11 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "molprop.hpp"
-#include "molprop_xml.hpp"
-#include "molprop_util.hpp"
+#include "molprop.h"
+#include "molprop_xml.h"
+#include "molprop_util.h"
 #include "atomprop.h"
-#include "poldata_xml.hpp"
+#include "poldata_xml.h"
 
 int alex_molprop_test(int argc,char*argv[])
 {
@@ -38,8 +38,6 @@ int alex_molprop_test(int argc,char*argv[])
         "molprop_test reads a molprop file and writes a new one.",
     };
     output_env_t    oenv;
-    gmx_atomprop_t ap;
-    gmx_poldata_t  pd;
     std::vector<alexandria::MolProp> mpt;
     t_filenm        fnm[] = {
         { efDAT, "-f", "molin", ffREAD },

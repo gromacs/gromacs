@@ -42,13 +42,13 @@
 #include <vec.h>
 #include <atomprop.h>
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "molprop.hpp"
+#include "molprop.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "coulombintegrals/coulombintegrals.h"
-#include "poldata.hpp"
-#include "gentop_nm2type.hpp"
-#include "gentop_qgen.hpp"
-#include "gmx_resp.hpp"
+#include "poldata.h"
+#include "gentop_nm2type.h"
+#include "gentop_qgen.h"
+#include "gmx_resp.h"
 
 typedef struct gentop_qgen
 {

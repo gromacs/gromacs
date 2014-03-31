@@ -21,15 +21,15 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef MOLPROP_TABLES_HPP
-#define MOLPROP_TABLES_HPP
+#ifndef MOLPROP_TABLES_H
+#define MOLPROP_TABLES_H
 
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "atomprop.h"
-#include "poldata.hpp"
-#include "molprop.hpp"
-#include "molprop_util.hpp"
-#include "molselect.hpp"
+#include "poldata.h"
+#include "molprop.h"
+#include "molprop_util.h"
+#include "molselect.h"
 
 //! Utility function converting float to char *
 extern char *ftoa(double f);

@@ -30,9 +30,9 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
-#include "poldata.hpp"
+#include "poldata.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gentop_vsite.hpp"
+#include "gentop_vsite.h"
 
 typedef struct {
     int nline; /* Must be 3 or 4 */

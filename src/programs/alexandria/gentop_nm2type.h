@@ -21,15 +21,15 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef GENTOP_NM2TYPE_HPP
-#define GENTOP_NM2TYPE_HPP
+#ifndef GENTOP_NM2TYPE_H
+#define GENTOP_NM2TYPE_H
 
 #include <stdio.h>
 #include "atomprop.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "poldata.hpp"
-#include "gentop_vsite.hpp"
+#include "poldata.h"
+#include "gentop_vsite.h"
 
 extern int nm2type(FILE *fp,const char *molname,
 		   gmx_poldata_t pd,gmx_atomprop_t aps,

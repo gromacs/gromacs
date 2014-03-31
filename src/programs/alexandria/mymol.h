@@ -21,22 +21,22 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef MYMOL_HPP
-#define MYMOL_HPP
+#ifndef MYMOL_H
+#define MYMOL_H
 
 #include "typedefs.h"
 #include "vsite.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "atomprop.h"
-#include "gmx_resp.hpp"
-#include "gentop_qgen.hpp"
-#include "gentop_vsite.hpp"
-#include "gentop_core.hpp"
-#include "molprop.hpp"
-#include "molselect.hpp"
-#include "poldata.hpp"
-#include "gauss_io.hpp"
+#include "gmx_resp.h"
+#include "gentop_qgen.h"
+#include "gentop_vsite.h"
+#include "gentop_core.h"
+#include "molprop.h"
+#include "molselect.h"
+#include "poldata.h"
+#include "gauss_io.h"
 
 enum immStatus { 
     immUnknown,

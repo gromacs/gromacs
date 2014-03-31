@@ -21,10 +21,10 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef GAUSS_IO_HPP
-#define GAUSS_IO_HPP
+#ifndef GAUSS_IO_H
+#define GAUSS_IO_H
 
-#include "molprop.hpp"
+#include "molprop.h"
 
 namespace alexandria {
 

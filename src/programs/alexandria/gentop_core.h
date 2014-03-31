@@ -21,16 +21,16 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef GENTOP_CORE_HPP
-#define GENTOP_CORE_HPP
+#ifndef GENTOP_CORE_H
+#define GENTOP_CORE_H
 
 #include <stdio.h>
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gentop_nm2type.hpp"
-#include "poldata.hpp"
+#include "gentop_nm2type.h"
+#include "poldata.h"
 
 #ifdef __cplusplus
 extern "C" {

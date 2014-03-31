@@ -21,8 +21,8 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef POLDATA_HPP
-#define POLDATA_HPP
+#ifndef POLDATA_H
+#define POLDATA_H
 
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/typedefs.h"

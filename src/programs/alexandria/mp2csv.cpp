@@ -28,11 +28,11 @@
 #include "gromacs/fileio/futil.h"
 #include "copyrite.h"
 #include "smalloc.h"
-#include "molprop.hpp"
-#include "molprop_xml.hpp"
-#include "molprop_util.hpp"
+#include "molprop.h"
+#include "molprop_xml.h"
+#include "molprop_util.h"
 #include "atomprop.h"
-#include "poldata_xml.hpp"
+#include "poldata_xml.h"
 
 static void gmx_molprop_csv(const char *fn,
                             std::vector<alexandria::MolProp> mp,

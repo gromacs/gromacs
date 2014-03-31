@@ -32,9 +32,9 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/string2.h"
-#include "poldata.hpp"
+#include "poldata.h"
 #include "gmx_simple_comm.h"
-#include "stringutil.hpp"
+#include "stringutil.h"
 
 typedef struct {
     char   *type, *miller, *bosque;

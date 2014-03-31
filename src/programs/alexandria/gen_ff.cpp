@@ -32,9 +32,9 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
-#include "poldata.hpp"
-#include "poldata_xml.hpp"
-#include "stringutil.hpp"
+#include "poldata.h"
+#include "poldata_xml.h"
+#include "stringutil.h"
 
 static int maxline = 30;
 

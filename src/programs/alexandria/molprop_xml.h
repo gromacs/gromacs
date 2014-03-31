@@ -21,10 +21,10 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef MOLPROP_XML_HPP
-#define MOLPROP_XML_HPP
+#ifndef MOLPROP_XML_H
+#define MOLPROP_XML_H
 
-#include "molprop.hpp"
+#include "molprop.h"
 
 /*! \brief
  * Write a vector of molprops to an XML file 

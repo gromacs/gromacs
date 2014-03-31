@@ -26,8 +26,8 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/fileio/strdb.h"
-#include "molselect.hpp"
-#include "stringutil.hpp"
+#include "molselect.h"
+#include "stringutil.h"
 
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
 

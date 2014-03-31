@@ -1,7 +1,7 @@
 #include <string>
 #include <sstream>
 #include <math.h>
-#include "stringutil.hpp"
+#include "stringutil.h"
 
 std::vector<std::string> &split(const std::string &s, 
                                 char delim, 

@@ -32,15 +32,15 @@
  * \inpublicapi
  * \ingroup module_alexandria
  */
-#ifndef MOLPROP_HPP
-#define MOLPROP_HPP
+#ifndef MOLPROP_H
+#define MOLPROP_H
 
 #include <string>
 #include <vector>
 #include <string.h>
 #include "typedefs.h"
 #include "atomprop.h"
-#include "poldata.hpp"
+#include "poldata.h"
 
 /*! \brief
  * Enumerated type holding the types of observables stored in MolProp 

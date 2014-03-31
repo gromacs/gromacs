@@ -35,9 +35,9 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "xml_util.h"
-#include "molprop.hpp"
-#include "molprop_xml.hpp"
-#include "stringutil.hpp"
+#include "molprop.h"
+#include "molprop_xml.h"
+#include "stringutil.h"
 
 extern int xmlDoValidityCheckingDefaultValue;
 	

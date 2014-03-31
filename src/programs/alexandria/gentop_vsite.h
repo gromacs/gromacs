@@ -25,7 +25,7 @@
 #define GENTOP_VSITE_H
 
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "poldata.hpp"
+#include "poldata.h"
 
 enum { egvtNO, egvtLINEAR, egvtPLANAR, egvtRING_PLANAR, egvtALL, egvtNR };
 

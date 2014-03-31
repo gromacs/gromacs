@@ -25,11 +25,11 @@
 #include <vector>
 #include "gromacs/math/utilities.h"
 #include "smalloc.h"
-#include "poldata.hpp"
+#include "poldata.h"
 #include "gmx_simple_comm.h"
-#include "molprop.hpp"
-#include "composition.hpp"
-#include "stringutil.hpp"
+#include "molprop.h"
+#include "composition.h"
+#include "stringutil.h"
       
 const char *mpo_name[MPO_NR] = 
 { 

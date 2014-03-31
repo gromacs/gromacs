@@ -42,9 +42,9 @@
 #include "copyrite.h"
 
 // Alexandria stuff
-#include "poldata_xml.hpp"
-#include "mymol.hpp"
-#include "molprop_util.hpp"
+#include "poldata_xml.h"
+#include "mymol.h"
+#include "molprop_util.h"
 
 typedef struct {
     char       *a1, *a2;

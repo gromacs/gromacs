@@ -21,8 +21,8 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef MOLSELECT_HPP
-#define MOLSELECT_HPP
+#ifndef MOLSELECT_H
+#define MOLSELECT_H
 
 typedef struct gmx_molselect *gmx_molselect_t;
 

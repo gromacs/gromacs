@@ -1,5 +1,5 @@
-#ifndef GMX_SPLIT_HPP
-#define GMX_SPLIT_HPP
+#ifndef STRINGUTIL_H
+#define STRINGUTIL_H
 
 #include <string>
 #include <vector>

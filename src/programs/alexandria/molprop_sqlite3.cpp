@@ -35,8 +35,8 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "molprop_sqlite3.hpp"
-#include "stringutil.hpp"
+#include "molprop_sqlite3.h"
+#include "stringutil.h"
 
 typedef struct {
     const char *molname, *iupac;

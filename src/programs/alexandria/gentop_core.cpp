@@ -48,11 +48,11 @@
 #include "vec.h"
 #include "atomprop.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "poldata.hpp"
-#include "gentop_nm2type.hpp"
-#include "gentop_core.hpp"
-#include "gentop_vsite.hpp"
-#include "stringutil.hpp"
+#include "poldata.h"
+#include "gentop_nm2type.h"
+#include "gentop_core.h"
+#include "gentop_vsite.h"
+#include "stringutil.h"
 
 void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,
                       matrix box)

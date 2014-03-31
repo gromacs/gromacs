@@ -35,12 +35,12 @@
 #include "symtab.h"
 #include "string2.h"
 #include "vec.h"
-#include "poldata.hpp"
+#include "poldata.h"
 #include "atomprop.h"
-#include "molprop.hpp"
-#include "molprop_util.hpp"
-#include "gauss_io.hpp"
-#include "stringutil.hpp"
+#include "molprop.h"
+#include "molprop_util.h"
+#include "gauss_io.h"
+#include "stringutil.h"
 
 using namespace std;
 

@@ -35,13 +35,13 @@
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gmx_fatal.h"
-#include "poldata.hpp"
-#include "poldata_xml.hpp"
-#include "molprop.hpp"
-#include "molprop_util.hpp"
-#include "molprop_xml.hpp"
-#include "molprop_sqlite3.hpp"
-#include "stringutil.hpp"
+#include "poldata.h"
+#include "poldata_xml.h"
+#include "molprop.h"
+#include "molprop_util.h"
+#include "molprop_xml.h"
+#include "molprop_sqlite3.h"
+#include "stringutil.h"
 
 typedef struct {
     const char *iupac;

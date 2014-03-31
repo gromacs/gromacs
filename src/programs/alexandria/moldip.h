@@ -21,15 +21,15 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef MOLDIP_HPP
-#define MOLDIP_HPP
+#ifndef MOLDIP_H
+#define MOLDIP_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include "typedefs.h"
-#include "mymol.hpp"
+#include "mymol.h"
 
 typedef struct {
     int  n,nopt,nconst,nopt_c;

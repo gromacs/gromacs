@@ -66,17 +66,17 @@
 #include "string2.h"
 
 // alexandria stuff
-#include "molselect.hpp"
-#include "poldata.hpp"
-#include "poldata_xml.hpp"
-#include "gentop_qgen.hpp"
-#include "gentop_core.hpp"
-#include "molprop.hpp"
-#include "molprop_xml.hpp"
-#include "molprop_util.hpp"
-#include "mymol.hpp"
-#include "moldip.hpp"
-#include "stringutil.hpp"
+#include "molselect.h"
+#include "poldata.h"
+#include "poldata_xml.h"
+#include "gentop_qgen.h"
+#include "gentop_core.h"
+#include "molprop.h"
+#include "molprop_xml.h"
+#include "molprop_util.h"
+#include "mymol.h"
+#include "moldip.h"
+#include "stringutil.h"
 
 typedef struct {
     int    nb[ebtsNR], *ngtb[ebtsNR];

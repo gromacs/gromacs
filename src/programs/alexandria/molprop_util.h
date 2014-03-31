@@ -21,15 +21,15 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef MOLPROP_UTIL_HPP
-#define MOLPROP_UTIL_HPP
+#ifndef MOLPROP_UTIL_H
+#define MOLPROP_UTIL_H
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "atomprop.h"
-#include "molprop.hpp"
-#include "poldata.hpp"
-#include "molselect.hpp"
+#include "molprop.h"
+#include "poldata.h"
+#include "molselect.h"
 
 extern void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd);
 extern void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap);

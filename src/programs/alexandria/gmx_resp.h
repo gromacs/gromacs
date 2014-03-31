@@ -21,14 +21,14 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef GMX_RESP_HPP
-#define GMX_RESP_HPP
+#ifndef GMX_RESP_H
+#define GMX_RESP_H
 	
 #include <stdio.h>
 #include "gromacs/statistics/statistics.h"
-#include "poldata.hpp"
+#include "poldata.h"
 #include "atomprop.h"
-#include "molprop.hpp"
+#include "molprop.h"
 
 typedef struct 
 {

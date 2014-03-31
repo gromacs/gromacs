@@ -43,9 +43,9 @@
 #include "bondf.h"
 #include "names.h"
 #include "atomprop.h"
-#include "poldata.hpp"
-#include "gentop_nm2type.hpp"
-#include "gentop_vsite.hpp"
+#include "poldata.h"
+#include "gentop_nm2type.h"
+#include "gentop_vsite.h"
 
 enum { egmLinear, egmPlanar, egmTetrahedral, egmNR };
 static const char *geoms[egmNR] = { "linear", "planar", "tetrahedral" };

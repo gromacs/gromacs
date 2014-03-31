@@ -21,10 +21,10 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef POLDATA_XML_HPP
-#define POLDATA_XML_HPP
+#ifndef POLDATA_XML_H
+#define POLDATA_XML_H
 
-#include "poldata.hpp"
+#include "poldata.h"
 #include "atomprop.h"
 
 /* This source code file is part of the Alexandria project */

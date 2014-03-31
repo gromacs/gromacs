@@ -49,12 +49,12 @@
 #include "pbc.h"
 //#include "gpp_atomtype.h"
 #include "atomprop.h"
-#include "poldata.hpp"
-#include "poldata_xml.hpp"
-#include "molprop.hpp"
-#include "molprop_util.hpp"
-#include "molprop_xml.hpp"
-#include "gauss_io.hpp"
+#include "poldata.h"
+#include "poldata_xml.h"
+#include "molprop.h"
+#include "molprop_util.h"
+#include "molprop_xml.h"
+#include "gauss_io.h"
 
 int alex_gauss2molprop(int argc, char *argv[])
 {

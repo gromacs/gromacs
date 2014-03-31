@@ -26,8 +26,8 @@
 
 #include <stdio.h>
 //#include "gromacs/gmxpreprocess/grompp.h"
-#include "poldata.hpp"
-#include "gmx_resp.hpp"
+#include "poldata.h"
+#include "gmx_resp.h"
 	
 enum { eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR };
 

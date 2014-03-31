@@ -38,14 +38,14 @@
 #include "physics.h"
 #include "gmx_fatal.h"
 #include "gromacs/linearalgebra/matrix.h"
-#include "poldata.hpp"
-#include "poldata_xml.hpp"
-#include "molselect.hpp"
-#include "molprop.hpp"
-#include "molprop_util.hpp"
-#include "molprop_xml.hpp"
-#include "molprop_tables.hpp"
-#include "composition.hpp"
+#include "poldata.h"
+#include "poldata_xml.h"
+#include "molselect.h"
+#include "molprop.h"
+#include "molprop_util.h"
+#include "molprop_xml.h"
+#include "molprop_tables.h"
+#include "composition.h"
 
 static void calc_frag_miller(gmx_poldata_t pd,
                              std::vector<alexandria::MolProp> &mp,
