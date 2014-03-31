@@ -9,11 +9,8 @@ share/template/template.cpp: error: source file documentation appears outside fu
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests
 
-# These are real documentation issues that should be fixed
-
 # These would be nice to fix, but can wait for later
 *: warning: includes local file as <config.h>
-src/programs/view/*: warning: includes local file as <*.h>
 src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd/math_x86_*.h" is not documented as exposed outside its module
 
 # These are specific to Folding@Home, and easiest to suppress here
