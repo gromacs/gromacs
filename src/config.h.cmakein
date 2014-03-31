@@ -250,6 +250,9 @@
 /* Defined if texture objects are supported by CUDA */
 #cmakedefine HAVE_CUDA_TEXOBJ_SUPPORT
 
+/* Use a single compiations unit when compiling the CUDA (non-bonded) kernels.  */
+#cmakedefine GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+
 /* Use NVML */
 #cmakedefine HAVE_NVML
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,6 +110,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
  const cu_nbparam_t nbparam,
  const cu_plist_t plist,
  bool bCalcFshift)
+#ifdef FUNCTION_DECLARATION_ONLY
+;     /* Only do function declaration, omit the function body. */
+#else
 {
     /* convenience variables */
     const nbnxn_sci_t *pl_sci       = plist.sci;
@@ -569,6 +572,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 #endif
 }
+#endif /* FUNCTION_DECLARATION_ONLY */
 
 #undef EL_EWALD_ANY
 #undef EXCLUSION_FORCES
