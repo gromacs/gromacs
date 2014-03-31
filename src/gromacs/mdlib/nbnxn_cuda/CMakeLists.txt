@@ -33,6 +33,18 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if(GMX_USE_CUDA)
-    file(GLOB CUDA_NB_SOURCES *.cu)
-    set(MDLIB_SOURCES ${MDLIB_SOURCES} ${CUDA_NB_SOURCES} PARENT_SCOPE)
+    if(NOT GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
+        set(NBNXN_CUDA_KERNEL_SOURCES
+                nbnxn_cuda_kernel_F_noprune.cu
+                nbnxn_cuda_kernel_F_prune.cu
+                nbnxn_cuda_kernel_VF_noprune.cu
+                nbnxn_cuda_kernel_VF_prune.cu)
+    endif()
+
+    file(GLOB NBNXN_CUDA_SOURCES
+         nbnxn_cuda.cu
+         nbnxn_cuda_data_mgmt.cu
+         nbnxn_cuda_jit_support.cu
+         ${NBNXN_CUDA_KERNEL_SOURCES})
+    set(MDLIB_SOURCES ${MDLIB_SOURCES} ${NBNXN_CUDA_SOURCES} PARENT_SCOPE)
 endif()
