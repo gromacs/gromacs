@@ -91,7 +91,10 @@
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
 
-/* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
+/**@{*/
+/*! \brief Compute capability dependent definition of kernel launch configuration parameters.
+ *
+ * NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
  * warp-pairs per block.
  *
  * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
@@ -107,9 +110,11 @@
  * shuffle-based reduction, hence CC >= 3.0.
  */
 
-/* Kernel launch bounds as function of NTHREAD_Z.
- * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
+/* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
+ * determines the number of threads per block and it is chosen such that
+ * 16 blocks/multiprocessor can be kept in flight.
+ * - CC 2.x, 3.0, 3.5, 5.x: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
  */
 #if GMX_PTX_ARCH == 370
 #define NTHREAD_Z           (2)
@@ -122,6 +127,11 @@
 
 
 #if GMX_PTX_ARCH >= 350
+#if (GMX_PTX_ARCH <= 210) && (NTHREAD_Z > 1)
+#error NTHREAD_Z > 1 will give incorrect results on CC 2.x
+#endif
+/**@}*/
+
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #else
 __launch_bounds__(THREADS_PER_BLOCK)
@@ -143,6 +153,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
  const cu_nbparam_t nbparam,
  const cu_plist_t plist,
  bool bCalcFshift)
+#ifdef FUNCTION_DECLARATION_ONLY
+;     /* Only do function declaration, omit the function body. */
+#else
 {
     /* convenience variables */
     const nbnxn_sci_t *pl_sci       = plist.sci;
@@ -608,6 +621,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 #endif
 }
+#endif /* FUNCTION_DECLARATION_ONLY */
 
 #undef REDUCE_SHUFFLE
 #undef IATYPE_SHMEM

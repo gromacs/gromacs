@@ -48,15 +48,12 @@
 #include <limits>
 #endif
 
-#include <cuda.h>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
-#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 
@@ -71,20 +68,17 @@ texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
-/* Convenience defines */
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
-/***** The kernels come here *****/
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
+/***** The kernel declarations/definitions come here *****/
 
-/* Top-level kernel generation: will generate through multiple inclusion the
- * following flavors for all kernels:
+/* Top-level kernel declaration generation: will generate through multiple
+ * inclusion the following flavors for all kernel declarations:
  * - force-only output;
  * - force and energy output;
  * - force-only with pair list pruning;
  * - force and energy output with pair list pruning.
  */
+#define FUNCTION_DECLARATION_ONLY
 /** Force only **/
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
@@ -101,6 +95,24 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
+#undef FUNCTION_DECLARATION_ONLY
+
+/* Now generate the function definitions if we are using a single compilation unit. */
+#ifdef GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_F_noprune.cu"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_F_prune.cu"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_noprune.cu"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_prune.cu"
+#else
+/* Prevent compilation in multiple compilation unit mode for CC 2.x. Although we have
+ * build-time checks to prevent this, the user could manually tweaks nvcc flags
+ * which would lead to buggy kernels getting compiled.
+ */
+#if GMX_PTX_ARCH > 0 && GMX_PTX_ARCH <= 210
+#error Due to an CUDA compiler bug, the CUDA non-bonded module can not be compiled with multiple compilation units for CC 2.x devices. If you have changed the nvcc flags manually, either use the GMX_CUDA_TARGET_* variables instead or set GMX_CUDA_NB_SINGLE_COMPILATION_UNIT=ON CMake option.
+#endif
+#endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
+
 
 
 /*! Nonbonded kernel function pointer type */
@@ -110,6 +122,7 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
                                      bool);
 
 /*********************************/
+
 
 /* XXX always/never run the energy/pruning kernels -- only for benchmarking purposes */
 static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);

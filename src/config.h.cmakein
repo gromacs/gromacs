@@ -240,6 +240,9 @@
 /* CUDA runtime API version (identical to CUDART_VERSION from cuda_runtime_api.h) */
 #cmakedefine GMX_CUDA_VERSION @GMX_CUDA_VERSION@
 
+/* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
+#cmakedefine GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+
 /* Use NVML */
 #cmakedefine HAVE_NVML
 
