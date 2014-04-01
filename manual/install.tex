@@ -165,7 +165,9 @@ you should consult your local documentation for details.
 \item   {\tt GMX_MAXBACKUP}: {\gromacs} automatically backs up old
         copies of files when trying to write a new file of the same
         name, and this variable controls the maximum number of
-        backups that will be made, default 99.
+        backups that will be made, default 99. If set to 0 it fails to
+        run if any output file already exists. And if set to -1 it
+        overwrites any output file without making a backup.
 \item   {\tt GMX_NO_QUOTES}: if this is explicitly set, no cool quotes
         will be printed at the end of a program.
 \item   {\tt GMX_SUPPRESS_DUMP}: prevent dumping of step files during
