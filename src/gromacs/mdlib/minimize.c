@@ -42,7 +42,7 @@
 #include <time.h>
 #include <math.h>
 #include "sysstuff.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "network.h"
 #include "gromacs/utility/smalloc.h"
 #include "nrnb.h"

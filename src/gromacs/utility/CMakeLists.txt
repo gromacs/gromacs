@@ -41,6 +41,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gmx_header_config_gen.h.cmakein
 
 set(UTILITY_PUBLIC_HEADERS
     arrayref.h
+    cstringutil.h
     common.h
     errorcodes.h
     exceptions.h

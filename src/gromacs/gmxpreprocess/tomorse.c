@@ -45,7 +45,7 @@
 #include <string.h>
 
 #include "typedefs.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "grompp-impl.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/utility/smalloc.h"

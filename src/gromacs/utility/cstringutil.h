@@ -35,26 +35,20 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
- * \brief Generic string handling functions.
+ * \brief Generic C string handling functions.
  *
  * \inpublicapi
+ * \ingroup module_utility
  */
-#ifndef _string2_h
-#define _string2_h
-
-/*
- *
- * string2.h
- * David van der Spoel
- *
- */
+#ifndef GMX_UTILITY_STRINGUTIL_H
+#define GMX_UTILITY_STRINGUTIL_H
 
 #include <stdio.h>
 #include <time.h>
 
-#include "../utility/gmx_header_config.h"
+#include "../legacyheaders/types/simple.h"
 
-#include "types/simple.h"
+#include "gmx_header_config.h"
 
 /* Suppress Cygwin compiler warnings from using newlib version of
  * ctype.h */
@@ -215,4 +209,4 @@ gmx_int64_t str_to_int64_t(const char *str, char **endptr);
 }
 #endif
 
-#endif  /* _string2_h */
+#endif

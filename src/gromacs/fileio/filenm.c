@@ -48,7 +48,7 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "types/simple.h"
 #include "types/commrec.h"
 

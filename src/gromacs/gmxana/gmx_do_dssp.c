@@ -40,7 +40,7 @@
 
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/strdb.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"

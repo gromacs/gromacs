@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,18 +42,18 @@
 
 #include "config.h"
 
+#include <stdio.h>
+
 #ifdef GMX_OPENMP
 #include <omp.h>
 #endif
 
-#include <stdio.h>
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/legacyheaders/md_logging.h"
 
-#include "copyrite.h"
-#include "md_logging.h"
-#include "gmx_fatal.h"
-#include "string2.h"
-
-#include "common.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/cstringutil.h"
 
 int gmx_omp_get_max_threads(void)
 {

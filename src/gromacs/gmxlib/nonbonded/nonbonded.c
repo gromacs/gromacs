@@ -50,7 +50,7 @@
 #include "vec.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "force.h"
 #include "names.h"
 #include "main.h"

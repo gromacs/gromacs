@@ -35,7 +35,7 @@
  */
 #include <string.h>
 
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "readir.h"
 #include "names.h"
 #include "gromacs/utility/smalloc.h"

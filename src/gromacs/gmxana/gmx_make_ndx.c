@@ -44,7 +44,7 @@
 #include "sysstuff.h"
 #include "gromacs/fileio/futil.h"
 #include "macros.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "typedefs.h"

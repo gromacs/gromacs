@@ -56,7 +56,7 @@
 #include "nmol.h"
 #include "copyrite.h"
 #include "vec.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/tpxio.h"

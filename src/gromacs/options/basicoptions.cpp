@@ -50,8 +50,7 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/string2.h"
-
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 

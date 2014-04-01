@@ -55,7 +55,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "gmx_ana.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/trxio.h"
 
 #define EPS0 8.85419E-12

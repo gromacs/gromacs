@@ -43,7 +43,7 @@
 #include <algorithm>
 
 #include "gmx_fatal.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"

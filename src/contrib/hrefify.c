@@ -42,7 +42,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
 #include "vec.h"
 #include "gromacs/commandline/pargs.h"

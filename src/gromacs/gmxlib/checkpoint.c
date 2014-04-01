@@ -68,7 +68,7 @@
 #include "network.h"
 #include "checkpoint.h"
 #include "main.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include <fcntl.h>
 
 #include "gromacs/fileio/filenm.h"
