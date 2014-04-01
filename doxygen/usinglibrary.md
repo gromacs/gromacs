@@ -80,6 +80,10 @@ releases), you should expect incompatible API changes.  This is in particular
 true until the planned reorganization of the `legacyheaders/` subdirectory is
 complete.
 
+The header version.h (installed as `gromacs/version.h`) provides defines that
+calling code can use to check the exact (released) version of \Gromacs that
+installed the headers.
+
 This Doxygen documentation only covers part of the API.  In particular, nearly
 all of `include/gromacs/legacyheaders/` is undocumented, as well as code
 recently moved from there.
