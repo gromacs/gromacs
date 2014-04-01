@@ -57,8 +57,8 @@
 #include <string>
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/string2.h"
 
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"

@@ -40,7 +40,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "typedefs.h"
 #include "gmx_fatal.h"
 #include "vec.h"

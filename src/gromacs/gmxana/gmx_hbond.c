@@ -53,7 +53,7 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "pbc.h"
 #include "correl.h"
 #include "gmx_ana.h"

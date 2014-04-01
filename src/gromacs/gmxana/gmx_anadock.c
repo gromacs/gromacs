@@ -45,7 +45,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "gromacs/utility/smalloc.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/commandline/pargs.h"

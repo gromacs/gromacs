@@ -41,7 +41,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "sysstuff.h"
 #include "princ.h"
 #include "gromacs/fileio/futil.h"

@@ -42,7 +42,7 @@
 
 #include "nb_kernel.h"
 #include "gromacs/utility/smalloc.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gmx_fatal.h"
 
 

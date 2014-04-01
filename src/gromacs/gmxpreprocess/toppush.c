@@ -45,7 +45,7 @@
 #include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "names.h"
 #include "toputil.h"
 #include "toppush.h"

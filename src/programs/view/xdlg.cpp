@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "Xstuff.h"

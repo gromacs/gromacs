@@ -48,9 +48,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/string2.h"
 
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/messagestringcollector.h"

@@ -52,7 +52,7 @@
 #include "names.h"
 #include "mtop_util.h"
 #include "gromacs/fileio/tpxio.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "membed.h"
 #include "pbc.h"
 #include "readinp.h"

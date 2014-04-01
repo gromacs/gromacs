@@ -35,39 +35,36 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
+#include "cstringutil.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <ctype.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <time.h>
 
+#include <sys/types.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_PWD_H
-#include <pwd.h>
-#endif
-#include <time.h>
-#include <assert.h>
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/legacyheaders/main.h"
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gmx_fatal.h"
-#include "macros.h"
-#include "main.h"
-#include "string2.h"
 #include "gromacs/fileio/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int continuing(char *s)
 {

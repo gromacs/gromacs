@@ -41,7 +41,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "sysstuff.h"
 #include "gromacs/fileio/confio.h"

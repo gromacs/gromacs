@@ -56,7 +56,7 @@
 #include "physics.h"
 #include "macros.h"
 #include "names.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "symtab.h"
 #include "gmx_fatal.h"
 #include "warninp.h"

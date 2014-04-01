@@ -53,7 +53,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "futil.h"
 #include "filenm.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gmxfio.h"
 #include "md5.h"
 

@@ -45,7 +45,7 @@
 #include "sysstuff.h"
 #include <errno.h>
 #include "macros.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "confio.h"
 #include "vec.h"
 #include "symtab.h"

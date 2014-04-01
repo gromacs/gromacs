@@ -53,7 +53,7 @@
 #include "gromacs/legacyheaders/types/simple.h"
 }
 %{
-#include "gromacs/legacyheaders/string2.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "parser.h"
 #include "scanner.h"
