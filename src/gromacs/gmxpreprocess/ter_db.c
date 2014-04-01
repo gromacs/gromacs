@@ -48,7 +48,7 @@
 #include "gromacs/fileio/futil.h"
 #include "resall.h"
 #include "h_db.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gmx_fatal.h"
 #include "ter_db.h"
 #include "toputil.h"

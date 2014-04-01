@@ -50,7 +50,7 @@
 #include "macros.h"
 #include "index.h"
 #include "symtab.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "readinp.h"
 #include "warninp.h"
 #include "readir.h"

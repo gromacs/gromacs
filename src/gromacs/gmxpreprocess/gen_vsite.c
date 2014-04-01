@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include <stdio.h>
 #include <math.h>
 #include <string.h>

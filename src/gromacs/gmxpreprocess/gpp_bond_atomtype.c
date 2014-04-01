@@ -42,7 +42,7 @@
 #include "sysstuff.h"
 #include "macros.h"
 #include "symtab.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gpp_bond_atomtype.h"
 
 typedef struct {

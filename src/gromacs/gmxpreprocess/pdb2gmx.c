@@ -49,7 +49,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "vec.h"

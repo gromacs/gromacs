@@ -57,7 +57,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "copyrite.h"
 
 #include "gromacs/utility/exceptions.h"

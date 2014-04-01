@@ -43,7 +43,7 @@
 #include <time.h>
 
 #include "typedefs.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "gromacs/fileio/confio.h"

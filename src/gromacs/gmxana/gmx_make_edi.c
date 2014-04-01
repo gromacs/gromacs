@@ -64,7 +64,7 @@
 #include "txtdump.h"
 #include "eigio.h"
 #include "index.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 
 typedef struct
 {

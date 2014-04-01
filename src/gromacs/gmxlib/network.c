@@ -47,7 +47,7 @@
 #include "copyrite.h"
 #include <ctype.h>
 #include "macros.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/utility/gmxmpi.h"
 

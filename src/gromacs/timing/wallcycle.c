@@ -45,7 +45,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gmx_fatal.h"
 #include "md_logging.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/gmxmpi.h"

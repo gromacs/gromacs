@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "specbond.h"
 #include "pdb2top.h"

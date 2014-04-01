@@ -41,7 +41,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "typedefs.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "symtab.h"
 #include "index.h"

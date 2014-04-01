@@ -42,7 +42,7 @@
 #include <string.h>
 
 #include "sysstuff.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"

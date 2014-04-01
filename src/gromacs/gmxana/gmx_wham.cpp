@@ -62,7 +62,7 @@
 #include "gromacs/random/random.h"
 #include "gmx_ana.h"
 #include "macros.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "xvgr.h"
 
 //! longest file names allowed in input files

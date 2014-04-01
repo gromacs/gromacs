@@ -52,7 +52,7 @@
 #include "index.h"
 #include "names.h"
 #include "gmx_fatal.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "physics.h"
 #include "macros.h"
 

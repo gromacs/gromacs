@@ -48,7 +48,7 @@
 #include "physics.h"
 #include "toputil.h"
 #include "pdb2top.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "macros.h"
 
 static int in_strings(char *key, int nstr, const char **str)

@@ -76,7 +76,7 @@
 #include "mtop_util.h"
 #include "sighandler.h"
 #include "txtdump.h"
-#include "string2.h"
+#include "gromacs/utility/cstringutil.h"
 #include "pme_loadbal.h"
 #include "bondf.h"
 #include "membed.h"
