@@ -18,5 +18,4 @@ src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: included file "gromacs/simd
 src/config.h.cmakein: warning: includes non-local file as "swindirect.h"
 
 # These are limitations in the current script
-src/gromacs/version.h.cmakein: warning: includes local file as <gromacs/version.h>
 src/gromacs/utility/gmx_header_config.h: warning: includes non-local file as "gmx_header_config_gen.h"
