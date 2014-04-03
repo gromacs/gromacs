@@ -370,6 +370,10 @@ class Member(Entity):
     def __init__(self, name, refid):
         Entity.__init__(self, name, refid)
         self._parents = set()
+        self._class = None
+        self._namespace = None
+        self._files = set()
+        self._group = None
         self._location = None
         self._alternates = set()
         self._loaded = False
@@ -379,38 +383,31 @@ class Member(Entity):
     def add_parent_compound(self, compound):
         """Add a compound that contains this member."""
         self._parents.add(compound)
-
-    def _get_raw_location(self):
-        """Returns the BodyLocation object associated with this member.
-
-        This is necessary so that EnumValue can override it report a non-empty
-        location: Doxygen doesn't provide any location for <enumvalue>.
-        """
-        return self._location
-
-    def get_parent_compounds(self):
-        return self._parents
-
-    def get_inherited_visibility(self):
-        return max([parent.get_visibility() for parent in self._parents])
-
-    def is_visible(self):
-        return self.get_inherited_visibility() != DocType.none
-
-    def has_same_body_location(self):
-        return self._get_raw_location().has_same_body_location()
-
-    def get_reporter_location(self):
-        return self._get_raw_location().get_reporter_location()
-
-    def get_location(self):
-        return self._get_raw_location().get_location()
-
-    def get_body_location(self):
-        return self._get_raw_location().get_body_location()
+        if isinstance(compound, Class):
+            assert self._class is None
+            self._class = compound
+        elif isinstance(compound, Namespace):
+            assert self._namespace is None
+            self._namespace = compound
+        elif isinstance(compound, File):
+            self._files.add(compound)
+        elif isinstance(compound, Group):
+            assert self._group is None
+            self._group = compound
+        else:
+            assert False
 
     def merge_definition(self, definition):
+        """Merge another member into this.
+
+        See DocumentationSet.merge_duplicates().
+        """
+        assert self._class is None
+        assert definition._class is None
+        assert self._group == definition._group
+        assert self._namespace == definition._namespace
         self._parents.update(definition._parents)
+        self._files.update(definition._files)
         self._alternates.add(definition)
 
     def load_details_from_element(self, rootelem, xmlpath):
@@ -465,8 +462,50 @@ class Member(Entity):
         """
         return False
 
+    def _get_raw_location(self):
+        """Returns the BodyLocation object associated with this member.
+
+        This is necessary so that EnumValue can override it report a non-empty
+        location: Doxygen doesn't provide any location for <enumvalue>.
+        """
+        return self._location
+
+    def get_reporter_location(self):
+        return self._get_raw_location().get_reporter_location()
+
+    def get_location(self):
+        """Return main location for the member.
+
+        This typically corresponds to the declaration.
+        """
+        return self._get_raw_location().get_location()
+
+    def get_body_location(self):
+        """Return location of the body for the member.
+
+        Some types of members do not have a body location, in which case this
+        returns None.
+        """
+        return self._get_raw_location().get_body_location()
+
+    def has_same_body_location(self):
+        """Check whether the main location is the same as body location."""
+        return self._get_raw_location().has_same_body_location()
+
+    def get_namespace(self):
+        return self._namespace
+
+    def get_parent_compounds(self):
+        return self._parents
+
+    def get_inherited_visibility(self):
+        return max([parent.get_visibility() for parent in self._parents])
+
     def show(self):
         self.show_base()
+        if self._alternates:
+            idlist = [x.get_id() for x in self._alternates]
+            print 'Alt. IDs:   {0}'.format(', '.join(idlist))
         print 'Parent vis: {0}'.format(self.get_inherited_visibility())
         print 'Location:   {0}'.format(self.get_location().get_full_string())
         print 'Body loc:   {0}'.format(self.get_body_location().get_full_string())
@@ -539,6 +578,7 @@ class Compound(Entity):
     contains references to contained compounds, and details of all members
     within the compound.
     """
+
     def __init__(self, name, refid):
         Entity.__init__(self, name, refid)
         self._members = dict()
@@ -891,6 +931,9 @@ class Namespace(Compound):
     def get_reporter_location(self):
         return self._doclocation.get_reporter_location()
 
+    def is_anonymous(self):
+        return 'anonymous_namespace{' in self.get_name()
+
     def show(self):
         self.show_base()
         print 'Doc. loc.: {0}'.format(self._doclocation.get_full_string())
@@ -1093,9 +1136,9 @@ class DocumentationSet(object):
     def merge_duplicates(self):
         """Merge duplicate member definitions based on body location.
 
-        At least for functions that are declared in a header, but have their
-        body in a source file, Doxygen seems to create two different IDs, but
-        the contents of the members are the same, except for the location
+        At least for some functions that are declared in a header, but have
+        their body in a source file, Doxygen seems to create two different IDs,
+        but the contents of the members are the same, except for the location
         attribute.  This method merges members that have identical name and
         body location into a single member that keeps the information from both
         instances (they should only differ in the location attribute and in
@@ -1190,8 +1233,11 @@ class DocumentationSet(object):
     def get_groups(self, name):
         return self.get_compounds(Group, lambda x: x.get_name() in name)
 
-    def get_namespaces(self, name):
-        return self.get_compounds(Namespace, lambda x: x.get_name() in name)
+    def get_namespaces(self, name=None):
+        if name:
+            return self.get_compounds(Namespace, lambda x: x.get_name() in name)
+        else:
+            return self.get_compounds(Namespace)
 
     def get_classes(self, name=None):
         if name:

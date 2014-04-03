@@ -343,10 +343,10 @@ class GraphBuilder(object):
         gmxtree.
         """
         intramodule = (fromfile.get_module() == tofile.get_module())
-        is_legacy = not tofile.get_module().is_documented()
+        is_legacy = not tofile.api_type_is_reliable()
         if fromfile.get_module() == tofile.get_module():
             edgetype = EdgeType.intramodule
-        elif tofile.get_api_type() == DocType.internal:
+        elif tofile.get_api_type() == DocType.internal and not tofile.is_public():
             if is_legacy:
                 edgetype = EdgeType.legacy
             else:
@@ -355,30 +355,30 @@ class GraphBuilder(object):
             edgetype = EdgeType.test
         elif tofile.is_test_file():
             edgetype = EdgeType.undocumented
-        elif fromfile.is_source_file() or \
-                (fromfile.get_api_type() <= DocType.internal and \
-                not fromfile.is_installed()):
-            if tofile.get_api_type() == DocType.public:
+        elif fromfile.is_module_internal():
+            if tofile.is_public():
                 edgetype = EdgeType.pubimpl
             elif tofile.get_api_type() == DocType.library:
                 edgetype = EdgeType.libimpl
-            elif is_legacy or not tofile.is_documented():
+            elif is_legacy:
                 edgetype = EdgeType.legacy
+            elif not tofile.is_documented():
+                edgetype = EdgeType.undocumented
             else:
                 raise ValueError('Unknown edge type between {0} and {1}'
-                        .format(fromfile.path, tofile.path))
+                        .format(fromfile.get_relpath(), tofile.get_relpath()))
         elif fromfile.get_api_type() == DocType.library:
             edgetype = EdgeType.library
-        elif fromfile.get_api_type() == DocType.public or fromfile.is_installed():
-            if tofile.get_api_type() == DocType.public or \
-                    tofile.get_documentation_type() == DocType.public or \
-                    (tofile.is_installed() and not tofile.is_documented()):
+        elif fromfile.is_public() or fromfile.is_installed():
+            if tofile.is_public() or tofile.is_installed():
                 edgetype = EdgeType.public
             else:
                 edgetype = EdgeType.undocumented
+        elif is_legacy:
+            edgetype = EdgeType.legacy
         else:
             raise ValueError('Unknown edge type between {0} and {1}'
-                    .format(fromfile.path, tofile.path))
+                    .format(fromfile.get_relpath(), tofile.get_relpath()))
         return Edge(filenodes[fromfile], filenodes[tofile], edgetype)
 
     def _create_file_edges(self, filenodes):
@@ -397,6 +397,17 @@ class GraphBuilder(object):
                     edges.append(edge)
         return edges
 
+    def _get_module_color(self, modulegroup):
+        if modulegroup == 'legacy':
+            return 'fillcolor=grey75'
+        elif modulegroup == 'analysismodules':
+            return 'fillcolor="0 .2 1"'
+        elif modulegroup == 'utilitymodules':
+            return 'fillcolor=".08 .2 1"'
+        elif modulegroup == 'mdrun':
+            return 'fillcolor=".75 .2 1"'
+        return None
+
     def _create_module_node(self, module, filenodes):
         """Create node for a module.
 
@@ -408,17 +419,12 @@ class GraphBuilder(object):
         properties.append('shape=ellipse')
         properties.append('URL="\\ref module_{0}"'.format(module.get_name()))
         if not module.is_documented():
+            fillcolor = self._get_module_color('legacy')
+        else:
+            fillcolor = self._get_module_color(module.get_group())
+        if fillcolor:
             style.append('filled')
-            properties.append('fillcolor=grey75')
-        elif module.get_group() == 'analysismodules':
-            style.append('filled')
-            properties.append('fillcolor="0 .2 1"')
-        elif module.get_group() == 'utilitymodules':
-            style.append('filled')
-            properties.append('fillcolor=".08 .2 1"')
-        elif module.get_group() == 'mdrun':
-            style.append('filled')
-            properties.append('fillcolor=".75 .2 1"')
+            properties.append(fillcolor)
         rootdir = module.get_root_dir()
         if rootdir.has_installed_files():
             properties.append('color=".66 .5 1"')
@@ -429,6 +435,20 @@ class GraphBuilder(object):
         for childfile in module.get_files():
             node.add_child(self._create_file_node(childfile, filenodes))
         return node
+
+    def _create_legend_node(self, label, modulegroup):
+        if modulegroup:
+            nodename = 'legend_' + modulegroup
+            fillcolor = self._get_module_color(modulegroup)
+        else:
+            nodename = 'legend_' + label
+            fillcolor = None
+        style = []
+        properties = []
+        if fillcolor:
+            style.append('filled')
+            properties.append(fillcolor)
+        return Node(nodename, label, style, properties)
 
     def create_modules_graph(self):
         """Create module dependency graph."""
@@ -445,6 +465,15 @@ class GraphBuilder(object):
                 nodes.append(node)
             modulenodes.append(node)
         edges = self._create_file_edges(filenodes)
+        # TODO: Consider adding invisible edges to order the nodes better.
+        # TODO: Consider adding legend for the edge types as well.
+        legendnode = Node('legend', 'legend')
+        legendnode.add_child(self._create_legend_node('legacy', 'legacy'))
+        legendnode.add_child(self._create_legend_node('analysis', 'analysismodules'))
+        legendnode.add_child(self._create_legend_node('utility', 'utilitymodules'))
+        legendnode.add_child(self._create_legend_node('mdrun', 'mdrun'))
+        legendnode.add_child(Node('legend_installed', 'installed', properties=['color=".66 .5 1"', 'penwidth=3']))
+        nodes.append(legendnode)
         graph = Graph(nodes, edges)
         for node in modulenodes:
             graph.collapse_node(node)

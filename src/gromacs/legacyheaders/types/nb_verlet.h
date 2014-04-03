@@ -44,7 +44,7 @@ extern "C" {
 #endif
 
 
-/*! Nonbonded NxN kernel types: plain C, CPU SIMD, GPU CUDA, GPU emulation */
+/** Nonbonded NxN kernel types: plain C, CPU SIMD, GPU CUDA, GPU emulation */
 typedef enum
 {
     nbnxnkNotSet = 0,
@@ -56,7 +56,7 @@ typedef enum
     nbnxnkNR
 } nbnxn_kernel_type;
 
-/*! Return a string indentifying the kernel type */
+/** Return a string indentifying the kernel type */
 const char *lookup_nbnxn_kernel_name(int kernel_type);
 
 enum {

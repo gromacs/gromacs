@@ -53,7 +53,9 @@
 extern "C" {
 #endif
 
-/*! Launch asynchronously the nonbonded force calculations.
+/*! \brief
+ * Launch asynchronously the nonbonded force calculations.
+ *
  *  This consists of the following (async) steps launched:
  *  - upload x and q;
  *  - upload shift vector;
@@ -66,16 +68,18 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                               int                    gmx_unused  flags,
                               int                    gmx_unused  iloc) FUNC_TERM
 
-/*! Launch asynchronously the download of nonbonded forces from the GPU
- *  (and energies/shift forces if required).
+/*! \brief
+ * Launch asynchronously the download of nonbonded forces from the GPU
+ * (and energies/shift forces if required).
  */
 void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                                const nbnxn_atomdata_t gmx_unused *nbatom,
                                int                    gmx_unused  flags,
                                int                    gmx_unused  aloc) FUNC_TERM
 
-/*! Wait for the asynchronously launched nonbonded calculations and data
- *  transfers to finish.
+/*! \brief
+ * Wait for the asynchronously launched nonbonded calculations and data
+ * transfers to finish.
  */
 void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t       gmx_unused  cu_nb,
                          const nbnxn_atomdata_t gmx_unused *nbatom,

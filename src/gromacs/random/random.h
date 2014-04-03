@@ -46,12 +46,12 @@ extern "C" {
 #endif
 
 /*! Fixed random number seeds for different types of RNG */
-#define RND_SEED_UPDATE    1 /*!< For coordinate update (sd, bd, ..) */
-#define RND_SEED_REPLEX    2 /*!< For replica exchange */
-#define RND_SEED_VRESCALE  3 /*!< For V-rescale thermostat */
-#define RND_SEED_ANDERSEN  4 /*!< For Andersen thermostat */
-#define RND_SEED_TPI       5 /*!< For test particle insertion */
-#define RND_SEED_EXPANDED  6 /*!< For expanded emseble methods */
+#define RND_SEED_UPDATE    1 /**< For coordinate update (sd, bd, ..) */
+#define RND_SEED_REPLEX    2 /**< For replica exchange */
+#define RND_SEED_VRESCALE  3 /**< For V-rescale thermostat */
+#define RND_SEED_ANDERSEN  4 /**< For Andersen thermostat */
+#define RND_SEED_TPI       5 /**< For test particle insertion */
+#define RND_SEED_EXPANDED  6 /**< For expanded emseble methods */
 
 /*! \brief Abstract datatype for a random number generator
  *
