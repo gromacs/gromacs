@@ -68,7 +68,7 @@ def check_file(fileobj, reporter):
         # TODO: Add rule to exclude examples from this check
         if fileobj.is_installed():
             reporter.file_error(fileobj, "source file is installed")
-        if fileobj.get_documentation_type() != DocType.internal:
+        if fileobj.get_doc_type() != DocType.internal:
             reporter.file_error(fileobj,
                     "source file documentation appears outside full documentation")
         elif fileobj.get_api_type() != DocType.internal:
@@ -76,19 +76,19 @@ def check_file(fileobj, reporter):
     elif fileobj.is_test_file() and fileobj.is_installed():
         reporter.file_error(fileobj, "test file is installed")
     elif fileobj.is_installed():
-        if fileobj.get_documentation_type() != DocType.public:
+        if fileobj.get_doc_type() != DocType.public:
             reporter.file_error(fileobj,
                     "public header has non-public documentation")
-    elif fileobj.get_documentation_type() == DocType.public:
+    elif fileobj.get_doc_type() == DocType.public:
         reporter.file_error(fileobj,
                 "non-installed header has public documentation")
     elif fileobj.get_api_type() == DocType.public:
         reporter.file_error(fileobj,
                 "non-installed header specified as part of public API")
-    elif fileobj.get_documentation_type() < fileobj.get_api_type():
+    elif fileobj.get_doc_type() < fileobj.get_api_type():
         reporter.file_error(fileobj,
                 "API type ({0}) conflicts with documentation visibility ({1})"
-                .format(fileobj.get_api_type(), fileobj.get_documentation_type()))
+                .format(fileobj.get_api_type(), fileobj.get_doc_type()))
 
     if not fileobj.has_brief_description():
         reporter.file_error(fileobj,
@@ -132,14 +132,13 @@ def check_include(fileobj, includedfile, reporter):
         filemodule = fileobj.get_module()
         othermodule = otherfile.get_module()
         if fileobj.is_documented() and otherfile.is_documented():
-            filetype = fileobj.get_documentation_type()
-            othertype = otherfile.get_documentation_type()
+            filetype = fileobj.get_doc_type()
+            othertype = otherfile.get_doc_type()
             if filetype > othertype:
                 reporter.code_issue(includedfile,
                         "{0} file includes {1} file {2}"
                         .format(filetype, othertype, includedfile))
-        check_api = (othermodule and othermodule.is_documented() and
-                filemodule != othermodule)
+        check_api = (otherfile.api_type_is_reliable() and filemodule != othermodule)
         if check_api and otherfile.get_api_type() < DocType.library:
             reporter.code_issue(includedfile,
                     "included file {0} is not documented as exposed outside its module"
@@ -156,8 +155,8 @@ def check_class(classobj, reporter):
     """Check documentation for a class/struct/union."""
     check_entity(classobj, reporter)
     if classobj.is_documented():
-        classtype = classobj.get_documentation_type()
-        filetype = classobj.get_file_documentation_type()
+        classtype = classobj.get_doc_type()
+        filetype = classobj.get_file_doc_type()
         if classtype == DocType.public and not classobj.is_in_installed_file():
             reporter.doc_error(classobj,
                     "has public documentation, but is not in installed header")
@@ -166,12 +165,11 @@ def check_class(classobj, reporter):
                     "is in {0} file(s), but appears in {1} documentation"
                     .format(filetype, classtype))
 
-def check_member(member, reporter):
+def check_member(member, reporter, check_ignored):
     """Check documentation for a generic member."""
     check_entity(member, reporter)
     if member.is_documented():
-        if not member.is_visible():
-            # TODO: This is triggered by members in anonymous namespaces.
+        if check_ignored and not member.is_visible():
             reporter.doc_note(member,
                     "is documented, but is ignored by Doxygen, because its scope is not documented")
         if member.has_inbody_description():
@@ -191,7 +189,7 @@ def main():
     parser.add_option('--ignore',
                       help='Set file with patterns for messages to ignore')
     parser.add_option('--check-ignored', action='store_true',
-                      help='Check documentation ignored by Doxygen')
+                      help='Issue notes for comments ignored by Doxygen')
     parser.add_option('-q', '--quiet', action='store_true',
                       help='Do not write status messages')
     options, args = parser.parse_args()
@@ -231,8 +229,7 @@ def main():
         check_class(classobj, reporter)
 
     for memberobj in tree.get_members():
-        if memberobj.is_visible() or options.check_ignored:
-            check_member(memberobj, reporter)
+        check_member(memberobj, reporter, options.check_ignored)
 
     reporter.write_pending()
     reporter.report_unused_filters()

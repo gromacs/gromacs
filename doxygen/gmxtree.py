@@ -196,13 +196,29 @@ class File(object):
     def get_name(self):
         return os.path.basename(self._abspath)
 
-    def get_documentation_type(self):
+    def get_doc_type(self):
         if not self._rawdoc:
             return DocType.none
         return self._rawdoc.get_visibility()
 
     def get_api_type(self):
         return self._apitype
+
+    def api_type_is_reliable(self):
+        if self._apitype > DocType.internal:
+            return True
+        module = self.get_module()
+        return module and module.is_documented()
+
+    def is_public(self):
+        if self.api_type_is_reliable():
+            return self.get_api_type() == DocType.public
+        return self.get_api_type() == DocType.public or self.is_installed()
+
+    def is_module_internal(self):
+        if self.is_source_file():
+            return True
+        return not self.is_installed() and self.get_api_type() <= DocType.internal
 
     def get_expected_module(self):
         return self._dir.get_module()
@@ -352,6 +368,15 @@ class Module(object):
     def get_group(self):
         return self._group
 
+class Namespace(object):
+
+    """Namespace in the GROMACS source code."""
+
+    def __init__(self, rawdoc):
+        self._rawdoc = rawdoc
+
+    def is_anonymous(self):
+        return self._rawdoc.is_anonymous()
 
 class Class(object):
 
@@ -376,18 +401,65 @@ class Class(object):
     def has_brief_description(self):
         return self._rawdoc.has_brief_description()
 
-    def get_documentation_type(self):
+    def get_doc_type(self):
+        """Return documentation type (visibility) for the class.
+
+        In addition to the actual code, this encodes GROMACS-specific logic
+        of setting EXTRACT_LOCAL_CLASSES=YES only for the full documentation.
+        Local classes never appear outside the full documentation, no matter
+        what is their visibility.
+        """
         if not self.is_documented():
             return DocType.none
         if self._rawdoc.is_local():
             return DocType.internal
         return self._rawdoc.get_visibility()
 
-    def get_file_documentation_type(self):
-        return max([fileobj.get_documentation_type() for fileobj in self._files])
+    def get_file_doc_type(self):
+        return max([fileobj.get_doc_type() for fileobj in self._files])
 
     def is_in_installed_file(self):
         return any([fileobj.is_installed() for fileobj in self._files])
+
+class Member(object):
+
+    """Member (in Doxygen terminology) in the GROMACS source tree.
+
+    Currently, modeling is limited to the minimal set of properties that the
+    checker uses.
+    """
+
+    def __init__(self, rawdoc, namespace):
+        self._rawdoc = rawdoc
+        self._namespace = namespace
+
+    def get_name(self):
+        return self._rawdoc.get_name()
+
+    def get_reporter_location(self):
+        return self._rawdoc.get_reporter_location()
+
+    def is_documented(self):
+        return self._rawdoc.is_documented()
+
+    def has_brief_description(self):
+        return self._rawdoc.has_brief_description()
+
+    def has_inbody_description(self):
+        return self._rawdoc.has_inbody_description()
+
+    def is_visible(self):
+        """Return whether the member is visible in Doxygen documentation.
+
+        Doxygen ignores members whose parent compounds are not documented.
+        However, when EXTRACT_ANON_NPACES=ON (which is set for our full
+        documentation), members of anonymous namespaces are extracted even if
+        the namespace is the only parent and is not documented.
+        """
+        if self._namespace and self._namespace.is_anonymous():
+            return True
+        return self._rawdoc.get_inherited_visibility() != DocType.none
+
 
 class GromacsTree(object):
 
@@ -423,6 +495,8 @@ class GromacsTree(object):
         self._files = dict()
         self._modules = dict()
         self._classes = set()
+        self._namespaces = set()
+        self._members = set()
         self._walk_dir(os.path.join(self._source_root, 'src'))
         rootdir = self._get_dir(os.path.join('src', 'gromacs'))
         for subdir in rootdir.get_subdirectories():
@@ -503,7 +577,9 @@ class GromacsTree(object):
         self._load_modules()
         self._load_files()
         if not only_files:
+            self._load_namespaces()
             self._load_classes()
+            self._load_members()
 
     def _load_dirs(self):
         """Load Doxygen XML directory information."""
@@ -568,6 +644,14 @@ class GromacsTree(object):
             fileobj.set_doc_xml(filedoc, self)
             self._docmap[filedoc] = fileobj
 
+    def _load_namespaces(self):
+        """Load Doxygen XML namespace information."""
+        nsdocs = self._docset.get_namespaces()
+        for nsdoc in nsdocs:
+            nsobj = Namespace(nsdoc)
+            self._docmap[nsdoc] = nsobj
+            self._namespaces.add(nsobj)
+
     def _load_classes(self):
         """Load Doxygen XML class information."""
         classdocs = self._docset.get_classes()
@@ -576,6 +660,16 @@ class GromacsTree(object):
             classobj = Class(classdoc, files)
             self._docmap[classdoc] = classobj
             self._classes.add(classobj)
+
+    def _load_members(self):
+        """Load Doxygen XML member information."""
+        memberdocs = self._docset.get_members()
+        for memberdoc in memberdocs:
+            nsdoc = memberdoc.get_namespace()
+            nsobj = self.get_object(nsdoc)
+            memberobj = Member(memberdoc, nsobj)
+            self._docmap[memberdoc] = memberobj
+            self._members.add(memberobj)
 
     def _get_dir(self, relpath):
         """Get directory object for a path relative to source tree root."""
@@ -609,6 +703,8 @@ class GromacsTree(object):
 
     def get_object(self, docobj):
         """Get tree object for a Doxygen XML object."""
+        if docobj is None:
+            return None
         return self._docmap.get(docobj)
 
     def get_files(self):
@@ -625,5 +721,4 @@ class GromacsTree(object):
 
     def get_members(self):
         """Get iterable for all members (in Doxygen terms) in the source tree."""
-        # TODO: Add wrappers to solve some issues.
-        return self._docset.get_members()
+        return self._members
