@@ -59,6 +59,8 @@
 #include "gmx_ana.h"
 #include "macros.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
+
 typedef struct {
     char *atomname;
     int   nr_el;

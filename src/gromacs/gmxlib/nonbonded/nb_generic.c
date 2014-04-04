@@ -46,9 +46,10 @@
 #include "nb_generic.h"
 #include "nrnb.h"
 
+#include "gmx_fatal.h"
+
 #include "nonbonded.h"
 #include "nb_kernel.h"
-
 
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,

@@ -54,6 +54,8 @@
 #include "main.h"
 #include "macros.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
+
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 #define nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))

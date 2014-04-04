@@ -48,6 +48,8 @@
 #include "macros.h"
 #include "nb_free_energy.h"
 
+#include "gmx_fatal.h"
+
 void
 gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                           rvec * gmx_restrict              xx,

@@ -49,7 +49,6 @@
 #include "vec.h"
 #include "index.h"
 #include "macros.h"
-#include "gmx_fatal.h"
 #include "xvgr.h"
 #include "rmpbc.h"
 #include "gromacs/fileio/tpxio.h"

@@ -46,6 +46,8 @@
 #include "nsgrid.h"
 #include "network.h"
 
+#include "gmx_fatal.h"
+
 static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stddev,
                                 t_commrec *cr_sum)
 {

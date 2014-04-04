@@ -51,6 +51,7 @@
 #include "physics.h"
 #include "gmx_ana.h"
 
+#include "gmx_fatal.h"
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
                          atom_id index[], rvec xref, int ePBC)

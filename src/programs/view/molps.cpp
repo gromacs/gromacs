@@ -44,7 +44,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "xutil.h"
-#include "gmx_fatal.h"
 #include "buttons.h"
 #include "manager.h"
 #include "nmol.h"

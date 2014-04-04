@@ -34,6 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmx_fatal.h"
+#include "gmx_fatal_collective.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -48,24 +51,20 @@
 #include "main.h"
 #include "types/commrec.h"
 #include "network.h"
-#include "gmx_fatal.h"
 #include "copyrite.h"
 #include "macros.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 static gmx_bool            bDebug         = FALSE;
-static char               *fatal_tmp_file = NULL;
 static FILE               *log_file       = NULL;
 
 static tMPI_Thread_mutex_t debug_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
-static tMPI_Thread_mutex_t fatal_tmp_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
 
 gmx_bool bDebugMode(void)
 {
@@ -233,56 +232,10 @@ static void quit_gmx_noquit(const char *msg)
     tMPI_Thread_mutex_unlock(&debug_mutex);
 }
 
-void _set_fatal_tmp_file(const char *fn, const char *file, int line)
-{
-    tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
-    if (fatal_tmp_file == NULL)
-    {
-        fatal_tmp_file = strdup(fn);
-    }
-    else
-    {
-        fprintf(stderr, "BUGWARNING: fatal_tmp_file already set at %s:%d",
-                file, line);
-    }
-    tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
-}
-
-void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
-{
-    tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
-    if (strcmp(fn, fatal_tmp_file) == 0)
-    {
-        sfree(fatal_tmp_file);
-        fatal_tmp_file = NULL;
-    }
-    else
-    {
-        fprintf(stderr, "BUGWARNING: file %s not set as fatal_tmp_file at %s:%d",
-                fn, file, line);
-    }
-    tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
-}
-
-static void clean_fatal_tmp_file()
-{
-    tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
-    if (fatal_tmp_file)
-    {
-        fprintf(stderr, "Cleaning up temporary file %s\n", fatal_tmp_file);
-        remove(fatal_tmp_file);
-        sfree(fatal_tmp_file);
-        fatal_tmp_file = NULL;
-    }
-    tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
-}
-
 void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
 {
     va_list ap;
     char    msg[STRLEN];
-
-    clean_fatal_tmp_file();
 
     va_start(ap, fmt);
     vsprintf(msg, fmt, ap);
@@ -325,8 +278,6 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
     if ((cr != NULL && MASTER(cr)  ) ||
         (dd != NULL && DDMASTER(dd)))
     {
-        clean_fatal_tmp_file();
-
         va_start(ap, fmt);
         vsprintf(msg, fmt, ap);
         va_end(ap);
@@ -368,18 +319,6 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
 #endif
 
     exit(fatal_errno);
-}
-
-void _invalid_case(const char *fn, int line)
-{
-    gmx_fatal(FARGS, "Invalid case in switch statement, file %s, line %d",
-              fn, line);
-}
-
-void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline)
-{
-    gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d\n"
-              "(Source file %s, line %d)", fn, line, srcfn, srcline);
 }
 
 /*

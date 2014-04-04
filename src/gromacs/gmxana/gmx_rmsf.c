@@ -50,7 +50,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "pbc.h"
-#include "gmx_fatal.h"
 #include "gromacs/fileio/futil.h"
 #include "princ.h"
 #include "rmpbc.h"

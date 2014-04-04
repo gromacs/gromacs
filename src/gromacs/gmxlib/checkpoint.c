@@ -77,6 +77,7 @@
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/utility/baseversion.h"
+#include "gmx_fatal.h"
 
 #include "buildinfo.h"
 

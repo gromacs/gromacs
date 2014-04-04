@@ -49,6 +49,8 @@
 #include "vec.h"
 #include "index.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
+
 const int   nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 4, 3};
 
 const char *s_ffn[effnNR+2] = {

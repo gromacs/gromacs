@@ -48,6 +48,8 @@
 #include "pbc.h"
 #include "vec.h"
 
+#include "gmx_fatal.h"
+
 #define N 4
 
 void m4_op(mat4 m, rvec x, vec4 v)

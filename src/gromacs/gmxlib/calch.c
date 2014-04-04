@@ -44,6 +44,8 @@
 #include "vec.h"
 #include "physics.h"
 
+#include "gmx_fatal.h"
+
 #define xAI xa[0]
 #define xAJ xa[1]
 #define xAK xa[2]

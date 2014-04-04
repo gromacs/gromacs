@@ -46,6 +46,8 @@
 #include "gromacs/fileio/trnio.h"
 #include "txtdump.h"
 
+#include "gmx_fatal.h"
+
 static char *RotStr = {"Enforced rotation:"};
 
 

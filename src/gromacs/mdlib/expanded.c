@@ -71,6 +71,7 @@
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gmx_fatal.h"
 #include "gromacs/utility/gmxmpi.h"
 
 static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, int nlim)

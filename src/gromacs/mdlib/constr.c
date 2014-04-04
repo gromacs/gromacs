@@ -61,6 +61,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/pulling/pull.h"
 
+#include "gmx_fatal.h"
 
 typedef struct gmx_constr {
     int                ncon_tot;       /* The total number of constraints    */

@@ -62,6 +62,8 @@
 #include "gmx_ana.h"
 #include "names.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
+
 static void check_box_c(matrix box)
 {
     if (fabs(box[ZZ][XX]) > GMX_REAL_EPS*box[ZZ][ZZ] ||
