@@ -55,6 +55,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/utility/gmxomp.h"
 
 int gmx_sans(int argc, char *argv[])

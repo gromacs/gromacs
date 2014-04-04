@@ -65,6 +65,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "xvgr.h"
 
+#include "gmx_fatal.h"
+
 //! longest file names allowed in input files
 #define WHAM_MAXFILELEN 2048
 

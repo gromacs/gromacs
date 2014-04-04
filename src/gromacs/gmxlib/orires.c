@@ -51,6 +51,7 @@
 
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
+#include "gmx_fatal.h"
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec xref[],

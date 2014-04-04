@@ -56,6 +56,7 @@
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
 
 /****************************************************************************/
 /* This program calculates the ordering of water molecules across a box, as */

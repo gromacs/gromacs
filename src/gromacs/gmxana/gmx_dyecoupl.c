@@ -42,6 +42,7 @@
 #include "xvgr.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
 
 int gmx_dyecoupl(int argc, char *argv[])
 {

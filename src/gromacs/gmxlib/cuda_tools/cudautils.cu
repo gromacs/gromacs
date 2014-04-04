@@ -35,7 +35,6 @@
 
 #include <stdlib.h>
 
-#include "gmx_fatal.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "cudautils.cuh"

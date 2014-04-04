@@ -50,6 +50,8 @@
 #include "gmx_omp_nthreads.h"
 #include "macros.h"
 
+#include "gmx_fatal.h"
+
 typedef struct {
     int  nsend;
     int *a;

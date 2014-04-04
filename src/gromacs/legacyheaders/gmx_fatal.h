@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,27 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \file
+ * \brief
+ * Declares fatal error handling and debugging routines for C code.
+ *
+ * \inpublicapi
+ */
 #ifndef _fatal_h
 #define _fatal_h
 
 #include <stdio.h>
-#include <stdarg.h>
-#include <errno.h>
+
 #include "types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifndef __has_feature      // Optional.
-#define __has_feature(x) 0 // Compatibility with non-clang compilers.
+#ifndef __has_feature
+/** For compatibility with non-clang compilers. */
+#define __has_feature(x) 0
 #endif
 
-/* This documentation block seems to produce warnings with some Doxygen
- * versions, so it's disabled for now.  Maybe because the file itself
- * is not documented. */
-/* \def GMX_ATTRIBUTE_NORETURN
+/*! \def GMX_ATTRIBUTE_NORETURN
  * \brief
  * Indicate that a function is not expected to return.
  *
@@ -70,108 +72,119 @@ extern "C" {
 #endif
 #endif
 
+/** Implementation for where(). */
 void
 _where(const char *file, int line);
+/** Prints filename and line to stdlog. */
 #define where() _where(__FILE__, __LINE__)
-/* Prints filename and line to stdlog and only on amba memvail */
 
-void
-_set_fatal_tmp_file(const char *fn, const char *file, int line);
-#define set_fatal_tmp_file(fn) _set_fatal_tmp_file(fn, __FILE__, __LINE__)
-/* set filename to be removed when fatal_error is called */
-
-void
-_unset_fatal_tmp_file(const char *fn, const char *file, int line);
-#define unset_fatal_tmp_file(fn) _unset_fatal_tmp_file(fn, __FILE__, __LINE__)
-/* unsets filename to be removed */
-
-void
-gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...) GMX_ATTRIBUTE_NORETURN;
-#define FARGS 0, __FILE__, __LINE__
-/*
- * Routine gmx_fatal prints
+/*! \brief
+ * Fatal error reporting routine for \Gromacs.
  *
- *  "fatal error file %s line %s \n\t "
- *
- * followed by the string specified by fmt and supplied parameters. If
- * errno is 0, only the message and arguments are printed. If errno is
- * a legal system errno or -1, a perror like message is printed after the
- * first message, if errno is -1, the last system errno will be used.
- * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
- * are allowed as format specifiers.
+ * This function prints a fatal error message with a header that contains the
+ * source file and line number of the call, followed by the string specified by
+ * \p fmt and supplied parameters.
+ * If \p fatal_errno is 0, only the message and arguments are printed.
+ * If \p fatal_errno is a legal system errno or -1, a perror()-like message is
+ * printed after the first message; if fatal_errno is -1, the last system errno
+ * will be used.
+ * The format of \p fmt uses printf()-like formatting.
  *
  * In case all MPI processes want to stop with the same fatal error,
- * use gmx_fatal_collective, declared in gmx_fatal_collective.h,
+ * use gmx_fatal_collective(), declared in gmx_fatal_collective.h,
  * to avoid having as many error messages as processes.
  *
- * Tip of the week:
- * call this function using the FARGS macro:
- * gmx_fatal(FARGS,fmt,...)
- *
+ * The first three parameters can be provided through ::FARGS:
+ * \code
+   gmx_fatal(FARGS, fmt, ...);
+   \endcode
  */
+void
+gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...) GMX_ATTRIBUTE_NORETURN;
+/** Helper macro to pass first three parameters to gmx_fatal(). */
+#define FARGS 0, __FILE__, __LINE__
 
+/** Sets the log file for printing error messages. */
 void
 gmx_fatal_set_log_file(FILE *fp);
-/* Set the log file for printing error messages */
 
-void
-_invalid_case(const char *fn, int line);
-#define invalid_case() _invalid_case(__FILE__, __LINE__)
-/* Issue a warning stating 'Invalid case in switch' */
-
-void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline);
-#define unexpected_eof(fn, line) _unexpected_eof(fn, line, __FILE__, __LINE__)
-
-/*
- * Functions can write to this file for debug info
- * Before writing to it, it should be checked whether
- * the file is not NULL:
- * if (debug) fprintf(debug,"%s","Hallo");
+/*! \brief
+ * Debug log file.
+ *
+ * Functions can write to this file for debug info.
+ * Before writing to it, it should be checked whether the file is not NULL:
+ * \code
+   if (debug)
+   {
+       fprintf(debug, "%s", "Debug text");
+   }
+   \endcode
  */
 extern FILE    *debug;
+/** Whether extra debugging is enabled. */
 extern gmx_bool gmx_debug_at;
 
-void init_debug (const int dbglevel, const char *dbgfile);
+/** Initializes debugging variables */
+void init_debug(const int dbglevel, const char *dbgfile);
 
+/** Returns TRUE when the program was started in debug mode */
 gmx_bool bDebugMode(void);
-/* Return TRUE when the program was started in debug mode */
 
 #if (defined __sgi && defined USE_SGI_FPE)
+/** Sets exception handlers for debugging */
 void doexceptions(void);
-/* Set exception handlers for debugging */
 #endif
 
-/* warn_str is allowed to be NULL.
+/*! \brief
+ * Implementation for range_check() and range_check_mesg().
+ *
+ * \p warn_str can be NULL.
  */
 void _range_check(int n, int n_min, int n_max, const char *warn_str,
                   const char *var,
                   const char *file, int line);
 
+/*! \brief
+ * Checks that a variable is within a range.
+ *
+ * If \p n is not in range [n_min, n_max), a fatal error is raised.
+ * \p n_min is inclusive, but \p n_max is not.
+ */
 #define range_check_mesg(n, n_min, n_max, str) _range_check(n, n_min, n_max, str,#n, __FILE__, __LINE__)
-/* Range check will terminate with an error message if not
- * n E [ n_min, n_max >
- * That is n_min is inclusive but not n_max.
- */
 
+/*! \brief
+ * Checks that a variable is within a range.
+ *
+ * This works as range_check_mesg(), but with a default error message.
+ */
 #define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL,#n, __FILE__, __LINE__)
-/* Range check will terminate with an error message if not
- * n E [ n_min, n_max >
- * That is n_min is inclusive but not n_max.
- */
 
+/*! \brief
+ * Returns error message corresponding to a string key.
+ *
+ * This maps the strings used by gmx_error() to actual error messages.
+ * Caller is responsible of freeing the returned string.
+ */
 char *gmx_strerror(const char *key);
-/* Return error message corresponding to the key.
- * Maybe a multi-line message.
- * The messages are stored in src/gmxlib/fatal.c
- */
 
+/** Implementation for gmx_error(). */
 void _gmx_error(const char *key, const char *msg, const char *file, int line) GMX_ATTRIBUTE_NORETURN;
-#define gmx_error(key, msg) _gmx_error(key, msg, __FILE__, __LINE__)
-/* Error msg of type key is generated and the program is
- * terminated unless and error handle is set (see below)
+/*! \brief
+ * Alternative fatal error routine with canned messages.
+ *
+ * This works as gmx_fatal(), except that a generic error message is added
+ * based on a string key, and printf-style formatting is not supported.
+ * Should not typically be called directly, but through gmx_bug(), gmx_call()
+ * etc.
  */
+#define gmx_error(key, msg) _gmx_error(key, msg, __FILE__, __LINE__)
 
-/* Some common error types */
+/*! \name Fatal error routines for certain types of errors
+ *
+ * These wrap gmx_error() and provide the \p key parameter as one of the
+ * recognized strings.
+ */
+/*! \{ */
 #define gmx_bug(msg)    gmx_error("bug", msg)
 #define gmx_call(msg)   gmx_error("call", msg)
 #define gmx_comm(msg)   gmx_error("comm", msg)
@@ -182,28 +195,33 @@ void _gmx_error(const char *key, const char *msg, const char *file, int line) GM
 #define gmx_input(msg)  gmx_error("input", msg)
 #define gmx_mem(msg)    gmx_error("mem", msg)
 #define gmx_open(fn)    gmx_error("open", fn)
+/*! \} */
 
+/*! \brief
+ * Sets an error handler for gmx_fatal() and other fatal error routines.
+ *
+ * The default handler prints the message and aborts the program.
+ * If you set a custom handler, it must also abort the program, otherwise
+ * \Gromacs will behave unpredictably (most likely, it crashes shortly after
+ * the fatal error).
+ * The string passed to the handler may be a multi-line string.
+ *
+ * \see gmx_fatal()
+ */
 void
 set_gmx_error_handler(void (*func)(const char *msg));
-/* An error function will be called that terminates the program
- * with a fatal error, unless you override it with another function.
- * i.e.:
- * set_gmx_error_handler(my_func);
- * where my_func is a function that takes a string as an argument.
- * The string may be a multi-line string.
- */
 
-void gmx_warning(const char *fmt, ...);
-/* Print a warning message to stderr.
- * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
- * are allowed as format specifiers.
+/*! \brief
+ * Prints a warning message to stderr.
+ *
+ * The format of \p fmt uses printf()-like formatting.
  * The message string should NOT start with "WARNING"
  * and should NOT end with a newline.
  */
-
+void gmx_warning(const char *fmt, ...);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _fatal_h */
+#endif

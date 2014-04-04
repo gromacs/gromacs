@@ -36,13 +36,10 @@
 #include <config.h>
 #endif
 
-
 #include <time.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
-
 
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
@@ -63,6 +60,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/math/utilities.h"
 
+#include "gmx_fatal.h"
 
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in

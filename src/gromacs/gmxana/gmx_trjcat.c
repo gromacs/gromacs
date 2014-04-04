@@ -63,6 +63,8 @@
 #include "xvgr.h"
 #include "gmx_ana.h"
 
+#include "gmx_fatal.h"
+
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
 #define TIME_LAST     2

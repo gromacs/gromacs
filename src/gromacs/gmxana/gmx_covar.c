@@ -70,6 +70,7 @@
 
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
 
 int gmx_covar(int argc, char *argv[])
 {

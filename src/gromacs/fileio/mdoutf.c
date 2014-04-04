@@ -46,6 +46,7 @@
 #include "checkpoint.h"
 #include "copyrite.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/utility/smalloc.h"
 
 struct gmx_mdoutf {

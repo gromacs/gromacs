@@ -63,6 +63,7 @@
 #include "mtop_util.h"
 #include "gmx_ana.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
 
 static void clust_size(const char *ndx, const char *trx, const char *xpm,
                        const char *xpmw, const char *ncl, const char *acl,

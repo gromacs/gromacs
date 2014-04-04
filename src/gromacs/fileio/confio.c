@@ -957,7 +957,8 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     {
         if ((fgets2 (line, STRLEN, in)) == NULL)
         {
-            unexpected_eof(infile, i+2);
+            gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d",
+                      infile, i+2);
         }
         if (strlen(line) < 39)
         {

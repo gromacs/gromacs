@@ -50,7 +50,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gmx_fatal.h"
-#include "gmx_fatal_collective.h"
 #include "physics.h"
 #include "force.h"
 #include "tables.h"
@@ -76,11 +75,6 @@
 #include "gmx_omp_nthreads.h"
 #include "gmx_detect_hardware.h"
 #include "inputrec.h"
-
-#ifdef _MSC_VER
-/* MSVC definition for __cpuid() */
-#include <intrin.h>
-#endif
 
 #include "types/nbnxn_cuda_types_ext.h"
 #include "gpu_utils.h"

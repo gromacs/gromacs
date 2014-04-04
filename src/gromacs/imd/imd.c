@@ -51,6 +51,14 @@
 #endif
 
 
+#include <string.h>
+
+#ifdef GMX_NATIVE_WINDOWS
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 #include "imd.h"
 #include "imdsocket.h"
 #include "gromacs/utility/smalloc.h"
@@ -65,13 +73,7 @@
 #include "names.h"
 #include "gromacs/timing/wallcycle.h"
 
-#include <string.h>
-
-#ifdef GMX_NATIVE_WINDOWS
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
+#include "gmx_fatal.h"
 
 /*! \brief How long shall we wait in seconds until we check for a connection again? */
 #define IMDLOOPWAIT 1

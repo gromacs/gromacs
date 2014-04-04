@@ -46,6 +46,8 @@
 #include "nb_generic_adress.h"
 #include "nrnb.h"
 
+#include "gmx_fatal.h"
+
 #include "nonbonded.h"
 #include "nb_kernel.h"
 

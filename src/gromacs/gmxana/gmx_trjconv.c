@@ -66,6 +66,7 @@
 #include "gmx_ana.h"
 
 #include "gromacs/math/do_fit.h"
+#include "gmx_fatal.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

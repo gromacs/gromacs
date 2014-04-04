@@ -65,8 +65,9 @@
 #include "vec.h"
 #include "atomprop.h"
 #include "hackblock.h"
-
 #include "nm2type.h"
+
+#include "gmx_fatal.h"
 
 char atp[7] = "HCNOSX";
 #define NATP (asize(atp)-1)

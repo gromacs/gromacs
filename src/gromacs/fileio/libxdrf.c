@@ -43,11 +43,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "xdrf.h"
 #include "xdr_datatype.h"
 #include "futil.h"
-#include "gmx_fatal.h"
-
 
 /* This is just for clarity - it can never be anything but 4! */
 #define XDR_INT_SIZE 4

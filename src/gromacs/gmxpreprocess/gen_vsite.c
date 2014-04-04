@@ -38,10 +38,11 @@
 #include <config.h>
 #endif
 
-#include "gromacs/utility/cstringutil.h"
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
+
+#include "gromacs/utility/cstringutil.h"
 #include "gen_vsite.h"
 #include "gromacs/utility/smalloc.h"
 #include "resall.h"
@@ -55,6 +56,8 @@
 #include "gpp_atomtype.h"
 #include "fflibutil.h"
 #include "macros.h"
+
+#include "gmx_fatal.h"
 
 #define MAXNAME 32
 #define OPENDIR     '[' /* starting sign for directive		*/

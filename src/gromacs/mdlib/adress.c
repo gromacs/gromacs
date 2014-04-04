@@ -41,6 +41,8 @@
 #include "typedefs.h"
 #include "vec.h"
 
+#include "gmx_fatal.h"
+
 real
 adress_weight(rvec                 x,
               int                  adresstype,
