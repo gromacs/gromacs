@@ -54,6 +54,7 @@
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gmx_fatal.h"
 #include "gromacs/utility/gmxomp.h"
 
 typedef struct {

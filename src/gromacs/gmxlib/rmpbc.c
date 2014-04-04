@@ -40,13 +40,14 @@
 
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "mshift.h"
 #include "pbc.h"
 #include "rmpbc.h"
 #include "vec.h"
 
 #include "gromacs/fileio/futil.h"
+#include "gmx_fatal.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int      natoms;

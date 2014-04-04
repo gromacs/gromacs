@@ -55,6 +55,7 @@
 #include "physics.h"
 #include "gmx_ana.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
 
 #define MAX_ENDS 3
 

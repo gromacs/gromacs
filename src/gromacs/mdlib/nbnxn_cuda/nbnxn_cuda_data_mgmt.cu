@@ -36,9 +36,10 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 
 #include <cuda.h>
 

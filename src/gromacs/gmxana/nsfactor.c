@@ -46,6 +46,7 @@
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/strdb.h"
+#include "gmx_fatal.h"
 #include "gromacs/utility/gmxomp.h"
 
 void check_binwidth(real binwidth)

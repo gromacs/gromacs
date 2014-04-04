@@ -50,6 +50,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "bondf.h"
 
+#include "gmx_fatal.h"
+
 real ellipticity(int nres, t_bb bb[])
 {
     typedef struct {

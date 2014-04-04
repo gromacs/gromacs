@@ -54,6 +54,8 @@
 #include "vec.h"
 #include "hackblock.h"
 
+#include "gmx_fatal.h"
+
 int gmx_protonate(int argc, char *argv[])
 {
     const char     *desc[] = {

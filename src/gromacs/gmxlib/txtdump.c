@@ -41,7 +41,6 @@
 /* This file is completely threadsafe - please keep it that way! */
 
 #include <stdio.h>
-#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "names.h"
@@ -49,6 +48,8 @@
 #include "vec.h"
 #include "macros.h"
 
+#include "gmx_fatal.h"
+#include "gromacs/utility/smalloc.h"
 
 int pr_indent(FILE *fp, int n)
 {

@@ -48,7 +48,6 @@
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
 #include "txtdump.h"
@@ -57,7 +56,6 @@
 #include "xvgr.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
-
 
 typedef struct {
     int  nlj, nqq;

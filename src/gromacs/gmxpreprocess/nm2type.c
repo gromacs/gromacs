@@ -62,6 +62,8 @@
 
 #include "nm2type.h"
 
+#include "gmx_fatal.h"
+
 static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 {
     FILE         *fp;

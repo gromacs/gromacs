@@ -41,7 +41,6 @@
 #include <string.h>
 #include "types/commrec.h"
 #include "sysstuff.h"
-#include "gmx_fatal.h"
 #include "names.h"
 #include "macros.h"
 #include "nrnb.h"

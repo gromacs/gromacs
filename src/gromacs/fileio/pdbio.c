@@ -56,6 +56,8 @@
 #include "pbc.h"
 #include "gmxfio.h"
 
+#include "gromacs/legacyheaders/gmx_fatal.h"
+
 typedef struct {
     int ai, aj;
 } gmx_conection_t;
