@@ -347,51 +347,6 @@ void init_debug(const int dbglevel, const char *dbgfile)
     tMPI_Thread_mutex_unlock(&debug_mutex);
 }
 
-#if (defined __sgi && defined USE_SGI_FPE)
-static void user_routine(unsigned us[5], int ii[2])
-{
-    fprintf(stderr, "User routine us=(%u,%u,%u,%u,%u) ii=(%d,%d)\n",
-            us[0], us[1], us[2], us[3], us[4], ii[0], ii[1]);
-    fprintf(stderr, "Exception encountered! Dumping core\n");
-    abort();
-}
-
-static void abort_routine(unsigned int **ii)
-{
-    fprintf(stderr, "Abort routine\n");
-    abort();
-}
-
-static void handle_signals(int n)
-{
-    fprintf(stderr, "Handle signals: n = %d\n", n);
-    fprintf(stderr, "Dumping core\n");
-    abort();
-}
-
-void doexceptions(void)
-{
-#include <sigfpe.h>
-#include <signal.h>
-    int hs[] = { SIGILL, SIGFPE, SIGTRAP, SIGEMT, SIGSYS };
-
-    int onoff, en_mask, abort_action, i;
-
-    tMPI_Thread_mutex_lock(&debug_mutex);
-    onoff   = _DEBUG;
-    en_mask = _EN_UNDERFL | _EN_OVERFL | _EN_DIVZERO |
-        _EN_INVALID | _EN_INT_OVERFL;
-    abort_action = _ABORT_ON_ERROR;
-    handle_sigfpes(onoff, en_mask, user_routine, abort_action, abort_routine);
-
-    for (i = 0; (i < asize(hs)); i++)
-    {
-        signal(hs[i], handle_signals);
-    }
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-}
-#endif /* __sgi and FPE */
-
 static const char *gmxuser = "Please report this to the mailing list (gmx-users@gromacs.org)";
 
 static void        (*gmx_error_handler)(const char *msg) = quit_gmx;

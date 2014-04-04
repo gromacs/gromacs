@@ -131,11 +131,6 @@ void init_debug(const int dbglevel, const char *dbgfile);
 /** Returns TRUE when the program was started in debug mode */
 gmx_bool bDebugMode(void);
 
-#if (defined __sgi && defined USE_SGI_FPE)
-/** Sets exception handlers for debugging */
-void doexceptions(void);
-#endif
-
 /*! \brief
  * Implementation for range_check() and range_check_mesg().
  *

@@ -361,10 +361,6 @@ you should consult your local documentation for details.
 \item   {\tt GMX_VERLET_SCHEME}: convert from group-based to Verlet cutoff scheme, even if the {\tt cutoff_scheme} is
         not set to use Verlet in the {\tt .mdp} file. It is unnecessary since the {\tt -testverlet} option of
         {\tt \normindex{mdrun}} has the same functionality, but it is maintained for backwards compatibility.
-\item   {\tt GMXNPRI}: for SGI systems only. When set, gives the default non-degrading priority (npri) 
-        for {\tt \normindex{mdrun}}, {\tt \normindex{g_covar}} and {\tt \normindex{g_nmeig}},
-        {\eg} setting {\tt setenv GMXNPRI 250} causes all runs to be performed at near-lowest priority by default.
-\item   {\tt GMXNPRIALL}: same as {\tt GMXNPRI}, but for all processes.
 \item   {\tt MPIRUN}: the {\tt mpirun} command used by {\tt \normindex{g_tune_pme}}.
 \item   {\tt MDRUN}: the {\tt \normindex{mdrun}} command used by {\tt \normindex{g_tune_pme}}.
 \item   {\tt GMX_NSTLIST}: sets the default value for {\tt nstlist}, preventing it from being tuned during

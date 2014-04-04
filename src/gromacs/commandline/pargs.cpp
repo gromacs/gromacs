@@ -50,12 +50,6 @@
 #include <unistd.h>
 #endif
 
-/* used for npri */
-#ifdef __sgi
-#include <sys/schedctl.h>
-#include <sys/sysmp.h>
-#endif
-
 #include "thread_mpi/threads.h"
 
 #include "gromacs/legacyheaders/gmx_fatal.h"
@@ -619,42 +613,35 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     t_pargs    *all_pa = NULL;
 
-#ifdef __sgi
-    int     npri      = 0;
-    t_pargs npri_pa   = {
-        "-npri", FALSE, etINT,   {&npri},
-        "HIDDEN Set non blocking priority (try 128)"
-    };
-#endif
-    t_pargs nice_pa   = {
+    t_pargs     nice_pa   = {
         "-nice", FALSE, etINT,   {&nicelevel},
         "Set the nicelevel"
     };
-    t_pargs deffnm_pa = {
+    t_pargs     deffnm_pa = {
         "-deffnm", FALSE, etSTR, {&deffnm},
         "Set the default filename for all file options"
     };
-    t_pargs begin_pa  = {
+    t_pargs     begin_pa  = {
         "-b",    FALSE, etTIME,  {&tbegin},
         "First frame (%t) to read from trajectory"
     };
-    t_pargs end_pa    = {
+    t_pargs     end_pa    = {
         "-e",    FALSE, etTIME,  {&tend},
         "Last frame (%t) to read from trajectory"
     };
-    t_pargs dt_pa     = {
+    t_pargs     dt_pa     = {
         "-dt",   FALSE, etTIME,  {&tdelta},
         "Only use frame when t MOD dt = first time (%t)"
     };
-    t_pargs view_pa   = {
+    t_pargs     view_pa   = {
         "-w",    FALSE, etBOOL,  {&bView},
         "View output [TT].xvg[tt], [TT].xpm[tt], [TT].eps[tt] and [TT].pdb[tt] files"
     };
-    t_pargs xvg_pa    = {
+    t_pargs     xvg_pa    = {
         "-xvg",  FALSE, etENUM,  {xvg_format},
         "xvg plot formatting"
     };
-    t_pargs time_pa   = {
+    t_pargs     time_pa   = {
         "-tu",   FALSE, etENUM,  {time_units},
         "Time unit"
     };
@@ -707,23 +694,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     {
         npall = add_parg(npall, all_pa, &(pca_pa[i]));
     }
-
-#ifdef __sgi
-    const char *envstr = getenv("GMXNPRIALL");
-    if (envstr)
-    {
-        npri = strtol(envstr, NULL, 10);
-    }
-    if (FF(PCA_BE_NICE))
-    {
-        envstr = getenv("GMXNPRI");
-        if (envstr)
-        {
-            npri = strtol(envstr, NULL, 10);
-        }
-    }
-    npall = add_parg(npall, all_pa, &npri_pa);
-#endif
 
     if (FF(PCA_BE_NICE))
     {
@@ -819,10 +789,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         memcpy(&(pa[i]), &(all_pa[k]), (size_t)sizeof(pa[i]));
     }
 
-#if (defined __sgi && USE_SGI_FPE)
-    doexceptions();
-#endif
-
     bool bExit = false;
     try
     {
@@ -851,13 +817,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     /* Set the nice level */
-#ifdef __sgi
-    if (npri != 0 && !bExit)
-    {
-        schedctl(MPTS_RTPRI, 0, npri);
-    }
-#endif
-
 #ifdef HAVE_UNISTD_H
 #ifndef GMX_NO_NICE
     /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
