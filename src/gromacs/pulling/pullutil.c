@@ -48,7 +48,7 @@
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "symtab.h"
 #include "index.h"

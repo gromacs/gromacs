@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include "vec.h"
 #include "constr.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "pbc.h"
 

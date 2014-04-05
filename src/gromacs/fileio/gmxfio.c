@@ -50,7 +50,7 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "futil.h"

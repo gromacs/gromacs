@@ -45,7 +45,7 @@
 #include "vec.h"
 #include "main.h"
 #include "mvdata.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "symtab.h"
 #include "txtdump.h"
 #include "mdatoms.h"

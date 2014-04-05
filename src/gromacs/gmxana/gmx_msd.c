@@ -59,7 +59,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define FACTOR  1000.0  /* Convert nm^2/ps to 10e-5 cm^2/s */
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion

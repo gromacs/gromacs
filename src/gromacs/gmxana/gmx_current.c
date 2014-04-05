@@ -51,7 +51,7 @@
 #include "gmx_ana.h"
 #include "macros.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define SQR(x) (pow(x, 2.0))
 #define EPSI0 (EPSILON0*E_CHARGE*E_CHARGE*AVOGADRO/(KILO*NANO)) /* EPSILON0 in SI units */

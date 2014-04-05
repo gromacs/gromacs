@@ -60,7 +60,7 @@
 #include "qmmm.h"
 #include <stdio.h>
 #include <string.h>
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "typedefs.h"
 #include <stdlib.h>
 

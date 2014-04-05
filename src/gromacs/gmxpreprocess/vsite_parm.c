@@ -51,7 +51,7 @@
 #include "physics.h"
 #include "index.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/cstringutil.h"
 #include "physics.h"
 #include "macros.h"

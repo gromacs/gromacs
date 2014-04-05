@@ -51,7 +51,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "macros.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 static int in_strings(char *key, int nstr, const char **str)
 {

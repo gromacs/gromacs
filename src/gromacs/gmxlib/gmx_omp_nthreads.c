@@ -42,7 +42,7 @@
 #include <config.h>
 #endif
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "network.h"

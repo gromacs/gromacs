@@ -39,7 +39,7 @@
 
 #include <math.h>
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 static gmx_inline

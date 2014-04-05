@@ -60,7 +60,7 @@
 #include "gstat.h"
 #include "gmx_ana.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 real calc_gyro(rvec x[], int gnx, atom_id index[], t_atom atom[], real tm,
                rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)

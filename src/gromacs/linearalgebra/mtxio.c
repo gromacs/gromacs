@@ -46,11 +46,10 @@
  */
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
-
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 /* Just a number to identify our file type */

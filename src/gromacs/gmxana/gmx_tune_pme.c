@@ -60,7 +60,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/math/utilities.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in

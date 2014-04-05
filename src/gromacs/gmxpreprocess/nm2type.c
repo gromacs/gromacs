@@ -62,7 +62,7 @@
 
 #include "nm2type.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 {

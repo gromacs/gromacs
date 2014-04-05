@@ -52,7 +52,7 @@
 #include "topdirs.h"
 #include "readir.h"
 #include "symtab.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"

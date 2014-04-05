@@ -49,7 +49,7 @@
 #include "topdirs.h"
 #include "toputil.h"
 #include "symtab.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "gpp_atomtype.h"
 

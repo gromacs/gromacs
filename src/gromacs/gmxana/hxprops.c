@@ -50,7 +50,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "bondf.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 real ellipticity(int nres, t_bb bb[])
 {

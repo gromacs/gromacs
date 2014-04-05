@@ -47,7 +47,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "atomprop.h"
 #include "vec.h"
 #include "pbc.h"

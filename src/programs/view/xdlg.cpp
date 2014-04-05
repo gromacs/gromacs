@@ -48,7 +48,7 @@
 #include "xutil.h"
 #include "xdlg.h"
 #include "xmb.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 /*****************************
  *
  * Helpful routines

@@ -42,9 +42,9 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "gmx_lapack.h"

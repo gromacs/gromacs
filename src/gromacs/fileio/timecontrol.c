@@ -43,7 +43,7 @@
 #include "thread_mpi/threads.h"
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */

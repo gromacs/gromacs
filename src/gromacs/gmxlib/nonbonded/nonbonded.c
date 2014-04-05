@@ -55,7 +55,7 @@
 #include "names.h"
 #include "main.h"
 #include "xvgr.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "physics.h"
 #include "force.h"
 #include "bondf.h"

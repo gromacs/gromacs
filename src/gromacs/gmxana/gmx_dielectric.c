@@ -50,7 +50,7 @@
 #include "xvgr.h"
 #include "correl.h"
 #include "gmx_ana.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/math/gmxcomplex.h"

@@ -44,7 +44,7 @@
 #include "types/commrec.h"
 #include "vec.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "physics.h"
 #include "coulomb.h"
 #include "macros.h"

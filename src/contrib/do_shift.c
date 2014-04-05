@@ -47,7 +47,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "xvgr.h"
 #include "gstat.h"
 #include "index.h"

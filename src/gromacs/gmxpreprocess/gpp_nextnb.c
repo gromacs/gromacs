@@ -44,7 +44,7 @@
 #include "macros.h"
 /* #define DEBUG_NNB */
 #include "gpp_nextnb.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "toputil.h"
 
 typedef struct {

@@ -51,7 +51,7 @@
 #include "sortwater.h"
 #include "gromacs/fileio/trxio.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
                      gmx_rng_t rng, rvec max_rot)

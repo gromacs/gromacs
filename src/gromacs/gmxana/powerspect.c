@@ -39,7 +39,7 @@
 
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fft/fft.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/futil.h"
 #include "interf.h"
 #include "powerspect.h"

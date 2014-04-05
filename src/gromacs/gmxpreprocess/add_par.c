@@ -47,7 +47,7 @@
 #include "toputil.h"
 #include "hackblock.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void clear_atom_list(int i0, atom_id a[])
 {

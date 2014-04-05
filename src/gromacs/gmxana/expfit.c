@@ -49,7 +49,7 @@
 #include "vec.h"
 #include "index.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 const int   nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 4, 3};
 

@@ -44,7 +44,7 @@
 #include "vec.h"
 #include "physics.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define xAI xa[0]
 #define xAJ xa[1]

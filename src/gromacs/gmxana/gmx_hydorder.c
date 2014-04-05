@@ -57,7 +57,7 @@
 #include "binsearch.h"
 #include "powerspect.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* Print name of first atom in all groups in index file */
 static void print_types(atom_id index[], atom_id a[], int ngrps,

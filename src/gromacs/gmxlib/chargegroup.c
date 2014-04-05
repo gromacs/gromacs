@@ -44,7 +44,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "chargegroup.h"
 
 

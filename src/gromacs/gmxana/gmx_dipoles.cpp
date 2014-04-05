@@ -67,7 +67,7 @@
 
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/programcontext.h"
 
 #define e2d(x) ENM2DEBYE*(x)

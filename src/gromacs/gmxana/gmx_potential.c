@@ -58,7 +58,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/trxio.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19

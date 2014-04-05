@@ -65,7 +65,7 @@
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/timing/wallcycle.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 void ns(FILE              *fp,
         t_forcerec        *fr,

@@ -48,7 +48,7 @@
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
 #include "copyrite.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct {
     int    nx, ny;

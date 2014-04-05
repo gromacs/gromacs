@@ -49,7 +49,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "names.h"
 #include "warninp.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 t_inpfile *read_inpfile(const char *fn, int *ninp,
                         warninp_t wi)

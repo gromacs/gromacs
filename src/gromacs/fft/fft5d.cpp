@@ -76,7 +76,7 @@
 FILE* debug = 0;
 #endif
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 
 #ifdef GMX_FFT_FFTW3

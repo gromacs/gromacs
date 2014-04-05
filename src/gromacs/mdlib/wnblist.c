@@ -46,7 +46,7 @@
 #include "types/commrec.h"
 #include "ns.h"
 #include "nrnb.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "gromacs/fileio/futil.h"
 #include "names.h"

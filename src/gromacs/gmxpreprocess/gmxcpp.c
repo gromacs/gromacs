@@ -51,7 +51,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/futil.h"
 #include "macros.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gmxcpp.h"
 
 typedef struct {

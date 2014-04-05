@@ -49,7 +49,7 @@
 #include "resall.h"
 #include "h_db.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "ter_db.h"
 #include "toputil.h"
 #include "gromacs/fileio/gmxfio.h"

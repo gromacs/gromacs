@@ -46,7 +46,7 @@
 #include "copyrite.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/utility/smalloc.h"

@@ -63,7 +63,7 @@
 #include "rmpbc.h"
 #include "gmx_ana.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct
 {

@@ -50,7 +50,7 @@
 #include "force.h"
 #include "macros.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "update.h"

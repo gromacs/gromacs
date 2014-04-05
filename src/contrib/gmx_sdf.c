@@ -35,7 +35,7 @@
 #include "nrnb.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 
 #define G_REF1      0

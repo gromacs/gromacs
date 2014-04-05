@@ -53,7 +53,7 @@
 #include "vec.h"
 #include "index.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define MAXNAMES 30
 #define NAME_LEN 30

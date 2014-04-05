@@ -58,7 +58,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gmx_ana.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct {
     atom_id i;

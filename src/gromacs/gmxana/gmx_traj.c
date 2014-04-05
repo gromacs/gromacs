@@ -59,7 +59,7 @@
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/nrjac.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void low_print_data(FILE *fp, real time, rvec x[], int n, atom_id *index,
                            gmx_bool bDim[], const char *sffmt)

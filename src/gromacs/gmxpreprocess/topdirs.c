@@ -45,7 +45,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "topdirs.h"
 
 /* Must correspond to the directive enum in grompp-impl.h */

@@ -48,13 +48,13 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "pbc.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct {
     char *label;

@@ -43,7 +43,7 @@
 
 #include "gromacs/utility/smalloc.h"
 #include "gstat.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "index.h"
 
 t_dlist *mk_dlist(FILE *log,

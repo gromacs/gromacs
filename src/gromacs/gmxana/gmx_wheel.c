@@ -54,7 +54,7 @@
 #include "pbc.h"
 #include "index.h"
 #include "gstat.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"

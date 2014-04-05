@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "bondf.h"
 #include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "rmpbc.h"
 
 static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };

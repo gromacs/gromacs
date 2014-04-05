@@ -64,7 +64,7 @@
 
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
 static gmx_inline

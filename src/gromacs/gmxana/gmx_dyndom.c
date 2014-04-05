@@ -43,7 +43,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "index.h"
 #include "gromacs/fileio/confio.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "vec.h"
 #include "physics.h"
 #include "gmx_ana.h"

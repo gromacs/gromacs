@@ -45,6 +45,7 @@ set(UTILITY_PUBLIC_HEADERS
     common.h
     errorcodes.h
     exceptions.h
+    fatalerror.h
     file.h
     flags.h
     gmx_header_config.h

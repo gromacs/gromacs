@@ -44,7 +44,7 @@
 #include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "ebin.h"
 #include "main.h"
 #include "gromacs/math/utilities.h"

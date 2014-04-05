@@ -47,7 +47,7 @@
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "nsgrid.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "vec.h"
 #include "network.h"
 #include "domdec.h"

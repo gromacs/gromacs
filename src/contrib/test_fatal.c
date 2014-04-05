@@ -1,4 +1,4 @@
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 void my_func(char *msg)
 {

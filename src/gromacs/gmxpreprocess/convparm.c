@@ -47,7 +47,7 @@
 #include "vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "topio.h"
 #include "toputil.h"
 #include "convparm.h"

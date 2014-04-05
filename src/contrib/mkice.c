@@ -41,7 +41,7 @@
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"

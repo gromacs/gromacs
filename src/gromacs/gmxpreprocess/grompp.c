@@ -66,7 +66,7 @@
 #include "splitter.h"
 #include "gromacs/gmxpreprocess/sortwater.h"
 #include "convparm.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "index.h"
 #include "gromacs/fileio/gmxfio.h"

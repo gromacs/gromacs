@@ -41,7 +41,7 @@
 #include "typedefs.h"
 #include "vec.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 real
 adress_weight(rvec                 x,
