@@ -32,6 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#include "tune-pme-cmain.h"
+
+#include <algorithm>
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -46,7 +51,6 @@
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
 #include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/utility/cstringutil.h"
@@ -54,7 +58,6 @@
 #include "calcgrid.h"
 #include "checkpoint.h"
 #include "macros.h"
-#include "gmx_ana.h"
 #include "names.h"
 #include "perf_est.h"
 #include "inputrec.h"
@@ -62,6 +65,13 @@
 #include "gromacs/math/utilities.h"
 
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+
+namespace gmx
+{
+
+namespace
+{
 
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in
@@ -85,7 +95,7 @@ enum {
 
 typedef struct
 {
-    int     npmeSetting;     /* number of PME-only ranks used in this test */
+    int     npmeSetting;     /* mdrun -npme setting used in this test */
     int     nx, ny, nz;      /* DD grid */
     int     numPmeRanksUsed; /* if npmeSetting == -1, this is the guessed number of PME ranks */
     double *numGigaCycles;   /* This can contain more than one value if doing multiple tests */
@@ -112,14 +122,15 @@ typedef struct
 } t_inputinfo;
 
 
-static void printSeparatorLine(FILE *fp)
+//! Utility function for printing a line of dashes as a separator
+void printSeparatorLine(FILE *fp)
 {
     fprintf(fp, "\n------------------------------------------------------------\n");
 }
 
 
-/* Wrapper for system calls */
-static int gmx_system_call(char *command)
+//! Wrapper function around system calls
+int gmx_system_call(char *command)
 {
 #ifdef GMX_NO_SYSTEM
     gmx_fatal(FARGS, "No calls to system(3) supported on this platform. Attempted to call:\n'%s'\n", command);
@@ -129,14 +140,14 @@ static int gmx_system_call(char *command)
 }
 
 
-/* Check if string starts with substring */
-static gmx_bool str_starts(const char *string, const char *substring)
+//! Utility function that checks if `string` starts with `substring`
+gmx_bool str_starts(const char *string, const char *substring)
 {
     return ( strncmp(string, substring, strlen(substring)) == 0);
 }
 
-
-static void cleandata(t_perf *perfdata, int test_nr)
+//! Clears fields in perfdata arrays
+void cleandata(t_perf *perfdata, int test_nr)
 {
     perfdata->numGigaCycles[test_nr]     = 0.0;
     perfdata->nanoSecondsPerDay[test_nr] = 0.0;
@@ -145,8 +156,8 @@ static void cleandata(t_perf *perfdata, int test_nr)
     return;
 }
 
-
-static void remove_if_exists(const char *fn)
+//! Utility function for removing temporary files
+void remove_if_exists(const char *fn)
 {
     if (gmx_fexist(fn))
     {
@@ -155,8 +166,8 @@ static void remove_if_exists(const char *fn)
     }
 }
 
-
-static void finalize(const char *fn_out)
+//! Clean up output files during exit
+void finalize(const char *fn_out)
 {
     char  buf[STRLEN];
     FILE *fp;
@@ -178,9 +189,10 @@ enum {
     eFoundNothing, eFoundDdStr, eFoundAccountingStr, eFoundCycleStr
 };
 
-static int parse_logfile(const char *logfile, const char *errfile,
-                         t_perf *perfdata, int test_nr, int presteps, gmx_int64_t cpt_steps,
-                         int nranks)
+//! Parses a logfile to extract mdrun performance data
+int parse_logfile(const char *logfile, const char *errfile,
+                  t_perf *perfdata, int test_nr, int presteps, gmx_int64_t cpt_steps,
+                  int nranks)
 {
     FILE           *fp;
     char            line[STRLEN], dumstring[STRLEN], dumstring2[STRLEN];
@@ -233,7 +245,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
         {
             if (strstr(line, matchstrcr) != NULL)
             {
-                sprintf(dumstring, "step %s", "%"GMX_SCNd64);
+                sprintf(dumstring, "step %s", "%" GMX_SCNd64);
                 sscanf(line, dumstring, &resetsteps);
                 bFoundResetStr = TRUE;
                 if (resetsteps == presteps+cpt_steps)
@@ -242,8 +254,8 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 }
                 else
                 {
-                    sprintf(dumstring, "%"GMX_PRId64, resetsteps);
-                    sprintf(dumstring2, "%"GMX_PRId64, presteps+cpt_steps);
+                    sprintf(dumstring, "%" GMX_PRId64, resetsteps);
+                    sprintf(dumstring2, "%" GMX_PRId64, presteps+cpt_steps);
                     fprintf(stderr, "WARNING: Time step counters were reset at step %s,\n"
                             "         though they were supposed to be reset at step %s!\n",
                             dumstring, dumstring2);
@@ -258,7 +270,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Look for domain decomp grid and separate PME ranks: */
                 if (str_starts(line, matchstrdd))
                 {
-                    sscanf(line, "Domain decomposition grid %d x %d x %d, separate PME nodes %d",
+                    sscanf(line, "Domain decomposition grid %8d x %8d x %8d, separate PME nodes %8d",
                            &(perfdata->nx), &(perfdata->ny), &(perfdata->nz), &npmeSetting);
                     if (perfdata->npmeSetting == -1)
                     {
@@ -308,7 +320,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Look for PME mesh/force balance (not necessarily present, though) */
                 else if (str_starts(line, matchstrbal))
                 {
-                    sscanf(&line[strlen(matchstrbal)], "%f", &(perfdata->pmeForceLoad[test_nr]));
+                    sscanf(&line[strlen(matchstrbal)], "%20f", &(perfdata->pmeForceLoad[test_nr]));
                 }
                 /* Look for matchstring */
                 else if (str_starts(line, matchstring))
@@ -320,7 +332,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Already found matchstring - look for cycle data */
                 if (str_starts(line, "Total  "))
                 {
-                    sscanf(line, "Total %*f %lf", &(perfdata->numGigaCycles[test_nr]));
+                    sscanf(line, "Total %*f %20lf", &(perfdata->numGigaCycles[test_nr]));
                     iFound = eFoundCycleStr;
                 }
                 break;
@@ -328,7 +340,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Already found cycle data - look for remaining performance info and return */
                 if (str_starts(line, "Performance:"))
                 {
-                    ndum = sscanf(line, "%s %f %f %f %f", dumstring, &dum1, &dum2, &dum3, &dum4);
+                    ndum = sscanf(line, "%60s %20f %20f %20f %20f", dumstring, &dum1, &dum2, &dum3, &dum4);
                     /* (ns/day) is the second last entry, depending on whether GMX_DETAILED_PERF_STATS was set in print_perf(), nrnb.c */
                     perfdata->nanoSecondsPerDay[test_nr] = (ndum == 5) ? dum3 : dum1;
                     fclose(fp);
@@ -343,7 +355,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 }
                 break;
         }
-    } /* while */
+    }       /* while */
 
     /* Close the log file */
     fclose(fp);
@@ -382,8 +394,9 @@ static int parse_logfile(const char *logfile, const char *errfile,
     return eParselogNoPerfData;
 }
 
-
-static gmx_bool analyze_data(
+//! Analyzes mdrun performance data for runs with different -npme
+//! settings and .tpr files to find the optimum way to run mdrun
+gmx_bool analyze_data(
         FILE         *fp,
         const char   *fn,
         t_perf      **perfdata,
@@ -589,11 +602,10 @@ static gmx_bool analyze_data(
 }
 
 
-/* Get the commands we need to set up the runs from environment variables */
-static void get_program_paths(gmx_bool bUseThreadMpi, char *mpirunNameToUse[], char *mdrunNameToUse[])
+//! Get the commands we need to set up the runs from environment variables
+void get_program_paths(gmx_bool bUseThreadMpi, char *mpirunNameToUse[], char *mdrunNameToUse[])
 {
     char      *cp;
-    FILE      *fp;
     const char defaultMpirunName[]   = "mpirun";
     const char defaultMdrunName[]    = "mdrun";
 
@@ -626,17 +638,18 @@ static void get_program_paths(gmx_bool bUseThreadMpi, char *mpirunNameToUse[], c
     }
 }
 
-/* Check that the commands will run mdrun (perhaps via mpirun) by
+/*! \brief Check that the commands will run mdrun (perhaps via mpirun) by
  * running a very quick test simulation. Requires MPI environment or
- * GPU support to be available if applicable. */
-/* TODO implement feature to parse the log file to get the list of
-   compatible GPUs from mdrun, if the user of gmx tune-pme has not
-   given one. */
-static void check_mdrun_works(gmx_bool    bUseThreadMpi,
-                              const char *mpirunNameToUse,
-                              const char *argumentsForRanks,
-                              const char *mdrunNameToUse,
-                              gmx_bool    bNeedGpuSupport)
+ * GPU support to be available if applicable.
+ *
+ * \todo Implement feature to parse the log file to get the list of
+ * compatible GPUs from mdrun, if the user of gmx tune-pme has not
+ * given one. */
+void check_mdrun_works(gmx_bool    bUseThreadMpi,
+                       const char *mpirunNameToUse,
+                       const char *argumentsForRanks,
+                       const char *mdrunNameToUse,
+                       gmx_bool    bNeedGpuSupport)
 {
     char      *command = NULL;
     char      *cp;
@@ -746,11 +759,13 @@ typedef struct eligible_gpu_ids
     int *ids;      /**< Array of length n. NULL if no GPUs in use */
 } t_eligible_gpu_ids;
 
-/* Handles the no-GPU case by emitting an empty string. */
-static char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const t_eligible_gpu_ids *gpu_ids)
+//! Build a string containing an mdrun command-line -gpu_id flag and
+//! argument. Handles the no-GPU case by emitting an empty string.
+char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const t_eligible_gpu_ids *gpu_ids)
 {
-    char *command_line, *flag = "-gpu_id ", *ptr;
-    int   flag_length;
+    const char *flag = "-gpu_id ";
+    char       *command_line, *ptr;
+    int         flag_length;
 
     /* Reserve enough room for the option name, enough single-digit
        GPU ids (since that is currently all that is possible to use
@@ -800,7 +815,8 @@ static char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const t_eli
     return command_line;
 }
 
-static void launch_simulation(
+//! Launch the optimized mdrun simulation
+void launch_simulation(
         gmx_bool                  bLaunch,           /* Should the simulation be launched? */
         FILE                     *fp,                /* General log file */
         gmx_bool                  bUseThreadMpi,     /* Whether to use thread-MPI */
@@ -850,8 +866,8 @@ static void launch_simulation(
     }
 }
 
-
-static void modifyFinalTprSettings(
+//! Produce a .tpr file for the optimal run conditions
+void modifyFinalTprSettings(
         gmx_int64_t     simsteps,    /* Set this value as number of time steps */
         gmx_int64_t     init_step,   /* Set this value as init_step */
         const char     *fn_best_tpr, /* tpr file with the best performance */
@@ -870,7 +886,7 @@ static void modifyFinalTprSettings(
     ir->init_step = init_step;
 
     /* Write the tpr file which will be launched */
-    sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, "%"GMX_PRId64);
+    sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, "%" GMX_PRId64);
     fprintf(stdout, buf, ir->nsteps);
     fflush(stdout);
     write_tpx_state(fn_sim_tpr, ir, &state, &mtop);
@@ -881,9 +897,9 @@ static void modifyFinalTprSettings(
 
 #define EPME_SWITCHED(e) ((e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
 
-/* Make additional TPR files with more computational load for the
- * direct-space ranks: */
-static void make_benchmark_tprs(
+/*! \brief Make additional .tpr files with more computational load for the
+ * direct-space ranks. */
+void make_benchmark_tprs(
         const char     *fn_sim_tpr,      /* READ : User-provided tpr file                 */
         char           *fn_bench_tprs[], /* WRITE: Names of benchmark tpr files           */
         gmx_int64_t     benchsteps,      /* Number of time steps for benchmark runs       */
@@ -910,11 +926,11 @@ static void make_benchmark_tprs(
 
 
     sprintf(buf, "Making benchmark tpr file%s with %s time step%s",
-            *ntprs > 1 ? "s" : "", "%"GMX_PRId64, benchsteps > 1 ? "s" : "");
+            *ntprs > 1 ? "s" : "", "%" GMX_PRId64, benchsteps > 1 ? "s" : "");
     fprintf(stdout, buf, benchsteps);
     if (statesteps > 0)
     {
-        sprintf(buf, " (adding %s steps from checkpoint file)", "%"GMX_PRId64);
+        sprintf(buf, " (adding %s steps from checkpoint file)", "%" GMX_PRId64);
         fprintf(stdout, buf, statesteps);
         benchsteps += statesteps;
     }
@@ -996,7 +1012,7 @@ static void make_benchmark_tprs(
     else
     {
         /* Use the maximum observed spacing */
-        fourierspacing = max(max(info->fsx[0], info->fsy[0]), info->fsz[0]);
+        fourierspacing = std::max(std::max(info->fsx[0], info->fsy[0]), info->fsz[0]);
     }
 
     fprintf(stdout, "Calculating PME grid points on the basis of a fourierspacing of %f nm\n", fourierspacing);
@@ -1094,13 +1110,13 @@ static void make_benchmark_tprs(
                 else
                 {
                     /* For vdw cutoff, rvdw >= rlist */
-                    ir->rvdw = max(info->rvdw[0], ir->rlist);
+                    ir->rvdw = std::max(info->rvdw[0], ir->rlist);
                 }
             }
 
             ir->rlistlong = max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb));
 
-        } /* end of "if (j != 0)" */
+        }       /* end of "if (j != 0)" */
 
         /* for j==0: Save the original settings
          * for j >0: Save modified radii and Fourier grids */
@@ -1120,7 +1136,7 @@ static void make_benchmark_tprs(
         sprintf(buf, "_bench%.2d.tpr", j);
         strcat(fn_bench_tprs[j], buf);
         fprintf(stdout, "Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
-        fprintf(stdout, "%"GMX_PRId64, ir->nsteps);
+        fprintf(stdout, "%" GMX_PRId64, ir->nsteps);
         if (j > 0)
         {
             fprintf(stdout, ", scaling factor %f\n", fac);
@@ -1169,10 +1185,10 @@ static void make_benchmark_tprs(
 }
 
 
-/* Rename the files we want to keep to some meaningful filename and
- * delete the rest */
-static void cleanup(const t_filenm *fnm, int nfile, int k, int nranks,
-                    int npmeSetting, int nr, gmx_bool bKeepStderr)
+/*! \brief Clean up after benchmark runs. Rename the files we want to
+ * keep to some meaningful filename and delete the rest */
+void cleanup(const t_filenm *fnm, int nfile, int k, int nranks,
+             int npmeSetting, int nr, gmx_bool bKeepStderr)
 {
     char        numstring[STRLEN];
     char        newfilename[STRLEN];
@@ -1246,8 +1262,8 @@ enum {
     eNpmeAuto, eNpmeAll, eNpmeReduced, eNpmeSubset, eNpmeNr
 };
 
-/* Create a list of numbers of PME ranks to test */
-static void make_npme_list(
+//! Create a list of numbers of PME ranks to test
+void make_npme_list(
         const char *npmevalues_opt, /* Make a complete list with all
                                      * possibilities or a short list that keeps only
                                      * reasonable numbers of PME ranks                  */
@@ -1264,6 +1280,7 @@ static void make_npme_list(
     int nlist;            /* Actual number of entries in list                 */
     int eNPME = 0;
 
+    GMX_RELEASE_ASSERT(npmevalues_opt, "Option string for -npme was NULL");
 
     /* Do we need to check all possible values for -npme or is a reduced list enough? */
     if (0 == strcmp(npmevalues_opt, "all") )
@@ -1274,7 +1291,7 @@ static void make_npme_list(
     {
         eNPME = eNpmeSubset;
     }
-    else /* "auto" or "range" */
+    else    /* "auto" or "range" */
     {
         if (nranks <= 64)
         {
@@ -1348,8 +1365,8 @@ static void make_npme_list(
 }
 
 
-/* Allocate memory to store the performance data */
-static void init_perfdata(t_perf *perfdata[], int ntprs, int datasets, int repeats)
+//! Allocate memory to store the performance data
+void init_perfdata(t_perf *perfdata[], int ntprs, int datasets, int repeats)
 {
     int i, j, k;
 
@@ -1370,20 +1387,21 @@ static void init_perfdata(t_perf *perfdata[], int ntprs, int datasets, int repea
 }
 
 
-/* Check for errors on mdrun -h */
-/* TODO This check is really for a functional .tpr, and if we need it,
+/*! \brief Check for errors when running a particular .tpr file
+ *
+ * \todo This check is really for a functional .tpr, and if we need it,
  * it should take place for every .tpr, and the logic for it should be
- * immediately inside the loop over k, not in this inner loop. */
-/* TODO -npme 0 is more likely to succeed at low parallelism than the
-   default of -npme -1, but is more likely to fail at the scaling
-   limit when the PP domains may be too small. "mpirun -np 1 mdrun" is
-   probably a reasonable thing to do for this check, but it'll be
-   easier to implement that after some refactoring of how the number
-   of MPI ranks is managed. */
-static void make_sure_it_runs(char *mdrunCommandLine, int length, FILE *fp,
-                              const t_filenm *fnm, int nfile)
+ * immediately inside the loop over k, not in this inner loop.
+ *
+ * \todo -npme 0 is more likely to succeed at low parallelism than the
+ * default of -npme -1, but is more likely to fail at the scaling
+ * limit when the PP domains may be too small. "mpirun -np 1 mdrun" is
+ * probably a reasonable thing to do for this check, but it'll be
+ * easier to implement that after some refactoring of how the number
+ * of MPI ranks is managed. */
+void make_sure_it_runs(char *mdrunCommandLine, int length, FILE *fp,
+                       const t_filenm *fnm, int nfile)
 {
-    const char *fn = NULL;
     char       *command, *msg;
     int         ret;
 
@@ -1423,7 +1441,8 @@ static void make_sure_it_runs(char *mdrunCommandLine, int length, FILE *fp,
     sfree(msg    );
 }
 
-static void do_the_tests(
+//! Make all the calls to mdrun to measure performance
+void do_the_tests(
         FILE                     *fp,                /* General g_tune_pme output file         */
         char                    **tpr_names,         /* Filenames of the input files to test   */
         int                       maxPmeRanks,       /* Max fraction of ranks to use for PME   */
@@ -1456,7 +1475,6 @@ static void do_the_tests(
     char     buf[STRLEN];
     gmx_bool bResetProblem = FALSE;
     gmx_bool bFirst        = TRUE;
-    gmx_bool bUsingGpus    = 0 < gpu_ids->n;
 
     /* This string array corresponds to the eParselog enum type at the start
      * of this file */
@@ -1640,8 +1658,8 @@ static void do_the_tests(
     sfree(cmd_stub);
 }
 
-
-static void check_input(
+//! Validate the user input to gmx tune-pme
+void check_input(
         int             nranks,
         int             repeats,
         int            *ntprs,
@@ -1747,13 +1765,13 @@ static void check_input(
     /* If one of rmin, rmax is set, we need 2 tpr files at minimum */
     if (!gmx_within_tol(*rmax, rcoulomb, GMX_REAL_EPS) || !gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) )
     {
-        *ntprs = max(*ntprs, 2);
+        *ntprs = std::max(*ntprs, 2);
     }
 
     /* If both rmin, rmax are set, we need 3 tpr files at minimum */
     if (!gmx_within_tol(*rmax, rcoulomb, GMX_REAL_EPS) && !gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) )
     {
-        *ntprs = max(*ntprs, 3);
+        *ntprs = std::max(*ntprs, 3);
     }
 
     if (old != *ntprs)
@@ -1795,7 +1813,7 @@ static void check_input(
     if (bench_nsteps > 10000 || bench_nsteps < 100)
     {
         fprintf(stderr, "WARNING: steps=");
-        fprintf(stderr, "%"GMX_PRId64, bench_nsteps);
+        fprintf(stderr, "%" GMX_PRId64, bench_nsteps);
         fprintf(stderr, ". Are you sure you want to perform so %s steps for each benchmark?\n", (bench_nsteps < 100) ? "few" : "many");
     }
 
@@ -1838,8 +1856,8 @@ static void check_input(
 }
 
 
-/* Returns TRUE when "opt" is needed at launch time */
-static gmx_bool is_launch_file(char *opt, gmx_bool bSet)
+//! Returns TRUE when "opt" is needed for the launch of the final simulation
+gmx_bool is_launch_file(char *opt, gmx_bool bSet)
 {
     if (0 == strncmp(opt, "-swap", 5))
     {
@@ -1858,8 +1876,8 @@ static gmx_bool is_launch_file(char *opt, gmx_bool bSet)
 }
 
 
-/* Returns TRUE when "opt" defines a file which is needed for the benchmarks runs */
-static gmx_bool is_bench_file(char *opt, gmx_bool bSet, gmx_bool bOptional, gmx_bool bIsOutput)
+//! Returns TRUE when "opt" defines a file which is needed for the benchmarks runs
+gmx_bool is_bench_file(char *opt, gmx_bool bSet, gmx_bool bOptional, gmx_bool bIsOutput)
 {
     /* Apart from the input .tpr, all files starting with "-b" are for
      * _b_enchmark files exclusively */
@@ -1900,8 +1918,8 @@ static gmx_bool is_bench_file(char *opt, gmx_bool bSet, gmx_bool bOptional, gmx_
 }
 
 
-/* Adds 'buf' to 'str' */
-static void add_to_string(char **str, char *buf)
+//! Appends `buf` to `str`
+void add_to_string(char **str, const char *buf)
 {
     int len;
 
@@ -1912,8 +1930,8 @@ static void add_to_string(char **str, char *buf)
 }
 
 
-/* Create the command line for the benchmark as well as for the real run */
-static void create_command_line_snippets(
+//! Create the command line for the benchmark as well as for the real run
+void create_command_line_snippets(
         gmx_bool  bAppendFiles,
         gmx_bool  bKeepAndNumCPT,
         gmx_bool  bResetHWay,
@@ -1994,8 +2012,8 @@ static void create_command_line_snippets(
 }
 
 
-/* Set option opt */
-static void setopt(const char *opt, int nfile, t_filenm fnm[])
+//! Set the "set" flag for option `opt`
+void setopt(const char *opt, int nfile, t_filenm fnm[])
 {
     int i;
 
@@ -2009,13 +2027,13 @@ static void setopt(const char *opt, int nfile, t_filenm fnm[])
 }
 
 
-/* This routine inspects the tpr file and ...
+/*! \brief This routine inspects the tpr file and ...
  * 1. checks for output files that get triggered by a tpr option. These output
  *    files are marked as 'set' to allow for a proper cleanup after each
  *    tuning run.
  * 2. returns the PME:PP load ratio
  * 3. returns rcoulomb from the tpr */
-static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
+float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
 {
     gmx_bool     bPull;     /* Is pulling requested in .tpr file?             */
     gmx_bool     bTpi;      /* Is test particle insertion requested?          */
@@ -2065,8 +2083,8 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
     return pme_load_estimate(&mtop, &ir, state.box);
 }
 
-
-static void couple_files_options(int nfile, t_filenm fnm[])
+//! Couples some file options for complex simulation output cases
+void couple_files_options(int nfile, t_filenm fnm[])
 {
     int      i;
     gmx_bool bSet, bBench;
@@ -2096,9 +2114,11 @@ static void couple_files_options(int nfile, t_filenm fnm[])
     }
 }
 
+}   // anonymous namespace
 
 #define BENCHSTEPS (1000)
 
+//! C-style main function for gmx tune-pme
 int gmx_tune_pme(int argc, char *argv[])
 {
     const char     *desc[] = {
@@ -2381,6 +2401,8 @@ int gmx_tune_pme(int argc, char *argv[])
     }
     else
     {
+        GMX_RELEASE_ASSERT(procstring[0], "Option string for -npstring was NULL");
+
         /* This string will be used for MPI runs and will appear after the
          * mpirun command. */
         if (strcmp(procstring[0], "none") != 0)
@@ -2445,16 +2467,17 @@ int gmx_tune_pme(int argc, char *argv[])
             {
                 /* PME : PP load is in the range 0..1, let's test around the guess */
                 guessPmeRanks = nranks/(1.0 + 1.0/guessPmeRatio);
-                minPmeRanks   = floor(0.7*guessPmeRanks);
-                maxPmeRanks   =  ceil(1.6*guessPmeRanks);
-                maxPmeRanks   = min(maxPmeRanks, nranks/2);
+                minPmeRanks   = (int) floor(0.7*guessPmeRanks);
+                maxPmeRanks   = (int) ceil(1.6*guessPmeRanks);
+                maxPmeRanks   = std::min(maxPmeRanks, nranks/2);
             }
         }
         else
         {
             /* Determine the npme range based on user input */
-            maxPmeRanks = floor(maxPmeFraction*nranks);
-            minPmeRanks = max(floor(minPmeFraction*nranks), 0);
+            maxPmeRanks = (int) floor(maxPmeFraction*nranks);
+            minPmeRanks = (int) floor(minPmeFraction*nranks);
+            minPmeRanks = std::max(minPmeRanks, 0);
             fprintf(stdout, "Will try runs with %d ", minPmeRanks);
             if (maxPmeRanks != minPmeRanks)
             {
@@ -2498,13 +2521,13 @@ int gmx_tune_pme(int argc, char *argv[])
     fprintf(fp, "The mdrun  command is   : %s\n", mdrunNameToUse);
     fprintf(fp, "mdrun args benchmarks   : %s\n", argumentsForBench);
     fprintf(fp, "Benchmark steps         : ");
-    fprintf(fp, "%"GMX_PRId64, bench_nsteps);
+    fprintf(fp, "%" GMX_PRId64, bench_nsteps);
     fprintf(fp, "\n");
     fprintf(fp, "dlb equilibration steps : %d\n", presteps);
     if (simulationPart > 1)
     {
         fprintf(fp, "Checkpoint time step    : ");
-        fprintf(fp, "%"GMX_PRId64, cpt_steps);
+        fprintf(fp, "%" GMX_PRId64, cpt_steps);
         fprintf(fp, "\n");
     }
     fprintf(fp, "mdrun args at launchtime: %s\n", argumentsForLaunch);
@@ -2513,10 +2536,10 @@ int gmx_tune_pme(int argc, char *argv[])
     {
         bOverwrite = TRUE;
         fprintf(stderr, "Note: Simulation input file %s will have ", opt2fn("-so", NFILE, fnm));
-        fprintf(stderr, "%"GMX_PRId64, newNumSteps+cpt_steps);
+        fprintf(stderr, "%" GMX_PRId64, newNumSteps+cpt_steps);
         fprintf(stderr, " steps.\n");
         fprintf(fp, "Simulation steps        : ");
-        fprintf(fp, "%"GMX_PRId64, newNumSteps);
+        fprintf(fp, "%" GMX_PRId64, newNumSteps);
         fprintf(fp, "\n");
     }
     if (repeats > 1)
@@ -2609,3 +2632,5 @@ int gmx_tune_pme(int argc, char *argv[])
 
     return 0;
 }
+
+} // namespace gmx
