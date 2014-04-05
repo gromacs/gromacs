@@ -57,7 +57,7 @@
 #include "fflibutil.h"
 #include "macros.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define MAXNAME 32
 #define OPENDIR     '[' /* starting sign for directive		*/

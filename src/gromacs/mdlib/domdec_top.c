@@ -56,7 +56,7 @@
 #include "force.h"
 #include "gmx_omp_nthreads.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* for dd_init_local_state */
 #define NITEM_DD_INIT_LOCAL_STATE 5

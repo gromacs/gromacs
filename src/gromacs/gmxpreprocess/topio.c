@@ -58,7 +58,7 @@
 #include "names.h"
 #include "gromacs/utility/cstringutil.h"
 #include "symtab.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "vsite_parm.h"
 

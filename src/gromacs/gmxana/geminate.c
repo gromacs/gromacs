@@ -42,7 +42,7 @@
 #include "vec.h"
 #include "geminate.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 
 static void missing_code_message()

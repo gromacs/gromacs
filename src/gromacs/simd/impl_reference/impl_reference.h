@@ -48,7 +48,7 @@
 
 #include <math.h>
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */

@@ -45,7 +45,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "symtab.h"
 #include "macros.h"
 #include "resall.h"

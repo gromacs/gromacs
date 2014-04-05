@@ -53,7 +53,7 @@
 #include "ns.h"
 #include "pbc.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "nrnb.h"
 #include "txtdump.h"
 #include "mtop_util.h"

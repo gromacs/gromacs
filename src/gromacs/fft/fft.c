@@ -43,7 +43,7 @@
 #include <errno.h>
 
 #include "types/simple.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/math/gmxcomplex.h"
 

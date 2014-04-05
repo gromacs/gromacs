@@ -65,7 +65,7 @@
 #include "gmx_ana.h"
 
 #include "gromacs/math/do_fit.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct {
     int  n;

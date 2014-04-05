@@ -44,7 +44,7 @@
 #include <fcntl.h>
 #include "sysstuff.h"
 #include "network.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef HAVE_UNISTD_H

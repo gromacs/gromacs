@@ -42,7 +42,7 @@
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "invblock.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 atom_id *make_invblock(const t_block *block, int nr)
 {

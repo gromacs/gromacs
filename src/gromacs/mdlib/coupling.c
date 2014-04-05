@@ -47,7 +47,7 @@
 #include "macros.h"
 #include "physics.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "nrnb.h"
 #include "gromacs/random/random.h"

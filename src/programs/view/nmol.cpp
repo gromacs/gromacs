@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "xutil.h"
 #include "gromacs/math/3dview.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "buttons.h"
 #include "manager.h"
 #include "nmol.h"

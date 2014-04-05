@@ -48,7 +48,7 @@
 #include "pbc.h"
 #include "vec.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define N 4
 

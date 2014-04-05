@@ -43,7 +43,7 @@
 #include "nb_kernel.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 
 /* Static data structures to find kernels */

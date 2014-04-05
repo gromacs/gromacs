@@ -47,9 +47,9 @@
 #include <vector>
 
 #include "gromacs/legacyheaders/index.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /********************************************************************
@@ -844,7 +844,7 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
                         break;
 
                     default: /* Should not be reached */
-                        gmx_bug("internal error");
+                        GMX_RELEASE_ASSERT(false, "Unreachable code was reached");
                         break;
                 }
             }

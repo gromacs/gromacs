@@ -48,7 +48,7 @@
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
 #include "xvgr.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "bondf.h"
 #include "copyrite.h"
 #include "disre.h"

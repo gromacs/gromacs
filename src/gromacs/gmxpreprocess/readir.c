@@ -46,7 +46,7 @@
 #include "typedefs.h"
 #include "physics.h"
 #include "names.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "index.h"
 #include "symtab.h"

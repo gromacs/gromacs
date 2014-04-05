@@ -48,7 +48,7 @@
 #include "symtab.h"
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "physics.h"
 #include "calch.h"
 #include "genhydro.h"

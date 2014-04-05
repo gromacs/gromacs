@@ -48,7 +48,7 @@
 #include "gromacs/fileio/futil.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "names.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

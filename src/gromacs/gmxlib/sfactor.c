@@ -42,7 +42,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/math/utilities.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "vec.h"
 #include "macros.h"
 #include "index.h"

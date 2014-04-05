@@ -56,7 +56,7 @@
 #include "md_logging.h"
 #include "gmx_thread_affinity.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 
 static int

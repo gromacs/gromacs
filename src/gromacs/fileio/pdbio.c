@@ -56,7 +56,7 @@
 #include "pbc.h"
 #include "gmxfio.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct {
     int ai, aj;

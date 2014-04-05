@@ -44,7 +44,7 @@
 #include "macros.h"
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "random.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/futil.h"

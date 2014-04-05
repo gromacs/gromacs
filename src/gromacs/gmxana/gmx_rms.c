@@ -47,7 +47,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "index.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/futil.h"
 #include "princ.h"
 #include "rmpbc.h"

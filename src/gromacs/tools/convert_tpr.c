@@ -40,7 +40,7 @@
 
 #include <math.h>
 #include "index.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"

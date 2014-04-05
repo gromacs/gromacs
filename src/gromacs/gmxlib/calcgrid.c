@@ -42,7 +42,7 @@
 
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "calcgrid.h"
 
 /* The grid sizes below are based on timing of a 3D cubic grid in fftw

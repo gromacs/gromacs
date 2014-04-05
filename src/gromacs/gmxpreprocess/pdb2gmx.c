@@ -55,7 +55,7 @@
 #include "vec.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/pdbio.h"
 #include "toputil.h"
 #include "h_db.h"

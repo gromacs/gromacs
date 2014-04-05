@@ -49,9 +49,9 @@
 
 #include "gromacs/legacyheaders/types/atoms.h"
 #include "gromacs/legacyheaders/physics.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 
 #include "gromacs/utility/common.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 void gmx_prepare_tng_writing(const char              *filename,

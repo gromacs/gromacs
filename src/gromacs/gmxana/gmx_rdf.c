@@ -62,7 +62,7 @@
 #include "gmx_ana.h"
 #include "names.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void check_box_c(matrix box)
 {

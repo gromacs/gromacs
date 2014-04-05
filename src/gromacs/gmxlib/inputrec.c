@@ -42,7 +42,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "inputrec.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 
 /* The minimum number of integration steps required for reasonably accurate

@@ -42,7 +42,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "pgutil.h"
 #include <string.h>
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define BUFSIZE 1024
 static void atom_not_found(int fatal_errno, const char *file, int line,

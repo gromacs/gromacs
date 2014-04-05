@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmx_fatal.h"
-#include "gmx_fatal_collective.h"
+#include "fatalerror.h"
+#include "gromacs/legacyheaders/gmx_fatal_collective.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -44,15 +44,15 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "thread_mpi/threads.h"
 
-#include "main.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "copyrite.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"

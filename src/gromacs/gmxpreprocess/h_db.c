@@ -48,7 +48,7 @@
 #include "h_db.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "fflibutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 
 /* Number of control atoms for each 'add' type.

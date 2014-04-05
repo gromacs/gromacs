@@ -50,7 +50,7 @@
 #include "gmx_omp_nthreads.h"
 #include "macros.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct {
     int  nsend;

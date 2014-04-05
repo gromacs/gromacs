@@ -49,11 +49,11 @@
 #endif
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/md_logging.h"
 
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_omp_get_max_threads(void)
 {

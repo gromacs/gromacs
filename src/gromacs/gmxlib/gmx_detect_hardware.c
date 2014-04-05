@@ -48,7 +48,7 @@
 #include "types/enums.h"
 #include "types/hw_info.h"
 #include "types/commrec.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gmx_fatal_collective.h"
 #include "md_logging.h"
 #include "gmx_cpuid.h"

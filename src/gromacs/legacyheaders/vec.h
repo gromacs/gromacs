@@ -113,13 +113,15 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "types/simple.h"
-#include "../math/utilities.h"
 #include "typedefs.h"
 #include "sysstuff.h"
-#include "gmx_fatal.h"
-#include <math.h>
 #include "physics.h"
+
+#include "../math/utilities.h"
+#include "../utility/fatalerror.h"
 
 #ifdef __cplusplus
 extern "C" {

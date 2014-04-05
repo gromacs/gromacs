@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "sysstuff.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "network.h"
 #include "txtdump.h"
 #include "names.h"

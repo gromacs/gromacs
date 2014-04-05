@@ -55,7 +55,7 @@
 #include "gpp_nextnb.h"
 #include "symtab.h"
 #include "macros.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "pgutil.h"
 #include "resall.h"
 #include "gen_ad.h"

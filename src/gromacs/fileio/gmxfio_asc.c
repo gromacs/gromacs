@@ -48,7 +48,7 @@
 #include <io.h>
 #endif
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "futil.h"

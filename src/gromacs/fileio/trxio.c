@@ -66,7 +66,7 @@
 #include "xdrf.h"
 
 #include "gromacs/fileio/timecontrol.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* defines for frame counter output */
 #define SKIP1   10

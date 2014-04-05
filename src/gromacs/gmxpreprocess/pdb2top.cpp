@@ -47,7 +47,7 @@
 #include "macros.h"
 #include "symtab.h"
 #include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
 #include "topdirs.h"

@@ -54,7 +54,7 @@
 #include "nmol.h"
 #include "manager.h"
 #include "gromacs/fileio/futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 

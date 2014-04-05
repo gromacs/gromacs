@@ -52,7 +52,6 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 
@@ -66,6 +65,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"

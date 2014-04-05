@@ -47,14 +47,15 @@
 #endif
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/physics.h"
+
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/common.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
-#include "gmxfio.h"
 
 static const char *modeToVerb(char mode)
 {

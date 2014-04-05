@@ -48,7 +48,7 @@
 #include "gromacs/fileio/futil.h"
 #include "fflibutil.h"
 #include "hackblock.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "xlate.h"
 
 #include "gromacs/fileio/strdb.h"

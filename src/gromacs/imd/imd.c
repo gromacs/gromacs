@@ -73,7 +73,7 @@
 #include "names.h"
 #include "gromacs/timing/wallcycle.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /*! \brief How long shall we wait in seconds until we check for a connection again? */
 #define IMDLOOPWAIT 1

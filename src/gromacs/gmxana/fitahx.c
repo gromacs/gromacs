@@ -42,7 +42,7 @@
 #include "vec.h"
 
 #include "gromacs/math/do_fit.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 static void my_calc_xcm(int nbb, atom_id bbind[], rvec x[], rvec xcm)

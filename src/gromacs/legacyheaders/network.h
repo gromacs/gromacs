@@ -48,7 +48,7 @@
 #include "types/simple.h"
 #include "typedefs.h"
 #include "main.h"
-#include "gmx_fatal.h"
+#include "../utility/fatalerror.h"
 
 #ifdef __cplusplus
 extern "C" {

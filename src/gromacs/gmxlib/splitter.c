@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "mshift.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct {
     int atom, sid;

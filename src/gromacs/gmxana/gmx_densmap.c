@@ -62,7 +62,7 @@
 #include "pbc.h"
 #include "gmx_ana.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_densmap(int argc, char *argv[])
 {

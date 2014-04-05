@@ -59,7 +59,7 @@
 #include "gmx_ana.h"
 #include "macros.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 typedef struct {
     char *atomname;

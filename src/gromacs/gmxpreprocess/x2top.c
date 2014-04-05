@@ -67,7 +67,7 @@
 #include "hackblock.h"
 #include "nm2type.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 char atp[7] = "HCNOSX";
 #define NATP (asize(atp)-1)

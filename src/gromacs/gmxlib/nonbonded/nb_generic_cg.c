@@ -48,7 +48,7 @@
 #include "nb_kernel.h"
 #include "nrnb.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 void
 gmx_nb_generic_cg_kernel(t_nblist *                nlist,

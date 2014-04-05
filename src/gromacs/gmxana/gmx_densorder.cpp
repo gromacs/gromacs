@@ -63,7 +63,7 @@
 #include "copyrite.h"
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/programcontext.h"
 
 #ifdef GMX_DOUBLE

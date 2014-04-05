@@ -48,7 +48,7 @@
 #include "vec.h"
 #include "index.h"
 #include "pbc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gstat.h"
 #include "pbc.h"
 #include "gmx_ana.h"

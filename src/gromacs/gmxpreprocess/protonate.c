@@ -54,7 +54,7 @@
 #include "vec.h"
 #include "hackblock.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_protonate(int argc, char *argv[])
 {

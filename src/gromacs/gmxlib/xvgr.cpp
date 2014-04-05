@@ -58,7 +58,7 @@
 #include "gromacs/fileio/gmxfio.h"
 
 #include "gromacs/utility/exceptions.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/programcontext.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)

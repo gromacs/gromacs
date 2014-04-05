@@ -39,7 +39,7 @@
 #endif
 
 #include <string.h>
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "main.h"
 #include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"

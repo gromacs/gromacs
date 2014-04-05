@@ -43,7 +43,7 @@
 #include <math.h>
 #include "typedefs.h"
 #include "macros.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "viewit.h"
 #include "gmx_ana.h"

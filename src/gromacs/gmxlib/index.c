@@ -56,7 +56,7 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 const char gmx_residuetype_undefined[] = "Other";
 

@@ -46,7 +46,7 @@
 #include "disre.h"
 #include "names.h"
 #include "macros.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/enxio.h"
 #include "vec.h"
 #include "gmx_ana.h"

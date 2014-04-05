@@ -59,7 +59,7 @@
 #include "../nbnxn_kernel_common.h"
 #include "gmx_omp_nthreads.h"
 #include "types/force_flags.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
@@ -252,7 +252,7 @@ reduce_group_energies(int ng, int ng_2log,
 
 #else /* GMX_NBNXN_SIMD_2XNN */
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #endif /* GMX_NBNXN_SIMD_2XNN */
 

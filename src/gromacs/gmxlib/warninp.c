@@ -43,7 +43,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 
 typedef struct warninp {

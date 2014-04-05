@@ -39,13 +39,14 @@
  * Declares fatal error handling and debugging routines for C code.
  *
  * \inpublicapi
+ * \ingroup module_utility
  */
-#ifndef _fatal_h
-#define _fatal_h
+#ifndef GMX_UTILITY_FATALERROR_H
+#define GMX_UTILITY_FATALERROR_H
 
 #include <stdio.h>
 
-#include "types/simple.h"
+#include "../legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

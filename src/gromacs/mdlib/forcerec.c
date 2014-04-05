@@ -49,7 +49,7 @@
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "physics.h"
 #include "force.h"
 #include "tables.h"

@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "gromacs/utility/smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "md_logging.h"
 #include "gromacs/utility/cstringutil.h"
 

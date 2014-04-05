@@ -40,7 +40,7 @@
 
 #include "gromacs/fileio/confio.h"
 #include "copyrite.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"

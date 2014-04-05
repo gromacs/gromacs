@@ -51,7 +51,7 @@
 #include "vec.h"
 #include "index.h"
 #include "pbc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"

@@ -52,7 +52,7 @@
 #include "atomprop.h"
 #include "names.h"
 #include "vec.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "addconf.h"

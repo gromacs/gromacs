@@ -44,7 +44,6 @@
 
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdrun.h"
@@ -55,6 +54,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_mdrun(int argc, char *argv[])
 {

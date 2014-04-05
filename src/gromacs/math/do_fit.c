@@ -43,7 +43,7 @@
 #include "txtdump.h"
 
 #include "gromacs/linearalgebra/nrjac.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 real calc_similar_ind(gmx_bool bRho, int nind, atom_id *index, real mass[],

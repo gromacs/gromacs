@@ -49,8 +49,7 @@
 #include <dmalloc.h>
 #endif
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
-
+#include "gromacs/utility/fatalerror.h"
 #ifdef PRINT_ALLOC_KB
 #include "gromacs/utility/gmxmpi.h"
 #endif

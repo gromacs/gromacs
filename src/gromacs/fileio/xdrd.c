@@ -40,7 +40,7 @@
 
 #include "typedefs.h"
 #include "xdrf.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 int xdr_real(XDR *xdrs, real *r)

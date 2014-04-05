@@ -60,10 +60,10 @@
 #endif
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/main.h"
 
 #include "gromacs/fileio/futil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 int continuing(char *s)

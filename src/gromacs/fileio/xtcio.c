@@ -46,7 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "futil.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #define XTC_MAGIC 1995
 

@@ -46,7 +46,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/filenm.h"
 #include "macros.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 static const int   can_view_ftp[] = {
     0,

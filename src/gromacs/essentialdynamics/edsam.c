@@ -61,7 +61,7 @@
 #include "gromacs/mdlib/groupcoord.h"
 
 #include "gromacs/linearalgebra/nrjac.h"
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))

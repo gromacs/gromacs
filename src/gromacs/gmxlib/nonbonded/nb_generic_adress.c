@@ -46,7 +46,7 @@
 #include "nb_generic_adress.h"
 #include "nrnb.h"
 
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "nonbonded.h"
 #include "nb_kernel.h"

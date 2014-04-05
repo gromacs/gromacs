@@ -58,7 +58,7 @@
 #include "cmat.h"
 #include "gmx_ana.h"
 
-#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 /****************************************************************************/
 /* This program calculates the order parameter per atom for an interface or */

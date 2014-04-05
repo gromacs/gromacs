@@ -52,7 +52,7 @@
 #include "toputil.h"
 #include "topdirs.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_fatal.h"
+#include "gromacs/utility/fatalerror.h"
 
 static void copy_bond (t_params *pr, int to, int from)
 /* copies an entry in a bond list to another position.
