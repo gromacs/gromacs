@@ -32,14 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_subdirectory(tunepme)
-
-file(GLOB TOOLS_SOURCES *.cpp *.c)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOOLS_SOURCES} PARENT_SCOPE)
-
-set(TOOLS_PUBLIC_HEADERS
-    )
-gmx_install_headers(tools ${TOOLS_PUBLIC_HEADERS})
+file(GLOB TUNEPME_SOURCES *.cpp *.c)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TUNEPME_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

@@ -55,6 +55,7 @@
 #include "gromacs/tools/check.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/tools/dump.h"
+#include "gromacs/tools/tunepme/tune-pme-cmain.h"
 
 #include "mdrun/mdrun_main.h"
 #include "view/view.h"
@@ -322,7 +323,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate viscosities of liquids");
     registerModule(manager, &gmx_traj, "traj",
                    "Plot x, v, f, box, temperature and rotational energy from trajectories");
-    registerModule(manager, &gmx_tune_pme, "tune_pme",
+    registerModule(manager, &gmx::gmx_tune_pme, "tune-pme",
                    "Time mdrun as a function of PME nodes to optimize settings");
     registerModule(manager, &gmx_vanhove, "vanhove",
                    "Compute Van Hove displacement and correlation functions");
@@ -390,7 +391,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("sham");
         group.addModule("spatial");
         group.addModule("traj");
-        group.addModule("tune_pme");
+        group.addModule("tune-pme");
         group.addModule("wham");
         group.addModule("check");
         group.addModule("dump");
