@@ -55,9 +55,11 @@
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
 #include "gmx_thread_affinity.h"
+#include "network.h"
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 static int
 get_thread_affinity_layout(FILE *fplog,
@@ -368,18 +370,53 @@ gmx_set_thread_affinity(FILE                *fplog,
  * Note that this will only work on Linux as we use a GNU feature.
  */
 void
-gmx_check_thread_affinity_set(FILE            gmx_unused *fplog,
-                              const t_commrec gmx_unused *cr,
-                              gmx_hw_opt_t    gmx_unused *hw_opt,
-                              int             gmx_unused  ncpus,
-                              gmx_bool        gmx_unused  bAfterOpenmpInit)
+gmx_check_thread_affinity_set(FILE            *fplog,
+                              const t_commrec *cr,
+                              gmx_hw_opt_t    *hw_opt,
+                              int  gmx_unused  ncpus,
+                              gmx_bool         bAfterOpenmpInit)
 {
 #ifdef HAVE_SCHED_GETAFFINITY
     cpu_set_t mask_current;
     int       i, ret, cpu_count, cpu_set;
     gmx_bool  bAllSet;
+#endif
 
     assert(hw_opt);
+    if (!bAfterOpenmpInit)
+    {
+        /* Check for externally set OpenMP affinity and turn off internal
+         * pinning if any is found. We need to do this check early to tell
+         * thread-MPI whether it should do pinning when spawning threads.
+         * TODO: the above no longer holds, we should move these checks later
+         */
+        if (hw_opt->thread_affinity != threadaffOFF)
+        {
+            char *message;
+            if (!gmx_omp_check_thread_affinity(&message))
+            {
+                /* TODO: with -pin auto we should only warn when using all cores */
+                md_print_warn(cr, fplog, "%s", message);
+                sfree(message);
+                hw_opt->thread_affinity = threadaffOFF;
+            }
+        }
+
+        /* With thread-MPI this is needed as pinning might get turned off,
+         * which needs to be known before starting thread-MPI.
+         * With thread-MPI hw_opt is processed here on the master rank
+         * and passed to the other ranks later, so we only do this on master.
+         */
+        if (!SIMMASTER(cr))
+        {
+            return;
+        }
+#ifndef GMX_THREAD_MPI
+        return;
+#endif
+    }
+
+#ifdef HAVE_SCHED_GETAFFINITY
     if (hw_opt->thread_affinity == threadaffOFF)
     {
         /* internal affinity setting is off, don't bother checking process affinity */
