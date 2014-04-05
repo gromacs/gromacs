@@ -48,12 +48,13 @@
 #include <omp.h>
 #endif
 
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/md_logging.h"
 
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/programcontext.h"
 
 int gmx_omp_get_max_threads(void)
 {
@@ -110,16 +111,10 @@ void gmx_omp_set_num_threads(int num_threads)
  * when the first call is made into a compilation unit that contains OpenMP
  * pragmas.
  */
-void gmx_omp_check_thread_affinity(FILE            *fplog,
-                                   const t_commrec *cr,
-                                   gmx_hw_opt_t    *hw_opt)
+gmx_bool gmx_omp_check_thread_affinity(FILE            *fplog,
+                                       const t_commrec *cr)
 {
-    /* no need to worry if internal thread pinning is turned off */
-    if (hw_opt->thread_affinity == threadaffOFF)
-    {
-        return;
-    }
-
+    bool shouldSetAffinity = true;
 #ifndef GMX_OPENMP
     GMX_UNUSED_VALUE(fplog);
     GMX_UNUSED_VALUE(cr);
@@ -128,6 +123,13 @@ void gmx_omp_check_thread_affinity(FILE            *fplog,
      * gcc supports. Even if this is not the case (e.g. Mac OS) the user
      * will only get a warning. */
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
+    const char *programName;
+    try
+    {
+        programName = gmx::getProgramContext().displayName();
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
     const char *const gomp_env            = getenv("GOMP_CPU_AFFINITY");
     const bool        bGompCpuAffinitySet = (gomp_env != NULL);
 
@@ -140,9 +142,9 @@ void gmx_omp_check_thread_affinity(FILE            *fplog,
                       "      setting as the two can conflict and cause performance degradation.\n"
                       "      To keep using the %s internal affinity setting, unset the\n"
                       "      GOMP_CPU_AFFINITY environment variable.",
-                      ShortProgram(), ShortProgram());
+                      programName, programName);
 
-        hw_opt->thread_affinity = threadaffOFF;
+        shouldSetAffinity = false;
     }
 #endif /* __GNUC__ || __INTEL_COMPILER */
 
@@ -184,11 +186,12 @@ void gmx_omp_check_thread_affinity(FILE            *fplog,
                       "      setting as the two can conflict and cause performance degradation.\n"
                       "      To keep using the %s internal affinity setting, set the\n"
                       "      KMP_AFFINITY=disabled environment variable.",
-                      ShortProgram(), ShortProgram());
+                      programName, programName);
 
-        hw_opt->thread_affinity = threadaffOFF;
+        shouldSetAffinity = false;
     }
 #endif /* __INTEL_COMPILER */
 
 #endif /* GMX_OPENMP */
+    return shouldSetAffinity;
 }

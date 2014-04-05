@@ -44,6 +44,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 #include "macros.h"
 #include "network.h"
 #include "copyrite.h"

@@ -47,17 +47,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <exception>
+
 #include "thread_mpi/threads.h"
 
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
 static gmx_bool            bDebug         = FALSE;
@@ -68,14 +71,6 @@ static tMPI_Thread_mutex_t where_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
 
 gmx_bool bDebugMode(void)
 {
-    gmx_bool ret;
-#if 0
-    tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
-    ret = bDebug;
-#if 0
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
     return bDebug;
 }
 
@@ -252,14 +247,11 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
                           const t_commrec *cr, gmx_domdec_t *dd,
                           const char *fmt, ...)
 {
-    gmx_bool    bFinalize;
     va_list     ap;
     char        msg[STRLEN];
 #ifdef GMX_MPI
     int         result;
 #endif
-
-    bFinalize = TRUE;
 
 #ifdef GMX_MPI
     /* Check if we are calling on all processes in MPI_COMM_WORLD */
@@ -272,7 +264,7 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
         MPI_Comm_compare(dd->mpi_comm_all, MPI_COMM_WORLD, &result);
     }
     /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
-    bFinalize = (result != MPI_UNEQUAL);
+    const bool bFinalize = (result != MPI_UNEQUAL);
 #endif
 
     if ((cr != NULL && MASTER(cr)  ) ||
@@ -419,13 +411,23 @@ void _gmx_error(const char *key, const char *msg, const char *file, int line)
     {
         sprintf(errerrbuf, "Empty fatal_error message. %s", gmxuser);
     }
+    // In case ProgramInfo is not initialized and there is an issue with the
+    // initialization, fall back to "GROMACS".
+    const char *programName = "GROMACS";
+    try
+    {
+        programName = gmx::getProgramContext().displayName();
+    }
+    catch (const std::exception &)
+    {
+    }
 
     strerr = gmx_strerror(key);
     sprintf(buf, "\n%s\nProgram %s, %s\n"
             "Source code file: %s, line: %d\n\n"
             "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
             "website at http://www.gromacs.org/Documentation/Errors\n%s\n",
-            llines, ShortProgram(), GromacsVersion(), file, line,
+            llines, programName, gmx_version(), file, line,
             strerr, msg ? msg : errerrbuf, llines);
     free(strerr);
 
