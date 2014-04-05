@@ -53,6 +53,8 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+
 #ifndef GMX_NATIVE_WINDOWS
 /* Ugly hack because the openmp implementation below hacks into the SIMD
  * settings to decide when to use _mm_pause(). This should eventually be
@@ -67,13 +69,16 @@
 #include <windows.h>
 #endif
 
-#include "types/commrec.h"
-#include "mdrun.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+/* This doesn't really remove the dependency, even if it removes the need to
+ * include types/commrec.h here... */
+struct t_commrec;
 
 /*! \addtogroup module_utility
  * \{
@@ -114,8 +119,7 @@ void gmx_omp_set_num_threads(int num_threads);
  * Check for externally set thread affinity to avoid conflicts with \Gromacs
  * internal setting.
  */
-void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
-                                   gmx_hw_opt_t *hw_opt);
+gmx_bool gmx_omp_check_thread_affinity(FILE *fplog, const struct t_commrec *cr);
 
 /*! \brief
  * Pause for use in a spin-wait loop.

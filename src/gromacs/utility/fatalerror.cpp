@@ -47,17 +47,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <exception>
+
 #include "thread_mpi/threads.h"
 
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
 static gmx_bool            bDebug         = FALSE;
@@ -419,13 +422,23 @@ void _gmx_error(const char *key, const char *msg, const char *file, int line)
     {
         sprintf(errerrbuf, "Empty fatal_error message. %s", gmxuser);
     }
+    // In case ProgramInfo is not initialized and there is an issue with the
+    // initialization, fall back to "GROMACS".
+    const char *programName = "GROMACS";
+    try
+    {
+        programName = gmx::getProgramContext().displayName();
+    }
+    catch (const std::exception &)
+    {
+    }
 
     strerr = gmx_strerror(key);
     sprintf(buf, "\n%s\nProgram %s, %s\n"
             "Source code file: %s, line: %d\n\n"
             "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
             "website at http://www.gromacs.org/Documentation/Errors\n%s\n",
-            llines, ShortProgram(), GromacsVersion(), file, line,
+            llines, programName, gmx_version(), file, line,
             strerr, msg ? msg : errerrbuf, llines);
     free(strerr);
 
