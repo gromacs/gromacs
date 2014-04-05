@@ -84,7 +84,6 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/gmxomp.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/pulling/pull.h"
@@ -1204,29 +1203,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
     }
 
-    /* Check for externally set OpenMP affinity and turn off internal
-     * pinning if any is found. We need to do this check early to tell
-     * thread-MPI whether it should do pinning when spawning threads.
-     * TODO: the above no longer holds, we should move these checks down
-     */
-    gmx_omp_check_thread_affinity(fplog, cr, hw_opt);
-
     /* Check and update the hardware options for internal consistency */
     check_and_update_hw_opt_1(hw_opt, SIMMASTER(cr));
 
+    /* Early check for externally set process affinity. */
+    gmx_check_thread_affinity_set(fplog, cr,
+                                  hw_opt, hwinfo->nthreads_hw_avail, FALSE);
     if (SIMMASTER(cr))
     {
-#ifdef GMX_THREAD_MPI
-        /* Early check for externally set process affinity.
-         * With thread-MPI this is needed as pinning might get turned off,
-         * which needs to be known before starting thread-MPI.
-         * With thread-MPI hw_opt is processed here on the master rank
-         * and passed to the other ranks later, so we only do this on master.
-         */
-        gmx_check_thread_affinity_set(fplog,
-                                      NULL,
-                                      hw_opt, hwinfo->nthreads_hw_avail, FALSE);
-#endif
 
 #ifdef GMX_THREAD_MPI
         if (cr->npmenodes > 0 && hw_opt->nthreads_tmpi <= 0)

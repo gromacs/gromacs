@@ -34,6 +34,7 @@
  */
 #ifndef GMX_THREAD_AFFINITY_H_
 #define GMX_THREAD_AFFINITY_H_
+
 #include "typedefs.h"
 
 #ifdef __cplusplus
@@ -61,6 +62,8 @@ gmx_set_thread_affinity(FILE                *fplog,
  * made by the OpenMP library.
  *
  * Note that this will only work on Linux as we use a GNU feature.
+ * With bAfterOpenmpInit false, it will also detect whether OpenMP environment
+ * variables for setting the affinity are set.
  */
 void
 gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
