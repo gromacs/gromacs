@@ -1209,7 +1209,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      * thread-MPI whether it should do pinning when spawning threads.
      * TODO: the above no longer holds, we should move these checks down
      */
-    gmx_omp_check_thread_affinity(fplog, cr, hw_opt);
+    if (hw_opt->thread_affinity != threadaffOFF)
+    {
+        if (!gmx_omp_check_thread_affinity(fplog, cr))
+        {
+            hw_opt->thread_affinity = threadaffOFF;
+        }
+    }
 
     /* Check and update the hardware options for internal consistency */
     check_and_update_hw_opt_1(hw_opt, SIMMASTER(cr));
