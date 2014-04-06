@@ -45,7 +45,6 @@
 #include "vec.h"
 #include "gromacs/fileio/futil.h"
 #include "mshift.h"
-#include "main.h"
 #include "pbc.h"
 
 /************************************************************

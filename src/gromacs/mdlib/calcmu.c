@@ -46,7 +46,6 @@
 #include "network.h"
 #include "vec.h"
 #include "physics.h"
-#include "main.h"
 #include "calcmu.h"
 #include "gmx_omp_nthreads.h"
 
