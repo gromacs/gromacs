@@ -75,7 +75,8 @@
 #endif
 
 #include <stddef.h>
-#include "gromacs/legacyheaders/types/simple.h"
+
+#include "gromacs/utility/basedefinitions.h"
 
 /* Forward declarations so memory allocation can be used in implementations */
 static gmx_inline float *  gmx_simd_align_f(float *p);

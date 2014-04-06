@@ -48,7 +48,7 @@
 
 #include <string>
 
-#include "../legacyheaders/types/simple.h"
+#include "../utility/basedefinitions.h"
 #include "../utility/gmxassert.h"
 
 #include "abstractoption.h"

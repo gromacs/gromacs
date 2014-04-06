@@ -52,9 +52,12 @@
  * \ingroup module_simd
  */
 #include <vector>
-#include <gtest/gtest.h>
-#include "gromacs/simd/simd.h"
 
+#include <gtest/gtest.h>
+
+#include "gromacs/legacyheaders/types/simple.h"
+
+#include "gromacs/simd/simd.h"
 
 namespace gmx
 {

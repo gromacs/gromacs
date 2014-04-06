@@ -46,7 +46,7 @@
 
 #include <stddef.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

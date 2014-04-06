@@ -69,7 +69,7 @@
 #include <windows.h>
 #endif
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C"

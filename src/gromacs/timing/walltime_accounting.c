@@ -47,8 +47,7 @@
 #include <sys/time.h>
 #endif
 
-#include "gromacs/legacyheaders/types/simple.h"
-
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
 
 /* TODO in future: convert gmx_walltime_accounting to a class,

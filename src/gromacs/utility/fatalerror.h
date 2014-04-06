@@ -46,7 +46,7 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/simple.h"
+#include "basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
