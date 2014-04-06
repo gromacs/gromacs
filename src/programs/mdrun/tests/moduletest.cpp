@@ -45,16 +45,19 @@
 #  include <config.h>
 #endif
 
+#include "gromacs/legacyheaders/types/simple.h"
+
+#include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/file.h"
+
+#include "programs/mdrun/mdrun_main.h"
+
 #include "testutils/integrationtests.h"
 #include "testutils/testoptions.h"
 #include "testutils/cmdlinetest.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/utility/file.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/gmxpreprocess/grompp.h"
-#include "programs/mdrun/mdrun_main.h"
 
 namespace gmx
 {

@@ -47,7 +47,6 @@
 #include "gromacs/fileio/enxio.h"
 #include "vec.h"
 #include "disre.h"
-#include "main.h"
 #include "network.h"
 #include "names.h"
 #include "orires.h"

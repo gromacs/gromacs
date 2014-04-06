@@ -73,13 +73,14 @@
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/swap/swapcoords.h"
-#include "gromacs/utility/qsort_threadsafe.h"
+#include "gromacs/imd/imd.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
-#include "gromacs/imd/imd.h"
+#include "gromacs/swap/swapcoords.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/qsort_threadsafe.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)

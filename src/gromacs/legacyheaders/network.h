@@ -47,7 +47,6 @@
 
 #include "types/simple.h"
 #include "typedefs.h"
-#include "main.h"
 #include "../utility/fatalerror.h"
 
 #ifdef __cplusplus
@@ -67,36 +66,11 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
 void gmx_fill_commrec_from_mpi(t_commrec *cr);
 /* Continues t_commrec construction */
 
-int gmx_node_num(void);
-/* return the number of nodes in the ring */
-
-int gmx_node_rank(void);
-/* return the rank of the node */
-
-int gmx_physicalnode_id_hash(void);
-/* Return a non-negative hash that is, hopefully, unique for each physical node.
- * This hash is useful for determining hardware locality.
- */
-
-int gmx_hostname_num(void);
-/* Ostensibly, returns a integer characteristic of and unique to each
-   physical node in the MPI system. If the first part of the MPI
-   hostname (up to the first dot) ends with a number, returns this
-   number. If the first part of the MPI hostname does not ends in a
-   number (0-9 characters), returns 0.
- */
-
 void gmx_setup_nodecomm(FILE *fplog, t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
 void gmx_init_intranode_counters(t_commrec *cr);
 /* Initializes intra-physical-node MPI process/thread counts and ID. */
-
-gmx_bool gmx_mpi_initialized(void);
-/* return TRUE when MPI_Init has been called.
- * return FALSE when MPI_Init has not been called OR
- * when GROMACS was compiled without MPI support.
- */
 
 void gmx_barrier(const t_commrec *cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
@@ -131,9 +105,6 @@ void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms);
 void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of doubles */
 
-void gmx_abort(int nodeid, int nnodes, int errorno);
-/* Abort the parallel run */
-
 #ifdef GMX_DOUBLE
 #define gmx_sum       gmx_sumd
 #define gmx_sum_sim   gmx_sumd_sim
@@ -142,6 +113,7 @@ void gmx_abort(int nodeid, int nnodes, int errorno);
 #define gmx_sum_sim   gmx_sumf_sim
 #endif
 
+/* This doesn't currently work if enabled (needs some header cleanup). */
 #ifdef DEBUG_GMX
 #define debug_gmx() do { FILE *fp = debug ? debug : stderr; \
                          if (bDebugMode()) { fprintf(fp, "NODEID=%d, %s  %d\n", gmx_mpi_initialized() ? gmx_node_rank() : -1, __FILE__, __LINE__); } fflush(fp); } while (0)

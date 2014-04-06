@@ -46,7 +46,6 @@
 #include "typedefs.h"
 #include "gromacs/utility/fatalerror.h"
 #include "ebin.h"
-#include "main.h"
 #include "gromacs/math/utilities.h"
 #include "vec.h"
 #include "physics.h"

@@ -42,7 +42,6 @@
 
 #include <math.h>
 #include "macros.h"
-#include "main.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/futil.h"
 #include "tgroup.h"
