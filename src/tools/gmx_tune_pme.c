@@ -702,7 +702,7 @@ static void check_mdrun_works(gmx_bool bThreads,
             gmx_fatal(FARGS, "Need a threaded version of mdrun. This one\n"
                       "(%s)\n"
                       "seems to have been compiled with MPI instead.",
-                      *cmd_mdrun);
+                      cmd_mdrun);
         }
     }
     else
@@ -712,7 +712,7 @@ static void check_mdrun_works(gmx_bool bThreads,
             gmx_fatal(FARGS, "Need an MPI-enabled version of mdrun. This one\n"
                       "(%s)\n"
                       "seems to have been compiled without MPI support.",
-                      *cmd_mdrun);
+                      cmd_mdrun);
         }
     }
 
