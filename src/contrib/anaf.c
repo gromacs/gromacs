@@ -39,7 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "main.h"
+
 #include "macros.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/commandline/pargs.h"

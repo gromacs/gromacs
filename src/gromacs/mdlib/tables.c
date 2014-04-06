@@ -47,7 +47,6 @@
 #include "gromacs/fileio/futil.h"
 #include "xvgr.h"
 #include "vec.h"
-#include "main.h"
 #include "network.h"
 #include "physics.h"
 #include "force.h"

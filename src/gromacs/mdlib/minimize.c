@@ -46,7 +46,6 @@
 #include "network.h"
 #include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
-#include "main.h"
 #include "force.h"
 #include "macros.h"
 #include "names.h"

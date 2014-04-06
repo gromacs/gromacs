@@ -44,6 +44,7 @@
 #include <string.h>
 #include <time.h>
 
+#include <fcntl.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -67,15 +68,14 @@
 #include "vec.h"
 #include "network.h"
 #include "checkpoint.h"
-#include "main.h"
 #include "gromacs/utility/cstringutil.h"
-#include <fcntl.h>
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xdr_datatype.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
 

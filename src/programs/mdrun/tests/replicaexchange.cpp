@@ -48,12 +48,12 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/fileio/path.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "../mdrun_main.h"
+#include "programs/mdrun/mdrun_main.h"
 
 #include "testutils/cmdlinetest.h"
 
