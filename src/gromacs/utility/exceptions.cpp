@@ -56,8 +56,7 @@
 
 #include "thread_mpi/system_error.h"
 
-#include "gromacs/legacyheaders/network.h"
-
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"

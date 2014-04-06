@@ -48,7 +48,6 @@
 #include "minvert.h"
 #include "pppm.h"
 #include "readinp.h"
-#include "main.h"
 #include "force.h"
 #include "nrnb.h"
 #include "coulomb.h"

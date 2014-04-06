@@ -43,7 +43,6 @@
 #include "constr.h"
 #include "copyrite.h"
 #include "invblock.h"
-#include "main.h"
 #include "mdrun.h"
 #include "nrnb.h"
 #include "gromacs/utility/smalloc.h"

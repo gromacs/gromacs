@@ -52,10 +52,10 @@
 #include "thread_mpi/threads.h"
 
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"

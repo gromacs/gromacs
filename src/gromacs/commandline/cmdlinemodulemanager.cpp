@@ -47,7 +47,6 @@
 #include <utility>
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpmodule.h"
@@ -58,6 +57,7 @@
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"

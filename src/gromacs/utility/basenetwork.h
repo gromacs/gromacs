@@ -34,51 +34,77 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief
+ * Utility functions for basic MPI and network functionality.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_BASENETWORK_H
+#define GMX_UTILITY_BASENETWORK_H
 
-#ifndef _main_h
-#define _main_h
+#include <stddef.h>
 
-
-#include <stdio.h>
-#include "typedefs.h"
-#include "network.h"
-#include "../fileio/filenm.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void gmx_log_open(const char *fn, const t_commrec *cr,
-                  gmx_bool bMasterOnly, gmx_bool bAppendFiles, FILE**);
-/* Open the log file, if necessary (nprocs > 1) the logfile name is
- * communicated around the ring.
+/*! \brief
+ * Sets the hostname to the value given by gethostname(), if available.
+ *
+ * \param[out] name Buffer to receive the hostname.
+ * \param[in]  len  Length of buffer \p name (must be >= 8).
+ * \returns 0 on success, -1 on error.
+ *
+ * If the value is not available, "unknown" is returned.
+ * \p name should have at least size \p len.
  */
+int gmx_gethostname(char *name, size_t len);
 
-void gmx_log_close(FILE *fp);
-/* Close the log file */
-
-void check_multi_int(FILE *log, const gmx_multisim_t *ms,
-                     int val, const char *name,
-                     gmx_bool bQuiet);
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       gmx_int64_t val, const char *name,
-                       gmx_bool bQuiet);
-/* Check if val is the same on all processors for a mdrun -multi run
- * The string name is used to print to the log file and in a fatal error
- * if the val's don't match. If bQuiet is true and the check passes,
- * no output is written.
+/*! \brief
+ * Returns whether MPI has been initialized.
+ *
+ * The return value is `FALSE` if MPI_Init() has not been called, or if
+ * \Gromacs has been compiled without MPI support.
+ * For thread-MPI, always returns `TRUE`.
  */
+gmx_bool gmx_mpi_initialized(void);
 
-void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
-                      int nfile, const t_filenm fnm[], gmx_bool bParFn);
-/* Splits the communication into nsim separate simulations
- * and creates a communication structure between the master
- * these simulations.
- * If bParFn is set, the nodeid is appended to the tpx and each output file.
+/** Returns the number of nodes. */
+int gmx_node_num(void);
+
+/** Returns the rank of the node. */
+int gmx_node_rank(void);
+
+/*! \brief
+ * Return a non-negative hash that is, hopefully, unique for each physical
+ * node.
+ *
+ * This hash is useful for determining hardware locality.
  */
+int gmx_physicalnode_id_hash(void);
+
+/*! \brief
+ * Returns an integer characteristic of and, hopefully, unique to each
+ * physical node in the MPI system.
+ *
+ * If the first part of the MPI hostname (up to the first dot) ends with a
+ * number, returns this number.  If the first part of the MPI hostname does not
+ * ends in a number (0-9 characters), returns 0.
+ *
+ * \todo
+ * This function should be fully replaced by gmx_physicalnode_id_hash().
+ */
+int gmx_hostname_num(void);
+
+/** Abort the parallel run */
+void gmx_abort(int nodeid, int nnodes, int errorno);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _main_h */
+#endif

@@ -49,6 +49,7 @@
 #include "vec.h"
 #include "names.h"
 #include "domdec.h"
+#include "main.h"
 #include "gromacs/random/random.h"
 
 #define PROBABILITYCUTOFF 100

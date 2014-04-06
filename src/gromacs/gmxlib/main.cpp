@@ -47,37 +47,34 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef GMX_NATIVE_WINDOWS
+#include <process.h>
+#endif
 
-#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
-#include "gromacs/utility/fatalerror.h"
 #include "network.h"
 #include "main.h"
 #include "macros.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/utility/cstringutil.h"
 #include "copyrite.h"
 
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
 
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#ifdef GMX_NATIVE_WINDOWS
-#include <process.h>
-#endif
-
 #define BUFSIZE 1024
-
 
 static void par_fn(char *base, int ftp, const t_commrec *cr,
                    gmx_bool bAppendSimId, gmx_bool bAppendNodeId,
@@ -220,26 +217,6 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     }
 
     sfree(ibuf);
-}
-
-
-int gmx_gethostname(char *name, size_t len)
-{
-    if (len < 8)
-    {
-        gmx_incons("gmx_gethostname called with len<8");
-    }
-#if defined(HAVE_UNISTD_H) && !defined(__native_client__)
-    if (gethostname(name, len-1) != 0)
-    {
-        strncpy(name, "unknown", 8);
-        return -1;
-    }
-    return 0;
-#else
-    strncpy(name, "unknown", 8);
-    return -1;
-#endif
 }
 
 
