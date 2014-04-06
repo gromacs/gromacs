@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "types/commrec.h"
-#include "main.h"
 #include "constr.h"
 #include "copyrite.h"
 #include "physics.h"

@@ -48,18 +48,19 @@
 #include "types/enums.h"
 #include "types/hw_info.h"
 #include "types/commrec.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gmx_fatal_collective.h"
 #include "md_logging.h"
 #include "gmx_cpuid.h"
-#include "gromacs/utility/smalloc.h"
 #include "gpu_utils.h"
 #include "copyrite.h"
 #include "gmx_detect_hardware.h"
-#include "main.h"
 #include "md_logging.h"
-#include "gromacs/utility/gmxomp.h"
+
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "thread_mpi/threads.h"
 

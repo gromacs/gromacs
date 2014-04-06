@@ -40,7 +40,6 @@
 #endif
 
 #include "typedefs.h"
-#include "main.h"
 #include "network.h"
 #include "rbin.h"
 #include "gromacs/utility/smalloc.h"

@@ -58,7 +58,6 @@
 #include "eigio.h"
 #include "mtop_util.h"
 #include "physics.h"
-#include "main.h"
 #include "gmx_ana.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"

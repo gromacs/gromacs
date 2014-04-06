@@ -44,7 +44,6 @@
 #include "sysstuff.h"
 #include "vec.h"
 #include "macros.h"
-#include "main.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "index.h"
