@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "../legacyheaders/types/simple.h"
+#include "basedefinitions.h"
 
 #include "gmx_header_config.h"
 

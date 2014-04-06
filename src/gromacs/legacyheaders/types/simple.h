@@ -38,14 +38,7 @@
 #ifndef _simple_h
 #define _simple_h
 
-/* Information about integer data type sizes */
-#include <limits.h>
-#define __STDC_LIMIT_MACROS
-#include <stdint.h>
-#ifndef _MSC_VER
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
-#endif
+#include "../../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,39 +47,10 @@ extern "C" {
 }
 #endif
 
-
-#define XX      0           /* Defines for indexing in	*/
-#define YY      1           /* vectors			*/
+#define XX      0                 /* Defines for indexing in */
+#define YY      1                 /* vectors                 */
 #define ZZ      2
-#define DIM     3           /* Dimension of vectors		*/
-#define XXXX    0           /* defines to index matrices */
-#define XXYY    1
-#define XXZZ    2
-#define YYXX    3
-#define YYYY    4
-#define YYZZ    5
-#define ZZXX    6
-#define ZZYY    7
-#define ZZZZ    8
-
-/* There is no standard size for 'bool' in C++, so when
- * we previously defined it to int for C code the data types
- * (and structs) would have different size depending on your compiler,
- * both at gromacs build time and when you use the library.
- * The only way around this is to NOT assume anything about the C++ type,
- * so we cannot use the name 'bool' in our C code anymore.
- */
-
-typedef int gmx_bool;
-
-#ifndef FALSE
-#  define FALSE   0
-#endif
-#ifndef TRUE
-#  define TRUE    1
-#endif
-#define BOOL_NR 2
-
+#define DIM     3                 /* Dimension of vectors    */
 
 typedef int         atom_id;      /* To indicate an atoms id         */
 #define NO_ATID     (atom_id)(~0) /* Use this to indicate invalid atid */
@@ -149,94 +113,8 @@ typedef int             ivec[DIM];
 
 typedef int             imatrix[DIM][DIM];
 
-#ifdef _MSC_VER
-typedef __int32 gmx_int32_t;
-#define GMX_PRId32 "I32d"
-#define GMX_SCNd32 "I32d"
-
-typedef __int64 gmx_int64_t;
-#define GMX_PRId64 "I64d"
-#define GMX_SCNd64 "I64d"
-
-typedef unsigned __int32 gmx_uint32_t;
-#define GMX_PRIu32 "I32u"
-#define GMX_SCNu32 "I32u"
-
-typedef unsigned __int64 gmx_uint64_t;
-#define GMX_PRIu64 "I64u"
-#define GMX_SCNu64 "I64u"
-#else
-typedef int32_t gmx_int32_t;
-#define GMX_PRId32 PRId32
-#define GMX_SCNd32 SCNd32
-
-typedef int64_t gmx_int64_t;
-#define GMX_PRId64 PRId64
-#define GMX_SCNd64 SCNd64
-
-typedef uint32_t gmx_uint32_t;
-#define GMX_PRIu32 PRIu32
-#define GMX_SCNu32 SCNu32
-
-typedef uint64_t gmx_uint64_t;
-#define GMX_PRIu64 PRIu64
-#define GMX_SCNu64 SCNu64
-#endif
-
-#define GMX_INT32_MAX INT32_MAX
-#define GMX_INT32_MIN INT32_MIN
-
-#define GMX_INT64_MAX INT64_MAX
-#define GMX_INT64_MIN INT64_MIN
-
-#define GMX_UINT32_MAX UINT32_MAX
-#define GMX_UINT32_MIN UINT32_MIN
-
-#define GMX_UINT64_MAX UINT64_MAX
-#define GMX_UINT64_MIN UINT64_MIN
-
-#if !defined __cplusplus && _MSC_VER
-#define gmx_inline __inline
-#else
-/* C++ or C99 */
-#define gmx_inline inline
-#endif
-
-/* ICC, GCC, MSVC, Pathscale, PGI, XLC support __restrict.
- * Any other compiler can be added here. We cannot
- * use restrict because it is in C99 but not in C++ */
-#define gmx_restrict __restrict
-
-/*
- * These attributes suppress compiler warnings about unused function arguments
- * by marking them as possibly unused. Some arguments are unused but
- * have to be retained to preserve a function signature
- * that must match that of another function.
- * Some arguments are only used in *some* code paths (e.g. MPI)
- */
-
-#ifndef gmx_unused
-#ifdef __GNUC__
-/* GCC, clang, and some ICC pretending to be GCC */
-#  define gmx_unused __attribute__ ((unused))
-#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && !defined(_MSC_VER)
-/* ICC on *nix */
-#  define gmx_unused __attribute__ ((unused))
-#elif defined _MSC_VER
-/* MSVC */
-#  define gmx_unused /*@unused@*/
-#elif defined(__xlC__)
-/* IBM */
-#  define gmx_unused __attribute__ ((unused))
-#else
-#  define gmx_unused
-#endif
-#endif
-
 /* Standard sizes for char* string buffers */
 #define STRLEN 4096
-#define BIG_STRLEN 1048576
-
 
 #ifdef __cplusplus
 }
