@@ -328,7 +328,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 /* Already found matchstring - look for cycle data */
                 if (str_starts(line, "Total  "))
                 {
-                    sscanf(line, "Total %lf", &(perfdata->Gcycles[test_nr]));
+                    sscanf(line, "Total %*f %lf", &(perfdata->Gcycles[test_nr]));
                     iFound = eFoundCycleStr;
                 }
                 break;
