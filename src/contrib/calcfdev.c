@@ -37,7 +37,6 @@
 #endif
 
 #include "typedefs.h"
-#include "main.h"
 #include "vec.h"
 #include "txtdump.h"
 

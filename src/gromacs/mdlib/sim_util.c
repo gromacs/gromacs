@@ -60,7 +60,6 @@
 #include "sim_util.h"
 #include "update.h"
 #include "physics.h"
-#include "main.h"
 #include "mdatoms.h"
 #include "force.h"
 #include "bondf.h"

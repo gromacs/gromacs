@@ -78,6 +78,7 @@
 #include "macros.h"
 #include "gmx_thread_affinity.h"
 #include "inputrec.h"
+#include "main.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdlib/nbnxn_search.h"

@@ -46,7 +46,6 @@
 #include "types/commrec.h"
 #include "vec.h"
 #include "gromacs/math/utilities.h"
-#include "main.h"
 #include "pbc.h"
 #include "gromacs/utility/smalloc.h"
 #include "txtdump.h"

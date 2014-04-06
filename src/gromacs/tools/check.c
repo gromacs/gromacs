@@ -42,7 +42,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "main.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "sysstuff.h"
