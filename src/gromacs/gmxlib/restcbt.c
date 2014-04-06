@@ -48,7 +48,6 @@
 #include "macros.h"
 #include "names.h"
 #include "mshift.h"
-#include "main.h"
 #include "disre.h"
 #include "orires.h"
 #include "force.h"

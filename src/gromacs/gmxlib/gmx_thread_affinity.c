@@ -55,8 +55,8 @@
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
 #include "gmx_thread_affinity.h"
-#include "network.h"
 
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 

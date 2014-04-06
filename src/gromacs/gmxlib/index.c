@@ -45,7 +45,6 @@
 #include "macros.h"
 #include "names.h"
 #include "gromacs/utility/cstringutil.h"
-#include "main.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "invblock.h"
