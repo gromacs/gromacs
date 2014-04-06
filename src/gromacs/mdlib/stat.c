@@ -50,7 +50,6 @@
 #include "physics.h"
 #include "vec.h"
 #include "gromacs/math/utilities.h"
-#include "main.h"
 #include "force.h"
 #include "vcm.h"
 #include "gromacs/utility/smalloc.h"

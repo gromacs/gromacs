@@ -50,7 +50,6 @@
 #include "physics.h"
 #include "macros.h"
 #include "vec.h"
-#include "main.h"
 #include "update.h"
 #include "gromacs/random/random.h"
 #include "mshift.h"

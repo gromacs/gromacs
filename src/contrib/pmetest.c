@@ -40,7 +40,6 @@
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
-#include "main.h"
 #include "nrnb.h"
 #include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"

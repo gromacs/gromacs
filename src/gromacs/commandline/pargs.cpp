@@ -53,7 +53,6 @@
 #include "thread_mpi/threads.h"
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
@@ -63,6 +62,7 @@
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -684,7 +684,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             }
         }
     }
-    debug_gmx();
 
     /* Check ALL the flags ... */
     max_pa = NPCA_PA + EXTRA_PA + npargs+1;
