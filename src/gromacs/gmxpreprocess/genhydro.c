@@ -47,7 +47,7 @@
 #include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "vec.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "physics.h"
 #include "calch.h"

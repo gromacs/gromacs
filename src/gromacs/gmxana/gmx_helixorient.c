@@ -53,7 +53,7 @@
 #include "pbc.h"
 #include "gmx_ana.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/do_fit.h"
 

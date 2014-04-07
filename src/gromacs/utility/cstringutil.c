@@ -59,10 +59,10 @@
 #include <unistd.h>
 #endif
 
-#include "gromacs/fileio/futil.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 int continuing(char *s)

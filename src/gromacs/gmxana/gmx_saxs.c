@@ -48,7 +48,7 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "physics.h"

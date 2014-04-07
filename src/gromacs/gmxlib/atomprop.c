@@ -50,7 +50,7 @@
 #include "index.h"
 #include "copyrite.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/math/utilities.h"
 

@@ -43,7 +43,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "symtab.h"
 #include "h_db.h"
 #include "gromacs/fileio/gmxfio.h"

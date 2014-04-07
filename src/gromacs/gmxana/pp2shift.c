@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "typedefs.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "macros.h"
 #include "physics.h"
 #include "gromacs/utility/smalloc.h"

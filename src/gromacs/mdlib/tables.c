@@ -44,7 +44,7 @@
 #include "names.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "xvgr.h"
 #include "vec.h"
 #include "network.h"

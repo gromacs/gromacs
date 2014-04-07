@@ -52,7 +52,7 @@
 #include "index.h"
 #include "txtdump.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/utility/fatalerror.h"

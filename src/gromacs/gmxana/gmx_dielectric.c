@@ -52,7 +52,7 @@
 #include "gmx_ana.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/utilities.h"
 

@@ -58,7 +58,7 @@
 #include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/writeps.h"
 

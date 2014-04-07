@@ -48,7 +48,7 @@
 
 #include "sysstuff.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "copyrite.h"
 #include "oenv.h"
 #include "gromacs/utility/smalloc.h"

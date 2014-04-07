@@ -51,7 +51,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "filenm.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gmxfio.h"

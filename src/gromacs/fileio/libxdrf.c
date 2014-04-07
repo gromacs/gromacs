@@ -46,7 +46,7 @@
 
 #include "xdrf.h"
 #include "xdr_datatype.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 
 /* This is just for clarity - it can never be anything but 4! */
 #define XDR_INT_SIZE 4

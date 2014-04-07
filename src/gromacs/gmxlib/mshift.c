@@ -43,7 +43,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "vec.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "mshift.h"
 #include "pbc.h"
 

@@ -53,7 +53,7 @@
 #include "domdec.h"
 #include "pbc.h"
 #include <stdio.h>
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 
 /***********************************

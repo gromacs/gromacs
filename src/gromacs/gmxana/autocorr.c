@@ -47,7 +47,7 @@
 #include "physics.h"
 #include "gromacs/utility/smalloc.h"
 #include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"

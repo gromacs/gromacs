@@ -52,7 +52,7 @@
 #include "physics.h"
 #include "index.h"
 #include "names.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gpp_atomtype.h"
 #include "fflibutil.h"
 #include "macros.h"

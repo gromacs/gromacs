@@ -50,7 +50,7 @@
 #include "pdbio.h"
 #include "vec.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "atomprop.h"
 #include "physics.h"
 #include "pbc.h"

@@ -43,7 +43,7 @@
 #include <math.h>
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "tgroup.h"
 #include "vec.h"
 #include "network.h"

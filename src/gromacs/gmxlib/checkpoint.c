@@ -71,7 +71,7 @@
 #include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xdr_datatype.h"

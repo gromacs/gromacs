@@ -48,7 +48,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
 #include "macros.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "atomprop.h"
 #include "names.h"
 #include "vec.h"

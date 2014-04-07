@@ -48,7 +48,7 @@
 #include "nrnb.h"
 #include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "names.h"
 #include "domdec.h"
 #include "gromacs/fileio/gmxfio.h"

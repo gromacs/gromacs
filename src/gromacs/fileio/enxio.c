@@ -40,7 +40,7 @@
 
 #include <string.h>
 
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gmxfio.h"

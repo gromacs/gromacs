@@ -42,7 +42,7 @@
 #include <string.h>
 
 #include "sysstuff.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/commandline/pargs.h"

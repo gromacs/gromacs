@@ -57,7 +57,7 @@
 #include "copyrite.h"
 #include "macros.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/linearalgebra/nrjac.h"

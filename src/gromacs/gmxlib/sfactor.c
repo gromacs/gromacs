@@ -40,7 +40,7 @@
 
 #include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 #include "vec.h"

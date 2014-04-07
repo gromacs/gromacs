@@ -49,7 +49,7 @@
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gmxcpp.h"

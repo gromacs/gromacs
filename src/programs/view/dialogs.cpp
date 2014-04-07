@@ -53,7 +53,7 @@
 #include "names.h"
 #include "nmol.h"
 #include "manager.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW

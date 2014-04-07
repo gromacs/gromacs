@@ -54,7 +54,7 @@
 #include "symtab.h"
 #include "vec.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/pdbio.h"
 #include "toputil.h"

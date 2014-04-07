@@ -46,7 +46,7 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"

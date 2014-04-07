@@ -42,7 +42,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "index.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "vec.h"

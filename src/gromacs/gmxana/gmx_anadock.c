@@ -42,7 +42,7 @@
 
 #include "gromacs/fileio/confio.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/cstringutil.h"

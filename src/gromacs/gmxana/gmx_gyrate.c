@@ -48,7 +48,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "index.h"
 #include "mshift.h"
 #include "xvgr.h"

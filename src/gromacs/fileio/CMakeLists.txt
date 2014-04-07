@@ -46,7 +46,6 @@ set(FILEIO_PUBLIC_HEADERS
     confio.h
     enxio.h
     filenm.h
-    futil.h
     gmxfio.h
     matio.h
     mdoutf.h

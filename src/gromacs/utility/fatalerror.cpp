@@ -53,11 +53,10 @@
 
 #include "gromacs/legacyheaders/types/commrec.h"
 
-#include "gromacs/fileio/futil.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
@@ -330,7 +329,7 @@ void init_debug(const int dbglevel, const char *dbgfile)
     if (!bDebug) /* another thread hasn't already run this*/
     {
         no_buffers();
-        debug  = gmx_fio_fopen(dbgfile, "w+");
+        debug  = gmx_ffopen(dbgfile, "w+");
         bDebug = TRUE;
         if (dbglevel >= 2)
         {

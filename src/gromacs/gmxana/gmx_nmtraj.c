@@ -48,7 +48,7 @@
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "vec.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "index.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"

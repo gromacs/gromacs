@@ -58,7 +58,7 @@
 #include "tngio_for_tools.h"
 #include "names.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "xtcio.h"
 #include "pdbio.h"
 #include "confio.h"

@@ -45,7 +45,7 @@
 #include "gromacs/fileio/matio.h"
 #include "physics.h"
 #include "vec.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "copyrite.h"
 #include "xvgr.h"
 #include "index.h"

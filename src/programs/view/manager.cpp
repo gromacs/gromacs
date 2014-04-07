@@ -58,7 +58,7 @@
 #include "vec.h"
 #include "gromacs/utility/cstringutil.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/utilities.h"
 
