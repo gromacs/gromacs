@@ -143,29 +143,6 @@ static void cleandata(t_perf *perfdata, int test_nr)
 }
 
 
-static gmx_bool is_equal(real a, real b)
-{
-    real diff, eps = 1.0e-7;
-
-
-    diff = a - b;
-
-    if (diff < 0.0)
-    {
-        diff = -diff;
-    }
-
-    if (diff < eps)
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
-
 static void remove_if_exists(const char *fn)
 {
     if (gmx_fexist(fn))
@@ -553,8 +530,9 @@ static gmx_bool analyze_data(
     fprintf(fp, "\n");
 
     /* Only mention settings if they were modified: */
-    bRefinedCoul = !is_equal(info->rcoulomb[k_win], info->rcoulomb[0]);
-    bRefinedVdW  = !is_equal(info->rvdw[k_win], info->rvdw[0]    );
+    bRefinedCoul = !gmx_within_tol(info->rcoulomb[k_win], info->rcoulomb[0], GMX_REAL_EPS);
+    bRefinedCoul = !gmx_within_tol(info->rcoulomb[k_win], info->rcoulomb[0], GMX_REAL_EPS);
+    bRefinedVdW  = !gmx_within_tol(info->rvdw[k_win], info->rvdw[0], GMX_REAL_EPS);
     bRefinedGrid = !(info->nkx[k_win] == info->nkx[0] &&
                      info->nky[k_win] == info->nky[0] &&
                      info->nkz[k_win] == info->nkz[0]);
@@ -981,11 +959,11 @@ static void make_benchmark_tprs(
         {
             /* Determine which Coulomb radii rc to use in the benchmarks */
             add = (rmax-rmin)/(*ntprs-1);
-            if (is_equal(rmin, info->rcoulomb[0]))
+            if (gmx_within_tol(rmin, info->rcoulomb[0], GMX_REAL_EPS))
             {
                 ir->rcoulomb = rmin + j*add;
             }
-            else if (is_equal(rmax, info->rcoulomb[0]))
+            else if (gmx_within_tol(rmax, info->rcoulomb[0], GMX_REAL_EPS))
             {
                 ir->rcoulomb = rmin + (j-1)*add;
             }
@@ -1082,8 +1060,8 @@ static void make_benchmark_tprs(
         fprintf(fp, "  %-14s\n", fn_bench_tprs[j]);
 
         /* Make it clear to the user that some additional settings were modified */
-        if (!is_equal(ir->rvdw, info->rvdw[0])
-            || !is_equal(ir->rlistlong, info->rlistlong[0]) )
+        if (!gmx_within_tol(ir->rvdw, info->rvdw[0], GMX_REAL_EPS)
+            || !gmx_within_tol(ir->rlistlong, info->rlistlong[0], GMX_REAL_EPS) )
         {
             bNote = TRUE;
         }
@@ -1645,13 +1623,13 @@ static void check_input(
     /* Add test scenarios if rmin or rmax were set */
     if (*ntprs <= 2)
     {
-        if (!is_equal(*rmin, rcoulomb) && (*ntprs == 1) )
+        if (!gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) && (*ntprs == 1) )
         {
             (*ntprs)++;
             fprintf(stderr, "NOTE: Setting -rmin to %g changed -ntpr to %d\n",
                     *rmin, *ntprs);
         }
-        if (!is_equal(*rmax, rcoulomb) && (*ntprs == 1) )
+        if (!gmx_within_tol(*rmax, rcoulomb, GMX_REAL_EPS) && (*ntprs == 1) )
         {
             (*ntprs)++;
             fprintf(stderr, "NOTE: Setting -rmax to %g changed -ntpr to %d\n",
@@ -1660,13 +1638,13 @@ static void check_input(
     }
     old = *ntprs;
     /* If one of rmin, rmax is set, we need 2 tpr files at minimum */
-    if (!is_equal(*rmax, rcoulomb) || !is_equal(*rmin, rcoulomb) )
+    if (!gmx_within_tol(*rmax, rcoulomb, GMX_REAL_EPS) || !gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) )
     {
         *ntprs = max(*ntprs, 2);
     }
 
     /* If both rmin, rmax are set, we need 3 tpr files at minimum */
-    if (!is_equal(*rmax, rcoulomb) && !is_equal(*rmin, rcoulomb) )
+    if (!gmx_within_tol(*rmax, rcoulomb, GMX_REAL_EPS) && !gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) )
     {
         *ntprs = max(*ntprs, 3);
     }
@@ -1678,7 +1656,7 @@ static void check_input(
 
     if (*ntprs > 1)
     {
-        if (is_equal(*rmin, rcoulomb) && is_equal(rcoulomb, *rmax)) /* We have just a single rc */
+        if (gmx_within_tol(*rmin, rcoulomb, GMX_REAL_EPS) && gmx_within_tol(rcoulomb, *rmax, GMX_REAL_EPS)) /* We have just a single rc */
         {
             fprintf(stderr, "WARNING: Resetting -ntpr to 1 since no Coulomb radius scaling is requested.\n"
                     "Please set rmin < rmax to test Coulomb radii in the [rmin, rmax] interval\n"
