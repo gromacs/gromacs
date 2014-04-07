@@ -1,0 +1,9 @@
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Verified+2: Jenkins Buildbot
+Code-Review+1: Carsten Kutzner <ckutzne@googlemail.com>
+Verified+1: Carsten Kutzner <ckutzne@googlemail.com>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Mon, 07 Apr 2014 18:30:28 +0200
+Reviewed-on: https://gerrit.gromacs.org/3331
+Project: gromacs
+Branch: refs/heads/release-4-6
