@@ -42,7 +42,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "readir.h"
 #include "names.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/trnio.h"
 #include "txtdump.h"
 

@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include "typedefs.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "readinp.h"
 #include "macros.h"

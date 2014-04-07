@@ -49,6 +49,7 @@ set(UTILITY_PUBLIC_HEADERS
     fatalerror.h
     file.h
     flags.h
+    futil.h
     gmx_header_config.h
     gmxassert.h
     init.h

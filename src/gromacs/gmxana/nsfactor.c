@@ -42,7 +42,7 @@
 #include "vec.h"
 #include "nsfactor.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/cstringutil.h"

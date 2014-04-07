@@ -43,7 +43,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"

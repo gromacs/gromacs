@@ -53,7 +53,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "index.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trnio.h"

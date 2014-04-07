@@ -44,7 +44,7 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "index.h"

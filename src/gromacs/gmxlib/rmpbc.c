@@ -45,7 +45,7 @@
 #include "rmpbc.h"
 #include "vec.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

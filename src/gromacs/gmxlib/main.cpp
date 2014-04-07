@@ -58,7 +58,7 @@
 #include "network.h"
 #include "main.h"
 #include "macros.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "copyrite.h"

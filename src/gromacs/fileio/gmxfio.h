@@ -42,7 +42,7 @@
 
 #include "../legacyheaders/typedefs.h"
 #include "../utility/cstringutil.h"
-#include "futil.h"
+#include "../utility/futil.h"
 
 #ifdef __cplusplus
 extern "C" {

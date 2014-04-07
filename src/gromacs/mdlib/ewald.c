@@ -49,7 +49,7 @@
 #include "coulomb.h"
 #include "macros.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/math/gmxcomplex.h"
 
 #define TOL 2e-5

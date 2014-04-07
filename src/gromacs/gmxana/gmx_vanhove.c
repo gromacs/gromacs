@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "index.h"
 #include "typedefs.h"
 #include "xvgr.h"

@@ -47,7 +47,7 @@
 #include "typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "grompp-impl.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "toputil.h"
 #include "gromacs/utility/fatalerror.h"

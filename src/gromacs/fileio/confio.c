@@ -49,7 +49,7 @@
 #include "confio.h"
 #include "vec.h"
 #include "symtab.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "xdrf.h"
 #include "filenm.h"
 #include "pdbio.h"

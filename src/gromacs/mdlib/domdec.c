@@ -70,7 +70,7 @@
 #include "gmx_omp_nthreads.h"
 #include "gpu_utils.h"
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/imd/imd.h"

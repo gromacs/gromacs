@@ -44,7 +44,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "bondf.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "rmpbc.h"
 

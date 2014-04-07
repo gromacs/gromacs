@@ -47,7 +47,7 @@
 #include "typedefs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/matio.h"

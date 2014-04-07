@@ -49,7 +49,7 @@
 #include "macros.h"
 #include "names.h"
 #include "symtab.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "filenm.h"
 #include "gmxfio.h"
 #include "tpxio.h"

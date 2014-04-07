@@ -64,7 +64,7 @@
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/pulling/pull.h"

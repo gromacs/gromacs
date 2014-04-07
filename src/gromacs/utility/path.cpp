@@ -37,7 +37,7 @@
  * Implements functions in path.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_fileio
+ * \ingroup module_utility
  */
 #include "path.h"
 
@@ -59,7 +59,7 @@
 #endif
 #endif
 
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace

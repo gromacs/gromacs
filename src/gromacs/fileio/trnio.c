@@ -44,7 +44,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "names.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "trnio.h"
 #include "gmxfio.h"
 

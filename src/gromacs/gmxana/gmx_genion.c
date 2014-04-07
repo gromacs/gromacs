@@ -49,7 +49,7 @@
 #include "pbc.h"
 #include "force.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "vec.h"

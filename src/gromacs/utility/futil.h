@@ -40,14 +40,15 @@
  * customizations.
  *
  * \inpublicapi
+ * \ingroup module_utility
  */
-#ifndef GMX_FILEIO_FUTIL_H
-#define GMX_FILEIO_FUTIL_H
+#ifndef GMX_UTILITY_FUTIL_H
+#define GMX_UTILITY_FUTIL_H
 
 #include <limits.h>
 #include <stdio.h>
 
-#include "../utility/basedefinitions.h"
+#include "basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,7 +57,7 @@ extern "C" {
 }
 #endif
 
-#include "../utility/gmx_header_config.h"
+#include "gmx_header_config.h"
 /*! \def DIR_SEPARATOR
  * \brief
  * Directory separator on this OS.
@@ -268,4 +269,4 @@ void gmx_getcwd(char *buffer, size_t size);
 }
 #endif
 
-#endif  /* GMX_FILEIO_FUTIL_H */
+#endif

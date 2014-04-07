@@ -39,7 +39,7 @@
 #include "ns.h"
 #include "gromacs/utility/smalloc.h"
 #include "wnblist.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"

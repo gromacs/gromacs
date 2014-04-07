@@ -46,10 +46,10 @@
 #include "copyrite.h"
 #include "macros.h"
 
-#include "gromacs/fileio/futil.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 

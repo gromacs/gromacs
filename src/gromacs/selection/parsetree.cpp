@@ -225,7 +225,6 @@
 #include <boost/exception_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/fileio/futil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"

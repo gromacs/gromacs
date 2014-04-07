@@ -41,7 +41,7 @@
 #include <math.h>
 
 #include "macros.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "sysstuff.h"

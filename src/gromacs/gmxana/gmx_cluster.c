@@ -55,7 +55,7 @@
 #include "pbc.h"
 #include "rmpbc.h"
 #include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "cmat.h"
 #include "gromacs/fileio/trnio.h"

@@ -49,8 +49,8 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/fileio/path.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "programs/mdrun/mdrun_main.h"

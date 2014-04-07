@@ -50,7 +50,7 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"

@@ -47,7 +47,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "random.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "physics.h"
 #include "xvgr.h"
 #include "vec.h"

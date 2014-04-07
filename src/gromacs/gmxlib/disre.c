@@ -46,7 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "xvgr.h"
 #include "gromacs/utility/fatalerror.h"
 #include "bondf.h"

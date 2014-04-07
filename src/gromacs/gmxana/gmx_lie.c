@@ -49,7 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "txtdump.h"
 #include "gromacs/fileio/enxio.h"
 #include "gstat.h"

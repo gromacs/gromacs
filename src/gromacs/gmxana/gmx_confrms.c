@@ -52,7 +52,7 @@
 #include "index.h"
 #include "pbc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "txtdump.h"

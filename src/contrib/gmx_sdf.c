@@ -27,7 +27,7 @@
 #include "pbc.h"
 #include "rmpbc.h"
 #include "copyrite.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "index.h"

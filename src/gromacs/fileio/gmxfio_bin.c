@@ -47,7 +47,7 @@
 
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "filenm.h"
 #include "gmxfio.h"
 #include "md5.h"

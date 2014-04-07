@@ -58,7 +58,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
 

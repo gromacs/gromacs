@@ -51,7 +51,7 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "gmx_ana.h"

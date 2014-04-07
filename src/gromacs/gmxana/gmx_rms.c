@@ -48,7 +48,7 @@
 #include "vec.h"
 #include "index.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "princ.h"
 #include "rmpbc.h"
 #include "gromacs/fileio/matio.h"

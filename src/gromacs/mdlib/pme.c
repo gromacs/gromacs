@@ -78,7 +78,7 @@
 #include "macros.h"
 
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/timing/cyclecounter.h"

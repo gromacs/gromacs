@@ -44,7 +44,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "sysstuff.h"
 #include "princ.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"

@@ -42,9 +42,9 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "gromacs/fileio/path.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/utility/path.h"
 
 #include "testutils/testfilemanager.h"
 

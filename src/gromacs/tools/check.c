@@ -55,7 +55,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "mtop_util.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/xtcio.h"

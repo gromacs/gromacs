@@ -102,7 +102,7 @@
 #include <shlobj.h>
 #endif
 #include "gromacs/utility/smalloc.h"
-#include "futil.h"
+#include "gromacs/utility/futil.h"
 #include "vmdio.h"
 
 

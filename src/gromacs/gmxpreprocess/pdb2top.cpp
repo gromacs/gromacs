@@ -46,7 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "symtab.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "pdb2top.h"
 #include "gpp_nextnb.h"

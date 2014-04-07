@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "xvgr.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gstat.h"
 #include "vec.h"
 #include "index.h"

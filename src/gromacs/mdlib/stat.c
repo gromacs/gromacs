@@ -53,7 +53,7 @@
 #include "force.h"
 #include "vcm.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "network.h"
 #include "rbin.h"
 #include "tgroup.h"

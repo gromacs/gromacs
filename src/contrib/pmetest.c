@@ -44,7 +44,7 @@
 #include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/futil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "vec.h"
 #include "mdatoms.h"
