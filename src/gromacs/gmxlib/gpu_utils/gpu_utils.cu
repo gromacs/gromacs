@@ -37,12 +37,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "types/hw_info.h"
 
 #include "gpu_utils.h"
 #include "../cuda_tools/cudautils.cuh"
 #include "memtestG80_core.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 /** Amount of memory to be used in quick memtest. */
 #define QUICK_MEM       250

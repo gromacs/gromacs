@@ -41,15 +41,18 @@
 
 #include <math.h>
 #include <string.h>
-#include "gromacs/math/utilities.h"
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "gromacs/utility/smalloc.h"
 #include "force.h"
-#include "gromacs/fileio/filenm.h"
 #include "nrnb.h"
 #include "vec.h"
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 void make_wall_tables(FILE *fplog, const output_env_t oenv,
                       const t_inputrec *ir, const char *tabfn,

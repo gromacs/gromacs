@@ -113,9 +113,6 @@ typedef int             ivec[DIM];
 
 typedef int             imatrix[DIM][DIM];
 
-/* Standard sizes for char* string buffers */
-#define STRLEN 4096
-
 #ifdef __cplusplus
 }
 #endif
