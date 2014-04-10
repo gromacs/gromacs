@@ -43,8 +43,6 @@
 
 #include <cuda.h>
 
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 #include "tables.h"
 #include "typedefs.h"
 #include "types/enums.h"
@@ -61,6 +59,9 @@
 #include "gpu_utils.h"
 
 #include "gromacs/utility/common.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
 

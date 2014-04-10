@@ -36,7 +36,6 @@
 #include <config.h>
 #endif
 
-#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "network.h"
 #include "calcgrid.h"
@@ -48,6 +47,9 @@
 #include "macros.h"
 #include "md_logging.h"
 #include "pme_loadbal.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Parameters and setting for one PP-PME setup */
 typedef struct {

@@ -45,11 +45,13 @@
 
 #include <algorithm>
 
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "Xstuff.h"
 #include "xdlgitem.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define BUFSIZE 16
 

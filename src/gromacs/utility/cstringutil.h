@@ -79,6 +79,8 @@ extern "C" {
 #define CONTINUE    '\\'
 /** Comment sign to use. */
 #define COMMENTSIGN ';'
+/** Standard size for char* string buffers. */
+#define STRLEN 4096
 
 /*! \brief
  * Strip trailing spaces and if s ends with a ::CONTINUE remove that too.

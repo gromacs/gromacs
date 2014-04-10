@@ -38,8 +38,8 @@
 #endif
 
 #include <string.h>
+
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
@@ -56,7 +56,9 @@
 #include "force.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* for dd_init_local_state */
 #define NITEM_DD_INIT_LOCAL_STATE 5

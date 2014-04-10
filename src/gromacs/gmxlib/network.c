@@ -46,6 +46,7 @@
 #include "copyrite.h"
 #include "macros.h"
 
+#include "gromacs/fileio/futil.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -694,4 +695,19 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
     }
 #endif
 #endif
+}
+
+gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr)
+{
+    gmx_bool bExist;
+
+    if (SIMMASTER(cr))
+    {
+        bExist = gmx_fexist(fname);
+    }
+    if (PAR(cr))
+    {
+        gmx_bcast(sizeof(bExist), &bExist, cr);
+    }
+    return bExist;
 }
