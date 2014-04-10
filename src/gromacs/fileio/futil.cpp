@@ -67,9 +67,6 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/network.h"
-
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/path.h"
 #include "gromacs/utility/cstringutil.h"
@@ -198,10 +195,6 @@ int gmx_ffclose(FILE *fp)
 }
 
 
-#ifdef rewind
-#undef rewind
-#endif
-
 void frewind(FILE *fp)
 {
     tMPI_Thread_mutex_lock(&pstack_mutex);
@@ -248,7 +241,8 @@ gmx_off_t gmx_ftell(FILE *stream)
 }
 
 
-gmx_bool is_pipe(FILE *fp)
+//! Check whether the file (opened by gmx_ffopen()) is a pipe.
+static bool is_pipe(FILE *fp)
 {
     tMPI_Thread_mutex_lock(&pstack_mutex);
 
@@ -258,12 +252,12 @@ gmx_bool is_pipe(FILE *fp)
         if (ps->fp == fp)
         {
             tMPI_Thread_mutex_unlock(&pstack_mutex);
-            return TRUE;
+            return true;
         }
         ps = ps->prev;
     }
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-    return FALSE;
+    return false;
 }
 
 
@@ -323,22 +317,6 @@ gmx_bool gmx_fexist(const char *fname)
         fclose(test);
         return TRUE;
     }
-}
-
-
-gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr)
-{
-    gmx_bool bExist;
-
-    if (SIMMASTER(cr))
-    {
-        bExist = gmx_fexist(fname);
-    }
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(bExist), &bExist, cr);
-    }
-    return bExist;
 }
 
 gmx_bool gmx_eof(FILE *fp)
@@ -864,28 +842,6 @@ void gmx_tmpnam(char *buf)
 #endif
     /* name in Buf should now be OK */
 }
-
-int gmx_truncatefile(char *path, gmx_off_t length)
-{
-#ifdef _MSC_VER
-    /* Microsoft visual studio does not have "truncate" */
-    HANDLE        fh;
-    LARGE_INTEGER win_length;
-
-    win_length.QuadPart = length;
-
-    fh = CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-                    OPEN_EXISTING, 0, NULL);
-    SetFilePointerEx(fh, win_length, NULL, FILE_BEGIN);
-    SetEndOfFile(fh);
-    CloseHandle(fh);
-
-    return 0;
-#else
-    return truncate(path, length);
-#endif
-}
-
 
 int gmx_file_rename(const char *oldname, const char *newname)
 {

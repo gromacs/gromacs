@@ -42,7 +42,6 @@
 #include <config.h>
 #endif
 
-#include "gromacs/utility/fatalerror.h"
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "macros.h"
@@ -51,6 +50,8 @@
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
 
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
