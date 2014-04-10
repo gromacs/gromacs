@@ -34,10 +34,12 @@
  */
 #include "read-conformation.h"
 
-#include "gromacs/fileio/confio.h"
 #include "atomprop.h"
 #include "types/simple.h"
 #include "types/atoms.h"
+
+#include "gromacs/fileio/confio.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
 real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,

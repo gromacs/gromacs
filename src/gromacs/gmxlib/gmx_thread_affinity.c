@@ -57,6 +57,7 @@
 #include "gmx_thread_affinity.h"
 
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"

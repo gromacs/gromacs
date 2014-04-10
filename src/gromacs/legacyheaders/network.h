@@ -113,6 +113,9 @@ void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
 #define gmx_sum_sim   gmx_sumf_sim
 #endif
 
+gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr);
+/* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
+
 /* This doesn't currently work if enabled (needs some header cleanup). */
 #ifdef DEBUG_GMX
 #define debug_gmx() do { FILE *fp = debug ? debug : stderr; \

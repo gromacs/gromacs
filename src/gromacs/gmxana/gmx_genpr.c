@@ -39,9 +39,10 @@
 #endif
 
 #include <math.h>
+#include <string.h>
+
 #include "sysstuff.h"
 #include "gromacs/commandline/pargs.h"
-#include <string.h>
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/fileio/confio.h"
@@ -49,6 +50,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gmx_ana.h"
 

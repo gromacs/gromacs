@@ -38,6 +38,8 @@
 #include "cudautils.cuh"
 #include "pmalloc_cuda.h"
 
+#include "gromacs/utility/cstringutil.h"
+
 /*! Allocates nbytes of page-locked memory.
  *  This memory should always be freed using pfree (or with the page-locked
  *  free functions provied by the CUDA library).

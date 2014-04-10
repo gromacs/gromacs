@@ -60,6 +60,8 @@
 #include "pbc.h"
 #include "xvgr.h"
 
+#include "gromacs/utility/cstringutil.h"
+
 static gmx_bool in_box(t_pbc *pbc, rvec x)
 {
     rvec box_center, dx;
