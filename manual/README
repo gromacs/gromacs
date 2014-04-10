@@ -1,7 +1,7 @@
 So, you want to build the manual? This is now easy.
 
 1. Configure the main GROMACS repo with GMX_BUILD_MANUAL=on
-2. cmake will run some detection about whetehr this is possible
+2. cmake will run some detection about whether this is possible
 3. Later, use "make manual," which will build GROMACS in the
    usual way, and use the generated binaries to build the manual.
 
