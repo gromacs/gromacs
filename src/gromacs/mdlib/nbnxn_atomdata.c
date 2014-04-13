@@ -37,19 +37,22 @@
 #include <config.h>
 #endif
 
-#include <math.h>
-#include <string.h>
 #include <assert.h>
-#include "gromacs/utility/smalloc.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "macros.h"
 #include "vec.h"
 #include "nbnxn_consts.h"
 #include "nbnxn_internal.h"
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
-#include "gromacs/utility/gmxomp.h"
 #include "gmx_omp_nthreads.h"
 #include "thread_mpi/atomic.h"
+
+#include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Default nbnxn allocation routine, allocates NBNXN_MEM_ALIGN byte aligned */
 void nbnxn_alloc_aligned(void **ptr, size_t nbytes)

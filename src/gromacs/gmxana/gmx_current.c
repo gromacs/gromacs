@@ -36,6 +36,8 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"

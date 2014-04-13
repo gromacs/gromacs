@@ -37,18 +37,21 @@
 #endif
 
 #include <assert.h>
+#include <math.h>
+#include <stdlib.h>
 
 #include <sys/types.h>
-#include <math.h>
+
 #include "typedefs.h"
 #include "physics.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "vec.h"
 #include "coulomb.h"
 #include "calc_verletbuf.h"
 #include "../mdlib/nbnxn_consts.h"
+
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_NBNXN_SIMD
 /* The include below sets the SIMD instruction type (precision+width)
