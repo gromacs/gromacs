@@ -34,15 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "network.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include "types/commrec.h"
-#include "network.h"
 #include "copyrite.h"
 #include "macros.h"
 
@@ -710,4 +712,33 @@ gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr)
         gmx_bcast(sizeof(bExist), &bExist, cr);
     }
     return bExist;
+}
+
+void gmx_fatal_collective(int f_errno, const char *file, int line,
+                          const t_commrec *cr, gmx_domdec_t *dd,
+                          const char *fmt, ...)
+{
+    va_list  ap;
+    gmx_bool bMaster, bFinalize;
+#ifdef GMX_MPI
+    int      result;
+    /* Check if we are calling on all processes in MPI_COMM_WORLD */
+    if (cr != NULL)
+    {
+        MPI_Comm_compare(cr->mpi_comm_mysim, MPI_COMM_WORLD, &result);
+    }
+    else
+    {
+        MPI_Comm_compare(dd->mpi_comm_all, MPI_COMM_WORLD, &result);
+    }
+    /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
+    bFinalize = (result != MPI_UNEQUAL);
+#else
+    bFinalize = TRUE;
+#endif
+    bMaster = (cr != NULL && MASTER(cr)) || (dd != NULL && DDMASTER(dd));
+
+    va_start(ap, fmt);
+    gmx_fatal_mpi_va(f_errno, file, line, bMaster, bFinalize, fmt, ap);
+    va_end(ap);
 }
