@@ -242,7 +242,7 @@ int gmx_hostname_num()
 }
 
 #ifdef GMX_LIB_MPI
-void gmx_abort(int noderank, int nnodes, int errorno)
+void gmx_abort(int errorno)
 {
     const char *programName = "GROMACS";
     try
@@ -252,9 +252,11 @@ void gmx_abort(int noderank, int nnodes, int errorno)
     catch (const std::exception &)
     {
     }
+    const int nnodes   = gmx_node_num();
+    const int noderank = gmx_node_rank();
     if (nnodes > 1)
     {
-        std::fprintf(stderr, "Halting parallel program %s on CPU %d out of %d\n",
+        std::fprintf(stderr, "Halting parallel program %s on node %d out of %d\n",
                      programName, noderank, nnodes);
     }
     else
@@ -263,6 +265,6 @@ void gmx_abort(int noderank, int nnodes, int errorno)
     }
 
     MPI_Abort(MPI_COMM_WORLD, errorno);
-    std::exit(1);
+    std::exit(errorno);
 }
 #endif
