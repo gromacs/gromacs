@@ -38,8 +38,10 @@
 #include <config.h>
 #endif
 
-#include "gromacs/utility/smalloc.h"
 #include <math.h>
+#include <stdlib.h>
+
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "typedefs.h"
 #include "xvgr.h"
