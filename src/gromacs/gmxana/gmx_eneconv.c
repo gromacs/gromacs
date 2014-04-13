@@ -37,8 +37,10 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <string.h>
+
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"

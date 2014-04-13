@@ -38,7 +38,8 @@
 #ifndef _disre_h
 #define _disre_h
 
-#include "sysstuff.h"
+#include <stdio.h>
+
 #include "typedefs.h"
 
 #ifdef __cplusplus

@@ -38,11 +38,14 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "typedefs.h"
-#include "gromacs/random/random.h"
-#include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "sortwater.h"
+
+#include "gromacs/random/random.h"
+#include "gromacs/utility/smalloc.h"
 
 static rvec   *xptr, box_1;
 static int     nwat;

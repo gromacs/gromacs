@@ -38,10 +38,11 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/fatalerror.h"
 #include "sighandler.h"
-
 
 const char *gmx_stop_cond_name[] =
 {

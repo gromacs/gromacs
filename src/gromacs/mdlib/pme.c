@@ -61,10 +61,12 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
 #include <assert.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "txtdump.h"
 #include "vec.h"

@@ -40,6 +40,7 @@
 #endif
 
 #include <math.h>
+#include <stdlib.h>
 
 #include "types/commrec.h"
 #include "constr.h"
@@ -47,7 +48,6 @@
 #include "physics.h"
 #include "vec.h"
 #include "pbc.h"
-#include "gromacs/utility/smalloc.h"
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"
@@ -57,6 +57,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int    b0;         /* first constraint for this thread */
