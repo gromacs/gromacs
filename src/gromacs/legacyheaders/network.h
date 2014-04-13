@@ -116,6 +116,20 @@ void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
 gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr);
 /* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
 
+void
+gmx_fatal_collective(int f_errno, const char *file, int line,
+                     const t_commrec *cr, gmx_domdec_t *dd,
+                     const char *fmt, ...);
+/* As gmx_fatal declared in utility/fatalerror.h,
+ * but only the master process prints the error message.
+ * This should only be called one of the following two situations:
+ * 1) On all nodes in cr->mpi_comm_mysim, with cr!=NULL,dd==NULL.
+ * 2) On all nodes in dd->mpi_comm_all,   with cr==NULL,dd!=NULL.
+ * This will call MPI_Finalize instead of MPI_Abort when possible,
+ * This is useful for handling errors in code that is executed identically
+ * for all processes.
+ */
+
 /* This doesn't currently work if enabled (needs some header cleanup). */
 #ifdef DEBUG_GMX
 #define debug_gmx() do { FILE *fp = debug ? debug : stderr; \

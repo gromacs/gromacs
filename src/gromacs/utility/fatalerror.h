@@ -44,6 +44,7 @@
 #ifndef GMX_UTILITY_FATALERROR_H
 #define GMX_UTILITY_FATALERROR_H
 
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "basedefinitions.h"
@@ -80,6 +81,22 @@ _where(const char *file, int line);
 /** Prints filename and line to stdlog. */
 #define where() _where(__FILE__, __LINE__)
 
+/*! |brief
+ * Low-level fatal error reporting routine for collective MPI errors.
+ *
+ * This function works as gmx_fatal(), but provides additional control for
+ * cases where it is known that the same error occurs on multiple MPI ranks.
+ * The error handler is called only if \p bMaster is `TRUE`, and MPI_Finalize()
+ * is called instead of MPI_Abort() in MPI-enabled \Gromacs if \p bFinalize is
+ * `TRUE`.
+ *
+ * This is used to implement gmx_fatal_collective() (which cannot be declared
+ * here, since it would bring with it mdrun-specific dependencies).
+ */
+void
+gmx_fatal_mpi_va(int fatal_errno, const char *file, int line, gmx_bool bMaster,
+                 gmx_bool bFinalize, const char *fmt, va_list ap) GMX_ATTRIBUTE_NORETURN;
+
 /*! \brief
  * Fatal error reporting routine for \Gromacs.
  *
@@ -93,7 +110,7 @@ _where(const char *file, int line);
  * The format of \p fmt uses printf()-like formatting.
  *
  * In case all MPI processes want to stop with the same fatal error,
- * use gmx_fatal_collective(), declared in gmx_fatal_collective.h,
+ * use gmx_fatal_collective(), declared in network.h,
  * to avoid having as many error messages as processes.
  *
  * The first three parameters can be provided through ::FARGS:
@@ -197,10 +214,10 @@ void _gmx_error(const char *key, const char *msg, const char *file, int line) GM
 /*! \brief
  * Sets an error handler for gmx_fatal() and other fatal error routines.
  *
- * The default handler prints the message and aborts the program.
- * If you set a custom handler, it must also abort the program, otherwise
- * \Gromacs will behave unpredictably (most likely, it crashes shortly after
- * the fatal error).
+ * The default handler prints the message.
+ * \Gromacs will terminate the program after the error handler returns.
+ * To make gmx_fatal_collective() work, the error handler should not terminate
+ * the program, as it cannot know what is the desired way of termination.
  * The string passed to the handler may be a multi-line string.
  *
  * \see gmx_fatal()
