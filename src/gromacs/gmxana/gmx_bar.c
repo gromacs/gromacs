@@ -36,13 +36,12 @@
 #include <config.h>
 #endif
 
-#include <math.h>
-#include <string.h>
 #include <ctype.h>
-#include <math.h>
 #include <float.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"

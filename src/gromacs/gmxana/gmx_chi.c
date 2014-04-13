@@ -53,7 +53,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include <string.h>
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "vec.h"

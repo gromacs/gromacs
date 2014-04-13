@@ -47,7 +47,6 @@
 #include <unistd.h>
 #endif
 
-#include "sysstuff.h"
 #include "network.h"
 #include "fflibutil.h"
 

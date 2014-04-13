@@ -38,16 +38,17 @@
 #include <config.h>
 #endif
 
-#include <math.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <ctype.h>
 #include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <sys/types.h>
 
 #include "gromacs/utility/futil.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"

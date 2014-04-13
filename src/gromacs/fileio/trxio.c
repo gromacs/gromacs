@@ -43,7 +43,6 @@
 #include <assert.h>
 #include <math.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #ifdef GMX_USE_PLUGINS
 #include "vmdio.h"

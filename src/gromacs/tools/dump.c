@@ -44,7 +44,6 @@
 #include <assert.h>
 #include "macros.h"
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

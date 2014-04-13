@@ -42,7 +42,6 @@
 
 #include <algorithm>
 
-#include "sysstuff.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"

@@ -42,7 +42,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "force.h"

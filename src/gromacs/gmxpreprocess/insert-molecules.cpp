@@ -41,7 +41,6 @@
 #endif
 
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/utilities.h"
