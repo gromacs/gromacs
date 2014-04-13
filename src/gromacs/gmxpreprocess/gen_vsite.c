@@ -40,11 +40,10 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
 #include "gen_vsite.h"
-#include "gromacs/utility/smalloc.h"
 #include "resall.h"
 #include "add_par.h"
 #include "vec.h"
@@ -57,7 +56,9 @@
 #include "fflibutil.h"
 #include "macros.h"
 
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MAXNAME 32
 #define OPENDIR     '[' /* starting sign for directive		*/

@@ -50,7 +50,7 @@
 #include <config.h>
 #endif
 
-
+#include <errno.h>
 #include <string.h>
 
 #ifdef GMX_NATIVE_WINDOWS
