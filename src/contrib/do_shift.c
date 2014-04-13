@@ -38,7 +38,6 @@
 
 #include <stdlib.h>
 #include "errno.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "macros.h"

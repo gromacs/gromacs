@@ -43,7 +43,6 @@
 #endif
 
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "x11.h"

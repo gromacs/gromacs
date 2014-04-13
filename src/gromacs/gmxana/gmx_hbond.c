@@ -43,7 +43,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "physics.h"
 #include "macros.h"

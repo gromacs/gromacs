@@ -39,9 +39,9 @@
 #endif
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "sysstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "vec.h"
 #include "gromacs/utility/smalloc.h"

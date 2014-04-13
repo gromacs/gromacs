@@ -41,7 +41,6 @@
 #include <math.h>
 #include <assert.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "vec.h"

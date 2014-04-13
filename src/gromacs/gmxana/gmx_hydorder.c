@@ -40,7 +40,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/smalloc.h"

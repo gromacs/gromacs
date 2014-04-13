@@ -46,7 +46,6 @@
 #include "bondf.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 #include "gromacs/fileio/confio.h"
 #include "physics.h"
 #include "vec.h"

@@ -42,7 +42,6 @@
 
 #include "macros.h"
 #include "vec.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trxio.h"

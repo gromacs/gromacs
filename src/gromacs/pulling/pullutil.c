@@ -40,7 +40,6 @@
 
 #include <stdlib.h>
 
-#include "sysstuff.h"
 #include "princ.h"
 #include "gromacs/utility/futil.h"
 #include "vec.h"
