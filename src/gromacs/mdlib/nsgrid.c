@@ -41,7 +41,6 @@
 
 #include <stdlib.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "macros.h"

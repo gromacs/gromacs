@@ -40,7 +40,6 @@
 
 #include <math.h>
 #include "gromacs/random/random.h"
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "physics.h"
 #include "typedefs.h"

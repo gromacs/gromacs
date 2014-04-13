@@ -38,7 +38,6 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "force.h"
 #include "names.h"

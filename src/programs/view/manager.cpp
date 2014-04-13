@@ -39,13 +39,13 @@
 #endif
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h> // for usleep()
 #endif
 
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "macros.h"

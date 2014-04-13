@@ -39,7 +39,6 @@
 #endif
 
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 #include "macros.h"
 #include "symtab.h"
 #include "gromacs/utility/cstringutil.h"

@@ -41,7 +41,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "macros.h"

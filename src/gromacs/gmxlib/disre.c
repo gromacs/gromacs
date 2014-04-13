@@ -40,9 +40,10 @@
 #endif
 
 #include <math.h>
+#include <stdlib.h>
+
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"

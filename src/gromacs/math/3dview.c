@@ -41,7 +41,6 @@
 #endif
 
 #include <math.h>
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "physics.h"

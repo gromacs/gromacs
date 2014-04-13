@@ -41,7 +41,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "sysstuff.h"
 #include <string.h>
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"

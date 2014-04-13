@@ -43,7 +43,6 @@
 #include <math.h>
 
 #include "types/commrec.h"
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "nrnb.h"

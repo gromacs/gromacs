@@ -20,7 +20,6 @@
 
 #include <math.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "vec.h"

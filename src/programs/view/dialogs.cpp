@@ -38,14 +38,12 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h> // for fork()
 #endif
 
-#include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 #include "macros.h"
-#include "gromacs/utility/cstringutil.h"
 #include "x11.h"
 #include "xdlghi.h"
 #include "xmb.h"
@@ -53,8 +51,11 @@
 #include "names.h"
 #include "nmol.h"
 #include "manager.h"
-#include "gromacs/utility/futil.h"
+
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 
