@@ -35,26 +35,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "fatalerror.h"
-#include "gromacs/legacyheaders/gmx_fatal_collective.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstring>
 
 #include <exception>
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/legacyheaders/types/commrec.h"
-
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -64,8 +61,11 @@
 static gmx_bool            bDebug         = FALSE;
 static FILE               *log_file       = NULL;
 
-static tMPI_Thread_mutex_t debug_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
-static tMPI_Thread_mutex_t where_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t debug_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
+
+static const char *const   gmxuser
+    = "Please report this to the mailing list (gmx-users@gromacs.org)";
 
 gmx_bool bDebugMode(void)
 {
@@ -121,7 +121,7 @@ void _where(const char *file, int line)
 
 static int fatal_errno = 0;
 
-static void quit_gmx(const char *msg)
+static void default_error_handler(const char *msg)
 {
     tMPI_Thread_mutex_lock(&debug_mutex);
     if (fatal_errno == 0)
@@ -143,174 +143,127 @@ static void quit_gmx(const char *msg)
         }
         perror(msg);
     }
+    tMPI_Thread_mutex_unlock(&debug_mutex);
+}
 
-#ifdef GMX_LIB_MPI
+static void (*gmx_error_handler)(const char *msg) = default_error_handler;
+
+void set_gmx_error_handler(void (*func)(const char *msg))
+{
+    // TODO: Either this is unnecessary, or also reads to the handler should be
+    // protected by a mutex.
+    tMPI_Thread_mutex_lock(&debug_mutex);
+    gmx_error_handler = func;
+    tMPI_Thread_mutex_unlock(&debug_mutex);
+}
+
+static void call_error_handler(const char *key, const char *file, int line, const char *msg)
+{
+    char        buf[10240], errerrbuf[1024];
+    const char *llines = "-------------------------------------------------------";
+    char       *strerr;
+
+    if (msg == NULL)
+    {
+        sprintf(errerrbuf, "Empty fatal_error message. %s", gmxuser);
+    }
+    // In case ProgramInfo is not initialized and there is an issue with the
+    // initialization, fall back to "GROMACS".
+    const char *programName = "GROMACS";
+    try
+    {
+        programName = gmx::getProgramContext().displayName();
+    }
+    catch (const std::exception &)
+    {
+    }
+
+    strerr = gmx_strerror(key);
+    sprintf(buf, "\n%s\nProgram %s, %s\n"
+            "Source code file: %s, line: %d\n\n"
+            "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
+            "website at http://www.gromacs.org/Documentation/Errors\n%s\n",
+            llines, programName, gmx_version(), file, line,
+            strerr, msg ? msg : errerrbuf, llines);
+    free(strerr);
+
+    gmx_error_handler(buf);
+}
+
+static void do_exit(bool bMaster, bool bFinalize)
+{
+    if (debug)
+    {
+        fflush(debug);
+    }
+
+#ifdef GMX_MPI
     if (gmx_mpi_initialized())
     {
-        int  nnodes;
-        int  noderank;
-
-        nnodes   = gmx_node_num();
-        noderank = gmx_node_rank();
-
-        if (nnodes > 1)
+        if (bFinalize)
         {
-            fprintf(stderr, "Error on node %d, will try to stop all the nodes\n",
-                    noderank);
+            /* Broadcast the fatal error number possibly modified
+             * on the master process, in case the user would like
+             * to use the return status on a non-master process.
+             * The master process in cr and dd always has global rank 0.
+             */
+            MPI_Bcast(&fatal_errno, sizeof(fatal_errno), MPI_BYTE,
+                      0, MPI_COMM_WORLD);
+
+            /* Finalize nicely instead of aborting */
+            MPI_Finalize();
         }
-        gmx_abort(noderank, nnodes, -1);
-    }
+        else if (bMaster)
+        {
+#ifdef GMX_LIB_MPI
+            gmx_abort(1);
 #endif
-
-    if (debug)
-    {
-        fflush(debug);
-    }
-    if (bDebugMode())
-    {
-        fprintf(stderr, "dump core (y/n):");
-        fflush(stderr);
-        if (toupper(getc(stdin)) != 'N')
+        }
+        else
         {
-            (void) abort();
+            /* Let all other processes wait till the master has printed
+             * the error message and issued MPI_Abort.
+             */
+            MPI_Barrier(MPI_COMM_WORLD);
         }
     }
-
-    exit(fatal_errno);
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-}
-
-/* The function below should be identical to quit_gmx,
- * except that is does not actually quit and call gmx_abort.
- */
-static void quit_gmx_noquit(const char *msg)
-{
-    tMPI_Thread_mutex_lock(&debug_mutex);
-    if (!fatal_errno)
-    {
-        if (log_file)
-        {
-            fprintf(log_file, "%s\n", msg);
-        }
-        fprintf(stderr, "%s\n", msg);
-        /* we set it to no-zero because if this function is called, something
-           has gone wrong */
-        fatal_errno = 255;
-    }
-    else
-    {
-        if (fatal_errno != -1)
-        {
-            errno = fatal_errno;
-        }
-        perror(msg);
-    }
-
-#ifndef GMX_LIB_MPI
-    if (debug)
-    {
-        fflush(debug);
-    }
-    if (bDebugMode())
-    {
-        fprintf(stderr, "dump core (y/n):");
-        fflush(stderr);
-        if (toupper(getc(stdin)) != 'N')
-        {
-            (void) abort();
-        }
-    }
-#endif
-
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-}
-
-void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
-{
-    va_list ap;
-    char    msg[STRLEN];
-
-    va_start(ap, fmt);
-    vsprintf(msg, fmt, ap);
-    va_end(ap);
-
-    tMPI_Thread_mutex_lock(&debug_mutex);
-    fatal_errno = f_errno;
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-
-    _gmx_error("fatal", msg, file, line);
-}
-
-void gmx_fatal_collective(int f_errno, const char *file, int line,
-                          const t_commrec *cr, gmx_domdec_t *dd,
-                          const char *fmt, ...)
-{
-    va_list     ap;
-    char        msg[STRLEN];
-#ifdef GMX_MPI
-    int         result;
-#endif
-
-#ifdef GMX_MPI
-    /* Check if we are calling on all processes in MPI_COMM_WORLD */
-    if (cr != NULL)
-    {
-        MPI_Comm_compare(cr->mpi_comm_mysim, MPI_COMM_WORLD, &result);
-    }
-    else
-    {
-        MPI_Comm_compare(dd->mpi_comm_all, MPI_COMM_WORLD, &result);
-    }
-    /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
-    const bool bFinalize = (result != MPI_UNEQUAL);
 #else
-    const bool bFinalize = true;
+    GMX_UNUSED_VALUE(bMaster);
+    GMX_UNUSED_VALUE(bFinalize);
 #endif
 
-    if ((cr != NULL && MASTER(cr)  ) ||
-        (dd != NULL && DDMASTER(dd)))
+    if (bDebugMode())
     {
-        va_start(ap, fmt);
+        std::abort();
+    }
+    std::exit(1);
+}
+
+void gmx_fatal_mpi_va(int f_errno, const char *file, int line,
+                      gmx_bool bMaster, gmx_bool bFinalize,
+                      const char *fmt, va_list ap)
+{
+    if (bMaster)
+    {
+        char msg[STRLEN];
         vsprintf(msg, fmt, ap);
-        va_end(ap);
 
         tMPI_Thread_mutex_lock(&debug_mutex);
         fatal_errno = f_errno;
         tMPI_Thread_mutex_unlock(&debug_mutex);
 
-        if (bFinalize)
-        {
-            /* Use an error handler that does not quit */
-            set_gmx_error_handler(quit_gmx_noquit);
-        }
-
-        _gmx_error("fatal", msg, file, line);
+        call_error_handler("fatal", file, line, msg);
     }
 
-#ifdef GMX_MPI
-    if (bFinalize)
-    {
-        /* Broadcast the fatal error number possibly modified
-         * on the master process, in case the user would like
-         * to use the return status on a non-master process.
-         * The master process in cr and dd always has global rank 0.
-         */
-        MPI_Bcast(&fatal_errno, sizeof(fatal_errno), MPI_BYTE,
-                  0, MPI_COMM_WORLD);
+    do_exit(bMaster, bFinalize);
+}
 
-        /* Finalize nicely instead of aborting */
-        MPI_Finalize();
-    }
-    else
-    {
-        /* Let all other processes wait till the master has printed
-         * the error message and issued MPI_Abort.
-         */
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-#endif
-
-    exit(fatal_errno);
+void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    gmx_fatal_mpi_va(f_errno, file, line, TRUE, FALSE, fmt, ap);
+    va_end(ap);
 }
 
 /*
@@ -336,17 +289,6 @@ void init_debug(const int dbglevel, const char *dbgfile)
             gmx_debug_at = TRUE;
         }
     }
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-}
-
-static const char *gmxuser = "Please report this to the mailing list (gmx-users@gromacs.org)";
-
-static void        (*gmx_error_handler)(const char *msg) = quit_gmx;
-
-void set_gmx_error_handler(void (*func)(const char *msg))
-{
-    tMPI_Thread_mutex_lock(&debug_mutex);
-    gmx_error_handler = func;
     tMPI_Thread_mutex_unlock(&debug_mutex);
 }
 
@@ -393,37 +335,8 @@ char *gmx_strerror(const char *key)
 
 void _gmx_error(const char *key, const char *msg, const char *file, int line)
 {
-    char        buf[10240], errerrbuf[1024];
-    const char *llines = "-------------------------------------------------------";
-    char       *strerr;
-
-    /* protect the audience from suggestive discussions */
-
-    if (msg == NULL)
-    {
-        sprintf(errerrbuf, "Empty fatal_error message. %s", gmxuser);
-    }
-    // In case ProgramInfo is not initialized and there is an issue with the
-    // initialization, fall back to "GROMACS".
-    const char *programName = "GROMACS";
-    try
-    {
-        programName = gmx::getProgramContext().displayName();
-    }
-    catch (const std::exception &)
-    {
-    }
-
-    strerr = gmx_strerror(key);
-    sprintf(buf, "\n%s\nProgram %s, %s\n"
-            "Source code file: %s, line: %d\n\n"
-            "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
-            "website at http://www.gromacs.org/Documentation/Errors\n%s\n",
-            llines, programName, gmx_version(), file, line,
-            strerr, msg ? msg : errerrbuf, llines);
-    free(strerr);
-
-    gmx_error_handler(buf);
+    call_error_handler(key, file, line, msg);
+    do_exit(true, false);
 }
 
 void _range_check(int n, int n_min, int n_max, const char *warn_str,
