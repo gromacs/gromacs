@@ -46,7 +46,6 @@
 #include <sys/time.h>
 #endif
 
-#include "sysstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "copyrite.h"

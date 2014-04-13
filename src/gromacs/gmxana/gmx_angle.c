@@ -40,7 +40,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "sysstuff.h"
 #include "physics.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"

@@ -41,7 +41,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"

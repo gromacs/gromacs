@@ -42,7 +42,6 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "sysstuff.h"
 #include "physics.h"
 #include "macros.h"
 #include "readir.h"

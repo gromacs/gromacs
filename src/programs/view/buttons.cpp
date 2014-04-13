@@ -38,13 +38,13 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
 #include <algorithm>
 
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 
 #include "x11.h"
 #include "xutil.h"

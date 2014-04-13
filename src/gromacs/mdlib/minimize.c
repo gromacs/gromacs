@@ -41,7 +41,6 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
-#include "sysstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "network.h"
 #include "gromacs/utility/smalloc.h"

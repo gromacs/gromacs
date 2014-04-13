@@ -47,7 +47,6 @@
 #endif
 
 #include "gromacs/commandline/pargs.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"

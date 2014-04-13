@@ -38,10 +38,11 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <math.h>
-#include "sysstuff.h"
+
 #include "network.h"
 #include "gromacs/utility/smalloc.h"
 #include "nrnb.h"

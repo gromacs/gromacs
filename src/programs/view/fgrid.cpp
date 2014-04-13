@@ -38,14 +38,16 @@
 #include <config.h>
 #endif
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
+
 #include "fgrid.h"
+
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *type[] = {
     "button", "radiobuttons", "groupbox", "checkbox",

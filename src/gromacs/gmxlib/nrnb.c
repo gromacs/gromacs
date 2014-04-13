@@ -38,9 +38,10 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
+
 #include "types/commrec.h"
-#include "sysstuff.h"
 #include "names.h"
 #include "macros.h"
 #include "nrnb.h"

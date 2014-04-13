@@ -47,7 +47,6 @@
 
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 #include "copyrite.h"
 #include "force.h"
 #include "mdrun.h"

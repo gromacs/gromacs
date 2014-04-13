@@ -41,10 +41,10 @@
 #endif
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/smalloc.h"
