@@ -41,6 +41,8 @@
 /* This file is completely threadsafe - please keep it that way! */
 
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "names.h"

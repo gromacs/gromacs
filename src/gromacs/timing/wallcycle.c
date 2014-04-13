@@ -40,15 +40,16 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
 #include "md_logging.h"
-#include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/timing/cyclecounter.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last

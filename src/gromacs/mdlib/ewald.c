@@ -38,8 +38,10 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "vec.h"
