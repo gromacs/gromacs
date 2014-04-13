@@ -39,9 +39,9 @@
 #endif
 
 #include <math.h>
-#include "sysstuff.h"
+#include <stdlib.h>
 #include <string.h>
-#include "gromacs/utility/smalloc.h"
+
 #include "macros.h"
 #include "xutil.h"
 #include "buttons.h"
@@ -51,6 +51,7 @@
 
 #include "gromacs/fileio/writeps.h"
 #include "gromacs/math/3dview.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MSIZE 4
 

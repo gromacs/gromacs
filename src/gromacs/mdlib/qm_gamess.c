@@ -41,7 +41,6 @@
 #ifdef GMX_QMMM_GAMESS
 
 #include <math.h>
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"

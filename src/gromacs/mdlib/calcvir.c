@@ -39,7 +39,6 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
 #include "force.h"
 #include "vec.h"
 #include "mshift.h"

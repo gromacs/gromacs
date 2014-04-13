@@ -38,24 +38,25 @@
 #include <config.h>
 #endif
 
-#include <ctype.h>
-#include <string.h>
 #include <assert.h>
-#include "sysstuff.h"
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "macros.h"
 #include "names.h"
-#include "gromacs/utility/cstringutil.h"
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "invblock.h"
 #include "macros.h"
 #include "index.h"
 #include "txtdump.h"
 
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 const char gmx_residuetype_undefined[] = "Other";
 

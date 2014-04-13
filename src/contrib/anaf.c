@@ -44,7 +44,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/xtcio.h"

@@ -38,7 +38,8 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
+#include <stdlib.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/strdb.h"
@@ -55,7 +56,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "viewit.h"
-
 
 static int strip_dssp(char *dsspfile, int nres,
                       gmx_bool bPhobres[], real t,

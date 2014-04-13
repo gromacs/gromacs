@@ -41,7 +41,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"

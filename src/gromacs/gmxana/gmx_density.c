@@ -37,11 +37,12 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <math.h>
-#include <ctype.h>
 
-#include "sysstuff.h"
+#include <ctype.h>
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "gromacs/utility/cstringutil.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"

@@ -47,7 +47,6 @@
 #include <limits.h>
 #include <assert.h>
 
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "readir.h"

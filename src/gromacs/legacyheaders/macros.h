@@ -38,8 +38,6 @@
 #ifndef _macros_h
 #define _macros_h
 
-#include <stdlib.h>
-
 /* no extern "C" for this header because it only defines Macros */
 
 /*
@@ -50,6 +48,8 @@
  * angle.a[0][3]
  */
 #ifndef __cplusplus
+#include <stdlib.h>
+
 #define AI  a[0]
 #define AJ  a[1]
 #define AK  a[2]

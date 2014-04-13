@@ -42,7 +42,6 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "sysstuff.h"
 #include "gromacs/utility/fatalerror.h"
 #include "network.h"
 #include "txtdump.h"

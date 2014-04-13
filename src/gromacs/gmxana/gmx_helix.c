@@ -56,7 +56,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include <string.h>
-#include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "vec.h"

@@ -42,7 +42,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "sysstuff.h"
 #include "physics.h"
 #include "vec.h"
 #include "gromacs/utility/smalloc.h"

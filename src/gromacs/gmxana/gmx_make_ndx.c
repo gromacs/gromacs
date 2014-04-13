@@ -41,7 +41,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "sysstuff.h"
 #include "gromacs/utility/futil.h"
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"
