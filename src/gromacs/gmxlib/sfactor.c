@@ -38,7 +38,6 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/math/utilities.h"
@@ -135,21 +134,9 @@ extern t_complex *** rc_tensor_allocation(int x, int y, int z)
     t_complex ***t;
     int          i, j;
 
-    t = (t_complex ***)calloc(x, sizeof(t_complex**));
-    if (!t)
-    {
-        exit(fprintf(stderr, "\nallocation error"));
-    }
-    t[0] = (t_complex **)calloc(x*y, sizeof(t_complex*));
-    if (!t[0])
-    {
-        exit(fprintf(stderr, "\nallocation error"));
-    }
-    t[0][0] = (t_complex *)calloc(x*y*z, sizeof(t_complex));
-    if (!t[0][0])
-    {
-        exit(fprintf(stderr, "\nallocation error"));
-    }
+    snew(t, x);
+    snew(t[0], x*y);
+    snew(t[0][0], x*y*z);
 
     for (j = 1; j < y; j++)
     {
@@ -260,7 +247,10 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
             }
         }
     }
-    sfree (counter); free(tmpSF[0][0]); free(tmpSF[0]); free(tmpSF);
+    sfree(counter);
+    sfree(tmpSF[0][0]);
+    sfree(tmpSF[0]);
+    sfree(tmpSF);
 }
 
 

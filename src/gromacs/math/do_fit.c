@@ -37,7 +37,6 @@
 #include "do_fit.h"
 
 #include "gromacs/math/utilities.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "txtdump.h"

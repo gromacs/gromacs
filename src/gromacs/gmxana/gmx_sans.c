@@ -38,7 +38,6 @@
 #endif
 
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "vec.h"

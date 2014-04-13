@@ -43,7 +43,6 @@
 
 #include <algorithm>
 
-#include "sysstuff.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/cstringutil.h"
 #include "macros.h"

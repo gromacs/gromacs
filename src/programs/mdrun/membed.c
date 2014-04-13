@@ -41,7 +41,6 @@
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 #include "vec.h"
 #include "macros.h"
 #include "gromacs/utility/futil.h"

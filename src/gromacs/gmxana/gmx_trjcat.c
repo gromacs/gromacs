@@ -38,10 +38,11 @@
 #include <config.h>
 #endif
 
-#include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "macros.h"
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"

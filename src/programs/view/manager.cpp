@@ -45,7 +45,6 @@
 #include <unistd.h> // for usleep()
 #endif
 
-#include "sysstuff.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "macros.h"

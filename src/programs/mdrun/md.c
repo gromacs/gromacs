@@ -38,9 +38,10 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 #include "vec.h"
 #include "vcm.h"
 #include "mdebin.h"

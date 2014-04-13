@@ -38,7 +38,6 @@
 
 #include <string.h>
 
-#include "sysstuff.h"
 #include "vec.h"
 #include "nsfactor.h"
 

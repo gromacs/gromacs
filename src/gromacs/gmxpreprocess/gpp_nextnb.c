@@ -39,13 +39,15 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
-#include "gromacs/utility/smalloc.h"
+#include <stdlib.h>
+
 #include "macros.h"
 /* #define DEBUG_NNB */
 #include "gpp_nextnb.h"
-#include "gromacs/utility/fatalerror.h"
 #include "toputil.h"
+
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int ai, aj;

@@ -38,7 +38,6 @@
 #include <config.h>
 #endif
 
-#include "sysstuff.h"
 #include "macros.h"
 #include "xutil.h"
 #include "Xstuff.h"

@@ -38,24 +38,25 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <ctype.h>
 #include <math.h>
-#include <assert.h>
+#include <stdlib.h>
 
-#include "sysstuff.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gromacs/utility/cstringutil.h"
 #include "names.h"
 #include "toputil.h"
 #include "toppush.h"
 #include "topdirs.h"
 #include "readir.h"
 #include "symtab.h"
-#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
+
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atype,
                        warninp_t wi)

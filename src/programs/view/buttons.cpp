@@ -44,7 +44,6 @@
 
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "sysstuff.h"
 
 #include "x11.h"
 #include "xutil.h"
