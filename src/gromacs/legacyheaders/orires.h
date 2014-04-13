@@ -38,7 +38,8 @@
 #ifndef _orires_h
 #define _orires_h
 
-#include "sysstuff.h"
+#include <stdio.h>
+
 #include "typedefs.h"
 
 #ifdef __cplusplus

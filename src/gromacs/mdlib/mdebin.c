@@ -38,8 +38,10 @@
 #include <config.h>
 #endif
 
-#include <string.h>
 #include <float.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "mdebin.h"
 #include "gromacs/utility/smalloc.h"

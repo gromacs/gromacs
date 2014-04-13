@@ -38,6 +38,7 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "gromacs/utility/futil.h"
@@ -110,31 +111,31 @@ static void enxsubblock_free(t_enxsubblock *sb)
 {
     if (sb->fval_alloc)
     {
-        free(sb->fval);
+        sfree(sb->fval);
         sb->fval_alloc = 0;
         sb->fval       = NULL;
     }
     if (sb->dval_alloc)
     {
-        free(sb->dval);
+        sfree(sb->dval);
         sb->dval_alloc = 0;
         sb->dval       = NULL;
     }
     if (sb->ival_alloc)
     {
-        free(sb->ival);
+        sfree(sb->ival);
         sb->ival_alloc = 0;
         sb->ival       = NULL;
     }
     if (sb->lval_alloc)
     {
-        free(sb->lval);
+        sfree(sb->lval);
         sb->lval_alloc = 0;
         sb->lval       = NULL;
     }
     if (sb->cval_alloc)
     {
-        free(sb->cval);
+        sfree(sb->cval);
         sb->cval_alloc = 0;
         sb->cval       = NULL;
     }
@@ -146,10 +147,10 @@ static void enxsubblock_free(t_enxsubblock *sb)
         {
             if (sb->sval[i])
             {
-                free(sb->sval[i]);
+                sfree(sb->sval[i]);
             }
         }
-        free(sb->sval);
+        sfree(sb->sval);
         sb->sval_alloc = 0;
         sb->sval       = NULL;
     }
@@ -231,7 +232,7 @@ static void enxblock_free(t_enxblock *eb)
         {
             enxsubblock_free(&(eb->sub[i]));
         }
-        free(eb->sub);
+        sfree(eb->sub);
         eb->nsub_alloc = 0;
         eb->sub        = NULL;
     }
@@ -265,7 +266,7 @@ void free_enxframe(t_enxframe *fr)
     {
         enxblock_free(&(fr->block[b]));
     }
-    free(fr->block);
+    sfree(fr->block);
 }
 
 void add_blocks_enxframe(t_enxframe *fr, int n)

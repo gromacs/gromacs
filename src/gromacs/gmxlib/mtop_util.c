@@ -37,7 +37,9 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
+
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "mtop_util.h"

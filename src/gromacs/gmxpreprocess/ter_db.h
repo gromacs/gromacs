@@ -38,7 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_TER_DB_H
 #define GMX_GMXPREPROCESS_TER_DB_H
 
-#include "sysstuff.h"
 #include "hackblock.h"
 #include "grompp-impl.h"
 

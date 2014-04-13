@@ -37,10 +37,10 @@
 #ifndef _inputrec_h_
 #define _inputrec_h_
 
+#include <stdio.h>
 
 #include "simple.h"
 #include "enums.h"
-#include "../sysstuff.h"
 #include "../../swap/enums.h"
 
 #ifdef __cplusplus

@@ -41,6 +41,7 @@
  */
 #include "gromacs/selection/indexutil.h"
 
+#include <cstdlib>
 #include <cstring>
 
 #include <string>
@@ -464,7 +465,7 @@ cmp_atomid(const void *a, const void *b)
 void
 gmx_ana_index_sort(gmx_ana_index_t *g)
 {
-    qsort(g->index, g->isize, sizeof(*g->index), cmp_atomid);
+    std::qsort(g->index, g->isize, sizeof(*g->index), cmp_atomid);
 }
 
 /*!

@@ -38,7 +38,8 @@
 #ifndef _types_pbc_h
 #define _types_pbc_h
 
-#include "sysstuff.h"
+#include <stdio.h>
+
 #include "typedefs.h"
 
 #ifdef __cplusplus

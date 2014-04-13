@@ -37,6 +37,8 @@
 #endif
 
 #include <math.h>
+#include <stdlib.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "vec.h"

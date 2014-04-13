@@ -117,7 +117,6 @@
 
 #include "types/simple.h"
 #include "typedefs.h"
-#include "sysstuff.h"
 #include "physics.h"
 
 #include "../math/utilities.h"

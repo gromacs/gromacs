@@ -38,6 +38,8 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "gromacs/fileio/confio.h"
 #include "types/commrec.h"
 #include "constr.h"

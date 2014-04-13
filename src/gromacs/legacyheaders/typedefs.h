@@ -43,7 +43,7 @@
 #define NOTSET -12345
 
 #include <sys/types.h>
-#include "sysstuff.h"
+
 #include "types/simple.h"
 #include "types/enums.h"
 #include "types/block.h"
