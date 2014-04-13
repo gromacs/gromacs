@@ -38,7 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_H_DB_H
 #define GMX_GMXPREPROCESS_H_DB_H
 
-#include "sysstuff.h"
+#include <stdio.h>
+
 #include "hackblock.h"
 
 #ifdef __cplusplus

@@ -93,7 +93,7 @@ void free_t_restp(int nrtp, t_restp **rtp)
             free_t_bondeds(&(*rtp)[i].rb[j]);
         }
     }
-    free(*rtp);
+    sfree(*rtp);
 }
 
 void free_t_hack(int nh, t_hack **h)

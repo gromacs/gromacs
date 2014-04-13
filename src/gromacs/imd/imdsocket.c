@@ -50,13 +50,13 @@
 #include <config.h>
 #endif
 
-
+#include <errno.h>
 #include <string.h>
+
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "imdsocket.h"
 #include "imd.h"
-
 
 #ifdef GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK
@@ -78,7 +78,6 @@ extern int imdsock_winsockinit()
 #endif
 #else
 /* On UNIX, we can use nice errors from errno.h */
-#include <errno.h>
 #include <unistd.h>
 #endif
 

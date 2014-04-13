@@ -331,12 +331,12 @@ void done_molblock(gmx_molblock_t *molb)
     if (molb->nposres_xA > 0)
     {
         molb->nposres_xA = 0;
-        free(molb->posres_xA);
+        sfree(molb->posres_xA);
     }
     if (molb->nposres_xB > 0)
     {
         molb->nposres_xB = 0;
-        free(molb->posres_xB);
+        sfree(molb->posres_xB);
     }
 }
 
