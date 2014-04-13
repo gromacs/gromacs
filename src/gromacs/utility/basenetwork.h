@@ -101,7 +101,7 @@ int gmx_physicalnode_id_hash(void);
 int gmx_hostname_num(void);
 
 /** Abort the parallel run */
-void gmx_abort(int nodeid, int nnodes, int errorno);
+void gmx_abort(int errorno);
 
 #ifdef __cplusplus
 }

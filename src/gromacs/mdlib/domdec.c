@@ -47,7 +47,7 @@
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gmx_fatal_collective.h"
+#include "network.h"
 #include "vec.h"
 #include "domdec.h"
 #include "domdec_network.h"
