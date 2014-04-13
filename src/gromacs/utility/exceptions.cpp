@@ -516,7 +516,7 @@ int processExceptionAtExit(const std::exception & /*ex*/)
 #ifdef GMX_LIB_MPI
     // TODO: Consider moving the output done in gmx_abort() into the message
     // printing routine above, so that this could become a simple MPI_Abort().
-    gmx_abort(gmx_node_rank(), gmx_node_num(), returnCode);
+    gmx_abort(returnCode);
 #endif
     return returnCode;
 }
