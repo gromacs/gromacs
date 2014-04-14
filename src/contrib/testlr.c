@@ -44,7 +44,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/writeps.h"
 #include "copyrite.h"
-#include "minvert.h"
 #include "pppm.h"
 #include "readinp.h"
 #include "force.h"
