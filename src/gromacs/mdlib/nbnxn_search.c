@@ -3258,7 +3258,14 @@ static gmx_inline void fep_list_new_nri_copy(t_nblist *nlist)
     /* Add a new i-entry */
     nlist->nri++;
 
-    assert(nlist->nri < nlist->maxnri);
+    /* Dirty hack to prevent address not mapped error
+     * in some systems like dna or protein dna complexes.
+     * For details see issue #1474
+     */
+    if (nlist->nri >= nlist->maxnri) {
+        nlist->maxnri = nlist->nri + 1;
+        reallocate_nblist(nlist);
+    }
 
     /* Duplicate the last i-entry, except for jindex, which continues */
     nlist->iinr[nlist->nri]   = nlist->iinr[nlist->nri-1];
