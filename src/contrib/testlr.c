@@ -45,7 +45,6 @@
 #include "gromacs/fileio/writeps.h"
 #include "copyrite.h"
 #include "xvgr.h"
-#include "minvert.h"
 #include "pppm.h"
 #include "readinp.h"
 #include "force.h"
