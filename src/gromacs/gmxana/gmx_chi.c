@@ -1565,7 +1565,7 @@ int gmx_chi(int argc, char *argv[])
         }
     }
 
-    /* Correlation comes last because it fucks up the angles */
+    /* Correlation comes last because it messes up the angles */
     if (bCorr)
     {
         do_dihcorr(opt2fn("-corr", NFILE, fnm), nf, ndih, dih, dt, nlist, dlist, time,
