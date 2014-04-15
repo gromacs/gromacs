@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "gstat.h"
 #include "vec.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"

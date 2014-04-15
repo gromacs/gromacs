@@ -57,7 +57,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trnio.h"
 #include "mshift.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "gromacs/fileio/matio.h"

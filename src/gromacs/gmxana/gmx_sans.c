@@ -42,7 +42,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
 #include "index.h"

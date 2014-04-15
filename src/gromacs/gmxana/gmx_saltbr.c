@@ -50,7 +50,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "pbc.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gmx_ana.h"
 
 #include "gromacs/utility/fatalerror.h"

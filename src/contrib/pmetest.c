@@ -53,7 +53,7 @@
 #include "rmpbc.h"
 #include "pme.h"
 #include "force.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "pbc.h"
 
 #include "gromacs/utility/gmxmpi.h"

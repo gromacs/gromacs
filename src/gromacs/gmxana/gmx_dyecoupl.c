@@ -39,7 +39,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/trxio.h"
 
 #include "gromacs/utility/fatalerror.h"

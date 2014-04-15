@@ -57,6 +57,7 @@ set(FILEIO_PUBLIC_HEADERS
     trxio.h
     xdr_datatype.h
     xtcio.h
+    xvgr.h
     )
 gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
 

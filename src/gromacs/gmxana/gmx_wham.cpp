@@ -63,7 +63,7 @@
 #include "gmx_ana.h"
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 
 #include "gromacs/utility/fatalerror.h"
 

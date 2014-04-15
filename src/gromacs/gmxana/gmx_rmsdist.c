@@ -52,7 +52,7 @@
 #include "macros.h"
 #include "index.h"
 #include "pbc.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"

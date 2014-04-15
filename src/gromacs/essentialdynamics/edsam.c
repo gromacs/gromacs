@@ -57,7 +57,7 @@
 #include "mtop_util.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/mdlib/groupcoord.h"
 
 #include "gromacs/linearalgebra/nrjac.h"

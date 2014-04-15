@@ -42,7 +42,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/fileio/confio.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "index.h"
 #include "gmx_ana.h"

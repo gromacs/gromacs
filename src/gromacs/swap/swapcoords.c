@@ -57,7 +57,7 @@
 #include "names.h"
 #include "network.h"
 #include "mdrun.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/timing/wallcycle.h"

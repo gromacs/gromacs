@@ -62,7 +62,7 @@
 #include "rmpbc.h"
 #include "pbc.h"
 #include "viewit.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gmx_ana.h"
 
 #include "gromacs/math/do_fit.h"

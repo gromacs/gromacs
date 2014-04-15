@@ -50,7 +50,7 @@
 #include "index.h"
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gstat.h"
 #include "gromacs/fileio/trnio.h"

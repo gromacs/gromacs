@@ -49,7 +49,7 @@
 #include "pbc.h"
 #include "bondf.h"
 #include "gromacs/utility/futil.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "txtdump.h"
 #include "gromacs/statistics/statistics.h"

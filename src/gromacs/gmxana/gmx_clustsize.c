@@ -46,7 +46,7 @@
 #include "pbc.h"
 #include "rmpbc.h"
 #include "gromacs/commandline/pargs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

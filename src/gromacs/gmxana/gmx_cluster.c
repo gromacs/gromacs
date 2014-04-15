@@ -55,7 +55,7 @@
 #include "gromacs/random/random.h"
 #include "pbc.h"
 #include "rmpbc.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "cmat.h"
