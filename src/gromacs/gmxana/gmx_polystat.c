@@ -37,6 +37,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <math.h>
 #include <string.h>
 
@@ -49,6 +50,7 @@
 #include "index.h"
 #include "macros.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

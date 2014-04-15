@@ -69,7 +69,6 @@
 #include "network.h"
 #include "calcmu.h"
 #include "constr.h"
-#include "xvgr.h"
 #include "copyrite.h"
 #include "domdec.h"
 #include "genborn.h"

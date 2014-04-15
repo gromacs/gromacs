@@ -44,6 +44,7 @@
 #include "gstat.h"
 #include "vec.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "pbc.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"

@@ -45,7 +45,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "xvgr.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"

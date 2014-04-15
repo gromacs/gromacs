@@ -51,6 +51,7 @@
 #include "physics.h"
 #include "gromacs/utility/fatalerror.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gmx_ana.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/cstringutil.h"

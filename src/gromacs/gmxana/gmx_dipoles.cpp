@@ -50,6 +50,7 @@
 #include "bondf.h"
 #include "gromacs/utility/futil.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "txtdump.h"
 #include "gromacs/statistics/statistics.h"
 #include "gstat.h"

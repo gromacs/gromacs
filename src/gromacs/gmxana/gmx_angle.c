@@ -51,6 +51,7 @@
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gstat.h"
 #include "gromacs/fileio/trnio.h"
 #include "gmx_ana.h"

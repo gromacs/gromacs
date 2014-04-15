@@ -38,9 +38,9 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
@@ -53,6 +53,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gstat.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 

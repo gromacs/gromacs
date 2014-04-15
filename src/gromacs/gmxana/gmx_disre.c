@@ -46,6 +46,7 @@
 #include "macros.h"
 #include "mshift.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "vec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/smalloc.h"

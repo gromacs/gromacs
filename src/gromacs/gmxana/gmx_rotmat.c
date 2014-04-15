@@ -49,6 +49,7 @@
 #include "index.h"
 #include "mshift.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

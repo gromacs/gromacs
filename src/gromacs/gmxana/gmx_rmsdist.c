@@ -53,6 +53,7 @@
 #include "index.h"
 #include "pbc.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"

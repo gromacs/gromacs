@@ -60,7 +60,6 @@
 #include "network.h"
 #include "calcmu.h"
 #include "constr.h"
-#include "xvgr.h"
 #include "gromacs/random/random.h"
 #include "domdec.h"
 #include "macros.h"

@@ -55,7 +55,6 @@
 #include "md_support.h"
 #include "md_logging.h"
 #include "network.h"
-#include "xvgr.h"
 #include "physics.h"
 #include "names.h"
 #include "force.h"

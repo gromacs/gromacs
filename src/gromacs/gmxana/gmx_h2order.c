@@ -39,8 +39,8 @@
 #endif
 
 #include <math.h>
-
 #include <string.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
@@ -48,6 +48,7 @@
 #include "rmpbc.h"
 #include "vec.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"

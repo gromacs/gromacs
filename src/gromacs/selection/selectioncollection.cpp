@@ -50,7 +50,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/xvgr.h"
 
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"

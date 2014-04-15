@@ -52,7 +52,6 @@
 #include "oenv.h"
 #include "gromacs/utility/smalloc.h"
 #include "xvgr.h"
-#include "viewit.h"
 #include "vec.h"
 #include "gromacs/fileio/gmxfio.h"
 

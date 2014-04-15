@@ -51,6 +51,7 @@
 #include "index.h"
 #include "mshift.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "princ.h"
 #include "rmpbc.h"
 #include "txtdump.h"

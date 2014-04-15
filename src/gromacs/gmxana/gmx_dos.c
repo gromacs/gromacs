@@ -56,6 +56,7 @@
 #include "typedefs.h"
 #include "vec.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "gromacs/fft/fft.h"

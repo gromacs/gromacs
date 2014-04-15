@@ -46,6 +46,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"

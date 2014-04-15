@@ -53,7 +53,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "force.h"
 #include "names.h"
-#include "xvgr.h"
 #include "gromacs/utility/fatalerror.h"
 #include "physics.h"
 #include "force.h"

@@ -47,6 +47,7 @@
 #include "gstat.h"
 #include "vec.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"

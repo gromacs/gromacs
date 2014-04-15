@@ -40,8 +40,9 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "viewit.h"
+#include "types/oenv.h"
+#include "types/simple.h"
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
