@@ -90,7 +90,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
         --suppress=invalidscanf:src/gromacs/fileio/matio.cpp
-        --suppress=invalidscanf:src/gromacs/gmxlib/xvgr.cpp
+        --suppress=invalidscanf:src/gromacs/fileio/xvgr.cpp
         --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp
         --suppress=*:src/gromacs/selection/scanner.cpp)
 

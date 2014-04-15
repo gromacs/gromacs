@@ -43,7 +43,7 @@
 
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"

@@ -57,7 +57,7 @@
 #include "addconf.h"
 #include "read-conformation.h"
 #include "pbc.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 
 #include "gromacs/utility/cstringutil.h"
 

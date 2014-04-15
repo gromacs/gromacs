@@ -51,7 +51,7 @@
 #include "gromacs/utility/futil.h"
 #include "index.h"
 #include "mshift.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
 #include "txtdump.h"
 #include "eigio.h"

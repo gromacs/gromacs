@@ -61,7 +61,7 @@
 #include "gromacs/fileio/xtcio.h"
 #include "rmpbc.h"
 #include "pbc.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gmx_ana.h"
 
 #include "gromacs/utility/fatalerror.h"

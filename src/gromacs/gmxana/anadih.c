@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "txtdump.h"
 #include "bondf.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "gstat.h"

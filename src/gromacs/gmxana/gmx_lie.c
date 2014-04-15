@@ -52,7 +52,7 @@
 #include "txtdump.h"
 #include "gromacs/fileio/enxio.h"
 #include "gstat.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"

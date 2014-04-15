@@ -51,7 +51,7 @@
 #include "gromacs/utility/futil.h"
 #include "index.h"
 #include "mshift.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "princ.h"
 #include "rmpbc.h"
 #include "txtdump.h"

@@ -47,7 +47,7 @@
 #include "gstat.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "correl.h"
 #include "gmx_ana.h"

@@ -51,10 +51,10 @@
 
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/vec.h"
-#include "gromacs/legacyheaders/xvgr.h"
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"

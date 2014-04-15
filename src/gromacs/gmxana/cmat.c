@@ -42,7 +42,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "vec.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/utility/futil.h"
 

@@ -57,7 +57,7 @@
 #include "txtdump.h"
 #include "typedefs.h"
 #include "vec.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"

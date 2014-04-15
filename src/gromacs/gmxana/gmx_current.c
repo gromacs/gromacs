@@ -44,7 +44,7 @@
 #include "vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "rmpbc.h"
 #include "pbc.h"
 #include "physics.h"
