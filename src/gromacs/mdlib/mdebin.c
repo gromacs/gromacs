@@ -54,7 +54,7 @@
 #include "orires.h"
 #include "constr.h"
 #include "mtop_util.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "macros.h"
 #include "mdrun.h"

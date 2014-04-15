@@ -45,7 +45,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "vec.h"
 #include "network.h"
 #include "physics.h"

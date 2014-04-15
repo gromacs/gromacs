@@ -49,7 +49,7 @@
 #include "vec.h"
 #include "index.h"
 #include "macros.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "rmpbc.h"
 #include "gromacs/fileio/tpxio.h"

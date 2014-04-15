@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/fileio/xvgr.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -46,18 +48,17 @@
 #include <sys/time.h>
 #endif
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/futil.h"
-#include "copyrite.h"
-#include "oenv.h"
-#include "gromacs/utility/smalloc.h"
-#include "xvgr.h"
-#include "vec.h"
-#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {

@@ -66,7 +66,7 @@
 #include "mdrun.h"
 #include "sighandler.h"
 #include "gmx_ga2la.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/fileio/confio.h"
 #include "mtop_util.h"

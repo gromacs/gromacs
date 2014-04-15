@@ -49,7 +49,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/fatalerror.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/matio.h"
 #include "index.h"
 #include "gstat.h"

@@ -42,7 +42,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/utility/fatalerror.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"

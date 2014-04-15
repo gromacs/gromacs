@@ -53,7 +53,7 @@
 #include <string.h>
 #include "gromacs/utility/smalloc.h"
 #include "pull.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "names.h"
 #include "pbc.h"
 #include "mtop_util.h"

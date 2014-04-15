@@ -43,7 +43,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gstat.h"
 #include "vec.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "pbc.h"
 #include "index.h"

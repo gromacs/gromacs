@@ -47,7 +47,7 @@
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/fatalerror.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
 #include "index.h"
 #include "gromacs/fileio/pdbio.h"

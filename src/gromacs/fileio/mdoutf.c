@@ -34,7 +34,6 @@
  */
 #include "mdoutf.h"
 
-#include "gromacs/legacyheaders/xvgr.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/mvdata.h"
@@ -46,6 +45,7 @@
 #include "checkpoint.h"
 #include "copyrite.h"
 
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

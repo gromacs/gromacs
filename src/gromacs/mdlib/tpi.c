@@ -64,7 +64,7 @@
 #include "domdec.h"
 #include "gromacs/random/random.h"
 #include "physics.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "mdatoms.h"
 #include "ns.h"
 #include "mtop_util.h"

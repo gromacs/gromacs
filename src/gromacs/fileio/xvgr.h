@@ -34,14 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _xvgr_h
-#define _xvgr_h
+#ifndef GMX_FILEIO_XVGR_H
+#define GMX_FILEIO_XVGR_H
 
 #include <stdio.h>
 
-#include "types/oenv.h"
-#include "types/simple.h"
+#include "../legacyheaders/types/oenv.h"
+#include "../legacyheaders/types/simple.h"
 #include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -193,4 +192,4 @@ real **read_xvg_time(const char *fn,
 }
 #endif
 
-#endif  /* _xvgr_h */
+#endif

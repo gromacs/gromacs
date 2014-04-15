@@ -52,7 +52,7 @@
 #include "readinp.h"
 #include "txtdump.h"
 #include "gstat.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "physics.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/matio.h"

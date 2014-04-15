@@ -49,7 +49,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "names.h"
 #include "macros.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
 #include "physics.h"
 #include "gromacs/fileio/matio.h"

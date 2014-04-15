@@ -51,7 +51,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "macros.h"
 
 static const char *etitles[] = { "E-docked", "Free Energy" };

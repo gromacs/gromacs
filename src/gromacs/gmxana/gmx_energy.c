@@ -52,7 +52,7 @@
 #include "names.h"
 #include "copyrite.h"
 #include "macros.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
 #include "physics.h"
 #include "gromacs/fileio/tpxio.h"

@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "mshift.h"
-#include "xvgr.h"
+#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "vec.h"
 #include "gromacs/fileio/confio.h"
