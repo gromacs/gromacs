@@ -46,7 +46,6 @@
 #include "vec.h"
 #include "gromacs/utility/futil.h"
 #include "copyrite.h"
-#include "xvgr.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"
 

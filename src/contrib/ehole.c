@@ -49,7 +49,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/futil.h"
 #include "physics.h"
-#include "xvgr.h"
 #include "vec.h"
 #include "names.h"
 #include "ehdata.h"

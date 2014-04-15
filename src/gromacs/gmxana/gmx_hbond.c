@@ -51,6 +51,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gstat.h"
 #include "gromacs/utility/cstringutil.h"
 #include "pbc.h"

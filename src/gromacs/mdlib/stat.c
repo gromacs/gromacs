@@ -62,7 +62,6 @@
 #include "domdec.h"
 #include "constr.h"
 #include "checkpoint.h"
-#include "xvgr.h"
 #include "md_support.h"
 #include "mdrun.h"
 #include "sim_util.h"

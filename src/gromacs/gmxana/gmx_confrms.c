@@ -45,7 +45,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "typedefs.h"
-#include "xvgr.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "vec.h"

@@ -38,11 +38,13 @@
 #include <config.h>
 #endif
 
-#include "gromacs/utility/smalloc.h"
 #include <math.h>
+
+#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "typedefs.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gromacs/commandline/pargs.h"
 #include "vec.h"
 #include "index.h"

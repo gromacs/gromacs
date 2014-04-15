@@ -37,9 +37,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <stdio.h>
 
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -50,11 +52,11 @@
 #include "index.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
-#include <string.h>
 #include "txtdump.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "pbc.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"

@@ -39,6 +39,7 @@
 #endif
 
 #include <math.h>
+#include <string.h>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/fatalerror.h"
@@ -55,11 +56,11 @@
 #include "index.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
-#include <string.h>
 #include "txtdump.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gmx_ana.h"
 
 int gmx_helix(int argc, char *argv[])

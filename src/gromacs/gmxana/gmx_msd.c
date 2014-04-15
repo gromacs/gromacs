@@ -49,6 +49,7 @@
 #include "index.h"
 #include "typedefs.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gstat.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/fileio/tpxio.h"

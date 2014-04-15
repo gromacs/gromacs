@@ -48,7 +48,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "gromacs/utility/futil.h"
-#include "xvgr.h"
 #include "gromacs/utility/fatalerror.h"
 #include "bondf.h"
 #include "copyrite.h"

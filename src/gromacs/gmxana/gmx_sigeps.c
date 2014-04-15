@@ -38,12 +38,13 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "xvgr.h"
+#include "viewit.h"
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"

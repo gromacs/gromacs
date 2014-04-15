@@ -35,6 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
+#include "viewit.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -43,10 +45,9 @@
 #include <string.h>
 
 #include "oenv.h"
-#include "viewit.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/fileio/filenm.h"
 #include "macros.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
 static const int   can_view_ftp[] = {
@@ -59,7 +60,7 @@ static const char* view_program[] = {
     "ghostview",    "display",      NULL,           "xterm -e rasmol"
 };
 
-int can_view(int ftp)
+static int can_view(int ftp)
 {
     int i;
 
