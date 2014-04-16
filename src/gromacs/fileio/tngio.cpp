@@ -489,7 +489,7 @@ void gmx_tng_prepare_md_writing(tng_trajectory_t  tng,
 
 #ifdef GMX_USE_TNG
 /* Create a TNG molecule representing the selection groups
- * to write */
+ * to write. */
 static void add_selection_groups(tng_trajectory_t  tng,
                                  const gmx_mtop_t *mtop)
 {
@@ -508,10 +508,43 @@ static void add_selection_groups(tng_trajectory_t  tng,
     gmx_int64_t              nMols;
     char                    *groupName;
 
+    /* TODO: When the TNG molecules block is more flexible selection
+     * groups should not need all atoms specified. It should be possible
+     * just to specify what molecules are selected (and/or which atoms in
+     * the molecule) and how many (if applicable). */
+
     /* The name of the TNG molecule containing the selection group is the
      * same as the name of the selection group. */
     nameIndex = *mtop->groups.grps[egcCompressedX].nm_ind;
     groupName = *mtop->groups.grpname[nameIndex];
+
+    /* First count if the number of atoms are the same in the molecular system
+     * as in the selection, in which case we do not need to create a molecule
+     * for the selection in TNG. */
+    for (molIt = 0; molIt < mtop->nmoltype; molIt++)
+    {
+        molType = &mtop->moltype[mtop->molblock[molIt].type];
+
+        atoms = &molType->atoms;
+
+        for (j = 0; j < mtop->molblock[molIt].nmol; j++)
+        {
+            for (atomIt = 0; atomIt < atoms->nr; atomIt++, i++)
+            {
+                if (ggrpnr(&mtop->groups, egcCompressedX, i) == 0)
+                {
+                    nAtoms++;
+                }
+            }
+        }
+    }
+
+    if (nAtoms == i)
+    {
+        return;
+    }
+    
+    i = 0;
 
     tng_molecule_alloc(tng, &mol);
     tng_molecule_name_set(tng, mol, groupName);
@@ -619,24 +652,17 @@ static void add_selection_groups(tng_trajectory_t  tng,
             atom_offset += atoms->nr;
         }
     }
-    if (nAtoms != i)
+    tng_molecule_existing_add(tng, &mol);
+    tng_molecule_cnt_set(tng, mol, 1);
+    tng_num_molecule_types_get(tng, &nMols);
+    for (gmx_int64_t k = 0; k < nMols; k++)
     {
-        tng_molecule_existing_add(tng, &mol);
-        tng_molecule_cnt_set(tng, mol, 1);
-        tng_num_molecule_types_get(tng, &nMols);
-        for (gmx_int64_t k = 0; k < nMols; k++)
+        tng_molecule_of_index_get(tng, k, &iterMol);
+        if (iterMol == mol)
         {
-            tng_molecule_of_index_get(tng, k, &iterMol);
-            if (iterMol == mol)
-            {
-                continue;
-            }
-            tng_molecule_cnt_set(tng, iterMol, 0);
+            continue;
         }
-    }
-    else
-    {
-        tng_molecule_free(tng, &mol);
+        tng_molecule_cnt_set(tng, iterMol, 0);
     }
 }
 #endif
