@@ -488,8 +488,41 @@ void gmx_tng_prepare_md_writing(tng_trajectory_t  tng,
 }
 
 #ifdef GMX_USE_TNG
+/* Check if all atoms in the molecule system are selected
+ * by a selection group of type specified by gtype. */
+static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
+                                   const int gtype)
+{
+    const gmx_moltype_t     *molType;
+    const t_atoms           *atoms;
+
+    /* Iterate through all atoms in the molecule system and
+     * check if they belong to a selection group of the
+     * requested type. */
+    for (int molIt = 0, i = 0; molIt < mtop->nmoltype; molIt++)
+    {
+        molType = &mtop->moltype[mtop->molblock[molIt].type];
+
+        atoms = &molType->atoms;
+
+        for (int j = 0; j < mtop->molblock[molIt].nmol; j++)
+        {
+            for (int atomIt = 0; atomIt < atoms->nr; atomIt++, i++)
+            {
+                if (ggrpnr(&mtop->groups, gtype, i) != 0)
+                {
+                    return FALSE;
+                }
+            }
+        }
+    }
+    return TRUE;
+}
+
 /* Create a TNG molecule representing the selection groups
- * to write */
+ * to write if there is a selection group for compressed
+ * positions and if the selection group is not the whole
+ * system. */
 static void add_selection_groups(tng_trajectory_t  tng,
                                  const gmx_mtop_t *mtop)
 {
@@ -498,7 +531,7 @@ static void add_selection_groups(tng_trajectory_t  tng,
     const t_atom            *at;
     const t_resinfo         *resInfo;
     const t_ilist           *ilist;
-    int                      nAtoms      = 0, i = 0, j, molIt, atomIt, nameIndex;
+    int                      nameIndex;
     int                      atom_offset = 0;
     tng_molecule_t           mol, iterMol;
     tng_chain_t              chain;
@@ -508,6 +541,25 @@ static void add_selection_groups(tng_trajectory_t  tng,
     gmx_int64_t              nMols;
     char                    *groupName;
 
+    /* TODO: When the TNG molecules block is more flexible TNG selection
+     * groups should not need all atoms specified. It should be possible
+     * just to specify what molecules are selected (and/or which atoms in
+     * the molecule) and how many (if applicable). */
+
+    /* If no atoms are selected we do not need to create a
+     * TNG selection group molecule. */
+    if (mtop->groups.ngrpnr[egcCompressedX] == 0)
+    {
+        return;
+    }
+
+    /* If all atoms are selected we do not have to create a selection
+     * group molecule in the TNG molecule system. */
+    if (all_atoms_selected(mtop, egcCompressedX))
+    {
+        return;
+    }
+
     /* The name of the TNG molecule containing the selection group is the
      * same as the name of the selection group. */
     nameIndex = *mtop->groups.grps[egcCompressedX].nm_ind;
@@ -516,16 +568,16 @@ static void add_selection_groups(tng_trajectory_t  tng,
     tng_molecule_alloc(tng, &mol);
     tng_molecule_name_set(tng, mol, groupName);
     tng_molecule_chain_add(tng, mol, "", &chain);
-    for (molIt = 0; molIt < mtop->nmoltype; molIt++)
+    for (int molIt = 0, i = 0; molIt < mtop->nmoltype; molIt++)
     {
         molType = &mtop->moltype[mtop->molblock[molIt].type];
 
         atoms = &molType->atoms;
 
-        for (j = 0; j < mtop->molblock[molIt].nmol; j++)
+        for (int j = 0; j < mtop->molblock[molIt].nmol; j++)
         {
             bool bAtomsAdded = FALSE;
-            for (atomIt = 0; atomIt < atoms->nr; atomIt++, i++)
+            for (int atomIt = 0; atomIt < atoms->nr; atomIt++, i++)
             {
                 char *res_name;
                 int   res_id;
@@ -558,7 +610,6 @@ static void add_selection_groups(tng_trajectory_t  tng,
                 tng_residue_atom_w_id_add(tng, res, *(atoms->atomname[atomIt]),
                                           *(atoms->atomtype[atomIt]),
                                           atom_offset + atomIt, &atom);
-                nAtoms++;
                 bAtomsAdded = TRUE;
             }
             /* Add bonds. */
@@ -619,24 +670,17 @@ static void add_selection_groups(tng_trajectory_t  tng,
             atom_offset += atoms->nr;
         }
     }
-    if (nAtoms != i)
+    tng_molecule_existing_add(tng, &mol);
+    tng_molecule_cnt_set(tng, mol, 1);
+    tng_num_molecule_types_get(tng, &nMols);
+    for (gmx_int64_t k = 0; k < nMols; k++)
     {
-        tng_molecule_existing_add(tng, &mol);
-        tng_molecule_cnt_set(tng, mol, 1);
-        tng_num_molecule_types_get(tng, &nMols);
-        for (gmx_int64_t k = 0; k < nMols; k++)
+        tng_molecule_of_index_get(tng, k, &iterMol);
+        if (iterMol == mol)
         {
-            tng_molecule_of_index_get(tng, k, &iterMol);
-            if (iterMol == mol)
-            {
-                continue;
-            }
-            tng_molecule_cnt_set(tng, iterMol, 0);
+            continue;
         }
-    }
-    else
-    {
-        tng_molecule_free(tng, &mol);
+        tng_molecule_cnt_set(tng, iterMol, 0);
     }
 }
 #endif
