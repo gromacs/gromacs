@@ -644,7 +644,7 @@ void gmx_tng_set_compression_precision(tng_trajectory_t tng,
                                        real             prec)
 {
 #ifdef GMX_USE_TNG
-    tng_compression_precision_set(tng, 1.0/prec);
+    tng_compression_precision_set(tng, prec);
 #else
     GMX_UNUSED_VALUE(tng);
     GMX_UNUSED_VALUE(prec);
