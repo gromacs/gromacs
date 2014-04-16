@@ -40,7 +40,7 @@
 
 #include <math.h>
 
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "nonbonded.h"
 #include "nb_kernel.h"

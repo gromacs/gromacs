@@ -38,12 +38,12 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
+
 #include "typedefs.h"
 #include "macros.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "physics.h"
 #include "force.h"
@@ -63,8 +63,10 @@
 #include "qmmm.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void ns(FILE              *fp,
         t_forcerec        *fr,

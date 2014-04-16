@@ -46,7 +46,7 @@
 /* Modified DvdS */
 #include "pbc.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "nsc.h"
 

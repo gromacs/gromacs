@@ -48,7 +48,7 @@
 #include "nrnb.h"
 #include "physics.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "update.h"
 #include "gromacs/random/random.h"
 #include "mshift.h"

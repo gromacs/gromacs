@@ -49,7 +49,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/strdb.h"
 #include "index.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "physics.h"

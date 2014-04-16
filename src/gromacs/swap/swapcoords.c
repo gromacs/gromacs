@@ -53,7 +53,7 @@
 #include "gromacs/mdlib/groupcoord.h"
 #include "mtop_util.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "names.h"
 #include "network.h"
 #include "mdrun.h"

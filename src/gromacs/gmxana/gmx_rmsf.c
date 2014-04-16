@@ -46,7 +46,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/commandline/pargs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "index.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"

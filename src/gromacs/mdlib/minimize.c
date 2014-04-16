@@ -53,7 +53,7 @@
 #include "typedefs.h"
 #include "update.h"
 #include "constr.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "tgroup.h"
 #include "mdebin.h"
 #include "vsite.h"

@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "dens_filter.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 
 #ifdef GMX_DOUBLE
 #define EXP(x) (exp(x))

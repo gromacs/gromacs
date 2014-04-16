@@ -46,7 +46,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "mdatoms.h"
 #include "coulomb.h"
 #include "nsb.h"

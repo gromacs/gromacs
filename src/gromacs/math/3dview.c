@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "physics.h"
 #include "pbc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 
 #include "gromacs/utility/fatalerror.h"
 

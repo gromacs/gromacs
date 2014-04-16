@@ -49,7 +49,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "index.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gstat.h"

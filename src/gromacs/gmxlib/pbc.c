@@ -43,7 +43,7 @@
 
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "pbc.h"
 #include "gromacs/utility/smalloc.h"

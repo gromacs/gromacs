@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gmx_random.h"
 #include "gmx_statistics.h"
 

@@ -42,7 +42,7 @@
 
 #include "types/simple.h"
 
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "nb_kernel_allvsall.h"

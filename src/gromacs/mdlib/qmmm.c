@@ -45,7 +45,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "physics.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "force.h"
 #include "invblock.h"
 #include "gromacs/fileio/confio.h"

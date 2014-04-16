@@ -42,7 +42,7 @@
 #include <string.h>
 
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/commandline/pargs.h"

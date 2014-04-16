@@ -47,7 +47,7 @@
 #include "txtdump.h"
 #include "gromacs/utility/fatalerror.h"
 #include "atomprop.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "physics.h"
 #include "index.h"

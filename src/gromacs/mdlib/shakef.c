@@ -43,7 +43,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "pbc.h"
 #include "txtdump.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
 #include "constr.h"
 

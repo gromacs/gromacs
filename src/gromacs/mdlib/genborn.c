@@ -46,7 +46,7 @@
 #include "types/commrec.h"
 #include "gromacs/utility/smalloc.h"
 #include "genborn.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/pdbio.h"
 #include "names.h"
 #include "physics.h"

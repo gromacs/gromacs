@@ -56,7 +56,7 @@
 #include "toputil.h"
 #include "index.h"
 #include "network.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "mtop_util.h"
 #include "chargegroup.h"

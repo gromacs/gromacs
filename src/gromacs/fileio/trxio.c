@@ -56,7 +56,7 @@
 #include "tngio.h"
 #include "tngio_for_tools.h"
 #include "names.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "xtcio.h"
 #include "pdbio.h"

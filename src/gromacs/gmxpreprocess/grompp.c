@@ -59,7 +59,7 @@
 #include "grompp-impl.h"
 #include "gromacs/random/random.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "splitter.h"

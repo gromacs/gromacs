@@ -47,7 +47,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "readinp.h"
 #include "txtdump.h"

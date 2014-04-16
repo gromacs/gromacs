@@ -40,7 +40,7 @@
 #include <assert.h>
 
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"

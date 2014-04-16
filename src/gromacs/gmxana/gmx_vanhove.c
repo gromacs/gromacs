@@ -54,7 +54,7 @@
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 

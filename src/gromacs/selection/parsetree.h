@@ -56,8 +56,8 @@
 #include <string>
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/uniqueptr.h"
 

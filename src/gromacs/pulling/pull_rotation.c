@@ -51,7 +51,7 @@
 #include "names.h"
 #include "mtop_util.h"
 #include "names.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gmx_ga2la.h"
 #include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"

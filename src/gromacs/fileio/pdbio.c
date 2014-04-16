@@ -42,13 +42,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "vec.h"
-#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "symtab.h"
 #include "pdbio.h"
-#include "vec.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "atomprop.h"
@@ -56,7 +52,10 @@
 #include "pbc.h"
 #include "gmxfio.h"
 
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int ai, aj;

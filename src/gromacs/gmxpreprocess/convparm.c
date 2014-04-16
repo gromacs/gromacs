@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "physics.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/utility/fatalerror.h"

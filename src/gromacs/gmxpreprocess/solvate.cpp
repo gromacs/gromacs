@@ -50,7 +50,7 @@
 #include "gromacs/utility/futil.h"
 #include "atomprop.h"
 #include "names.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/conformation-utilities.h"

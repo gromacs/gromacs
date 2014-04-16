@@ -42,8 +42,6 @@
 #include "mshift.h"
 #include "tgroup.h"
 #include "network.h"
-#include "vec.h"
-
 
 #ifdef __cplusplus
 extern "C" {

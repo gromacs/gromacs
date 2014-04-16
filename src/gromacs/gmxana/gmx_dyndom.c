@@ -44,7 +44,7 @@
 #include "index.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "physics.h"
 #include "gmx_ana.h"
 #include "macros.h"

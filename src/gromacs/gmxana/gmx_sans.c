@@ -40,7 +40,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"

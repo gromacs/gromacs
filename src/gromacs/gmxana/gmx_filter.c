@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

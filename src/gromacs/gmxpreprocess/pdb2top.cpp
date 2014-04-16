@@ -42,7 +42,7 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "symtab.h"

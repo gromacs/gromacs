@@ -42,7 +42,7 @@
 #include <string.h>
 #include "hackblock.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
 
 /* these MUST correspond to the enum in hackblock.h */

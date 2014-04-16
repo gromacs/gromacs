@@ -51,7 +51,7 @@
 #include "gstat.h"
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "correl.h"
 
 #define MODE(x) ((mode & (x)) == (x))

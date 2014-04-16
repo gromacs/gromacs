@@ -45,7 +45,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "physics.h"
 #include "names.h"

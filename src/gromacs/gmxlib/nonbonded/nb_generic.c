@@ -41,7 +41,7 @@
 #include <math.h>
 
 #include "types/simple.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "nb_generic.h"
 #include "nrnb.h"

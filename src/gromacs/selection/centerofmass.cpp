@@ -45,7 +45,8 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
+
+#include "gromacs/math/vec.h"
 
 int
 gmx_calc_cog(t_topology * /* top */, rvec x[], int nrefat, atom_id index[], rvec xout)

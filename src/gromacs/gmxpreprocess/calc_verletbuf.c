@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "physics.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "coulomb.h"
 #include "calc_verletbuf.h"
 #include "../mdlib/nbnxn_consts.h"

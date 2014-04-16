@@ -43,7 +43,7 @@
 #include "names.h"
 #include "gromacs/fileio/matio.h"
 #include "physics.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "copyrite.h"
 #include "index.h"

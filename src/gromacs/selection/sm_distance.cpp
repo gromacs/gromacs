@@ -44,8 +44,8 @@
  */
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/math/vec.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"

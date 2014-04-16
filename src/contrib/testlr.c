@@ -35,7 +35,7 @@
 #include <math.h>
 #include <string.h>
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "physics.h"
 #include "macros.h"
 #include "names.h"

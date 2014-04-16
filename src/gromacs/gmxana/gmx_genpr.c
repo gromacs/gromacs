@@ -47,7 +47,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/futil.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "index.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
