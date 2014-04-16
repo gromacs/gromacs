@@ -41,7 +41,7 @@
 #include <stdlib.h>
 
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "sortwater.h"
 
 #include "gromacs/random/random.h"

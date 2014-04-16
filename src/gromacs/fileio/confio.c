@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "confio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "symtab.h"
 #include "gromacs/utility/futil.h"
 #include "xdrf.h"

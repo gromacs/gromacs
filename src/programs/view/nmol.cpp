@@ -47,7 +47,7 @@
 #include "buttons.h"
 #include "manager.h"
 #include "nmol.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "txtdump.h"
 #include "pbc.h"
 

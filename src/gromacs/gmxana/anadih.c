@@ -48,7 +48,7 @@
 #include "bondf.h"
 #include "gromacs/fileio/xvgr.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gstat.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"

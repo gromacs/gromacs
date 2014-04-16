@@ -67,7 +67,7 @@
 #include "types/commrec.h"
 #include "gromacs/utility/smalloc.h"
 #include "txtdump.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "network.h"
 #include "checkpoint.h"
 #include "gromacs/utility/cstringutil.h"

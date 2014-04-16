@@ -47,13 +47,8 @@
 #include "macros.h"
 #include "bondf.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
 #include "physics.h"
-#include "gromacs/commandline/pargs.h"
-#include "vec.h"
-#include "gromacs/math/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
@@ -61,12 +56,15 @@
 #include "pdb2top.h"
 #include "gen_ad.h"
 #include "gpp_nextnb.h"
-#include "vec.h"
 #include "atomprop.h"
 #include "hackblock.h"
 #include "nm2type.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 char atp[7] = "HCNOSX";
 #define NATP (asize(atp)-1)

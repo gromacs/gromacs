@@ -41,7 +41,7 @@
 #include <math.h>
 #include "types/simple.h"
 
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "network.h"

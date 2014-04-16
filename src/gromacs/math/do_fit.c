@@ -38,7 +38,7 @@
 
 #include "gromacs/math/utilities.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "txtdump.h"
 
 #include "gromacs/linearalgebra/nrjac.h"

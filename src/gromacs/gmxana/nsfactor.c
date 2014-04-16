@@ -38,7 +38,7 @@
 
 #include <string.h>
 
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nsfactor.h"
 
 #include "gromacs/utility/futil.h"

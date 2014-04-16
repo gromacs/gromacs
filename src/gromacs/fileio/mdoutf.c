@@ -46,6 +46,7 @@
 #include "copyrite.h"
 
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

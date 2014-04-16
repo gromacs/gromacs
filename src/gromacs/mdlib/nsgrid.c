@@ -47,7 +47,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "nsgrid.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "network.h"
 #include "domdec.h"
 #include "pbc.h"

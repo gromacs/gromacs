@@ -46,7 +46,7 @@
 #include "gen_vsite.h"
 #include "resall.h"
 #include "add_par.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "toputil.h"
 #include "physics.h"
 #include "index.h"

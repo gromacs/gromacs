@@ -47,7 +47,7 @@
 #include "txtdump.h"
 #include "gromacs/utility/smalloc.h"
 #include "ns.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"

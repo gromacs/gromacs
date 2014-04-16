@@ -41,9 +41,8 @@
  */
 #include "analysissettings.h"
 
-#include "gromacs/legacyheaders/vec.h"
-
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 

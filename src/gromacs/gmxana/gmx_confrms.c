@@ -47,7 +47,7 @@
 #include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "index.h"
 #include "pbc.h"
 #include "gromacs/utility/fatalerror.h"

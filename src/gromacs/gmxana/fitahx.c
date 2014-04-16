@@ -39,7 +39,7 @@
 #endif
 
 #include "fitahx.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 
 #include "gromacs/math/do_fit.h"
 #include "gromacs/utility/fatalerror.h"

@@ -41,7 +41,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/math/3dview.h"
 #include "txtdump.h"

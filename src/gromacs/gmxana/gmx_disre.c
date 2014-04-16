@@ -47,7 +47,7 @@
 #include "mshift.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/smalloc.h"
 #include "nrnb.h"

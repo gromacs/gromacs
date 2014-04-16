@@ -49,7 +49,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/utility/cstringutil.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
 #include "index.h"
 #include "gromacs/random/random.h"

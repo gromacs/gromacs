@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "physics.h"
 #include "toputil.h"
 #include "pdb2top.h"

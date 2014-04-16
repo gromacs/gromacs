@@ -52,7 +52,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "mdrun.h"
 #include "gromacs/random/random.h"

@@ -48,7 +48,7 @@
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
 #include "index.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "gbutil.h"
 #include "physics.h"

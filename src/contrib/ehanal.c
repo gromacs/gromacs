@@ -48,7 +48,7 @@
 #include "gromacs/utility/futil.h"
 #include "physics.h"
 #include "gromacs/fileio/xvgr.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "names.h"
 #include "ehdata.h"
 #include "gromacs/fileio/pdbio.h"

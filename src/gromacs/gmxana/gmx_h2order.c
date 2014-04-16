@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "princ.h"
 #include "rmpbc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "pbc.h"

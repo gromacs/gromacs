@@ -46,7 +46,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
 #include "gstat.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "index.h"
 
 #include "gromacs/utility/fatalerror.h"

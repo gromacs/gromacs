@@ -42,7 +42,7 @@
 #include "mshift.h"
 #include "pbc.h"
 #include "rmpbc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"

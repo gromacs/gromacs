@@ -42,7 +42,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"

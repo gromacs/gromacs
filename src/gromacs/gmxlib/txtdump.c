@@ -47,7 +47,7 @@
 #include "types/commrec.h"
 #include "names.h"
 #include "txtdump.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
 
 #include "gromacs/utility/fatalerror.h"

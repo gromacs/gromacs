@@ -39,8 +39,6 @@
 #endif
 
 #include "typedefs.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
 #include "mdrun.h"
 #include "domdec.h"
 #include "mtop_util.h"
@@ -50,7 +48,10 @@
 #include "md_logging.h"
 #include "md_support.h"
 
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };

@@ -53,7 +53,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "txtdump.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 
 static char *nm[5]  = { "OW", "HW1", "HW2", "DW", "SW" };
   

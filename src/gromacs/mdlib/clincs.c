@@ -46,7 +46,7 @@
 #include "constr.h"
 #include "copyrite.h"
 #include "physics.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "mdrun.h"
 #include "nrnb.h"

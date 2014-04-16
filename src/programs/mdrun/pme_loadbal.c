@@ -40,7 +40,7 @@
 #include "network.h"
 #include "calcgrid.h"
 #include "pme.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "domdec.h"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "force.h"

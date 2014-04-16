@@ -39,7 +39,7 @@
 #include <assert.h>
 
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "constr.h"
 #include "types/commrec.h"
 #include "domdec.h"

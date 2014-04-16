@@ -46,7 +46,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "index.h"
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"

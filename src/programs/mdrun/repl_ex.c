@@ -46,7 +46,7 @@
 #include "physics.h"
 #include "copyrite.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "names.h"
 #include "domdec.h"
 #include "main.h"

@@ -38,7 +38,7 @@
 #endif
 
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "types/commrec.h"
 #include "domdec.h"

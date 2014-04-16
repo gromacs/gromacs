@@ -44,7 +44,7 @@
 #include "gmxfio.h"
 #include "xtcio.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 

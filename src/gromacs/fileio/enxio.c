@@ -46,7 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gmxfio.h"
 #include "enxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "xdrf.h"
 #include "macros.h"
 

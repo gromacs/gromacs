@@ -69,7 +69,7 @@
 
 #include "typedefs.h"
 #include "txtdump.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "coulomb.h"
 #include "gromacs/utility/fatalerror.h"

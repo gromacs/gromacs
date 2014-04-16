@@ -46,7 +46,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "ebin.h"
 #include "gromacs/math/utilities.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "physics.h"
 
 t_ebin *mk_ebin(void)

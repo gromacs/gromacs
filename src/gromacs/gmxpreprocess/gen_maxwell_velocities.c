@@ -43,7 +43,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "physics.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gen_maxwell_velocities.h"
 #include "mtop_util.h"
 

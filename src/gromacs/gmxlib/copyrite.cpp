@@ -58,10 +58,10 @@
 /* This file is completely threadsafe - keep it that way! */
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"

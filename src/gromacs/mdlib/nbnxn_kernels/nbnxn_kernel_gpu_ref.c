@@ -40,7 +40,7 @@
 
 #include "types/simple.h"
 #include "gromacs/math/utilities.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "force.h"
 #include "nbnxn_kernel_gpu_ref.h"

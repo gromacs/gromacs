@@ -45,7 +45,7 @@
 #include "types/commrec.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "txtdump.h"
 #include "force.h"
 #include "mdrun.h"

@@ -50,7 +50,7 @@
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/enxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 

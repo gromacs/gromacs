@@ -41,7 +41,7 @@
 #include "typedefs.h"
 #include "force.h"
 #include "names.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "physics.h"
 #include "copyrite.h"
 #include "pbc.h"

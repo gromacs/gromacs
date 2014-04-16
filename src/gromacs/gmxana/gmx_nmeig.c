@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"

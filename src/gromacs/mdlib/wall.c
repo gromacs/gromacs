@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "force.h"
 #include "nrnb.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/math/utilities.h"

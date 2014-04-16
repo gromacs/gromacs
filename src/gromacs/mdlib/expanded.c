@@ -45,7 +45,7 @@
 #include "txtdump.h"
 #include "pbc.h"
 #include "chargegroup.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
 #include "mshift.h"
 #include "mdrun.h"

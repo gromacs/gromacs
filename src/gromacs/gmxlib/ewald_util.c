@@ -43,7 +43,7 @@
 #include "gromacs/math/utilities.h"
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "coulomb.h"
 #include "gromacs/utility/smalloc.h"
 #include "physics.h"
