@@ -81,7 +81,7 @@ _where(const char *file, int line);
 /** Prints filename and line to stdlog. */
 #define where() _where(__FILE__, __LINE__)
 
-/*! |brief
+/*! \brief
  * Low-level fatal error reporting routine for collective MPI errors.
  *
  * This function works as gmx_fatal(), but provides additional control for
