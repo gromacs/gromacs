@@ -39,7 +39,7 @@
 #include "pbc.h"
 #include "types/simple.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 
 #include "gromacs/utility/fatalerror.h"
 

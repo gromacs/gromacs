@@ -49,11 +49,11 @@
 
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/rmpbc.h"
-#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"

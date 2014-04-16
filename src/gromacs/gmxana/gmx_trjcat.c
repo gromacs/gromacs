@@ -57,7 +57,7 @@
 #include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "index.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xtcio.h"
 #include "rmpbc.h"
 #include "pbc.h"

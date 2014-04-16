@@ -55,7 +55,7 @@
 #include "pbc.h"
 #include "nmol.h"
 #include "copyrite.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/utility/futil.h"

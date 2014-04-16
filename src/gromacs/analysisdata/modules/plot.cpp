@@ -50,11 +50,11 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"

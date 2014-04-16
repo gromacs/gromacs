@@ -41,7 +41,7 @@
 #include "cmat.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/utility/futil.h"

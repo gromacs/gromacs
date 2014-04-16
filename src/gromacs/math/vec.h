@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _vec_h
-#define _vec_h
+#ifndef GMX_MATH_VEC_H
+#define GMX_MATH_VEC_H
 
 /*
    collection of in-line ready operations:
@@ -115,11 +115,11 @@
 
 #include <math.h>
 
-#include "types/simple.h"
-#include "typedefs.h"
-#include "physics.h"
+#include "../legacyheaders/types/simple.h"
+#include "../legacyheaders/physics.h"
 
-#include "../math/utilities.h"
+#include "utilities.h"
+
 #include "../utility/fatalerror.h"
 
 #ifdef __cplusplus
@@ -905,4 +905,4 @@ static gmx_inline void tmvmul_ur0(const matrix a, const rvec src, rvec dest)
 
 #endif
 
-#endif  /* _vec_h */
+#endif

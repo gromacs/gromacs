@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "readir.h"
 #include "names.h"

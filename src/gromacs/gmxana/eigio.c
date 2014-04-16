@@ -39,7 +39,7 @@
 #endif
 
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "eigio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/tpxio.h"

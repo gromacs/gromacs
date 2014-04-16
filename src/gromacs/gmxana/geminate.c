@@ -41,7 +41,7 @@
 
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "geminate.h"
 
 #include "gromacs/utility/fatalerror.h"

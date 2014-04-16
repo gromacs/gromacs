@@ -47,7 +47,7 @@
 #include "txtdump.h"
 #include "names.h"
 #include "physics.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "force.h"
 #include "vcm.h"

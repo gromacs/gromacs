@@ -45,7 +45,7 @@
 #include "domdec_network.h"
 #include "names.h"
 #include "network.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "chargegroup.h"
 #include "gromacs/gmxlib/topsort.h"

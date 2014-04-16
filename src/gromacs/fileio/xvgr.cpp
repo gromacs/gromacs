@@ -50,9 +50,9 @@
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"

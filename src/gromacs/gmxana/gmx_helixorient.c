@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/commandline/pargs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "index.h"
 #include "pbc.h"
 #include "gromacs/utility/fatalerror.h"

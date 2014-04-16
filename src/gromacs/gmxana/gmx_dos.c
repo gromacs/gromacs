@@ -54,7 +54,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "txtdump.h"
 #include "typedefs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "correl.h"

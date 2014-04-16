@@ -37,16 +37,16 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <string.h>
-#include <assert.h>
 
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
 #include "force.h"
 #include "mdrun.h"
@@ -78,15 +78,17 @@
 #include "inputrec.h"
 #include "main.h"
 
+#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/swap/swapcoords.h"
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/swap/swapcoords.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

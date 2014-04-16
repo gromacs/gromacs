@@ -43,7 +43,7 @@
 #include <assert.h>
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"

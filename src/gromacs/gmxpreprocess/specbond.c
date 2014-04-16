@@ -49,7 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "specbond.h"
 #include "pdb2top.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
 
 gmx_bool yesno(void)

@@ -44,7 +44,7 @@
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/pdbio.h"

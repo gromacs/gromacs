@@ -42,7 +42,7 @@
 
 #include "perf_est.h"
 #include "physics.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "mtop_util.h"
 #include "types/commrec.h"
 #include "nbnxn_search.h"

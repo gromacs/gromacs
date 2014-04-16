@@ -44,8 +44,8 @@
 #include <string.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vec.h"
 
+#include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"

@@ -47,7 +47,7 @@
 #include "typedefs.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/commandline/pargs.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "mtop_util.h"
 #include "checkpoint.h"
 #include "gromacs/fileio/tpxio.h"

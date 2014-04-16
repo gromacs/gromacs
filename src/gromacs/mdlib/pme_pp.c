@@ -47,7 +47,7 @@
 #include "types/commrec.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pme.h"
 #include "network.h"
 #include "domdec.h"

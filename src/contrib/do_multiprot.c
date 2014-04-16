@@ -54,7 +54,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "viewit.h"
 #include "gbutil.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 

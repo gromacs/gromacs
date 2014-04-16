@@ -45,7 +45,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
 #include "tgroup.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "network.h"
 #include "update.h"
 #include "rbin.h"

@@ -52,7 +52,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
 #include "symtab.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"

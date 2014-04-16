@@ -43,7 +43,7 @@
 
 #include "../nb_kernel.h"
 #include "types/simple.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
 
 #include "kernelutil_sparc64_hpc_ace_double.h"

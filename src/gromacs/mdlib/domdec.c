@@ -48,7 +48,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "network.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "domdec.h"
 #include "domdec_network.h"
 #include "nrnb.h"

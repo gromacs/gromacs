@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "pbc.h"

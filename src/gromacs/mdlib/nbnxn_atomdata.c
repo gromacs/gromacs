@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nbnxn_consts.h"
 #include "nbnxn_internal.h"
 #include "nbnxn_atomdata.h"

@@ -52,9 +52,8 @@
  */
 #include <string.h>
 
-#include "gromacs/legacyheaders/vec.h"
-
 #include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"

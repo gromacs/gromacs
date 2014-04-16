@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "physics.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "index.h"
 #include "hxprops.h"
 #include "gromacs/utility/smalloc.h"

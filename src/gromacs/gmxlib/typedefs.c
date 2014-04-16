@@ -43,7 +43,7 @@
 
 #include "gromacs/utility/smalloc.h"
 #include "symtab.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "macros.h"
 #include <string.h>

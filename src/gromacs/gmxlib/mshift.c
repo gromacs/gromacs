@@ -42,7 +42,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "mshift.h"
 #include "pbc.h"

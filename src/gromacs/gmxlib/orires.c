@@ -40,7 +40,7 @@
 
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "types/commrec.h"
 #include "network.h"
 #include "orires.h"

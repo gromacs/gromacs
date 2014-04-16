@@ -48,7 +48,7 @@
 #include "names.h"
 #include "gromacs/fileio/confio.h"
 #include "txtdump.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "nrnb.h"
 #include "mshift.h"
 #include "mdrun.h"

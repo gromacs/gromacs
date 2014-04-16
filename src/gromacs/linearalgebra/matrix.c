@@ -42,8 +42,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/vec.h"
-
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -239,7 +237,7 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
         {
             ax += a0[i]*a[j][i];
         }
-        chi2 += sqr(y[j]-ax);
+        chi2 += (y[j] - ax) * (y[j] - ax);
     }
 
     sfree(atx);

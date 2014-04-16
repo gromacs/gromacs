@@ -107,7 +107,7 @@
 
 
 #include "types/simple.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gmxfio.h"
 
 

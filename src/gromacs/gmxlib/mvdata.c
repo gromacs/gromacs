@@ -49,7 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "symtab.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "tgroup.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))

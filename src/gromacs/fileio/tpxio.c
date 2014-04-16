@@ -57,7 +57,7 @@
 #include "confio.h"
 #include "atomprop.h"
 #include "copyrite.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "mtop_util.h"
 
 #define TPX_TAG_RELEASE  "release"

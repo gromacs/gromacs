@@ -47,7 +47,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "physics.h"
 #include "gromacs/fileio/enxio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "disre.h"
 #include "network.h"
 #include "names.h"

@@ -48,7 +48,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "toputil.h"
 #include "topio.h"

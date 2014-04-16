@@ -44,7 +44,7 @@
 
 #include "typedefs.h"
 #include "network.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "physics.h"
 #include "calcmu.h"
 #include "gmx_omp_nthreads.h"

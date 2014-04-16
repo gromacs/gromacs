@@ -43,7 +43,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/commandline/pargs.h"

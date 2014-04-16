@@ -42,8 +42,7 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/legacyheaders/vec.h"
-
+#include "gromacs/math/vec.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/selection/selparam.h"

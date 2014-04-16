@@ -38,22 +38,17 @@
 #include <config.h>
 #endif
 
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include "gromacs/utility/futil.h"
 #include "index.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "vec.h"
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "network.h"
-#include "gromacs/fileio/filenm.h"
-#include <string.h>
-#include "gromacs/utility/smalloc.h"
 #include "pull.h"
-#include "gromacs/fileio/xvgr.h"
 #include "names.h"
 #include "pbc.h"
 #include "mtop_util.h"
@@ -61,7 +56,12 @@
 #include "gmx_ga2la.h"
 #include "copyrite.h"
 #include "macros.h"
-#include "vec.h"
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 static void pull_print_group_x(FILE *out, ivec dim, const t_pull_group *pgrp)
 {

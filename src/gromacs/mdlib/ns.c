@@ -45,7 +45,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "types/commrec.h"
 #include "network.h"
 #include "nsgrid.h"

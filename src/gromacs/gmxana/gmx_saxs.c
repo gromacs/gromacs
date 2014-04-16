@@ -43,7 +43,7 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"

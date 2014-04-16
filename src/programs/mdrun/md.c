@@ -42,7 +42,7 @@
 
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "vcm.h"
 #include "mdebin.h"
 #include "nrnb.h"

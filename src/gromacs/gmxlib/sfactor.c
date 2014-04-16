@@ -42,7 +42,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "macros.h"
 #include "index.h"
 #include "gromacs/fileio/strdb.h"

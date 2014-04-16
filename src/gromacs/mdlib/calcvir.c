@@ -40,7 +40,7 @@
 #endif
 
 #include "force.h"
-#include "vec.h"
+#include "gromacs/math/vec.h"
 #include "mshift.h"
 #include "macros.h"
 
