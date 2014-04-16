@@ -3310,8 +3310,8 @@ static void make_fep_list(const nbnxn_search_t    nbs,
     cj_ind_start = nbl_ci->cj_ind_start;
     cj_ind_end   = nbl_ci->cj_ind_end;
 
-    /* In worst case we have alternating energy groups and create npair lists */
-    nri_max = nbl->na_ci*(cj_ind_end - cj_ind_start);
+    /* In worst case we have alternating energy groups and create #atom-pair lists */
+    nri_max = nbl->na_ci*nbl->na_cj*(cj_ind_end - cj_ind_start);
     if (nlist->nri + nri_max > nlist->maxnri)
     {
         nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
@@ -3513,7 +3513,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
     cj4_ind_end   = nbl_sci->cj4_ind_end;
 
     /* No energy groups (yet), so we split lists in max_nrj_fep pairs */
-    nri_max = nbl->na_sc*(1 + ((cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE)/max_nrj_fep);
+    nri_max = nbl->na_sc*nbl->na_cj*(1 + ((cj4_ind_end - cj4_ind_start)*NBNXN_GPU_JGROUP_SIZE)/max_nrj_fep);
     if (nlist->nri + nri_max > nlist->maxnri)
     {
         nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
