@@ -39,17 +39,10 @@ option(REGRESSIONTEST_DOWNLOAD
 
 if(REGRESSIONTEST_DOWNLOAD)
     if("${PROJECT_VERSION}" MATCHES "-dev")
-       if("${PROJECT_VERSION}" MATCHES "^5[.]")
-          set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/refs/heads/master)
-       else()
-          set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/refs/heads/release-4-6)
-      endif()
+      set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/${REGRESSIONTEST_BRANCH})
       set(REGRESSIONTEST_PATH "${CMAKE_CURRENT_BINARY_DIR}/regressiontests"
            CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
     else()
-        if(NOT REGRESSIONTEST_VERSION)
-          message(FATAL_ERROR "The configuration files do not specify what regressiontests tarball is suitable for automated download and testing. Please obtain and use a suitable set of tests yourself.")
-        endif()
         set(REGRESSIONTEST_URL http://gerrit.gromacs.org/download/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
         set(REGRESSIONTEST_PATH
            "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"

@@ -2577,7 +2577,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     /* IMD cleanup, if bIMD is TRUE. */
     IMD_finalize(inputrec->bIMD, inputrec->imd);
 
-    /* Print some shit...  */
+    /* Print some data...  */
     if (MASTER(cr))
     {
         fprintf(stderr, "\nwriting lowest energy coordinates.\n");

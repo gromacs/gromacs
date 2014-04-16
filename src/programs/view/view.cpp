@@ -364,7 +364,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
     init_dlgs(x11, gmx);
 
-    /* Now do file shit */
+    /* Now do file operations */
     set_file(x11, gmx->man, ftp2fn(efTRX, nfile, fnm), ftp2fn(efTPX, nfile, fnm));
 
     ShowDlg(gmx->dlgs[edFilter]);
