@@ -907,3 +907,86 @@ int protonate(t_atoms **atomsptr, rvec **xptr, t_protonate *protdata)
     return nadd;
 #undef NTERPAIRS
 }
+
+/* Adding Drudes is a lot like adding H, so I put it here */
+void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
+{
+
+    int         i, j, natoms;
+    char       *dname;              /* Drude name, created from heavy atom */
+    rvec       *xn;                 /* new atom positions */
+    gmx_bool    bHeavy = FALSE;     /* if an atom is a heavy atom (non-H, non-Drude, non-LP) */
+    gmx_bool    bPresent = FALSE;   /* flag to check if Drude is already present in input pdba */
+    t_atoms    *newpdba = NULL, *pdba = NULL;
+
+    pdba = *pdbaptr;
+    natoms = pdba->nr;
+
+    snew(xn, natoms);
+
+    /* loop over all atoms, identify heavy atoms for adding Drudes */
+    for (i=0; i<natoms; i++)
+    {
+        /* Step 1. If we have a heavy atom, look for its associated Drude */
+        if (!is_hydrogen(*pdba->atomname[i]) && !is_drude(*pdba->atomname[i])
+            && !is_lonepair(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i]))
+        {
+            bHeavy = TRUE;
+            /* build name of associated Drude */
+            snew(dname, strlen((*pdba->atomname[i])+1));
+            strcpy(dname, "D");
+            strcat(dname, *pdba->atomname[i]);
+
+            if (debug)
+            {
+                fprintf(debug, "ADD DRUDES: Searching for Drude on atom %i, dname = %s aname = %s\n", i, dname, *pdba->atomname[i]);
+            }
+
+            /* Here we assume the Drude, if present, is somewhere after the heavy atom. 
+             * The assumption is OK because either (1) the input is from CHARMM, which
+             * always puts the Drude after the associated heavy atom, or (2) it's not
+             * there, anyway! */
+            for (j=i; j<natoms; j++)
+            {
+                if (strcmp(dname, *pdba->atomname[j])==0)
+                {
+                    bPresent = TRUE;
+                } 
+            }
+        }
+        else
+        {
+            bHeavy = FALSE;
+        }
+
+        /* Step 2. If Drude not found, increase the size of newpdba by one atom */
+        if (bHeavy && !bPresent)
+        {
+            /* we need to add a Drude, so increase natoms */
+            natoms++;
+            snew(newpdba, 1);
+            init_t_atoms(newpdba, natoms, FALSE);
+            newpdba->nres = pdba->nres;
+            sfree(newpdba->resinfo);
+            newpdba->resinfo = pdba->resinfo;
+
+            /* Step 3. Add Drude to newpdba */
+            srenew(newpdba->atom, natoms);
+            srenew(newpdba->atomname, natoms); 
+
+            /* add atom and Drude back to pdba */
+            /* TODO: CHECK THIS */
+            copy_atom(pdba, i, newpdba, i);
+            copy_atom(pdba, i+1, newpdba, i+1);
+
+            /* Step 4. Copy coords of heavy atom to Drude */
+            srenew(xn, natoms+1);
+            copy_rvec((*xptr)[i], xn[i]);   /* preserve heavy atom coords */
+            copy_rvec((*xptr)[i], xn[i+1]); /* use heavy atom coords for Drude */
+        }
+    }
+
+    /* update coords */
+    sfree(*xptr);
+    *xptr = xn;
+}

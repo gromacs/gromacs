@@ -76,6 +76,9 @@ void deprotonate(t_atoms *atoms, rvec *x);
  * removed
  */
 
+void add_drudes(t_atoms **pdbaptr, rvec *xptr[]);
+/* Add Drudes to input structure */
+
 #ifdef __cplusplus
 }
 #endif

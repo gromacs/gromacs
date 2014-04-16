@@ -96,7 +96,7 @@ typedef struct {
 
 
 enum {
-    DDB_CH3, DDB_NH3, DDB_NH2, DDB_PHE, DDB_TYR,
+    DDB_CH3, DDB_NH3, DDB_NH2, DDB_OLP, DDB_NLP, DDB_SLP, DDB_SHLP, DDB_SSLP, DDB_PHE, DDB_TYR,
     DDB_TRP, DDB_HISA, DDB_HISB, DDB_HISH, DDB_DIR_NR
 };
 
@@ -106,6 +106,11 @@ static const t_dirname ddb_dirnames[DDB_DIR_NR] = {
     "CH3",
     "NH3",
     "NH2",
+    "O_LP",
+    "N_LP",
+    "S_LP",
+    "SH_LP",
+    "SS_LP",
     "PHE",
     "TYR",
     "TRP",
@@ -148,6 +153,12 @@ static void read_vsite_database(const char *ddbname,
      * (nb: not bonded type) of the N/C atom to be replaced, the second field is
      * the type of the next heavy atom it is bonded to, and the third field the type
      * of dummy mass that will be used for this group.
+     * 
+     * This function was recently extended to include specific residues in the Drude FF
+     * to streamline the generation of virtual sites. It's somewhat ugly, but covers
+     * everything in a fairly straightforward manner. Generalization is a task for the
+     * future, but would likely require more extensive changes to the way virtual sites
+     * are generated and handled.
      *
      * If the NH2 group planar (sp2 N) a different vsite construct is used, so in this
      * case the second field should just be the word planar.
@@ -246,6 +257,57 @@ static void read_vsite_database(const char *ddbname,
                             else
                             {
                                 vsiteconflist[nvsite].nhydrogens = 3;
+                            }
+                            nvsite++;
+                        }
+                        else
+                        {
+                            gmx_fatal(FARGS, "Not enough directives in vsite database line: %s\n", pline);
+                        }
+                        break;
+                    /* carbonyl O */
+                    case DDB_OLP:
+                    /* ring N */
+                    case DDB_NLP:
+                        n = sscanf(pline, "%s%s%s", s1, s2, s3);
+                        if (n < 3 && !gmx_strcasecmp(s2, "planar"))
+                        {
+                            srenew(vsiteconflist, nvsite+1);
+                            strncpy(vsiteconflist[nvsite].atomtype, s1, MAXNAME-1);
+                            vsiteconflist[nvsite].isplanar         = TRUE;
+                            vsiteconflist[nvsite].nextheavytype[0] = 0;
+                            vsiteconflist[nvsite].dummymass[0]     = 0;
+                            vsiteconflist[nvsite].nhydrogens       = 0;
+                            nvsite++;
+                        }
+                        else
+                        {
+                            gmx_fatal(FARGS, "Not enough directives in vsite database line: %s\n", pline);
+                        }
+                        break;
+                    /* thioethers */
+                    case DDB_SLP:
+                    /* thiols */
+                    case DDB_SHLP:
+                    /* disulfides */
+                    case DDB_SSLP:
+                        n = sscanf(pline, "%s%s%s", s1, s2, s3);
+                        if (n == 3)
+                        {
+                            srenew(vsiteconflist, (nvsite+1));
+                            strncpy(vsiteconflist[nvsite].atomtype, s1, MAXNAME-1);
+                            vsiteconflist[nvsite].isplanar = FALSE;
+                            strncpy(vsiteconflist[nvsite].nextheavytype, s2, MAXNAME-1);
+                            strncpy(vsiteconflist[nvsite].dummymass, s3, MAXNAME-1);
+                            if (curdir == DDB_SHLP)
+                            {
+                                /* thiol -SH */
+                                vsiteconflist[nvsite].nhydrogens = 1;
+                            }
+                            else
+                            {
+                                /* disulfide or thioether */
+                                vsiteconflist[nvsite].nhydrogens = 0;
                             }
                             nvsite++;
                         }
@@ -586,7 +648,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
     for (i = 0; i < nrHatoms; i++)
     {
         ftype = vsite_type[Hatoms[i]];
-        /* Errors in setting the vsite_type should really be caugth earlier,
+        /* Errors in setting the vsite_type should really be caught earlier,
          * because here it's not possible to print any useful error message.
          * But it's still better to print a message than to segfault.
          */
@@ -1587,7 +1649,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
     /* if bVsiteAromatics=TRUE do_vsites will specifically convert atoms in
        PHE, TRP, TYR and HIS to a construction of virtual sites */
-    enum                    {
+    enum {
         resPHE, resTRP, resTYR, resHIS, resNR
     };
     const char *resnms[resNR]   = {   "PHE",  "TRP",  "TYR",  "HIS" };

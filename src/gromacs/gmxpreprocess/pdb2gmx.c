@@ -502,7 +502,8 @@ void write_posres(char *fn, t_atoms *pdba, real fc)
             );
     for (i = 0; (i < pdba->nr); i++)
     {
-        if (!is_hydrogen(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i]))
+        if (!is_hydrogen(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i])
+            && !is_drude(*pdba->atomname[i]) && !is_lonepair(*pdba->atomname[i]))
         {
             fprintf(fp, "%6d%6d  %g  %g  %g\n", i+1, 1, fc, fc, fc);
         }
@@ -1250,7 +1251,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     int               nssbonds;
     t_ssbond         *ssbonds;
     rvec             *pdbx, *x;
-    gmx_bool          bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE, bCheckMerge;
+    gmx_bool          bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE, bVsiteLP = FALSE, bCheckMerge;
     real              mHmult  = 0;
     t_hackblock      *hb_chain;
     t_restp          *restp_chain;
@@ -1297,6 +1298,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     static gmx_bool    bSort          = TRUE, bAllowMissing = FALSE, bRemoveH = FALSE;
     static gmx_bool    bDeuterate     = FALSE, bVerbose = FALSE, bChargeGroups = TRUE, bCmap = TRUE;
     static gmx_bool    bRenumRes      = FALSE, bRTPresname = FALSE;
+    static gmx_bool    bDrude         = FALSE;
     static real        angle          = 135.0, distance = 0.3, posre_fc = 1000;
     static real        long_bond_dist = 0.25, short_bond_dist = 0.05;
     static const char *vsitestr[]     = { NULL, "none", "hydrogens", "aromatics", NULL };
@@ -1368,7 +1370,9 @@ int gmx_pdb2gmx(int argc, char *argv[])
         { "-renum", TRUE, etBOOL, {&bRenumRes},
           "Renumber the residues consecutively in the output"  },
         { "-rtpres", TRUE, etBOOL, {&bRTPresname},
-          "Use [TT].rtp[tt] entry names as residue names"  }
+          "Use [TT].rtp[tt] entry names as residue names"  },
+        { "-charmmdrude", FALSE, etBOOL, {&bDrude},
+          "Add Drude oscillators to structure. ONLY for the CHARMM-Drude force field." }
     };
 #define NPARGS asize(pa)
 
@@ -1963,10 +1967,21 @@ int gmx_pdb2gmx(int argc, char *argv[])
         }
 
         /* Generate Hydrogen atoms (and termini) in the sequence */
-        printf("Generating any missing hydrogen atoms and/or adding termini.\n");
+        /* Drudes will be added here */
+        fprintf(stderr, "Generating any missing hydrogen atoms%s and/or adding termini.\n",
+                bDrude ? ", Drudes," : "");
         natom = add_h(&pdba, &x, nah, ah,
                       cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing,
                       NULL, NULL, TRUE, FALSE);
+
+        /* At this point, pdba has all H and termini built, so all this function needs to do
+         * is loop thru all the atoms in pdba and find anything that's not H, LP, or D that already
+         * exists.  Prepend each of those atom names with a 'D' and copy the coords */
+        if (bDrude)
+        {
+            add_drudes(&pdba, &x);
+        }
+
         printf("Now there are %d residues with %d atoms\n",
                pdba->nres, pdba->nr);
         if (debug)

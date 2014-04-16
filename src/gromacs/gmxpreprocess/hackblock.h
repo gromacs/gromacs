@@ -50,9 +50,9 @@ extern "C" {
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
 /* these *MUST* correspond to the arrays in hackblock.c */
-/* TODO: check addition of ebtsANISO for anisotropy and ebtsTHOLE for Thole factors */
 enum {
-    ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsCMAP, ebtsANISO, ebtsTHOLE, ebtsNR
+    ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsCMAP, ebtsANISO, ebtsTHOLE, ebtsVSITE2, 
+    ebtsVSITE3, ebtsVSITE4, ebtsNR
 };
 extern const char *btsNames[ebtsNR];
 extern const int   btsNiatoms[ebtsNR];

@@ -101,6 +101,46 @@ static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int *l)
     *l = (*l+1) % 6;
 }
 
+/* Same idea as gen_waterhydrogens, but to keep the code simple
+ * and avoid redundancies, we introduce a simple function here
+ * to build tetrahedral LP on -OH groups */
+static void gen_oh_lonepairs(rvec xa[], rvec xh[], int *l)
+{
+#define AA 0.0349947
+#define BB 0.0
+#define CC 0.0006108
+    const  rvec   matrix1[6] = {
+        { AA,     BB,     CC },
+        { AA,     BB,     CC },
+        { AA,     BB,     CC },
+        { -AA,    BB,     CC },
+        { -AA,    BB,     CC },
+        { BB,     AA,    -CC }
+    };
+    const  rvec   matrix2[6] = {
+        { -AA,   BB,   CC },
+        { BB,    AA,  -CC },
+        { BB,   -AA,  -CC },
+        { BB,    AA,  -CC },
+        { BB,   -AA,  -CC },
+        { BB,   -AA,  -CC }
+    };
+#undef AA
+#undef BB
+#undef CC
+    int        m;
+    rvec       kkk;
+
+    /* Place LP in tetrahedral configuration */ 
+    for (m = 0; (m < DIM); m++)
+    {
+        xH1[m] = xAI[m]+matrix1[*l][m];
+        xH2[m] = xAI[m]+matrix2[*l][m];
+    }
+
+    *l = (*l+1) % 6;
+}
+
 void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 {
 #define alfaH   (acos(-1/3.0)) /* 109.47 degrees */
@@ -114,6 +154,10 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 #define distO   0.123
 #define distOA  0.125
 #define distOM  0.136
+
+/* For LP construction */
+#define distOLP  0.030
+#define alfaOLP  (DEG2RAD*140)
 
     rvec sa, sb, sij;
     real s6, rij, ra, rb, xd;
@@ -293,6 +337,22 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 
             break;
         }
+        case 12: /* two planar LP on carboxyl O */
+            for (d = 0; (d < DIM); d++)
+            {
+                xH1[d] = xAI[d]-distOLP*sin(alfaOLP)*sb[d]-distOLP*cos(alfaOLP)*sij[d];
+                xH2[d] = xAI[d]+distOLP*sin(alfaOLP)*sb[d]-distOLP*cos(alfaOLP)*sij[d];
+            }
+            break;
+        case 13: /* two tetrahedral LP on carboxyl O in -OH */
+            gen_oh_lonepairs(xa, xh, l);
+            break;
+        case 14: /* add a Drude on top of an atom */
+            for (d = 0; (d < DIM); d++)
+            {
+                xH1[d] = xAI[d];
+            }
+            break;
         default:
             gmx_fatal(FARGS, "Invalid argument (%d) for nht in routine genh\n", nht);
     } /* end switch */
