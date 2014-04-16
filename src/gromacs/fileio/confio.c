@@ -1022,7 +1022,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
 
         /* eventueel controle atomnumber met i+1 */
 
-        /* coordinates (start after residue shit) */
+        /* coordinates (start after residue data) */
         ptr = line + 20;
         /* Read fixed format */
         for (m = 0; m < DIM; m++)
