@@ -3080,7 +3080,9 @@ static void check_box_size(gmx_domdec_t *dd, gmx_ddbox_t *ddbox)
     }
 }
 
-enum { setcellsizeslbLOCAL, setcellsizeslbMASTER, setcellsizeslbPULSE_ONLY };
+enum {
+    setcellsizeslbLOCAL, setcellsizeslbMASTER, setcellsizeslbPULSE_ONLY
+};
 
 /* Set the domain boundaries. Use for static (or no) load balancing,
  * and also for the starting state for dynamic load balancing.
@@ -3175,7 +3177,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
             char error_string[STRLEN];
 
             sprintf(error_string,
-                     "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
+                    "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
                     dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d],
                     comm->cutoff,
                     dd->nc[d], dd->nc[d],
