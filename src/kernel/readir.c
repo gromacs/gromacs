@@ -1088,13 +1088,24 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_note(wi, warn_buf);
     }
 
-    if (ir->coulombtype == eelPMESWITCH)
+    if (ir->coulombtype == eelPMESWITCH || ir->coulomb_modifier == eintmodPOTSWITCH)
     {
         if (ir->rcoulomb_switch/ir->rcoulomb < 0.9499)
         {
-            sprintf(warn_buf, "The switching range for %s should be 5%% or less, energy conservation will be good anyhow, since ewald_rtol = %g",
-                    eel_names[ir->coulombtype],
-                    ir->ewald_rtol);
+            real percentage  = 100*(ir->rcoulomb-ir->rcoulomb_switch)/ir->rcoulomb;
+            sprintf(warn_buf, "The switching range for should be 5%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate electrostatic energies, energy conservation will be good regardless, since ewald_rtol = %g.",
+                    percentage,ir->rcoulomb_switch,ir->rcoulomb,ir->ewald_rtol);
+            warning(wi, warn_buf);
+        }
+    }
+
+    if (ir->vdwtype == evdwSWITCH || ir->vdw_modifier == eintmodPOTSWITCH)
+    {
+        if (ir->rvdw_switch/ir->rvdw < 0.8999)
+        {
+            real percentage  = 100*(ir->rvdw-ir->rvdw_switch)/ir->rvdw;
+            sprintf(warn_buf, "The switching range for should be 10%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate Lennard-Jones energies.",
+                    percentage,ir->rvdw_switch,ir->rvdw);
             warning(wi, warn_buf);
         }
     }
