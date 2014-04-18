@@ -442,8 +442,6 @@ static void clean_ang(t_param *ang, int *nang, t_atoms *atoms)
         if (is_d(atoms, ang[index[i]].AI) || is_d(atoms, ang[index[i]].AK) ||
             is_lp(atoms, ang[index[i]].AI) || is_lp(atoms, ang[index[i]].AK))
         {
-            /* TODO: remove */
-            fprintf(stderr, "Found angle to delete, i = %d\n", i);
             bKeep = FALSE;
         }
 
@@ -459,6 +457,51 @@ static void clean_ang(t_param *ang, int *nang, t_atoms *atoms)
         strcpy(ang[i].s, "");
     }
     *nang = j;
+
+    sfree(index);
+}
+
+/* Clean up pairs - only really necessary for Drude FF */
+static void clean_pairs(t_param *pai, int *npai, t_atoms *atoms)
+{
+
+    int i, j;
+    int *index, nind;
+
+    /* construct list of angle indices */
+    snew(index, *npai+1);
+    nind = *npai;
+    for (i = 0; i < nind; i++)
+    {
+        index[i] = i;
+    }
+    index[nind] = *npai;
+
+    /* loop over angles and remove any we don't want to keep,
+     * i.e. those with a Drude or LP at atom ai or ak */
+    j = 0;
+    for (i = 0; i < nind; i++)
+    {
+        gmx_bool    bKeep = TRUE;
+
+        if (is_d(atoms, pai[index[i]].AI) || is_d(atoms, pai[index[i]].AL) ||
+            is_lp(atoms, pai[index[i]].AI) || is_lp(atoms, pai[index[i]].AL))
+        {
+            bKeep = FALSE;
+        }
+
+        if (bKeep)
+        {
+            cpparam(&pai[j], &pai[index[i]]);
+            j++;
+        }
+    }
+
+    for (i = j; i < *npai; i++)
+    {
+        strcpy(pai[i].s, "");
+    }
+    *npai = j;
 
     sfree(index);
 }
@@ -1112,6 +1155,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
          */
         fprintf(stderr, "Before cleaning: %d pairs\n", npai);
         rm2par(pai, &npai, preq);
+
+        /* removes pairs with Drudes or LP */
+        clean_pairs(pai, &npai, atoms);
     }
 
     /* Get the impropers from the database */
