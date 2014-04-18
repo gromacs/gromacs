@@ -1,5 +1,5 @@
 #include <math.h>
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 #include "../gmx_lapack.h"
 
 void

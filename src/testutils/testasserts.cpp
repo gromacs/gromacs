@@ -47,8 +47,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

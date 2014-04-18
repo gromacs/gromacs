@@ -38,6 +38,10 @@
 #ifndef GMX_STATISTICS_H
 #define GMX_STATISTICS_H
 
+#include <stdio.h>
+
+#include "gromacs/utility/real.h"
+
 /*! \libinternal \file
  *
  * \brief
@@ -50,8 +54,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <stdio.h>
-#include "types/simple.h"
 
 //! Abstract container type
 typedef struct gmx_stats *gmx_stats_t;

@@ -2,7 +2,7 @@
 #include "../gmx_lapack.h"
 #include "lapack_limits.h"
 
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 
 void 
 F77_FUNC(dlasv2,DLASV2)(double *f, 

@@ -1,7 +1,7 @@
 #include <math.h>
 #include "../gmx_lapack.h"
 
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 
 float
 F77_FUNC(slapy2,SLAPY2)(float * x, float * y)
