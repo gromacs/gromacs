@@ -37,7 +37,7 @@
 #ifndef GMX_LINEARALGEBRA_NRJAC_H
 #define GMX_LINEARALGEBRA_NRJAC_H
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

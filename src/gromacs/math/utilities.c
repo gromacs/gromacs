@@ -40,12 +40,12 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <math.h>
 #include <limits.h>
 #ifdef HAVE__FINITE
 #include <float.h>
 #endif
-#include <assert.h>
 
 int gmx_nint(real a)
 {
@@ -60,11 +60,11 @@ real cuberoot(real x)
 {
     if (x < 0)
     {
-        return (-pow(-x, 1.0/DIM));
+        return (-pow(-x, 1.0/3.0));
     }
     else
     {
-        return (pow(x, 1.0/DIM));
+        return (pow(x, 1.0/3.0));
     }
 }
 

@@ -42,7 +42,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 static void nrerror(const char error_text[], gmx_bool bExit)
 {

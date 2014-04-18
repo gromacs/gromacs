@@ -40,8 +40,8 @@
 #include <stdio.h>
 
 #include "../legacyheaders/types/oenv.h"
-#include "../legacyheaders/types/simple.h"
 #include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

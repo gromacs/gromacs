@@ -4,7 +4,7 @@
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"
 
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 
 void
 F77_FUNC(slarf,SLARF)(const char *side,
