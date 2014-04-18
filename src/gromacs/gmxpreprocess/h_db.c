@@ -53,13 +53,13 @@
 
 /* Number of control atoms for each 'add' type.
  *
- * There are 11 types of adding hydrogens, numbered from 1 thru
- * 11. Each of these has a specific number of control atoms, that
+ * There are 14 types of adding hydrogens, numbered from 1 thru
+ * 14. Each of these has a specific number of control atoms, that
  * determine how the hydrogens are added.  Here these number are
  * given. Because arrays start at 0, an extra dummy for index 0 is
  * added.
  */
-const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 };
+const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1, 3, 3, 1 };
 #define maxcontrol asize(ncontrol)
 
 int compaddh(const void *a, const void *b)
