@@ -43,9 +43,11 @@
 #include "macros.h"
 #include "xutil.h"
 #include "Xstuff.h"
-#include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
 #include "logo.h"
+
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int            x, y, rad;
@@ -112,7 +114,6 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     };
 #define NMESS asize(Mess)
     int             i;
-    real            wfac, hfac;
     t_logo         *logo;
     t_windata      *wd;
 
@@ -120,8 +121,8 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     wd   = &(logo->wd);
     if (bFirst)
     {
-        wfac = wd->width/110.0;
-        hfac = wd->height/110.0;
+        const real wfac = wd->width/110.0;
+        const real hfac = wd->height/110.0;
         for (i = 0; (i < asize(c)); i++)
         {
             c[i].x *= wfac;

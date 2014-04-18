@@ -101,14 +101,15 @@
 #include <windows.h>
 #include <shlobj.h>
 #endif
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
+
 #include "vmdio.h"
 
-
-#include "types/simple.h"
-#include "gromacs/math/vec.h"
 #include "gmxfio.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 typedef int (*initfunc)(void);

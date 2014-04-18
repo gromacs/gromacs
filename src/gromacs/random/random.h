@@ -35,11 +35,11 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _GMX_RANDOM_H_
-#define _GMX_RANDOM_H_
+#ifndef GMX_RANDOM_RANDOM_H
+#define GMX_RANDOM_RANDOM_H
 
-#include <stdio.h>
-#include "types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -322,4 +322,4 @@ gmx_rng_cycle_6gaussian_table(gmx_int64_t ctr1, gmx_int64_t ctr2,
 }
 #endif
 
-#endif /* _GMX_RANDOM_H_ */
+#endif

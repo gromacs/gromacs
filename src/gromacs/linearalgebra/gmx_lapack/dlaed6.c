@@ -2,7 +2,7 @@
 
 #include "../gmx_lapack.h"
 
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 
 void
 F77_FUNC(dlaed6,DLAED6)(int *kniter, 
