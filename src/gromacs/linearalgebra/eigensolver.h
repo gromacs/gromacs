@@ -37,7 +37,7 @@
 #ifndef GMX_LINEARALGEBRA_EIGENSOLVER_H
 #define GMX_LINEARALGEBRA_EIGENSOLVER_H
 
-#include "../legacyheaders/types/simple.h"
+#include "../utility/real.h"
 
 #include "sparsematrix.h"
 

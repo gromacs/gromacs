@@ -38,6 +38,7 @@
 #define GMX_MATH_GMXCOMPLEX_H
 
 #include <math.h>
+
 #include "../legacyheaders/types/simple.h"
 
 typedef struct {

@@ -42,8 +42,9 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */

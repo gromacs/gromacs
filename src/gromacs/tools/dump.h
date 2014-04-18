@@ -35,8 +35,6 @@
 #ifndef GMX_TOOLS_DUMP_H
 #define GMX_TOOLS_DUMP_H
 
-#include "gromacs/legacyheaders/types/simple.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

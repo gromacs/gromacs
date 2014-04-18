@@ -55,9 +55,8 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

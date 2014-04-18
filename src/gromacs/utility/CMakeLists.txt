@@ -54,6 +54,7 @@ set(UTILITY_PUBLIC_HEADERS
     gmxassert.h
     init.h
     programcontext.h
+    real.h
     smalloc.h
     stringutil.h
     uniqueptr.h)

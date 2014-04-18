@@ -38,9 +38,10 @@
 #define GMX_FFT_PARALLEL_3DFFT_H
 
 #include "../legacyheaders/types/nrnb.h"
-#include "../legacyheaders/types/simple.h"
 #include "../math/gmxcomplex.h"
 #include "../utility/gmxmpi.h"
+#include "../utility/real.h"
+
 #include "fft.h"
 
 #ifdef __cplusplus
