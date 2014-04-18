@@ -58,6 +58,21 @@
 #include "resall.h"
 #include "gen_ad.h"
 
+static gmx_bool is_hydro(t_atoms *atoms, int ai)
+{
+    return ((*(atoms->atomname[ai]))[0] == 'H');
+}
+
+static gmx_bool is_d(t_atoms *atoms, int ai)
+{
+    return ((*(atoms->atomname[ai]))[0] == 'D');
+}
+
+static gmx_bool is_lp(t_atoms *atoms, int ai)
+{
+    return ((*(atoms->atomname[ai]))[0] == 'L');
+}
+
 #define DIHEDRAL_WAS_SET_IN_RTP 0
 static gmx_bool was_dihedral_set_in_rtp(t_param *dih)
 {
@@ -461,6 +476,13 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
             }
         }
 
+        /* remove dihedral if ai or al is a Drude or LP */
+        if (is_d(atoms, dih[index[i]].AI) || is_d(atoms, dih[index[i]].AL) ||
+            is_lp(atoms, dih[index[i]].AI) || is_lp(atoms, dih[index[i]].AL))
+        {
+            bKeep = FALSE;
+        }
+
         if (bKeep)
         {
             /* If we don't want all dihedrals, we want to select the
@@ -591,21 +613,6 @@ static int nb_dist(t_nextnb *nnb, int ai, int aj)
         }
     }
     return NRE;
-}
-
-gmx_bool is_hydro(t_atoms *atoms, int ai)
-{
-    return ((*(atoms->atomname[ai]))[0] == 'H');
-}
-
-gmx_bool is_d(t_atoms *atoms, int ai)
-{
-    return ((*(atoms->atomname[ai]))[0] == 'D');
-}
-
-gmx_bool is_lp(t_atoms *atoms, int ai)
-{
-    return ((*(atoms->atomname[ai]))[0] == 'L');
 }
 
 static void get_atomnames_min(int n, char **anm,
