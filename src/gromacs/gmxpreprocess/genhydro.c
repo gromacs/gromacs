@@ -943,11 +943,8 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
                 fprintf(debug, "ADD DRUDES: Searching for Drude on atom %i, dname = %s aname = %s\n", i, dname, *pdba->atomname[i]);
             }
 
-            /* Here we assume the Drude, if present, is somewhere after the heavy atom. 
-             * The assumption is OK because either (1) the input is from CHARMM, which
-             * always puts the Drude after the associated heavy atom, or (2) it's not
-             * there, anyway! */
-            for (j=i; j<natoms; j++)
+            /* Look to see if the Drude is already in the input coordinates */
+            for (j=0; j<natoms; j++)
             {
                 if (strcmp(dname, *pdba->atomname[j])==0)
                 {
@@ -961,29 +958,43 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
         }
 
         /* Step 2. If Drude not found, increase the size of newpdba by one atom */
-        if (bHeavy && !bPresent)
+        if (bHeavy)
         {
-            /* we need to add a Drude, so increase natoms */
-            natoms++;
             snew(newpdba, 1);
             init_t_atoms(newpdba, natoms, FALSE);
             newpdba->nres = pdba->nres;
             sfree(newpdba->resinfo);
             newpdba->resinfo = pdba->resinfo;
 
-            /* Step 3. Add Drude to newpdba */
-            srenew(newpdba->atom, natoms);
-            srenew(newpdba->atomname, natoms); 
+            if (!bPresent)
+            {
+                /* we need to add a Drude, so increase natoms */
+                natoms++;
 
-            /* add atom and Drude back to pdba */
-            /* TODO: CHECK THIS */
+                /* Step 3. Add Drude to newpdba */
+                srenew(newpdba->atom, natoms);
+                srenew(newpdba->atomname, natoms); 
+
+                /* add atom and Drude back to pdba */
+                /* TODO: CHECK THIS */
+                copy_atom(pdba, i, newpdba, i);
+                copy_atom(pdba, i+1, newpdba, i+1);
+
+                /* Step 4. Copy coords of heavy atom to Drude */
+                srenew(xn, natoms+1);
+                copy_rvec((*xptr)[i], xn[i]);   /* preserve heavy atom coords */
+                copy_rvec((*xptr)[i], xn[i+1]); /* use heavy atom coords for Drude */
+            }
+            else    /* the Drude is already there, so just copy to new structures */
+            {
+                copy_atom(pdba, i, newpdba, i);
+                copy_rvec((*xptr)[i], xn[i]);
+            }
+        }
+        else    /* not a heavy atom, thus no Drude, either */
+        {
             copy_atom(pdba, i, newpdba, i);
-            copy_atom(pdba, i+1, newpdba, i+1);
-
-            /* Step 4. Copy coords of heavy atom to Drude */
-            srenew(xn, natoms+1);
-            copy_rvec((*xptr)[i], xn[i]);   /* preserve heavy atom coords */
-            copy_rvec((*xptr)[i], xn[i+1]); /* use heavy atom coords for Drude */
+            copy_rvec((*xptr)[i], xn[i]);
         }
     }
 
