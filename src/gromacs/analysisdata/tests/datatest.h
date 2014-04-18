@@ -47,10 +47,9 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/refdata.h"
 

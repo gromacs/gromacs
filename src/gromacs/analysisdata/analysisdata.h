@@ -43,6 +43,8 @@
 #ifndef GMX_ANALYSISDATA_ANALYSISDATA_H
 #define GMX_ANALYSISDATA_ANALYSISDATA_H
 
+#include "../utility/real.h"
+
 #include "abstractdata.h"
 
 namespace gmx

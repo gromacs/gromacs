@@ -54,8 +54,8 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/simple.h"
 #include "../math/gmxcomplex.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
