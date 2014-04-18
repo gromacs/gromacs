@@ -408,10 +408,10 @@ static void analyse_prot(const char ** restype, t_atoms *atoms,
     };
     static const char *calpha[]  = { "CA" };
     static const char *bb[]      = { "N", "CA", "C" };
-    static const char *mc[]      = { "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
-    static const char *mcb[]     = { "N", "CA", "CB", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
+    static const char *mc[]      = { "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT", "OT1", "OT2" };
+    static const char *mcb[]     = { "N", "CA", "CB", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT", "OT1", "OT2" };
     static const char *mch[]     = {
-        "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT",
+        "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT", "OT1", "OT2",
         "H1", "H2", "H3", "H", "HN"
     };
 
