@@ -416,6 +416,53 @@ static int n_hydro(atom_id a[], char ***atomname)
     return nh;
 }
 
+/* Clean up angles - only really necessary for Drude FF */
+static void clean_ang(t_param *ang, int *nang, t_atoms *atoms)
+{
+
+    int i, j;
+    int *index, nind;
+
+    /* construct list of angle indices */
+    snew(index, *nang+1);
+    nind = *nang;
+    for (i = 0; i < nind; i++)
+    {
+        index[i] = i;
+    }
+    index[nind] = *nang;
+
+    /* loop over angles and remove any we don't want to keep,
+     * i.e. those with a Drude or LP at atom ai or ak */
+    j = 0;
+    for (i = 0; i < nind; i++)
+    {
+        gmx_bool    bKeep = TRUE;
+
+        if (is_d(atoms, ang[index[i]].AI) || is_d(atoms, ang[index[i]].AK) ||
+            is_lp(atoms, ang[index[i]].AI) || is_lp(atoms, ang[index[i]].AK))
+        {
+            /* TODO: remove */
+            fprintf(stderr, "Found angle to delete, i = %d\n", i);
+            bKeep = FALSE;
+        }
+
+        if (bKeep)
+        {
+            cpparam(&ang[j], &ang[index[i]]);
+            j++;
+        }
+    }
+
+    for (i = j; i < *nang; i++)
+    {
+        strcpy(ang[i].s, "");
+    }
+    *nang = j;
+
+    sfree(index);
+}
+
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
 static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper,
@@ -1079,6 +1126,13 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
         clean_dih(dih, &ndih, improper, nimproper, atoms,
                   rtp[0].bKeepAllGeneratedDihedrals,
                   rtp[0].bRemoveDihedralIfWithImproper);
+    }
+
+    /* clean angles - used only for Drude FF */
+    if (nang > 1)
+    {
+        fprintf(stderr, "Before cleaning: %d angles\n", nang);
+        clean_ang(ang, &nang, atoms);
     }
 
     /* Now we have unique lists of angles and dihedrals
