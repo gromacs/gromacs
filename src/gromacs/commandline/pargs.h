@@ -47,6 +47,8 @@
 #include "../legacyheaders/types/simple.h"
 #include "../legacyheaders/oenv.h"
 #include "../fileio/filenm.h"
+#include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -43,9 +43,11 @@
 #include "macros.h"
 #include "xutil.h"
 #include "Xstuff.h"
-#include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
 #include "logo.h"
+
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int            x, y, rad;

@@ -33,10 +33,10 @@
 
  ************************************************************/
 
-#include "types/simple.h"
-
 #ifndef _fftpack_h
 #define _fftpack_h
+
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,4 +53,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
 #endif

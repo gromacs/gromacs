@@ -35,9 +35,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <stdio.h>
-#include "types/simple.h"
+
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 /*Make range-array (Permutation identity) for sorting */
 void rangeArray(int *ar, int size)

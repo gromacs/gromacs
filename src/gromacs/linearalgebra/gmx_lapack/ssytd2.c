@@ -1,7 +1,7 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 
 #include "../gmx_blas.h"
 #include "../gmx_lapack.h"

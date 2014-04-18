@@ -2,7 +2,7 @@
 #include <ctype.h>
 
 
-#include "types/simple.h"
+#include "gromacs/utility/real.h"
 #include "../gmx_blas.h"
 
 void
