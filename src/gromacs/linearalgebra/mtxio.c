@@ -45,10 +45,10 @@
  * in normal mode analysis.
  */
 
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -108,7 +108,7 @@ void gmx_mtxio_write(const char *             filename,
     gmx_fio_do_int(fio, i);
 
     /* Write generating Gromacs version */
-    gmx_fio_write_string(fio, GromacsVersion());
+    gmx_fio_write_string(fio, gmx_version());
 
     /* Write 1 for double, 0 for single precision */
     if (sizeof(real) == sizeof(double))

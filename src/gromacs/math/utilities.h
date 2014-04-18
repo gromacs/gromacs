@@ -40,7 +40,8 @@
 #include <limits.h>
 #include <math.h>
 
-#include "../legacyheaders/types/simple.h"
+#include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
