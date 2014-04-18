@@ -2110,6 +2110,15 @@ int gmx_pdb2gmx(int argc, char *argv[])
             top_file2 = top_file;
         }
 
+        /* Effectively disable short bond warning when using Drude.
+         * Drude positions will normally coincide with the parent atom  
+         * if the structure has not yet been energy-minimized, so most
+         * input files will generate a ton of warnings without this */
+        if (bDrude)
+        {
+            short_bond_dist = 0.0;
+        }
+
         pdb2top(top_file2, posre_fn, molname, pdba, &x, atype, &symtab,
                 nrtp, restp,
                 restp_chain, hb_chain,
