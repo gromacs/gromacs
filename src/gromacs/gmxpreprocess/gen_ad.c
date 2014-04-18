@@ -598,6 +598,16 @@ gmx_bool is_hydro(t_atoms *atoms, int ai)
     return ((*(atoms->atomname[ai]))[0] == 'H');
 }
 
+gmx_bool is_d(t_atoms *atoms, int ai)
+{
+    return ((*(atoms->atomname[ai]))[0] == 'D');
+}
+
+gmx_bool is_lp(t_atoms *atoms, int ai)
+{
+    return ((*(atoms->atomname[ai]))[0] == 'L');
+}
+
 static void get_atomnames_min(int n, char **anm,
                               int resind, t_atoms *atoms, atom_id *a)
 {
@@ -792,7 +802,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     int         nFound;
     gmx_bool    bFound, bExcl;
 
-
     /* These are the angles, dihedrals and pairs that we generate
      * from the bonds. The ones that are already there from the rtp file
      * will be retained.
@@ -833,7 +842,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                 if (k1 != i)
                 {
                     /* Generate every angle only once */
-                    /* Checks added to exclude any angles involving Drudes or LP */
                     if (i < k1)
                     {
                         if (nang == maxang)
@@ -872,13 +880,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                             bFound = (bFound ||
                                                       ((strcmp(anm[m], hbang->b[l].AI) == 0) &&
                                                        (strcmp(anm[2-m], hbang->b[l].AK) == 0)));
-                                            /* Check for Drude/LP by atom name and set bFound = FALSE 
-                                               to prevent angles from being written */
-                                            if (hbang->b[l].AI[0] == 'D' || hbang->b[l].AK[0] == 'D' ||
-                                                hbang->b[l].AI[0] == 'L' || hbang->b[l].AK[0] == 'L')
-                                            {
-                                                bFound = FALSE;
-                                            }
                                         }
                                         if (bFound)
                                         {
@@ -941,12 +942,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                            (strcmp(anm[1+m],  hbdih->b[n].AJ) == 0) &&
                                                            (strcmp(anm[2-m],  hbdih->b[n].AK) == 0) &&
                                                            (strcmp(anm[3-3*m], hbdih->b[n].AL) == 0)));
-                                                /* Same check here as above for Drude or LP */
-                                                if (hbdih->b[n].AI[0] == 'D' || hbdih->b[n].AL[0] == 'D' ||
-                                                    hbdih->b[n].AI[0] == 'L' || hbdih->b[n].AL[0] == 'L')
-                                                {
-                                                    bFound = FALSE;
-                                                }
                                             }
                                             if (bFound)
                                             {
