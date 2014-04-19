@@ -290,7 +290,6 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
         }
 #endif
 
-        allocate_fail = FALSE; /* stop compiler warnings */
 #ifdef HAVE_POSIX_MEMALIGN
         allocate_fail = (0 != posix_memalign(&malloced, alignment, nelem*elsize));
 #elif defined HAVE_MEMALIGN

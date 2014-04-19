@@ -1183,7 +1183,7 @@ static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *databl
 {
     int i;
 
-    if (ISDON(datable[id]) || !datable)
+    if (!datable || ISDON(datable[id]))
     {
         if (ddd->dptr[id] == NOTSET)   /* New donor */
         {
@@ -4617,6 +4617,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             t_matrix mat;
             int      id, ia, hh, x, y;
+            mat.flags = mat.y0 = 0;
 
             if ((nframes > 0) && (hb->nrhb > 0))
             {

@@ -2156,7 +2156,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 {
                     if (debug)
                     {
-                        fprintf(debug, " [%u -> %u]", params->param[i].a[j],
+                        fprintf(debug, " [%d -> %d]", params->param[i].a[j],
                                 params->param[i].a[j]-add_shift);
                     }
                     params->param[i].a[j] = params->param[i].a[j]-add_shift;
@@ -2165,7 +2165,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 {
                     if (debug)
                     {
-                        fprintf(debug, " [%u -> %d]", params->param[i].a[j],
+                        fprintf(debug, " [%d -> %d]", params->param[i].a[j],
                                 o2n[params->param[i].a[j]]);
                     }
                     params->param[i].a[j] = o2n[params->param[i].a[j]];

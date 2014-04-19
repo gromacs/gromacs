@@ -2132,7 +2132,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     gmx_ns_t     *ns;
     atom_id     **nl_lr_ljc, **nl_lr_one, **nl_sr;
     int          *nlr_ljc, *nlr_one, *nsr;
-    gmx_domdec_t *dd     = NULL;
+    gmx_domdec_t *dd;
     t_block      *cgs    = &(top->cgs);
     int          *cginfo = fr->cginfo;
     /* atom_id *i_atoms,*cgsindex=cgs->index; */
@@ -2160,10 +2160,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     ns = &fr->ns;
 
     bDomDec = DOMAINDECOMP(cr);
-    if (bDomDec)
-    {
-        dd = cr->dd;
-    }
+    dd      = cr->dd;
 
     bTriclinicX = ((YY < grid->npbcdim &&
                     (!bDomDec || dd->nc[YY] == 1) && box[YY][XX] != 0) ||

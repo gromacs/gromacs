@@ -583,7 +583,6 @@ int gmx_eneconv(int argc, char *argv[])
     nset     = 0;
     timestep = 0.0;
     snew(fnms, argc);
-    nfile        = 0;
     lastfilestep = 0;
     laststep     = startstep = 0;
 

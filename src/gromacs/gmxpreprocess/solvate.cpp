@@ -116,8 +116,10 @@ static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
             moltp = NOTSET;
             for (j = 0; (j < nrmoltypes) && (moltp == NOTSET); j++)
             {
-                if (strcmp(*(atoms->resinfo[atoms->atom[i].resind].name),
-                           moltypes[j].name) == 0)
+                /* cppcheck-suppress nullPointer
+                 * moltypes is guaranteed to be allocated because otherwise
+                 * nrmoltypes is 0. */
+                if (strcmp(*(atoms->resinfo[atoms->atom[i].resind].name), moltypes[j].name) == 0)
                 {
                     moltp = j;
                 }
