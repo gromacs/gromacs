@@ -1518,13 +1518,13 @@ static void low_pr_blocka(FILE *fp, int indent, const char *title, t_blocka *blo
         for (i = 0; i <= block->nr; i++)
         {
             (void) pr_indent(fp, indent+INDENT);
-            (void) fprintf(fp, "%s->index[%d]=%u\n",
+            (void) fprintf(fp, "%s->index[%d]=%d\n",
                            title, bShowNumbers ? i : -1, block->index[i]);
         }
         for (i = 0; i < block->nra; i++)
         {
             (void) pr_indent(fp, indent+INDENT);
-            (void) fprintf(fp, "%s->a[%d]=%u\n",
+            (void) fprintf(fp, "%s->a[%d]=%d\n",
                            title, bShowNumbers ? i : -1, block->a[i]);
         }
     }
@@ -1605,7 +1605,7 @@ void pr_blocka(FILE *fp, int indent, const char *title, t_blocka *block, gmx_boo
                         (void) fprintf(fp, "\n");
                         size = pr_indent(fp, indent+INDENT);
                     }
-                    size += fprintf(fp, "%u", block->a[j]);
+                    size += fprintf(fp, "%d", block->a[j]);
                 }
                 (void) fprintf(fp, "}\n");
                 start = end;

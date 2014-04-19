@@ -210,7 +210,7 @@ static void rm2par(t_param p[], int *np, peq eq)
             {
                 fprintf(debug,
                         "Something VERY strange is going on in rm2par (gen_ad.c)\n"
-                        "a[0] %u a[1] %u a[2] %u a[3] %u\n",
+                        "a[0] %d a[1] %d a[2] %d a[3] %d\n",
                         p[i].a[0], p[i].a[1], p[i].a[2], p[i].a[3]);
             }
             strcpy(p[i].s, "");

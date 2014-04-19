@@ -131,7 +131,7 @@ extern IMDSocket* imdsock_create()
 
 extern int imdsock_bind(IMDSocket *sock, int port)
 {
-    int ret = -1;
+    int ret;
 
 
 #ifdef GMX_IMD
@@ -141,6 +141,8 @@ extern int imdsock_bind(IMDSocket *sock, int port)
 
     /* Try to bind to address and port ...*/
     ret = bind(sock->sockfd, (struct sockaddr *) &sock->address, sizeof(sock->address));
+#else
+    ret = -1;
 #endif
 
     if (ret)
@@ -154,12 +156,14 @@ extern int imdsock_bind(IMDSocket *sock, int port)
 
 extern int imd_sock_listen(IMDSocket *sock)
 {
-    int ret = -1;
+    int ret;
 
 
 #ifdef GMX_IMD
     /* Try to set to listening state */
     ret = listen(sock->sockfd, MAXIMDCONNECTIONS);
+#else
+    ret = -1;
 #endif
 
     if (ret)
@@ -173,7 +177,7 @@ extern int imd_sock_listen(IMDSocket *sock)
 
 extern IMDSocket* imdsock_accept(IMDSocket *sock)
 {
-    int       ret = -1;
+    int       ret;
 
 #ifdef GMX_IMD
     socklen_t length;
@@ -205,7 +209,7 @@ extern IMDSocket* imdsock_accept(IMDSocket *sock)
 
 extern int imdsock_getport(IMDSocket *sock, int *port)
 {
-    int                ret = -1;
+    int                ret;
 #ifdef GMX_IMD
     struct sockaddr_in sin;
     socklen_t          len;

@@ -1796,6 +1796,7 @@ static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms)
         /* Keep the curr_edi pointer for the case that the next group is empty: */
         last_edi = curr_edi;
         /* Let's prepare to read in the next edi data set: */
+        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         curr_edi = edi_read;
     }
     if (edi_nr == 0)

@@ -350,8 +350,6 @@ extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, atom_id
     {
         copy_rvec (fr->x[index[i]], pos[i].x);
     }
-
-    positions = (reduced_atom_t *)pos;
 }
 
 

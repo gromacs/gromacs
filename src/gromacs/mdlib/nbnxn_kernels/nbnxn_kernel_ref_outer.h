@@ -336,7 +336,6 @@ NBK_FUNC_NAME(_VgrpF)
 #undef HALF_LJ
 #undef CALC_COULOMB
             }
-            /* cppcheck-suppress duplicateBranch */
             else if (do_coul)
             {
 #define CALC_COULOMB
@@ -361,7 +360,6 @@ NBK_FUNC_NAME(_VgrpF)
 #undef HALF_LJ
 #undef CALC_COULOMB
             }
-            /* cppcheck-suppress duplicateBranch */
             else if (do_coul)
             {
 #define CALC_COULOMB

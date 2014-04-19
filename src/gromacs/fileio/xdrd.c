@@ -109,7 +109,7 @@ int xdr_int64(XDR *xdrs, gmx_int64_t *i)
     imaj   = (int)imaj64;
     imin   = (int)imin64;
     ret    = xdr_int(xdrs, &imaj);
-    ret    = xdr_int(xdrs, &imin);
+    ret   |= xdr_int(xdrs, &imin);
 
     *i = (((gmx_int64_t)imaj << 32) | ((gmx_int64_t)imin & two_p32_m1));
 

@@ -1934,7 +1934,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
         snew(grid_r, 2*dd->nnodes);
     }
 
-    dd_gather(dd, 2*sizeof(rvec), grid_s[0], DDMASTER(dd) ? grid_r[0] : NULL);
+    dd_gather(dd, 2*sizeof(rvec), grid_s, DDMASTER(dd) ? grid_r : NULL);
 
     if (DDMASTER(dd))
     {

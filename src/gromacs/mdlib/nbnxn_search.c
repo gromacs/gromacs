@@ -1373,14 +1373,13 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                                   int cxy_start, int cxy_end,
                                   int *sort_work)
 {
-    int  cxy;
-    int  cx, cy, cz = -1, c = -1, ncz;
-    int  na, ash, na_c, ind, a;
-    int  subdiv_z, sub_z, na_z, ash_z;
-    int  subdiv_y, sub_y, na_y, ash_y;
-    int  subdiv_x, sub_x, na_x, ash_x;
+    int        cxy;
+    int        cx, cy, cz = -1, c = -1, ncz;
+    int        na, ash, na_c, ind, a;
+    int        subdiv_z, sub_z, na_z, ash_z;
+    int        subdiv_y, sub_y, na_y, ash_y;
+    int        subdiv_x, sub_x, na_x, ash_x;
 
-    /* cppcheck-suppress unassignedVariable */
     nbnxn_bb_t bb_work_array[2], *bb_work_aligned;
 
     bb_work_aligned = (nbnxn_bb_t *)(((size_t)(bb_work_array+1)) & (~((size_t)15)));

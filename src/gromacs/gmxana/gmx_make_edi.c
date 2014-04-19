@@ -861,7 +861,6 @@ int gmx_make_edi(int argc, char *argv[])
         printf("\n");
     }
 
-    EigvecFile = NULL;
     EigvecFile = opt2fn("-f", NFILE, fnm);
 
     /*read eigenvectors from eigvec.trr*/

@@ -111,6 +111,7 @@ static void delete_from_interactions(t_idef *idef, int inr)
             idef->il[i].iatoms[j] = niatoms[j];
         }
         idef->il[i].nr = nnr;
+        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         sfree(niatoms);
     }
 }
