@@ -106,7 +106,7 @@ void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[])
     if (seed == 0)
     {
         seed = gmx_rng_make_seed();
-        fprintf(stderr, "Using random seed %d for generating velocities\n", seed);
+        fprintf(stderr, "Using random seed %u for generating velocities\n", seed);
     }
 
     rng = gmx_rng_init(seed);

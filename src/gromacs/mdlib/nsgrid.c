@@ -290,7 +290,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
                      */
                     /* Determine the shift for the corners of the triclinic box */
                     add_tric = izones_size[j]*box[j][i]/box[j][j];
-                    if (dd && dd->ndim == 1 && j == ZZ)
+                    if (dd->ndim == 1 && j == ZZ)
                     {
                         /* With 1D domain decomposition the cg's are not in
                          * the triclinic box, but trilinic x-y and rectangular y-z.

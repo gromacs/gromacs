@@ -282,6 +282,7 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                         last++;
                     }
                 }
+                /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
                 sfree(bRemoveHarm);
                 fprintf(stderr, "Converted %d out of %d %s to morse bonds for mol %d\n",
                         nrharm-last, nrharm, interaction_function[bb].name, i);

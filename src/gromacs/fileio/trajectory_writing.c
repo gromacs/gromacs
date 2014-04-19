@@ -147,7 +147,6 @@ do_md_trajectory_writing(FILE           *fplog,
         if (bCPT)
         {
             (*nchkpt)++;
-            bCPT = FALSE;
         }
         debug_gmx();
         if (bLastStep && step_rel == ir->nsteps &&

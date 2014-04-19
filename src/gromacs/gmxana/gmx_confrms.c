@@ -176,7 +176,7 @@ int find_next_match_atoms_in_res(int *i1, atom_id index1[],
     {
         if (debug)
         {
-            fprintf(debug, "{%d %d}", *i1+bFW ? dx : dy, *i2+bFW ? dy : dx );
+            fprintf(debug, "{%d %d}", *i1 + (bFW ? dx : dy), *i2 + (bFW ? dy : dx) );
         }
         if (bFW)
         {

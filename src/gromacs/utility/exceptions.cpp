@@ -176,11 +176,15 @@ GromacsException::GromacsException(const ExceptionInitializer &details)
 const char *GromacsException::what() const throw()
 {
     const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*this);
-    while (msg != NULL && msg->isContext())
+    if (msg == NULL)
+    {
+        return "No reason provided";
+    }
+    while (msg->isContext())
     {
         msg = &msg->child();
     }
-    return msg != NULL ? msg->text().c_str() : "No reason provided";
+    return msg->text().c_str();
 }
 
 void GromacsException::prependContext(const std::string &context)

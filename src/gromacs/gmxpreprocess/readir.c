@@ -3080,7 +3080,7 @@ static void make_swap_groups(
 
 void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
 {
-    int      ig = -1, i;
+    int      ig, i;
 
 
     ig            = search_string(IMDgname, grps->nr, gnames);

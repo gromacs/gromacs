@@ -1787,7 +1787,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     }
 
     stepsize  = 1.0/fnorm;
-    converged = FALSE;
 
     /* Start the loop over BFGS steps.
      * Each successful step is counted, and we continue until
