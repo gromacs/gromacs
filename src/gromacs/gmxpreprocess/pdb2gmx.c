@@ -2126,7 +2126,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 bVsites, bVsiteAromatics, ffdir,
                 mHmult, nssbonds, ssbonds,
                 long_bond_dist, short_bond_dist, bDeuterate, bChargeGroups, bCmap,
-                bRenumRes, bRTPresname);
+                bRenumRes, bRTPresname, bDrude);
 
         if (!cc->bAllWat)
         {

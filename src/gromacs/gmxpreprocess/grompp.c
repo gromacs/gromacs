@@ -1705,6 +1705,12 @@ int gmx_grompp(int argc, char *argv[])
             warning_note(wi, "nbtholecut set to zero; may be unstable for highly charged systems!");
         }
 
+        if (ir->drude->nbtholecut > max(ir->rlist,ir->rcoulomb))
+        {
+            gmx_fatal(FARGS, "nbtholecut = %.3f > rlist or rcoulomb = %.3f\n", ir->drude->nbtholecut,
+                        ir->rlist > ir->rcoulomb ? ir->rlist : ir->rcoulomb); 
+        }
+
         if (ir->drude->bHardWall)
         {
             if (ir->drude->drude_r > 0.02 && ir->drude->drudemode == edrudeLagrangian)

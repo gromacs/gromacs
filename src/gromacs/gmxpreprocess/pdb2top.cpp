@@ -721,7 +721,7 @@ void write_top(FILE *out, char *pr, char *molname,
         print_bondeds(out, at->nr, d_cmap,       F_CMAP,     bts[ebtsCMAP],  plist);
         print_bondeds(out, at->nr, d_polarization, F_POLARIZATION,   0,       plist);
         print_bondeds(out, at->nr, d_aniso_polarization, F_ANISO_POL, 0,      plist);
-        print_bondeds(out, at->nr, d_thole_polarization, F_THOLE_POL, 0,       plist);
+        print_bondeds(out, at->nr, d_thole_polarization, F_THOLE_POL, 0, plist);
         print_bondeds(out, at->nr, d_vsites2,    F_VSITE2,   0,              plist);
         print_bondeds(out, at->nr, d_vsites3,    F_VSITE3,   0,              plist);
         print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FD, 0,              plist);
@@ -1427,6 +1427,54 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
     }
 }
 
+static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
+{
+
+    int         residx, i, j, k;
+    int         nthole = 0;
+    const char *ptr;
+    int         nres = atoms->nres;
+    atom_id     thole_atomid[2];
+
+    if (debug)
+    {
+        ptr = "thole_polarization";
+    }
+    else
+    {
+        ptr = "check";
+    }
+
+    fprintf(stderr, "Constructing intramolecular Thole pairs...\n");
+    i = 0;
+    for (residx = 0; residx < nres; residx++)
+    {
+        for (j = 0; j < restp[residx].rb[ebtsTHOLE].nb; j++)
+        {
+            for (k = 0; k < 2; k++)
+            {
+                thole_atomid[k] = search_atom(restp[residx].rb[ebtsTHOLE].b[j].a[k],
+                                              i, atoms, ptr, TRUE);
+            }
+            /* TODO: remove */
+            fprintf(stderr, "Thole atoms: %d - %d, s = %s\n", thole_atomid[0]+1, thole_atomid[1]+1, restp[residx].rb[ebtsTHOLE].b[j].s);
+            if (thole_atomid[0] != NO_ATID && thole_atomid[1] != NO_ATID)
+            {
+                add_param(ps, thole_atomid[0], thole_atomid[1], NULL, restp[residx].rb[ebtsTHOLE].b[j].s);
+                nthole++;
+            }
+        }
+        if (residx < nres)
+        {
+            while (atoms->atom[i].resind < residx+1)
+            {
+                i++;
+            }
+        }
+    }
+    fprintf(stderr, "Wrote %d Thole pairs.\n", nthole);
+}
+
 #define NUM_CMAP_ATOMS 5
 static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuetype_t rt)
 {
@@ -1529,7 +1577,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
              gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,
-             gmx_bool bRenumRes, gmx_bool bRTPresname)
+             gmx_bool bRenumRes, gmx_bool bRTPresname, gmx_bool bDrude)
 {
     /*
        t_hackblock *hb;
@@ -1581,6 +1629,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* Cleanup bonds (sort and rm doubles) */
     clean_bonds(&(plist[F_BONDS]));
 
+    /* TODO: remove LP bonds in termini */
+
     snew(vsite_type, atoms->nr);
     for (i = 0; i < atoms->nr; i++)
     {
@@ -1612,6 +1662,21 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
             fprintf(stderr, "There are %4d cmap torsion pairs\n",
                     plist[F_CMAP].nr);
         }
+    }
+
+    /* Set up Thole screening and anisotropy */
+    if (bDrude)
+    {
+        /* TODO: add functions here */
+        gen_thole(&(plist[F_THOLE_POL]), restp, atoms);
+        /* gen_aniso(&(plist[F_ANISO_POL]), restp, atoms, rt); */
+        /* gen_lonepairs2(&(plist[F_VSITE2]), restp, atoms, rt); */
+        /* gen_lonepairs3(&(plist[F_VSITE3]), restp, atoms, rt); */
+        /* gen_lonepairs3(&(plist[F_VSITE3FD]), restp, atoms, rt); */
+        /* gen_lonepairs3(&(plist[F_VSITE3FAD]), restp, atoms, rt); */
+        /* gen_lonepairs3(&(plist[F_VSITE3OUT]), restp, atoms, rt); */
+        /* gen_lonepairs4(&(plist[F_VSITE4FD]), restp, atoms, rt); */
+        /* gen_lonepairs4(&(plist[F_VSITE4FDN]), restp, atoms, rt); */
     }
 
     /* set mass of all remaining hydrogen atoms */

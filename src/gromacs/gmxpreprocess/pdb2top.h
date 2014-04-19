@@ -122,7 +122,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nssbonds, t_ssbond ssbonds[],
              real long_bond_dist, real short_bond_dist,
              gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,
-             gmx_bool bRenumRes, gmx_bool bRTPresname);
+             gmx_bool bRenumRes, gmx_bool bRTPresname, gmx_bool bDrude);
 /* Create a topology ! */
 
 void print_sums(t_atoms *atoms, gmx_bool bSystem);
