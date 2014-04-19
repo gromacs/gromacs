@@ -223,7 +223,7 @@ int gmx_mdmat(int argc, char *argv[])
     int          **nmat, **totnmat;
     real          *mean_n;
     int           *tot_n;
-    matrix         box;
+    matrix         box = {{0}};
     output_env_t   oenv;
     gmx_rmpbc_t    gpbc = NULL;
 

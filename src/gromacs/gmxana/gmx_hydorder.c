@@ -67,7 +67,7 @@ static void print_types(atom_id index[], atom_id a[], int ngrps,
     fprintf(stderr, "Using following groups: \n");
     for (i = 0; i < ngrps; i++)
     {
-        fprintf(stderr, "Groupname: %s First atomname: %s First atomnr %u\n",
+        fprintf(stderr, "Groupname: %s First atomname: %s First atomnr %d\n",
                 groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
     }
     fprintf(stderr, "\n");

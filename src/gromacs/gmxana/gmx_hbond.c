@@ -1183,7 +1183,7 @@ static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *databl
 {
     int i;
 
-    if (ISDON(datable[id]) || !datable)
+    if (!datable || ISDON(datable[id]))
     {
         if (ddd->dptr[id] == NOTSET)   /* New donor */
         {
@@ -2543,13 +2543,16 @@ static void parallel_print(int *data, int nThreads)
 
 static void normalizeACF(real *ct, real *gt, int nhb, int len)
 {
-    real ct_fac, gt_fac;
+    real ct_fac, gt_fac = 0;
     int  i;
 
     /* Xu and Berne use the same normalization constant */
 
     ct_fac = 1.0/ct[0];
-    gt_fac = (nhb == 0) ? 0 : 1.0/(real)nhb;
+    if (nhb != 0)
+    {
+        gt_fac = 1.0/(real)nhb;
+    }
 
     printf("Normalization for c(t) = %g for gh(t) = %g\n", ct_fac, gt_fac);
     for (i = 0; i < len; i++)
@@ -4617,6 +4620,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             t_matrix mat;
             int      id, ia, hh, x, y;
+            mat.flags = mat.y0 = 0;
 
             if ((nframes > 0) && (hb->nrhb > 0))
             {

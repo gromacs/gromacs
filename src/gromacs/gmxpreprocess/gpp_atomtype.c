@@ -371,7 +371,6 @@ void done_atomtype(gpp_atomtype_t ga)
     sfree(ga->atomnumber);
     ga->nr = 0;
     sfree(ga);
-    ga = NULL;
 }
 
 static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],

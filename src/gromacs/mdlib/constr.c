@@ -792,7 +792,7 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
                 j, constr->nblocks, ncons);
         for (i = 0; (i < ncons); i++)
         {
-            fprintf(stderr, "i: %5d  sb[i].blocknr: %5u\n", i, sb[i].blocknr);
+            fprintf(stderr, "i: %5d  sb[i].blocknr: %5d\n", i, sb[i].blocknr);
         }
         for (j = 0; (j <= constr->nblocks); j++)
         {
