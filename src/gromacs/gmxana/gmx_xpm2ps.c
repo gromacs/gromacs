@@ -711,11 +711,11 @@ void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
             sfree(mat[i].map);
             mat[i].nmap = nmap;
             mat[i].map  = map;
-            if (mat2 && (strcmp(mat[i].title, mat2[i].title) != 0))
+            if (strcmp(mat[i].title, mat2[i].title) != 0)
             {
                 sprintf(mat[i].title+strlen(mat[i].title), " / %s", mat2[i].title);
             }
-            if (mat2 && (strcmp(mat[i].legend, mat2[i].legend) != 0))
+            if (strcmp(mat[i].legend, mat2[i].legend) != 0)
             {
                 sprintf(mat[i].legend+strlen(mat[i].legend), " / %s", mat2[i].legend);
             }

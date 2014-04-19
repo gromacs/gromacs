@@ -38,6 +38,7 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -200,6 +201,7 @@ int gmx_vanhove(int argc, char *argv[])
             srenew(sbox, nalloc);
             srenew(sx, nalloc);
         }
+        assert(time != NULL); assert(sbox != NULL);
 
         time[nfr] = t;
         copy_mat(box, sbox[nfr]);

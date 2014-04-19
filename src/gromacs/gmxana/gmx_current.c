@@ -36,6 +36,7 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "gromacs/commandline/pargs.h"
@@ -471,7 +472,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                 xshfr[i] = 0.0;
             }
         }
-
+        assert(time != NULL);
 
 
         if (nfr == 0)

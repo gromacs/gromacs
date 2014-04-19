@@ -465,6 +465,8 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
     {
         if (dtc == xdr_datatype_double)
         {
+            /* cppcheck-suppress invalidPointerCast
+             * Only executed if real is anyhow double */
             vd = (double *)vp;
         }
         else
@@ -716,7 +718,6 @@ static int do_cpte_nmatrix(XDR *xd, int cptp, int ecpt, int sflags,
     }
     for (i = 0; i < n; i++)
     {
-        reti = 0;
         vr   = v[i];
         reti = do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, &(v[i]), NULL, ecprREAL);
         if (list && reti == 0)
@@ -1281,7 +1282,6 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
         {
             enerhist->ener_sum_sim[i] = enerhist->ener_sum[i];
         }
-        fflags |= (1<<eenhENERGY_SUM_SIM);
     }
 
     if ( (fflags & (1<<eenhENERGY_NSUM)) &&
@@ -1289,14 +1289,16 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
     {
         /* Assume we have an old file format and copy nsum to nsteps */
         enerhist->nsteps = enerhist->nsum;
-        fflags          |= (1<<eenhENERGY_NSTEPS);
     }
     if ( (fflags & (1<<eenhENERGY_NSUM_SIM)) &&
          !(fflags & (1<<eenhENERGY_NSTEPS_SIM)))
     {
         /* Assume we have an old file format and copy nsum to nsteps */
         enerhist->nsteps_sim = enerhist->nsum_sim;
-        fflags              |= (1<<eenhENERGY_NSTEPS_SIM);
+        /* Is it correct that this is removed? It doesn't do anything. Or is this a latent bug and fflags is
+         * suppsed to be copied back to calling function.
+           fflags              |= (1<<eenhENERGY_NSTEPS_SIM);
+         */
     }
 
     return ret;

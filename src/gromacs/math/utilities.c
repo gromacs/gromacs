@@ -739,7 +739,6 @@ gmx_bool gmx_isfinite(real gmx_unused x)
 
 gmx_bool gmx_isnan(real x)
 {
-    /* cppcheck-suppress duplicateExpression */
     return x != x;
 }
 
