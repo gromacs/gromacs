@@ -1360,7 +1360,6 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
         j       = 0;
         while (j < molt->ilist[i].nr)
         {
-            bexcl = FALSE;
             a1    = molt->ilist[i].iatoms[j+1];
             a2    = molt->ilist[i].iatoms[j+2];
             bexcl = ((bQMMM[a1] && bQMMM[a2]) ||
