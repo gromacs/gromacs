@@ -734,7 +734,7 @@ static void print_lambda_vector(t_lambda *fep, int i,
     if (Nsep > 1)
     {
         /* and add the closing parenthesis */
-        str += sprintf(str, ")");
+        sprintf(str, ")");
     }
 }
 

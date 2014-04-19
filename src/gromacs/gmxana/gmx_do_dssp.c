@@ -495,7 +495,7 @@ int gmx_do_dssp(int argc, char *argv[])
     gmx_bool          *bPhbres, bDoAccSurf;
     real               t;
     int                i, j, natoms, nframe = 0;
-    matrix             box;
+    matrix             box = {0};
     int                gnx;
     char              *grpnm, *ss_str;
     atom_id           *index;

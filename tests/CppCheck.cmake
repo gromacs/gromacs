@@ -57,6 +57,8 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         ${CMAKE_SOURCE_DIR}/src/external/*.c
         ${CMAKE_SOURCE_DIR}/src/external/*.cpp
         ${CMAKE_SOURCE_DIR}/src/external/*.cu
+	${CMAKE_SOURCE_DIR}/src/gromacs/selection/scanner.cpp
+	${CMAKE_SOURCE_DIR}/src/gromacs/selection/parser.cpp
         )
     list(REMOVE_ITEM _inputfiles ${_files_to_ignore})
 
@@ -68,11 +70,12 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         set(_outputopt --xml)
     endif()
     set(_common_flags
-        --enable=style -DLINUX
+        --enable=style -DLINUX -DHAVE_UNISTD_H
         -I src/gromacs/legacyheaders -I src
         -I src/external/thread_mpi/include
         -I ${CMAKE_BINARY_DIR}/src -I ${CMAKE_BINARY_DIR}/src/gromacs/utility
         --quiet
+        --inline-suppr
         ${_outputopt})
     set(_c_flags
         --suppress=variableScope
@@ -84,15 +87,14 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=sizeofCalculation
         --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
         --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
-        --inline-suppr)
+        --suppress=assignIfError:src/gromacs/mdlib/nbnxn_atomdata.c) #Ticket 5695
     set(_cxx_flags
         -D__cplusplus
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
         --suppress=invalidscanf:src/gromacs/fileio/matio.cpp
         --suppress=invalidscanf:src/gromacs/fileio/xvgr.cpp
-        --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp
-        --suppress=*:src/gromacs/selection/scanner.cpp)
+        --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp)
 
     # This list will hold the list of all files with cppcheck errors
     # (one per input file)

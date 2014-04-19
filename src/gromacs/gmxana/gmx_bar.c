@@ -356,7 +356,7 @@ static void lambda_vec_print(const lambda_vec_t *lv, char *str, gmx_bool named)
         str += sprintf(str, "dH/dl");
         if (strlen(lv->lc->names[lv->dhdl]) > 0)
         {
-            str += sprintf(str, " (%s)", lv->lc->names[lv->dhdl]);
+            sprintf(str, " (%s)", lv->lc->names[lv->dhdl]);
         }
     }
 }

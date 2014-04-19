@@ -532,7 +532,6 @@ static gmx_bool analyze_data(
 
     /* Only mention settings if they were modified: */
     bRefinedCoul = !gmx_within_tol(info->rcoulomb[k_win], info->rcoulomb[0], GMX_REAL_EPS);
-    bRefinedCoul = !gmx_within_tol(info->rcoulomb[k_win], info->rcoulomb[0], GMX_REAL_EPS);
     bRefinedVdW  = !gmx_within_tol(info->rvdw[k_win], info->rvdw[0], GMX_REAL_EPS);
     bRefinedGrid = !(info->nkx[k_win] == info->nkx[0] &&
                      info->nky[k_win] == info->nky[0] &&
