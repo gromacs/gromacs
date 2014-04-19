@@ -1456,8 +1456,6 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
                 thole_atomid[k] = search_atom(restp[residx].rb[ebtsTHOLE].b[j].a[k],
                                               i, atoms, ptr, TRUE);
             }
-            /* TODO: remove */
-            fprintf(stderr, "Thole atoms: %d - %d, s = %s\n", thole_atomid[0]+1, thole_atomid[1]+1, restp[residx].rb[ebtsTHOLE].b[j].s);
             if (thole_atomid[0] != NO_ATID && thole_atomid[1] != NO_ATID)
             {
                 add_param(ps, thole_atomid[0], thole_atomid[1], NULL, restp[residx].rb[ebtsTHOLE].b[j].s);
