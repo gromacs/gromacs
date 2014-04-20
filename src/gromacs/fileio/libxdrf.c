@@ -1383,7 +1383,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
         {
             return -1;
         }
-        if (fr != frame && abs(low-high) > header_size)
+        if (fr != frame && llabs(low-high) > header_size)
         {
             if (fr < frame)
             {
@@ -1517,10 +1517,9 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
            the current time and the target time is bigger than dt and above all the distance between high
            and low is bigger than 1 frame, then do another step of binary search. Otherwise stop and check
            if we reached the solution */
-        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) || ((t
-                                                                              - time) >= dt && dt_sign >= 0)
-             || ((time - t) >= -dt && dt_sign < 0)) && (abs(low - high)
-                                                        > header_size))
+        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) ||
+             ((t - time) >= dt && dt_sign >= 0) || ((time - t) >= -dt && dt_sign < 0)) &&
+            (llabs(low - high) > header_size))
         {
             if (dt >= 0 && dt_sign != -1)
             {
@@ -1558,7 +1557,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
         }
         else
         {
-            if (abs(low - high) <= header_size)
+            if (llabs(low - high) <= header_size)
             {
                 break;
             }
