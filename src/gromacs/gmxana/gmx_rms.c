@@ -334,10 +334,10 @@ int gmx_rms(int argc, char *argv[])
     if (bFile2 && !bMat && !bBond)
     {
         fprintf(
-                stderr,
-                "WARNING: second trajectory (-f2) useless when not calculating matrix (-m/-bm),\n"
-                "         will not read from %s\n", opt2fn("-f2", NFILE,
-                                                           fnm));
+            stderr,
+            "WARNING: second trajectory (-f2) useless when not calculating matrix (-m/-bm),\n"
+            "         will not read from %s\n", opt2fn("-f2", NFILE,
+                                                       fnm));
         bFile2 = FALSE;
     }
 
@@ -1137,7 +1137,7 @@ int gmx_rms(int argc, char *argv[])
     for (i = 0; (i < teller); i++)
     {
         if (bSplit && i > 0 &&
-            abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
+            fabsf(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
         {
             fprintf(fp, "&\n");
         }
@@ -1179,7 +1179,7 @@ int gmx_rms(int argc, char *argv[])
         }
         for (i = 0; (i < teller); i++)
         {
-            if (bSplit && i > 0 && abs(time[i]) < 1e-5)
+            if (bSplit && i > 0 && fabsf(time[i]) < 1e-5)
             {
                 fprintf(fp, "&\n");
             }
