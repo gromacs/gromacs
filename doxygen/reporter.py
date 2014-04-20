@@ -240,6 +240,10 @@ class Reporter(object):
         self._report(Message('warning: ' + message, details,
             location=entity.get_reporter_location()))
 
+    def cyclic_issue(self, message, details=None):
+        """Report a cyclic dependency issue."""
+        self._report(Message('warning: ' + message, details))
+
     def doc_error(self, entity, message):
         """Report an issue in documentation."""
         self._report(Message('error: ' + entity.get_name() + ': ' + message,
