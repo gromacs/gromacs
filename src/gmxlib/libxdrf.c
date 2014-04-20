@@ -1361,6 +1361,12 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     return res;
 }
 
+/* can be replaced by llabs in 5.0 (allows C99)*/
+static gmx_off_t
+gmx_llabs(gmx_off_t x)
+{
+    return x>0?x:-x;
+}
 
 int
 xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
@@ -1399,7 +1405,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
         {
             return -1;
         }
-        if (fr != frame && abs(low-high) > header_size)
+        if (fr != frame && gmx_llabs(low-high) > header_size)
         {
             if (fr < frame)
             {
@@ -1533,10 +1539,9 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
            the current time and the target time is bigger than dt and above all the distance between high
            and low is bigger than 1 frame, then do another step of binary search. Otherwise stop and check
            if we reached the solution */
-        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) || ((t
-                                                                              - time) >= dt && dt_sign >= 0)
-             || ((time - t) >= -dt && dt_sign < 0)) && (abs(low - high)
-                                                        > header_size))
+        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) ||
+             ((t - time) >= dt && dt_sign >= 0) || ((time - t) >= -dt && dt_sign < 0)) &&
+            (gmx_llabs(low - high) > header_size))
         {
             if (dt >= 0 && dt_sign != -1)
             {
@@ -1574,7 +1579,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
         }
         else
         {
-            if (abs(low - high) <= header_size)
+            if (gmx_llabs(low - high) <= header_size)
             {
                 break;
             }

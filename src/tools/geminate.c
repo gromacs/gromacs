@@ -1195,10 +1195,10 @@ extern void fixGemACF(double *ct, int len)
     bBad = FALSE;
 
     /* An acf of binary data must be one at t=0. */
-    if (abs(ct[0]-1.0) > 1e-6)
+    if (fabs(ct[0]-1.0) > 1e-6)
     {
         ct[0] = 1.0;
-        fprintf(stderr, "|ct[0]-1.0| = %1.6d. Setting ct[0] to 1.0.\n", abs(ct[0]-1.0));
+        fprintf(stderr, "|ct[0]-1.0| = %1.6f. Setting ct[0] to 1.0.\n", fabs(ct[0]-1.0));
     }
 
     for (i = 0; i < len; i++)

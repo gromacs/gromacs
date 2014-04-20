@@ -172,7 +172,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
             ind_mini = ind_min[0];
             ind_minj = ind_min[1];
         }
-        if (bSplit && !bFirst && abs(t/output_env_get_time_factor(oenv)) < 1e-5)
+        if (bSplit && !bFirst && fabs(t/output_env_get_time_factor(oenv)) < 1e-5)
         {
             fprintf(out, "&\n");
         }
@@ -423,7 +423,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     bFirst = TRUE;
     do
     {
-        if (bSplit && !bFirst && abs(t/output_env_get_time_factor(oenv)) < 1e-5)
+        if (bSplit && !bFirst && fabs(t/output_env_get_time_factor(oenv)) < 1e-5)
         {
             fprintf(dist, "&\n");
             if (num)
