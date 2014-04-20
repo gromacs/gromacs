@@ -52,7 +52,6 @@
 #include "toputil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gpp_atomtype.h"
-#include "macros.h"
 
 #include "tomorse.h"
 

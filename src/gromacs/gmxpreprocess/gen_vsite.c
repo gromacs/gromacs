@@ -54,7 +54,6 @@
 #include "gromacs/utility/futil.h"
 #include "gpp_atomtype.h"
 #include "fflibutil.h"
-#include "macros.h"
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

@@ -43,7 +43,6 @@
 #include <math.h>
 
 #include "physics.h"
-#include "macros.h"
 #include "readir.h"
 #include "typedefs.h"
 #include "topshake.h"

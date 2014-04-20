@@ -56,7 +56,6 @@
 #include "resall.h"
 #include "pgutil.h"
 #include "network.h"
-#include "macros.h"
 
 static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
 {

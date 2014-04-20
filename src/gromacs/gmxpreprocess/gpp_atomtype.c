@@ -42,7 +42,6 @@
 #include <string.h>
 
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
 #include "topdirs.h"
 #include "toputil.h"
 #include "topdirs.h"
