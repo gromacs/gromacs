@@ -44,9 +44,9 @@
 #ifndef GMX_COMMANDLINE_PARGS_H
 #define GMX_COMMANDLINE_PARGS_H
 
-#include "../legacyheaders/types/simple.h"
 #include "../legacyheaders/oenv.h"
 #include "../fileio/filenm.h"
+#include "../math/vectypes.h"
 #include "../utility/basedefinitions.h"
 #include "../utility/real.h"
 

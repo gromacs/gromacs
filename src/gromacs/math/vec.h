@@ -115,12 +115,14 @@
 
 #include <math.h>
 
-#include "../legacyheaders/types/simple.h"
 #include "../legacyheaders/physics.h"
 
 #include "utilities.h"
+#include "vectypes.h"
 
+#include "../utility/basedefinitions.h"
 #include "../utility/fatalerror.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

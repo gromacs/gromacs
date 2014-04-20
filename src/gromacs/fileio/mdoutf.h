@@ -37,11 +37,14 @@
 #define GMX_FILEIO_MDOUTF_H
 
 #include <stdio.h>
-#include "../legacyheaders/types/simple.h"
+
 #include "../legacyheaders/types/topology.h"
 #include "../legacyheaders/types/inputrec.h"
 #include "../legacyheaders/types/oenv.h"
 #include "../legacyheaders/network.h"
+
+#include "../math/vectypes.h"
+#include "../utility/basedefinitions.h"
 #include "filenm.h"
 #include "enxio.h"
 

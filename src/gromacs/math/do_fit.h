@@ -38,6 +38,9 @@
 #define GMX_MATH_DO_FIT_H
 
 #include "../legacyheaders/types/simple.h"
+#include "../utility/real.h"
+
+#include "vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {

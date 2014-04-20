@@ -39,6 +39,7 @@
 
 #include "../legacyheaders/types/nrnb.h"
 #include "../math/gmxcomplex.h"
+#include "../utility/basedefinitions.h"
 #include "../utility/gmxmpi.h"
 #include "../utility/real.h"
 

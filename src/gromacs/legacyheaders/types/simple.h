@@ -37,27 +37,11 @@
 #ifndef _simple_h
 #define _simple_h
 
+#include "../../math/vectypes.h"
 #include "../../utility/basedefinitions.h"
 #include "../../utility/real.h"
 
-#define XX      0                 /* Defines for indexing in */
-#define YY      1                 /* vectors                 */
-#define ZZ      2
-#define DIM     3                 /* Dimension of vectors    */
-
 typedef int         atom_id;      /* To indicate an atoms id         */
 #define NO_ATID     (atom_id)(~0) /* Use this to indicate invalid atid */
-
-typedef real            rvec[DIM];
-
-typedef double          dvec[DIM];
-
-typedef real            matrix[DIM][DIM];
-
-typedef real            tensor[DIM][DIM];
-
-typedef int             ivec[DIM];
-
-typedef int             imatrix[DIM][DIM];
 
 #endif

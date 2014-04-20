@@ -41,6 +41,7 @@ set(MATH_PUBLIC_HEADERS
     do_fit.h
     utilities.h
     vec.h
+    vectypes.h
     )
 gmx_install_headers(math ${MATH_PUBLIC_HEADERS})
 

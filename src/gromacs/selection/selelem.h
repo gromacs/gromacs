@@ -53,8 +53,8 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/utility/common.h"
+#include "gromacs/utility/real.h"
 
 #include "indexutil.h"
 #include "selvalue.h"
