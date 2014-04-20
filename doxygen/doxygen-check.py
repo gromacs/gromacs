@@ -175,6 +175,146 @@ def check_member(member, reporter, check_ignored):
         if member.has_inbody_description():
             reporter.doc_note(member, "has in-body comments, which are ignored")
 
+def check_cycles(graph, reporter):
+    """Check cyclic dependencies in a dependency graph.
+
+    The graph parameter provides the graph to check.  It should be an object
+    that has three methods:
+      iternodes():
+        Return the list of nodes in the graph.
+      iteredges(node):
+        Return the list of edges from a given node.
+        The list should contain (node, edge) pairs, where node is an object
+        returned by iternodes() and edge is any object.
+      report_cycle(cycle, reporter):
+        Process a found cycle. cycle contains a list of (node, edge) pairs
+        that describe the cycle.  edge is the edge object that leads _to_
+        the node in the cycle.
+
+    This is implemented using an extended DFS-based strongly connected
+    component (SCC) search, written using a stack instead of recursion.
+    The base algorithm is Tarjan's SCC search:
+      http://en.wikipedia.org/wiki/Tarjan's_strongly_connected_components_algorithm
+
+    Each back edge that is encountered during the search is reported as a
+    cycle.  Additionally, if a cross edge is encountered that is within the
+    current SCC, the target node and all its children in the current SCC will
+    be visited again to find all cycles.  All steps except cycle detection are
+    omitted for such re-traversal.
+
+    To avoid duplicates from cycles that do not include all nodes in an SCC,
+    a cycle is only reported if the target of the back edge is still active
+    in the search, i.e., all edges from it have not yet been traversed.
+    """
+    # The DFS stack; next node is always popped from the end.
+    # Stores (node, edge) pairs.
+    # edge is None for start nodes and for post-order processing.
+    dfsstack = []
+    for node in graph.iternodes():
+        dfsstack.append((node, None))
+    # Stack of visited nodes that have not yet been assigned to a strongly
+    # connected component.
+    visitstack = []
+    # List of nodes in the DFS recursion stack.
+    currlist = []
+    # Set of nodes in currlist for more efficient searching.
+    currset = set()
+    # Counter for initializing preorder.
+    visit_count = 0
+    # DFS pre-order for nodes: initialized when a node is first encountered
+    # in the search.
+    preorder = dict()
+    # Lowest pre-order index reachable from this node.
+    # Initialized to pre-order, and updated during post-order processing.
+    linkorder = dict()
+    # Set to True for a node when first encountered, and set to False when
+    # a strongly connected component has been processed.
+    in_progress = dict()
+    # The DFS search
+    while dfsstack:
+        currnode, curredge = dfsstack.pop()
+        # curredge is None if this is a start node or post-order traversal.
+        # currlist is empty if this is a start node.
+        if curredge is None and currlist:
+            # All children visited: post-order processing.
+            done = currlist.pop()[0]
+            assert done == currnode
+            currset.remove(currnode)
+            # If this is the first time this node is encountered, fill
+            # linkorder and check for strongly connected components.
+            if linkorder[currnode] == preorder[currnode]:
+                children = [x for x, dummy in graph.iteredges(currnode) if in_progress[x]]
+                if children:
+                    linkorder[currnode] = min([linkorder[x] for x in children])
+                if preorder[currnode] <= linkorder[currnode]:
+                    # This is a root of a strongly connected component.
+                    while visitstack:
+                        node = visitstack.pop()
+                        in_progress[currnode] = False
+                        if node == currnode:
+                            break
+                    else:
+                        assert False
+            continue
+        if currnode not in preorder:
+            # First encounter of this node: pre-order processing.
+            preorder[currnode] = visit_count
+            linkorder[currnode] = visit_count
+            visitstack.append(currnode)
+            visit_count += 1
+            in_progress[currnode] = True
+        elif not in_progress[currnode]:
+            # Do not enter processed components again.
+            continue
+        currlist.append((currnode, curredge))
+        currset.add(currnode)
+        # add entry for post-order traversal
+        dfsstack.append((currnode, None))
+        for nextnode, edge in graph.iteredges(currnode):
+            if nextnode not in preorder:
+                # Not seen previously: push
+                dfsstack.append((nextnode, edge))
+            else:
+                # If an already visited node is in the same component, it is
+                # either part of a cycle, or we need to traverse it again to
+                # find all cycles.
+                if in_progress[nextnode]:
+                    if nextnode not in currset:
+                        dfsstack.append((nextnode, edge))
+                    # Only report cycles to nodes that haven't been processed
+                    # yet to avoid duplicates.
+                    elif linkorder[nextnode] == preorder[nextnode]:
+                        for index in xrange(len(currlist)):
+                            if currlist[index][0] == nextnode:
+                                cycle = [(nextnode, edge)]
+                                cycle.extend(currlist[index+1:])
+                                graph.report_cycle(cycle, reporter)
+                                break
+                        else:
+                            assert False
+
+class ModuleDependencyGraph(object):
+
+    """Module dependency graph representation for check_cycles()."""
+
+    def __init__(self, tree):
+        self._tree = tree
+
+    def iternodes(self):
+        for module in self._tree.get_modules():
+            if module.get_name() != 'module_testutils':
+                yield module
+
+    def iteredges(self, module):
+        for dependency in module.get_dependencies():
+            if dependency.get_other_module().get_name() != 'module_testutils':
+                yield (dependency.get_other_module(), dependency)
+
+    def report_cycle(self, cycle, reporter):
+        modulelist = ' -> '.join([x[0].get_name()[7:] for x in cycle])
+        summary = 'module-level cyclic dependency: ' + modulelist
+        reporter.cyclic_issue(summary)
+
 def main():
     """Run the checking script."""
     parser = OptionParser()
@@ -230,6 +370,8 @@ def main():
 
     for memberobj in tree.get_members():
         check_member(memberobj, reporter, options.check_ignored)
+
+    check_cycles(ModuleDependencyGraph(tree), reporter)
 
     reporter.write_pending()
     reporter.report_unused_filters()
