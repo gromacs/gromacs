@@ -145,7 +145,8 @@ if (DOXYGEN_FOUND)
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
             --installed ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
             -l ${CMAKE_CURRENT_BINARY_DIR}/doxygen-check.log
-            --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt)
+            --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
+            --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt)
         add_custom_target(doc-check COMMAND ${doc_check_command}
             COMMENT "Checking Doxygen documentation" VERBATIM)
         add_dependencies(doc-check doc-xml find-installed-headers)
