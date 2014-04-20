@@ -525,8 +525,8 @@ static void draw_zerolines(t_psdata out, real x0, real y0, real w,
                 xx = xx00+(x+0.7)*psr->xboxsize;
                 /* draw lines whenever tick label almost zero (e.g. next trajectory) */
                 if (x != 0 && x < mat[i].nx-1 &&
-                    abs(mat[i].axis_x[x]) <
-                    0.1*abs(mat[i].axis_x[x+1]-mat[i].axis_x[x]) )
+                    fabs(mat[i].axis_x[x]) <
+                    0.1*fabs(mat[i].axis_x[x+1]-mat[i].axis_x[x]) )
                 {
                     ps_line (out, xx, yy00, xx, yy00+dy+2);
                 }
@@ -540,8 +540,8 @@ static void draw_zerolines(t_psdata out, real x0, real y0, real w,
                 yy = yy00+(y+0.7)*psr->yboxsize;
                 /* draw lines whenever tick label almost zero (e.g. next trajectory) */
                 if (y != 0 && y < mat[i].ny-1 &&
-                    abs(mat[i].axis_y[y]) <
-                    0.1*abs(mat[i].axis_y[y+1]-mat[i].axis_y[y]) )
+                    fabs(mat[i].axis_y[y]) <
+                    0.1*fabs(mat[i].axis_y[y+1]-mat[i].axis_y[y]) )
                 {
                     ps_line (out, xx00, yy, xx00+w+2, yy);
                 }
@@ -1137,7 +1137,7 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
             }
             for (x = 0; x < mats[i].nx-1; x++)
             {
-                if (abs(mats[i].axis_x[x+1]) < 1e-5)
+                if (fabs(mats[i].axis_x[x+1]) < 1e-5)
                 {
                     for (y = 0; y < mats[i].ny; y++)
                     {
@@ -1147,7 +1147,7 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
             }
             for (y = 0; y < mats[i].ny-1; y++)
             {
-                if (abs(mats[i].axis_y[y+1]) < 1e-5)
+                if (fabs(mats[i].axis_y[y+1]) < 1e-5)
                 {
                     for (x = 0; x < mats[i].nx; x++)
                     {

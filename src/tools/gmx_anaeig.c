@@ -258,7 +258,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
         {
             for (i = 0; i < n; i++)
             {
-                if (bSplit && i > 0 && abs(x[i]) < 1e-5)
+                if (bSplit && i > 0 && fabs(x[i]) < 1e-5)
                 {
                     if (output_env_get_print_xvgr_codes(oenv))
                     {
@@ -671,7 +671,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                            oenv);
         for (i = 0; i < nframes; i++)
         {
-            if (bSplit && i > 0 && abs(inprod[noutvec][i]) < 1e-5)
+            if (bSplit && i > 0 && fabs(inprod[noutvec][i]) < 1e-5)
             {
                 fprintf(xvgrout, "&\n");
             }
@@ -759,7 +759,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             j = 0;
             for (i = 0; i < atoms.nr; i++)
             {
-                if (j > 0 && bSplit && abs(inprod[noutvec][i]) < 1e-5)
+                if (j > 0 && bSplit && fabs(inprod[noutvec][i]) < 1e-5)
                 {
                     fprintf(out, "TER\n");
                     j = 0;
