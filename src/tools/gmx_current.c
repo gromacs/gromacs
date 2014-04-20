@@ -141,7 +141,7 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
         }
     }
 
-    if (abs(qall) > 0.01)
+    if (fabs(qall) > 0.01)
     {
         printf("\n\nSystem not neutral (q=%f) will not calculate translational part of the dipole moment.\n", qall);
         bNEU = FALSE;
