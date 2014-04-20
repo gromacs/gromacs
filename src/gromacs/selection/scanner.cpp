@@ -3,7 +3,7 @@
 // Required before flex definitions, since it includes <stdint.h>.
 // Otherwise, compilers not strictly C99 get macro redefinition errors,
 // since flex defines INT32_MAX etc. in such cases.
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
 
 
 

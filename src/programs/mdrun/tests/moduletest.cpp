@@ -45,11 +45,10 @@
 #  include <config.h>
 #endif
 
-#include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/file.h"
 

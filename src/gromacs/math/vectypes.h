@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,99 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MATH_GMXCOMPLEX_H
-#define GMX_MATH_GMXCOMPLEX_H
-
-#include <math.h>
+#ifndef GMX_MATH_VECTYPES_H
+#define GMX_MATH_VECTYPES_H
 
 #include "../utility/real.h"
 
-#include "vectypes.h"
+#define XX      0 /* Defines for indexing in */
+#define YY      1 /* vectors                 */
+#define ZZ      2
+#define DIM     3 /* Dimension of vectors    */
 
-typedef struct {
-    real re, im;
-} t_complex;
+typedef real    rvec[DIM];
 
-typedef t_complex cvec[DIM];
+typedef double  dvec[DIM];
 
-static t_complex rcmul(real r, t_complex c)
-{
-    t_complex d;
+typedef real    matrix[DIM][DIM];
 
-    d.re = r*c.re;
-    d.im = r*c.im;
+typedef real    tensor[DIM][DIM];
 
-    return d;
-}
+typedef int     ivec[DIM];
 
-static t_complex rcexp(real r)
-{
-    t_complex c;
+typedef int     imatrix[DIM][DIM];
 
-    c.re = (real)cos(r);
-    c.im = (real)sin(r);
-
-    return c;
-}
-
-
-static t_complex cadd(t_complex a, t_complex b)
-{
-    t_complex c;
-
-    c.re = a.re+b.re;
-    c.im = a.im+b.im;
-
-    return c;
-}
-
-static t_complex csub(t_complex a, t_complex b)
-{
-    t_complex c;
-
-    c.re = a.re-b.re;
-    c.im = a.im-b.im;
-
-    return c;
-}
-
-static t_complex cmul(t_complex a, t_complex b)
-{
-    t_complex c;
-
-    c.re = a.re*b.re - a.im*b.im;
-    c.im = a.re*b.im + a.im*b.re;
-
-    return c;
-}
-
-static t_complex conjugate(t_complex c)
-{
-    t_complex d;
-
-    d.re =  c.re;
-    d.im = -c.im;
-
-    return d;
-}
-
-static real cabs2(t_complex c)
-{
-    real abs2;
-    abs2 = (c.re*c.re)+(c.im*c.im);
-
-    return abs2;
-}
-
-
-
-static t_complex cdiv(t_complex teller, t_complex noemer)
-{
-    t_complex res, anoemer;
-
-    anoemer = cmul(conjugate(noemer), noemer);
-    res     = cmul(teller, conjugate(noemer));
-
-    return rcmul(1.0/anoemer.re, res);
-}
 #endif

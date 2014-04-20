@@ -55,10 +55,10 @@
 #include <list>
 #include <string>
 
-#include "gromacs/legacyheaders/types/simple.h"
-
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/uniqueptr.h"
 
 #include "selelem.h"
