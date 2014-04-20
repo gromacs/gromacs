@@ -324,6 +324,24 @@ class Directory(object):
         for fileobj in self._files:
             yield fileobj
 
+class ModuleDependency(object):
+
+    """Dependency between modules."""
+
+    def __init__(self, othermodule):
+        """Initialize empty dependency object with given module as dependency."""
+        self._othermodule = othermodule
+        self._includedfiles = []
+
+    def add_included_file(self, includedfile):
+        """Add IncludedFile that is part of this dependency."""
+        assert includedfile.get_file().get_module() == self._othermodule
+        self._includedfiles.append(includedfile)
+
+    def get_other_module(self):
+        """Get module that this dependency is to."""
+        return self._othermodule
+
 class Module(object):
 
     """Code module in the GROMACS source tree.
@@ -340,6 +358,7 @@ class Module(object):
         self._rawdoc = None
         self._rootdir = rootdir
         self._group = None
+        self._dependencies = dict()
 
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the module."""
@@ -351,6 +370,13 @@ class Module(object):
                 groupname = groups[0].get_name()
                 if groupname.startswith('group_'):
                     self._group = groupname[6:]
+
+    def add_dependency(self, othermodule, includedfile):
+        """Add #include dependency from a file in this module."""
+        assert includedfile.get_file().get_module() == othermodule
+        if othermodule not in self._dependencies:
+            self._dependencies[othermodule] = ModuleDependency(othermodule)
+        self._dependencies[othermodule].add_included_file(includedfile)
 
     def is_documented(self):
         return self._rawdoc is not None
@@ -367,6 +393,9 @@ class Module(object):
 
     def get_group(self):
         return self._group
+
+    def get_dependencies(self):
+        return self._dependencies.itervalues()
 
 class Namespace(object):
 
@@ -559,6 +588,14 @@ class GromacsTree(object):
         for fileobj in self._files.itervalues():
             if not fileobj.is_external():
                 fileobj.scan_contents(self)
+                module = fileobj.get_module()
+                if module:
+                    for includedfile in fileobj.get_includes():
+                        otherfile = includedfile.get_file()
+                        if otherfile:
+                            othermodule = otherfile.get_module()
+                            if othermodule and othermodule != module:
+                                module.add_dependency(othermodule, includedfile)
 
     def load_xml(self, only_files=False):
         """Load Doxygen XML information.
