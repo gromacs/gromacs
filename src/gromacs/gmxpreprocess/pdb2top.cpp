@@ -1508,11 +1508,6 @@ static void gen_aniso(t_params *ps, t_restp *restp, t_atoms *atoms)
             bAddAniso = TRUE;
             for (k = 0; k < 5 && bAddAniso; k++)
             {
-                /* TODO: remove */
-                fprintf(stderr, "Searching for aniso in residue %s with %d bondeds...\n",
-                        restp[residx].resname, restp[residx].rb[ebtsANISO].nb);
-                fprintf(stderr, "Searching for atom named %s\n", restp[residx].rb[ebtsANISO].b[j].a[k]);
-
                 aniso_atomid[k] = search_atom(restp[residx].rb[ebtsANISO].b[j].a[k],
                                               i, atoms, ptr, TRUE);
                 bAddAniso = bAddAniso && (aniso_atomid[k] != NO_ATID);
