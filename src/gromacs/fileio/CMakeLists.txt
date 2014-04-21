@@ -49,6 +49,7 @@ set(FILEIO_PUBLIC_HEADERS
     gmxfio.h
     matio.h
     mdoutf.h
+    mtxio.h
     pdbio.h
     tpxio.h
     trajectory_writing.h

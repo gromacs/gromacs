@@ -38,18 +38,15 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-#include <assert.h>
+
 #include "macros.h"
-#include "gromacs/commandline/pargs.h"
 #include "txtdump.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "txtdump.h"
-#include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "gromacs/fileio/xtcio.h"
@@ -65,9 +62,12 @@
 #include <unistd.h>
 #endif
 
-#include "gromacs/linearalgebra/mtxio.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/mtxio.h"
+#include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
-
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                      gmx_bool bSysTop)
