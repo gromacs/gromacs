@@ -79,6 +79,7 @@
 #include "nrnb.h"
 #include "macros.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"

@@ -38,12 +38,16 @@
 #define GMX_TIMING_WALLCYCLE_H
 
 #include <stdio.h>
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+
+#include "../legacyheaders/types/commrec_fwd.h"
+#include "../legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,

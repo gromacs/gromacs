@@ -40,9 +40,9 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/typedefs.h"
-#include "../legacyheaders/symtab.h"
 #include "../legacyheaders/atomprop.h"
+#include "../legacyheaders/symtab.h"
+#include "../legacyheaders/types/topology.h"
 
 #ifdef __cplusplus
 extern "C" {
