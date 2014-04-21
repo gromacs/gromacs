@@ -38,9 +38,10 @@
 #include <config.h>
 #endif
 
+#include "gromacs/legacyheaders/symtab.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "symtab.h"
 
 void replace_atom(t_topology *top, int inr, char *anm, char *resnm,
                   real q, real m, int type)

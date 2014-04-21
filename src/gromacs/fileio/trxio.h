@@ -38,12 +38,13 @@
 #ifndef GMX_FILEIO_TRXIO_H
 #define GMX_FILEIO_TRXIO_H
 
-#include "../legacyheaders/typedefs.h"
-#include "filenm.h"
+#include "../legacyheaders/types/topology.h"
 #include "../legacyheaders/readinp.h"
-#include "pdbio.h"
 #include "../legacyheaders/oenv.h"
+
+#include "filenm.h"
 #include "gmxfio.h"
+#include "pdbio.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -72,6 +72,7 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trajectory_writing.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/timing/wallcycle.h"

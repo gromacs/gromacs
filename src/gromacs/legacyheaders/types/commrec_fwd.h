@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,23 +33,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_TYPES_ENERGY_H
-#define GMX_TYPES_ENERGY_H
+#ifndef GMX_TYPES_COMMREC_FWD_H
+#define GMX_TYPES_COMMREC_FWD_H
 
-#include "simple.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct {
-    real   e;    /* The current energy.					*/
-    double eav;  /* The running average                     */
-    double esum; /* The sum of energies until now.			*/
-} t_energy;
-
-#ifdef __cplusplus
-}
-#endif
+typedef struct t_commrec t_commrec;
+typedef struct gmx_domdec_t gmx_domdec_t;
+typedef struct gmx_multisim_t gmx_multisim_t;
+typedef struct gmx_domdec_zones_t gmx_domdec_zones_t;
+typedef struct gmx_ddbox_t gmx_ddbox_t;
 
 #endif
