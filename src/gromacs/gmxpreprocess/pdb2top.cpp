@@ -75,6 +75,11 @@
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
 
+static gmx_bool is_lp(t_atoms *atoms, int ai)
+{
+    return ((*(atoms->atomname[ai]))[0] == 'L');
+}
+
 static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
 {
     int      j, k, nmiss;
@@ -882,10 +887,10 @@ static int pcompar(const void *a, const void *b)
     }
 }
 
-static void clean_bonds(t_params *ps)
+static void clean_bonds(t_params *ps, t_atoms *atoms, gmx_bool bDrude)
 {
-    int     i, j;
-    atom_id a;
+    int         i, j;
+    atom_id     a;
 
     if (ps->nr > 0)
     {
@@ -904,6 +909,8 @@ static void clean_bonds(t_params *ps)
         qsort(ps->param, ps->nr, (size_t)sizeof(ps->param[0]), pcompar);
 
         /* remove doubles, keep the first one always. */
+        /* Here, we also remove any bonds to LP that may have
+         * been added when patching termini */
         j = 1;
         for (i = 1; (i < ps->nr); i++)
         {
@@ -912,11 +919,22 @@ static void clean_bonds(t_params *ps)
             {
                 if (j != i)
                 {
-                    cp_param(&(ps->param[j]), &(ps->param[i]));
+                    if (bDrude)
+                    {
+                        if (!is_lp(atoms, ps->param[i].a[0]) && !is_lp(atoms, ps->param[i].a[1]))
+                        {
+                            cp_param(&(ps->param[j]), &(ps->param[i]));
+                        }
+                    }
+                    else
+                    {
+                        cp_param(&(ps->param[j]), &(ps->param[i]));
+                    }
                 }
                 j++;
             }
         }
+
         fprintf(stderr, "Number of bonds was %d, now %d\n", ps->nr, j);
         ps->nr = j;
     }
@@ -1739,9 +1757,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     }
 
     /* Cleanup bonds (sort and rm doubles) */
-    clean_bonds(&(plist[F_BONDS]));
-
-    /* TODO: remove LP bonds in termini */
+    /* With Drude FF, also removes bonds involving LP */
+    clean_bonds(&(plist[F_BONDS]), atoms, bDrude);
 
     snew(vsite_type, atoms->nr);
     for (i = 0; i < atoms->nr; i++)
