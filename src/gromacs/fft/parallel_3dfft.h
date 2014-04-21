@@ -37,8 +37,8 @@
 #ifndef GMX_FFT_PARALLEL_3DFFT_H
 #define GMX_FFT_PARALLEL_3DFFT_H
 
-#include "../legacyheaders/types/nrnb.h"
 #include "../math/gmxcomplex.h"
+#include "../timing/wallcycle.h"
 #include "../utility/basedefinitions.h"
 #include "../utility/gmxmpi.h"
 #include "../utility/real.h"

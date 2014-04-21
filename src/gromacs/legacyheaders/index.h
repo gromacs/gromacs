@@ -38,7 +38,10 @@
 #ifndef _index_h
 #define _index_h
 
-#include "typedefs.h"
+#include <stdio.h>
+
+#include "types/atoms.h"
+#include "types/block.h"
 
 #ifdef __cplusplus
 extern "C" {

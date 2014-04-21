@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "../math/gmxcomplex.h"
+#include "../timing/wallcycle.h"
 #include "../timing/walltime_accounting.h"
 #include "../legacyheaders/network.h"
 
