@@ -53,7 +53,6 @@
  *
  **************************************************************/
 
-#include "../legacyheaders/typedefs.h"
 #include "gmxfio.h"
 
 #ifdef __cplusplus

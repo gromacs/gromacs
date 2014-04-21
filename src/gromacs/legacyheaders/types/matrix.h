@@ -41,7 +41,8 @@
 extern "C" {
 #endif
 
-#include "simple.h"
+#include "../../utility/basedefinitions.h"
+#include "../../utility/real.h"
 
 typedef struct {
     real r, g, b;

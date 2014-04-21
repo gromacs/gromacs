@@ -45,6 +45,7 @@
 #include "trajectory_writing.h"
 #include "mdoutf.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/wallcycle.h"
 
 void

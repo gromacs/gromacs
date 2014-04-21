@@ -63,6 +63,7 @@
 #include "qmmm.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"

@@ -38,8 +38,13 @@
 #ifndef GMX_FILEIO_CONFIO_H
 #define GMX_FILEIO_CONFIO_H
 
+#include <stdio.h>
 
-#include "../legacyheaders/typedefs.h"
+#include "../legacyheaders/types/atoms.h"
+#include "../legacyheaders/types/simple.h"
+#include "../legacyheaders/types/topology.h"
+
+#include "trx.h"
 
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.

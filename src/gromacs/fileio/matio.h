@@ -38,7 +38,9 @@
 #ifndef GMX_FILEIO_MATIO_H
 #define GMX_FILEIO_MATIO_H
 
-#include "../legacyheaders/typedefs.h"
+#include <stdio.h>
+
+#include "../legacyheaders/types/matrix.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -39,7 +39,7 @@
 #define _symtab_h
 
 #include <stdio.h>
-#include "typedefs.h"
+#include "types/symtab.h"
 
 #ifdef __cplusplus
 extern "C" {

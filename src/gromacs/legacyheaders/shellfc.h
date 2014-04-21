@@ -35,6 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "../timing/wallcycle.h"
+
 #include "typedefs.h"
 #include "vsite.h"
 

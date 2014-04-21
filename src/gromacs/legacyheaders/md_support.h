@@ -43,6 +43,8 @@
 #include "sim_util.h"
 #include "vcm.h"
 
+#include "../timing/wallcycle.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

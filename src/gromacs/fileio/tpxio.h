@@ -47,7 +47,9 @@
  * can also be used with the routines in gmxfio.h
  *
  **************************************************************/
-#include "../legacyheaders/typedefs.h"
+#include "../legacyheaders/types/inputrec.h"
+#include "../legacyheaders/types/state.h"
+#include "../legacyheaders/types/topology.h"
 #include "gmxfio.h"
 
 #ifdef __cplusplus
