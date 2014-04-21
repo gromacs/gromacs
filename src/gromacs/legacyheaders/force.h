@@ -47,6 +47,7 @@
 #include "vsite.h"
 #include "genborn.h"
 
+#include "../timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {

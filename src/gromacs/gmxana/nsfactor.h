@@ -36,9 +36,10 @@
 #ifndef _nsfactor_h
 #define _nsfactor_h
 
-#include "index.h"
-#include "types/simple.h"
-#include "oenv.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/topology.h"
 
 #ifdef __cplusplus
 extern "C" {

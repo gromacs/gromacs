@@ -82,6 +82,7 @@
 #include "../gmxlib/nonbonded/nb_kernel.h"
 #include "../gmxlib/nonbonded/nb_free_energy.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"

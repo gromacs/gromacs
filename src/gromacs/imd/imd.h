@@ -62,6 +62,7 @@
 
 #include "typedefs.h"
 #include "../fileio/filenm.h"
+#include "../timing/wallcycle.h"
 
 #ifdef GMX_NATIVE_WINDOWS
 #include <Windows.h>

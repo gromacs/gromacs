@@ -44,6 +44,7 @@
 #include "vcm.h"
 #include "../fileio/enxio.h"
 #include "../fileio/mdoutf.h"
+#include "../timing/wallcycle.h"
 #include "../timing/walltime_accounting.h"
 
 #ifdef __cplusplus
