@@ -39,7 +39,6 @@
 
 
 #include "simple.h"
-#include "../../swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -177,41 +176,7 @@ typedef struct
 }
 edsamstate_t;
 
-
-typedef struct
-{
-    int        eSwapCoords;                         /* Swapping along x, y, or z-direction?      */
-    int        nat_req[eCompNR][eIonNR];            /* Requested ion numbers per type an comp.   */
-    int       *nat_req_p[eCompNR][eIonNR];          /* Pointer to this data (for .cpt writing)   */
-    int        nAverage;                            /* Use average over this many swap attempt
-                                                       steps when determining the ion counts     */
-    int        inflow_netto[eCompNR][eIonNR];       /* Flux determined from the # of swaps       */
-    int       *inflow_netto_p[eCompNR][eIonNR];     /* Pointer to this data                      */
-    int       *nat_past[eCompNR][eIonNR];           /* Array with nAverage entries for history   */
-    int       *nat_past_p[eCompNR][eIonNR];         /* Pointer points to the first entry only    */
-
-    /* Channel flux detection, this is counting only and has no influence on whether swaps
-     * are performed or not: */
-    int            fluxfromAtoB[eCompNR][eIonNR];   /* Flux determined from the split cylinders  */
-    int           *fluxfromAtoB_p[eCompNR][eIonNR]; /* Pointer to this data                      */
-    int           *fluxleak;                        /* Flux not going through any channel        */
-    int            nions;                           /* Size of the following arrays              */
-    unsigned char *comp_from;                       /* Ion came from which compartment?          */
-    unsigned char *channel_label;                   /* Through which channel did this ion pass?  */
-
-    /* To also make multimeric channel proteins whole, we save the last whole configuration of
-     * the channels in the checkpoint file. If we have no checkpoint file, we assume that the
-     * starting configuration hast the correct PBC representation after making the individual
-     * molecules whole */
-    gmx_bool    bFromCpt;                           /* Did we started from a checkpoint file?    */
-    int         nat[eChanNR];                       /* Size of xc_old_whole, i.e. the number of
-                                                       atoms in each channel                     */
-    rvec       *xc_old_whole[eChanNR];              /* Last known whole positions of the two
-                                                       channels (important for multimeric ch.!)  */
-    rvec      **xc_old_whole_p[eChanNR];            /* Pointer to these positions                */
-}
-swapstate_t;
-
+typedef struct swapstate_t swapstate_t;
 
 typedef struct
 {
@@ -246,7 +211,7 @@ typedef struct
     ekinstate_t      ekinstate;       /* The state of the kinetic energy data      */
 
     energyhistory_t  enerhist;        /* Energy history for statistics           */
-    swapstate_t      swapstate;       /* Position swapping                       */
+    swapstate_t     *swapstate;       /* Position swapping                       */
     df_history_t     dfhist;          /*Free energy history for free energy analysis  */
     edsamstate_t     edsamstate;      /* Essential dynamics / flooding history */
 

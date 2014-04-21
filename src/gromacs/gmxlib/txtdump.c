@@ -53,6 +53,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gromacs/swap/swapcoords.h"
+
 int pr_indent(FILE *fp, int n)
 {
     int i;
@@ -811,7 +813,7 @@ static void pr_rot(FILE *fp, int indent, t_rot *rot)
     }
 }
 
-
+//TODO: should prob be moved too
 static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
 {
     int  i, j;

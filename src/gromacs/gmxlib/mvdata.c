@@ -51,6 +51,7 @@
 #include "symtab.h"
 #include "gromacs/math/vec.h"
 #include "tgroup.h"
+#include "gromacs/swap/swapcoords.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 /* Probably the test for (nr) > 0 in the next macro is only needed
@@ -655,6 +656,7 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
 }
 
 
+//TODO: should prob be moved too
 static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 {
     int i;

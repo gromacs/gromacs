@@ -2010,3 +2010,55 @@ extern gmx_bool do_swapcoords(
 
     return bSwap;
 }
+
+void do_swapcoords_io(t_fileio *fio, t_swapcoords **pswap, gmx_bool bRead)
+{
+    int i, j;
+
+    if (bRead)
+    {
+        snew(*pswap, 1);
+    }
+    t_swapcoords *swap = *pswap;
+
+    gmx_fio_do_int(fio, swap->nat);
+    gmx_fio_do_int(fio, swap->nat_sol);
+    for (j = 0; j < 2; j++)
+    {
+        gmx_fio_do_int(fio, swap->nat_split[j]);
+        gmx_fio_do_int(fio, swap->massw_split[j]);
+    }
+    gmx_fio_do_int(fio, swap->nstswap);
+    gmx_fio_do_int(fio, swap->nAverage);
+    gmx_fio_do_real(fio, swap->threshold);
+    gmx_fio_do_real(fio, swap->cyl0r);
+    gmx_fio_do_real(fio, swap->cyl0u);
+    gmx_fio_do_real(fio, swap->cyl0l);
+    gmx_fio_do_real(fio, swap->cyl1r);
+    gmx_fio_do_real(fio, swap->cyl1u);
+    gmx_fio_do_real(fio, swap->cyl1l);
+
+    if (bRead)
+    {
+        snew(swap->ind, swap->nat);
+        snew(swap->ind_sol, swap->nat_sol);
+        for (j = 0; j < 2; j++)
+        {
+            snew(swap->ind_split[j], swap->nat_split[j]);
+        }
+    }
+
+    gmx_fio_ndo_int(fio, swap->ind, swap->nat);
+    gmx_fio_ndo_int(fio, swap->ind_sol, swap->nat_sol);
+    for (j = 0; j < 2; j++)
+    {
+        gmx_fio_ndo_int(fio, swap->ind_split[j], swap->nat_split[j]);
+    }
+
+    for (j = 0; j < eCompNR; j++)
+    {
+        gmx_fio_do_int(fio, swap->nanions[j]);
+        gmx_fio_do_int(fio, swap->ncations[j]);
+    }
+
+}

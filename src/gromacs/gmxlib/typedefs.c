@@ -48,6 +48,7 @@
 #include "macros.h"
 #include <string.h>
 #include "gromacs/random/random.h"
+#include "gromacs/swap/swapcoords.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
@@ -487,6 +488,7 @@ static void zero_ekinstate(ekinstate_t *eks)
     eks->mvcos          = 0;
 }
 
+//TODO: should be moved too
 static void init_swapstate(swapstate_t *swapstate)
 {
     int ii, ic;
@@ -654,7 +656,8 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     zero_ekinstate(&state->ekinstate);
     init_energyhistory(&state->enerhist);
     init_df_history(&state->dfhist, nlambda);
-    init_swapstate(&state->swapstate);
+    snew(state->swapstate, 1);
+    init_swapstate(state->swapstate);
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;
     state->cg_gl           = NULL;

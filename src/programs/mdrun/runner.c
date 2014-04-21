@@ -1718,7 +1718,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             /* Initialize ion swapping code */
             init_swapcoords(fplog, bVerbose, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
-                            mtop, state->x, state->box, &state->swapstate, cr, oenv, Flags);
+                            mtop, state->x, state->box, state->swapstate, cr, oenv, Flags);
         }
 
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);

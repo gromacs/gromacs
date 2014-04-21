@@ -53,6 +53,7 @@
 #include "calcgrid.h"
 #include "update.h"
 #include "mdebin.h"
+#include "gromacs/swap/swapcoords.h"
 
 #define BUFSIZE 256
 
@@ -155,7 +156,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
 
     init_energyhistory(&state->enerhist);
     init_df_history(&state->dfhist, ir->fepvals->n_lambda);
-    state->swapstate.eSwapCoords = ir->eSwapCoords;
+    state->swapstate->eSwapCoords = ir->eSwapCoords;
 }
 
 

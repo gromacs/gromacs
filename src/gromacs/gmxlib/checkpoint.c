@@ -80,6 +80,7 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/swap/swapcoords.h"
 
 #include "buildinfo.h"
 
@@ -1637,7 +1638,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL, &npmenodes,
                   &state->natoms, &state->ngtc, &state->nnhpres,
                   &state->nhchainlength, &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
-                  &state->edsamstate.nED, &state->swapstate.eSwapCoords,
+                  &state->edsamstate.nED, &state->swapstate->eSwapCoords,
                   NULL);
 
     sfree(version);
@@ -1651,7 +1652,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, &state->enerhist, NULL) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, &state->edsamstate, NULL) < 0)      ||
-        (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, &state->swapstate, NULL) < 0) ||
+        (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, state->swapstate, NULL) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, &noutputfiles, NULL,
                       file_version) < 0))
     {
@@ -1883,7 +1884,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   &nppnodes_f, dd_nc_f, &npmenodes_f,
                   &natoms, &ngtc, &nnhpres, &nhchainlength, &nlambda,
                   &fflags, &flags_eks, &flags_enh, &flags_dfh,
-                  &state->edsamstate.nED, &state->swapstate.eSwapCoords, NULL);
+                  &state->edsamstate.nED, &state->swapstate->eSwapCoords, NULL);
 
     if (bAppendOutputFiles &&
         file_version >= 13 && double_prec != GMX_CPT_BUILD_DP)
@@ -2062,7 +2063,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, state->swapstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2294,7 +2295,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                   &eIntegrator, simulation_part, step, t, &nppnodes, dd_nc, &npme,
                   &state->natoms, &state->ngtc, &state->nnhpres, &state->nhchainlength,
                   &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
-                  &state->edsamstate.nED, &state->swapstate.eSwapCoords, NULL);
+                  &state->edsamstate.nED, &state->swapstate->eSwapCoords, NULL);
     ret =
         do_cpt_state(gmx_fio_getxdr(fp), TRUE, state->flags, state, NULL);
     if (ret)
@@ -2324,7 +2325,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
         cp_error();
     }
 
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, state->swapstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2445,7 +2446,7 @@ void list_checkpoint(const char *fn, FILE *out)
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
                   &(state.dfhist.nlambda), &state.flags,
                   &flags_eks, &flags_enh, &flags_dfh, &state.edsamstate.nED,
-                  &state.swapstate.eSwapCoords, out);
+                  &state.swapstate->eSwapCoords, out);
     ret = do_cpt_state(gmx_fio_getxdr(fp), TRUE, state.flags, &state, out);
     if (ret)
     {
@@ -2472,7 +2473,7 @@ void list_checkpoint(const char *fn, FILE *out)
 
     if (ret == 0)
     {
-        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state.swapstate, out);
+        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, state.swapstate, out);
     }
 
     if (ret == 0)
