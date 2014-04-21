@@ -40,12 +40,11 @@
  * in normal mode analysis.
  */
 
-#ifndef GMX_LINEARALGEBRA_MTXIO_H
-#define GMX_LINEARALGEBRA_MTXIO_H
+#ifndef GMX_FILEIO_MTXIO_H
+#define GMX_FILEIO_MTXIO_H
 
+#include "../linearalgebra/sparsematrix.h"
 #include "../utility/real.h"
-
-#include "sparsematrix.h"
 
 #ifdef __cplusplus
 extern "C" {

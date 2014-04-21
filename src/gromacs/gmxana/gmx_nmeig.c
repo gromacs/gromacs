@@ -41,17 +41,13 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"
 #include "mshift.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
 #include "txtdump.h"
 #include "eigio.h"
@@ -59,9 +55,13 @@
 #include "physics.h"
 #include "gmx_ana.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/mtxio.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/eigensolver.h"
-#include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 static double cv_corr(double nu, double T)
 {

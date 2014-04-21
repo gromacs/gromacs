@@ -38,22 +38,19 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <string.h>
 #include <time.h>
-#include <math.h>
-#include "gromacs/utility/cstringutil.h"
+
 #include "network.h"
-#include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
 #include "force.h"
 #include "macros.h"
 #include "names.h"
-#include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "update.h"
 #include "constr.h"
-#include "gromacs/math/vec.h"
 #include "tgroup.h"
 #include "mdebin.h"
 #include "vsite.h"
@@ -71,13 +68,17 @@
 #include "md_logging.h"
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/mtxio.h"
 #include "gromacs/fileio/trajectory_writing.h"
+#include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
-#include "gromacs/imd/imd.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     t_state  s;
