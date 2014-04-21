@@ -63,6 +63,8 @@
 #include "inputrec.h"
 #include "calc_verletbuf.h"
 
+#include "gromacs/swap/swapcoords.h"
+
 #define MAXPTR 254
 #define NOGID  255
 
@@ -2171,6 +2173,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
     if (ir->eSwapCoords != eswapNO)
     {
+        //TODO: This section should probably also be moved to swap
         snew(ir->swap, 1);
         CTYPE("Swap attempt frequency");
         ITYPE("swap-frequency", ir->swap->nstswap, 1);
