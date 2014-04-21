@@ -54,6 +54,9 @@ void add_imp_param(t_params *ps, int ai, int aj, int ak, int al,
 void add_dih_param(t_params *ps, int ai, int aj, int ak, int al,
                    real c0, real c1, real c2, char *s);
 
+void add_aniso_param(t_params *ps, int ai, int aj, int ak, int al, int am,
+                     char *s);
+
 void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am,
                     char *s);
 

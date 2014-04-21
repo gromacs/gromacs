@@ -129,6 +129,22 @@ void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c
     ps->nr++;
 }
 
+void add_aniso_param(t_params *ps, int ai, int aj, int ak, int al, int am, char *s)
+{
+    int i;
+
+    pr_alloc(1, ps);
+    ps->param[ps->nr].AI = ai;
+    ps->param[ps->nr].AJ = aj;
+    ps->param[ps->nr].AK = ak;
+    ps->param[ps->nr].AL = al;
+    ps->param[ps->nr].AM = am;
+    clear_atom_list  (5, ps->param[ps->nr].a);
+    clear_force_param(0, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), s);
+    ps->nr++;
+}
+
 void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, char *s)
 {
     pr_alloc(1, ps);

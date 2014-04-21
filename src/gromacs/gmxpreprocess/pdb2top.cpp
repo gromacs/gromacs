@@ -1435,6 +1435,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
     const char *ptr;
     int         nres = atoms->nres;
     atom_id     thole_atomid[2];
+    gmx_bool    bAddThole;
 
     if (debug)
     {
@@ -1451,12 +1452,18 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
     {
         for (j = 0; j < restp[residx].rb[ebtsTHOLE].nb; j++)
         {
-            for (k = 0; k < 2; k++)
+            bAddThole = TRUE;
+            for (k = 0; k < 2 && bAddThole; k++)
             {
                 thole_atomid[k] = search_atom(restp[residx].rb[ebtsTHOLE].b[j].a[k],
                                               i, atoms, ptr, TRUE);
+                bAddThole = bAddThole && (thole_atomid[k] != NO_ATID);
             }
-            if (thole_atomid[0] != NO_ATID && thole_atomid[1] != NO_ATID)
+            if (!bAddThole)
+            {
+                break;
+            }
+            else
             {
                 add_param(ps, thole_atomid[0], thole_atomid[1], NULL, restp[residx].rb[ebtsTHOLE].b[j].s);
                 nthole++;
@@ -1471,6 +1478,118 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
         }
     }
     fprintf(stderr, "Wrote %d Thole pairs.\n", nthole);
+}
+
+static void gen_aniso(t_params *ps, t_restp *restp, t_atoms *atoms)
+{
+
+    int         residx, i, j, k;
+    int         naniso = 0;
+    const char *ptr;
+    int         nres = atoms->nres;
+    atom_id     aniso_atomid[5];
+    gmx_bool    bAddAniso;
+
+    if (debug)
+    {
+        ptr = "anisotropic_polarization";
+    }
+    else
+    {
+        ptr = "check";
+    }
+
+    fprintf(stderr, "Constructing anisotropic polarization list...\n");
+    i = 0;
+    for (residx = 0; residx < nres; residx++)
+    {
+        for (j = 0; j < restp[residx].rb[ebtsANISO].nb; j++)
+        {
+            bAddAniso = TRUE;
+            for (k = 0; k < 5 && bAddAniso; k++)
+            {
+                /* TODO: remove */
+                fprintf(stderr, "Searching for aniso in residue %s with %d bondeds...\n",
+                        restp[residx].resname, restp[residx].rb[ebtsANISO].nb);
+                fprintf(stderr, "Searching for atom named %s\n", restp[residx].rb[ebtsANISO].b[j].a[k]);
+
+                aniso_atomid[k] = search_atom(restp[residx].rb[ebtsANISO].b[j].a[k],
+                                              i, atoms, ptr, TRUE);
+                bAddAniso = bAddAniso && (aniso_atomid[k] != NO_ATID);
+            }
+            if (!bAddAniso)
+            {
+                break;
+            }
+            else
+            {
+                add_aniso_param(ps, aniso_atomid[0], aniso_atomid[1], aniso_atomid[2], aniso_atomid[3],
+                                aniso_atomid[4], restp[residx].rb[ebtsANISO].b[j].s);
+                naniso++;
+            }
+        }
+        if (residx < nres)
+        {
+            while (atoms->atom[i].resind < residx+1)
+            {
+                i++;
+            }
+        }
+    }
+    fprintf(stderr, "Wrote %d anisotropic polarization entries.\n", naniso);
+}
+
+static void gen_pol(t_params *ps, t_restp *restp, t_atoms *atoms)
+{
+
+    int         residx, i, j, k;
+    int         npol = 0;
+    const char *ptr;
+    int         nres = atoms->nres;
+    atom_id     pol_atomid[2];
+    gmx_bool    bAddPol;
+
+    if (debug)
+    {
+        ptr = "polarization";
+    }
+    else
+    {
+        ptr = "check";
+    }
+
+    fprintf(stderr, "Constructing isotropic polarization list...\n");
+    i = 0;
+    for (residx = 0; residx < nres; residx++)
+    {
+        for (j = 0; j < restp[residx].rb[ebtsPOL].nb; j++)
+        {
+            bAddPol = TRUE;
+            for (k = 0; k < 2 && bAddPol; k++)
+            {
+                pol_atomid[k] = search_atom(restp[residx].rb[ebtsPOL].b[j].a[k],
+                                              i, atoms, ptr, TRUE);
+                bAddPol = bAddPol && (pol_atomid[k] != NO_ATID);
+            }
+            if (!bAddPol)
+            {
+                break;
+            }
+            else
+            {
+                add_param(ps, pol_atomid[0], pol_atomid[1], NULL, restp[residx].rb[ebtsPOL].b[j].s);
+                npol++;
+            }
+        }
+        if (residx < nres)
+        {
+            while (atoms->atom[i].resind < residx+1)
+            {
+                i++;
+            }
+        }
+    }
+    fprintf(stderr, "Wrote %d isotropic polarization entries.\n", npol);
 }
 
 #define NUM_CMAP_ATOMS 5
@@ -1667,7 +1786,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     {
         /* TODO: add functions here */
         gen_thole(&(plist[F_THOLE_POL]), restp, atoms);
-        /* gen_aniso(&(plist[F_ANISO_POL]), restp, atoms, rt); */
+        gen_aniso(&(plist[F_ANISO_POL]), restp, atoms);
+        gen_pol(&(plist[F_POLARIZATION]), restp, atoms);
         /* gen_lonepairs2(&(plist[F_VSITE2]), restp, atoms, rt); */
         /* gen_lonepairs3(&(plist[F_VSITE3]), restp, atoms, rt); */
         /* gen_lonepairs3(&(plist[F_VSITE3FD]), restp, atoms, rt); */

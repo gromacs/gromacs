@@ -51,7 +51,7 @@ extern "C" {
 /* ebtsBONDS must be the first, new types can be added to the end */
 /* these *MUST* correspond to the arrays in hackblock.c */
 enum {
-    ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsCMAP, ebtsANISO, ebtsTHOLE, ebtsVSITE2, 
+    ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsCMAP, ebtsANISO, ebtsPOL, ebtsTHOLE, ebtsVSITE2, 
     ebtsVSITE3, ebtsVSITE4, ebtsNR
 };
 extern const char *btsNames[ebtsNR];
