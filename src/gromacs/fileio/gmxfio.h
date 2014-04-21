@@ -40,9 +40,10 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/typedefs.h"
 #include "../utility/cstringutil.h"
 #include "../utility/futil.h"
+#include "../utility/real.h"
+#include "../math/vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {

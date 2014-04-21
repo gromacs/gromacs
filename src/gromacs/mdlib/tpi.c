@@ -71,6 +71,7 @@
 #include "pme.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"

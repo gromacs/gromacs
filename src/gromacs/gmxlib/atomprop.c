@@ -41,17 +41,17 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/legacyheaders/atomprop.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "atomprop.h"
-#include "macros.h"
-#include "index.h"
-#include "copyrite.h"
-
 #include "gromacs/utility/futil.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/math/utilities.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     gmx_bool    bSet;

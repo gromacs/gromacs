@@ -38,7 +38,8 @@
 #ifndef GMX_FILEIO_FILENM_H
 #define GMX_FILEIO_FILENM_H
 
-#include "../legacyheaders/typedefs.h"
+#include "../legacyheaders/types/commrec_fwd.h"
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
