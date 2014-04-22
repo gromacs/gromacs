@@ -205,7 +205,7 @@ void done_mi(t_molinfo *mi)
 
 void print_bt(FILE *out, directive d, gpp_atomtype_t at,
               int ftype, int fsubtype, t_params plist[],
-              gmx_bool bFullDih)
+              gmx_bool bFullDih, gmx_bool bDrude)
 {
     /* This dihp is a DIRTY patch because the dih-types do not use
      * all four atoms to determine the type.
@@ -344,8 +344,12 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
                 fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[dihp[f][j]], at));
             }
         }
-        fprintf (out, "%5d ", bSwapParity ? -f-1 : f+1);
 
+        /* For the Drude FF, function types are encoded in the string read from the .rtp file */
+        if (!bDrude)
+        {
+            fprintf (out, "%5d ", bSwapParity ? -f-1 : f+1);
+        }
         if (bt->param[i].s[0])
         {
             fprintf(out, "   %s", bt->param[i].s);
@@ -520,7 +524,8 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
 }
 
 void print_bondeds(FILE *out, int natoms, directive d,
-                   int ftype, int fsubtype, t_params plist[])
+                   int ftype, int fsubtype, t_params plist[],
+                   gmx_bool bDrude)
 {
     t_symtab       stab;
     gpp_atomtype_t atype;
@@ -538,7 +543,7 @@ void print_bondeds(FILE *out, int natoms, directive d,
         sprintf(buf, "%4d", (i+1));
         add_atomtype(atype, &stab, a, buf, param, 0, 0, 0, 0, 0, 0, 0);
     }
-    print_bt(out, d, atype, ftype, fsubtype, plist, TRUE);
+    print_bt(out, d, atype, ftype, fsubtype, plist, TRUE, bDrude);
 
     done_symtab(&stab);
     sfree(a);

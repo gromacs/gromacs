@@ -79,7 +79,8 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                  gmx_bool bRTPresname);
 
 void print_bondeds(FILE *out, int natoms, directive d,
-                   int ftype, int fsubtype, t_params plist[]);
+                   int ftype, int fsubtype, t_params plist[],
+                   gmx_bool bDrude);
 
 void print_excl(FILE *out, int natoms, t_excls excls[]);
 

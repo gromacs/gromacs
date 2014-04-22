@@ -705,7 +705,8 @@ void print_top_mols(FILE *out,
 void write_top(FILE *out, char *pr, char *molname,
                t_atoms *at, gmx_bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
-               gpp_atomtype_t atype, int *cgnr, int nrexcl)
+               gpp_atomtype_t atype, int *cgnr, int nrexcl,
+               gmx_bool bDrude)
 /* NOTE: nrexcl is not the size of *excl! */
 {
     if (at && atype && cgnr)
@@ -715,25 +716,25 @@ void write_top(FILE *out, char *pr, char *molname,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds(out, at->nr, d_bonds,      F_BONDS,    bts[ebtsBONDS], plist);
-        print_bondeds(out, at->nr, d_constraints, F_CONSTR,   0,              plist);
-        print_bondeds(out, at->nr, d_constraints, F_CONSTRNC, 0,              plist);
-        print_bondeds(out, at->nr, d_pairs,      F_LJ14,     0,              plist);
+        print_bondeds(out, at->nr, d_bonds,      F_BONDS,    bts[ebtsBONDS], plist, FALSE);
+        print_bondeds(out, at->nr, d_constraints, F_CONSTR,   0,              plist, FALSE);
+        print_bondeds(out, at->nr, d_constraints, F_CONSTRNC, 0,              plist, FALSE);
+        print_bondeds(out, at->nr, d_pairs,      F_LJ14,     0,              plist, FALSE);
         print_excl(out, at->nr, excls);
-        print_bondeds(out, at->nr, d_angles,     F_ANGLES,   bts[ebtsANGLES], plist);
-        print_bondeds(out, at->nr, d_dihedrals,  F_PDIHS,    bts[ebtsPDIHS], plist);
-        print_bondeds(out, at->nr, d_dihedrals,  F_IDIHS,    bts[ebtsIDIHS], plist);
-        print_bondeds(out, at->nr, d_cmap,       F_CMAP,     bts[ebtsCMAP],  plist);
-        print_bondeds(out, at->nr, d_polarization, F_POLARIZATION,   0,       plist);
-        print_bondeds(out, at->nr, d_aniso_polarization, F_ANISO_POL, 0,      plist);
-        print_bondeds(out, at->nr, d_thole_polarization, F_THOLE_POL, 0, plist);
-        print_bondeds(out, at->nr, d_vsites2,    F_VSITE2,   0,              plist);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3,   0,              plist);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FD, 0,              plist);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FAD, 0,              plist);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3OUT, 0,              plist);
-        print_bondeds(out, at->nr, d_vsites4,    F_VSITE4FD, 0,              plist);
-        print_bondeds(out, at->nr, d_vsites4,    F_VSITE4FDN, 0,             plist);
+        print_bondeds(out, at->nr, d_angles,     F_ANGLES,   bts[ebtsANGLES], plist, FALSE);
+        print_bondeds(out, at->nr, d_dihedrals,  F_PDIHS,    bts[ebtsPDIHS], plist, FALSE);
+        print_bondeds(out, at->nr, d_dihedrals,  F_IDIHS,    bts[ebtsIDIHS], plist, FALSE);
+        print_bondeds(out, at->nr, d_cmap,       F_CMAP,     bts[ebtsCMAP],  plist, FALSE);
+        print_bondeds(out, at->nr, d_polarization, F_POLARIZATION,   0,       plist, FALSE);
+        print_bondeds(out, at->nr, d_aniso_polarization, F_ANISO_POL, 0,      plist, FALSE);
+        print_bondeds(out, at->nr, d_thole_polarization, F_THOLE_POL, 0, plist, FALSE);
+        print_bondeds(out, at->nr, d_vsites2,    F_VSITE2,   0,              plist, bDrude);
+        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3,   0,              plist, bDrude);
+        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FD, 0,              plist, bDrude);
+        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FAD, 0,              plist, bDrude);
+        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3OUT, 0,              plist, bDrude);
+        print_bondeds(out, at->nr, d_vsites4,    F_VSITE4FD, 0,              plist, bDrude);
+        print_bondeds(out, at->nr, d_vsites4,    F_VSITE4FDN, 0,             plist, bDrude);
 
         if (pr)
         {
@@ -1464,7 +1465,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
         ptr = "check";
     }
 
-    fprintf(stderr, "Constructing intramolecular Thole pairs...\n");
+    fprintf(stderr, "Constructing Thole list...");
     i = 0;
     for (residx = 0; residx < nres; residx++)
     {
@@ -1495,7 +1496,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
             }
         }
     }
-    fprintf(stderr, "Wrote %d Thole pairs.\n", nthole);
+    fprintf(stderr, "wrote %d Thole pairs.\n", nthole);
 }
 
 static void gen_aniso(t_params *ps, t_restp *restp, t_atoms *atoms)
@@ -1517,7 +1518,7 @@ static void gen_aniso(t_params *ps, t_restp *restp, t_atoms *atoms)
         ptr = "check";
     }
 
-    fprintf(stderr, "Constructing anisotropic polarization list...\n");
+    fprintf(stderr, "Constructing anisotropic polarization list...");
     i = 0;
     for (residx = 0; residx < nres; residx++)
     {
@@ -1549,7 +1550,7 @@ static void gen_aniso(t_params *ps, t_restp *restp, t_atoms *atoms)
             }
         }
     }
-    fprintf(stderr, "Wrote %d anisotropic polarization entries.\n", naniso);
+    fprintf(stderr, "wrote %d anisotropic polarization entries.\n", naniso);
 }
 
 static void gen_pol(t_params *ps, t_restp *restp, t_atoms *atoms)
@@ -1571,7 +1572,7 @@ static void gen_pol(t_params *ps, t_restp *restp, t_atoms *atoms)
         ptr = "check";
     }
 
-    fprintf(stderr, "Constructing isotropic polarization list...\n");
+    fprintf(stderr, "Constructing isotropic polarization list...");
     i = 0;
     for (residx = 0; residx < nres; residx++)
     {
@@ -1602,7 +1603,102 @@ static void gen_pol(t_params *ps, t_restp *restp, t_atoms *atoms)
             }
         }
     }
-    fprintf(stderr, "Wrote %d isotropic polarization entries.\n", npol);
+    fprintf(stderr, "wrote %d isotropic polarization entries.\n", npol);
+}
+
+static void gen_lonepairs(t_params *ps, t_restp *restp, t_atoms *atoms, int vstype)
+{
+    int         residx, i, j, k;
+    const char *ptr;
+    int         nres = atoms->nres;
+    int         n = 0;
+    int         subtype = 0;
+
+    /* since different vsite geometries take different numbers
+     * of atoms as reference, we set up a switch here to properly
+     * allocate the atom_id array below */
+    switch (vstype)
+    {
+        case F_VSITE2:
+            n = 3;
+            subtype = ebtsVSITE2;
+            break;
+        case F_VSITE3:
+        case F_VSITE3FD:
+        case F_VSITE3FAD:
+        case F_VSITE3OUT:
+            n = 4;
+            subtype = ebtsVSITE3;
+            break;
+        case F_VSITE4FD:
+        case F_VSITE4FDN:
+            n = 5;
+            subtype = ebtsVSITE4;
+            break;
+        default:
+            gmx_fatal(FARGS, "Weird geometry passed to gen_lonepairs(), vstype = %d, n = %d\n", vstype, n);
+    }
+
+    atom_id     vsite_atomid[n];
+    gmx_bool    bAddVSite;
+
+    if (debug)
+    {
+        ptr = "virtual_sites";
+    }
+    else
+    {
+        ptr = "check";
+    }
+
+    fprintf(stderr, "Constructing virtual sites from lone pairs...");
+    i = 0;
+    for (residx = 0; residx < nres; residx++)
+    {
+        for (j = 0; j < restp[residx].rb[subtype].nb; j++)
+        {
+            bAddVSite = TRUE;
+            for (k = 0; k < n && bAddVSite; k++)
+            {
+                vsite_atomid[k] = search_atom(restp[residx].rb[subtype].b[j].a[k],
+                                              i, atoms, ptr, TRUE);
+                bAddVSite = bAddVSite && (vsite_atomid[k] != NO_ATID);
+            }
+            if (!bAddVSite)
+            {
+                break;
+            }
+            else
+            {
+                if (n == 3)
+                {
+                    add_vsite2_rtp_param(ps, vsite_atomid[0], vsite_atomid[1], vsite_atomid[2],
+                                            restp[residx].rb[subtype].b[j].s);
+                }
+                else if (n == 4)
+                {
+                    add_vsite3_rtp_param(ps, vsite_atomid[0], vsite_atomid[1], vsite_atomid[2], vsite_atomid[3],
+                                            restp[residx].rb[subtype].b[j].s);
+                }
+                else if (n == 5)
+                {
+                    add_vsite4_rtp_param(ps, vsite_atomid[0], vsite_atomid[1], vsite_atomid[2], vsite_atomid[3],
+                                            vsite_atomid[4], restp[residx].rb[subtype].b[j].s);
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Death Horror in gen_lonepairs! n = %d\n", n);
+                }
+            }
+        }
+        if (residx < nres)
+        {
+            while (atoms->atom[i].resind < residx+1)
+            {
+                i++;
+            }
+        }
+    }
 }
 
 #define NUM_CMAP_ATOMS 5
@@ -1796,17 +1892,18 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* Set up Thole screening and anisotropy */
     if (bDrude)
     {
-        /* TODO: add functions here */
         gen_thole(&(plist[F_THOLE_POL]), restp, atoms);
         gen_aniso(&(plist[F_ANISO_POL]), restp, atoms);
         gen_pol(&(plist[F_POLARIZATION]), restp, atoms);
-        /* gen_lonepairs2(&(plist[F_VSITE2]), restp, atoms, rt); */
-        /* gen_lonepairs3(&(plist[F_VSITE3]), restp, atoms, rt); */
-        /* gen_lonepairs3(&(plist[F_VSITE3FD]), restp, atoms, rt); */
-        /* gen_lonepairs3(&(plist[F_VSITE3FAD]), restp, atoms, rt); */
-        /* gen_lonepairs3(&(plist[F_VSITE3OUT]), restp, atoms, rt); */
-        /* gen_lonepairs4(&(plist[F_VSITE4FD]), restp, atoms, rt); */
-        /* gen_lonepairs4(&(plist[F_VSITE4FDN]), restp, atoms, rt); */
+        gen_lonepairs(&(plist[F_VSITE3]), restp, atoms, F_VSITE3);
+        if (plist[F_VSITE3].nr > 0)
+        {
+            fprintf(stderr, "generated %d virtual sites from lone pairs.\n", plist[F_VSITE3].nr);
+        }
+        else
+        {
+            fprintf(stderr, "\n");
+        }
     }
 
     /* set mass of all remaining hydrogen atoms */
@@ -1860,7 +1957,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         }
         write_top(top_file, posre_fn, molname,
                   atoms, bRTPresname,
-                  bts, plist, excls, atype, cgnr, restp[0].nrexcl);
+                  bts, plist, excls, atype, cgnr, restp[0].nrexcl,
+                  bDrude);
     }
 
     /* cleaning up */

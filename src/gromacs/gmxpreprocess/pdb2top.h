@@ -106,7 +106,8 @@ void print_top_mols(FILE *out,
 void write_top(FILE *out, char *pr, char *molname,
                t_atoms *at, gmx_bool bRTPresname,
                int bts[], t_params plist[], t_excls excls[],
-               gpp_atomtype_t atype, int *cgnr, int nrexcl);
+               gpp_atomtype_t atype, int *cgnr, int nrexcl,
+               gmx_bool bDrude);
 /* NOTE: nrexcl is not the size of *excl! */
 
 
