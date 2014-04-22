@@ -62,7 +62,7 @@
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gmx_ana.h"
 
 #include "gromacs/math/do_fit.h"

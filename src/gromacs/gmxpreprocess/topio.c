@@ -54,7 +54,7 @@
 #include "macros.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "txtdump.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
 #include "names.h"
 #include "gromacs/utility/cstringutil.h"

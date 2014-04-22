@@ -47,7 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/pdbio.h"
 #include "names.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "domdec.h"
 #include "network.h"
 #include "gromacs/utility/fatalerror.h"

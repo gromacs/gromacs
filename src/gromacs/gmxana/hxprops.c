@@ -43,7 +43,7 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "index.h"
 #include "hxprops.h"

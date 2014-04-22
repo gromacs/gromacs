@@ -43,7 +43,6 @@
 #include "types/commrec.h"
 #include "network.h"
 #include "perf_est.h"
-#include "physics.h"
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/math/vec.h"

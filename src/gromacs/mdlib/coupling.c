@@ -45,7 +45,7 @@
 #include "update.h"
 #include "gromacs/math/vec.h"
 #include "macros.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"

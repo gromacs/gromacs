@@ -44,8 +44,6 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "macros.h"
-#include "physics.h"
 #include "force.h"
 #include "nonbonded.h"
 #include "names.h"

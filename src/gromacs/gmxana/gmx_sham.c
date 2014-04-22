@@ -53,7 +53,7 @@
 #include "txtdump.h"
 #include "gstat.h"
 #include "gromacs/fileio/xvgr.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"

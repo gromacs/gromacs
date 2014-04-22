@@ -45,7 +45,6 @@
 #include "random.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/utility/futil.h"
-#include "physics.h"
 #include "ehdata.h"
 
 typedef struct {

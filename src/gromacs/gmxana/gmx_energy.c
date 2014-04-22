@@ -54,7 +54,7 @@
 #include "macros.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "viewit.h"

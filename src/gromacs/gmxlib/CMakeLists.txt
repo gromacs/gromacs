@@ -40,16 +40,11 @@ add_subdirectory(nonbonded)
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.c *.cpp)
 
-# Files called xxx_test.c are test drivers with a main() function for module xxx.c,
-# so they should not be included in the library
-file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
-list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})
-
 # gpu utils + cuda tools module
 if(GMX_GPU)
     # The log file output queries Cuda if GPU support is enabled
     add_subdirectory(cuda_tools)
-    add_subdirectory(gpu_utils)   
+    add_subdirectory(gpu_utils)
     set(GMX_GPU_LIBRARIES ${GMX_GPU_LIBRARIES} gpu_utils cuda_tools PARENT_SCOPE)
 endif()
 

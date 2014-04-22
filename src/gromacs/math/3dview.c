@@ -43,7 +43,7 @@
 #include <math.h>
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "pbc.h"
 #include "gromacs/math/vec.h"
 

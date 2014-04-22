@@ -53,7 +53,6 @@
 #include "mshift.h"
 #include "mdrun.h"
 #include "update.h"
-#include "physics.h"
 #include "mtop_util.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"

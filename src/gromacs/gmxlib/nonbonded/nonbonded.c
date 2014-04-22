@@ -54,7 +54,6 @@
 #include "force.h"
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
-#include "physics.h"
 #include "force.h"
 #include "bondf.h"
 #include "nrnb.h"

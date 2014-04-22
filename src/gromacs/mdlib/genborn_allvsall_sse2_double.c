@@ -45,7 +45,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "network.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "genborn.h"
 #include "genborn_allvsall.h"
 

@@ -41,7 +41,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "txtdump.h"

@@ -48,8 +48,8 @@
 #endif
 
 #include "gromacs/legacyheaders/types/atoms.h"
-#include "gromacs/legacyheaders/physics.h"
 
+#include "gromacs/math/units.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
