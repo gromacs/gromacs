@@ -42,7 +42,7 @@
 #include "random.h"
 #include "names.h"
 #include "gromacs/fileio/matio.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "copyrite.h"

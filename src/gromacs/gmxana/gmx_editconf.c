@@ -52,7 +52,7 @@
 #include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "atomprop.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

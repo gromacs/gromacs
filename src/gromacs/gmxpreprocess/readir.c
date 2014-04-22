@@ -43,7 +43,7 @@
 #include <limits.h>
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "macros.h"

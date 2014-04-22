@@ -48,7 +48,7 @@
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "atomprop.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "pbc.h"
 #include "gmxfio.h"
 

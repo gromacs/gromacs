@@ -40,7 +40,7 @@
 
 #include <math.h>
 #include <assert.h>
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "txtdump.h"

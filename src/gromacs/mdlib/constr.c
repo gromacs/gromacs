@@ -49,7 +49,6 @@
 #include "nrnb.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "physics.h"
 #include "names.h"
 #include "txtdump.h"
 #include "domdec.h"

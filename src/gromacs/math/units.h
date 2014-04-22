@@ -34,9 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _physics_h
-#define _physics_h
+#ifndef GMX_MATH_UNITS_H
+#define GMX_MATH_UNITS_H
 
 /*
  * Physical constants to be used in Gromacs.
@@ -44,7 +43,7 @@
  * be anywhere else in the code.
  */
 
-#include "../math/utilities.h"
+#include "utilities.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -156,5 +155,4 @@ extern const char *unit2string(int unit);
 }
 #endif
 
-
-#endif  /* _physics_h */
+#endif

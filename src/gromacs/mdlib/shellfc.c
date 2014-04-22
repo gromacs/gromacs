@@ -55,7 +55,7 @@
 #include "names.h"
 #include "constr.h"
 #include "domdec.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "shellfc.h"
 #include "mtop_util.h"
 #include "chargegroup.h"

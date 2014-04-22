@@ -57,7 +57,7 @@
 #include "index.h"
 #include "gromacs/random/random.h"
 #include "names.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "calcmu.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"

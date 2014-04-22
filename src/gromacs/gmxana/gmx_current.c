@@ -48,7 +48,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "rmpbc.h"
 #include "pbc.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "index.h"
 #include "gromacs/statistics/statistics.h"
 #include "gmx_ana.h"

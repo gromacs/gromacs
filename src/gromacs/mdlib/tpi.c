@@ -63,7 +63,7 @@
 #include "mdrun.h"
 #include "domdec.h"
 #include "gromacs/random/random.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/xvgr.h"
 #include "mdatoms.h"
 #include "ns.h"

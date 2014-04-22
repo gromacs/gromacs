@@ -48,7 +48,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "macros.h"
 #include "gromacs/fileio/enxio.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"

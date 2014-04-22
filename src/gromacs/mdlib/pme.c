@@ -75,7 +75,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "pme.h"
 #include "network.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "nrnb.h"
 #include "macros.h"
 

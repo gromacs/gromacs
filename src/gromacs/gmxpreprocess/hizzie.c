@@ -45,7 +45,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "toputil.h"
 #include "pdb2top.h"
 #include "gromacs/utility/cstringutil.h"

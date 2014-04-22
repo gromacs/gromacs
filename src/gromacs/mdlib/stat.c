@@ -46,7 +46,6 @@
 #include "network.h"
 #include "txtdump.h"
 #include "names.h"
-#include "physics.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "force.h"

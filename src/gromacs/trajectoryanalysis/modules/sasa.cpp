@@ -50,7 +50,6 @@
 #include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/physics.h"
 #include "gromacs/legacyheaders/symtab.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -58,6 +57,7 @@
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"

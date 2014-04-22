@@ -44,7 +44,6 @@
 
 #include "macros.h"
 #include "typedefs.h"
-#include "physics.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"

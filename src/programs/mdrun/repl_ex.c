@@ -43,7 +43,7 @@
 #include "network.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "copyrite.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"

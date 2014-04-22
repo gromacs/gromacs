@@ -51,7 +51,7 @@
 #include "macros.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/strdb.h"
 #include "gmx_ana.h"

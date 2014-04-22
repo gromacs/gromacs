@@ -62,7 +62,6 @@
 #include "txtdump.h"
 #include "gromacs/fileio/matio.h"
 #include "eigio.h"
-#include "physics.h"
 #include "gmx_ana.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/trxio.h"

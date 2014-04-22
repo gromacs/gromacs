@@ -54,7 +54,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "calcgrid.h"
 #include "nrnb.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "coulomb.h"
 #include "pme.h"
 #include "gstat.h"

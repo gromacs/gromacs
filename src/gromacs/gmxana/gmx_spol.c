@@ -49,7 +49,7 @@
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gmx_ana.h"
 
 #include "gromacs/utility/fatalerror.h"

@@ -52,7 +52,7 @@
 #include "txtdump.h"
 #include "eigio.h"
 #include "mtop_util.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"

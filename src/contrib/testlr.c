@@ -36,7 +36,7 @@
 #include <string.h>
 #include "typedefs.h"
 #include "gromacs/math/vec.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
 #include "names.h"
 #include "gromacs/utility/smalloc.h"

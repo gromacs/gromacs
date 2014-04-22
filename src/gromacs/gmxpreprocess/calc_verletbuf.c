@@ -43,7 +43,7 @@
 #include <sys/types.h>
 
 #include "typedefs.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "coulomb.h"

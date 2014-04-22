@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "gromacs/utility/futil.h"
 #include "macros.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/smalloc.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"

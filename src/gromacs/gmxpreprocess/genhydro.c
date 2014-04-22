@@ -48,7 +48,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "physics.h"
 #include "calch.h"
 #include "genhydro.h"
 #include "h_db.h"
