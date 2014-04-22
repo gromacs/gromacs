@@ -47,9 +47,9 @@
 #endif
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/physics.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/common.h"

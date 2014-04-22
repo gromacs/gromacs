@@ -50,7 +50,7 @@
 #include "mshift.h"
 #include "mdrun.h"
 #include "update.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "force.h"
 #include "bondf.h"

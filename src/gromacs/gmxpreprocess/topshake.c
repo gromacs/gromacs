@@ -42,7 +42,7 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
 #include "readir.h"
 #include "typedefs.h"

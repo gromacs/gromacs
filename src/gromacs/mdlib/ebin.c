@@ -47,7 +47,7 @@
 #include "ebin.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 
 t_ebin *mk_ebin(void)
 {

@@ -47,7 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"

@@ -49,7 +49,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
-#include "physics.h"
 #include "index.h"
 #include "gromacs/utility/smalloc.h"
 #include "calcgrid.h"

@@ -46,7 +46,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "index.h"
-#include "physics.h"
 #include "names.h"
 #include "mtop_util.h"
 #include "gromacs/fileio/tpxio.h"

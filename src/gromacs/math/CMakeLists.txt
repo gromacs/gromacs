@@ -39,6 +39,7 @@ set(MATH_PUBLIC_HEADERS
     3dview.h
     gmxcomplex.h
     do_fit.h
+    units.h
     utilities.h
     vec.h
     vectypes.h

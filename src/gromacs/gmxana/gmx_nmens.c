@@ -53,7 +53,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "txtdump.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/random/random.h"
 #include "eigio.h"
 #include "gmx_ana.h"

@@ -49,7 +49,7 @@
 #include "atomprop.h"
 #include "gromacs/math/vec.h"
 #include "pbc.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "index.h"
 #include "gromacs/utility/smalloc.h"
 #include "names.h"

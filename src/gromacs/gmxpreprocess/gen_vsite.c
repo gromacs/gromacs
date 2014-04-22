@@ -48,7 +48,7 @@
 #include "add_par.h"
 #include "gromacs/math/vec.h"
 #include "toputil.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "index.h"
 #include "names.h"
 #include "gromacs/utility/futil.h"

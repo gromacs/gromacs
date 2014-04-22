@@ -46,7 +46,7 @@
 #include "checkpoint.h"
 #include "gmx_ana.h"
 #include "gromacs/random/random.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "coulomb.h"
 #include "mtop_util.h"

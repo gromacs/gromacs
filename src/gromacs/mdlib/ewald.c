@@ -47,7 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "coulomb.h"
 #include "macros.h"
 

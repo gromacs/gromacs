@@ -57,7 +57,6 @@
 #include "resall.h"
 #include "topio.h"
 #include "gromacs/utility/cstringutil.h"
-#include "physics.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gen_ad.h"
 #include "gromacs/fileio/filenm.h"

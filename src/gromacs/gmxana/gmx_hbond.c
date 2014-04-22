@@ -44,7 +44,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "txtdump.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "index.h"

@@ -49,7 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "force.h"
 #include "tables.h"
 #include "nonbonded.h"

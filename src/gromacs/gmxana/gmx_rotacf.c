@@ -41,7 +41,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "physics.h"
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"

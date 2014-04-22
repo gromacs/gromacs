@@ -59,7 +59,7 @@
 #include "mdrun.h"
 #include "sim_util.h"
 #include "update.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "force.h"
 #include "bondf.h"

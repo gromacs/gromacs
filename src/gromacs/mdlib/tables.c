@@ -48,7 +48,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
 #include "network.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "force.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "macros.h"

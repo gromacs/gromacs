@@ -47,7 +47,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
-#include "physics.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/3dview.h"
 #include "txtdump.h"

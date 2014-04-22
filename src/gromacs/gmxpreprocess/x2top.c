@@ -48,7 +48,7 @@
 #include "bondf.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/confio.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"

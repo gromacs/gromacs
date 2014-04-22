@@ -56,7 +56,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "rmpbc.h"
-#include "physics.h"
+#include "gromacs/math/units.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 

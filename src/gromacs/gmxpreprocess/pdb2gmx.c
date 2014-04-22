@@ -59,7 +59,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "toputil.h"
 #include "h_db.h"
-#include "physics.h"
 #include "pgutil.h"
 #include "calch.h"
 #include "resall.h"
