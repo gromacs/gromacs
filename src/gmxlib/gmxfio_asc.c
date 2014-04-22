@@ -108,7 +108,7 @@ static void encode_string(int maxlen, char dst[], const char src[])
 {
     int i;
 
-    for (i = 0; (src[i] != '\0') && (i < maxlen - 1); i++)
+    for (i = 0; (i < maxlen - 1) && (src[i] != '\0'); i++)
     {
         if ((src[i] == ' ') || (src[i] == '\t'))
         {
@@ -131,7 +131,7 @@ static void decode_string(int maxlen, char dst[], const char src[])
 {
     int i;
 
-    for (i = 0; (src[i] != '\0') && (i < maxlen - 1); i++)
+    for (i = 0; (i < maxlen - 1) && (src[i] != '\0'); i++)
     {
         if (src[i] == '_')
         {
