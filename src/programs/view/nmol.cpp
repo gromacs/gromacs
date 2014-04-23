@@ -461,7 +461,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
 
         for (i = 0; (i < NCUCEDGE); i++)
         {
-            m4_op(view->proj, corner[i], x4);
+            gmx_mat4_transform_point(view->proj, corner[i], x4);
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
         XSetForeground(x11->disp, x11->gc, YELLOW);
@@ -510,7 +510,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
                 }
             }
             rvec_inc(corner[i], box_center);
-            m4_op(view->proj, corner[i], x4);
+            gmx_mat4_transform_point(view->proj, corner[i], x4);
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }
         if (debug)
@@ -574,7 +574,7 @@ void draw_mol(t_x11 *x11, t_manager *man)
     {
         if (man->bVis[i])
         {
-            m4_op(view->proj, man->x[i], x4);
+            gmx_mat4_transform_point(view->proj, man->x[i], x4);
             man->zz[i] = x4[ZZ];
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }

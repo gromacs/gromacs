@@ -197,7 +197,7 @@ static void draw_box(t_psdata ps, t_3dview *view, matrix box,
         {
             corner[i][j] = ivec[i][j]*box[j][j];
         }
-        m4_op(view->proj, corner[i], x4);
+        gmx_mat4_transform_point(view->proj, corner[i], x4);
         v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
     }
     ps_color(ps, 0, 0, 0.5);
@@ -241,7 +241,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     {
         if (man->bVis[i])
         {
-            m4_op(view->proj, man->x[i], x4);
+            gmx_mat4_transform_point(view->proj, man->x[i], x4);
             man->zz[i] = x4[ZZ];
             v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
         }

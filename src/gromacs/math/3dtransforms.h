@@ -34,57 +34,55 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MATH_3DVIEW_H
-#define GMX_MATH_3DVIEW_H
+#ifndef GMX_MATH_3DTRANSFORMS_H
+#define GMX_MATH_3DTRANSFORMS_H
 
-#include "../utility/basedefinitions.h"
+#include <stdio.h>
+
 #include "../utility/real.h"
-#include "3dtransforms.h"
 #include "vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef int  iv2[2];
+/** Index for the fourth dimension for `vec4`. */
+#define WW 3
 
-typedef struct {
-    matrix box;
-    int    ecenter;     /* enum for centering, see pbc.h */
-    vec4   eye, origin; /* The eye and origin position   */
-    mat4   proj;        /* Projection matrix             */
-    mat4   Rot;         /* Total rotation matrix         */
-    real   sc_x, sc_y;  /* Scaling for aspect ratio      */
-    mat4   RotP[DIM];   /* state for 3d rotations        */
-    mat4   RotM[DIM];
-} t_3dview;
-
-t_3dview *init_view(matrix box);
-/* Generate the view matrix from the eye pos and the origin,
- * applying also the scaling for the aspect ration.
- * There is no accompanying done_view routine: the struct can simply
- * be sfree'd.
+/*! \brief
+ * 4D vector type used in 3D transformations.
+ *
+ * In \Gromacs, only a limited set of 3D transformations are used, and all of
+ * them operate on coordinates, so the fourth element is assumed to be one and
+ * ignored in all contexts.
  */
+typedef real vec4[4];
 
-/* The following options are present on the 3d struct:
- * zoom (scaling)
- * rotate around the center of the box
- * reset the view
+/*! \brief
+ * 4D matrix type used in 3D transformations.
  */
+typedef real mat4[4][4];
 
-gmx_bool zoom_3d(t_3dview *view, real fac);
-/* Zoom in or out with factor fac, returns TRUE when zoom successful,
- * FALSE otherwise.
+void gmx_mat4_copy(mat4 a, mat4 b);
+
+void gmx_mat4_transform_point(mat4 m, rvec x, vec4 v);
+
+/*! \brief
+ * Computes the product of two `mat4` matrices as A = B * C.
+ *
+ * Note that the order of operands is different from mmul() in vec.h!
  */
+void gmx_mat4_mmul(mat4 A, mat4 B, mat4 C);
 
-void rotate_3d(t_3dview *view, int axis, gmx_bool bPositive);
-/* Rotate the eye around the center of the box, around axis */
+void gmx_mat4_init_unity(mat4 m);
 
-void translate_view(t_3dview *view, int axis, gmx_bool bPositive);
-/* Translate the origin at which one is looking */
+void gmx_mat4_init_rotation(int axis, real angle, mat4 A);
 
-void reset_view(t_3dview *view);
-/* Reset the viewing to the initial view */
+void gmx_mat4_init_translation(real tx, real ty, real tz, mat4 A);
+
+void gmx_mat4_print(FILE *fp, const char *s, mat4 A);
+
+void gmx_vec4_print(FILE *fp, const char *s, vec4 a);
 
 #ifdef __cplusplus
 }

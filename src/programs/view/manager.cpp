@@ -46,7 +46,6 @@
 #include <unistd.h> // for usleep()
 #endif
 
-#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "atomprop.h"
@@ -55,12 +54,14 @@
 #include "pbc.h"
 #include "nmol.h"
 #include "copyrite.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/cstringutil.h"
 
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/tpxio.h"
+#include "gromacs/math/3dview.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)
 {
