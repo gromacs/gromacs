@@ -34,17 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MATH_3DVIEW_H
-#define GMX_MATH_3DVIEW_H
+#ifndef GMX_VIEW_3DVIEW_H
+#define GMX_VIEW_3DVIEW_H
 
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
-#include "3dtransforms.h"
-#include "vectypes.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/math/3dtransforms.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 typedef int  iv2[2];
 
@@ -85,9 +81,5 @@ void translate_view(t_3dview *view, int axis, gmx_bool bPositive);
 
 void reset_view(t_3dview *view);
 /* Reset the viewing to the initial view */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
