@@ -73,6 +73,16 @@ void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
 void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al,
                       int am);
 
+/* The following vsite functions are slightly modified version of those
+ * list above.  Whereas those above are used in constructing vsites from
+ * an input coordinate file, the functions that follow simply read the 
+ * necessary vsite information from an .rtp file */
+void add_vsite2_rtp_param(t_params *ps, int ai, int aj, int ak, char *s);
+
+void add_vsite3_rtp_param(t_params *ps, int ai, int aj, int ak, int al, char *s);
+
+void add_vsite4_rtp_param(t_params *ps, int ai, int aj, int ak, int al, int am, char *s);
+
 int search_jtype(t_restp *rp, char *name, gmx_bool bFirstRes);
 
 #ifdef __cplusplus

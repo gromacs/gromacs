@@ -231,6 +231,45 @@ void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
     ps->nr++;
 }
 
+void add_vsite2_rtp_param(t_params *ps, int ai, int aj, int ak, char *s)
+{
+    pr_alloc(1, ps);
+    ps->param[ps->nr].AI = ai;
+    ps->param[ps->nr].AJ = aj;
+    ps->param[ps->nr].AK = ak;
+    clear_atom_list  (3, ps->param[ps->nr].a);
+    clear_force_param(0, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), s);
+    ps->nr++;
+}
+
+void add_vsite3_rtp_param(t_params *ps, int ai, int aj, int ak, int al, char *s)
+{
+    pr_alloc(1, ps);
+    ps->param[ps->nr].AI = ai;
+    ps->param[ps->nr].AJ = aj;
+    ps->param[ps->nr].AK = ak;
+    ps->param[ps->nr].AL = al;
+    clear_atom_list  (4, ps->param[ps->nr].a);
+    clear_force_param(0, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), s);
+    ps->nr++;
+}
+
+void add_vsite4_rtp_param(t_params *ps, int ai, int aj, int ak, int al, int am, char *s)
+{
+    pr_alloc(1, ps);
+    ps->param[ps->nr].AI = ai;
+    ps->param[ps->nr].AJ = aj;
+    ps->param[ps->nr].AK = ak;
+    ps->param[ps->nr].AL = al;
+    ps->param[ps->nr].AM = am;
+    clear_atom_list  (5, ps->param[ps->nr].a);
+    clear_force_param(0, ps->param[ps->nr].c);
+    set_p_string(&(ps->param[ps->nr]), s);
+    ps->nr++;
+}
+
 int search_jtype(t_restp *rtp, char *name, gmx_bool bNterm)
 {
     int   niter, iter, j, k, kmax, jmax, minstrlen;
