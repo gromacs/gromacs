@@ -38,19 +38,19 @@
 
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
-#include "gromacs/math/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
 #include "sortwater.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/3dtransforms.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
                      gmx_rng_t rng, rvec max_rot)
@@ -70,27 +70,28 @@ static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
     }
     fprintf(stderr, "center of geometry: %f, %f, %f\n", xcm[0], xcm[1], xcm[2]);
 
-    translate(-xcm[XX], -xcm[YY], -xcm[ZZ], mt1); /* move c.o.ma to origin */
+    /* move c.o.ma to origin */
+    gmx_mat4_init_translation(-xcm[XX], -xcm[YY], -xcm[ZZ], mt1);
     for (m = 0; (m < DIM); m++)
     {
         phi = M_PI*max_rot[m]*(2*gmx_rng_uniform_real(rng) - 1)/180;
-        rotate(m, phi, mr[m]);
+        gmx_mat4_init_rotation(m, phi, mr[m]);
     }
-    translate(xcm[XX], xcm[YY], xcm[ZZ], mt2);
+    gmx_mat4_init_translation(xcm[XX], xcm[YY], xcm[ZZ], mt2);
 
-    /* For mult_matrix we need to multiply in the opposite order
+    /* For gmx_mat4_mmul() we need to multiply in the opposite order
      * compared to normal mathematical notation.
      */
-    mult_matrix(mtemp1, mt1, mr[XX]);
-    mult_matrix(mtemp2, mr[YY], mr[ZZ]);
-    mult_matrix(mtemp3, mtemp1, mtemp2);
-    mult_matrix(mxtot, mtemp3, mt2);
-    mult_matrix(mvtot, mr[XX], mtemp2);
+    gmx_mat4_mmul(mtemp1, mt1, mr[XX]);
+    gmx_mat4_mmul(mtemp2, mr[YY], mr[ZZ]);
+    gmx_mat4_mmul(mtemp3, mtemp1, mtemp2);
+    gmx_mat4_mmul(mxtot, mtemp3, mt2);
+    gmx_mat4_mmul(mvtot, mr[XX], mtemp2);
 
     for (i = 0; (i < natoms); i++)
     {
-        m4_op(mxtot, x[i], xrot[i]);
-        m4_op(mvtot, v[i], vrot[i]);
+        gmx_mat4_transform_point(mxtot, x[i], xrot[i]);
+        gmx_mat4_transform_point(mvtot, v[i], vrot[i]);
     }
 }
 
