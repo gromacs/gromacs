@@ -855,7 +855,12 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                         default:
                             for (k = 0; (k < hb[resind].hack[j].nr); k++)
                             {
-                                add_param(psb, i, i+k+1, NULL, NULL);
+                                /* remove bonds involving LP here since they will be
+                                 * written as virtual sites elsewhere */
+                                if (!is_lp(atoms, i) && !is_lp(atoms, i+k+1))
+                                {
+                                    add_param(psb, i, i+k+1, NULL, NULL);
+                                }
                             }
                     }
                 }
@@ -888,7 +893,7 @@ static int pcompar(const void *a, const void *b)
     }
 }
 
-static void clean_bonds(t_params *ps, t_atoms *atoms, gmx_bool bDrude)
+static void clean_bonds(t_params *ps)
 {
     int         i, j;
     atom_id     a;
@@ -920,17 +925,7 @@ static void clean_bonds(t_params *ps, t_atoms *atoms, gmx_bool bDrude)
             {
                 if (j != i)
                 {
-                    if (bDrude)
-                    {
-                        if (!is_lp(atoms, ps->param[i].a[0]) && !is_lp(atoms, ps->param[i].a[1]))
-                        {
-                            cp_param(&(ps->param[j]), &(ps->param[i]));
-                        }
-                    }
-                    else
-                    {
-                        cp_param(&(ps->param[j]), &(ps->param[i]));
-                    }
+                    cp_param(&(ps->param[j]), &(ps->param[i]));
                 }
                 j++;
             }
@@ -1854,7 +1849,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
     /* Cleanup bonds (sort and rm doubles) */
     /* With Drude FF, also removes bonds involving LP */
-    clean_bonds(&(plist[F_BONDS]), atoms, bDrude);
+    clean_bonds(&(plist[F_BONDS]));
 
     snew(vsite_type, atoms->nr);
     for (i = 0; i < atoms->nr; i++)
