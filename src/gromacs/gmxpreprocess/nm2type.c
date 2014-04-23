@@ -48,7 +48,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/math/3dview.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"

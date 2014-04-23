@@ -185,9 +185,7 @@ double gmx_erfd(double x)
 
     conv.d = x;
 
-    /* In release-4-6 and later branches, only the test for
-     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
-#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
+#ifdef GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
     hx = conv.i[0];
 #else
     hx = conv.i[1];
@@ -263,9 +261,7 @@ double gmx_erfd(double x)
 
     conv.d = x;
 
-    /* In release-4-6 and later branches, only the test for
-     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
-#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
+#ifdef GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
     conv.i[1] = 0;
 #else
     conv.i[0] = 0;
@@ -299,9 +295,7 @@ double gmx_erfcd(double x)
 
     conv.d = x;
 
-    /* In release-4-6 and later branches, only the test for
-     * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
-#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
+#ifdef GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
     hx = conv.i[0];
 #else
     hx = conv.i[1];
@@ -379,9 +373,7 @@ double gmx_erfcd(double x)
 
         conv.d = x;
 
-        /* In release-4-6 and later branches, only the test for
-         * GMX_IEEE754_BIG_ENDIAN_WORD_ORDER will be required. */
-#if defined(IEEE754_BIG_ENDIAN_WORD_ORDER) || defined(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
+#ifdef GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
         conv.i[1] = 0;
 #else
         conv.i[0] = 0;
