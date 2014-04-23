@@ -41,133 +41,16 @@
 #endif
 
 #include <math.h>
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
+
+#include <algorithm>
+
+#include "gromacs/legacyheaders/pbc.h"
+
 #include "gromacs/math/units.h"
-#include "pbc.h"
 #include "gromacs/math/vec.h"
-
+#include "gromacs/math/vec4.h"
 #include "gromacs/utility/fatalerror.h"
-
-#define N 4
-
-void m4_op(mat4 m, rvec x, vec4 v)
-{
-    int i;
-
-    for (i = 0; (i < N); i++)
-    {
-        v[i] = m[XX][i]*x[XX]+m[YY][i]*x[YY]+m[ZZ][i]*x[ZZ]+m[WW][i];
-    }
-}
-
-void unity_m4(mat4 m)
-{
-    int i, j;
-
-    for (i = 0; (i < N); i++)
-    {
-        for (j = 0; (j < N); j++)
-        {
-            if (i == j)
-            {
-                m[i][j] = 1.0;
-            }
-            else
-            {
-                m[i][j] = 0.0;
-            }
-        }
-    }
-}
-
-void print_m4(FILE *fp, const char *s, mat4 A)
-{
-    int i, j;
-
-    if (fp)
-    {
-        fprintf(fp, "%s: ", s);
-        for (i = 0; i < N; i++)
-        {
-            fprintf(fp, "\t");
-            for (j = 0; j < N; j++)
-            {
-                fprintf(fp, "%10.5f", A[i][j]);
-            }
-            fprintf(fp, "\n");
-        }
-    }
-}
-
-void print_v4(FILE *fp, char *s, int dim, real *a)
-{
-    int j;
-
-    if (fp)
-    {
-        fprintf(fp, "%s: ", s);
-        for (j = 0; j < dim; j++)
-        {
-            fprintf(fp, "%10.5f", a[j]);
-        }
-        fprintf(fp, "\n");
-    }
-}
-
-void mult_matrix(mat4 A, mat4 B, mat4 C)
-{
-    int i, j, k;
-
-    for (i = 0; i < N; i++)
-    {
-        for (j = 0; j < N; j++)
-        {
-            A[i][j] = 0;
-            for (k = 0; (k < N); k++)
-            {
-                A[i][j] += B[i][k]*C[k][j];
-            }
-        }
-    }
-}
-
-void rotate(int axis, real angle, mat4 A)
-{
-    unity_m4(A);
-
-    switch (axis)
-    {
-        case XX:
-            A[YY][YY] =  cos(angle);
-            A[YY][ZZ] = -sin(angle);
-            A[ZZ][YY] =  sin(angle);
-            A[ZZ][ZZ] =  cos(angle);
-            break;
-        case YY:
-            A[XX][XX] =  cos(angle);
-            A[XX][ZZ] =  sin(angle);
-            A[ZZ][XX] = -sin(angle);
-            A[ZZ][ZZ] =  cos(angle);
-            break;
-        case ZZ:
-            A[XX][XX] =  cos(angle);
-            A[XX][YY] = -sin(angle);
-            A[YY][XX] =  sin(angle);
-            A[YY][YY] =  cos(angle);
-            break;
-        default:
-            gmx_fatal(FARGS, "Error: invalid axis: %d", axis);
-    }
-}
-
-void translate(real tx, real ty, real tz, mat4 A)
-{
-    unity_m4(A);
-    A[3][XX] = tx;
-    A[3][YY] = ty;
-    A[3][ZZ] = tz;
-}
+#include "gromacs/utility/smalloc.h"
 
 static void set_scale(t_3dview *view, real sx, real sy)
 {
@@ -175,7 +58,7 @@ static void set_scale(t_3dview *view, real sx, real sy)
     view->sc_y = sy;
 }
 
-void calculate_view(t_3dview *view)
+static void calculate_view(t_3dview *view)
 {
 #define SMALL 1e-6
     mat4 To, Te, T1, T2, T3, T4, T5, N1, D1, D2, D3, D4, D5;
@@ -188,17 +71,15 @@ void calculate_view(t_3dview *view)
     l  = sqrt(dx*dx+dy*dy+dz*dz);
     r  = sqrt(dx*dx+dy*dy);
 #ifdef DEBUG
-    print_v4(debug, "eye", N, view->eye);
+    print_v4(debug, "eye", view->eye);
     printf("del: %10.5f%10.5f%10.5f l: %10.5f, r: %10.5f\n", dx, dy, dz, l, r);
 #endif
     if (l < SMALL)
     {
         gmx_fatal(FARGS, "Error: Zero Length Vector - No View Specified");
     }
-    translate((real)(-view->origin[XX]),
-              (real)(-view->origin[YY]), (real)(-view->origin[ZZ]), To);
-    translate((real)(-view->eye[XX]),
-              (real)(-view->eye[YY]), (real)(-view->eye[ZZ]), Te);
+    gmx_mat4_init_translation(-view->origin[XX], -view->origin[YY], -view->origin[ZZ], To);
+    gmx_mat4_init_translation(-view->eye[XX], -view->eye[YY], -view->eye[ZZ], Te);
 
     unity_m4(T2);
     T2[YY][YY] = 0, T2[YY][ZZ] = -1, T2[ZZ][YY] = 1, T2[ZZ][ZZ] = 0;
@@ -254,7 +135,7 @@ gmx_bool zoom_3d(t_3dview *view, real fac)
     dr1 = sqrt(dr2);
     if (fac < 1)
     {
-        bm = max(norm(view->box[XX]), max(norm(view->box[YY]), norm(view->box[ZZ])));
+        bm = std::max(norm(view->box[XX]), std::max(norm(view->box[YY]), norm(view->box[ZZ])));
         if (dr1*fac < 1.1*bm) /* Don't come to close */
         {
             return FALSE;
@@ -269,15 +150,16 @@ gmx_bool zoom_3d(t_3dview *view, real fac)
     return TRUE;
 }
 
-void init_rotate_3d(t_3dview *view)
+/* Initiates the state of 3d rotation matrices in the structure */
+static void init_rotate_3d(t_3dview *view)
 {
     real rot = DEG2RAD*15;
     int  i;
 
     for (i = 0; (i < DIM); i++)
     {
-        rotate(i,        rot, view->RotP[i]);
-        rotate(i, (real)(-rot), view->RotM[i]);
+        gmx_mat4_init_rotation(i,  rot, view->RotP[i]);
+        gmx_mat4_init_rotation(i, -rot, view->RotM[i]);
 #ifdef DEBUG
         print_m4(debug, "RotP", view->RotP[i]);
         print_m4(debug, "RotM", view->RotM[i]);
@@ -288,7 +170,6 @@ void init_rotate_3d(t_3dview *view)
 
 void rotate_3d(t_3dview *view, int axis, gmx_bool bPositive)
 {
-    int  i, j;
     mat4 m4;
 
     if (bPositive)
@@ -299,14 +180,7 @@ void rotate_3d(t_3dview *view, int axis, gmx_bool bPositive)
     {
         mult_matrix(m4, view->Rot, view->RotM[axis]);
     }
-    for (i = 0; (i < N); i++)
-    {
-        for (j = 0; (j < N); j++)
-        {
-            view->Rot[i][j] = m4[i][j];
-        }
-    }
-
+    gmx_mat4_copy(m4, view->Rot);
     calculate_view(view);
 }
 
@@ -328,15 +202,13 @@ void translate_view(t_3dview *view, int axis, gmx_bool bPositive)
 
 void reset_view(t_3dview *view)
 {
-    int  i;
-
 #ifdef DEBUG
     printf("Reset view called\n");
 #endif
     set_scale(view, 4.0, 4.0);
     clear_rvec(view->eye);
     calc_box_center(view->ecenter, view->box, view->origin);
-    view->eye[ZZ] = 3.0*max(view->box[XX][XX], view->box[YY][YY]);
+    view->eye[ZZ] = 3.0*std::max(view->box[XX][XX], view->box[YY][YY]);
     zoom_3d(view, 1.0);
     view->eye[WW] = view->origin[WW] = 0.0;
 
@@ -350,21 +222,10 @@ void reset_view(t_3dview *view)
 t_3dview *init_view(matrix box)
 {
     t_3dview *view;
-    int       i, j;
 
     snew(view, 1);
-
-    /* Copy parameters into variables */
-    for (i = 0; (i < DIM); i++)
-    {
-        for (j = 0; (j < DIM); j++)
-        {
-            view->box[i][j] = box[i][j];
-        }
-    }
-
+    copy_mat(box, view->box);
     view->ecenter = ecenterDEF;
-
     reset_view(view);
 
     return view;

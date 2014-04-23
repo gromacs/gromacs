@@ -43,7 +43,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/math/3dview.h"
+#include "gromacs/math/vec4.h"
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
@@ -70,13 +70,14 @@ static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
     }
     fprintf(stderr, "center of geometry: %f, %f, %f\n", xcm[0], xcm[1], xcm[2]);
 
-    translate(-xcm[XX], -xcm[YY], -xcm[ZZ], mt1); /* move c.o.ma to origin */
+    /* move c.o.ma to origin */
+    gmx_mat4_init_translation(-xcm[XX], -xcm[YY], -xcm[ZZ], mt1);
     for (m = 0; (m < DIM); m++)
     {
         phi = M_PI*max_rot[m]*(2*gmx_rng_uniform_real(rng) - 1)/180;
-        rotate(m, phi, mr[m]);
+        gmx_mat4_init_rotation(m, phi, mr[m]);
     }
-    translate(xcm[XX], xcm[YY], xcm[ZZ], mt2);
+    gmx_mat4_init_translation(xcm[XX], xcm[YY], xcm[ZZ], mt2);
 
     /* For mult_matrix we need to multiply in the opposite order
      * compared to normal mathematical notation.
