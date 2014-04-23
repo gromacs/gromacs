@@ -1477,85 +1477,90 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
     return ener_npt;
 }
 
-static real vrescale_gamdev(int ia, gmx_rng_t rng)
+static real vrescale_gamdev(real ia, gmx_rng_t rng)
 /* Gamma distribution, adapted from numerical recipes */
 {
-    int  j;
     real am, e, s, v1, v2, x, y;
 
-    if (ia < 6)
-    {
-        do
-        {
-            x = 1.0;
-            for (j = 1; j <= ia; j++)
-            {
-                x *= gmx_rng_uniform_real(rng);
-            }
-        }
-        while (x == 0);
-        x = -log(x);
-    }
-    else
+    assert(ia > 1);
+
+    do
     {
         do
         {
             do
             {
-                do
-                {
-                    v1 = gmx_rng_uniform_real(rng);
-                    v2 = 2.0*gmx_rng_uniform_real(rng)-1.0;
-                }
-                while (v1*v1 + v2*v2 > 1.0 ||
-                       v1*v1*GMX_REAL_MAX < 3.0*ia);
-                /* The last check above ensures that both x (3.0 > 2.0 in s)
-                 * and the pre-factor for e do not go out of range.
-                 */
-                y  = v2/v1;
-                am = ia - 1;
-                s  = sqrt(2.0*am + 1.0);
-                x  = s*y + am;
+                v1 = gmx_rng_uniform_real(rng);
+                v2 = 2.0*gmx_rng_uniform_real(rng) - 1.0;
             }
-            while (x <= 0.0);
-            e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
+            while (v1*v1 + v2*v2 > 1.0 ||
+                   v1*v1*GMX_REAL_MAX < 3.0*ia);
+            /* The last check above ensures that both x (3.0 > 2.0 in s)
+             * and the pre-factor for e do not go out of range.
+             */
+            y  = v2/v1;
+            am = ia - 1;
+            s  = sqrt(2.0*am + 1.0);
+            x  = s*y + am;
         }
-        while (gmx_rng_uniform_real(rng) > e);
+        while (x <= 0.0);
+
+        e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
     }
+    while (gmx_rng_uniform_real(rng) > e);
 
     return x;
 }
 
-static real vrescale_sumnoises(int nn, gmx_rng_t rng)
+static real vrescale_sumnoises(real nn, gmx_rng_t rng)
 {
 /*
  * Returns the sum of n independent gaussian noises squared
  * (i.e. equivalent to summing the square of the return values
  * of nn calls to gmx_rng_gaussian_real).xs
  */
-    real rr;
+    const real ndeg_tol = 0.0001;
+    real       r;
 
-    if (nn == 0)
+    if (nn < 2 + ndeg_tol)
     {
-        return 0.0;
-    }
-    else if (nn == 1)
-    {
-        rr = gmx_rng_gaussian_real(rng);
-        return rr*rr;
-    }
-    else if (nn % 2 == 0)
-    {
-        return 2.0*vrescale_gamdev(nn/2, rng);
+        int  nn_int, i;
+        real gauss;
+
+        nn_int = (int)(nn + 0.5);
+
+        if (nn - nn_int < -ndeg_tol || nn - nn_int > ndeg_tol)
+        {
+            gmx_fatal(FARGS, "The v-rescale thermostat was called with a group with #DOF=%f, but for #DOF<3 only integer #DOF are supported", nn + 1);
+        }
+
+        r = 0;
+        for (i = 0; i < nn_int; i++)
+        {
+            gauss = gmx_rng_gaussian_real(rng);
+
+            r += gauss*gauss;
+        }
     }
     else
     {
-        rr = gmx_rng_gaussian_real(rng);
-        return 2.0*vrescale_gamdev((nn-1)/2, rng) + rr*rr;
+        /* This call to the rng is only here to keep the rng state in sync
+         * with pre-4.6.6 versions, so simulations results will be similar.
+         * Remove this for 5.0.
+         */
+        if (((int)nn) % 2 == 1)
+        {
+            gmx_rng_gaussian_real(rng);
+        }
+
+        /* Use a gamma distribution for any real nn > 2 */
+        r = 2.0*vrescale_gamdev(0.5*nn, rng);
     }
+
+    return r;
 }
 
-static real vrescale_resamplekin(real kk, real sigma, int ndeg, real taut,
+static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
                                  gmx_rng_t rng)
 {
 /*
