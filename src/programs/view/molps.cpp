@@ -43,15 +43,16 @@
 #include <string.h>
 
 #include "macros.h"
-#include "xutil.h"
-#include "buttons.h"
-#include "manager.h"
-#include "nmol.h"
-#include "nleg.h"
 
 #include "gromacs/fileio/writeps.h"
-#include "gromacs/math/3dview.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "3dview.h"
+#include "buttons.h"
+#include "manager.h"
+#include "nleg.h"
+#include "nmol.h"
+#include "xutil.h"
 
 #define MSIZE 4
 
