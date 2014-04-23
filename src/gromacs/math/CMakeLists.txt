@@ -36,12 +36,12 @@ file(GLOB MATH_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
 
 set(MATH_PUBLIC_HEADERS
-    3dview.h
     gmxcomplex.h
     do_fit.h
     units.h
     utilities.h
     vec.h
+    vec4.h
     vectypes.h
     )
 gmx_install_headers(math ${MATH_PUBLIC_HEADERS})

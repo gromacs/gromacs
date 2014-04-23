@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#include "gromacs/math/3dview.h"
+#include "gromacs/math/vec4.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/smalloc.h"
 #include "index.h"
@@ -112,12 +112,12 @@ static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
 
     /* Now the total rotation matrix: */
     /* Rotate a couple of times */
-    rotate(ZZ, -phi, Rz);
-    rotate(YY, M_PI/2-theta, Ry);
-    rotate(XX, angle*DEG2RAD, Rx);
+    gmx_mat4_init_rotation(ZZ, -phi, Rz);
+    gmx_mat4_init_rotation(YY, M_PI/2-theta, Ry);
+    gmx_mat4_init_rotation(XX, angle*DEG2RAD, Rx);
     Rx[WW][XX] = trans;
-    rotate(YY, theta-M_PI/2, Rinvy);
-    rotate(ZZ, phi, Rinvz);
+    gmx_mat4_init_rotation(YY, theta-M_PI/2, Rinvy);
+    gmx_mat4_init_rotation(ZZ, phi, Rinvz);
 
     mult_matrix(temp1, Ry, Rz);
     mult_matrix(temp2, Rinvy, Rx);

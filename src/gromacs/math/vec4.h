@@ -34,57 +34,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MATH_3DVIEW_H
-#define GMX_MATH_3DVIEW_H
+#ifndef GMX_MATH_VEC4_H
+#define GMX_MATH_VEC4_H
 
-#include "../utility/basedefinitions.h"
+#include <stdio.h>
+
 #include "../utility/real.h"
-#include "vec4.h"
 #include "vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef int  iv2[2];
+#define WW 3
 
-typedef struct {
-    matrix box;
-    int    ecenter;     /* enum for centering, see pbc.h */
-    vec4   eye, origin; /* The eye and origin position   */
-    mat4   proj;        /* Projection matrix             */
-    mat4   Rot;         /* Total rotation matrix         */
-    real   sc_x, sc_y;  /* Scaling for aspect ratio      */
-    mat4   RotP[DIM];   /* state for 3d rotations        */
-    mat4   RotM[DIM];
-} t_3dview;
+typedef real vec4[4];
 
-t_3dview *init_view(matrix box);
-/* Generate the view matrix from the eye pos and the origin,
- * applying also the scaling for the aspect ration.
- * There is no accompanying done_view routine: the struct can simply
- * be sfree'd.
- */
+typedef real mat4[4][4];
 
-/* The following options are present on the 3d struct:
- * zoom (scaling)
- * rotate around the center of the box
- * reset the view
- */
+void gmx_mat4_copy(mat4 a, mat4 b);
 
-gmx_bool zoom_3d(t_3dview *view, real fac);
-/* Zoom in or out with factor fac, returns TRUE when zoom successful,
- * FALSE otherwise.
- */
+void unity_m4(mat4 m);
 
-void rotate_3d(t_3dview *view, int axis, gmx_bool bPositive);
-/* Rotate the eye around the center of the box, around axis */
+void m4_op(mat4 m, rvec x, vec4 v);
 
-void translate_view(t_3dview *view, int axis, gmx_bool bPositive);
-/* Translate the origin at which one is looking */
+void mult_matrix(mat4 A, mat4 B, mat4 C);
 
-void reset_view(t_3dview *view);
-/* Reset the viewing to the initial view */
+void gmx_mat4_init_rotation(int axis, real angle, mat4 A);
+
+void gmx_mat4_init_translation(real tx, real ty, real tz, mat4 A);
+
+void print_m4(FILE *fp, const char *s, mat4 A);
+
+void print_v4(FILE *fp, const char *s, vec4 a);
 
 #ifdef __cplusplus
 }
