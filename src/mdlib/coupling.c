@@ -1608,7 +1608,17 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt,
             Ek_ref1 = 0.5*opts->ref_t[i]*BOLTZ;
             Ek_ref  = Ek_ref1*opts->nrdf[i];
 
-            Ek_new  = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i],
+            /* By rounding rndf to an int,  we can make a (small) error
+             * in the spread, not the average, of Ekin.
+             * Proper T-coupling uses a single coupling group, in which case
+             * nrdf is always integer.
+             * With multiple groups, system COM removal (or multiple coupling
+             * groups in constrained molecules) will gives fractional nrdf's.
+             * But this is already non-exact and should only be used with
+             * large nrdf and tau_t, where the rouding error is very small.
+             */
+            Ek_new  = vrescale_resamplekin(Ek, Ek_ref,
+                                           (int)(opts->nrdf[i] + 0.5),
                                            opts->tau_t[i]/dt, rng);
 
             /* Analytically Ek_new>=0, but we check for rounding errors */
