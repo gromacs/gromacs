@@ -197,7 +197,7 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
 #elif defined GMX_QMMM_GAUSSIAN
             QMener = call_gaussian(cr, fr, qm, mm, f, fshift);
 #elif defined GMX_QMMM_ORCA
-            QMener = call_orca(cr, fr, qm, mm, f, fshift);
+            QMener = call_orca(fr, qm, mm, f, fshift);
 #else
             gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif
@@ -770,7 +770,7 @@ void init_QMMMrec(t_commrec  *cr,
 #elif defined GMX_QMMM_GAUSSIAN
             init_gaussian(cr, qr->qm[0], qr->mm);
 #elif defined GMX_QMMM_ORCA
-            init_orca(cr, qr->qm[0], qr->mm);
+            init_orca(qr->qm[0]);
 #else
             gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif
