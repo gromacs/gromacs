@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,38 +32,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \brief
- * Implements the gmx wrapper binary.
+/*! \internal \file
+ * \brief
+ * Declares utilities for selecting energies.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/commandline/cmdlineinit.h"
-#include "gromacs/selection/selectioncollection.h"
-#include "gromacs/trajectoryanalysis/modules.h"
-#include "gromacs/energyanalysis/modules.h"
-#include "gromacs/utility/exceptions.h"
 
-#include "legacymodules.h"
+#ifndef GMX_ENERGYANALYSIS_SELECT_H
+#define GMX_ENERGYANALYSIS_SELECT_H
 
-int
-main(int argc, char *argv[])
-{
-    gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
-    try
-    {
-        gmx::CommandLineModuleManager manager("gmx", &context);
-        registerTrajectoryAnalysisModules(&manager);
-        registerEnergyAnalysisModules(&manager);
-        registerLegacyModules(&manager);
-        manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
-        int rc = manager.run(argc, argv);
-        gmx::finalizeForCommandLine();
-        return rc;
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return gmx::processExceptionAtExit(ex);
-    }
-}
+#include <vector>
+
+/*! \brief
+ * Return a set of indices in the energy file from an interactive selection.
+ * \param[in] nm  The names of the energy terms
+ * \param[out] set The array of indices
+ */
+void select_by_index(std::vector<std::string> nm, std::vector<int> &set);
+
+/*! \brief
+ * Return a set of indices in the energy file from an interactive selection.
+ * \param[in] nm  The names of the energy terms
+ * \param[out] set The array of indices
+ */
+void select_by_name(const std::vector<std::string> nm, std::vector<int> &set);
+
+#endif
