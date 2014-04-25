@@ -45,6 +45,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/energyanalysis/gmx_energy.h"
 #include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/insert-molecules.h"
