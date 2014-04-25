@@ -1,0 +1,136 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Declares gmx::EnergyAnalysisModule
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_trajectoryanalysis
+ */
+#ifndef GMX_ENERGYANALYSIS_ENERGYANALYSIS_H
+#define GMX_ENERGYANALYSIS_ENERGYANALYSIS_H
+
+#include <string>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/options.h"
+
+namespace gmx
+{
+/*! \brief
+ * Pure class used by handler.
+ * \todo Remove usage of energy file implementation elements
+ */
+class EnergyAnalysisModule
+{
+    public:
+        //! Default constructor
+        //EnergyAnalysisModule() {};
+
+        //! Destructor must be virtual since there are other virtual functions
+        virtual ~EnergyAnalysisModule();
+
+        //! Initiate the command line options
+        virtual void initOptions(Options *options) = 0;
+
+        //! Pass the output environment on for printing etc.
+        virtual void setOutputEnvironment(output_env_t oenv) = 0;
+
+        /*! \brief
+         * Does the initiation of the analysis of the file
+         * \param[in] eName Names of the energy terms etc.
+         * \param[in] eUnit Units of the energy terms etc.
+         * \return true if OK, false otherwise
+         */
+        virtual bool initAnalysis(std::vector<std::string> eName,
+                                  std::vector<std::string> eUnit) = 0;
+
+        /*! \brief
+         * Start a new data set (either from a file or something else).
+         * \param name String describing the new data set
+         * \return true if OK, false otherwise
+         */
+        virtual bool addDataSet(std::string name) = 0;
+
+        /*! \brief
+         * Analyse one frame and stores the results in memory
+         * \param[in] fr The energy data frame
+         * \return true if OK, false otherwise
+         */
+        virtual bool addAnalysisFrame(t_enxframe *fr) = 0;
+
+        //! Finalize reading
+        virtual bool finalizeAnalysis() = 0;
+        /*! \brief
+         * Returns the name of the analysis module.
+         *
+         * Does not throw.
+         */
+        const char *name() const;
+        /*! \brief
+         * Returns short description for the analysis module.
+         *
+         * Does not throw.
+         */
+        const char *description() const;
+    protected:
+        /*! \brief
+         * Initializes the dataset registration mechanism.
+         *
+         * \param[in] name         Name for the module.
+         * \param[in] description  One-line description for the module.
+         * \throws    std::bad_alloc if out of memory.
+         * TODO: check
+         */
+        EnergyAnalysisModule(const char *name, const char *description);
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
+
+//! Pointer to the energyanalysis structure
+typedef boost::shared_ptr<EnergyAnalysisModule> EnergyAnalysisModulePointer;
+
+//! Iterator over such pointers
+typedef std::vector<EnergyAnalysisModulePointer>::iterator EnergyAnalysisModulePointerIterator;
+
+} // namespace gmx
+
+#endif

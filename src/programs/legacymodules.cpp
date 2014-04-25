@@ -318,8 +318,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Interpolate and extrapolate structure rotations");
     registerModule(manager, &gmx_enemat, "enemat",
                    "Extract an energy matrix from an energy file");
-    registerModule(manager, &gmx_energy, "energy",
-                   "Writes energies to xvg files and display averages");
     registerModule(manager, &gmx_filter, "filter",
                    "Frequency filter trajectories, useful for making smooth movies");
     registerModule(manager, &gmx_gyrate, "gyrate",

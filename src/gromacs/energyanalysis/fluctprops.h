@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,40 +32,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \brief
- * Implements the gmx wrapper binary.
+/*! \internal \file
+ * \brief
+ * Declares gmx::FluctProps
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_energyanalysis
  */
-#include "gmxpre.h"
+#ifndef GMX_ENERGYANALYSIS_FLUCTPROPS_H
+#define GMX_ENERGYANALYSIS_FLUCTPROPS_H
 
-#include "gromacs/commandline/cmdlineinit.h"
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/selection/selhelp.h"
-#include "gromacs/trajectoryanalysis/modules.h"
-#include "gromacs/energyanalysis/modules.h"
-#include "gromacs/utility/exceptions.h"
+#include "gromacs/energyanalysis/analysismodule.h"
 
-#include "legacymodules.h"
-
-int
-main(int argc, char *argv[])
+namespace gmx
 {
-    gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
-    try
-    {
-        gmx::CommandLineModuleManager manager("gmx", &context);
-        registerTrajectoryAnalysisModules(&manager);
-        registerEnergyAnalysisModules(&manager);
-        registerLegacyModules(&manager);
-        manager.addHelpTopic(gmx::createSelectionHelpTopic());
-        int rc = manager.run(argc, argv);
-        gmx::finalizeForCommandLine();
-        return rc;
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return gmx::processExceptionAtExitForCommandLine(ex);
-    }
+
+class FluctPropsInfo
+{
+    public:
+        static const char name[];
+        static const char shortDescription[];
+        static EnergyAnalysisModulePointer create();
+};
+
 }
+
+
+#endif
