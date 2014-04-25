@@ -43,6 +43,7 @@
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/trajectoryanalysis/modules.h"
+#include "gromacs/energyanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "legacymodules.h"
@@ -55,6 +56,7 @@ main(int argc, char *argv[])
     {
         gmx::CommandLineModuleManager manager("gmx", &context);
         registerTrajectoryAnalysisModules(&manager);
+        registerEnergyAnalysisModules(&manager);
         registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::createSelectionHelpTopic());
         int rc = manager.run(argc, argv);
