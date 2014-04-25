@@ -45,6 +45,8 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/energyanalysis/gmx_energy.h"
+#include "gromacs/energyanalysis/gmx_viscosity.h"
 #include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/insert-molecules.h"
@@ -328,6 +330,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Compute Van Hove displacement and correlation functions");
     registerModule(manager, &gmx_velacc, "velacc",
                    "Calculate velocity autocorrelation functions");
+    registerModule(manager, &gmx_viscosity, "viscosity",
+                   "Determines the shear- and bulk viscosity");
     registerModule(manager, &gmx_wham, "wham",
                    "Perform weighted histogram analysis after umbrella sampling");
     registerModule(manager, &gmx_wheel, "wheel",
