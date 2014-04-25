@@ -115,9 +115,6 @@ int
 gmx_enemat(int argc, char *argv[]);
 
 int
-gmx_energy(int argc, char *argv[]);
-
-int
 gmx_lie(int argc, char *argv[]);
 
 int
