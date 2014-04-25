@@ -80,6 +80,7 @@ const FileTypeMapping c_fileTypeMapping[] =
 {
     { eftTopology,    efTPS },
     { eftTrajectory,  efTRX },
+    { eftEnergy,      efEDR },
     { eftPDB,         efPDB },
     { eftIndex,       efNDX },
     { eftPlot,        efXVG },
