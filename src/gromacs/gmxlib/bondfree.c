@@ -761,32 +761,29 @@ real aniso_pol(int nbonds,
     vtot = 0.0;
     if (nbonds > 0)
     {
-        type0  = forceatoms[0];
-        aS     = forceatoms[1];
-        qS     = md->chargeA[aS];
-        /* we can get the force constants from ffpararms or just re-calculate */
-        kk[XX] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type0].daniso.a11;
-        kk[YY] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type0].daniso.a22;
-        kk[ZZ] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type0].daniso.a33;
-        if (debug)
-        {
-            fprintf(debug, "ANISOPOL: qS  = %10.5f aS = %5d\n", qS, aS);
-            fprintf(debug, "ANISOPOL: kk  = %10.3f        %10.3f        %10.3f\n",
-                    kk[XX], kk[YY], kk[ZZ]);
-        }
         for (i = 0; (i < nbonds); i += 6)
         {
             type = forceatoms[i];
-            if (type != type0)
-            {
-                gmx_fatal(FARGS, "Sorry, type = %d, type0 = %d, file = %s, line = %d",
-                          type, type0, __FILE__, __LINE__);
-            }
+
             aS   = forceatoms[i+1];
             aY   = forceatoms[i+2];
             aX   = forceatoms[i+3];
             aZ1  = forceatoms[i+4];
             aZ2  = forceatoms[i+5];
+
+            qS     = md->chargeA[aS];
+
+            /* we can get the force constants from ffpararms or just re-calculate */
+            kk[XX] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type].daniso.a11;
+            kk[YY] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type].daniso.a22;
+            kk[ZZ] = sqr(qS)*ONE_4PI_EPS0_CHARMM/forceparams[type].daniso.a33;
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: qS  = %10.5f aS = %5d\n", qS, aS);
+                fprintf(debug, "ANISOPOL: aY = %5d aX = %5d aZ1 = %5d aZ2 = %5d\n", aY, aX, aZ1, aZ2); 
+                fprintf(debug, "ANISOPOL: kk  = %10.3f   %10.3f   %10.3f\n", kk[XX], kk[YY], kk[ZZ]);
+            }
 
             /* Inverse length of the 2 axis */
             r_22   = 1.0/sqrt(distance2(x[aZ1], x[aZ2]));
