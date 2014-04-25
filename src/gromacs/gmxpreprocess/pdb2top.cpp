@@ -937,8 +937,6 @@ static void clean_bonds(t_params *ps)
         qsort(ps->param, ps->nr, (size_t)sizeof(ps->param[0]), pcompar);
 
         /* remove doubles, keep the first one always. */
-        /* Here, we also remove any bonds to LP that may have
-         * been added when patching termini */
         j = 1;
         for (i = 1; (i < ps->nr); i++)
         {
@@ -1871,7 +1869,6 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     }
 
     /* Cleanup bonds (sort and rm doubles) */
-    /* With Drude FF, also removes bonds involving LP */
     clean_bonds(&(plist[F_BONDS]));
 
     snew(vsite_type, atoms->nr);
@@ -1913,8 +1910,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         gen_thole(&(plist[F_THOLE_POL]), restp, atoms);
         gen_aniso(&(plist[F_ANISO_POL]), restp, atoms);
         gen_pol(&(plist[F_POLARIZATION]), restp, atoms);
-
         gen_lonepairs(&(plist[F_VSITE3]), restp, atoms, F_VSITE3);
+
         /* gen_lonepairs(&(plist[F_VSITE3FAD]), restp, atoms, F_VSITE3FAD); */
         /* gen_lonepairs(&(plist[F_VSITE3OUT]), restp, atoms, F_VSITE3OUT); */
 
