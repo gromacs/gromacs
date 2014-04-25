@@ -786,7 +786,8 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
 static void at2bonds(t_params *psb, t_hackblock *hb,
                      t_atoms *atoms,
                      rvec x[],
-                     real long_bond_dist, real short_bond_dist)
+                     real long_bond_dist, real short_bond_dist,
+                     gmx_bool bDrude)
 {
     int         resind, i, j, k;
     atom_id     ai, aj;
@@ -852,6 +853,27 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                             add_param(psb, i, i+2, NULL, NULL);   /* C-OA */
                             add_param(psb, i+2, i+3, NULL, NULL); /* OA-H */
                             break;
+                        case 8:                                     /* COO- terminus for Drude FF */
+                            /* C DC OT1 DOT1 LPT1 LPT2 OT2 DOT2 LPT3 LPT4 */
+                            /* 0 1  2   3    4    5    6   7    8    9    */
+                            if (bDrude)
+                            {
+                                add_param(psb, i, i+1, NULL, NULL); /* C - DC */
+                                add_param(psb, i, i+2, NULL, NULL); /* C - OT1 */
+                                add_param(psb, i, i+6, NULL, NULL); /* C - OT2 */
+                                break;
+                            }
+                            /* otherwise fall through */
+                        case 4:                                     /* NH3 terminus for Drude FF */
+                            if (bDrude)
+                            {
+                                add_param(psb, i, i+1, NULL, NULL); /* N - DN */
+                                add_param(psb, i, i+2, NULL, NULL); /* N - H1 */
+                                add_param(psb, i, i+3, NULL, NULL); /* N - H2 */
+                                add_param(psb, i, i+4, NULL, NULL); /* N - H3 */
+                                break;
+                            }
+                            /* otherwise fall through */
                         default:
                             for (k = 0; (k < hb[resind].hack[j].nr); k++)
                             {
@@ -1825,7 +1847,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* Make bonds */
     at2bonds(&(plist[F_BONDS]), hb,
              atoms, *x,
-             long_bond_dist, short_bond_dist);
+             long_bond_dist, short_bond_dist,
+             bDrude);
 
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]),
@@ -1890,7 +1913,11 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         gen_thole(&(plist[F_THOLE_POL]), restp, atoms);
         gen_aniso(&(plist[F_ANISO_POL]), restp, atoms);
         gen_pol(&(plist[F_POLARIZATION]), restp, atoms);
+
         gen_lonepairs(&(plist[F_VSITE3]), restp, atoms, F_VSITE3);
+        /* gen_lonepairs(&(plist[F_VSITE3FAD]), restp, atoms, F_VSITE3FAD); */
+        /* gen_lonepairs(&(plist[F_VSITE3OUT]), restp, atoms, F_VSITE3OUT); */
+
         if (plist[F_VSITE3].nr > 0)
         {
             fprintf(stderr, "generated %d virtual sites from lone pairs.\n", plist[F_VSITE3].nr);
