@@ -1727,7 +1727,11 @@ int gmx_grompp(int argc, char *argv[])
         }
         else
         {
-            warning_note(wi, "Drude hard wall not set, could be unstable!");
+            /* only really relevant during dynamics, hard wall not usually necessary during EM */
+            if (ir->drude->drudemode == edrudeLagrangian)
+            {
+                warning_note(wi, "Drude hard wall not set, could be unstable!");
+            }
         }
 
         /* dt = 0.002 is probably safe for water, but not much else */
