@@ -52,7 +52,7 @@ void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
-             gmx_bool bAllowMissing);
+             gmx_bool bAllowMissing, gmx_bool bDrude);
 
 #ifdef __cplusplus
 }

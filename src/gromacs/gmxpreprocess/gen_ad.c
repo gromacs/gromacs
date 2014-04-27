@@ -621,6 +621,95 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
     sfree(index);
 }
 
+/* In reality, this could probably be merged with get_impropers, but most people
+ * probably aren't using polarizable FF, so to keep things separate and clean, I
+ * added this as a separate function - jal */
+static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, gmx_bool bAllowMissing,
+                           int ftype)
+{
+
+    char       *a0;
+    char        str[STRLEN];
+    int         n;      /* return value - number of interactions found */
+    int         nbonded, i, j, k, r, start, ninc, nalloc;
+    int         btype;
+    int         natoms;
+    t_rbondeds *bondeds;
+    atom_id     ai[MAXATOMLIST];
+    gmx_bool    bStop;
+
+    ninc = 100;     /* There should usually be very few of these to deal with */
+    nalloc = ninc;
+    snew(*p, nalloc);
+
+    n = 0;
+    start = 0;
+
+    /* determine how many atoms to look for in each of the possible bonded types */
+    switch (ftype)
+    {
+        case F_THOLE_POL:
+            natoms = 2;
+            btype = ebtsTHOLE;
+            strcpy(str, "thole polarization");
+            break;
+        case F_ANISO_POL:
+            natoms = 5;
+            btype = ebtsANISO;
+            strcpy(str, "anisotropic polarization");
+            break;
+        case F_POLARIZATION:
+            natoms = 2;
+            btype = ebtsPOL;
+            strcpy(str, "polarization");
+            break;
+        case F_VSITE3:
+            natoms = 4;
+            btype = ebtsVSITE3;
+            strcpy(str, "virtual sites");
+            break;
+        default:
+            gmx_fatal(FARGS, "Unknown function type passed to get_tdb_bonded().\n");
+    }
+
+    if (hb != NULL)
+    {
+        for (i = 0; (i < atoms->nres); i++)
+        {
+            bondeds = &hb[i].rb[btype];
+            for (j = 0; (j < bondeds->nb); j++)
+            {
+                bStop = FALSE;
+                for (k = 0; (k < natoms) && !bStop; k++)
+                {
+                    ai[k] = search_atom(bondeds->b[j].a[k], start, atoms, str, bAllowMissing);
+                    if (ai[k] == NO_ATID)
+                    {
+                        bStop = TRUE;
+                    }
+                }
+                if (!bStop)
+                {
+                    if (nbonded == nalloc)
+                    {
+                        nalloc += ninc;
+                        srenew(*p, nalloc);
+                    }
+                    /* fprintf(stderr, "String in input bondeds is %s\n", bondeds->b[j].s); */
+                    set_p(&((*p)[nbonded]), ai, NULL, bondeds->b[j].s);
+                    nbonded++;
+                }
+            }
+            while ((start < atoms->nr) && (atoms->atom[start].resind == i))
+            {
+                start++;
+            }
+        }
+    }
+
+    return(n);
+}
+
 static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
                          gmx_bool bAllowMissing)
 {
@@ -732,6 +821,7 @@ static void get_atomnames_min(int n, char **anm,
 static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
                       gmx_bool bAllowMissing)
 {
+
     int         r;
     atom_id     a, astart, i1, i2, itmp;
     t_rbondeds *hbexcl;
@@ -887,15 +977,17 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 /* Generate pairs, angles and dihedrals from .rtp settings */
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
-             gmx_bool bAllowMissing)
+             gmx_bool bAllowMissing, gmx_bool bDrude)
 {
     t_param    *ang, *dih, *pai, *improper;
+    t_param    *thole, *aniso, *pol, *vsites;   /* these are only needed with Drude FF */
     t_rbondeds *hbang, *hbdih;
     char      **anm;
     int         res, minres, maxres;
     int         i, j, j1, k, k1, l, l1, m, n, i1, i2;
     int         ninc, maxang, maxdih, maxpai;
     int         nang, ndih, npai, nimproper, nbd;
+    int         nthole, naniso, npol, nvsites = 0;
     int         nFound;
     gmx_bool    bFound, bExcl;
 
@@ -911,6 +1003,15 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     snew(ang, maxang);
     snew(dih, maxdih);
     snew(pai, maxpai);
+
+    /* only allocate memory for these structures if needed */
+    if (bDrude)
+    {
+        snew(thole, ninc);
+        snew(aniso, ninc);
+        snew(pol, ninc);
+        snew(vsites, ninc);
+    }
 
     snew(anm, 4);
     for (i = 0; i < 4; i++)
@@ -1179,6 +1280,22 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     {
         fprintf(stderr, "Before cleaning: %d angles\n", nang);
         clean_ang(ang, &nang, atoms);
+    }
+
+    /* get bondeds that are present in the .tdb files and
+     * add them to plist */
+    if (bDrude)
+    {
+        /* call a generalized routine here to get bondeds from hackblocks */
+        nthole = get_tdb_bonded(atoms, hb, &thole, bAllowMissing, F_THOLE_POL);
+        naniso = get_tdb_bonded(atoms, hb, &aniso, bAllowMissing, F_ANISO_POL);
+        npol = get_tdb_bonded(atoms, hb, &pol, bAllowMissing, F_POLARIZATION);
+        nvsites = get_tdb_bonded(atoms, hb, &vsites, bAllowMissing, F_VSITE3);
+
+        cppar(thole, nthole, plist, F_THOLE_POL);
+        cppar(aniso, naniso, plist, F_ANISO_POL);
+        cppar(pol, npol, plist, F_POLARIZATION);
+        cppar(vsites, nvsites, plist, F_VSITE3);
     }
 
     /* Now we have unique lists of angles and dihedrals
