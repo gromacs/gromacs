@@ -1,0 +1,11 @@
+
+; atom renaming specification
+; residue   gromacs  forcefield
+   *           H        HN
+   *         H5'1       H5'
+   *         H5'2       H5''
+   *         H2'1       H2'
+   *         H2'2       H2''
+ CYS2        LPGA       LPSA
+ CYS2        LPGB       LPSB
+  ILE        CD1        CD

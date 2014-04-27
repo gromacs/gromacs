@@ -1,0 +1,43 @@
+
+; protein and nucleic acid atom types
+[ O_LP ]
+    OD2C1A  planar
+    OD2C1B  planar
+    OD2C2A  planar
+    OD2C2B  planar
+    OD2C2C  planar
+    OD2C3A  planar
+    OD2C3B  planar
+    OD30A   planar
+    OD30B   planar
+    OD30BN  planar
+    OD30C   planar
+    OD30CL  planar
+    OD30D   planar
+    OD305A  planar
+    OD306A  planar
+    OD31A   planar
+    OD31B   planar
+    OD31C   planar
+    OD31E   planar
+    OD31F   planar
+
+; ND2R5B is the only planar N with LP in protein FF (HSD, HSE)
+; other atom types are for nucleic acids
+[ N_LP ]
+    ND2R5B  planar
+    ND2R6B  planar
+    ND2R5E  planar
+
+; for CYS
+[ SH_LP ]
+    CD32A   SD31B    LP
+
+; for CYS2
+[ SS_LP ]
+    CD32A   SD30B    LP
+
+; for MET
+[ S_LP ]
+    CD32A   SD30A    LP
+

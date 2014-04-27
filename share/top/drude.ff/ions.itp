@@ -1,0 +1,84 @@
+
+; ions.itp with polarizable ions
+
+[ moleculetype ]
+; molname   nrexcl
+NA      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    SODD    1       NA          SOD             1          1.68760
+   2    D       1       NA          DSOD            1         -0.68760
+
+[ bonds ]
+; i  j  func
+  1  2  1  
+
+[ moleculetype ]
+; molname   nrexcl
+MG      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    MAGD    1       MG          MAG             1          2.47524
+   2    D       1       MG          DMAG            1         -0.47524
+
+[ bonds ]
+; i  j  func
+  1  2  1
+
+[ moleculetype ]
+; molname   nrexcl
+K       1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    POT     1       K           POT             1          2.58097
+   2    D       1       K           DPOT            1         -1.58097
+
+[ bonds ]
+; i  j  func
+  1  2  1        
+
+[ moleculetype ]
+; molname   nrexcl
+CS     1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    CS      1       CS          CS              1          3.66588
+   2    D       1       CS          DCS             1         -2.66588
+
+[ bonds ]
+; i  j  func
+  1  2  1        
+
+[ moleculetype ]
+; molname   nrexcl
+CAL     1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    CALD    1       CAL         CAL             1          2.00000    
+
+[ moleculetype ]
+; molname   nrexcl
+CL      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    CLA     1       CL          CLA             1          2.45720
+   2    D       1       CL          DCLA            1         -3.45720    
+
+[ moleculetype ]
+; molname   nrexcl
+ZN      1
+
+[ atoms ]
+; id    type    resnr   resname     at name         cg nr      charge
+   1    ZND     1       ZN          ZN              1          3.12463
+   2    D       1       ZN          DZN             1         -1.12463
+
+[ bonds ]
+; i  j  func
+  1  2  1   

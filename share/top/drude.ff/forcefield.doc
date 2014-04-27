@@ -1,0 +1,64 @@
+
+
+Drude polarizable CHARMM force field
+
+*******************************************************************************
+*                    Drude 2013a port writted by                              *
+*                    Justin A. Lemkul, E. Prabhu Raman, Robert Best           *
+*                    and Alexander D. MacKerell, Jr.                          *
+*                    CHARMM force field homepage:                             *
+*                    www.mackerell.umaryland.edu/CHARMM_ff_params.html        *
+*******************************************************************************
+
+Parameters are from the 2013a Drude force field for proteins, 
+nucleic acids, and polarizable water
+
+References:
+
+** Proteins
+P.E.M. Lopes, J. Huang, J. Shim, Y. Luo, H. Li, B. Roux, and A.D. MacKerell, Jr.
+(2013) Polarizable Force Field for Peptides and Proteins Based on the Classical
+Drude Oscillator. J Chem Theory Comput 9: 5430-5449.
+
+** Lipids
+
+(Not present yet)
+
+** Nucleic Acids
+
+C.M. Baker, V.M. Anisimov, and A.D. MacKerell, Jr. (2011) Development of CHARMM
+Polarizable Force Field for Nucleic Acid Bases Based on the Classical Drude
+Oscillator Model. J Phys Chem B 115: 580-596.
+
+A. Savelyev and A.D. MacKerell, Jr. (20xx) All-Atom Polarizable Force Field for
+DNA Based on the Classical Drude Oscillator Model. J Comput Chem (Submitted).
+
+(RNA force field under development)
+
+** SWM4-NDP water
+
+G. Lamoureux, E. Harder, I.V. Vorobyov, Y. Deng, B. Roux, and A.D. MacKerell,
+ Jr. (2006) A polarizable model of water for molecular dynamics simulations. 
+Chem Phys Lett 418: 245-249.
+
+** SWM6 water
+
+W. Yu, P.E.M. Lopes, B. Roux, and A.D. MacKerell, Jr. (2013) Six-site 
+Polarizable Water Based on the Classical Drude Oscillator. J Chem Phys 138: 
+034508.
+
+** Ions
+
+H. Yu, T.W. Whitfield, E. Harder, G. Lamoureux, I. Vorobyov, V.M. Anisimov, 
+A.D. MacKerell, Jr., and B. Roux (2010) Simulating Monovalent and Divalent Ions 
+in Aqueous Solution Using a Drude Polarizable Force Field. J Chem Theory Comput
+6: 774-786.
+
+Y. Luo, W. Jiang, H. Yu, A.D. MacKerell, Jr., and B. Roux (2013) Simulation
+study of ion pairing in concentrated aqueous salt solutions with a polarizable
+force field. Faraday Disc 160: 135-149.
+
+** Carbohydrates
+
+(Not present yet)
+
