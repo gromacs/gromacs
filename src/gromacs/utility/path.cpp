@@ -165,6 +165,18 @@ std::string Path::getFilename(const std::string &path)
     return path.substr(pos+1);
 }
 
+std::string Path::stripExtension(const std::string &path)
+{
+    size_t dirSeparatorPos = path.find_last_of(cDirSeparators);
+    size_t extPos          = path.find_last_of('.');
+    if (extPos == std::string::npos
+        || (dirSeparatorPos != std::string::npos && extPos < dirSeparatorPos))
+    {
+        return path;
+    }
+    return path.substr(0, extPos);
+}
+
 std::string Path::normalize(const std::string &path)
 {
     std::string result(path);
