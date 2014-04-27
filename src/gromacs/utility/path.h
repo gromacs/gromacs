@@ -67,6 +67,7 @@ class Path
         static std::string normalize(const std::string &path);
         static std::string getParentPath(const std::string &path);
         static std::string getFilename(const std::string &path);
+        static std::string stripExtension(const std::string &path);
 
         static bool exists(const char *path);
         static bool exists(const std::string &path);
