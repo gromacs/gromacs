@@ -148,8 +148,6 @@ void OptionCompletionWriter::visitOption(const OptionInfo &option)
             extensions = "@(" + extensions + ")";
         }
         completion.append(extensions);
-        // TODO: Don't duplicate this from filenm.c/futil.c.
-        completion.append("?(.gz|.Z)' -f -- $c ; compgen -S '/' -d $c");
         writeOptionCompletion(option, completion);
         return;
     }
