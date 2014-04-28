@@ -208,10 +208,6 @@ static const t_deffile
     { eftASC, "", "rundir", NULL, "Run directory" }
 };
 
-#define NZEXT 2
-static const char *z_ext[NZEXT] =
-{ ".gz", ".Z" };
-
 const char *ftp2ext(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
@@ -493,7 +489,6 @@ static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm,
      * or empty, the default filename is given.
      */
     char buf[256];
-    int  i, len, extlen;
 
     if ((fnm->flag & ffREAD) && !bReadNode)
     {
@@ -505,34 +500,16 @@ static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm,
         gmx_fatal(FARGS, "file type out of range (%d)", fnm->ftp);
     }
 
-    if (name)
-    {
-        strcpy(buf, name);
-    }
-    if ((fnm->flag & ffREAD) && name && gmx_fexist(name))
-    {
-        /* check if filename ends in .gz or .Z, if so remove that: */
-        len = strlen(name);
-        for (i = 0; i < NZEXT; i++)
-        {
-            extlen = strlen(z_ext[i]);
-            if (len > extlen)
-            {
-                if (gmx_strcasecmp(name+len-extlen, z_ext[i]) == 0)
-                {
-                    buf[len-extlen] = '\0';
-                    break;
-                }
-            }
-        }
-    }
-
     if (deffile[fnm->ftp].ntps)
     {
-        set_grpfnm(fnm, name ? buf : NULL, deffnm);
+        set_grpfnm(fnm, name, deffnm);
     }
     else
     {
+        if (name)
+        {
+            strcpy(buf, name);
+        }
         if (name == NULL || deffnm != NULL)
         {
             if (deffnm != NULL)
