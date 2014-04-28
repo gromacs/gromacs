@@ -77,16 +77,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-/* we keep a linked list of all files opened through pipes (i.e.
-   compressed or .gzipped files. This way we can distinguish between them
-   without having to change the semantics of reading from/writing to files)
- */
-typedef struct t_pstack {
-    FILE            *fp;
-    struct t_pstack *prev;
-} t_pstack;
-
-static t_pstack    *pstack      = NULL;
 static gmx_bool     bUnbuffered = FALSE;
 
 /* this linked list is an intrinsically globally shared object, so we have
@@ -98,96 +88,18 @@ void no_buffers(void)
     bUnbuffered = TRUE;
 }
 
-void push_ps(FILE *fp)
-{
-    t_pstack *ps;
-
-    tMPI_Thread_mutex_lock(&pstack_mutex);
-
-    snew(ps, 1);
-    ps->fp   = fp;
-    ps->prev = pstack;
-    pstack   = ps;
-
-    tMPI_Thread_mutex_unlock(&pstack_mutex);
-}
-
-#ifdef GMX_FAHCORE
-/* don't use pipes!*/
-#define popen fah_fopen
-#define pclose fah_fclose
-#define SKIP_FFOPS 1
-#else
-#ifdef gmx_ffclose
-#undef gmx_ffclose
-#endif
-#if (!defined(HAVE_PIPES) && !defined(__native_client__))
-static FILE *popen(const char *nm, const char *mode)
-{
-    gmx_impl("Sorry no pipes...");
-
-    return NULL;
-}
-
-static int pclose(FILE *fp)
-{
-    gmx_impl("Sorry no pipes...");
-
-    return 0;
-}
-#endif /* !defined(HAVE_PIPES) && !defined(__native_client__) */
-#endif /* GMX_FAHCORE */
-
 int gmx_ffclose(FILE *fp)
 {
 #ifdef SKIP_FFOPS
     return fclose(fp);
 #else
-    t_pstack *ps, *tmp;
     int       ret = 0;
 
     tMPI_Thread_mutex_lock(&pstack_mutex);
 
-    ps = pstack;
-    if (ps == NULL)
+    if (fp != NULL)
     {
-        if (fp != NULL)
-        {
-            ret = fclose(fp);
-        }
-    }
-    else if (ps->fp == fp)
-    {
-        if (fp != NULL)
-        {
-            ret = pclose(fp);
-        }
-        pstack = pstack->prev;
-        sfree(ps);
-    }
-    else
-    {
-        while ((ps->prev != NULL) && (ps->prev->fp != fp))
-        {
-            ps = ps->prev;
-        }
-        if ((ps->prev != NULL) && ps->prev->fp == fp)
-        {
-            if (ps->prev->fp != NULL)
-            {
-                ret = pclose(ps->prev->fp);
-            }
-            tmp      = ps->prev;
-            ps->prev = ps->prev->prev;
-            sfree(tmp);
-        }
-        else
-        {
-            if (fp != NULL)
-            {
-                ret = fclose(fp);
-            }
-        }
+        ret = fclose(fp);
     }
 
     tMPI_Thread_mutex_unlock(&pstack_mutex);
@@ -200,17 +112,6 @@ void frewind(FILE *fp)
 {
     tMPI_Thread_mutex_lock(&pstack_mutex);
 
-    t_pstack *ps = pstack;
-    while (ps != NULL)
-    {
-        if (ps->fp == fp)
-        {
-            fprintf(stderr, "Cannot rewind compressed file!\n");
-            tMPI_Thread_mutex_unlock(&pstack_mutex);
-            return;
-        }
-        ps = ps->prev;
-    }
     rewind(fp);
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 }
@@ -239,59 +140,6 @@ gmx_off_t gmx_ftell(FILE *stream)
     return ftell(stream);
 #endif
 #endif
-}
-
-
-//! Check whether the file (opened by gmx_ffopen()) is a pipe.
-static bool is_pipe(FILE *fp)
-{
-    tMPI_Thread_mutex_lock(&pstack_mutex);
-
-    t_pstack *ps = pstack;
-    while (ps != NULL)
-    {
-        if (ps->fp == fp)
-        {
-            tMPI_Thread_mutex_unlock(&pstack_mutex);
-            return true;
-        }
-        ps = ps->prev;
-    }
-    tMPI_Thread_mutex_unlock(&pstack_mutex);
-    return false;
-}
-
-
-static FILE *uncompress(const char *fn, const char *mode)
-{
-    FILE *fp;
-    char  buf[256];
-
-    sprintf(buf, "uncompress -c < %s", fn);
-    fprintf(stderr, "Going to execute '%s'\n", buf);
-    if ((fp = popen(buf, mode)) == NULL)
-    {
-        gmx_open(fn);
-    }
-    push_ps(fp);
-
-    return fp;
-}
-
-static FILE *gunzip(const char *fn, const char *mode)
-{
-    FILE *fp;
-    char  buf[256];
-
-    sprintf(buf, "gunzip -c < %s", fn);
-    fprintf(stderr, "Going to execute '%s'\n", buf);
-    if ((fp = popen(buf, mode)) == NULL)
-    {
-        gmx_open(fn);
-    }
-    push_ps(fp);
-
-    return fp;
 }
 
 gmx_bool gmx_fexist(const char *fname)
@@ -325,18 +173,11 @@ gmx_bool gmx_eof(FILE *fp)
     char     data[4];
     gmx_bool beof;
 
-    if (is_pipe(fp))
+    if ((beof = fread(data, 1, 1, fp)) == 1)
     {
-        return feof(fp);
+        gmx_fseek(fp, -1, SEEK_CUR);
     }
-    else
-    {
-        if ((beof = fread(data, 1, 1, fp)) == 1)
-        {
-            gmx_fseek(fp, -1, SEEK_CUR);
-        }
-        return !beof;
-    }
+    return !beof;
 }
 
 static char *backup_fn(const char *file, int count_max)
@@ -502,23 +343,7 @@ FILE *gmx_ffopen(const char *file, const char *mode)
     }
     else
     {
-        sprintf(buf, "%s.Z", file);
-        if (gmx_fexist(buf))
-        {
-            ff = uncompress(buf, mode);
-        }
-        else
-        {
-            sprintf(buf, "%s.gz", file);
-            if (gmx_fexist(buf))
-            {
-                ff = gunzip(buf, mode);
-            }
-            else
-            {
-                gmx_file(file);
-            }
-        }
+        gmx_file(file);
     }
     return ff;
 #endif
