@@ -78,11 +78,8 @@ gmx_bool gmx_fexist(const char *fname);
 gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr);
 /* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
 
-gmx_bool gmx_eof(FILE *fp);
-/* Return TRUE on end-of-file, FALSE otherwise */
-
-gmx_bool is_pipe(FILE *fp);
-/* Check whether the file (opened by gmx_ffopen) is a pipe */
+gmx_bool gmx_before_eof(FILE *fp);
+/* Return TRUE if the file position is just before end-of-file, FALSE otherwise */
 
 /*  Make a backup of file if necessary.
     Return false if there was a problem.
@@ -111,8 +108,6 @@ int gmx_fseek(FILE *stream, gmx_off_t offset, int whence);
 gmx_off_t gmx_ftell(FILE *stream);
 /* OS-independent fseek. 64-bit when available. */
 
-
-gmx_bool is_pipe(FILE *fp);
 
 char *gmxlibfn(const char *file);
 /* allocates and returns a string with the full file name for a library file */
