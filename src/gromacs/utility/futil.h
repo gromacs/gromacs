@@ -110,17 +110,6 @@ void no_buffers(void);
 gmx_bool gmx_fexist(const char *fname);
 
 /*! \brief
- * Checks for end of file.
- *
- * \returns `TRUE` on end-of-file
- *
- * \todo
- * There are only two callers for this function, while there are ~20 direct
- * calls to feof().  Probably this is unnecessary.
- */
-gmx_bool gmx_eof(FILE *fp);
-
-/*! \brief
  * Makes a backup of file if the file exists.
  *
  * \returns `FALSE` if there was a problem.

@@ -1143,6 +1143,18 @@ static void read_whole_conf(const char *infile, char *title,
     gmx_fio_fclose(in);
 }
 
+static gmx_bool gmx_one_before_eof(FILE *fp)
+{
+    char     data[4];
+    gmx_bool beof;
+
+    if ((beof = fread(data, 1, 1, fp)) == 1)
+    {
+        gmx_fseek(fp, -1, SEEK_CUR);
+    }
+    return !beof;
+}
+
 gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
 {
     t_atoms  atoms;
@@ -1151,7 +1163,7 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
     double   tt;
     int      ndec = 0, i;
 
-    if (gmx_eof(status))
+    if (gmx_one_before_eof(status))
     {
         return FALSE;
     }
