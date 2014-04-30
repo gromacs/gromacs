@@ -241,27 +241,6 @@ gmx_off_t gmx_ftell(FILE *stream)
 #endif
 }
 
-
-//! Check whether the file (opened by gmx_ffopen()) is a pipe.
-static bool is_pipe(FILE *fp)
-{
-    tMPI_Thread_mutex_lock(&pstack_mutex);
-
-    t_pstack *ps = pstack;
-    while (ps != NULL)
-    {
-        if (ps->fp == fp)
-        {
-            tMPI_Thread_mutex_unlock(&pstack_mutex);
-            return true;
-        }
-        ps = ps->prev;
-    }
-    tMPI_Thread_mutex_unlock(&pstack_mutex);
-    return false;
-}
-
-
 static FILE *uncompress(const char *fn, const char *mode)
 {
     FILE *fp;
@@ -320,23 +299,16 @@ gmx_bool gmx_fexist(const char *fname)
     }
 }
 
-gmx_bool gmx_eof(FILE *fp)
+gmx_bool gmx_before_eof(FILE *fp)
 {
     char     data[4];
     gmx_bool beof;
 
-    if (is_pipe(fp))
+    if ((beof = fread(data, 1, 1, fp)) == 1)
     {
-        return feof(fp);
+        gmx_fseek(fp, -1, SEEK_CUR);
     }
-    else
-    {
-        if ((beof = fread(data, 1, 1, fp)) == 1)
-        {
-            gmx_fseek(fp, -1, SEEK_CUR);
-        }
-        return !beof;
-    }
+    return !beof;
 }
 
 static char *backup_fn(const char *file, int count_max)
