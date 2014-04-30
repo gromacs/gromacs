@@ -1153,7 +1153,7 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
     double   tt;
     int      ndec = 0, i;
 
-    if (gmx_eof(status))
+    if (gmx_before_eof(status))
     {
         return FALSE;
     }
