@@ -580,7 +580,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 
         if (detect_cuda_gpus(&hwinfo_g->gpu_info, detection_error) != 0)
         {
-            if (detection_error != NULL && detection_error[0] != '\0')
+            if (detection_error[0] != '\0')
             {
                 sprintf(sbuf, ":\n      %s\n", detection_error);
             }
