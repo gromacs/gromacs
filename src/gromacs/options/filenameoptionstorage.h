@@ -52,6 +52,7 @@ namespace gmx
 {
 
 class FileNameOption;
+class FileNameOptionManager;
 
 /*! \internal \brief
  * Converts, validates, and stores file names.
@@ -66,6 +67,9 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         virtual std::string typeString() const;
         virtual std::string formatExtraDescription() const;
         virtual std::string formatSingleValue(const std::string &value) const;
+
+        //! \copydoc FileNameOptionInfo::setManager()
+        void setManager(FileNameOptionManager *manager);
 
         //! \copydoc FileNameOptionInfo::isInputFile()
         bool isInputFile() const { return bRead_ && !bWrite_; }
@@ -83,8 +87,10 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 
     private:
         virtual void convertValue(const std::string &value);
+        virtual void processAll();
 
         FileNameOptionInfo      info_;
+        FileNameOptionManager  *manager_;
         OptionFileType          filetype_;
         int                     legacyType_;
         bool                    bRead_;

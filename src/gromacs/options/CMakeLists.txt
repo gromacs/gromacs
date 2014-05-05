@@ -39,6 +39,7 @@ set(OPTIONS_PUBLIC_HEADERS
     abstractoption.h
     basicoptions.h
     filenameoption.h
+    filenameoptionmanager.h
     optionfiletype.h
     optionflags.h
     options.h
