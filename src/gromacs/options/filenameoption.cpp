@@ -46,9 +46,10 @@
 #include <vector>
 
 #include "gromacs/fileio/filenm.h"
-
+#include "gromacs/options/filenameoptionmanager.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -279,11 +280,13 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
  */
 
 FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
-    : MyBase(settings), info_(this), filetype_(settings.filetype_),
-      legacyType_(settings.legacyType_),
+    : MyBase(settings), info_(this), manager_(NULL),
+      filetype_(settings.filetype_), legacyType_(settings.legacyType_),
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
 {
+    GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
+                       "allowMultiple() is not supported for file name options");
     if (settings.defaultBasename_ != NULL)
     {
         std::string defaultValue =
@@ -294,6 +297,16 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
         {
             setDefaultValue(defaultValue);
         }
+    }
+}
+
+void FileNameOptionStorage::setManager(FileNameOptionManager *manager)
+{
+    GMX_RELEASE_ASSERT(manager_ == NULL || manager_ == manager,
+                       "Manager cannot be changed once set");
+    if (manager_ == NULL)
+    {
+        manager_ = manager;
     }
 }
 
@@ -361,6 +374,37 @@ void FileNameOptionStorage::convertValue(const std::string &value)
     addValue(completeFileName(value, filetype_, legacyType_, bInput));
 }
 
+void FileNameOptionStorage::processAll()
+{
+    if (hasFlag(efOption_HasDefaultValue))
+    {
+        const bool              bInput      = isInputFile() || isInputOutputFile();
+        const FileTypeRegistry &registry    = FileTypeRegistry::instance();
+        const FileTypeHandler  &typeHandler = registry.handlerForType(filetype_, legacyType_);
+        const ExtensionList    &extensions  = typeHandler.extensions();
+        ValueList              &valueList   = values();
+        GMX_RELEASE_ASSERT(valueList.size() == 1,
+                           "There should be only one default value");
+        const bool              bGlobalDefault =
+            (manager_ != NULL && !manager_->defaultFileName().empty());
+        if (!valueList[0].empty() && (extensions.size() > 1 || bGlobalDefault))
+        {
+            std::string oldValue = valueList[0];
+            std::string newValue = stripSuffixIfPresent(oldValue, extensions[0]);
+            if (bGlobalDefault)
+            {
+                newValue = manager_->defaultFileName();
+            }
+            newValue = completeFileName(newValue, filetype_, legacyType_, bInput);
+            if (newValue != oldValue)
+            {
+                valueList[0] = newValue;
+                refreshValues();
+            }
+        }
+    }
+}
+
 bool FileNameOptionStorage::isDirectoryOption() const
 {
     return legacyType_ == efRND;
@@ -383,9 +427,19 @@ FileNameOptionInfo::FileNameOptionInfo(FileNameOptionStorage *option)
 {
 }
 
+FileNameOptionStorage &FileNameOptionInfo::option()
+{
+    return static_cast<FileNameOptionStorage &>(OptionInfo::option());
+}
+
 const FileNameOptionStorage &FileNameOptionInfo::option() const
 {
     return static_cast<const FileNameOptionStorage &>(OptionInfo::option());
+}
+
+void FileNameOptionInfo::setManager(FileNameOptionManager *manager)
+{
+    option().setManager(manager);
 }
 
 bool FileNameOptionInfo::isInputFile() const

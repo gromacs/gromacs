@@ -53,6 +53,7 @@ namespace gmx
 
 template <typename T> class ConstArrayRef;
 class FileNameOptionInfo;
+class FileNameOptionManager;
 class FileNameOptionStorage;
 
 /*! \brief
@@ -131,6 +132,19 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * required, the value given to defaultBasename() is treated as for
          * both defaultValue() and defaultValueIfSet(), otherwise it is treated
          * as for defaultValueIfSet().
+         *
+         * For input files that accept multiple extensions, the extension is
+         * completed to the default extension on creation of the option or at
+         * time of parsing an option without a value.
+         * The extension may change during Options::finish(), as this is the
+         * time when the default names are checked against the file system to
+         * provide an extension that matches an existing file if that is
+         * possible.
+         *
+         * If FileNameOptionManager is used, and
+         * FileNameOptionManager::addDefaultFileNameOption() is used, and the
+         * user provides a global default file name using that option, then the
+         * global default takes precedence over defaultBasename().
          */
         MyClass &defaultBasename(const char *basename)
         { defaultBasename_ = basename; return me(); }
@@ -172,6 +186,21 @@ class FileNameOptionInfo : public OptionInfo
         //! Creates an option info object for the given option.
         explicit FileNameOptionInfo(FileNameOptionStorage *option);
 
+        /*! \brief
+         * Set manager for handling interaction with other options.
+         *
+         * \param   manager  File name option manager to set.
+         *
+         * This must be called before the values are added.
+         *
+         * Typically it is called through setManagerForFileNameOptions(),
+         * which recursively sets the manager for all file name options in
+         * an Options object.
+         *
+         * Does not throw.
+         */
+        void setManager(FileNameOptionManager *manager);
+
         //! Whether the option specifies an input file.
         bool isInputFile() const;
         //! Whether the option specifies an output file.
@@ -191,6 +220,7 @@ class FileNameOptionInfo : public OptionInfo
         ExtensionList extensions() const;
 
     private:
+        FileNameOptionStorage &option();
         const FileNameOptionStorage &option() const;
 };
 
