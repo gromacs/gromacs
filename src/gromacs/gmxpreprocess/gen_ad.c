@@ -312,6 +312,34 @@ static void set_p(t_param *p, atom_id ai[4], real *c, char *s)
     set_p_string(p, s);
 }
 
+/* generalized version of set_p() for other bonded interactions */
+static void set_p_tdb(t_param *p, atom_id ai[MAXATOMLIST], real *c, char *s, int n)
+{
+    int j;
+
+    for (j = 0; (j < n); j++)
+    {
+        if (debug)
+        {
+            fprintf(debug, "In set_p_tdb: j = %d, ai[j] = %d\n", j, ai[j]);
+        }
+        p->a[j] = ai[j];
+    }
+    for (j = 0; (j < MAXFORCEPARAM); j++)
+    {
+        if (c)
+        {
+            p->c[j] = c[j];
+        }
+        else
+        {
+            p->c[j] = NOTSET;
+        }
+    }
+
+    set_p_string(p, s);
+}
+
 static int int_comp(const void *a, const void *b)
 {
     return (*(int *)a) - (*(int *)b);
@@ -643,7 +671,11 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, gmx_boo
     snew(*p, nalloc);
 
     n = 0;
+    nbonded = 0;
     start = 0;
+
+    /* enabled for testing for now, may need to be set... */
+    bAllowMissing = TRUE;
 
     /* determine how many atoms to look for in each of the possible bonded types */
     switch (ftype)
@@ -687,6 +719,13 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, gmx_boo
                     {
                         bStop = TRUE;
                     }
+                    if (debug)
+                    {
+                        if (!bStop)
+                        {
+                            fprintf(debug, "Atom found in get_tdb_bonded: k = %d, ai[k] = %d\n", k, ai[k]);
+                        }
+                    }
                 }
                 if (!bStop)
                 {
@@ -695,8 +734,7 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, gmx_boo
                         nalloc += ninc;
                         srenew(*p, nalloc);
                     }
-                    /* fprintf(stderr, "String in input bondeds is %s\n", bondeds->b[j].s); */
-                    set_p(&((*p)[nbonded]), ai, NULL, bondeds->b[j].s);
+                    set_p_tdb(&((*p)[nbonded]), ai, NULL, bondeds->b[j].s, natoms);
                     nbonded++;
                 }
             }
@@ -819,7 +857,7 @@ static void get_atomnames_min(int n, char **anm,
 }
 
 static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
-                      gmx_bool bAllowMissing)
+                      gmx_bool bAllowMissing, gmx_bool bDrude)
 {
 
     int         r;
@@ -827,6 +865,13 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     t_rbondeds *hbexcl;
     int         e;
     char       *anm;
+
+    /* need to allow for missing atoms due to the complexity of the bonded
+     * interactions specified in both the .rtp and .tdb files */
+    if (bDrude)
+    {
+        bAllowMissing = TRUE;
+    }
 
     astart = 0;
     for (a = 0; a < atoms->nr; a++)
@@ -1021,7 +1066,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 
     if (hb)
     {
-        gen_excls(atoms, excls, hb, bAllowMissing);
+        gen_excls(atoms, excls, hb, bAllowMissing, bDrude);
     }
 
     /* Extract all i-j-k-l neighbours from nnb struct to generate all

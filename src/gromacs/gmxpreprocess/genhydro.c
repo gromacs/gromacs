@@ -976,7 +976,6 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
                 srenew(newpdba->atomname, natoms); 
 
                 /* add atom and Drude back to pdba */
-                /* TODO: CHECK THIS */
                 copy_atom(pdba, i, newpdba, i);
                 copy_atom(pdba, i+1, newpdba, i+1);
 
