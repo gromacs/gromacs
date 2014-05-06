@@ -741,6 +741,10 @@ void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
                             "nstdhdl", &ir->fepvals->nstdhdl);
         }
     }
+    if (IR_TWINRANGE(*ir) && ir->nstlist > 1)
+    {
+        gmx_fatal(FARGS, "The implementation of multiple time stepping was fixed after 4.0.7. The new implementation is broken for twin-range cut-offs with nstlist > 1. Either use that version, or single-range cut-offs, or update the neighbor list every step.");
+    }
 }
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
