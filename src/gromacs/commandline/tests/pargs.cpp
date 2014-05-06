@@ -323,8 +323,12 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgs)
     EXPECT_STREQ("test.xvg", opt2fn_null("-o2", nfile(), fnm));
     char **files;
     EXPECT_EQ(2, opt2fns(&files, "-om", nfile(), fnm));
-    EXPECT_STREQ("test1.xvg", files[0]);
-    EXPECT_STREQ("test2.xvg", files[1]);
+    EXPECT_TRUE(files != NULL);
+    if (files != NULL)
+    {
+        EXPECT_STREQ("test1.xvg", files[0]);
+        EXPECT_STREQ("test2.xvg", files[1]);
+    }
     EXPECT_STREQ("outm2.xvg", opt2fn("-om2", nfile(), fnm));
     done_filenms(nfile(), fnm);
 }
