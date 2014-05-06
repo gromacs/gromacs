@@ -73,7 +73,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), filetype_(eftUnknown), legacyType_(-1),
-              defaultBasename_(NULL),
+              defaultBasename_(NULL), bLegacyOptionalBehavior_(false),
               bRead_(false), bWrite_(false), bLibrary_(false)
         {
         }
@@ -93,6 +93,16 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          */
         MyClass &legacyType(int type)
         { legacyType_ = type; return me(); }
+        /*! \brief
+         * Changes the behavior of optional options to match old t_filenm.
+         *
+         * If this is not set, optional options return an empty string if not
+         * set.  If this is set, a non-empty value is always returned.
+         * In the latter case, whether the option is set only affects the
+         * return value of OptionInfo::isSet() and Options::isSet().
+         */
+        MyClass &legacyOptionalBehavior()
+        { bLegacyOptionalBehavior_ = true; return me(); }
         //! Tells that the file provided by this option is used for input only.
         MyClass &inputFile()
         { bRead_ = true; bWrite_ = false; return me(); }
@@ -160,6 +170,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         OptionFileType          filetype_;
         int                     legacyType_;
         const char             *defaultBasename_;
+        bool                    bLegacyOptionalBehavior_;
         bool                    bRead_;
         bool                    bWrite_;
         bool                    bLibrary_;
