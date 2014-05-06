@@ -376,7 +376,7 @@ void FloatOptionStorage::convertValue(const std::string &value)
     double      dval = std::strtod(ptr, &endptr);
     if (errno == ERANGE
         || dval * factor_ < -std::numeric_limits<float>::max()
-        || dval * factor_ > -std::numeric_limits<float>::max())
+        || dval * factor_ >  std::numeric_limits<float>::max())
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + value
                                     + "'; it causes an overflow/underflow"));
