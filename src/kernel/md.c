@@ -348,6 +348,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                   (DOMAINDECOMP(cr) && !MASTER(cr))) ?
                                  NULL : state_global->x);
 
+    if (shellfc && ir->eI == eiNM)
+    {
+        /* Currently shells don't work with Normal Modes */
+        gmx_fatal(FARGS, "Normal Mode analysis is not supported with shells.\n");
+    }
+
     if (DEFORM(*ir))
     {
 #ifdef GMX_THREAD_MPI
