@@ -42,6 +42,8 @@
 #include "filenameoption.h"
 #include "filenameoptionstorage.h"
 
+#include <cstring>
+
 #include <string>
 #include <vector>
 
@@ -62,6 +64,10 @@ class FileTypeRegistry;
 
 //! \addtogroup module_options
 //! \{
+
+//! Extensions that are recognized as compressed files.
+const char *const c_compressedExtensions[] =
+{ ".gz", ".Z" };
 
 //! Shorthand for a list of file extensions.
 typedef std::vector<const char *> ExtensionList;
@@ -252,6 +258,15 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
         // TODO: This may not work as expected if the value is passed to a
         // function that uses fn2ftp() to determine the file type and the input
         // file has an unrecognized extension.
+        ConstArrayRef<const char *>                 compressedExtensions(c_compressedExtensions);
+        ConstArrayRef<const char *>::const_iterator ext;
+        for (ext = compressedExtensions.begin(); ext != compressedExtensions.end(); ++ext)
+        {
+            if (endsWith(value, *ext))
+            {
+                return value.substr(0, value.length() - std::strlen(*ext));
+            }
+        }
         return value;
     }
     const FileTypeRegistry &registry    = FileTypeRegistry::instance();
@@ -293,7 +308,7 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
             completeFileName(settings.defaultBasename_, filetype_,
                              legacyType_, false);
         setDefaultValueIfSet(defaultValue);
-        if (isRequired())
+        if (isRequired() || settings.bLegacyOptionalBehavior_)
         {
             setDefaultValue(defaultValue);
         }
