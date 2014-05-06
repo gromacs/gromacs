@@ -272,6 +272,10 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "Can not have nstlist<=0 with twin-range interactions");
         }
+        if (IR_TWINRANGE(*ir) && ir->nstlist > 1)
+        {
+            warning_error(wi, "The implementation of multiple time stepping was fixed after 4.0.7. The new implementation is broken for twin-range cut-offs with nstlist > 1. Either use that version, or single-range cut-offs, or update the neighbour list every step.");
+        }
     }
 
     if (ir->rlistlong == ir->rlist)
