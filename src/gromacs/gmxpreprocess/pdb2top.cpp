@@ -849,10 +849,25 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                     switch (hb[resind].hack[j].tp)
                     {
                         case 9:                                   /* COOH terminus */
-                            add_param(psb, i, i+1, NULL, NULL);   /* C-O  */
-                            add_param(psb, i, i+2, NULL, NULL);   /* C-OA */
-                            add_param(psb, i+2, i+3, NULL, NULL); /* OA-H */
-                            break;
+                            if (bDrude)
+                            {
+                                /* C DC OT1 DOT1 LPT1 LPT2 OT2 DOT2 LPT3 LPT4 H */
+                                /* 0 1  2   3    4    5    6   7    8    9    10 */
+                                add_param(psb, i, i+1, NULL, NULL);   /* C-DC */
+                                add_param(psb, i, i+2, NULL, NULL);   /* C-OT1 */
+                                add_param(psb, i+2, i+3, NULL, NULL); /* OT1-DOT1 */
+                                add_param(psb, i, i+6, NULL, NULL);   /* C-OT2 */
+                                add_param(psb, i+6, i+7, NULL, NULL); /* OT2-DOT2 */
+                                add_param(psb, i+6, i+10, NULL, NULL); /* OT2-H */
+                                break;
+                            }
+                            else
+                            {
+                                add_param(psb, i, i+1, NULL, NULL);   /* C-O  */
+                                add_param(psb, i, i+2, NULL, NULL);   /* C-OA */
+                                add_param(psb, i+2, i+3, NULL, NULL); /* OA-H */
+                                break;
+                            }
                         case 8:                                     /* COO- terminus for Drude FF */
                             /* C DC OT1 DOT1 LPT1 LPT2 OT2 DOT2 LPT3 LPT4 */
                             /* 0 1  2   3    4    5    6   7    8    9    */
