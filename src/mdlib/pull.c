@@ -328,7 +328,8 @@ static void get_pullgrps_dr(const t_pull *pull, const t_pbc *pbc, int g, double 
     }
     if (max_dist2 >= 0 && dr2 > 0.98*0.98*max_dist2)
     {
-        gmx_fatal(FARGS, "Distance of pull group %d (%f nm) is larger than 0.49 times the box size (%f)", g, sqrt(dr2), sqrt(max_dist2));
+        gmx_fatal(FARGS, "Distance of pull group %d (%f nm) is larger than 0.49 times the box size (%f).\nYou might want to consider using \"pull-geometry = direction-periodic\" instead.\n", g, sqrt(dr2), sqrt(max_dist2));
+
     }
 
     if (pull->eGeom == epullgDIRPBC)
