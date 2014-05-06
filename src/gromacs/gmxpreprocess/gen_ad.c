@@ -652,12 +652,11 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
 /* In reality, this could probably be merged with get_impropers, but most people
  * probably aren't using polarizable FF, so to keep things separate and clean, I
  * added this as a separate function - jal */
-static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, gmx_bool bAllowMissing,
-                           int ftype)
+static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, int ftype)
 {
 
     char       *a0;
-    char        str[STRLEN];
+    const char *ptr;
     int         n;      /* return value - number of interactions found */
     int         nbonded, i, j, k, r, start, ninc, nalloc;
     int         btype;
@@ -674,34 +673,40 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, gmx_boo
     nbonded = 0;
     start = 0;
 
-    /* enabled for testing for now, may need to be set... */
-    bAllowMissing = TRUE;
-
     /* determine how many atoms to look for in each of the possible bonded types */
     switch (ftype)
     {
         case F_THOLE_POL:
             natoms = 2;
             btype = ebtsTHOLE;
-            strcpy(str, "thole polarization");
+            ptr = "thole polarization";
             break;
         case F_ANISO_POL:
             natoms = 5;
             btype = ebtsANISO;
-            strcpy(str, "anisotropic polarization");
+            ptr = "anisotropic polarization";
             break;
         case F_POLARIZATION:
             natoms = 2;
             btype = ebtsPOL;
-            strcpy(str, "polarization");
+            ptr = "polarization";
             break;
         case F_VSITE3:
             natoms = 4;
             btype = ebtsVSITE3;
-            strcpy(str, "virtual sites");
+            ptr = "virtual sites";
             break;
         default:
             gmx_fatal(FARGS, "Unknown function type passed to get_tdb_bonded().\n");
+    }
+
+    if (debug)
+    {
+        ptr = ptr;
+    }
+    else
+    {
+        ptr = "check";
     }
 
     if (hb != NULL)
@@ -714,7 +719,8 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, gmx_boo
                 bStop = FALSE;
                 for (k = 0; (k < natoms) && !bStop; k++)
                 {
-                    ai[k] = search_atom(bondeds->b[j].a[k], start, atoms, str, bAllowMissing);
+                    /* allow for missing atoms */
+                    ai[k] = search_atom(bondeds->b[j].a[k], start, atoms, ptr, TRUE);
                     if (ai[k] == NO_ATID)
                     {
                         bStop = TRUE;
@@ -865,12 +871,22 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     t_rbondeds *hbexcl;
     int         e;
     char       *anm;
+    const char *ptr;
 
     /* need to allow for missing atoms due to the complexity of the bonded
      * interactions specified in both the .rtp and .tdb files */
     if (bDrude)
     {
         bAllowMissing = TRUE;
+    }
+
+    if (debug)
+    {
+        ptr = "exclusions";
+    }
+    else
+    {
+        ptr = "check";
     }
 
     astart = 0;
@@ -885,10 +901,10 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
             {
                 anm = hbexcl->b[e].a[0];
                 i1  = search_atom(anm, astart, atoms,
-                                  "exclusion", bAllowMissing);
+                                  ptr, bAllowMissing);
                 anm = hbexcl->b[e].a[1];
                 i2  = search_atom(anm, astart, atoms,
-                                  "exclusion", bAllowMissing);
+                                  ptr, bAllowMissing);
                 if (i1 != NO_ATID && i2 != NO_ATID)
                 {
                     if (i1 > i2)
@@ -1332,10 +1348,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     if (bDrude)
     {
         /* call a generalized routine here to get bondeds from hackblocks */
-        nthole = get_tdb_bonded(atoms, hb, &thole, bAllowMissing, F_THOLE_POL);
-        naniso = get_tdb_bonded(atoms, hb, &aniso, bAllowMissing, F_ANISO_POL);
-        npol = get_tdb_bonded(atoms, hb, &pol, bAllowMissing, F_POLARIZATION);
-        nvsites = get_tdb_bonded(atoms, hb, &vsites, bAllowMissing, F_VSITE3);
+        nthole = get_tdb_bonded(atoms, hb, &thole, F_THOLE_POL);
+        naniso = get_tdb_bonded(atoms, hb, &aniso, F_ANISO_POL);
+        npol = get_tdb_bonded(atoms, hb, &pol, F_POLARIZATION);
+        nvsites = get_tdb_bonded(atoms, hb, &vsites, F_VSITE3);
 
         cppar(thole, nthole, plist, F_THOLE_POL);
         cppar(aniso, naniso, plist, F_ANISO_POL);
