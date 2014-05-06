@@ -34,6 +34,7 @@
  */
 #include <string>
 #include <sstream>
+#include <stdio.h>
 #include <math.h>
 #include "stringutil.h"
 
