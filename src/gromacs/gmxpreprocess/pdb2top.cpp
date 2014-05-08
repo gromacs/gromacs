@@ -930,7 +930,7 @@ static int pcompar(const void *a, const void *b)
     }
 }
 
-static void clean_bonds(t_params *ps)
+static void clean_bonds(t_params *ps, int ftype)
 {
     int         i, j;
     atom_id     a;
@@ -966,12 +966,12 @@ static void clean_bonds(t_params *ps)
             }
         }
 
-        fprintf(stderr, "Number of bonds was %d, now %d\n", ps->nr, j);
+        fprintf(stderr, "Number of %s was %d, now %d\n",(ftype==F_BONDS)?"bonds":"tholes", ps->nr, j);
         ps->nr = j;
     }
     else
     {
-        fprintf(stderr, "No bonds\n");
+        fprintf(stderr, "No %s\n", (ftype==F_BONDS)?"bonds":"tholes");
     }
 }
 
@@ -1884,7 +1884,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     }
 
     /* Cleanup bonds (sort and rm doubles) */
-    clean_bonds(&(plist[F_BONDS]));
+    clean_bonds(&(plist[F_BONDS]), F_BONDS);
 
     snew(vsite_type, atoms->nr);
     for (i = 0; i < atoms->nr; i++)
@@ -1901,6 +1901,11 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
     /* Make Angles and Dihedrals */
     fprintf(stderr, "Generating angles, dihedrals and pairs...\n");
+    /* With Drude, we also set up Thole, anisotropy, etc. */
+    if (bDrude)
+    {
+        fprintf(stderr, "Generating polarization, lone pairs, and Thole screening...\n");
+    }
     snew(excls, atoms->nr);
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
@@ -1919,25 +1924,14 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         }
     }
 
-    /* Set up Thole screening, anisotropy, isotropic polarization, and lone pairs */
     if (bDrude)
     {
-        gen_thole(&(plist[F_THOLE_POL]), restp, atoms);
-        gen_aniso(&(plist[F_ANISO_POL]), restp, atoms);
-        gen_pol(&(plist[F_POLARIZATION]), restp, atoms);
-        gen_lonepairs(&(plist[F_VSITE3]), restp, atoms, F_VSITE3);
-
-        /* gen_lonepairs(&(plist[F_VSITE3FAD]), restp, atoms, F_VSITE3FAD); */
-        /* gen_lonepairs(&(plist[F_VSITE3OUT]), restp, atoms, F_VSITE3OUT); */
-
-        if (plist[F_VSITE3].nr > 0)
-        {
-            fprintf(stderr, "generated %d virtual sites from lone pairs.\n", plist[F_VSITE3].nr);
-        }
-        else
-        {
-            fprintf(stderr, "\n");
-        }
+        /* call clean_bonds() to sort and remove doubles within Thole */
+        /* Duplicates can happen when merging tdb and rtp, so since the
+         * tdb are read and stored first, their terminus-specific values
+         * will override what is stored in the rtp */
+        fprintf(stderr, "Cleaning up merged Thole factors...\n");
+        clean_bonds(&(plist[F_THOLE_POL]), F_THOLE_POL);
     }
 
     /* set mass of all remaining hydrogen atoms */

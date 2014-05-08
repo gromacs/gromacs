@@ -28,18 +28,34 @@
  HN
 [ thole_polarization ]
   ; ai    aj   a     alpha_i    alpha_j
-     N    CA   2.60  0.8950     1.0780
-     N   DCA   2.60  0.8950     1.0780
-    DN    CA   2.60  0.8950     1.0780
-    DN   DCA   2.60  0.8950     1.0780
-     N    CB   2.60  0.8950     2.0800
-     N   DCB   2.60  0.8950     2.0800
-    DN    CB   2.60  0.8950     2.0800
-    DN   DCB   2.60  0.8950     2.0800
-     N     C   2.60  0.8950     0.2950
-     N    DC   2.60  0.8950     0.2950
-    DN     C   2.60  0.8950     0.2950
-    DN    DC   2.60  0.8950     0.2950
+     N    CA   nterm_NH3_N_CA
+     N   DCA   nterm_NH3_N_CA
+    DN    CA   nterm_NH3_N_CA
+    DN   DCA   nterm_NH3_N_CA
+     N    CB   nterm_NH3_N_CB
+     N   DCB   nterm_NH3_N_CB
+    DN    CB   nterm_NH3_N_CB
+    DN   DCB   nterm_NH3_N_CB
+     N     C   nterm_NH3_N_C
+     N    DC   nterm_NH3_N_C
+    DN     C   nterm_NH3_N_C
+    DN    DC   nterm_NH3_N_C
+    CA    CB   nterm_NH3_CA_CB
+   DCA    CB   nterm_NH3_CA_CB
+    CA   DCB   nterm_NH3_CA_CB
+   DCA   DCB   nterm_NH3_CA_CB
+    CA     C   nterm_NH3_CA_C
+   DCA     C   nterm_NH3_CA_C
+    CA    DC   nterm_NH3_CA_C
+   DCA    DC   nterm_NH3_CA_C
+    CB     C   nterm_NH3_CB_C
+   DCB     C   nterm_NH3_CB_C
+    CB    DC   nterm_NH3_CB_C
+   DCB    DC   nterm_NH3_CB_C
+    CA     O   nterm_NH3_CA_O
+   DCA     O   nterm_NH3_CA_O
+    CA    DO   nterm_NH3_CA_O
+   DCA    DO   nterm_NH3_CA_O
 
 ; NH2 (neutral N-terminus) IS NOT YET AVAILABLE
 
@@ -60,34 +76,38 @@
  HN
 [ thole_polarization ]
   ; ai    aj   a     alpha_i    alpha_j
-     N    CA   2.60  0.8950     0.8950
-     N   DCA   2.60  0.8950     0.8950
-    DN    CA   2.60  0.8950     0.8950
-    DN   DCA   2.60  0.8950     0.8950
-     N    CB   2.60  0.8950     2.0800
-     N   DCB   2.60  0.8950     2.0800
-    DN    CB   2.60  0.8950     2.0800
-    DN   DCB   2.60  0.8950     2.0800
-     N     C   2.60  0.8950     0.2950
-     N    DC   2.60  0.8950     0.2950
-    DN     C   2.60  0.8950     0.2950
-    DN    DC   2.60  0.8950     0.2950
-    CA    CB   2.60  0.8950     2.0800
-    CA   DCB   2.60  0.8950     2.0800
-   DCA    CB   2.60  0.8950     2.0800
-   DCA   DCB   2.60  0.8950     2.0800
-    CA     C   2.60  0.8950     0.8990
-    CA    DC   2.60  0.8950     0.8990
-   DCA     C   2.60  0.8950     0.8990
-   DCA    DC   2.60  0.8950     0.8990
-    CA   OT1   2.60  0.8950     2.3990
-    CA  DOT1   2.60  0.8950     2.3990
-   DCA   OT1   2.60  0.8950     2.3990
-   DCA  DOT1   2.60  0.8950     2.3990
-    CA   OT2   2.60  0.8950     2.3990
-    CA  DOT2   2.60  0.8950     2.3990
-   DCA   OT2   2.60  0.8950     2.3990
-   DCA  DOT2   2.60  0.8950     2.3990
+     N    CA   nterm_NTES_N_CA
+     N   DCA   nterm_NTES_N_CA
+    DN    CA   nterm_NTES_N_CA
+    DN   DCA   nterm_NTES_N_CA
+     N    CB   nterm_NTES_N_CB
+     N   DCB   nterm_NTES_N_CB
+    DN    CB   nterm_NTES_N_CB
+    DN   DCB   nterm_NTES_N_CB
+     N     C   nterm_NTES_N_C
+     N    DC   nterm_NTES_N_C
+    DN     C   nterm_NTES_N_C
+    DN    DC   nterm_NTES_N_C
+    CA    CB   nterm_NTES_CA_CB
+    CA   DCB   nterm_NTES_CA_CB
+   DCA    CB   nterm_NTES_CA_CB
+   DCA   DCB   nterm_NTES_CA_CB
+    CA     C   nterm_NTES_CA_C
+    CA    DC   nterm_NTES_CA_C
+   DCA     C   nterm_NTES_CA_C
+   DCA    DC   nterm_NTES_CA_C
+    CA   OT1   nterm_NTES_CA_OT
+    CA  DOT1   nterm_NTES_CA_OT
+   DCA   OT1   nterm_NTES_CA_OT
+   DCA  DOT1   nterm_NTES_CA_OT
+    CA   OT2   nterm_NTES_CA_OT
+    CA  DOT2   nterm_NTES_CA_OT
+   DCA   OT2   nterm_NTES_CA_OT
+   DCA  DOT2   nterm_NTES_CA_OT
+    CB     C   nterm_NTES_CB_C
+   DCB     C   nterm_NTES_CB_C
+    CB    DC   nterm_NTES_CB_C
+   DCB    DC   nterm_NTES_CB_C
 
 ; Gly N-terminus, charged, in polypeptide
 ; CHARMM name: GNTE (formerly GLYP)
@@ -114,22 +134,26 @@
  HN
 [ thole_polarization ]
   ; ai    aj   a     alpha_i    alpha_j
-     N    CA   2.60  0.8950     0.8950
-     N   DCA   2.60  0.8950     0.8950
-    DN    CA   2.60  0.8950     0.8950
-    DN   DCA   2.60  0.8950     0.8950
-     N     C   2.60  0.8950     0.2950
-     N    DC   2.60  0.8950     0.2950
-    DN     C   2.60  0.8950     0.2950
-    DN    DC   2.60  0.8950     0.2950
-    CA     C   2.60  0.8950     0.2950
-    CA    DC   2.60  0.8950     0.2950
-   DCA     C   2.60  0.8950     0.2950
-   DCA    DC   2.60  0.8950     0.2950
-    CA     O   2.60  0.8950     0.3100
-    CA    DO   2.60  0.8950     0.3100
-   DCA     O   2.60  0.8950     0.3100
-   DCA    DO   2.60  0.8950     0.3100
+     N    CA   nterm_GLY_NH3_N_CA
+     N   DCA   nterm_GLY_NH3_N_CA
+    DN    CA   nterm_GLY_NH3_N_CA
+    DN   DCA   nterm_GLY_NH3_N_CA
+     N     C   nterm_GLY_NH3_N_C
+     N    DC   nterm_GLY_NH3_N_C
+    DN     C   nterm_GLY_NH3_N_C
+    DN    DC   nterm_GLY_NH3_N_C
+    CA     C   nterm_GLY_NH3_CA_C
+    CA    DC   nterm_GLY_NH3_CA_C
+   DCA     C   nterm_GLY_NH3_CA_C
+   DCA    DC   nterm_GLY_NH3_CA_C
+     C     O   nterm_GLY_NH3_C_O
+    DC     O   nterm_GLY_NH3_C_O
+     C    DO   nterm_GLY_NH3_C_O
+    DC    DO   nterm_GLY_NH3_C_O
+    CA     O   nterm_GLY_NH3_CA_O
+    CA    DO   nterm_GLY_NH3_CA_O
+   DCA     O   nterm_GLY_NH3_CA_O
+   DCA    DO   nterm_GLY_NH3_CA_O
 
 ; charged Gly N-terminus of single amino acid
 [ GNTS ]
@@ -150,22 +174,26 @@
 ; TODO: CHECK THIS - experimental
 [ thole_polarization ]
   ; ai    aj   a     alpha_i    alpha_j
-     N    CA   2.60  0.8950     0.8950
-     N   DCA   2.60  0.8950     0.8950
-    DN    CA   2.60  0.8950     0.8950
-    DN   DCA   2.60  0.8950     0.8950
-     N     C   2.60  0.8950     0.2950
-     N    DC   2.60  0.8950     0.2950
-    DN     C   2.60  0.8950     0.2950
-    DN    DC   2.60  0.8950     0.2950
-    CA     C   2.60  0.8950     0.2950
-    CA    DC   2.60  0.8950     0.2950
-   DCA     C   2.60  0.8950     0.2950
-   DCA    DC   2.60  0.8950     0.2950
-    CA     O   2.60  0.8950     0.3100
-    CA    DO   2.60  0.8950     0.3100
-   DCA     O   2.60  0.8950     0.3100
-   DCA    DO   2.60  0.8950     0.3100
+     N    CA   nterm_GNTS_N_CA
+     N   DCA   nterm_GNTS_N_CA
+    DN    CA   nterm_GNTS_N_CA
+    DN   DCA   nterm_GNTS_N_CA
+     N     C   nterm_GNTS_N_C
+     N    DC   nterm_GNTS_N_C
+    DN     C   nterm_GNTS_N_C
+    DN    DC   nterm_GNTS_N_C
+    CA     C   nterm_GNTS_CA_C
+    CA    DC   nterm_GNTS_CA_C
+   DCA     C   nterm_GNTS_CA_C
+   DCA    DC   nterm_GNTS_CA_C
+     C     O   nterm_GNTS_C_O
+    DC     O   nterm_GNTS_C_O
+     C    DO   nterm_GNTS_C_O
+    DC    DO   nterm_GNTS_C_O
+    CA     O   nterm_GNTS_CA_O
+    CA    DO   nterm_GNTS_CA_O
+   DCA     O   nterm_GNTS_CA_O
+   DCA    DO   nterm_GNTS_CA_O
 
 ; Pro N-terminus, charged, in polypeptide
 ; CHARMM name: PROP

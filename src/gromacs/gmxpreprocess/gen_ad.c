@@ -657,7 +657,6 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, int fty
 
     char       *a0;
     const char *ptr;
-    int         n;      /* return value - number of interactions found */
     int         nbonded, i, j, k, r, start, ninc, nalloc;
     int         btype;
     int         natoms;
@@ -669,7 +668,6 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, int fty
     nalloc = ninc;
     snew(*p, nalloc);
 
-    n = 0;
     nbonded = 0;
     start = 0;
 
@@ -751,7 +749,7 @@ static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, int fty
         }
     }
 
-    return(n);
+    return(nbonded);
 }
 
 static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
@@ -1348,10 +1346,21 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     if (bDrude)
     {
         /* call a generalized routine here to get bondeds from hackblocks */
+        fprintf(stderr, "Generating Thole pairs...");
         nthole = get_tdb_bonded(atoms, hb, &thole, F_THOLE_POL);
+        fprintf(stderr, "wrote %d pairs.\n", nthole);
+
+        fprintf(stderr, "Generating anisotropic polarization...");
         naniso = get_tdb_bonded(atoms, hb, &aniso, F_ANISO_POL);
+        fprintf(stderr, "wrote %d entries.\n", naniso);
+        
+        fprintf(stderr, "Generating isotropic polarization...");
         npol = get_tdb_bonded(atoms, hb, &pol, F_POLARIZATION);
+        fprintf(stderr, "wrote %d entries.\n", npol);
+
+        fprintf(stderr, "Generating virtual sites from lone pairs...");
         nvsites = get_tdb_bonded(atoms, hb, &vsites, F_VSITE3);
+        fprintf(stderr, "wrote %d virtual sites.\n", nvsites);
 
         cppar(thole, nthole, plist, F_THOLE_POL);
         cppar(aniso, naniso, plist, F_ANISO_POL);
