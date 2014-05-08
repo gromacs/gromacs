@@ -524,7 +524,6 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
                         size = sizeof(double);
                         break;
                     default:
-                        size = 0; /* Just to make the compiler happy. */
                         gmx_incons("Illegal datatype of box shape values!");
                 }
                 for (int i = 0; i < DIM; i++)
