@@ -277,13 +277,15 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         {
             for (j = i+1; j < re->nrepl; j++)
             {
-                if (re->q[re->type][re->ind[j]] < re->q[re->type][re->ind[i]])
+                real qi = re->q[re->type][re->ind[i]];
+                real qj = re->q[re->type][re->ind[j]];
+                if (qj < qi)
                 {
                     k          = re->ind[i];
                     re->ind[i] = re->ind[j];
                     re->ind[j] = k;
                 }
-                else if (re->q[re->type][re->ind[j]] == re->q[re->type][re->ind[i]])
+                else if (qj == qi)
                 {
                     gmx_fatal(FARGS, "Two replicas have identical %ss", erename[re->type]);
                 }

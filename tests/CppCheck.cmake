@@ -87,7 +87,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=sizeofCalculation
         --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
         --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
-        --suppress=assignIfError:src/gromacs/mdlib/nbnxn_atomdata.c #Ticket 5695
+#        --suppress=assignIfError:src/gromacs/mdlib/nbnxn_atomdata.c #Ticket 5695
         --suppress=invalidPointerCast:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
         --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
         --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh
