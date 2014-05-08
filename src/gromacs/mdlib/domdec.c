@@ -452,8 +452,14 @@ static const ivec dd_zp1[dd_zp1n] = {{0, 0, 2}};
 /* Factor to account for pressure scaling during nstlist steps */
 #define DD_PRES_SCALE_MARGIN 1.02
 
-/* Allowed performance loss before we DLB or warn */
-#define DD_PERF_LOSS 0.05
+/* Turn on DLB when the load imbalance causes this amount of total loss.
+ * There is a bit of overhead with DLB and it's difficult to achieve
+ * a load imbalance of less than 2% with DLB.
+ */
+#define DD_PERF_LOSS_DLB_ON  0.02
+
+/* Warn about imbalance due to PP or PP/PME load imbalance at this loss */
+#define DD_PERF_LOSS_WARN    0.05
 
 #define DD_CELL_F_SIZE(dd, di) ((dd)->nc[(dd)->dim[(di)]]+1+(di)*2+1+(di))
 
@@ -5478,7 +5484,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         fprintf(fplog, "\n");
         fprintf(stderr, "\n");
 
-        if (lossf >= DD_PERF_LOSS)
+        if (lossf >= DD_PERF_LOSS_WARN)
         {
             sprintf(buf,
                     "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
@@ -5494,7 +5500,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
             fprintf(fplog, "%s\n", buf);
             fprintf(stderr, "%s\n", buf);
         }
-        if (npme > 0 && fabs(lossp) >= DD_PERF_LOSS)
+        if (npme > 0 && fabs(lossp) >= DD_PERF_LOSS_WARN)
         {
             sprintf(buf,
                     "NOTE: %.1f %% performance was lost because the PME nodes\n"
@@ -9380,7 +9386,7 @@ void dd_partition_system(FILE                *fplog,
                 if (DDMASTER(dd))
                 {
                     bTurnOnDLB =
-                        (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS);
+                        (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS_DLB_ON);
                     if (debug)
                     {
                         fprintf(debug, "step %s, imb loss %f\n",

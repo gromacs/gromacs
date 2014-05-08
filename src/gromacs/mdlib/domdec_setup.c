@@ -719,7 +719,7 @@ real dd_choose_grid(FILE *fplog,
             cr->npmenodes = 0;
         }
 
-        if (cr->nnodes > 12)
+        if (nnodes_div > 12)
         {
             ldiv = largest_divisor(nnodes_div);
             /* Check if the largest divisor is more than nnodes^2/3 */
