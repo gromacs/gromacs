@@ -207,7 +207,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
             for (i = 0; i < il->nr; i += 1+NRAL(ft))
             {
                 const t_iparams *ip;
-                real             cam[5], inv_mass, m_aj;
+                real             cam[5] = {0}, inv_mass, m_aj;
                 int              a1, j, aj, coeff;
 
                 ip = &ffparams->iparams[il->iatoms[i]];
