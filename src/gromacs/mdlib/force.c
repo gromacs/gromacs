@@ -449,11 +449,19 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
     where();
 
     *cycles_pme = 0;
+    clear_mat(fr->vir_el_recip);
+    clear_mat(fr->vir_lj_recip);
+
+    /* Do long-range electrostatics and/or LJ-PME, including related short-range
+     * corrections.
+     */
     if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
-        real Vlr             = 0, Vcorr = 0;
-        real dvdl_long_range = 0;
-        int  status          = 0;
+        real Vlr               = 0, Vcorr = 0;
+        real dvdl_long_range   = 0;
+        int  status            = 0;
+        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
+        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
 
         bSB = (ir->nwall == 2);
         if (bSB)
@@ -462,20 +470,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
             svmul(ir->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
             box_size[ZZ] *= ir->wall_ewald_zfac;
         }
-    }
-
-    /* Do long-range electrostatics and/or LJ-PME, including related short-range
-     * corrections.
-     */
-
-    clear_mat(fr->vir_el_recip);
-    clear_mat(fr->vir_lj_recip);
-
-    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
-    {
-        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
-        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
-        int  status            = 0;
 
         if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
         {
@@ -581,11 +575,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
             PRINT_SEPDVDL("Ewald excl. corr. LJ", Vcorr_lj, dvdl_long_range_correction_lj);
             enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction_q;
             enerd->dvdl_lin[efptVDW]  += dvdl_long_range_correction_lj;
-        }
 
-        if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)))
-        {
-            if (cr->duty & DUTY_PME)
+            if ((EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)) && (cr->duty & DUTY_PME))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
