@@ -68,8 +68,8 @@ extern "C" {
  * code generation.
  */
 #ifndef GMX_ATTRIBUTE_NORETURN
-#if __has_feature(attribute_analyzer_noreturn)
-#define GMX_ATTRIBUTE_NORETURN __attribute__((analyzer_noreturn))
+#if defined(__GNUC__) || __has_feature(attribute_analyzer_noreturn)
+#define GMX_ATTRIBUTE_NORETURN __attribute__((noreturn))
 #else
 #define GMX_ATTRIBUTE_NORETURN
 #endif
