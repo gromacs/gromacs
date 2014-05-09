@@ -502,6 +502,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         gmx::Options               options(NULL, NULL);
         gmx::FileNameOptionManager fileOptManager;
 
+        options.addManager(&fileOptManager);
         options.setDescription(gmx::ConstArrayRef<const char *>(desc, ndesc));
         options.addOption(
                 gmx::IntegerOption("debug").store(&debug_level).hidden()
@@ -571,8 +572,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         {
             adapter.pargsToOptions(&options, &pa[i]);
         }
-
-        setManagerForFileNameOptions(&options, &fileOptManager);
 
         const gmx::CommandLineHelpContext *context =
             gmx::GlobalCommandLineHelpContext::get();
