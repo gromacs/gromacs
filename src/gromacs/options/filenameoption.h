@@ -165,7 +165,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         using MyBase::defaultValueIfSet;
 
         //! Creates a FileNameOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage() const;
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const;
 
         OptionFileType          filetype_;
         int                     legacyType_;
@@ -197,21 +198,6 @@ class FileNameOptionInfo : public OptionInfo
         //! Creates an option info object for the given option.
         explicit FileNameOptionInfo(FileNameOptionStorage *option);
 
-        /*! \brief
-         * Set manager for handling interaction with other options.
-         *
-         * \param   manager  File name option manager to set.
-         *
-         * This must be called before the values are added.
-         *
-         * Typically it is called through setManagerForFileNameOptions(),
-         * which recursively sets the manager for all file name options in
-         * an Options object.
-         *
-         * Does not throw.
-         */
-        void setManager(FileNameOptionManager *manager);
-
         //! Whether the option specifies an input file.
         bool isInputFile() const;
         //! Whether the option specifies an output file.
@@ -231,7 +217,6 @@ class FileNameOptionInfo : public OptionInfo
         ExtensionList extensions() const;
 
     private:
-        FileNameOptionStorage &option();
         const FileNameOptionStorage &option() const;
 };
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "abstractoption.h"
+#include "optionmanagercontainer.h"
 #include "options.h"
 
 namespace gmx
@@ -107,6 +108,12 @@ class Options::Impl
         std::string             title_;
         //! Full description for the Options object.
         std::string             description_;
+        /*! \brief
+         * Option managers set for this collection.
+         *
+         * This is non-empty only for the top-level Options object.
+         */
+        OptionManagerContainer  managers_;
         /*! \brief
          * List of subsections, in insertion order.
          *
