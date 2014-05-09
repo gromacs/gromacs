@@ -846,8 +846,12 @@ static int split_chain(t_atoms *atoms, rvec *x,
                 {
                     rvec_sub(x[ca_end], x[i], vec);
                 }
+                else
+                {
+                    break;
+                }
             }
-            while ((i < natoms) && (norm(vec) < 0.45));
+            while (norm(vec) < 0.45);
 
             end[nchain] = ca_end;
             while ((end[nchain]+1 < natoms) &&

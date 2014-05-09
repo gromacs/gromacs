@@ -377,7 +377,7 @@ void do_nonbonded(t_forcerec *fr,
                 nlist = nblists->nlist_sr;
                 f                                   = f_shortrange;
             }
-            else if (range == 1)
+            else
             {
                 /* Long-range */
                 if (!(flags & GMX_NONBONDED_DO_LR))
