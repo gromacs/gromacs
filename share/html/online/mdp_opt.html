@@ -403,7 +403,7 @@ the neighbor list is made only once.
 With energy minimization the neighborlist will be updated for every
 energy evaluation when <b>nstlist</b><tt>&gt;0</tt>.
 With <b>cutoff-scheme=Verlet</b> and <b>verlet-buffer-tolerance</b> set,
-<b>nstlist</b> is actually a minimum value and <tt>mdrun</tt> might increase it.
+<b>nstlist</b> is actually a minimum value and <tt>mdrun</tt> might increase it, unless it is set to 1.
 With parallel simulations and/or non-bonded force calculation on the GPU,
 a value of 20 or 40 often gives the best performance.
 With <b>cutoff-scheme=Group</b> and non-exact cut-off's, <b>nstlist</b> will
