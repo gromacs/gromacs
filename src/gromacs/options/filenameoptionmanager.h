@@ -45,6 +45,8 @@
 
 #include <string>
 
+#include "options.h"
+
 #include "../utility/common.h"
 
 namespace gmx
@@ -64,20 +66,20 @@ class Options;
  * most of the non-trivial file name completion logic in this class, so that
  * the customizations would be centralized here.
  *
- * Creating a FileNameOptionManager for an Options object is optional, even if
+ * Adding a FileNameOptionManager for an Options object is optional, even if
  * the Options contains FileNameOption options.  Features from the manager are
  * not available if the manager is not created, but otherwise the options work.
  *
- * \see setManagerForFileNameOptions()
+ * \see Options::addManager()
  *
  * \inpublicapi
  * \ingroup module_selection
  */
-class FileNameOptionManager
+class FileNameOptionManager : public OptionManagerInterface
 {
     public:
         FileNameOptionManager();
-        ~FileNameOptionManager();
+        virtual ~FileNameOptionManager();
 
         /*! \brief
          * Adds an option for setting the default global file name.
@@ -101,20 +103,6 @@ class FileNameOptionManager
 
         PrivateImplPointer<Impl> impl_;
 };
-
-/*! \brief
- * Set manager for all file name options.
- *
- * Recursively sets the manager to \p manager for all file name options in
- * \p options.
- * Must be called before value assignment starts for \p options.
- *
- * Does not throw.
- *
- * \inpublicapi
- */
-void setManagerForFileNameOptions(Options               *options,
-                                  FileNameOptionManager *manager);
 
 } // namespace gmx
 

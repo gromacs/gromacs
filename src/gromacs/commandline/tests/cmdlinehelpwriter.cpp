@@ -224,15 +224,15 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
     using gmx::SelectionFileOption;
     using gmx::SelectionOption;
 
-    gmx::Options options(NULL, NULL);
+    gmx::Options                options(NULL, NULL);
+    gmx::SelectionCollection    selections;
+    gmx::SelectionOptionManager manager(&selections);
+    options.addManager(&manager);
     options.addOption(SelectionFileOption("sf"));
     options.addOption(SelectionOption("refsel").required()
                           .description("Reference selection option"));
     options.addOption(SelectionOption("sel").required().valueCount(2)
                           .description("Selection option"));
-    gmx::SelectionCollection    selections;
-    gmx::SelectionOptionManager manager(&selections);
-    setManagerForSelectionOptions(&options, &manager);
     options.finish();
     manager.parseRequestedFromString(
             "resname SOL;"

@@ -138,7 +138,8 @@ bool BooleanOptionInfo::defaultValue() const
  * BooleanOption
  */
 
-AbstractOptionStoragePointer BooleanOption::createStorage() const
+AbstractOptionStoragePointer
+BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new BooleanOptionStorage(*this));
 }
@@ -195,7 +196,8 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
  * IntegerOption
  */
 
-AbstractOptionStoragePointer IntegerOption::createStorage() const
+AbstractOptionStoragePointer
+IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new IntegerOptionStorage(*this));
 }
@@ -242,7 +244,8 @@ Int64OptionInfo::Int64OptionInfo(Int64OptionStorage *option)
  * Int64Option
  */
 
-AbstractOptionStoragePointer Int64Option::createStorage() const
+AbstractOptionStoragePointer
+Int64Option::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new Int64OptionStorage(*this));
 }
@@ -343,7 +346,8 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStoragePointer DoubleOption::createStorage() const
+AbstractOptionStoragePointer
+DoubleOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new DoubleOptionStorage(*this));
 }
@@ -446,7 +450,8 @@ void FloatOptionInfo::setScaleFactor(double factor)
  * FloatOption
  */
 
-AbstractOptionStoragePointer FloatOption::createStorage() const
+AbstractOptionStoragePointer
+FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new FloatOptionStorage(*this));
 }
@@ -631,7 +636,8 @@ const std::vector<std::string> &StringOptionInfo::allowedValues() const
  * StringOption
  */
 
-AbstractOptionStoragePointer StringOption::createStorage() const
+AbstractOptionStoragePointer
+StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return AbstractOptionStoragePointer(new StringOptionStorage(*this));
 }

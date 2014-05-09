@@ -55,6 +55,14 @@ namespace gmx
 {
 
 /********************************************************************
+ * OptionManagerInterface
+ */
+
+OptionManagerInterface::~OptionManagerInterface()
+{
+}
+
+/********************************************************************
  * Options::Impl
  */
 
@@ -148,8 +156,28 @@ void Options::setDescription(const ConstArrayRef<const char *> &descArray)
     impl_->description_ = concatenateStrings(descArray.data(), descArray.size());
 }
 
+void Options::addManager(OptionManagerInterface *manager)
+{
+    GMX_RELEASE_ASSERT(impl_->parent_ == NULL,
+                       "Can only add a manager in a top-level Options object");
+    // This ensures that all options see the same set of managers.
+    GMX_RELEASE_ASSERT(impl_->options_.empty(),
+                       "Can only add a manager before options");
+    // This check could be relaxed if we instead checked that the subsections
+    // do not have options.
+    GMX_RELEASE_ASSERT(impl_->subSections_.empty(),
+                       "Can only add a manager before subsections");
+    impl_->managers_.add(manager);
+}
+
 void Options::addSubSection(Options *section)
 {
+    // This is required, because managers are used from the root Options
+    // object, so they are only seen after the subsection has been added.
+    GMX_RELEASE_ASSERT(section->impl_->options_.empty(),
+                       "Can only add a subsection before it has any options");
+    GMX_RELEASE_ASSERT(section->impl_->managers_.empty(),
+                       "Can only have managers in a top-level Options object");
     // Make sure that section is not already inserted somewhere.
     GMX_RELEASE_ASSERT(section->impl_->parent_ == NULL,
                        "Cannot add as subsection twice");
@@ -162,7 +190,12 @@ void Options::addSubSection(Options *section)
 
 OptionInfo *Options::addOption(const AbstractOption &settings)
 {
-    AbstractOptionStoragePointer option(settings.createStorage());
+    Options::Impl *root = impl_.get();
+    while (root->parent_ != NULL)
+    {
+        root = root->parent_->impl_.get();
+    }
+    AbstractOptionStoragePointer option(settings.createStorage(root->managers_));
     if (impl_->findOption(option->name().c_str()) != NULL)
     {
         GMX_THROW(APIError("Duplicate option: " + option->name()));

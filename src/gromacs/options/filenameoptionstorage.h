@@ -60,16 +60,19 @@ class FileNameOptionManager;
 class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 {
     public:
-        //! \copydoc StringOptionStorage::StringOptionStorage()
-        explicit FileNameOptionStorage(const FileNameOption &settings);
+        /*! \brief
+         * Initializes the storage from option settings.
+         *
+         * \param[in] settings   Storage settings.
+         * \param     manager    Manager for this object (can be NULL).
+         */
+        FileNameOptionStorage(const FileNameOption  &settings,
+                              FileNameOptionManager *manager);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const;
         virtual std::string formatExtraDescription() const;
         virtual std::string formatSingleValue(const std::string &value) const;
-
-        //! \copydoc FileNameOptionInfo::setManager()
-        void setManager(FileNameOptionManager *manager);
 
         //! \copydoc FileNameOptionInfo::isInputFile()
         bool isInputFile() const { return bRead_ && !bWrite_; }
