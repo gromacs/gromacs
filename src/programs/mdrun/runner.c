@@ -523,6 +523,14 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 
     if (nstlist_cmdline <= 0)
     {
+        if (ir->nstlist == 1)
+        {
+            /* The user probably set nstlist=1 for a reason,
+             * don't mess with the settings.
+             */
+            return;
+        }
+
         if (fp != NULL && bGPU && ir->nstlist < nstlist_try[0])
         {
             fprintf(fp, nstl_gpu, ir->nstlist);
