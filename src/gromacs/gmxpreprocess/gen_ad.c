@@ -506,14 +506,14 @@ static void clean_pairs(t_param *pai, int *npai, t_atoms *atoms)
     index[nind] = *npai;
 
     /* loop over angles and remove any we don't want to keep,
-     * i.e. those with a Drude or LP at atom ai or ak */
+     * i.e. those with a Drude or LP at atom ai or aj */
     j = 0;
     for (i = 0; i < nind; i++)
     {
         gmx_bool    bKeep = TRUE;
 
-        if (is_d(atoms, pai[index[i]].AI) || is_d(atoms, pai[index[i]].AL) ||
-            is_lp(atoms, pai[index[i]].AI) || is_lp(atoms, pai[index[i]].AL))
+        if (is_d(atoms, pai[index[i]].AI) || is_d(atoms, pai[index[i]].AJ) ||
+            is_lp(atoms, pai[index[i]].AI) || is_lp(atoms, pai[index[i]].AJ))
         {
             bKeep = FALSE;
         }
