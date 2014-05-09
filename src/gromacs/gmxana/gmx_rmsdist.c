@@ -324,7 +324,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                     if (bEquiv)
                     {
                         /* set index for matching atom */
-                        noe_index[j] = groupnr;
+                        noe_index[i] = groupnr;
                         /* skip matching atom */
                         i = j;
                     }
@@ -342,7 +342,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                    This is supposed to cover all CH3 groups and the like */
                 anmi   = *atoms->atomname[index[i]];
                 anmil  = strlen(anmi);
-                bMatch = i < isize-3 && anmi[anmil-1] == '1';
+                bMatch = i <= isize-3 && anmi[anmil-1] == '1';
                 if (bMatch)
                 {
                     for (j = 1; j < 3; j++)
@@ -645,7 +645,7 @@ int gmx_rmsdist(int argc, char *argv[])
         "equivalent atoms can be supplied ([TT]-equiv[tt]), each line containing",
         "a set of equivalent atoms specified as residue number and name and",
         "atom name; e.g.:[PAR]",
-        "[TT]3 SER  HB1 3 SER  HB2[tt][PAR]",
+        "[TT]HB* 3 SER  HB1 3 SER  HB2[tt][PAR]",
         "Residue and atom names must exactly match those in the structure",
         "file, including case. Specifying non-sequential atoms is undefined."
 
@@ -786,7 +786,8 @@ int gmx_rmsdist(int argc, char *argv[])
     }
 
     /*do a first step*/
-    natom = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natom  = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    teller = 0;
 
     do
     {
@@ -794,13 +795,12 @@ int gmx_rmsdist(int argc, char *argv[])
 
         rmsnow = rms_diff(isize, d, d_r);
         fprintf(fp, "%g  %g\n", t, rmsnow);
+        teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     gmx_ffclose(fp);
-
-    teller = nframes_read(status);
 
     close_trj(status);
 
