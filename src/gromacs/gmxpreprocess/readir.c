@@ -235,7 +235,10 @@ static void process_interaction_modifier(const t_inputrec *ir, int *eintmod)
 
 void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi)
-/* Check internal consistency */
+/* Check internal consistency.
+ * NOTE: index groups are not set here yet, don't check things
+ * like temperature coupling group options here, but in triple_check
+ */
 {
     /* Strange macro: first one fills the err_buf, and then one can check
      * the condition, which will print the message and increase the error
@@ -955,14 +958,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "%s temperature control not supported for integrator %s.", etcoupl_names[ir->etc], ei_names[ir->eI]);
         CHECK(!(EI_VV(ir->eI)));
 
-        for (i = 0; i < ir->opts.ngtc; i++)
-        {
-            sprintf(err_buf, "all tau_t must currently be equal using Andersen temperature control, violated for group %d", i);
-            CHECK(ir->opts.tau_t[0] != ir->opts.tau_t[i]);
-            sprintf(err_buf, "all tau_t must be postive using Andersen temperature control, tau_t[%d]=%10.6f",
-                    i, ir->opts.tau_t[i]);
-            CHECK(ir->opts.tau_t[i] < 0);
-        }
         if (ir->nstcomm > 0 && (ir->etc == etcANDERSEN))
         {
             sprintf(warn_buf, "Center of mass removal not necessary for %s.  All velocities of coupled groups are rerandomized periodically, so flying ice cube errors will not occur.", etcoupl_names[ir->etc]);
@@ -971,14 +966,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         sprintf(err_buf, "nstcomm must be 1, not %d for %s, as velocities of atoms in coupled groups are randomized every time step", ir->nstcomm, etcoupl_names[ir->etc]);
         CHECK(ir->nstcomm > 1 && (ir->etc == etcANDERSEN));
-
-        for (i = 0; i < ir->opts.ngtc; i++)
-        {
-            int nsteps = (int)(ir->opts.tau_t[i]/ir->delta_t);
-            sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
-            CHECK((nsteps % ir->nstcomm) && (ir->etc == etcANDERSENMASSIVE));
-        }
     }
+
     if (ir->etc == etcBERENDSEN)
     {
         sprintf(warn_buf, "The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",
@@ -3950,7 +3939,7 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
 void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
-    char                      err_buf[256];
+    char                      err_buf[STRLEN];
     int                       i, m, c, nmol, npct;
     gmx_bool                  bCharge, bAcc;
     real                      gdt_max, *mgrp, mt;
@@ -3962,6 +3951,71 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     char                      warn_buf[STRLEN];
 
     set_warning_line(wi, mdparin, -1);
+
+    if (ir->cutoff_scheme == ecutsVERLET &&
+        ir->verletbuf_tol > 0 &&
+        ir->nstlist > 1 &&
+        ((EI_MD(ir->eI) || EI_SD(ir->eI)) &&
+         (ir->etc == etcVRESCALE || ir->etc == etcBERENDSEN)))
+    {
+        /* Check if a too small Verlet buffer might potentially
+         * cause more drift than the thermostat can couple off.
+         */
+        /* Temperature error fraction for warning and suggestion */
+        const real T_error_warn    = 0.002;
+        const real T_error_suggest = 0.001;
+        /* For safety: 2 DOF per atom (typical with constraints) */
+        const real nrdf_at         = 2;
+        real       T, tau, max_T_error;
+        int        i;
+
+        T   = 0;
+        tau = 0;
+        for (i = 0; i < ir->opts.ngtc; i++)
+        {
+            T   = max(T, ir->opts.ref_t[i]);
+            tau = max(tau, ir->opts.tau_t[i]);
+        }
+        if (T > 0)
+        {
+            /* This is a worst case estimate of the temperature error,
+             * assuming perfect buffer estimation and no cancelation
+             * of errors. The factor 0.5 is because energy distributes
+             * equally over Ekin and Epot.
+             */
+            max_T_error = 0.5*tau*ir->verletbuf_tol/(nrdf_at*BOLTZ*T);
+            if (max_T_error > T_error_warn)
+            {
+                sprintf(warn_buf, "With a verlet-buffer-tolerance of %g kJ/mol/ps, a reference temperature of %g and a tau_t of %g, your temperature might be off by up to %.1f%%. To ensure the error is below %.1f%%, decrease verlet-buffer-tolerance to %.0e or decrease tau_t.",
+                        ir->verletbuf_tol, T, tau,
+                        100*max_T_error,
+                        100*T_error_suggest,
+                        ir->verletbuf_tol*T_error_suggest/max_T_error);
+                warning(wi, warn_buf);
+            }
+        }
+    }
+
+    if (ETC_ANDERSEN(ir->etc))
+    {
+        int i;
+
+        for (i = 0; i < ir->opts.ngtc; i++)
+        {
+            sprintf(err_buf, "all tau_t must currently be equal using Andersen temperature control, violated for group %d", i);
+            CHECK(ir->opts.tau_t[0] != ir->opts.tau_t[i]);
+            sprintf(err_buf, "all tau_t must be postive using Andersen temperature control, tau_t[%d]=%10.6f",
+                    i, ir->opts.tau_t[i]);
+            CHECK(ir->opts.tau_t[i] < 0);
+        }
+
+        for (i = 0; i < ir->opts.ngtc; i++)
+        {
+            int nsteps = (int)(ir->opts.tau_t[i]/ir->delta_t);
+            sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
+            CHECK((nsteps % ir->nstcomm) && (ir->etc == etcANDERSENMASSIVE));
+        }
+    }
 
     if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != eiBD &&
         ir->comm_mode == ecmNO &&
