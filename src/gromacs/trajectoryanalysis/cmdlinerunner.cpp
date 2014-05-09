@@ -108,20 +108,20 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         SelectionCollection *selections,
         int *argc, char *argv[])
 {
-    Options options(NULL, NULL);
-    Options moduleOptions(module_->name(), module_->description());
-    Options commonOptions("common", "Common analysis control");
-    Options selectionOptions("selection", "Common selection control");
-    module_->initOptions(&moduleOptions, settings);
-    common->initOptions(&commonOptions);
-    selections->initOptions(&selectionOptions);
+    SelectionOptionManager seloptManager(selections);
+    Options                options(NULL, NULL);
+    Options                moduleOptions(module_->name(), module_->description());
+    Options                commonOptions("common", "Common analysis control");
+    Options                selectionOptions("selection", "Common selection control");
 
+    options.addManager(&seloptManager);
     options.addSubSection(&commonOptions);
     options.addSubSection(&selectionOptions);
     options.addSubSection(&moduleOptions);
 
-    SelectionOptionManager seloptManager(selections);
-    setManagerForSelectionOptions(&options, &seloptManager);
+    module_->initOptions(&moduleOptions, settings);
+    common->initOptions(&commonOptions);
+    selections->initOptions(&selectionOptions);
 
     {
         CommandLineParser  parser(&options);
@@ -254,21 +254,20 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
     TrajectoryAnalysisSettings      settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
-    Options options(NULL, NULL);
-    Options moduleOptions(impl_->module_->name(), impl_->module_->description());
-    Options commonOptions("common", "Common analysis control");
-    Options selectionOptions("selection", "Common selection control");
+    SelectionOptionManager          seloptManager(&selections);
+    Options                         options(NULL, NULL);
+    Options                         moduleOptions(impl_->module_->name(), impl_->module_->description());
+    Options                         commonOptions("common", "Common analysis control");
+    Options                         selectionOptions("selection", "Common selection control");
 
-    impl_->module_->initOptions(&moduleOptions, &settings);
-    common.initOptions(&commonOptions);
-    selections.initOptions(&selectionOptions);
-
+    options.addManager(&seloptManager);
     options.addSubSection(&commonOptions);
     options.addSubSection(&selectionOptions);
     options.addSubSection(&moduleOptions);
 
-    SelectionOptionManager seloptManager(&selections);
-    setManagerForSelectionOptions(&options, &seloptManager);
+    impl_->module_->initOptions(&moduleOptions, &settings);
+    common.initOptions(&commonOptions);
+    selections.initOptions(&selectionOptions);
 
     CommandLineHelpWriter(options)
         .setShowDescriptions(true)

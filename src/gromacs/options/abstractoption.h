@@ -67,6 +67,7 @@ namespace gmx
 
 class AbstractOptionStorage;
 template <typename T> class OptionStorageTemplate;
+class OptionManagerContainer;
 class Options;
 
 //! Smart pointer for managing an AbstractOptionStorage object.
@@ -108,8 +109,10 @@ class AbstractOption
         /*! \brief
          * Creates a default storage object for the option.
          *
-         * \returns The created storage object.
-         * \throws  APIError if invalid option settings have been provided.
+         * \param[in] managers  Manager container (unused if the option does
+         *     not use a manager).
+         * \returns   The created storage object.
+         * \throws    APIError if invalid option settings have been provided.
          *
          * This method is called by Options::addOption() when initializing an
          * option from the settings.
@@ -120,7 +123,8 @@ class AbstractOption
          *
          * Should only be called by Options::addOption().
          */
-        virtual AbstractOptionStoragePointer createStorage() const = 0;
+        virtual AbstractOptionStoragePointer createStorage(
+            const OptionManagerContainer &managers) const = 0;
 
         //! Sets the description for the option.
         void setDescription(const char *descr) { descr_ = descr; }
