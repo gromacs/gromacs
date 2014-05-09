@@ -5151,10 +5151,10 @@ int gmx_pme_do(gmx_pme_t pme,
             }
             if (flags & GMX_PME_SOLVE)
             {
-                int loop_count;
                 /* solve in k-space for our local cells */
 #pragma omp parallel num_threads(pme->nthread) private(thread)
                 {
+                    int loop_count;
                     thread = gmx_omp_get_thread_num();
                     if (thread == 0)
                     {
