@@ -237,12 +237,12 @@ TEST(FileNameOptionTest, AddsMissingExtensionForRequiredFromDefaultNameOptionBas
     gmx::FileNameOptionManager manager;
     gmx::Options               options(NULL, NULL);
     std::string                value;
+    ASSERT_NO_THROW_GMX(options.addManager(&manager));
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value).required()
                                     .filetype(gmx::eftTrajectory).inputFile()
                                     .defaultBasename("foo")));
     ASSERT_NO_THROW_GMX(manager.addDefaultFileNameOption(&options, "deffnm"));
-    ASSERT_NO_THROW_GMX(setManagerForFileNameOptions(&options, &manager));
     EXPECT_EQ("foo.xtc", value);
 
     gmx::OptionsAssigner assigner(&options);
@@ -266,12 +266,12 @@ TEST(FileNameOptionTest, AddsMissingExtensionForOptionalFromDefaultNameOptionBas
     gmx::FileNameOptionManager manager;
     gmx::Options               options(NULL, NULL);
     std::string                value;
+    ASSERT_NO_THROW_GMX(options.addManager(&manager));
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftTrajectory).inputFile()
                                     .defaultBasename("foo")));
     ASSERT_NO_THROW_GMX(manager.addDefaultFileNameOption(&options, "deffnm"));
-    ASSERT_NO_THROW_GMX(setManagerForFileNameOptions(&options, &manager));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());

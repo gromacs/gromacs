@@ -49,6 +49,7 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/options/filenameoptionmanager.h"
+#include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
@@ -295,8 +296,9 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
  * FileNameOptionStorage
  */
 
-FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
-    : MyBase(settings), info_(this), manager_(NULL),
+FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
+                                             FileNameOptionManager *manager)
+    : MyBase(settings), info_(this), manager_(manager),
       filetype_(settings.filetype_), legacyType_(settings.legacyType_),
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
@@ -313,16 +315,6 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
         {
             setDefaultValue(defaultValue);
         }
-    }
-}
-
-void FileNameOptionStorage::setManager(FileNameOptionManager *manager)
-{
-    GMX_RELEASE_ASSERT(manager_ == NULL || manager_ == manager,
-                       "Manager cannot be changed once set");
-    if (manager_ == NULL)
-    {
-        manager_ = manager;
     }
 }
 
@@ -443,19 +435,9 @@ FileNameOptionInfo::FileNameOptionInfo(FileNameOptionStorage *option)
 {
 }
 
-FileNameOptionStorage &FileNameOptionInfo::option()
-{
-    return static_cast<FileNameOptionStorage &>(OptionInfo::option());
-}
-
 const FileNameOptionStorage &FileNameOptionInfo::option() const
 {
     return static_cast<const FileNameOptionStorage &>(OptionInfo::option());
-}
-
-void FileNameOptionInfo::setManager(FileNameOptionManager *manager)
-{
-    option().setManager(manager);
 }
 
 bool FileNameOptionInfo::isInputFile() const
@@ -492,9 +474,11 @@ FileNameOptionInfo::ExtensionList FileNameOptionInfo::extensions() const
  * FileNameOption
  */
 
-AbstractOptionStoragePointer FileNameOption::createStorage() const
+AbstractOptionStoragePointer
+FileNameOption::createStorage(const OptionManagerContainer &managers) const
 {
-    return AbstractOptionStoragePointer(new FileNameOptionStorage(*this));
+    return AbstractOptionStoragePointer(
+            new FileNameOptionStorage(*this, managers.get<FileNameOptionManager>()));
 }
 
 } // namespace gmx

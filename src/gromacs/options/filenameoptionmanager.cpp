@@ -46,7 +46,6 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
-#include "gromacs/options/optionsvisitor.h"
 
 namespace gmx
 {
@@ -91,56 +90,6 @@ void FileNameOptionManager::addDefaultFileNameOption(
 const std::string &FileNameOptionManager::defaultFileName() const
 {
     return impl_->defaultFileName_;
-}
-
-/********************************************************************
- * Global functions
- */
-
-namespace
-{
-
-/*! \internal \brief
- * Visitor that sets the manager for each file name option.
- *
- * \ingroup module_options
- */
-class FileNameOptionManagerSetter : public OptionsModifyingVisitor
-{
-    public:
-        //! Construct a visitor that sets given manager.
-        explicit FileNameOptionManagerSetter(FileNameOptionManager *manager)
-            : manager_(manager)
-        {
-        }
-
-        void visitSubSection(Options *section)
-        {
-            OptionsModifyingIterator iterator(section);
-            iterator.acceptSubSections(this);
-            iterator.acceptOptions(this);
-        }
-
-        void visitOption(OptionInfo *option)
-        {
-            FileNameOptionInfo *fileOption
-                = option->toType<FileNameOptionInfo>();
-            if (fileOption != NULL)
-            {
-                fileOption->setManager(manager_);
-            }
-        }
-
-    private:
-        FileNameOptionManager *manager_;
-};
-
-}   // namespace
-
-void setManagerForFileNameOptions(Options               *options,
-                                  FileNameOptionManager *manager)
-{
-    FileNameOptionManagerSetter(manager).visitSubSection(options);
 }
 
 } // namespace gmx

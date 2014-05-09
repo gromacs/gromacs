@@ -63,19 +63,15 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
+         * \param     manager    Manager for this object.
          */
-        SelectionFileOptionStorage(const SelectionFileOption &settings);
+        SelectionFileOptionStorage(const SelectionFileOption &settings,
+                                   SelectionOptionManager    *manager);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "file"; }
         virtual int valueCount() const { return 0; }
         virtual std::string formatValue(int /*i*/) const { return ""; }
-
-        //! \copydoc SelectionFileOptionInfo::setManager()
-        void setManager(SelectionOptionManager *manager)
-        {
-            manager_ = manager;
-        }
 
     private:
         virtual void clearSet();
@@ -83,9 +79,9 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         virtual void processSet();
         virtual void processAll() {}
 
-        SelectionFileOptionInfo info_;
-        SelectionOptionManager *manager_;
-        bool                    bValueParsed_;
+        SelectionFileOptionInfo  info_;
+        SelectionOptionManager  &manager_;
+        bool                     bValueParsed_;
 };
 
 } // namespace gmx

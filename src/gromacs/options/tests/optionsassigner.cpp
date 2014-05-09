@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -183,11 +183,11 @@ TEST(OptionsAssignerTest, HandlesSubSections)
     int          value1 = 1;
     int          value2 = 2;
     using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addSubSection(&sub1));
+    ASSERT_NO_THROW(options.addSubSection(&sub2));
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
     ASSERT_NO_THROW(sub1.addOption(IntegerOption("p").store(&value1)));
     ASSERT_NO_THROW(sub2.addOption(IntegerOption("p").store(&value2)));
-    ASSERT_NO_THROW(options.addSubSection(&sub1));
-    ASSERT_NO_THROW(options.addSubSection(&sub2));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -223,13 +223,13 @@ TEST(OptionsAssignerTest, HandlesNoStrictSubSections)
     int          pvalue2 = 2;
     int          rvalue  = 5;
     using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addSubSection(&sub1));
+    ASSERT_NO_THROW(options.addSubSection(&sub2));
     ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&pvalue)));
     ASSERT_NO_THROW(sub1.addOption(IntegerOption("p").store(&pvalue1)));
     ASSERT_NO_THROW(sub1.addOption(IntegerOption("q").store(&qvalue)));
     ASSERT_NO_THROW(sub2.addOption(IntegerOption("p").store(&pvalue2)));
     ASSERT_NO_THROW(sub2.addOption(IntegerOption("r").store(&rvalue)));
-    ASSERT_NO_THROW(options.addSubSection(&sub1));
-    ASSERT_NO_THROW(options.addSubSection(&sub2));
 
     gmx::OptionsAssigner assigner(&options);
     assigner.setNoStrictSectioning(true);
