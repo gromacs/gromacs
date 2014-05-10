@@ -61,30 +61,60 @@ namespace gmx
 namespace
 {
 
-class FileTypeRegistry;
-
 //! \addtogroup module_options
 //! \{
+
+/*! \brief
+ * Mapping from OptionFileType to a file type in filenm.h.
+ */
+struct FileTypeMapping
+{
+    //! OptionFileType value to map.
+    OptionFileType optionType;
+    //! Corresponding file type from filenm.h.
+    int            fileType;
+};
+
+//! Mappings from OptionFileType to file types in filenm.h.
+const FileTypeMapping c_fileTypeMapping[] =
+{
+    { eftTopology,    efTPS },
+    { eftTrajectory,  efTRX },
+    { eftPDB,         efPDB },
+    { eftIndex,       efNDX },
+    { eftPlot,        efXVG },
+    { eftGenericData, efDAT }
+};
 
 //! Extensions that are recognized as compressed files.
 const char *const c_compressedExtensions[] =
 { ".gz", ".Z" };
 
-//! Shorthand for a list of file extensions.
-typedef std::vector<const char *> ExtensionList;
-
 /********************************************************************
  * FileTypeHandler
  */
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Handles a single file type known to FileNameOptionStorage.
+ *
+ * Methods in this class do not throw, except for a possible std::bad_alloc
+ * when constructing std::string return values.
  */
 class FileTypeHandler
 {
     public:
-        //! Returns the list of extensions for this file type.
-        const ExtensionList &extensions() const { return extensions_; }
+        /*! \brief
+         * Returns a handler for a single file type.
+         *
+         * \param[in] fileType  File type (from filenm.h) to use.
+         */
+        explicit FileTypeHandler(int fileType);
+
+        //! Returns the number of acceptable extensions for this file type.
+        int extensionCount() const;
+        //! Returns the extension with the given index.
+        const char *extension(int i) const;
 
         //! Returns whether \p filename has a valid extension for this type.
         bool hasKnownExtension(const std::string &filename) const;
@@ -101,23 +131,65 @@ class FileTypeHandler
         std::string findFileWithExtension(const std::string &filename) const;
 
     private:
-        //! Possible extensions for this file type.
-        ExtensionList extensions_;
-
         /*! \brief
-         * Needed for initialization; all initialization is handled by
-         * FileTypeRegistry.
+         * File type (from filenm.h) represented by this handler.
+         *
+         * -1 represents an unknown file type.
          */
-        friend class FileTypeRegistry;
+        int        fileType_;
+        //! Number of different extensions this type supports.
+        int        extensionCount_;
+        /*! \brief
+         * List of simple file types that are included in this type.
+         *
+         * If `fileType_` represents a generic type in filenm.h, i.e., a type
+         * that accepts multiple different types of files, then this is an
+         * array of `extensionCount_` elements, each element specifying one
+         * non-generic file type that this option accepts.
+         * `NULL` for single-extension types.
+         */
+        const int *genericTypes_;
 };
+
+FileTypeHandler::FileTypeHandler(int fileType)
+    : fileType_(fileType), extensionCount_(0), genericTypes_(NULL)
+{
+    if (fileType_ >= 0)
+    {
+        const int genericTypeCount = ftp2generic_count(fileType_);
+        if (genericTypeCount > 0)
+        {
+            extensionCount_ = genericTypeCount;
+            genericTypes_   = ftp2generic_list(fileType_);
+        }
+        else if (ftp2ext_with_dot(fileType_)[0] != '\0')
+        {
+            extensionCount_ = 1;
+        }
+    }
+}
+
+int FileTypeHandler::extensionCount() const
+{
+    return extensionCount_;
+}
+
+const char *FileTypeHandler::extension(int i) const
+{
+    GMX_ASSERT(i >= 0 && i < extensionCount_, "Invalid extension index");
+    if (genericTypes_ != NULL)
+    {
+        return ftp2ext_with_dot(genericTypes_[i]);
+    }
+    return ftp2ext_with_dot(fileType_);
+}
 
 bool
 FileTypeHandler::hasKnownExtension(const std::string &filename) const
 {
-    for (size_t i = 0; i < extensions_.size(); ++i)
+    for (int i = 0; i < extensionCount(); ++i)
     {
-        // TODO: Should this be a case-insensitive comparison?
-        if (endsWith(filename, extensions_[i]))
+        if (endsWith(filename, extension(i)))
         {
             return true;
         }
@@ -128,19 +200,19 @@ FileTypeHandler::hasKnownExtension(const std::string &filename) const
 std::string
 FileTypeHandler::addExtension(const std::string &filename) const
 {
-    if (extensions_.empty())
+    if (extensionCount() == 0)
     {
         return filename;
     }
-    return filename + extensions_[0];
+    return filename + extension(0);
 }
 
 std::string
 FileTypeHandler::findFileWithExtension(const std::string &filename) const
 {
-    for (size_t i = 0; i < extensions_.size(); ++i)
+    for (int i = 0; i < extensionCount(); ++i)
     {
-        std::string testFilename(filename + extensions_[i]);
+        std::string testFilename(filename + extension(i));
         if (File::exists(testFilename))
         {
             return testFilename;
@@ -149,111 +221,18 @@ FileTypeHandler::findFileWithExtension(const std::string &filename) const
     return std::string();
 }
 
-/********************************************************************
- * FileTypeRegistry
- */
-
-/*! \internal \brief
- * Singleton for managing static file type info for FileNameOptionStorage.
- */
-class FileTypeRegistry
-{
-    public:
-        //! Returns a singleton instance of this class.
-        static const FileTypeRegistry &instance();
-        //! Returns a handler for a single file type.
-        const FileTypeHandler &
-        handlerForType(OptionFileType type, int legacyType) const;
-
-    private:
-        //! Initializes the file type registry.
-        FileTypeRegistry();
-
-        //! Registers a file type that corresponds to a ftp in filenm.h.
-        void registerType(int type, int ftp);
-        //! Registers a file type with a single extension.
-        void registerType(int type, const char *extension);
-
-        std::vector<FileTypeHandler> filetypes_;
-};
-
-// static
-const FileTypeRegistry &
-FileTypeRegistry::instance()
-{
-    static FileTypeRegistry singleton;
-    return singleton;
-}
-
-const FileTypeHandler &
-FileTypeRegistry::handlerForType(OptionFileType type, int legacyType) const
-{
-    int index = type;
-    if (type == eftUnknown && legacyType >= 0)
-    {
-        index = eftOptionFileType_NR + legacyType;
-    }
-    GMX_RELEASE_ASSERT(index >= 0 && static_cast<size_t>(index) < filetypes_.size(),
-                       "Invalid file type");
-    return filetypes_[index];
-}
-
-FileTypeRegistry::FileTypeRegistry()
-{
-    filetypes_.resize(eftOptionFileType_NR + efNR);
-    registerType(eftTopology,    efTPS);
-    registerType(eftTrajectory,  efTRX);
-    registerType(eftPDB,         efPDB);
-    registerType(eftIndex,       efNDX);
-    registerType(eftPlot,        efXVG);
-    registerType(eftGenericData, efDAT);
-    for (int i = 0; i < efNR; ++i)
-    {
-        registerType(eftOptionFileType_NR + i, i);
-    }
-}
-
-void FileTypeRegistry::registerType(int type, int ftp)
-{
-    GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
-                       "Invalid file type");
-    const int genericTypeCount = ftp2generic_count(ftp);
-    if (genericTypeCount > 0)
-    {
-        const int *const genericTypes = ftp2generic_list(ftp);
-        filetypes_[type].extensions_.clear();
-        filetypes_[type].extensions_.reserve(genericTypeCount);
-        for (int i = 0; i < genericTypeCount; ++i)
-        {
-            filetypes_[type].extensions_.push_back(ftp2ext_with_dot(genericTypes[i]));
-        }
-    }
-    else
-    {
-        registerType(type, ftp2ext_with_dot(ftp));
-    }
-}
-
-void FileTypeRegistry::registerType(int type, const char *extension)
-{
-    GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
-                       "Invalid file type");
-    filetypes_[type].extensions_.assign(1, extension);
-}
-
 /*! \brief
  * Helper method to complete a file name provided to a file name option.
  *
- * \param[in] value      Value provided to the file name option.
- * \param[in] filetype   File type for the option.
- * \param[in] legacyType If \p filetype is eftUnknown, this gives the type as
- *     an enum value from filenm.h.
+ * \param[in] value       Value provided to the file name option.
+ * \param[in] typeHandler Handler for the file type.
  * \param[in] bCompleteToExisting
  *     Whether to check existing files when completing the extension.
  * \returns   \p value with possible extension added.
  */
-std::string completeFileName(const std::string &value, OptionFileType filetype,
-                             int legacyType, bool bCompleteToExisting)
+std::string completeFileName(const std::string     &value,
+                             const FileTypeHandler &typeHandler,
+                             bool                   bCompleteToExisting)
 {
     if (bCompleteToExisting && File::exists(value))
     {
@@ -271,8 +250,6 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
         }
         return value;
     }
-    const FileTypeRegistry &registry    = FileTypeRegistry::instance();
-    const FileTypeHandler  &typeHandler = registry.handlerForType(filetype, legacyType);
     if (typeHandler.hasKnownExtension(value))
     {
         return value;
@@ -298,18 +275,33 @@ std::string completeFileName(const std::string &value, OptionFileType filetype,
 
 FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
                                              FileNameOptionManager *manager)
-    : MyBase(settings), info_(this), manager_(manager),
-      filetype_(settings.filetype_), legacyType_(settings.legacyType_),
+    : MyBase(settings), info_(this), manager_(manager), fileType_(-1),
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
 {
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for file name options");
+    if (settings.optionType_ == eftUnknown && settings.legacyType_ >= 0)
+    {
+        fileType_ = settings.legacyType_;
+    }
+    else
+    {
+        ConstArrayRef<FileTypeMapping>                 map(c_fileTypeMapping);
+        ConstArrayRef<FileTypeMapping>::const_iterator i;
+        for (i = map.begin(); i != map.end(); ++i)
+        {
+            if (i->optionType == settings.optionType_)
+            {
+                fileType_ = i->fileType;
+                break;
+            }
+        }
+    }
     if (settings.defaultBasename_ != NULL)
     {
-        std::string defaultValue =
-            completeFileName(settings.defaultBasename_, filetype_,
-                             legacyType_, false);
+        std::string defaultValue(settings.defaultBasename_);
+        defaultValue.append(defaultExtension());
         setDefaultValueIfSet(defaultValue);
         if (isRequired() || settings.bLegacyOptionalBehavior_)
         {
@@ -320,27 +312,24 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
 
 std::string FileNameOptionStorage::typeString() const
 {
-    const FileTypeRegistry       &registry    = FileTypeRegistry::instance();
-    const FileTypeHandler        &typeHandler = registry.handlerForType(filetype_, legacyType_);
-    const ExtensionList          &extensions  = typeHandler.extensions();
-    std::string                   result;
-    ExtensionList::const_iterator i;
-    int                           count = 0;
-    for (i = extensions.begin(); count < 2 && i != extensions.end(); ++i, ++count)
+    FileTypeHandler typeHandler(fileType_);
+    std::string     result;
+    int             count;
+    for (count = 0; count < 2 && count < typeHandler.extensionCount(); ++count)
     {
-        if (i != extensions.begin())
+        if (count > 0)
         {
             result.append("/");
         }
-        result.append(*i);
+        result.append(typeHandler.extension(count));
     }
-    if (i != extensions.end())
+    if (count < typeHandler.extensionCount())
     {
         result.append("/...");
     }
     if (result.empty())
     {
-        if (legacyType_ == efRND)
+        if (isDirectoryOption())
         {
             result = "dir";
         }
@@ -354,18 +343,16 @@ std::string FileNameOptionStorage::typeString() const
 
 std::string FileNameOptionStorage::formatExtraDescription() const
 {
-    const FileTypeRegistry       &registry    = FileTypeRegistry::instance();
-    const FileTypeHandler        &typeHandler = registry.handlerForType(filetype_, legacyType_);
-    const ExtensionList          &extensions  = typeHandler.extensions();
-    std::string                   result;
-    if (extensions.size() > 2)
+    FileTypeHandler typeHandler(fileType_);
+    std::string     result;
+    if (typeHandler.extensionCount() > 2)
     {
         result.append(":");
-        ExtensionList::const_iterator i;
-        for (i = extensions.begin(); i != extensions.end(); ++i)
+        for (int i = 0; i < typeHandler.extensionCount(); ++i)
         {
             result.append(" ");
-            result.append((*i) + 1);
+            // Skip the dot.
+            result.append(typeHandler.extension(i) + 1);
         }
     }
     return result;
@@ -378,32 +365,33 @@ std::string FileNameOptionStorage::formatSingleValue(const std::string &value) c
 
 void FileNameOptionStorage::convertValue(const std::string &value)
 {
-    bool bInput = isInputFile() || isInputOutputFile();
-    addValue(completeFileName(value, filetype_, legacyType_, bInput));
+    const bool      bInput = isInputFile() || isInputOutputFile();
+    FileTypeHandler typeHandler(fileType_);
+    addValue(completeFileName(value, typeHandler, bInput));
 }
 
 void FileNameOptionStorage::processAll()
 {
-    if (hasFlag(efOption_HasDefaultValue))
+    FileTypeHandler typeHandler(fileType_);
+    if (hasFlag(efOption_HasDefaultValue) && typeHandler.extensionCount() > 0)
     {
-        const bool              bInput      = isInputFile() || isInputOutputFile();
-        const FileTypeRegistry &registry    = FileTypeRegistry::instance();
-        const FileTypeHandler  &typeHandler = registry.handlerForType(filetype_, legacyType_);
-        const ExtensionList    &extensions  = typeHandler.extensions();
-        ValueList              &valueList   = values();
+        const bool  bInput      = isInputFile() || isInputOutputFile();
+        ValueList  &valueList   = values();
         GMX_RELEASE_ASSERT(valueList.size() == 1,
                            "There should be only one default value");
-        const bool              bGlobalDefault =
+        const bool  bGlobalDefault =
             (manager_ != NULL && !manager_->defaultFileName().empty());
-        if (!valueList[0].empty() && (extensions.size() > 1 || bGlobalDefault))
+        if (!valueList[0].empty() && (typeHandler.extensionCount() > 1 || bGlobalDefault))
         {
-            std::string oldValue = valueList[0];
-            std::string newValue = stripSuffixIfPresent(oldValue, extensions[0]);
+            const std::string &oldValue = valueList[0];
+            GMX_ASSERT(endsWith(oldValue, defaultExtension()),
+                       "Default value does not have the expected extension");
+            std::string prefix = stripSuffixIfPresent(oldValue, defaultExtension());
             if (bGlobalDefault)
             {
-                newValue = manager_->defaultFileName();
+                prefix = manager_->defaultFileName();
             }
-            newValue = completeFileName(newValue, filetype_, legacyType_, bInput);
+            std::string newValue = completeFileName(prefix, typeHandler, bInput);
             if (newValue != oldValue)
             {
                 valueList[0] = newValue;
@@ -415,15 +403,29 @@ void FileNameOptionStorage::processAll()
 
 bool FileNameOptionStorage::isDirectoryOption() const
 {
-    return legacyType_ == efRND;
+    return fileType_ == efRND;
 }
 
-ConstArrayRef<const char *> FileNameOptionStorage::extensions() const
+const char *FileNameOptionStorage::defaultExtension() const
 {
-    const FileTypeRegistry &registry    = FileTypeRegistry::instance();
-    const FileTypeHandler  &typeHandler = registry.handlerForType(filetype_, legacyType_);
-    const ExtensionList    &extensions  = typeHandler.extensions();
-    return ConstArrayRef<const char *>(extensions.begin(), extensions.end());
+    FileTypeHandler typeHandler(fileType_);
+    if (typeHandler.extensionCount() == 0)
+    {
+        return "";
+    }
+    return typeHandler.extension(0);
+}
+
+std::vector<const char *> FileNameOptionStorage::extensions() const
+{
+    FileTypeHandler           typeHandler(fileType_);
+    std::vector<const char *> result;
+    result.reserve(typeHandler.extensionCount());
+    for (int i = 0; i < typeHandler.extensionCount(); ++i)
+    {
+        result.push_back(typeHandler.extension(i));
+    }
+    return result;
 }
 
 /********************************************************************
@@ -463,6 +465,11 @@ bool FileNameOptionInfo::isLibraryFile() const
 bool FileNameOptionInfo::isDirectoryOption() const
 {
     return option().isDirectoryOption();
+}
+
+const char *FileNameOptionInfo::defaultExtension() const
+{
+    return option().defaultExtension();
 }
 
 FileNameOptionInfo::ExtensionList FileNameOptionInfo::extensions() const
