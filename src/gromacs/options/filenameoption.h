@@ -44,6 +44,7 @@
 #define GMX_OPTIONS_FILENAMEOPTION_H
 
 #include <string>
+#include <vector>
 
 #include "abstractoption.h"
 #include "optionfiletype.h"
@@ -72,7 +73,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
-            : MyBase(name), filetype_(eftUnknown), legacyType_(-1),
+            : MyBase(name), optionType_(eftUnknown), legacyType_(-1),
               defaultBasename_(NULL), bLegacyOptionalBehavior_(false),
               bRead_(false), bWrite_(false), bLibrary_(false)
         {
@@ -84,7 +85,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * Either this attribute or legacyType() must be provided.
          */
         MyClass &filetype(OptionFileType type)
-        { filetype_ = type; return me(); }
+        { optionType_ = type; return me(); }
         /*! \brief
          * Sets the type of the file from an enum in filenm.h.
          *
@@ -168,7 +169,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         virtual AbstractOptionStoragePointer createStorage(
             const OptionManagerContainer &managers) const;
 
-        OptionFileType          filetype_;
+        OptionFileType          optionType_;
         int                     legacyType_;
         const char             *defaultBasename_;
         bool                    bLegacyOptionalBehavior_;
@@ -193,7 +194,7 @@ class FileNameOptionInfo : public OptionInfo
 {
     public:
         //! Shorthand for a list of extensions.
-        typedef ConstArrayRef<const char *> ExtensionList;
+        typedef std::vector<const char *> ExtensionList;
 
         //! Creates an option info object for the given option.
         explicit FileNameOptionInfo(FileNameOptionStorage *option);
@@ -213,6 +214,8 @@ class FileNameOptionInfo : public OptionInfo
 
         //! Whether the option specifies directories.
         bool isDirectoryOption() const;
+        //! Returns the default extension for this option.
+        const char *defaultExtension() const;
         //! Returns the list of extensions this option accepts.
         ExtensionList extensions() const;
 
