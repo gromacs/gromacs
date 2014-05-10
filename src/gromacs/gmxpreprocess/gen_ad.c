@@ -496,7 +496,7 @@ static void clean_pairs(t_param *pai, int *npai, t_atoms *atoms)
     int i, j;
     int *index, nind;
 
-    /* construct list of angle indices */
+    /* construct list of pair indices */
     snew(index, *npai+1);
     nind = *npai;
     for (i = 0; i < nind; i++)
@@ -505,7 +505,7 @@ static void clean_pairs(t_param *pai, int *npai, t_atoms *atoms)
     }
     index[nind] = *npai;
 
-    /* loop over angles and remove any we don't want to keep,
+    /* loop over pairs and remove any we don't want to keep,
      * i.e. those with a Drude or LP at atom ai or aj */
     j = 0;
     for (i = 0; i < nind; i++)
