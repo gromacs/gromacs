@@ -382,9 +382,12 @@ static void read_ter_db_file(char *fn,
                 {
                     tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = NULL;
                 }
-                strcpy(buf, "");
-                sscanf(line+n, "%s", buf);
-                tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = strdup(buf);
+                while (isspace(line[n]))
+                {
+                    n++;
+                }
+                rtrim(line+n);
+                tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = strdup(line+n);
                 tb[nb].rb[kwnr].nb++;
             }
             else
