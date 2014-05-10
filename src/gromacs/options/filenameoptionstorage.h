@@ -43,6 +43,7 @@
 #define GMX_OPTIONS_FILENAMEOPTIONSTORAGE_H
 
 #include <string>
+#include <vector>
 
 #include "filenameoption.h"
 #include "optionfiletype.h"
@@ -85,8 +86,10 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 
         //! \copydoc FileNameOptionInfo::isDirectoryOption()
         bool isDirectoryOption() const;
+        //! \copydoc FileNameOptionInfo::defaultExtension()
+        const char *defaultExtension() const;
         //! \copydoc FileNameOptionInfo::extensions()
-        ConstArrayRef<const char *> extensions() const;
+        std::vector<const char *> extensions() const;
 
     private:
         virtual void convertValue(const std::string &value);
@@ -94,8 +97,7 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 
         FileNameOptionInfo      info_;
         FileNameOptionManager  *manager_;
-        OptionFileType          filetype_;
-        int                     legacyType_;
+        int                     fileType_;
         bool                    bRead_;
         bool                    bWrite_;
         bool                    bLibrary_;
