@@ -236,6 +236,8 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 #define PCA_BE_NICE        (1<<13)
 /** Is this node not reading: for parallel all nodes but the master */
 #define PCA_NOT_READ_NODE  (1<<16)
+/** Don't do any special processing for ffREAD files */
+#define PCA_DISABLE_INPUT_FILE_CHECKING (1<<17)
 
 /*! \brief
  * Parse command-line arguments.
