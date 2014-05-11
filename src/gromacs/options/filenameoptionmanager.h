@@ -52,23 +52,27 @@
 namespace gmx
 {
 
+class FileNameOptionInfo;
 class Options;
 
 /*! \brief
  * Handles interaction of file name options with global options.
  *
- * Currently, this class implements support for a global default file name
- * that overrides any option-specific default.
+ * This class contains all logic that completes file names based on user input
+ * and file system contents.  Additionally, this class implements support for a
+ * global default file name that overrides any option-specific default, as well
+ * as additional control over how the completion is done.
  *
  * \todo
- * Currently, this class has very little logic, and just provides the global
- * values to FileNameOptionStorage implementation.  A cleaner design would have
- * most of the non-trivial file name completion logic in this class, so that
- * the customizations would be centralized here.
+ * Most of the functionality in this class is specific to command line parsing,
+ * so it would be cleaner to replace this with an interface, and have the
+ * actual code in the `commandline` module.
  *
  * Adding a FileNameOptionManager for an Options object is optional, even if
  * the Options contains FileNameOption options.  Features from the manager are
- * not available if the manager is not created, but otherwise the options work.
+ * not available if the manager is not created, but otherwise the options work:
+ * the values provided to FileNameOption are used as they are, and exceptions
+ * are thrown if they are no valid instead of attempting to complete them.
  *
  * \see Options::addManager()
  *
@@ -80,6 +84,23 @@ class FileNameOptionManager : public OptionManagerInterface
     public:
         FileNameOptionManager();
         virtual ~FileNameOptionManager();
+
+        /*! \brief
+         * Disables special input file option handling.
+         *
+         * If disabled, this removes all file system calls from the file
+         * name option parsing.
+         * The values returned by FileNameOption for input and input/output
+         * files are handled with the same simple rule as for output files:
+         * the default extension is added if the file does not end in a
+         * recognized extension, and no other checking is done.
+         *
+         * This changes the following behavior:
+         *  - Providing non-existent files does not trigger errors.
+         *  - Extensions for input files are not completed to an existing file.
+         *  - Compressed input files do not work.
+         */
+        void disableInputOptionChecking(bool bDisable);
 
         /*! \brief
          * Adds an option for setting the default global file name.
@@ -95,8 +116,41 @@ class FileNameOptionManager : public OptionManagerInterface
          */
         void addDefaultFileNameOption(Options *options, const char *name);
 
-        //! Returns the currently set default file name.
-        const std::string &defaultFileName() const;
+        /*! \brief
+         * Completes file name option values.
+         *
+         * \param[in] value  Value provided by the user.
+         * \param[in] option Option for which the value should be completed.
+         * \returns   Value for the file name option.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InvalidInputError if the value is not valid for this
+         *     option.
+         *
+         * This method is called for each value that the user provides to
+         * a FileNameOption.  The return value (if non-empty) is used as the
+         * value of the option instead of the user-provided one.
+         */
+        std::string completeFileName(const std::string        &value,
+                                     const FileNameOptionInfo &option);
+        /*! \brief
+         * Completes default values for file name options.
+         *
+         * \param[in] prefix Default prefix for the file name.
+         * \param[in] option Option for which the value should be completed.
+         * \returns   Value for the file name option.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InvalidInputError if the value is not valid for this
+         *     option.
+         *
+         * This method is called for each FileNameOption that has a default
+         * value (either a standard default value, or if the user provided the
+         * option without an explicit value).  \p prefix is the default value
+         * without the default extension for the option.
+         * If the return value is non-empty, it is used as the default value
+         * for the option instead of \p prefix + default extension.
+         */
+        std::string completeDefaultFileName(const std::string        &prefix,
+                                            const FileNameOptionInfo &option);
 
     private:
         class Impl;
