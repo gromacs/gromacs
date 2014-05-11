@@ -104,6 +104,7 @@ mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
 include(gmxBuildTypeThreadSanitizer)
+include(gmxBuildTypeAddressSanitizer)
 include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
