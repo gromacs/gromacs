@@ -62,8 +62,10 @@ using gmx::test::TestFileManager;
 
 TEST(FileNameOptionTest, AddsMissingExtension)
 {
-    gmx::Options           options(NULL, NULL);
-    std::string            value;
+    gmx::FileNameOptionManager manager;
+    gmx::Options               options(NULL, NULL);
+    std::string                value;
+    ASSERT_NO_THROW_GMX(options.addManager(&manager));
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftTrajectory).outputFile()));
@@ -156,13 +158,15 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 
 TEST(FileNameOptionTest, AddsMissingExtensionBasedOnExistingFile)
 {
-    TestFileManager      tempFiles;
-    std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
+    TestFileManager            tempFiles;
+    std::string                filename(tempFiles.getTemporaryFilePath(".trr"));
     gmx::File::writeFileFromString(filename, "Dummy trajectory file");
-    std::string          inputValue(gmx::Path::stripExtension(filename));
+    std::string                inputValue(gmx::Path::stripExtension(filename));
 
-    gmx::Options         options(NULL, NULL);
-    std::string          value;
+    gmx::FileNameOptionManager manager;
+    gmx::Options               options(NULL, NULL);
+    std::string                value;
+    ASSERT_NO_THROW_GMX(options.addManager(&manager));
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftTrajectory).inputFile()));
@@ -180,13 +184,15 @@ TEST(FileNameOptionTest, AddsMissingExtensionBasedOnExistingFile)
 
 TEST(FileNameOptionTest, AddsMissingExtensionForRequiredDefaultNameBasedOnExistingFile)
 {
-    TestFileManager      tempFiles;
-    std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
+    TestFileManager            tempFiles;
+    std::string                filename(tempFiles.getTemporaryFilePath(".trr"));
     gmx::File::writeFileFromString(filename, "Dummy trajectory file");
-    std::string          inputValue(gmx::Path::stripExtension(filename));
+    std::string                inputValue(gmx::Path::stripExtension(filename));
 
-    gmx::Options         options(NULL, NULL);
-    std::string          value;
+    gmx::FileNameOptionManager manager;
+    gmx::Options               options(NULL, NULL);
+    std::string                value;
+    ASSERT_NO_THROW_GMX(options.addManager(&manager));
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value).required()
                                     .filetype(gmx::eftTrajectory).inputFile()
@@ -205,13 +211,15 @@ TEST(FileNameOptionTest, AddsMissingExtensionForRequiredDefaultNameBasedOnExisti
 
 TEST(FileNameOptionTest, AddsMissingExtensionForOptionalDefaultNameBasedOnExistingFile)
 {
-    TestFileManager      tempFiles;
-    std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
+    TestFileManager            tempFiles;
+    std::string                filename(tempFiles.getTemporaryFilePath(".trr"));
     gmx::File::writeFileFromString(filename, "Dummy trajectory file");
-    std::string          inputValue(gmx::Path::stripExtension(filename));
+    std::string                inputValue(gmx::Path::stripExtension(filename));
 
-    gmx::Options         options(NULL, NULL);
-    std::string          value;
+    gmx::FileNameOptionManager manager;
+    gmx::Options               options(NULL, NULL);
+    std::string                value;
+    ASSERT_NO_THROW_GMX(options.addManager(&manager));
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftTrajectory).inputFile()

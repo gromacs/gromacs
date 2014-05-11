@@ -90,6 +90,10 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         const char *defaultExtension() const;
         //! \copydoc FileNameOptionInfo::extensions()
         std::vector<const char *> extensions() const;
+        //! \copydoc FileNameOptionInfo::isValidType()
+        bool isValidType(int fileType) const;
+        //! \copydoc FileNameOptionInfo::fileTypes()
+        ConstArrayRef<int> fileTypes() const;
 
     private:
         virtual void convertValue(const std::string &value);
