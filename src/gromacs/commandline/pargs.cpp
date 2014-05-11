@@ -423,10 +423,6 @@ void OptionsAdapter::copyValues(bool bReadNode)
     std::list<FileNameData>::const_iterator file;
     for (file = fileNameOptions_.begin(); file != fileNameOptions_.end(); ++file)
     {
-        // FIXME: FF_NOT_READ_NODE should also skip all fexist() calls in
-        // FileNameOption.  However, it is not currently used, and other
-        // commented out code for using it is also outdated, so left this for
-        // later.
         if (!bReadNode && (file->fnm->flag & ffREAD))
         {
             continue;
@@ -502,6 +498,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         gmx::Options               options(NULL, NULL);
         gmx::FileNameOptionManager fileOptManager;
 
+        fileOptManager.disableInputOptions(FF(PCA_NOT_READ_NODE));
+        fileOptManager.allowMissingInputFiles(FF(PCA_ALLOW_MISSING_INPUT_FILES));
         options.addManager(&fileOptManager);
         options.setDescription(gmx::ConstArrayRef<const char *>(desc, ndesc));
         options.addOption(

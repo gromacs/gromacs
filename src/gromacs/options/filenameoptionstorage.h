@@ -86,10 +86,16 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 
         //! \copydoc FileNameOptionInfo::isDirectoryOption()
         bool isDirectoryOption() const;
+        //! \copydoc FileNameOptionInfo::isTrajectoryOption()
+        bool isTrajectoryOption() const;
         //! \copydoc FileNameOptionInfo::defaultExtension()
         const char *defaultExtension() const;
         //! \copydoc FileNameOptionInfo::extensions()
         std::vector<const char *> extensions() const;
+        //! \copydoc FileNameOptionInfo::isValidType()
+        bool isValidType(int fileType) const;
+        //! \copydoc FileNameOptionInfo::fileTypes()
+        ConstArrayRef<int> fileTypes() const;
 
     private:
         virtual void convertValue(const std::string &value);
