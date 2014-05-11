@@ -216,6 +216,10 @@ class FileNameOptionInfo : public OptionInfo
         const char *defaultExtension() const;
         //! Returns the list of extensions this option accepts.
         ExtensionList extensions() const;
+        //! Returns whether \p fileType (from filenm.h) is accepted for this option.
+        bool isValidType(int fileType) const;
+        //! Returns the list of file types this option accepts.
+        ConstArrayRef<int> fileTypes() const;
 
     private:
         const FileNameOptionStorage &option() const;

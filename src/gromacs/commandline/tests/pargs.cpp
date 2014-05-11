@@ -394,7 +394,7 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentInputFiles)
     const char *const cmdline[] = {
         "test", "-f2", "-f3", "other", "-f4", "trj.gro", "-g2", "foo"
     };
-    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, PCA_ALLOW_MISSING_INPUT_FILES, fnm, gmx::EmptyArrayRef());
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
     EXPECT_STREQ("trj2.xtc", opt2fn("-f2", nfile(), fnm));
@@ -402,6 +402,21 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentInputFiles)
     EXPECT_STREQ("trj.gro", opt2fn("-f4", nfile(), fnm));
     EXPECT_STREQ("cnf.gro", opt2fn("-g", nfile(), fnm));
     EXPECT_STREQ("foo.gro", opt2fn("-g2", nfile(), fnm));
+    done_filenms(nfile(), fnm);
+}
+
+TEST_F(ParseCommonArgsTest, HandlesNonExistentOptionalInputFiles)
+{
+    t_filenm          fnm[] = {
+        { efTPS, "-s",  NULL,   ffOPTRD },
+        { efTRX, "-f",  "trj",  ffOPTRD }
+    };
+    const char *const cmdline[] = {
+        "test"
+    };
+    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
+    EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
     done_filenms(nfile(), fnm);
 }
 
