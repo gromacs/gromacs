@@ -54,6 +54,7 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/options/filenameoptionmanager.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptionmanager.h"
@@ -109,12 +110,14 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         SelectionCollection *selections,
         int *argc, char *argv[])
 {
+    FileNameOptionManager  fileoptManager;
     SelectionOptionManager seloptManager(selections);
     Options                options(NULL, NULL);
     Options                moduleOptions(module_->name(), module_->description());
     Options                commonOptions("common", "Common analysis control");
     Options                selectionOptions("selection", "Common selection control");
 
+    options.addManager(&fileoptManager);
     options.addManager(&seloptManager);
     options.addSubSection(&commonOptions);
     options.addSubSection(&selectionOptions);
