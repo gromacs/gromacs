@@ -41,6 +41,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -55,6 +56,18 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/utility/fatalerror.h"
+
+static bool is_multisim_option_set(int argc, const char *const argv[])
+{
+    for (int i = 0; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "-multi") == 0 || strcmp(argv[i], "-multidir") == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 int gmx_mdrun(int argc, char *argv[])
 {
@@ -605,10 +618,17 @@ int gmx_mdrun(int argc, char *argv[])
     int             rc;
     char          **multidir = NULL;
 
-
     cr = init_commrec();
 
     PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
+    // With -multi or -multidir, the file names are going to get processed
+    // further (or the working directory changed), so we can't check for their
+    // existence during parsing.  It isn't useful to do any completion based on
+    // file system contents, either.
+    if (is_multisim_option_set(argc, argv))
+    {
+        PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;
+    }
 
     /* Comment this in to do fexist calls only on master
      * works not with rerun or tables at the moment
