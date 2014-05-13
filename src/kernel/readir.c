@@ -1240,6 +1240,12 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
+    {
+        sprintf(warn_buf, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
+        warning_error(wi, warn_buf);
+    }
+
     /* IMPLICIT SOLVENT */
     if (ir->coulombtype == eelGB_NOTUSED)
     {

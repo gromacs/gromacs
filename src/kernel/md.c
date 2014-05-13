@@ -1217,6 +1217,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * step to combine the long-range forces on these steps.
              * For nstcalclr=1 this is not done, since the forces would have been added
              * directly to the short-range forces already.
+             *
+             * TODO Remove various aspects of VV+twin-range in master
+             * branch, because VV integrators did not ever support
+             * twin-range multiple time stepping with constraints.
              */
             bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
