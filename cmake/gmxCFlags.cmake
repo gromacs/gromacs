@@ -64,7 +64,7 @@ function(gmx_set_cmake_compiler_flags)
         # be set up elsewhere and passed to this function, but it is
         # inconvenient in CMake to pass more than one list, and such a
         # list is only used here.
-        foreach(build_type RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL)
+        foreach(build_type RELWITHDEBUGINFO RELWITHASSERT MINSIZEREL PROFILE)
             set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
         endforeach()
         # Copy the flags that are only used by the real Release build
@@ -112,7 +112,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
-        GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
+        GMX_TEST_CFLAG(CFLAGS_COPT "-funroll-all-loops"
                        GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_NOINLINE "-fno-inline" GMXC_CFLAGS_DEBUG)
     endif()
@@ -128,7 +128,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
         # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
-        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
+        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-funroll-all-loops"
                          GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_NOINLINE "-fno-inline" GMXC_CXXFLAGS_DEBUG)
     endif()
