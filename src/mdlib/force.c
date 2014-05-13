@@ -370,7 +370,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 
     if (debug)
     {
-        pr_rvecs(debug, 0, "fshift after SR", fr->fshift, SHIFTS);
+        gmx_bool bDidLongRange;
+
+        bDidLongRange = flags & GMX_FORCE_DO_LR;
+        pr_rvecs(debug, 0, bDidLongRange ? "fshift after SR+LR" : "fshift after SR", fr->fshift, SHIFTS);
     }
 
     /* Shift the coordinates. Must be done before bonded forces and PPPM,

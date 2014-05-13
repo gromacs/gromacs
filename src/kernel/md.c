@@ -205,6 +205,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
+    gmx_bool          bShouldDoUpdateWithV;
+    gmx_bool          bUpdateLRConstraintVirial;
     real              mu_aver = 0, dvdl_constr;
     int               a0, a1, gnx = 0, ii;
     atom_id          *grpindex = NULL;
@@ -808,6 +810,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         multisim_nsteps = get_multisim_nsteps(cr, ir->nsteps);
     }
 
+    /* Why is rerun_fr.bV here?  Unclear. */
+    /* TODO this variable needs a better name, but I don't know what
+       to call it */
+    bShouldDoUpdateWithV = !bRerunMD || rerun_fr.bV || bForceUpdate;
 
     /* and stop now if we should */
     bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
@@ -1193,6 +1199,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             fflush(fplog);
         }
 
+        bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
+        bUpdateLRConstraintVirial = bUpdateDoLR && ir->nstcalclr > 1 && constr && bCalcVir;
+
         if (bVV && !bStartingFromCpt && !bRerunMD)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
@@ -1222,8 +1231,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * branch, because VV integrators did not ever support
              * twin-range multiple time stepping with constraints.
              */
-            bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
-
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
                           f, bUpdateDoLR, fr->f_twin, fcd,
                           ekind, M, wcycle, upd, bInitStep, etrtVELOCITY1,
@@ -1268,7 +1275,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
 
                 bOK = TRUE;
-                if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
+                if (bShouldDoUpdateWithV)
                 {
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
@@ -1686,7 +1693,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bOK = TRUE;
             dvdl_constr = 0;
 
-            if (!(bRerunMD && !rerun_fr.bV && !bForceUpdate))
+            if (bShouldDoUpdateWithV)
             {
                 wallcycle_start(wcycle, ewcUPDATE);
                 /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
@@ -1723,8 +1730,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (bVV)
                 {
-                    bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
-
                     /* velocity half-step update */
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, fcd,
@@ -1741,8 +1746,18 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     copy_rvecn(state->x, cbuf, 0, state->natoms);
                 }
-                bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
+                temporary_update_for_twin_range(fplog, step, ir, mdatoms,
+                                                state, fr->bMolPBC, f, fcd,
+                                                ekind, M, wcycle, upd, bInitStep,
+                                                cr, nrnb, constr,
+                                                bUpdateDoLR && !EI_VV(ir->eI),
+                                                bUpdateLRConstraintVirial,
+                                                shake_vir, &top->idef);
+
+                /* Now do the normal update (which includes the
+                   multiple-time impulse, if using multiple time
+                   stepping */
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                               bUpdateDoLR, fr->f_twin, fcd,
                               ekind, M, wcycle, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
@@ -1752,7 +1767,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir, force_vir,
                                    cr, nrnb, wcycle, upd, constr,
-                                   bInitStep, FALSE, bCalcVir, state->veta);
+                                   bInitStep, FALSE, bCalcVir && !bUpdateLRConstraintVirial, state->veta);
 
                 if (ir->eI == eiVVAK)
                 {
@@ -1769,7 +1784,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf, state->x, 0, state->natoms);
 
-                    bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, fcd,
@@ -1854,6 +1868,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              */
             if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)))
             {
+                swap_twin_range_velocities(bUpdateDoLR && bShouldDoUpdateWithV, state, upd);
+
                 if (ir->nstlist == -1 && bFirstIterate)
                 {
                     gs.sig[eglsNABNSB] = nlh.nabnsb;
@@ -1875,6 +1891,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                 | CGLO_CONSTRAINT
                                 );
+
+                swap_twin_range_velocities(bUpdateDoLR && bShouldDoUpdateWithV, state, upd);
+
                 if (ir->nstlist == -1 && bFirstIterate)
                 {
                     nlh.nabnsb         = gs.set[eglsNABNSB];

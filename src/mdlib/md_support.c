@@ -715,6 +715,7 @@ void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
     {
         md_print_warn(cr, fplog, "Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies\n");
 
+        /* TODO can this go away now? */
         if (gmx_mtop_ftype_count(mtop, F_CONSTR) +
             gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0 &&
             ir->eConstrAlg == econtSHAKE)

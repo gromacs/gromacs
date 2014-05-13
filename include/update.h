@@ -118,6 +118,71 @@ void update_coords(FILE             *fplog,
                    gmx_constr_t      constr,
                    t_idef           *idef);
 
+/*! \brief Do temporary update for twin-range MTS at nstlist steps
+ *
+ * At nstlist steps, the twin-range multiple-time step scheme requires
+ * a temporary update to x and v that is then constrained, in order to
+ * compute the post-update constraint contribution to the virial (if
+ * required), and quantities like kinetic energy from the velocities
+ * for the corresponding point in time (which is always required in
+ * practice). Both those quantities should be identical to those
+ * computed when not actually doing a multiple-time step.
+ *
+ * This temporary update must take place before the nstlist-1 impulse
+ * from the long-range forces produces the real update, which is then
+ * constrained in the usual way (but suppressing re-computation of the
+ * constraint component of the virial).
+ *
+ * \param[out] upd                      vp contains the updated velocities
+ * \param[in]  bUpdateVelocities        Whether to produce a velocity update (should
+ *                                      always be true for the supported integrators)
+ * \param[in]  bUpdateConstraintVirial  Whether the constraint virial is required (has
+ *                                      no effect unless bUpdateVelocities is true)
+ * \param[out] vir_part                 Contains the constraint contribution to the virial
+ */
+
+void
+temporary_update_for_twin_range(FILE             *fplog,
+                                gmx_large_int_t   step,
+                                t_inputrec       *inputrec,  /* input record and box stuff	*/
+                                t_mdatoms        *md,
+                                t_state          *state,
+                                gmx_bool          bMolPBC,
+                                rvec             *f,    /* forces on home particles */
+                                t_fcdata         *fcd,
+                                gmx_ekindata_t   *ekind,
+                                matrix            M,
+                                gmx_wallcycle_t   wcycle,
+                                gmx_update_t      upd, /* OUTPUT: the updated velocities in vp */
+                                gmx_bool          bInitStep,
+                                t_commrec        *cr, /* these shouldn't be here -- need to think about it */
+                                t_nrnb           *nrnb,
+                                gmx_constr_t      constr,
+                                gmx_bool          bUpdateVelocities,
+                                gmx_bool          bUpdateConstraintVirial,
+                                tensor            vir_part, /* OUTPUT: the constraint virial */
+                                t_idef           *idef);
+
+/*! \brief Swap velocity vector between upd and state if needed
+ *
+ * When using twin-range, at long-range update steps, for computing
+ * parts of the update phase (e.g. temperature coupling), we need to
+ * use the single-step velocities. But the next step needs the
+ * velocities from the single step plus the multiple-time-step
+ * contribution. So there are two velocity vectors to
+ * juggle. Computing the kinetic energy is buried in the mess that is
+ * compute_globals, and hard-coded to use state->v. So rather than
+ * extend t_state to cater for this minor and probably short-lived use
+ * case, this routine is an egregious hack to make state->v point to
+ * the values it needs to hold.
+ *
+ * \param[inout] bSwapVelocities  Whether to actually do the swap of velocities
+ * \param[inout] state            On output, if the swap occurs, state->v points to the velocities that were pointed to by upd->vp
+ * \param[inout] upd              On output, if the swap occurs, upd->vp points to the velocities that were pointed to by state->v
+ */
+void
+swap_twin_range_velocities(gmx_bool bSwapVelocities, t_state *state, gmx_update_t upd);
+
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 GMX_LIBMD_EXPORT

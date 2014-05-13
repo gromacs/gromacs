@@ -3739,6 +3739,7 @@ void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr, warninp_t wi)
             warning_error(wi, warn_buf);
         }
 
+        /* TODO can this go away now? */
         if (IR_TWINRANGE(*ir) && ir->nstlist > 1)
         {
             sprintf(warn_buf, "With twin-range cut-off's and SHAKE the virial and the pressure are incorrect.");

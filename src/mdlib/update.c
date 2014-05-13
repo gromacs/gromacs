@@ -42,6 +42,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
 
 #include "types/commrec.h"
 #include "sysstuff.h"
@@ -117,6 +118,9 @@ typedef struct gmx_update
     /* xprime for constraint algorithms */
     rvec         *xp;
     int           xp_nalloc;
+    /* vprime needed only for twin-range + multiple time stepping */
+    rvec         *vp;
+    int           vp_nalloc;
 
     /* variable size arrays for andersen */
     gmx_bool *randatom;
@@ -681,6 +685,8 @@ gmx_update_t init_update(FILE *fplog, t_inputrec *ir)
 
     upd->xp                 = NULL;
     upd->xp_nalloc          = 0;
+    upd->vp                 = NULL;
+    upd->vp_nalloc          = 0;
     upd->randatom           = NULL;
     upd->randatom_list      = NULL;
     upd->randatom_list_init = FALSE; /* we have not yet cleared the data structure at this point */
@@ -1334,37 +1340,16 @@ static void deform(gmx_update_t upd,
 }
 
 static void combine_forces(int nstcalclr,
-                           gmx_constr_t constr,
-                           t_inputrec *ir, t_mdatoms *md, t_idef *idef,
-                           t_commrec *cr,
-                           gmx_large_int_t step,
-                           t_state *state, gmx_bool bMolPBC,
                            int start, int nrend,
-                           rvec f[], rvec f_lr[],
-                           t_nrnb *nrnb)
+                           rvec f[], rvec f_lr[])
 {
     int  i, d, nm1;
 
-    /* f contains the short-range forces + the long range forces
-     * which are stored separately in f_lr.
-     */
-
-    if (constr != NULL && !(ir->eConstrAlg == econtSHAKE && ir->epc == epcNO))
-    {
-        /* We need to constrain the LR forces separately,
-         * because due to the different pre-factor for the SR and LR
-         * forces in the update algorithm, we can not determine
-         * the constraint force for the coordinate constraining.
-         * Constrain only the additional LR part of the force.
-         */
-        /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
-        constrain(NULL, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
-                  state->x, f_lr, f_lr, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
-                  NULL, NULL, nrnb, econqForce, ir->epc == epcMTTK, state->veta, state->veta);
-    }
-
-    /* Add nstcalclr-1 times the LR force to the sum of both forces
-     * and store the result in forces_lr.
+    /* f contains the short-range forces + the long range forces.  The
+     * latter are also stored separately in f_lr. To implement the
+     * twin-range update, we add nstcalclr-1 times the LR force to f,
+     * and store the result in f_lr. Later, these will be constrained
+     * in the normal way.
      */
     nm1 = nstcalclr - 1;
     for (i = start; i < nrend; i++)
@@ -1519,6 +1504,68 @@ static rvec *get_xprime(const t_state *state, gmx_update_t upd)
     return upd->xp;
 }
 
+static rvec *get_vprime(const t_state *state, gmx_update_t upd)
+{
+    if (state->nalloc > upd->vp_nalloc)
+    {
+        upd->vp_nalloc = state->nalloc;
+        srenew(upd->vp, upd->vp_nalloc);
+    }
+
+    return upd->vp;
+}
+
+/*! \brief Accumulate the constraint component of the virial
+ *
+ * \param[in]  bCalcVir  Whether we need to calculate the virial
+ * \param[in]  bIsSD2    Whether the integrator is SD2
+ * \param[in]  upd       Update management object
+ * \param[in]  vir_con   The constraint component of the virial
+ * \param[out] vir_part  The total virial
+ *
+ * \todo The clear_mat and accumulation semantics should be removed,
+ * and msmul and copy_mat used instead.
+ */
+static void
+update_constraint_virial(gmx_bool bCalcVir,
+                         gmx_bool bIsSD2,
+                         const gmx_update_t upd,
+                         tensor vir_con,
+                         tensor vir_part)
+{
+    if (!bCalcVir)
+    {
+        return;
+    }
+
+    /* clear out tensor before applying the constraint contribution */
+    clear_mat(vir_part);
+
+    if (bIsSD2)
+    {
+        int i, m;
+        /* A correction factor eph is needed for the SD constraint force */
+        /* Here we can, unfortunately, not have proper corrections
+         * for different friction constants, so we use the first one.
+         */
+        for (i = 0; i < DIM; i++)
+        {
+            for (m = 0; m < DIM; m++)
+            {
+                vir_part[i][m] += upd->sd->sdc[0].eph*vir_con[i][m];
+            }
+        }
+    }
+    else
+    {
+        m_add(vir_part, vir_con, vir_part);
+    }
+    if (debug)
+    {
+        pr_rvecs(debug, 0, "constraint virial", vir_part, DIM);
+    }
+}
+
 void update_constraints(FILE             *fplog,
                         gmx_large_int_t   step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
@@ -1582,9 +1629,6 @@ void update_constraints(FILE             *fplog,
 
     if (bDoConstr)
     {
-        /* clear out constraints before applying */
-        clear_mat(vir_part);
-
         xprime = get_xprime(state, upd);
 
         bLastStep = (step == inputrec->init_step+inputrec->nsteps);
@@ -1619,31 +1663,8 @@ void update_constraints(FILE             *fplog,
         dump_it_all(fplog, "After Shake",
                     state->natoms, state->x, xprime, state->v, force);
 
-        if (bCalcVir)
-        {
-            if (inputrec->eI == eiSD2)
-            {
-                /* A correction factor eph is needed for the SD constraint force */
-                /* Here we can, unfortunately, not have proper corrections
-                 * for different friction constants, so we use the first one.
-                 */
-                for (i = 0; i < DIM; i++)
-                {
-                    for (m = 0; m < DIM; m++)
-                    {
-                        vir_part[i][m] += upd->sd->sdc[0].eph*vir_con[i][m];
-                    }
-                }
-            }
-            else
-            {
-                m_add(vir_part, vir_con, vir_part);
-            }
-            if (debug)
-            {
-                pr_rvecs(debug, 0, "constraint virial", vir_part, DIM);
-            }
-        }
+        update_constraint_virial(bCalcVir, inputrec->eI == eiSD2,
+                                 upd, vir_con, vir_part);
     }
 
     where();
@@ -1828,6 +1849,34 @@ void update_box(FILE             *fplog,
                 state->natoms, state->x, upd->xp, state->v, force);
 }
 
+/*! \brief Do the actual update for coordinates
+ *
+ * This function is needed so that the output vectors can be
+ * controlled for different kinds of output. We can't always use those
+ * in state.
+ *
+ * \param[in]    state  Contains state information, but not used for x and v
+ * \param[in]    f      The forces to use in the update
+ * \param[in]    x      The positions to use in the update
+ * \param[out]   xp     Over-written with new positions
+ * \param[inout] v      Updated with the new velocities
+ *
+ * \todo consider state->veta. */
+static void
+update_coords_inner(gmx_large_int_t   step,
+                    t_inputrec       *inputrec,  /* input record and box stuff	*/
+                    t_mdatoms        *md,
+                    t_state          *state,
+                    rvec             *f,    /* forces on home particles */
+                    rvec             *x,      /* initial coordinates */
+                    rvec             *xprime, /* updated coordinates */
+                    rvec             *v,      /* initial AND updated velocities */
+                    gmx_ekindata_t   *ekind,
+                    matrix            M,
+                    gmx_update_t      upd,
+                    gmx_bool          bInitStep,
+                    int               UpdatePart);
+
 void update_coords(FILE             *fplog,
                    gmx_large_int_t   step,
                    t_inputrec       *inputrec,  /* input record and box stuff	*/
@@ -1874,9 +1923,6 @@ void update_coords(FILE             *fplog,
 
     xprime = get_xprime(state, upd);
 
-    dt   = inputrec->delta_t;
-    dt_1 = 1.0/dt;
-
     /* We need to update the NMR restraint history when time averaging is used */
     if (state->flags & (1<<estDISRE_RM3TAV))
     {
@@ -1887,20 +1933,15 @@ void update_coords(FILE             *fplog,
         update_orires_history(fcd, &state->hist);
     }
 
-
-    bNH = inputrec->etc == etcNOSEHOOVER;
-    bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK));
-
-    if (bDoLR && inputrec->nstcalclr > 1 && !EI_VV(inputrec->eI))  /* get this working with VV? */
+    if (bDoLR && !EI_VV(inputrec->eI))  /* get this working with VV? */
     {
         /* Store the total force + nstcalclr-1 times the LR force
          * in forces_lr, so it can be used in a normal update algorithm
          * to produce twin time stepping.
          */
         /* is this correct in the new construction? MRS */
-        combine_forces(inputrec->nstcalclr, constr, inputrec, md, idef, cr,
-                       step, state, bMolPBC,
-                       start, nrend, f, f_lr, nrnb);
+        combine_forces(inputrec->nstcalclr,
+                       start, nrend, f, f_lr);
         force = f_lr;
     }
     else
@@ -1908,10 +1949,128 @@ void update_coords(FILE             *fplog,
         force = f;
     }
 
+    update_coords_inner(step, inputrec, md, state, force,
+                        state->x, xprime, state->v, ekind,
+                        M, upd, bInitStep, UpdatePart);
+}
+
+void
+temporary_update_for_twin_range(FILE             *fplog,
+                                gmx_large_int_t   step,
+                                t_inputrec       *inputrec,
+                                t_mdatoms        *md,
+                                t_state          *state,
+                                gmx_bool          bMolPBC,
+                                rvec             *f,
+                                t_fcdata         *fcd,
+                                gmx_ekindata_t   *ekind,
+                                matrix            M,
+                                gmx_wallcycle_t   wcycle,
+                                gmx_update_t      upd,
+                                gmx_bool          bInitStep,
+                                t_commrec        *cr,
+                                t_nrnb           *nrnb,
+                                gmx_constr_t      constr,
+                                gmx_bool          bUpdateVelocities,
+                                gmx_bool          bUpdateConstraintVirial,
+                                tensor            vir_part,
+                                t_idef           *idef)
+{
+    int      n;
+    tensor   vir_con;
+    rvec    *xprime, *vprime;
+    /* Create an output variable that can be discarded */
+    real dvdl_constraint_temporary = 0;
+
+    if (!bUpdateVelocities)
+    {
+        return;
+    }
+
+    xprime = get_xprime(state, upd);
+
+    /* Set up buffers so we can do a temporary update to determine the
+     * constraint virial for this (nstlist) update step from the
+     * short-range and bonded forces plus a single step worth of
+     * long-range forces. Other output is discarded. Later, the real
+     * update is done from the short-range and bonded forces plus
+     * nstlist times the long-range forces. */
+    vprime = get_vprime(state, upd);
+    for(n = md->start; n < md->start + md->homenr; n++)
+    {
+        copy_rvec(state->v[n], vprime[n]);
+    }
+
+    /* Compute an update with a single-step long-range contribution
+     * (ie. the forces currently in f), so we can get the correct velocities */
+    update_coords_inner(step, inputrec, md, state, f,
+                        state->x, xprime, vprime, ekind,
+                        M, upd, bInitStep, etrtPOSITION);
+
+    if (!bUpdateConstraintVirial)
+    {
+        return;
+    }
+
+
+    wallcycle_stop(wcycle, ewcUPDATE);
+    wallcycle_start(wcycle, ewcCONSTR);
+
+    /* Using the updated xprime and vprime, get the correct constraint
+       contribution to the virial. */
+    constrain(NULL, FALSE, FALSE, constr, idef,
+              inputrec, ekind, cr, step, 1, md,
+              state->x, xprime, NULL,
+              bMolPBC, state->box,
+              state->lambda[efptBONDED], &dvdl_constraint_temporary,
+              vprime, &vir_con, nrnb, econqCoord,
+              inputrec->epc == epcMTTK, state->veta, state->veta);
+    update_constraint_virial(TRUE, inputrec->eI == eiSD2,
+                             upd, vir_con, vir_part);
+
+    wallcycle_stop(wcycle, ewcCONSTR);
+    wallcycle_start(wcycle, ewcUPDATE);
+}
+
+static void
+update_coords_inner(gmx_large_int_t   step,
+                    t_inputrec       *inputrec,  /* input record and box stuff	*/
+                    t_mdatoms        *md,
+                    t_state          *state,
+                    rvec             *force,  /* forces on home particles */
+                    rvec             *x,      /* initial coordinates */
+                    rvec             *xprime, /* updated coordinates */
+                    rvec             *v,      /* initial AND updated velocities */
+                    gmx_ekindata_t   *ekind,
+                    matrix            M,
+                    gmx_update_t      upd,
+                    gmx_bool          bInitStep,
+                    int               UpdatePart)
+{
+    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE;
+    double            dt, alpha;
+    real             *imass, *imassin;
+    real              dt_1;
+    int               start, homenr, nrend, d, n, m, g;
+    int               blen0, blen1, iatom, jatom, nshake, nsettle, nconstr, nexpand;
+    int              *icom = NULL;
+    rvec             *vcom, *xcom, *vall, *xall, *xin, *vin, *forcein, *fall, *xpall, *xprimein;
+    int               nth, th;
+
+    start  = md->start;
+    homenr = md->homenr;
+    nrend  = start+homenr;
+
+    dt   = inputrec->delta_t;
+    dt_1 = 1.0/dt;
+
+    bNH = inputrec->etc == etcNOSEHOOVER;
+    bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK));
+
     /* ############# START The update of velocities and positions ######### */
     where();
-    dump_it_all(fplog, "Before update",
-                state->natoms, state->x, xprime, state->v, force);
+    dump_it_all(debug, "Before update",
+                nrend, x, xprime, v, force);
 
     if (inputrec->eI == eiSD2)
     {
@@ -1950,7 +2109,7 @@ void update_coords(FILE             *fplog,
                                  inputrec->opts.nFreeze,
                                  md->invmass, md->ptype,
                                  md->cFREEZE, md->cACC, md->cTC,
-                                 state->x, xprime, state->v, force, M,
+                                 x, xprime, v, force, M,
                                  bNH, bPR);
                 }
                 else
@@ -1958,7 +2117,7 @@ void update_coords(FILE             *fplog,
                     do_update_visc(start_th, end_th, dt,
                                    ekind->tcstat, state->nosehoover_vxi,
                                    md->invmass, md->ptype,
-                                   md->cTC, state->x, xprime, state->v, force, M,
+                                   md->cTC, x, xprime, v, force, M,
                                    state->box,
                                    ekind->cosacc.cos_accel,
                                    ekind->cosacc.vcos,
@@ -1971,7 +2130,7 @@ void update_coords(FILE             *fplog,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
-                              state->x, xprime, state->v, force, state->sd_X,
+                              x, xprime, v, force, state->sd_X,
                               inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t);
                 break;
             case (eiSD2):
@@ -1983,7 +2142,7 @@ void update_coords(FILE             *fplog,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
-                              state->x, xprime, state->v, force, state->sd_X,
+                              x, xprime, v, force, state->sd_X,
                               inputrec->opts.tau_t,
                               TRUE);
                 break;
@@ -1991,7 +2150,7 @@ void update_coords(FILE             *fplog,
                 do_update_bd(start_th, end_th, dt,
                              inputrec->opts.nFreeze, md->invmass, md->ptype,
                              md->cFREEZE, md->cTC,
-                             state->x, xprime, state->v, force,
+                             x, xprime, v, force,
                              inputrec->bd_fric,
                              upd->sd->bd_rf, upd->sd->gaussrand[th]);
                 break;
@@ -2007,7 +2166,7 @@ void update_coords(FILE             *fplog,
                                          inputrec->opts.acc, inputrec->opts.nFreeze,
                                          md->invmass, md->ptype,
                                          md->cFREEZE, md->cACC,
-                                         state->v, force,
+                                         v, force,
                                          (bNH || bPR), state->veta, alpha);
                         break;
                     case etrtPOSITION:
@@ -2015,7 +2174,7 @@ void update_coords(FILE             *fplog,
                                          ekind->tcstat, ekind->grpstat,
                                          inputrec->opts.acc, inputrec->opts.nFreeze,
                                          md->invmass, md->ptype, md->cFREEZE,
-                                         state->x, xprime, state->v, force,
+                                         x, xprime, v, force,
                                          (bNH || bPR), state->veta, alpha);
                         break;
                 }
@@ -2028,6 +2187,21 @@ void update_coords(FILE             *fplog,
 
 }
 
+void
+swap_twin_range_velocities(gmx_bool bSwapVelocities, t_state *state, gmx_update_t upd)
+{
+    if (bSwapVelocities)
+    {
+        rvec *temp;
+
+        assert(state->v);
+        assert(upd->vp);
+
+        temp = state->v;
+        state->v = upd->vp;
+        upd->vp = temp;
+    }
+}
 
 void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[],
                   real tmass, tensor ekin)

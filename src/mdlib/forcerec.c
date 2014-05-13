@@ -1338,11 +1338,11 @@ void forcerec_set_ranges(t_forcerec *fr,
     if (fr->natoms_force_constr > fr->nalloc_force)
     {
         fr->nalloc_force = over_alloc_dd(fr->natoms_force_constr);
+    }
 
-        if (fr->bTwinRange)
-        {
-            srenew(fr->f_twin, fr->nalloc_force);
-        }
+    if (fr->bTwinRange)
+    {
+        srenew(fr->f_twin, fr->nalloc_force);
     }
 
     if (fr->bF_NoVirSum)

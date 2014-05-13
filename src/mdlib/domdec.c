@@ -9786,10 +9786,10 @@ void dd_partition_system(FILE                *fplog,
     }
 
     /* Set the number of atoms required for the force calculation.
-     * Forces need to be constrained when using a twin-range setup
-     * or with energy minimization. For simple simulations we could
-     * avoid some allocation, zeroing and copying, but this is
-     * probably not worth the complications ande checking.
+     * Forces need to be constrained with energy minimization. For
+     * simple simulations we could avoid some allocation, zeroing and
+     * copying, but this is probably not worth the complications ande
+     * checking.
      */
     forcerec_set_ranges(fr, dd->ncg_home, dd->ncg_tot,
                         dd->nat_tot, comm->nat[ddnatCON], nat_f_novirsum);
