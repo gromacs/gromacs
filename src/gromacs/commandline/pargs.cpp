@@ -63,6 +63,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -568,14 +569,16 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx::GlobalCommandLineHelpContext::get();
         if (context != NULL)
         {
-            if (!(FF(PCA_QUIET)))
-            {
-                gmx::CommandLineHelpWriter(options)
-                    .setShowDescriptions(true)
-                    .setTimeUnitString(timeUnitManager.timeUnitAsString())
-                    .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
-                    .writeHelp(*context);
-            }
+            // TODO: The first check should not be necessary, but with
+            // thread-MPI it is...
+            GMX_RELEASE_ASSERT(!gmx_mpi_initialized() || gmx_node_rank() == 0,
+                               "Help output should be handled higher up and "
+                               "only get called only on the master rank");
+            gmx::CommandLineHelpWriter(options)
+                .setShowDescriptions(true)
+                .setTimeUnitString(timeUnitManager.timeUnitAsString())
+                .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
+                .writeHelp(*context);
             return FALSE;
         }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,6 +85,9 @@ class CommandLineModuleInterface
          * \param[in] context  Context object for writing the help.
          * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
+         *
+         * Note that for MPI-enabled builds, this is called only on the master
+         * rank.
          */
         virtual void writeHelp(const CommandLineHelpContext &context) const = 0;
 };
