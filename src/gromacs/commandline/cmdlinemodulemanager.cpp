@@ -558,7 +558,11 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         fprintf(stderr, "Will write debug log file: %s\n", filename.c_str());
         gmx_init_debug(optionsHolder.debugLevel(), filename.c_str());
     }
-    int rc = module->run(argc, argv);
+    int rc = 0;
+    if (!(module == impl_->helpModule_ && !bMaster))
+    {
+        rc = module->run(argc, argv);
+    }
     if (!bQuiet)
     {
         gmx_thanx(stderr);
