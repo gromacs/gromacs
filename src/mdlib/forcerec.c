@@ -2579,6 +2579,11 @@ void init_forcerec(FILE              *fp,
         gmx_fatal(FARGS, "Switch/shift interaction not supported with Buckingham");
     }
 
+    if (fr->bBHAM && fr->cutoff_scheme == ecutsVERLET)
+    {
+        gmx_fatal(FARGS, "Verlet cutoff-scheme is not supported with Buckingham");
+    }
+
     if (fp)
     {
         fprintf(fp, "Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
