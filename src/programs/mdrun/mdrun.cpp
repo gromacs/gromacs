@@ -607,7 +607,7 @@ int gmx_mdrun(int argc, char *argv[])
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    unsigned long   Flags, PCA_Flags;
+    unsigned long   Flags;
     ivec            ddxyz;
     int             dd_node_order;
     gmx_bool        bAddPart;
@@ -620,7 +620,7 @@ int gmx_mdrun(int argc, char *argv[])
 
     cr = init_commrec();
 
-    PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
+    unsigned long PCA_Flags = PCA_CAN_SET_DEFFNM;
     // With -multi or -multisim, the file names are going to get processed
     // further (or the working directory changed), so we can't check for their
     // existence during parsing.

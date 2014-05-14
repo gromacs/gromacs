@@ -270,8 +270,7 @@ int main(int argc,char *argv[])
    * init_par (see above)
    */
   parse_common_args(&argc,argv,
-		    PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
-		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
+		    PCA_NOEXIT_ON_ARGS | PCA_BE_NICE | PCA_CAN_SET_DEFFNM,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
 #ifndef GMX_MPI

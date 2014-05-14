@@ -575,14 +575,11 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx::GlobalCommandLineHelpContext::get();
         if (context != NULL)
         {
-            if (!(FF(PCA_QUIET)))
-            {
-                gmx::CommandLineHelpWriter(options)
-                    .setShowDescriptions(true)
-                    .setTimeUnitString(timeUnitManager.timeUnitAsString())
-                    .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
-                    .writeHelp(*context);
-            }
+            gmx::CommandLineHelpWriter(options)
+                .setShowDescriptions(true)
+                .setTimeUnitString(timeUnitManager.timeUnitAsString())
+                .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
+                .writeHelp(*context);
             return FALSE;
         }
 
