@@ -687,6 +687,21 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
         {
             pgrp = &pull->grp[g];
 
+            if (pull->eGeom == epullgPOS)
+            {
+                for (m = 0; m < DIM; m++)
+                {
+                    ref[m] = pgrp->init[m] + pgrp->rate*t*pgrp->vec[m];
+                }
+            }
+            else
+            {
+                ref[0] = pgrp->init[0] + pgrp->rate*t;
+                /* Keep the compiler happy */
+                ref[1] = 0;
+                ref[2] = 0;
+            }
+
             get_pullgrps_dr(pull, pbc, g, t, rinew[g], rjnew[PULL_CYL(pull) ? g : 0],
                             -1, unc_ij);
 
