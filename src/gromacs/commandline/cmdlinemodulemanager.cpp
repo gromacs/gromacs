@@ -540,7 +540,11 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     {
         return 0;
     }
-    int rc = module->run(argc, argv);
+    int rc = 0;
+    if (!(module == impl_->helpModule_ && !bMaster))
+    {
+        rc = module->run(argc, argv);
+    }
     if (!bQuiet)
     {
         gmx_thanx(stderr);

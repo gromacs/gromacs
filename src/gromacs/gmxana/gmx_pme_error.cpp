@@ -1126,12 +1126,8 @@ int gmx_pme_error(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     cr = init_commrec();
-#ifdef GMX_LIB_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
 
     PCA_Flags  = PCA_NOEXIT_ON_ARGS;
-    PCA_Flags |= (MASTER(cr) ? 0 : PCA_QUIET);
 
     if (!parse_common_args(&argc, argv, PCA_Flags,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
