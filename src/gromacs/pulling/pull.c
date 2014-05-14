@@ -629,11 +629,13 @@ static void do_constraint(t_pull *pull, t_pbc *pbc,
         for (c = 0; c < pull->ncoord; c++)
         {
             pcrd = &pull->coord[c];
+            ref = pcrd->init + pcrd->rate*t;
+
 
             low_get_pull_coord_dr(pull, pcrd, pbc, t,
                                   rnew[pcrd->group[1]],
                                   rnew[pcrd->group[0]],
-                                  -1, unc_ij);
+                                  -1, unc_sij);
 
             switch (pull->eGeom)
             {
