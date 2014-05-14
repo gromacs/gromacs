@@ -332,6 +332,8 @@ typedef struct {
     gmx_bool bTwinRange;
     int      nlr;
     rvec    *f_twin;
+    /* Constraint virial correction for multiple time stepping */
+    tensor   vir_twin_constr;
 
     /* Forces that should not enter into the virial summation:
      * PPPM/PME/Ewald/posres
