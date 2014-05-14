@@ -649,6 +649,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
             dlen2 = 2*len2 - norm2(dx);
             if (dlen2 < wfac*len2 && (nlocat == NULL || nlocat[b]))
             {
+                /* not race free - see detailed comment in caller */
                 *warn = b;
             }
             if (dlen2 > 0)
