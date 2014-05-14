@@ -656,6 +656,8 @@ do_nonbonded_listed(int ftype, int nbonds,
 
         if (r2 >= fr->tab14.r*fr->tab14.r)
         {
+            /* This check isn't race free. But it doesn't matter because if a race occurs the only
+             * disadvantage is that the warning is printed twice */
             if (warned_rlimit == FALSE)
             {
                 nb_listed_warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->tab14.r);
