@@ -119,7 +119,7 @@ const char *ftp2ftype(int ftp);
 /* Return Binary or ASCII depending on file type */
 
 void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     const char *deffnm, gmx_bool bReadNode);
+                     const char *deffnm);
 /* Parse command line for file names. When bKeep is set args are
  * not removed from argv. */
 

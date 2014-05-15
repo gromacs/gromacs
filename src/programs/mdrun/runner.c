@@ -1573,10 +1573,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                       FALSE,
                       pforce);
 
-        /* version for PCA_NOT_READ_NODE (see md.c) */
-        /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
-           "nofile","nofile","nofile","nofile",FALSE,pforce);
-         */
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
 
         /* Initialize QM-MM */

@@ -609,18 +609,6 @@ int gmx_mdrun(int argc, char *argv[])
 
     PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
 
-    /* Comment this in to do fexist calls only on master
-     * works not with rerun or tables at the moment
-     * also comment out the version of init_forcerec in md.c
-     * with NULL instead of opt2fn
-     */
-    /*
-       if (!MASTER(cr))
-       {
-       PCA_Flags |= PCA_NOT_READ_NODE;
-       }
-     */
-
     if (!parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, 0, NULL, &oenv))
     {

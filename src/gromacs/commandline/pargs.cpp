@@ -760,7 +760,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                     (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
     /* Parse the file args */
-    parse_file_args(argc, argv, nfile, fnm, deffnm, !FF(PCA_NOT_READ_NODE));
+    parse_file_args(argc, argv, nfile, fnm, deffnm);
 
     /* Open the debug file */
     if (debug_level > 0)

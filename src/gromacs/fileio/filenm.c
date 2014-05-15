@@ -485,8 +485,7 @@ static void set_grpfnm(t_filenm *fnm, const char *name, const char *deffnm)
     add_filenm(fnm, buf);
 }
 
-static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm,
-                       gmx_bool bReadNode)
+static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm)
 {
     /* Set the default filename, extension and option for those fields that
      * are not already set. An extension is added if not present, if fn = NULL
@@ -494,11 +493,6 @@ static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm,
      */
     char buf[256];
     int  i, len, extlen;
-
-    if ((fnm->flag & ffREAD) && !bReadNode)
-    {
-        return;
-    }
 
     if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
     {
@@ -550,7 +544,7 @@ static void set_filenm(t_filenm *fnm, const char *name, const char *deffnm,
     }
 }
 
-static void set_filenms(int nf, t_filenm fnm[], const char *deffnm, gmx_bool bReadNode)
+static void set_filenms(int nf, t_filenm fnm[], const char *deffnm)
 {
     int i;
 
@@ -558,13 +552,13 @@ static void set_filenms(int nf, t_filenm fnm[], const char *deffnm, gmx_bool bRe
     {
         if (!IS_SET(fnm[i]))
         {
-            set_filenm(&(fnm[i]), fnm[i].fn, deffnm, bReadNode);
+            set_filenm(&(fnm[i]), fnm[i].fn, deffnm);
         }
     }
 }
 
 void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
-                     const char *deffnm, gmx_bool bReadNode)
+                     const char *deffnm)
 {
     int       i, j;
     gmx_bool *bRemove;
@@ -592,12 +586,12 @@ void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
                     /* check if we are out of arguments for this option */
                     if ((i >= *argc) || (argv[i][0] == '-'))
                     {
-                        set_filenm(&fnm[j], fnm[j].fn, deffnm, bReadNode);
+                        set_filenm(&fnm[j], fnm[j].fn, deffnm);
                     }
                     /* sweep up all file arguments for this option */
                     while ((i < *argc) && (argv[i][0] != '-'))
                     {
-                        set_filenm(&fnm[j], argv[i], NULL, bReadNode);
+                        set_filenm(&fnm[j], argv[i], NULL);
                         bRemove[i] = TRUE;
                         i++;
                         /* only repeat for 'multiple' file options: */
@@ -630,7 +624,7 @@ void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
         sfree(bRemove);
     }
 
-    set_filenms(nf, fnm, deffnm, bReadNode);
+    set_filenms(nf, fnm, deffnm);
 
 }
 
