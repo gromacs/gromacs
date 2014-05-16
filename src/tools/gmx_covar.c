@@ -566,7 +566,7 @@ int gmx_covar(int argc, char *argv[])
     out = xvgropen(eigvalfile,
                    "Eigenvalues of the covariance matrix",
                    "Eigenvector index", str, oenv);
-    for (i = 0; (i < ndim); i++)
+    for (i = 0; (i < end); i++)
     {
         fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
     }
@@ -577,6 +577,9 @@ int gmx_covar(int argc, char *argv[])
         if (nframes-1 < ndim)
         {
             end = nframes-1;
+            fprintf(out, "WARNING: there are fewer frames in your trajectory than there are\n");
+            fprintf(out, "degrees of freedom in your system. Only generating the first\n");
+            fprintf(out, "%d out of %d eigenvectors and eigenvalues.\n", end, (int)ndim);
         }
         else
         {
@@ -659,7 +662,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(out, "Trace of the covariance matrix after diagonalizing: %g\n\n",
             sum);
 
-    fprintf(out, "Wrote %d eigenvalues to %s\n", (int)ndim, eigvalfile);
+    fprintf(out, "Wrote %d eigenvalues to %s\n", (int)end, eigvalfile);
     if (WriteXref == eWXR_YES)
     {
         fprintf(out, "Wrote reference structure to %s\n", eigvecfile);
