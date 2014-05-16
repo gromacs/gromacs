@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,7 +121,7 @@ int gmx_getusername(char *buf, size_t len)
     {
         return 0;
     }
-#elif defined(HAVE_UNISTD_H)
+#elif defined(HAVE_UNISTD_H) && !__has_feature(memory_sanitizer) //MSAN Issue 83
     if (!getlogin_r(buf, len))
     {
         buf[len-1] = '\0';
