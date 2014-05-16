@@ -2033,6 +2033,14 @@ int gmx_grompp(int argc, char *argv[])
             }
         }
     }
+    else
+    {
+        /* TODO: Without this the value written to tpr is undefined. Not sure this is correct.
+         * I can't find anywhere where the value read into tpx.fep_state is actually used by anything.
+         * Is this still used?!?
+         */
+        state.fep_state = 0;
+    }
 
     if (ir->ePull != epullNO)
     {
