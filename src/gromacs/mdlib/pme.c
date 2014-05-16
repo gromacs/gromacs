@@ -4946,6 +4946,9 @@ int gmx_pme_do(gmx_pme_t pme,
                         inc_nrnb(nrnb, eNR_FFT, 2*npme);
                     }
 
+                    /* Note: this wallcycle region is closed below
+                       outside an OpenMP region, so take care if
+                       refactoring code here. */
                     wallcycle_start(wcycle, ewcPME_SPREADGATHER);
                 }
 
@@ -4991,6 +4994,8 @@ int gmx_pme_do(gmx_pme_t pme,
 
             inc_nrnb(nrnb, eNR_GATHERFBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+            /* Note: this wallcycle region is opened above inside an OpenMP
+               region, so take care if refactoring code here. */
             wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
         }
 
