@@ -50,6 +50,7 @@
 #include "names.h"
 #include "warninp.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/qsort_threadsafe.h"
 
 t_inpfile *read_inpfile(const char *fn, int *ninp,
                         warninp_t wi)
@@ -238,7 +239,7 @@ static void sort_inp(int ninp, t_inpfile inp[])
             inp[i].count = mm++;
         }
     }
-    qsort(inp, ninp, (size_t)sizeof(inp[0]), inp_comp);
+    gmx_qsort(inp, ninp, (size_t)sizeof(inp[0]), inp_comp);
 }
 
 void write_inpfile(const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUnknown,
