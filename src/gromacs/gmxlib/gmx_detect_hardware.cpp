@@ -36,6 +36,9 @@
 #include <config.h>
 #endif
 
+#include <string>
+#include <vector>
+
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -59,9 +62,11 @@
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "thread_mpi/threads.h"
 
@@ -147,50 +152,74 @@ static void print_gpu_detection_stats(FILE                 *fplog,
     }
 }
 
-static void print_gpu_use_stats(FILE                 *fplog,
-                                const gmx_gpu_info_t *gpu_info,
-                                const gmx_gpu_opt_t  *gpu_opt,
-                                const t_commrec      *cr)
+/*! \brief Helper function for writing comma-separated GPU IDs.
+ *
+ * \param[in] ids  A container of integer GPU IDs
+ * \return         A comma-separated string of GPU IDs */
+template <typename Container>
+static std::string makeGpuIdsString(const Container &ids)
 {
-    char sbuf[STRLEN], stmp[STRLEN];
-    int  i, ngpu_comp, ngpu_use;
+    std::string output;
 
-    ngpu_comp = gpu_info->ncuda_dev_compatible;
-    ngpu_use  = gpu_opt->ncuda_dev_use;
+    if (0 != ids.size())
+    {
+        typename Container::const_iterator it = ids.begin();
+        output += gmx::formatString("%d", *it);
+        for (++it; it != ids.end(); ++it)
+        {
+            output += gmx::formatString(",%d", *it);
+        }
+    }
+    return output;
+}
+
+/*! \brief Helper function for reporting GPU usage information
+ * in the mdrun log file
+ *
+ * \param[in] gpu_info    Pointer to per-node GPU info struct
+ * \param[in] gpu_opt     Pointer to per-node GPU options struct
+ * \param[in] numPpRanks  Number of PP ranks per node
+ * \return                String to write to the log file
+ * \throws                std::bad_alloc if out of memory */
+static std::string
+makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
+                   const gmx_gpu_opt_t  *gpu_opt,
+                   size_t                numPpRanks)
+{
+    int ngpu_use  = gpu_opt->ncuda_dev_use;
+    int ngpu_comp = gpu_info->ncuda_dev_compatible;
 
     /* Issue a note if GPUs are available but not used */
     if (ngpu_comp > 0 && ngpu_use < 1)
     {
-        sprintf(sbuf,
-                "%d compatible GPU%s detected in the system, but none will be used.\n"
-                "Consider trying GPU acceleration with the Verlet scheme!",
-                ngpu_comp, (ngpu_comp > 1) ? "s" : "");
+        return gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
+                                 "Consider trying GPU acceleration with the Verlet scheme!\n",
+                                 ngpu_comp, (ngpu_comp > 1) ? "s" : "");
     }
-    else
+
+    std::string output;
+
     {
-        int ngpu_use_uniq;
-
-        ngpu_use_uniq = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
-
-        sprintf(sbuf, "%d GPU%s %sselected for this run.\n"
-                "Mapping of GPU%s to the %d PP rank%s in this node: ",
-                ngpu_use_uniq, (ngpu_use_uniq > 1) ? "s" : "",
-                gpu_opt->bUserSet ? "user-" : "auto-",
-                (ngpu_use > 1) ? "s" : "",
-                cr->nrank_pp_intranode,
-                (cr->nrank_pp_intranode > 1) ? "s" : "");
-
-        for (i = 0; i < ngpu_use; i++)
+        std::vector<int> gpuIdsInUse;
+        for (int i = 0; i < ngpu_use; i++)
         {
-            sprintf(stmp, "#%d", get_gpu_device_id(gpu_info, gpu_opt, i));
-            if (i < ngpu_use - 1)
-            {
-                strcat(stmp, ", ");
-            }
-            strcat(sbuf, stmp);
+            gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
         }
+        std::string gpuIdsString = makeGpuIdsString(gpuIdsInUse);
+        int         numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
+        bool        bPluralGpus  = numGpusInUse > 1;
+
+        output += gmx::formatString("%d GPU%s %sselected for this run.\n"
+                                    "Mapping of GPU ID%s to the %d PP rank%s in this node: %s\n",
+                                    numGpusInUse, bPluralGpus ? "s" : "",
+                                    gpu_opt->bUserSet ? "user-" : "auto-",
+                                    bPluralGpus ? "s" : "",
+                                    numPpRanks,
+                                    (numPpRanks > 1) ? "s" : "",
+                                    gpuIdsString.c_str());
     }
-    md_print_info(cr, fplog, "%s\n\n", sbuf);
+
+    return output;
 }
 
 /* Give a suitable fatal error or warning if the build configuration
@@ -281,8 +310,17 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
 
     if (hwinfo->gpu_info.ncuda_dev_compatible > 0)
     {
+        std::string gpuUseageReport;
+        try
+        {
+            gpuUseageReport = makeGpuUsageReport(&hwinfo->gpu_info,
+                                                 &hw_opt->gpu_opt,
+                                                 cr->nrank_pp_intranode);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
         /* NOTE: this print is only for and on one physical node */
-        print_gpu_use_stats(fplog, &hwinfo->gpu_info, &hw_opt->gpu_opt, cr);
+        md_print_info(cr, fplog, gpuUseageReport.c_str());
     }
 
     /* Need to ensure that we have enough GPUs:
