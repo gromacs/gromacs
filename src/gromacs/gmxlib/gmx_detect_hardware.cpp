@@ -65,6 +65,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "thread_mpi/threads.h"
@@ -196,6 +197,18 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     }
 
     std::string output;
+    {
+        std::string gpuIdsString =
+            makeGpuIdsString(gmx::ConstArrayRef<int>(gpu_opt->cuda_dev_use,
+                                                     gpu_opt->ncuda_dev_use));
+        bool bPluralGpus = gpu_opt->ncuda_dev_use > 1;
+        output += gmx::formatString("%d compatible GPU%s %s present, with ID%s %s\n",
+                                    gpu_opt->ncuda_dev_use,
+                                    bPluralGpus ? "s" : "s",
+                                    bPluralGpus ? "are" : "is",
+                                    bPluralGpus ? "s" : "s",
+                                    gpuIdsString.c_str());
+    }
 
     {
         std::vector<int> gpuIdsInUse;
