@@ -420,9 +420,9 @@ void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
         }
     }
 
-    gpu_opt->ncuda_dev_use = ncompat;
-    snew(gpu_opt->cuda_dev_use, ncompat);
-    memcpy(gpu_opt->cuda_dev_use, compat, ncompat*sizeof(*compat));
+    gpu_opt->ncuda_dev_compatible = ncompat;
+    snew(gpu_opt->cuda_dev_compatible, ncompat);
+    memcpy(gpu_opt->cuda_dev_compatible, compat, ncompat*sizeof(*compat));
     sfree(compat);
 }
 
