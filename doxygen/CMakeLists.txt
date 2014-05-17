@@ -156,6 +156,7 @@ if (DOXYGEN_FOUND)
             ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
             --installed ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt
+            --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
             -o ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
         set(dep_graphs_command_dot
             ${CMAKE_COMMAND} -DGRAPHDIR=${graphdir}

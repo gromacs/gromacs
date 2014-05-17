@@ -346,6 +346,9 @@ suppress a cycle between moduleA and moduleB, add a line with format
 into `doxygen/cycle-suppressions.txt`.  This suppresses all cycles that contain
 the mentioned edge.  Since a cycle contains multiple edges, the suppression
 should be made for the edge that is determined to be an incorrect dependency.
+This also affects the layout of the include dependency graphs (see below): the
+suppressed edge is not considered when determining the dependency order, and is
+shown as invalid in the graph.
 
 For some false positives from the script, the suppression mechanism is the
 easiest way to silence the script, but otherwise the goal would be to minimize
