@@ -66,7 +66,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "thread_mpi/threads.h"
 
@@ -198,6 +200,20 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     }
 
     std::string output;
+    if (!gpu_opt->bUserSet)
+    {
+        // gpu_opt->cuda_dev_compatible is only populated during auto-selection
+        std::string gpuIdsString =
+            makeGpuIdsString(gmx::ConstArrayRef<int>(gpu_opt->cuda_dev_compatible,
+                                                     gpu_opt->ncuda_dev_compatible));
+        bool bPluralGpus = gpu_opt->ncuda_dev_compatible > 1;
+        output += gmx::formatString("%d compatible GPU%s %s present, with ID%s %s\n",
+                                    gpu_opt->ncuda_dev_compatible,
+                                    bPluralGpus ? "s" : "",
+                                    bPluralGpus ? "are" : "is",
+                                    bPluralGpus ? "s" : "",
+                                    gpuIdsString.c_str());
+    }
 
     {
         std::vector<int> gpuIdsInUse;
@@ -809,17 +825,7 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
     else
     {
         pick_compatible_gpus(&hwinfo_g->gpu_info, gpu_opt);
-
-        if (gpu_opt->ncuda_dev_use > cr->nrank_pp_intranode)
-        {
-            /* We picked more GPUs than we can use: limit the number.
-             * We print detailed messages about this later in
-             * gmx_check_hw_runconf_consistency.
-             */
-            limit_num_gpus_used(gpu_opt, cr->nrank_pp_intranode);
-        }
-
-        gpu_opt->bUserSet = FALSE;
+        limit_num_gpus_used(gpu_opt, cr->nrank_pp_intranode);
     }
 
     /* If the user asked for a GPU, check whether we have a GPU */
@@ -829,30 +835,26 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
     }
 }
 
-static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int count)
+/* If we detected more compatible GPUs than we can use, limit the
+ * number. We print detailed messages about this later in
+ * gmx_check_hw_runconf_consistency.
+ */
+static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int maxNumberToUse)
 {
-    int ndev_use;
+    GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
+    GMX_RELEASE_ASSERT(maxNumberToUse >= 1,
+                       gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
+                                         maxNumberToUse, gpu_opt->ncuda_dev_compatible).c_str());
 
-    assert(gpu_opt);
-
-    ndev_use = gpu_opt->ncuda_dev_use;
-
-    if (count > ndev_use)
+    /* Don't increase the number of GPUs used beyond (e.g.) the number
+       of PP ranks */
+    gpu_opt->ncuda_dev_use = std::min(gpu_opt->ncuda_dev_compatible, maxNumberToUse);
+    snew(gpu_opt->cuda_dev_use, gpu_opt->ncuda_dev_use);
+    for (int i = 0; i != gpu_opt->ncuda_dev_use; ++i)
     {
-        /* won't increase the # of GPUs */
-        return;
+        /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
+        gpu_opt->cuda_dev_use[i] = gpu_opt->cuda_dev_compatible[i];
     }
-
-    if (count < 1)
-    {
-        char sbuf[STRLEN];
-        sprintf(sbuf, "Limiting the number of GPUs to <1 doesn't make sense (detected %d, %d requested)!",
-                ndev_use, count);
-        gmx_incons(sbuf);
-    }
-
-    /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-    gpu_opt->ncuda_dev_use = count;
 }
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
