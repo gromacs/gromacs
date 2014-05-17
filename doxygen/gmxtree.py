@@ -75,8 +75,8 @@ class IncludedFile(object):
 
     """Information about an #include directive in a file."""
 
-    def __init__(self, abspath, lineno, included_file, included_path, is_relative, is_system):
-        self._abspath = abspath
+    def __init__(self, including_file, lineno, included_file, included_path, is_relative, is_system):
+        self._including_file = including_file
         self._line_number = lineno
         self._included_file = included_file
         self._included_path = included_path
@@ -96,11 +96,14 @@ class IncludedFile(object):
     def is_relative(self):
         return self._is_relative
 
+    def get_including_file(self):
+        return self._including_file
+
     def get_file(self):
         return self._included_file
 
     def get_reporter_location(self):
-        return reporter.Location(self._abspath, self._line_number)
+        return reporter.Location(self._including_file.get_abspath(), self._line_number)
 
 class File(object):
 
@@ -150,7 +153,7 @@ class File(object):
                 fileobj = sourcetree.get_file(fullpath)
             else:
                 fileobj = sourcetree.find_include_file(includedpath)
-        self._includes.append(IncludedFile(self.get_abspath(), lineno, fileobj, includedpath,
+        self._includes.append(IncludedFile(self, lineno, fileobj, includedpath,
                 is_relative, is_system))
 
     def scan_contents(self, sourcetree):
@@ -350,6 +353,10 @@ class ModuleDependency(object):
     def get_other_module(self):
         """Get module that this dependency is to."""
         return self._othermodule
+
+    def get_included_files(self):
+        """Get IncludedFile objects for the individual include dependencies."""
+        return self._includedfiles
 
 class Module(object):
 

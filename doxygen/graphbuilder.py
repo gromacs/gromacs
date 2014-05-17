@@ -97,8 +97,9 @@ EdgeType.public = EdgeType(4)
 # Intramodule dependency
 EdgeType.intramodule = EdgeType(5)
 EdgeType.legacy = EdgeType(6)
+EdgeType.cyclic = EdgeType(7)
 # Invalid dependency
-EdgeType.undocumented = EdgeType(7)
+EdgeType.undocumented = EdgeType(8)
 
 class Edge(object):
 
@@ -139,6 +140,8 @@ class Edge(object):
             properties = 'color=black'
         elif self._edgetype == EdgeType.legacy:
             properties = 'color=grey75'
+        elif self._edgetype == EdgeType.cyclic:
+            properties = 'color=red, constraint=no'
         else: # undocumented
             properties = 'color=red'
         return '{0} -> {1} [{2}]'.format(self._fromnode.get_nodename(),
@@ -336,8 +339,8 @@ class GraphBuilder(object):
         filenodes[fileobj] = node
         return node
 
-    def _create_file_edge(self, fromfile, tofile, filenodes):
-        """Create edge between two file objects.
+    def _get_file_edge_type(self, fromfile, tofile):
+        """Get EdgeType for an edge between two file objects.
 
         Determines the type for the edge from the information provided by
         gmxtree.
@@ -345,40 +348,48 @@ class GraphBuilder(object):
         intramodule = (fromfile.get_module() == tofile.get_module())
         is_legacy = not tofile.api_type_is_reliable()
         if fromfile.get_module() == tofile.get_module():
-            edgetype = EdgeType.intramodule
+            return EdgeType.intramodule
         elif tofile.get_api_type() == DocType.internal and not tofile.is_public():
             if is_legacy:
-                edgetype = EdgeType.legacy
+                return EdgeType.legacy
             else:
-                edgetype = EdgeType.undocumented
+                return EdgeType.undocumented
         elif fromfile.is_test_file():
-            edgetype = EdgeType.test
+            return EdgeType.test
         elif tofile.is_test_file():
-            edgetype = EdgeType.undocumented
+            return EdgeType.undocumented
         elif fromfile.is_module_internal():
             if tofile.is_public():
-                edgetype = EdgeType.pubimpl
+                return EdgeType.pubimpl
             elif tofile.get_api_type() == DocType.library:
-                edgetype = EdgeType.libimpl
+                return EdgeType.libimpl
             elif is_legacy:
-                edgetype = EdgeType.legacy
+                return EdgeType.legacy
             elif not tofile.is_documented():
-                edgetype = EdgeType.undocumented
+                return EdgeType.undocumented
             else:
                 raise ValueError('Unknown edge type between {0} and {1}'
                         .format(fromfile.get_relpath(), tofile.get_relpath()))
         elif fromfile.get_api_type() == DocType.library:
-            edgetype = EdgeType.library
+            return EdgeType.library
         elif fromfile.is_public() or fromfile.is_installed():
             if tofile.is_public() or tofile.is_installed():
-                edgetype = EdgeType.public
+                return EdgeType.public
             else:
-                edgetype = EdgeType.undocumented
+                return EdgeType.undocumented
         elif is_legacy:
-            edgetype = EdgeType.legacy
+            return EdgeType.legacy
         else:
             raise ValueError('Unknown edge type between {0} and {1}'
                     .format(fromfile.get_relpath(), tofile.get_relpath()))
+
+    def _create_file_edge(self, fromfile, tofile, filenodes):
+        """Create edge between two file objects.
+
+        Determines the type for the edge from the information provided by
+        gmxtree.
+        """
+        edgetype = self._get_file_edge_type(fromfile, tofile)
         return Edge(filenodes[fromfile], filenodes[tofile], edgetype)
 
     def _create_file_edges(self, filenodes):
@@ -408,12 +419,8 @@ class GraphBuilder(object):
             return 'fillcolor=".75 .2 1"'
         return None
 
-    def _create_module_node(self, module, filenodes):
-        """Create node for a module.
-
-        The created node will have all files in the module as its child nodes.
-        All created file nodes are added to the filenodes dict.
-        """
+    def _create_module_node(self, module):
+        """Create node for a module."""
         style = []
         properties = []
         properties.append('shape=ellipse')
@@ -432,9 +439,30 @@ class GraphBuilder(object):
         nodename = 'module_' + re.subn(r'[-./]', '_', rootdir.get_relpath())[0]
         label = module.get_name()[7:]
         node = Node(nodename, label, style, properties)
-        for childfile in module.get_files():
-            node.add_child(self._create_file_node(childfile, filenodes))
         return node
+
+    def _create_module_edges(self, modulenodes):
+        """Create edges between all module nodes.
+
+        Create edges between module nodes specified in modulenodes from all
+        include dependencies.  An edge is created only if both ends of the
+        dependency are in the list of nodes.
+        """
+        edges = []
+        for moduleobj in modulenodes.iterkeys():
+            for dep in moduleobj.get_dependencies():
+                othermodule = dep.get_other_module()
+                if othermodule and othermodule in modulenodes:
+                    if dep.is_cycle_suppressed():
+                        edgetype = EdgeType.cyclic
+                    else:
+                        edgetype = max([
+                            self._get_file_edge_type(x.get_including_file(), x.get_file())
+                            for x in dep.get_included_files()])
+                    edge = Edge(modulenodes[moduleobj], modulenodes[othermodule], edgetype)
+                    edges.append(edge)
+        return edges
+
 
     def _create_legend_node(self, label, modulegroup):
         if modulegroup:
@@ -452,19 +480,18 @@ class GraphBuilder(object):
 
     def create_modules_graph(self):
         """Create module dependency graph."""
-        filenodes = dict()
         nodes = []
-        modulenodes = []
+        modulenodes = dict()
         libgromacsnode = Node('libgromacs', 'libgromacs')
         nodes.append(libgromacsnode)
         for moduleobj in self._tree.get_modules():
-            node = self._create_module_node(moduleobj, filenodes)
+            node = self._create_module_node(moduleobj)
             if moduleobj.get_root_dir().get_relpath().startswith('src/gromacs'):
                 libgromacsnode.add_child(node)
             else:
                 nodes.append(node)
-            modulenodes.append(node)
-        edges = self._create_file_edges(filenodes)
+            modulenodes[moduleobj] = node
+        edges = self._create_module_edges(modulenodes)
         # TODO: Consider adding invisible edges to order the nodes better.
         # TODO: Consider adding legend for the edge types as well.
         legendnode = Node('legend', 'legend')
@@ -475,8 +502,6 @@ class GraphBuilder(object):
         legendnode.add_child(Node('legend_installed', 'installed', properties=['color=".66 .5 1"', 'penwidth=3']))
         nodes.append(legendnode)
         graph = Graph(nodes, edges)
-        for node in modulenodes:
-            graph.collapse_node(node)
         graph.set_options(concentrate=False)
         return graph
 
@@ -508,6 +533,8 @@ def main():
                       help='Build tree root directory')
     parser.add_option('--installed',
                       help='Read list of installed files from given file')
+    parser.add_option('--ignore-cycles',
+                      help='Set file with module dependencies to ignore in cycles')
     parser.add_option('-o', '--outdir', default='.',
                       help='Specify output directory for graphs')
     parser.add_option('-q', '--quiet', action='store_true',
@@ -529,6 +556,8 @@ def main():
     if not options.quiet:
         sys.stderr.write('Reading source files...\n')
     tree.scan_files()
+    if options.ignore_cycles:
+        tree.load_cycle_suppression_list(options.ignore_cycles)
     if not options.quiet:
         sys.stderr.write('Reading Doxygen XML files...\n')
     tree.load_xml(only_files=True)
