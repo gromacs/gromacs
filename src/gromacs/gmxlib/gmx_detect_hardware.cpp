@@ -233,8 +233,8 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
                                       const gmx_hw_opt_t  *hw_opt,
                                       gmx_bool             bUseGPU)
 {
-    int      npppn, ntmpi_pp;
-    char     sbuf[STRLEN], th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
+    int      npppn;
+    char     th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
     gmx_bool btMPI, bMPI, bMaxMpiThreadsSet, bNthreadsAuto, bEmulateGPU;
 
     assert(hwinfo);
@@ -249,13 +249,14 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         return;
     }
 
-    btMPI         = bMPI = FALSE;
-    bNthreadsAuto = FALSE;
 #if defined(GMX_THREAD_MPI)
+    bMPI          = FALSE;
     btMPI         = TRUE;
     bNthreadsAuto = (hw_opt->nthreads_tmpi < 1);
 #elif defined(GMX_LIB_MPI)
-    bMPI  = TRUE;
+    bMPI          = TRUE;
+    btMPI         = FALSE;
+    bNthreadsAuto = FALSE;
 #endif
 
     /* GPU emulation detection is done later, but we need here as well
@@ -625,7 +626,6 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs)
 {
-    gmx_hw_info_t   *hw;
     int              ret;
 
     /* make sure no one else is doing the same thing */
@@ -723,7 +723,6 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
                         gmx_gpu_opt_t *gpu_opt)
 {
     int              i;
-    const char      *env;
     char             sbuf[STRLEN], stmp[STRLEN];
 
     /* Bail if binary is not compiled with GPU acceleration, but this is either
