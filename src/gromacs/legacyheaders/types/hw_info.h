@@ -101,8 +101,10 @@ typedef struct
     char     *gpu_id;        /* GPU id's to use, each specified as chars */
     gmx_bool  bUserSet;      /* true if the GPUs in cuda_dev_use are manually provided by the user */
 
-    int       ncuda_dev_use; /* number of device (IDs) selected to be used */
-    int      *cuda_dev_use;  /* device index list providing GPU to PP rank mapping, GPUs can be listed multiple times when ranks share them */
+    int       ncuda_dev_compatible; /* number of compatible GPU devices that could be used */
+    int      *cuda_dev_compatible;  /* array of compatible GPU device IDs, from which automatic selection occurs */
+    int       ncuda_dev_use; /* number of GPU devices selected to be used, either by the user or automatically */
+    int      *cuda_dev_use;  /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
 } gmx_gpu_opt_t;
 
 /* Threading and GPU options, can be set automatically or by the user */
