@@ -38,6 +38,8 @@
 #ifndef _nleg_h
 #define _nleg_h
 
+#include "gromacs/legacyheaders/types/rgb.h"
+
 #include "x11.h"
 #include "xutil.h"
 

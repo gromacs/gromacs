@@ -34,27 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "matio.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include <algorithm>
 
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/cstringutil.h"
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "matio.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/utilities.h"
-#include "copyrite.h"
-
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 #define round(a) (int)(a+0.5)
 
@@ -99,19 +98,6 @@ void done_matrix(int nx, real ***m)
     }
     sfree(*m);
     *m = NULL;
-}
-
-void clear_matrix(int nx, int ny, real **m)
-{
-    int x, y;
-
-    for (x = 0; x < nx; x++)
-    {
-        for (y = 0; y < ny; y++)
-        {
-            m[x][y] = 0;
-        }
-    }
 }
 
 gmx_bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2)
@@ -176,7 +162,7 @@ int readcmap(const char *fn, t_mapping **map)
 
     in = libopen(fn);
     n  = getcmap(in, fn, map);
-    gmx_fio_fclose(in);
+    gmx_ffclose(in);
 
     return n;
 }
@@ -219,7 +205,7 @@ static char *fgetline(char **line, int llmax, int *llalloc, FILE *in)
     return fg;
 }
 
-void skipstr(char *line)
+static void skipstr(char *line)
 {
     int i, c;
 
@@ -238,7 +224,7 @@ void skipstr(char *line)
     line[c-i] = '\0';
 }
 
-char *line2string(char **line)
+static char *line2string(char **line)
 {
     int i;
 
@@ -274,7 +260,7 @@ char *line2string(char **line)
     return *line;
 }
 
-void parsestring(char *line, const char *label, char *string)
+static void parsestring(char *line, const char *label, char *string)
 {
     if (strstr(line, label))
     {
@@ -286,7 +272,7 @@ void parsestring(char *line, const char *label, char *string)
     }
 }
 
-void read_xpm_entry(FILE *in, t_matrix *mm)
+static void read_xpm_entry(FILE *in, t_matrix *mm)
 {
     t_mapping   *map;
     char        *line_buf = NULL, *line = NULL, *str, buf[256] = {0};
@@ -643,10 +629,10 @@ real **matrix2real(t_matrix *in, real **out)
     return out;
 }
 
-void write_xpm_header(FILE *out,
-                      const char *title, const char *legend,
-                      const char *label_x, const char *label_y,
-                      gmx_bool bDiscrete)
+static void write_xpm_header(FILE *out,
+                             const char *title, const char *legend,
+                             const char *label_x, const char *label_y,
+                             gmx_bool bDiscrete)
 {
     fprintf(out,  "/* XPM */\n");
     try
@@ -682,9 +668,9 @@ static int calc_nmid(int nlevels, real lo, real mid, real hi)
                     nlevels-1);
 }
 
-void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
-                    real lo, real mid, real hi,
-                    t_rgb rlo, t_rgb rmid, t_rgb rhi)
+static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
+                           real lo, real mid, real hi,
+                           t_rgb rlo, t_rgb rmid, t_rgb rhi)
 {
     int    i, nmid;
     real   r, g, b, clev_lo, clev_hi;
@@ -802,12 +788,12 @@ static void pr_discrete_cmap(FILE *out, int *nlevel, int i0)
 
 
 
-void write_xpm_map_split(FILE *out, int n_x, int n_y,
-                         int *nlevel_top, real lo_top, real hi_top,
-                         t_rgb rlo_top, t_rgb rhi_top,
-                         gmx_bool bDiscreteColor,
-                         int *nlevel_bot, real lo_bot, real hi_bot,
-                         t_rgb rlo_bot, t_rgb rhi_bot)
+static void write_xpm_map_split(FILE *out, int n_x, int n_y,
+                                int *nlevel_top, real lo_top, real hi_top,
+                                t_rgb rlo_top, t_rgb rhi_top,
+                                gmx_bool bDiscreteColor,
+                                int *nlevel_bot, real lo_bot, real hi_bot,
+                                t_rgb rlo_bot, t_rgb rhi_bot)
 {
     int    ntot;
 
@@ -833,8 +819,8 @@ void write_xpm_map_split(FILE *out, int n_x, int n_y,
 }
 
 
-void write_xpm_map(FILE *out, int n_x, int n_y, int *nlevels, real lo, real hi,
-                   t_rgb rlo, t_rgb rhi)
+static void write_xpm_map(FILE *out, int n_x, int n_y, int *nlevels,
+                          real lo, real hi, t_rgb rlo, t_rgb rhi)
 {
     int    i, nlo;
     real   invlevel, r, g, b;
@@ -871,8 +857,8 @@ void write_xpm_map(FILE *out, int n_x, int n_y, int *nlevels, real lo, real hi,
     }
 }
 
-void write_xpm_axis(FILE *out, const char *axis, gmx_bool bSpatial, int n,
-                    real *label)
+static void write_xpm_axis(FILE *out, const char *axis, gmx_bool bSpatial,
+                           int n, real *label)
 {
     int i;
 
@@ -894,8 +880,8 @@ void write_xpm_axis(FILE *out, const char *axis, gmx_bool bSpatial, int n,
     }
 }
 
-void write_xpm_data(FILE *out, int n_x, int n_y, real **mat,
-                    real lo, real hi, int nlevels)
+static void write_xpm_data(FILE *out, int n_x, int n_y, real **mat,
+                           real lo, real hi, int nlevels)
 {
     int  i, j, c;
     real invlevel;
@@ -939,8 +925,8 @@ void write_xpm_data(FILE *out, int n_x, int n_y, real **mat,
     }
 }
 
-void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
-                     real lo, real mid, real hi, int nlevels)
+static void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
+                            real lo, real mid, real hi, int nlevels)
 {
     int  i, j, c = 0, nmid;
     real invlev_lo, invlev_hi;
@@ -999,9 +985,9 @@ void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
     }
 }
 
-void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
-                          real lo_top, real hi_top, int nlevel_top,
-                          real lo_bot, real hi_bot, int nlevel_bot)
+static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
+                                 real lo_top, real hi_top, int nlevel_top,
+                                 real lo_bot, real hi_bot, int nlevel_bot)
 {
     int  i, j, c;
     real invlev_top, invlev_bot;

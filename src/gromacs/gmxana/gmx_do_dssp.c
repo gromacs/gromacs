@@ -623,8 +623,7 @@ int gmx_do_dssp(int argc, char *argv[])
     }
 
     mat.map  = NULL;
-    mat.nmap = getcmap(libopen(opt2fn("-map", NFILE, fnm)),
-                       opt2fn("-map", NFILE, fnm), &(mat.map));
+    mat.nmap = readcmap(opt2fn("-map", NFILE, fnm), &(mat.map));
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     if (natoms > atoms->nr)

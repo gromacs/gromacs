@@ -39,7 +39,8 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/matrix.h"
+#include "../legacyheaders/types/rgb.h"
+#include "../utility/basedefinitions.h"
 #include "../utility/real.h"
 
 #ifdef __cplusplus

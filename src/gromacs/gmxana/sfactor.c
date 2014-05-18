@@ -52,7 +52,6 @@
 #include "oenv.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/fileio/matio.h"
 #include "names.h"
 #include "sfactor.h"
 

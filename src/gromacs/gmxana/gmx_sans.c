@@ -51,7 +51,6 @@
 #include "nsfactor.h"
 
 #include "gromacs/utility/futil.h"
-#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/utility/fatalerror.h"

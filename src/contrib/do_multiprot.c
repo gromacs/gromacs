@@ -48,7 +48,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/fileio/matio.h"
 #include "index.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"

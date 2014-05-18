@@ -40,11 +40,62 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/matrix.h"
+#include "../legacyheaders/types/rgb.h"
+#include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct {
+    char c1; /* should all be non-zero (and printable and not '"') */
+    char c2; /*
+              * should all be zero (single char color names: smaller xpm's)
+              * or should all be non-zero (double char color names: more colors)
+              */
+} t_xpmelmt;
+
+typedef short t_matelmt;
+
+typedef struct {
+    t_xpmelmt   code; /* see comment for t_xpmelmt */
+    const char *desc;
+    t_rgb       rgb;
+} t_mapping;
+
+#define MAT_SPATIAL_X (1<<0)
+#define MAT_SPATIAL_Y (1<<1)
+/* Defines if x and y are spatial dimensions,
+ * when not, there are n axis ticks at the middle of the elements,
+ * when set, there are n+1 axis ticks at the edges of the elements.
+ */
+
+typedef struct {
+    unsigned int flags; /* The possible flags are defined above */
+    int          nx, ny;
+    int          y0;
+    char         title[256];
+    char         legend[256];
+    char         label_x[256];
+    char         label_y[256];
+    gmx_bool     bDiscrete;
+    real        *axis_x;
+    real        *axis_y;
+    t_matelmt  **matrix;
+    int          nmap;
+    t_mapping   *map;
+} t_matrix;
+/* title      matrix title
+ * legend     label for the continuous legend
+ * label_x    label for the x-axis
+ * label_y    label for the y-axis
+ * nx, ny     size of the matrix
+ * axis_x[]   the x-ticklabels
+ * axis_y[]   the y-ticklables
+ * *matrix[]  element x,y is matrix[x][y]
+ * nmap       number of color levels for the output(?)
+ */
 
 gmx_bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
 
@@ -133,8 +184,6 @@ void write_xpm(FILE *out, unsigned int flags,
 real **mk_matrix(int nx, int ny, gmx_bool b1D);
 
 void done_matrix(int nx, real ***m);
-
-void clear_matrix(int nx, int ny, real **m);
 
 #ifdef __cplusplus
 }

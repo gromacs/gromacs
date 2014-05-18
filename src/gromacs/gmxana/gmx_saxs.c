@@ -55,7 +55,6 @@
 #include "nrnb.h"
 #include "coulomb.h"
 #include "gstat.h"
-#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 #include "names.h"
 #include "sfactor.h"
