@@ -127,6 +127,10 @@ std::string formatString(const char *fmt, ...)
     }
 }
 
+StringFormatter::StringFormatter(const char *format) : format_(format)
+{
+};
+
 std::vector<std::string> splitString(const std::string &str)
 {
     std::vector<std::string>          result;
