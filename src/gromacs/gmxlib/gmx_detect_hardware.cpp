@@ -153,27 +153,6 @@ static void print_gpu_detection_stats(FILE                 *fplog,
     }
 }
 
-/*! \brief Helper function for writing comma-separated GPU IDs.
- *
- * \param[in] ids  A container of integer GPU IDs
- * \return         A comma-separated string of GPU IDs */
-template <typename Container>
-static std::string makeGpuIdsString(const Container &ids)
-{
-    std::string output;
-
-    if (0 != ids.size())
-    {
-        typename Container::const_iterator it = ids.begin();
-        output += gmx::formatString("%d", *it);
-        for (++it; it != ids.end(); ++it)
-        {
-            output += gmx::formatString(",%d", *it);
-        }
-    }
-    return output;
-}
-
 /*! \brief Helper function for reporting GPU usage information
  * in the mdrun log file
  *
@@ -202,8 +181,9 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     {
         // gpu_opt->cuda_dev_compatible is only populated during auto-selection
         std::string gpuIdsString =
-            makeGpuIdsString(gmx::ConstArrayRef<int>(gpu_opt->cuda_dev_compatible,
-                                                     gpu_opt->ncuda_dev_compatible));
+            formatAndJoin(gmx::ConstArrayRef<int>(gpu_opt->cuda_dev_compatible,
+                                                  gpu_opt->ncuda_dev_compatible),
+                          ",", gmx::StringFormatter("%d"));
         bool bPluralGpus = gpu_opt->ncuda_dev_compatible > 1;
         output += gmx::formatString("%d compatible GPU%s %s present, with ID%s %s\n",
                                     gpu_opt->ncuda_dev_compatible,
@@ -219,7 +199,8 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
         {
             gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
         }
-        std::string gpuIdsString = makeGpuIdsString(gpuIdsInUse);
+        std::string gpuIdsString =
+            formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
         int         numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
         bool        bPluralGpus  = numGpusInUse > 1;
 
@@ -841,7 +822,7 @@ static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int maxNumberToUse)
        of PP ranks */
     gpu_opt->ncuda_dev_use = std::min(gpu_opt->ncuda_dev_compatible, maxNumberToUse);
     snew(gpu_opt->cuda_dev_use, gpu_opt->ncuda_dev_use);
-    for(int i = 0; i != gpu_opt->ncuda_dev_use; ++i)
+    for (int i = 0; i != gpu_opt->ncuda_dev_use; ++i)
     {
         /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
         gpu_opt->cuda_dev_use[i] = gpu_opt->cuda_dev_compatible[i];
