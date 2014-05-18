@@ -118,18 +118,88 @@ std::string stripString(const std::string &str);
  */
 std::string formatString(const char *fmt, ...);
 
-/*! \brief
- * Splits a string to whitespace separated tokens.
+/*! \brief Function object that wraps a call to formatString() that
+ * expects a single conversion argument, for use with algorithms. */
+class StringFormatter
+{
+    public:
+        /*! \brief Constructor
+         *
+         * \param[in] format The printf-style format string that will
+         *     be applied to convert values of type T to
+         *     string. Exactly one argument to the conversion
+         *     specification(s) in `format` is supported. */
+        explicit StringFormatter(const char *format) : format_(format)
+        {
+        }
+
+        //! Implements the formatting functionality
+        template <typename T>
+        std::string operator()(const T &value) const
+        {
+            return formatString(format_, value);
+        }
+
+    private:
+        //! Format string to use
+        const char *format_;
+};
+
+/*! \brief Function object to implement the same interface as
+ * `StringFormatter` to use with strings that should not be formatted
+ * further. */
+class IdentityFormatter
+{
+    public:
+        //! Implements the formatting non-functionality
+        std::string operator()(const std::string &value) const
+        {
+            return value;
+        }
+};
+
+/*! \brief Formats all the range as strings, and then joins them with
+ * a separator in between.
  *
- * \param[in] str  String to process.
- * \returns   \p str split into tokens at each whitespace sequence.
+ * \param[in] begin      Iterator the beginning of the range to join.
+ * \param[in] end        Iterator the end of the range to join.
+ * \param[in] separator  String to put in between the joined strings.
+ * \param[in] formatter  Function object to format the objects in
+ *     `container` as strings
+ * \returns   All objects in the range from `begin` to `end` formatted
+ *     as strings and concatenated with `separator` between each pair.
  * \throws    std::bad_alloc if out of memory.
- *
- * This function works like `split` in Python, i.e., leading and trailing
- * whitespace is ignored, and consecutive whitespaces are treated as a single
- * separator.
  */
-std::vector<std::string> splitString(const std::string &str);
+template <typename InputIterator, typename FormatterType>
+std::string formatAndJoin(InputIterator begin, InputIterator end, const char *separator, const FormatterType &formatter)
+{
+    std::string result;
+    const char *currentSeparator = "";
+    for (InputIterator i = begin; i != end; ++i)
+    {
+        result.append(currentSeparator);
+        result.append(formatter(*i));
+        currentSeparator = separator;
+    }
+    return result;
+}
+
+/*! \brief Formats all elements of the container as strings, and then
+ * joins them with a separator in between.
+ *
+ * \param[in] container  Objects to join.
+ * \param[in] separator  String to put in between the joined strings.
+ * \param[in] formatter  Function object to format the objects in
+ *     `container` as strings
+ * \returns   All objects from `container` formatted as strings and
+ *     concatenated with `separator` between each pair.
+ * \throws    std::bad_alloc if out of memory.
+ */
+template <typename ContainerType, typename FormatterType>
+std::string formatAndJoin(const ContainerType &container, const char *separator, const FormatterType &formatter)
+{
+    return formatAndJoin(container.begin(), container.end(), separator, formatter);
+}
 
 /*! \brief
  * Joins strings from a range with a separator in between.
@@ -145,16 +215,9 @@ template <typename InputIterator>
 std::string joinStrings(InputIterator begin, InputIterator end,
                         const char *separator)
 {
-    std::string result;
-    const char *currentSeparator = "";
-    for (InputIterator i = begin; i != end; ++i)
-    {
-        result.append(currentSeparator);
-        result.append(*i);
-        currentSeparator = separator;
-    }
-    return result;
+    return formatAndJoin(begin, end, separator, IdentityFormatter());
 }
+
 /*! \brief
  * Joins strings from a container with a separator in between.
  *
@@ -200,6 +263,19 @@ std::string concatenateStrings(const char * const (&sarray)[count])
 {
     return concatenateStrings(sarray, count);
 }
+
+/*! \brief
+ * Splits a string to whitespace separated tokens.
+ *
+ * \param[in] str  String to process.
+ * \returns   \p str split into tokens at each whitespace sequence.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * This function works like `split` in Python, i.e., leading and trailing
+ * whitespace is ignored, and consecutive whitespaces are treated as a single
+ * separator.
+ */
+std::vector<std::string> splitString(const std::string &str);
 
 /*! \brief
  * Replace all occurrences of a string with another string.
