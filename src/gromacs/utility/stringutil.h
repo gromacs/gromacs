@@ -118,6 +118,31 @@ std::string stripString(const std::string &str);
  */
 std::string formatString(const char *fmt, ...);
 
+//! \brief Function object that wraps a call to formatString() that
+//! expects a single conversion argument, for use with algorithms.
+template <typename T>
+class StringFormatter
+{
+    public:
+        /*! \brief Constructor
+         *
+         * \param[in] format The printf-style format string that will
+         *     be applied to convert values of type T to
+         *     string. Exactly one argument to the conversion
+         *     specification(s) in `format` is supported. */
+        StringFormatter(const char *format) : format_(format) {};
+
+        //! Implements the formatting functionality
+        std::string operator()(const T &value) const
+        {
+            return formatString(format_, value);
+        }
+
+    private:
+        //! Format string to use
+        const char *format_;
+};
+
 /*! \brief
  * Splits a string to whitespace separated tokens.
  *
@@ -168,6 +193,31 @@ template <typename ContainerType>
 std::string joinStrings(const ContainerType &container, const char *separator)
 {
     return joinStrings(container.begin(), container.end(), separator);
+}
+
+/*! \brief
+ * Formats all the values in a container as strings, and then joins
+ * them with a separator in between.
+ *
+ * \param[in] container  Objects to join.
+ * \param[in] formatter  Function object to format the objects in
+ *     `container` as strings
+ * \param[in] separator  String to put in between the joined strings.
+ * \returns   All objects from `container` formatted as strings and
+ *     concatenated with `separator` between each pair.
+ * \throws    std::bad_alloc if out of memory.
+ */
+template <typename ContainerType, typename FormatterType>
+std::string formatAndJoin(const ContainerType &container, const FormatterType &formatter, const char *separator)
+{
+    std::vector<std::string> strings;
+    strings.reserve(container.size());
+    for (typename ContainerType::const_iterator it = container.begin();
+         it != container.end(); ++it)
+    {
+        strings.push_back(formatter(*it));
+    }
+    return joinStrings(strings.begin(), strings.end(), separator);
 }
 
 /*! \brief
