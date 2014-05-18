@@ -53,6 +53,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/arrayref.h"
+
 #include "testutils/refdata.h"
 #include "testutils/stringtest.h"
 
@@ -138,6 +140,45 @@ TEST(FormatStringTest, HandlesLongStrings)
     std::string longString = gmx::formatString("%*c%d", 2000, 'x', 10);
     EXPECT_EQ(2002U, longString.length());
     EXPECT_EQ("x10", longString.substr(1999));
+}
+
+/********************************************************************
+ * Tests for StringFormatter
+ */
+
+TEST(StringFormatterTest, HandlesBasicFormatting)
+{
+    int value = 103;
+    EXPECT_EQ("103", gmx::StringFormatter("%d") (value));
+    EXPECT_EQ("null", gmx::StringFormatter("null") (value));
+}
+
+/********************************************************************
+ * Tests for formatAndJoin
+ */
+
+TEST(formatAndJoinTest, Works)
+{
+    const char * const words[] = { "The", "quick", "brown", "fox" };
+    EXPECT_EQ("The       .quick     .brown     .fox       ",
+              gmx::formatAndJoin(gmx::ConstArrayRef<const char *>(words), ".",
+                                 gmx::StringFormatter("%-10s")));
+
+    const int values[] = { 0, 1, 4 };
+    EXPECT_EQ("0,1,4", gmx::formatAndJoin(gmx::ConstArrayRef<int>(values), ",",
+                                          gmx::StringFormatter("%d")));
+}
+
+/********************************************************************
+ * Tests for joinStrings
+ */
+
+TEST(JoinStringsTest, Works)
+{
+    const char * const               words[] = { "The", "quick", "brown", "fox" };
+    gmx::ConstArrayRef<const char *> refToWords(words);
+    EXPECT_EQ("The; quick; brown; fox", gmx::joinStrings(refToWords.begin(), refToWords.end(), "; "));
+    EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(refToWords, "-"));
 }
 
 /********************************************************************
