@@ -37,24 +37,25 @@
 #include <config.h>
 #endif
 
-#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "pbc.h"
-#include "gromacs/fileio/xvgr.h"
 #include "copyrite.h"
-#include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "gstat.h"
 #include "gmx_ana.h"
 #include "nsfactor.h"
 
-#include "gromacs/utility/futil.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_sans(int argc, char *argv[])
 {

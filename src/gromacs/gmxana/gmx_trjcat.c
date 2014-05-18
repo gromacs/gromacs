@@ -59,7 +59,6 @@
 #include "index.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xtcio.h"
-#include "rmpbc.h"
 #include "pbc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gmx_ana.h"

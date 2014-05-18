@@ -56,7 +56,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "txtdump.h"
 #include "viewit.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gmx_ana.h"
 
 #include "gromacs/math/do_fit.h"

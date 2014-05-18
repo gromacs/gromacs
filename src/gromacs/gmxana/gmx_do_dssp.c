@@ -41,21 +41,23 @@
 #include <stdlib.h>
 
 #include "typedefs.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/fileio/strdb.h"
 #include "macros.h"
-#include "gromacs/utility/smalloc.h"
 #include "mshift.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/fileio/matio.h"
 #include "index.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "viewit.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int strip_dssp(char *dsspfile, int nres,
                       gmx_bool bPhobres[], real t,

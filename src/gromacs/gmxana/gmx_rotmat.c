@@ -50,7 +50,7 @@
 #include "mshift.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gmx_ana.h"

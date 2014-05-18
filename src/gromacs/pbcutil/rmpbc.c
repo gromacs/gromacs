@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/pbcutil/rmpbc.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -41,9 +43,8 @@
 #include "typedefs.h"
 #include "mshift.h"
 #include "pbc.h"
-#include "rmpbc.h"
-#include "gromacs/math/vec.h"
 
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -53,13 +54,13 @@ typedef struct {
     t_graph *gr;
 } rmpbc_graph_t;
 
-typedef struct gmx_rmpbc {
+struct gmx_rmpbc {
     t_idef        *idef;
     int            natoms_init;
     int            ePBC;
     int            ngraph;
     rmpbc_graph_t *graph;
-} koeiepoep;
+};
 
 static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
 {

@@ -45,14 +45,11 @@
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "pbc.h"
-#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "index.h"
-#include "gromacs/utility/smalloc.h"
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "coulomb.h"
@@ -60,7 +57,11 @@
 #include "gmx_ana.h"
 #include "names.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void check_box_c(matrix box)
 {

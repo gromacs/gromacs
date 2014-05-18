@@ -50,7 +50,6 @@
 #include "mdatoms.h"
 #include "coulomb.h"
 #include "nsb.h"
-#include "rmpbc.h"
 #include "pme.h"
 #include "force.h"
 #include "gromacs/fileio/xvgr.h"

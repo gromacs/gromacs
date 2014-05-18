@@ -42,7 +42,6 @@
 #include <string.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/utility/fatalerror.h"
 #include "fitahx.h"
 #include "gromacs/utility/futil.h"
 #include "gstat.h"
@@ -54,13 +53,16 @@
 #include "gromacs/fileio/trxio.h"
 #include "index.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/commandline/pargs.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gmx_ana.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
 
 int gmx_helix(int argc, char *argv[])
 {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,11 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_PBCUTIL_RMPBC_H
+#define GMX_PBCUTIL_RMPBC_H
 
-#ifndef _rmpbc_h
-#define _rmpbc_h
-
-#include "typedefs.h"
+#include "../legacyheaders/types/atoms.h"
+#include "../legacyheaders/types/idef.h"
+#include "../fileio/trx.h"
+#include "../math/vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,10 +67,6 @@ void gmx_rmpbc_copy(gmx_rmpbc_t gpbc, int natoms, matrix box, rvec x[],
 void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc, t_trxframe *fr);
 /* As gmx_rmpbc but operates on a t_trxframe data structure. */
 
-/*void rm_pbc(t_idef *idef,int ePBC,int natoms,
-   matrix box,rvec x[],rvec x_s[]);*/
-/* Convenience function that still holds a static variable. */
-
 void rm_gropbc(t_atoms *atoms, rvec x[], matrix box);
 /* Simple routine for use in analysis tools that just have a pdb or
  * similar file.
@@ -78,4 +76,4 @@ void rm_gropbc(t_atoms *atoms, rvec x[], matrix box);
 }
 #endif
 
-#endif  /* _rmpbc_h */
+#endif

@@ -44,7 +44,6 @@
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "pbc.h"
-#include "rmpbc.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"

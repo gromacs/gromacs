@@ -51,7 +51,7 @@
 #include "index.h"
 #include "mshift.h"
 #include "princ.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

@@ -47,7 +47,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "index.h"
 #include "pbc.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gmx_ana.h"
 #include "macros.h"
 
