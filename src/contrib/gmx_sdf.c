@@ -33,7 +33,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
 #include "gstat.h"
-#include "gromacs/fileio/matio.h"
 #include "gromacs/utility/fatalerror.h"
 
 
