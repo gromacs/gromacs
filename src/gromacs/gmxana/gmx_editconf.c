@@ -60,7 +60,7 @@
 #include "princ.h"
 #include "txtdump.h"
 #include "viewit.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gmx_ana.h"
 
 #include "gromacs/utility/fatalerror.h"

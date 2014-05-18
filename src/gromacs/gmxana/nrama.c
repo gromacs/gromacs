@@ -47,7 +47,7 @@
 #include "bondf.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 
 static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 #define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))

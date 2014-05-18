@@ -24,7 +24,7 @@
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "pbc.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"

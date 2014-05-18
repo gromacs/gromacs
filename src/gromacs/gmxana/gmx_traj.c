@@ -55,7 +55,7 @@
 #include "viewit.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"

@@ -45,7 +45,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "princ.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"

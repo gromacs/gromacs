@@ -54,7 +54,7 @@
 #include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "princ.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"
 

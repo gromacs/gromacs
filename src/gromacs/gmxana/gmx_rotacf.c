@@ -42,18 +42,19 @@
 #include <string.h>
 
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/commandline/pargs.h"
 #include "index.h"
 #include "macros.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gstat.h"
 #include "gromacs/math/vec.h"
 #include "viewit.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_rotacf(int argc, char *argv[])
 {

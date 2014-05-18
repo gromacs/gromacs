@@ -48,7 +48,6 @@
 #include <string.h>
 
 #include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/rmpbc.h"
 
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
@@ -57,6 +56,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"

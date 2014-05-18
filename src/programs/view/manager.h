@@ -41,8 +41,8 @@
 #include <stdio.h>
 
 #include "typedefs.h"
-#include "rmpbc.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/pbcutil/rmpbc.h"
 
 #include "3dview.h"
 #include "buttons.h"

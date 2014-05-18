@@ -59,7 +59,7 @@
 #include "mshift.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
 #include "gromacs/math/units.h"

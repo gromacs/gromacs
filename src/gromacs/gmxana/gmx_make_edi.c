@@ -58,7 +58,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "mshift.h"
 #include "gromacs/fileio/xvgr.h"
-#include "rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
 #include "index.h"

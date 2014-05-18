@@ -41,22 +41,23 @@
 #include <string.h>
 
 #include "typedefs.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gstat.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
 #include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/matio.h"
 #include "binsearch.h"
 #include "powerspect.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Print name of first atom in all groups in index file */
 static void print_types(atom_id index[], atom_id a[], int ngrps,
