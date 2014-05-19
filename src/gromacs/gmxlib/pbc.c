@@ -52,6 +52,7 @@
 #include "names.h"
 #include "macros.h"
 #include "gmx_omp_nthreads.h"
+#include "mshift.h"
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum {

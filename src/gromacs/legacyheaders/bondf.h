@@ -49,6 +49,8 @@
 extern "C" {
 #endif
 
+struct t_graph;
+
 int glatnr(int *global_atom_index, int i);
 /* Returns the global topology atom number belonging to local atom index i.
  * This function is intended for writing ascii output
@@ -60,7 +62,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
                 const t_idef *idef,
                 rvec x[], history_t *hist,
                 rvec f[], t_forcerec *fr,
-                const t_pbc *pbc, const t_graph *g,
+                const t_pbc *pbc, const struct t_graph *g,
                 gmx_enerdata_t *enerd, t_nrnb *nrnb, real *lambda,
                 const t_mdatoms *md,
                 t_fcdata *fcd, int *ddgatindex,
@@ -97,7 +99,7 @@ void calc_bonds_lambda(FILE *fplog,
                        const t_idef *idef,
                        rvec x[],
                        t_forcerec *fr,
-                       const t_pbc *pbc, const t_graph *g,
+                       const t_pbc *pbc, const struct t_graph *g,
                        gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                        real *lambda,
                        const t_mdatoms *md,
@@ -137,7 +139,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
                 rvec r_ij, rvec r_kj, rvec r_kl,
                 rvec m, rvec n, rvec f[], rvec fshift[],
-                const t_pbc *pbc, const t_graph *g,
+                const t_pbc *pbc, const struct t_graph *g,
                 const rvec *x, int t1, int t2, int t3);
 /* Do an update of the forces for dihedral potentials */
 

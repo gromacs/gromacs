@@ -55,7 +55,6 @@
 #include "types/energy.h"
 #include "types/inputrec.h"
 #include "types/ishift.h"
-#include "types/graph.h"
 #include "types/nrnb.h"
 #include "types/nblist.h"
 #include "types/nbnxn_pairlist.h"

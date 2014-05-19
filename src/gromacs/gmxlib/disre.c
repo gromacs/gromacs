@@ -44,16 +44,18 @@
 
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "bondf.h"
 #include "copyrite.h"
 #include "disre.h"
 #include "main.h"
 #include "mtop_util.h"
+
+#include "gromacs/math/vec.h"
+#include "mshift.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,

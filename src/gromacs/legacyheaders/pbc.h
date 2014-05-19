@@ -59,6 +59,8 @@ enum {
     ecenterDEF = ecenterTRIC
 };
 
+struct t_graph;
+
 int ePBC2npbcdim(int ePBC);
 /* Returns the number of dimensions that use pbc, starting at X */
 
@@ -85,7 +87,7 @@ real max_cutoff2(int ePBC, matrix box);
 int guess_ePBC(matrix box);
 /* Guesses the type of periodic boundary conditions using the box */
 
-gmx_bool correct_box(FILE *fplog, int step, tensor box, t_graph *graph);
+gmx_bool correct_box(FILE *fplog, int step, tensor box, struct t_graph *graph);
 /* Checks for un-allowed box angles and corrects the box
  * and the integer shift vectors in the graph (if graph!=NULL) if necessary.
  * Returns TRUE when the box was corrected.
