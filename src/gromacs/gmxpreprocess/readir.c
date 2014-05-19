@@ -2188,6 +2188,17 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         snew(ir->drude, 1);
         read_drude_opts(&ninp, &inp, ir->drude, wi);
+
+        /* None (0) or h-bonds (1) is acceptable; anything else is not.
+         * If one constrains an X-Drude bond, it is no longer polarizable,
+         * since the Drude will be fixed on top of the heavy atom! */
+        if (opts->nshake > 1) 
+        {
+            sprintf(warn_buf, 
+                    "Constraining all bonds with Drude model defeats the purpose!"
+                    "Use constraints = h-bonds or none, instead.");
+            warning_note(wi, warn_buf);
+        }
     }
 
     /* User defined thingies */
