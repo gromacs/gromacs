@@ -605,6 +605,7 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             {
                 real sh, sc;
 
+                /* possible div by zero */
                 approx_2dof(s2i_2d, r_buffer*s2i_2d/s2, &sh, &sc);
                 rsh    += sh;
                 sc_fac *= sc;

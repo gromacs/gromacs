@@ -962,7 +962,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         }
     }
 
-    for (i = td->nx0; (i < td->nx); i++)
+    for (i = max(1, td->nx0); (i < td->nx); i++)
     {
         r     = td->x[i];
         r2    = r*r;
