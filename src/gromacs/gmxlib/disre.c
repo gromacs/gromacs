@@ -53,7 +53,7 @@
 #include "mtop_util.h"
 
 #include "gromacs/math/vec.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

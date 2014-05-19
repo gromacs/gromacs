@@ -49,7 +49,7 @@
 #include "force.h"
 #include "nrnb.h"
 #include "coulomb.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "poisson.h"
 #include "mdatoms.h"
 

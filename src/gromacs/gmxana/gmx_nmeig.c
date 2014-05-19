@@ -47,7 +47,6 @@
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"
-#include "mshift.h"
 #include "gstat.h"
 #include "txtdump.h"
 #include "eigio.h"

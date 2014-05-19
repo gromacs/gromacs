@@ -51,7 +51,7 @@
 #include "macros.h"
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "disre.h"
 #include "orires.h"
 #include "force.h"

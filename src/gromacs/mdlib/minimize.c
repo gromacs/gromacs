@@ -74,6 +74,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"

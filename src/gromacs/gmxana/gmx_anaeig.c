@@ -56,7 +56,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/matio.h"
-#include "mshift.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/pbcutil/rmpbc.h"

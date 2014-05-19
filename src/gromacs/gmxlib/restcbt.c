@@ -34,24 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #include <math.h>
-#include <assert.h>
+
+#include "gromacs/legacyheaders/types/idef.h"
+
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
-#include "txtdump.h"
-#include "bondf.h"
-#include "gromacs/utility/smalloc.h"
-#include "pbc.h"
-#include "ns.h"
-#include "macros.h"
-#include "names.h"
-#include "mshift.h"
-#include "disre.h"
-#include "orires.h"
-#include "force.h"
-#include "nonbonded.h"
+#include "gromacs/math/vec.h"
 
 /* This function computes factors needed for restricted angle potential.
  * For explanations on formula used see file "restcbt.h" */

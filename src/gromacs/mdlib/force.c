@@ -52,7 +52,7 @@
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "txtdump.h"
 #include "coulomb.h"
 #include "pme.h"

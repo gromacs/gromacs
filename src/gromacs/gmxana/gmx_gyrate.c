@@ -49,7 +49,6 @@
 #include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"
-#include "mshift.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "princ.h"

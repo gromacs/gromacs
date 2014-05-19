@@ -41,7 +41,7 @@
 
 #include "force.h"
 #include "gromacs/math/vec.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "macros.h"
 
 #define XXXX    0

@@ -56,7 +56,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "mshift.h"
 #include "gromacs/fileio/xvgr.h"
 #include "txtdump.h"
 #include "eigio.h"

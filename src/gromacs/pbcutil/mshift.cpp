@@ -34,18 +34,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/pbcutil/mshift.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <string.h>
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "mshift.h"
+
+#include <algorithm>
+
 #include "pbc.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /************************************************************
  *
@@ -203,8 +206,8 @@ static void calc_1se(t_graph *g, int ftype, t_ilist *il,
                 nbond[iaa]   += 2;
                 nbond[ia[2]] += 1;
                 nbond[ia[3]] += 1;
-                g->at_start   = min(g->at_start, iaa);
-                g->at_end     = max(g->at_end, iaa+2+1);
+                g->at_start   = std::min(g->at_start, iaa);
+                g->at_end     = std::max(g->at_end, iaa+2+1);
             }
         }
         else
@@ -214,8 +217,8 @@ static void calc_1se(t_graph *g, int ftype, t_ilist *il,
                 iaa = ia[k];
                 if (iaa >= at_start && iaa < at_end)
                 {
-                    g->at_start = min(g->at_start, iaa);
-                    g->at_end   = max(g->at_end,  iaa+1);
+                    g->at_start = std::min(g->at_start, iaa);
+                    g->at_end   = std::max(g->at_end,  iaa+1);
                     /* When making the graph we (might) link all atoms in an interaction
                      * sequentially. Therefore the end atoms add 1 to the count,
                      * the middle atoms 2.
@@ -269,7 +272,7 @@ static int calc_start_end(FILE *fplog, t_graph *g, t_ilist il[],
     for (i = g->at_start; (i < g->at_end); i++)
     {
         nbtot += nbond[i];
-        nnb    = max(nnb, nbond[i]);
+        nnb    = std::max(nnb, nbond[i]);
     }
     if (fplog)
     {
@@ -284,7 +287,6 @@ static int calc_start_end(FILE *fplog, t_graph *g, t_ilist il[],
 static void compact_graph(FILE *fplog, t_graph *g)
 {
     int      i, j, n, max_nedge;
-    atom_id *e;
 
     max_nedge = 0;
     n         = 0;
@@ -294,7 +296,7 @@ static void compact_graph(FILE *fplog, t_graph *g)
         {
             g->edge[0][n++] = g->edge[i][j];
         }
-        max_nedge = max(max_nedge, g->nedge[i]);
+        max_nedge = std::max(max_nedge, g->nedge[i]);
     }
     srenew(g->edge[0], n);
     /* set pointers after srenew because edge[0] might move */
@@ -485,8 +487,6 @@ t_graph *mk_graph(FILE *fplog,
 
 void done_graph(t_graph *g)
 {
-    int i;
-
     GCHECK(g);
     if (g->nnodes > 0)
     {

@@ -47,7 +47,6 @@
 #include "chargegroup.h"
 #include "gromacs/math/vec.h"
 #include "nrnb.h"
-#include "mshift.h"
 #include "mdrun.h"
 #include "update.h"
 #include "gromacs/math/units.h"

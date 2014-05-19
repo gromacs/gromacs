@@ -55,7 +55,7 @@
 #include "chargegroup.h"
 #include "gromacs/math/vec.h"
 #include "nrnb.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "mdrun.h"
 #include "sim_util.h"
 #include "update.h"
