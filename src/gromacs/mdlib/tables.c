@@ -841,7 +841,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
     {
         r     = td->x[i];
         r2    = r*r;
-        r6    = 1.0/(r2*r2*r2);
+        r6    = 1.0/(r2*r2*r2); /* possible div by zero */
         if (gmx_within_tol(reppow, 12.0, 10*GMX_DOUBLE_EPS))
         {
             r12 = r6*r6;

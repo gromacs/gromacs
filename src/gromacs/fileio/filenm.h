@@ -76,12 +76,12 @@ typedef struct {
     char        **fns;    /* File names				*/
 } t_filenm;
 
-#define ffSET   1<<0
-#define ffREAD  1<<1
-#define ffWRITE 1<<2
-#define ffOPT   1<<3
-#define ffLIB   1<<4
-#define ffMULT  1<<5
+#define ffSET   (1<<0)
+#define ffREAD  (1<<1)
+#define ffWRITE (1<<2)
+#define ffOPT   (1<<3)
+#define ffLIB   (1<<4)
+#define ffMULT  (1<<5)
 #define ffRW    (ffREAD | ffWRITE)
 #define ffOPTRD (ffREAD | ffOPT)
 #define ffOPTWR (ffWRITE| ffOPT)
