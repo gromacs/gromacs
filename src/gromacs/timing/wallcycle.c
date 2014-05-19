@@ -649,7 +649,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     {
         c2t     = realtime/tot;
         c2t_pp  = c2t * nth_tot / (double) (npp*nth_pp);
-        c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
+        if (npme > 0)
+        {
+            c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
+        }
     }
     else
     {
