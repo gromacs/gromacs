@@ -39,8 +39,6 @@
 #endif
 
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
 #include "types/commrec.h"
 #include "network.h"
 #include "orires.h"
@@ -51,7 +49,10 @@
 
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "mshift.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec xref[],

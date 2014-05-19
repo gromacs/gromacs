@@ -51,6 +51,7 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+struct t_graph;
 
 
 void
@@ -86,7 +87,7 @@ do_nonbonded(t_forcerec *fr,
  */
 real
 do_nonbonded_listed(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
-                    const rvec x[], rvec f[], rvec fshift[], const t_pbc *pbc, const t_graph *g,
+                    const rvec x[], rvec f[], rvec fshift[], const t_pbc *pbc, const struct t_graph *g,
                     real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
                     gmx_grppairener_t *grppener, int *global_atom_index);
 

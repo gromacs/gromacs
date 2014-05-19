@@ -45,7 +45,6 @@
 
 #include "typedefs.h"
 #include "txtdump.h"
-#include "gromacs/utility/smalloc.h"
 #include "ns.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
@@ -53,12 +52,15 @@
 #include "gromacs/utility/cstringutil.h"
 #include "force.h"
 #include "names.h"
-#include "gromacs/utility/fatalerror.h"
 #include "force.h"
 #include "bondf.h"
 #include "nrnb.h"
 #include "nonbonded.h"
 #include "gromacs/simd/simd.h"
+
+#include "mshift.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "nb_kernel.h"
 #include "nb_free_energy.h"

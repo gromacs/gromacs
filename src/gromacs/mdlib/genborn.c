@@ -44,21 +44,22 @@
 
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
 #include "genborn.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/fileio/pdbio.h"
 #include "names.h"
 #include "gromacs/math/units.h"
 #include "domdec.h"
 #include "network.h"
-#include "gromacs/utility/fatalerror.h"
 #include "mtop_util.h"
 #include "pbc.h"
 #include "nrnb.h"
 #include "bondf.h"
 
+#include "gromacs/math/vec.h"
+#include "mshift.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
 #  ifdef GMX_DOUBLE
