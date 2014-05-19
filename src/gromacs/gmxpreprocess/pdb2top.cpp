@@ -930,7 +930,7 @@ static int pcompar(const void *a, const void *b)
     }
 }
 
-static void clean_bonds(t_params *ps, int ftype)
+static void clean_bonds(t_params *ps)
 {
     int         i, j;
     atom_id     a;
@@ -966,12 +966,80 @@ static void clean_bonds(t_params *ps, int ftype)
             }
         }
 
-        fprintf(stderr, "Number of %s was %d, now %d\n",(ftype==F_BONDS)?"bonds":"tholes", ps->nr, j);
+        fprintf(stderr, "Number of bonds was %d, now %d\n",ps->nr, j);
         ps->nr = j;
     }
     else
     {
-        fprintf(stderr, "No %s\n", (ftype==F_BONDS)?"bonds":"tholes");
+        fprintf(stderr, "No bonds\n");
+    }
+}
+
+/* Clean up merged thole factors, since they can be changed in the .tdb file.
+ * This function is similar to clean_bonds, but we need to retain 
+ * the second instance of a parameter instead of the first, so rather than
+ * make clean_bonds more convoluted, there's a new function to handle all that. */
+static void clean_tholes(t_params *ps)
+{
+    int     i, j, k;
+    int     start;
+    atom_id a;
+
+    start = ps->nr; /* save original number for later printing */
+
+    if (ps->nr > 0)
+    {
+        /* swap, if necessary */
+        for (i = 0; (i < ps->nr); i++)
+        {
+            if (ps->param[i].a[1] < ps->param[i].a[0])
+            {
+                a                 = ps->param[i].a[0];
+                ps->param[i].a[0] = ps->param[i].a[1];
+                ps->param[i].a[1] = a;
+            }
+        }
+
+        /* sort */
+        qsort(ps->param, ps->nr, (size_t)sizeof(ps->param[0]), pcompar);
+
+        /* Remove doubles, but here keep the second instance of a parameter if it is duplicated */
+        j = 0;
+        for (i = 1; (i < ps->nr); i++)
+        {
+            /* keep second instance of any duplicates */
+            if ((ps->param[i].a[0] == ps->param[j].a[0]) &&
+                (ps->param[i].a[1] == ps->param[j].a[1]))
+            {
+                /* copy params and shift the list */
+                if (j != i)
+                {
+                    for (k = j; k < (ps->nr)-1; k++)
+                    {
+                        cp_param(&(ps->param[k]), &(ps->param[k+1]));
+                    }
+                }
+                i--;
+                ps->nr -= 1;
+            }
+            /* keep all unique entries */
+            else if ((ps->param[i].a[0] != ps->param[j].a[0]) ||
+                     (ps->param[i].a[1] != ps->param[j].a[1]))
+            {
+                j++;
+                if (j != i)
+                {
+                    cp_param(&(ps->param[j]), &(ps->param[i]));
+                }
+            }
+        }
+
+        fprintf(stderr, "Number of Thole pairs was %d, now %d\n", start, j);
+        ps->nr = j;
+    }
+    else
+    {
+        fprintf(stderr, "No Thole pairs\n");
     }
 }
 
@@ -1884,7 +1952,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     }
 
     /* Cleanup bonds (sort and rm doubles) */
-    clean_bonds(&(plist[F_BONDS]), F_BONDS);
+    clean_bonds(&(plist[F_BONDS]));
 
     snew(vsite_type, atoms->nr);
     for (i = 0; i < atoms->nr; i++)
@@ -1926,12 +1994,11 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
     if (bDrude)
     {
-        /* call clean_bonds() to sort and remove doubles within Thole */
         /* Duplicates can happen when merging tdb and rtp, so since the
          * tdb are read and stored first, their terminus-specific values
          * will override what is stored in the rtp */
         fprintf(stderr, "Cleaning up merged Thole factors...\n");
-        clean_bonds(&(plist[F_THOLE_POL]), F_THOLE_POL);
+        clean_tholes(&(plist[F_THOLE_POL]));
     }
 
     /* set mass of all remaining hydrogen atoms */
