@@ -44,7 +44,6 @@
 #include "network.h"
 #include "sim_util.h"
 #include "tgroup.h"
-#include "mshift.h"
 #include "mdebin.h"
 #include "vcm.h"
 #include "vsite.h"

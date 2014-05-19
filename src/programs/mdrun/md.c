@@ -41,7 +41,6 @@
 #include <stdlib.h>
 
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "vcm.h"
 #include "mdebin.h"
@@ -83,17 +82,19 @@
 #include "types/iteratedconstraints.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
-#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trajectory_writing.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/imd/imd.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
-#include "gromacs/imd/imd.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

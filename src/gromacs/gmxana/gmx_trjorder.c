@@ -50,7 +50,6 @@
 #include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"
-#include "mshift.h"
 #include "gromacs/fileio/xvgr.h"
 #include "princ.h"
 #include "gromacs/pbcutil/rmpbc.h"

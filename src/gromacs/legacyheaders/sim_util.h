@@ -51,10 +51,12 @@
 extern "C" {
 #endif
 
+struct t_graph;
+
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
 void do_pbc_first(FILE *log, matrix box, t_forcerec *fr,
-                  t_graph *graph, rvec x[]);
+                  struct t_graph *graph, rvec x[]);
 
 void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
                        gmx_mtop_t *mtop, rvec x[]);

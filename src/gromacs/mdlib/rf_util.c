@@ -44,7 +44,7 @@
 #include "copyrite.h"
 #include "pbc.h"
 
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 

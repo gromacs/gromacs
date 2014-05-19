@@ -40,7 +40,6 @@
 #include "../legacyheaders/typedefs.h"
 #include "../commandline/pargs.h"
 #include "../legacyheaders/oenv.h"
-#include "../legacyheaders/mshift.h"
 #include "../legacyheaders/index.h"
 
 #ifdef __cplusplus

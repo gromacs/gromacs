@@ -44,7 +44,7 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "nrnb.h"

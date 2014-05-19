@@ -34,11 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_PBCUTIL_MSHIFT_H
+#define GMX_PBCUTIL_MSHIFT_H
 
-#ifndef _mshift_h
-#define _mshift_h
+#include <stdio.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/idef.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,7 +68,6 @@ typedef struct t_graph {
 } t_graph;
 
 #define SHIFT_IVEC(g, i) ((g)->ishift[i])
-
 
 t_graph *mk_graph(FILE *fplog,
                   t_idef *idef, int at_start, int at_end,
@@ -109,4 +112,4 @@ void unshift_self(t_graph *g, matrix box, rvec x[]);
 }
 #endif
 
-#endif  /* _mshift_h */
+#endif

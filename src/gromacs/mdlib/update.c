@@ -51,7 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "update.h"
 #include "gromacs/random/random.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "tgroup.h"
 #include "force.h"
 #include "names.h"

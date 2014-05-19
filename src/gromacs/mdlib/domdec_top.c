@@ -50,7 +50,7 @@
 #include "chargegroup.h"
 #include "gromacs/gmxlib/topsort.h"
 #include "mtop_util.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "vsite.h"
 #include "gmx_ga2la.h"
 #include "force.h"

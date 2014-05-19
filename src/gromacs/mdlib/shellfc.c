@@ -43,9 +43,6 @@
 
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
 #include "txtdump.h"
 #include "force.h"
 #include "mdrun.h"
@@ -61,6 +58,10 @@
 #include "chargegroup.h"
 #include "macros.h"
 
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int     nnucl;

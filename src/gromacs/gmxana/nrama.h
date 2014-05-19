@@ -40,7 +40,6 @@
 
 #include "typedefs.h"
 #include "oenv.h"
-#include "mshift.h"
 #include "../fileio/trxio.h"
 
 #ifdef __cplusplus

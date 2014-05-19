@@ -41,7 +41,7 @@
 #endif
 
 #include "typedefs.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "pbc.h"
 
 #include "gromacs/math/vec.h"

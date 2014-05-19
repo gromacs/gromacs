@@ -42,7 +42,6 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "mshift.h"
 #include "gromacs/fileio/pdbio.h"
 #include "index.h"
 #include "gstat.h"

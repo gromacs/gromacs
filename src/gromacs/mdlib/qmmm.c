@@ -55,7 +55,6 @@
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"
-#include "mshift.h"
 #include "txtdump.h"
 #include "qmmm.h"
 #include <stdio.h>

@@ -48,7 +48,7 @@
 #include "nrnb.h"
 #include "gromacs/math/vec.h"
 #include "network.h"
-#include "mshift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "pbc.h"
 #include "domdec.h"
 #include "mtop_util.h"
