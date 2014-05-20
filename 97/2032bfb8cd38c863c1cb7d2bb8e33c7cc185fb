@@ -1,0 +1,11 @@
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: Rossen Apostolov <rossen@kth.se>
+Code-Review+2: Erik Lindahl <erik@kth.se>
+Verified+2: Jenkins Buildbot
+Code-Review+1: Erik Lindahl <erik.lindahl@scilifelab.se>
+Verified+1: Erik Lindahl <erik.lindahl@scilifelab.se>
+Submitted-by: Erik Lindahl <erik@kth.se>
+Submitted-at: Tue, 20 May 2014 10:12:24 +0200
+Reviewed-on: https://gerrit.gromacs.org/3447
+Project: gromacs
+Branch: refs/heads/release-4-6
