@@ -59,6 +59,7 @@
 #include "gromacs/mdlib/groupcoord.h"
 
 #include "gromacs/linearalgebra/nrjac.h"
+#include "pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
 /* We use the same defines as in mvdata.c here */

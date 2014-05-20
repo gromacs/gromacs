@@ -40,9 +40,11 @@
 #endif
 
 #include "force.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "macros.h"
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "pbc.h"
 
 #define XXXX    0
 #define XXYY    1

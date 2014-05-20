@@ -37,11 +37,14 @@
 
 #ifndef _constr_h
 #define _constr_h
+
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_pbc;
 
 enum
 {
@@ -97,23 +100,23 @@ gmx_settledata_t settle_init(real mO, real mH, real invmO, real invmH,
                              real dOH, real dHH);
 /* Initializes and returns a structure with SETTLE parameters */
 
-void csettle(gmx_settledata_t settled,
-             int              nsettle,          /* Number of settles            */
-             t_iatom          iatoms[],         /* The settle iatom list        */
-             const t_pbc     *pbc,              /* PBC data pointer, can be NULL  */
-             real             b4[],             /* Old coordinates		*/
-             real             after[],          /* New coords, to be settled	*/
-             real             invdt,            /* 1/delta_t                    */
-             real            *v,                /* Also constrain v if v!=NULL  */
-             int              calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
-             tensor           vir_r_m_dr,       /* sum r x m delta_r            */
-             int             *xerror,
-             t_vetavars      *vetavar           /* variables for pressure control */
+void csettle(gmx_settledata_t    settled,
+             int                 nsettle,          /* Number of settles            */
+             t_iatom             iatoms[],         /* The settle iatom list        */
+             const struct t_pbc *pbc,              /* PBC data pointer, can be NULL */
+             real                b4[],             /* Old coordinates              */
+             real                after[],          /* New coords, to be settled    */
+             real                invdt,            /* 1/delta_t                    */
+             real               *v,                /* Also constrain v if v!=NULL  */
+             int                 calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
+             tensor              vir_r_m_dr,       /* sum r x m delta_r            */
+             int                *xerror,
+             t_vetavars         *vetavar           /* variables for pressure control */
              );
 
 void settle_proj(gmx_settledata_t settled, int econq,
                  int nsettle, t_iatom iatoms[],
-                 const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
+                 const struct t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],
                  rvec *der, rvec *derp,
                  int CalcVirAtomEnd, tensor vir_r_m_dder,
@@ -256,7 +259,7 @@ constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
                 gmx_lincsdata_t lincsd, t_mdatoms *md,
                 t_commrec *cr,
                 rvec *x, rvec *xprime, rvec *min_proj,
-                matrix box, t_pbc *pbc,
+                matrix box, struct t_pbc *pbc,
                 real lambda, real *dvdlambda,
                 real invdt, rvec *v,
                 gmx_bool bCalcVir, tensor vir_r_m_dr,

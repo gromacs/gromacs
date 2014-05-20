@@ -89,6 +89,7 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/pbcutil/mshift.h"
+#include "pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"

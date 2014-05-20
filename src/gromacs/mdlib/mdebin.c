@@ -44,7 +44,6 @@
 
 #include "typedefs.h"
 #include "mdebin.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/math/vec.h"
@@ -60,6 +59,8 @@
 #include "mdrun.h"
 #include "mdebin_bar.h"
 
+#include "pbc.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 

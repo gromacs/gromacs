@@ -47,6 +47,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
@@ -62,6 +63,8 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "swapcoords.h"
+
+#include "pbc.h"
 
 static char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
 static char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */

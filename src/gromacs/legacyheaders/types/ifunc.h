@@ -42,18 +42,18 @@
 #include "idef.h"
 #include "mdatom.h"
 #include "fcdata.h"
-#include "pbc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct t_graph;
+struct t_pbc;
 
 typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
                       const t_iparams iparams[],
                       const rvec x[], rvec f[], rvec fshift[],
-                      const t_pbc *pbc, const struct t_graph *g,
+                      const struct t_pbc *pbc, const struct t_graph *g,
                       real lambda, real *dvdlambda,
                       const t_mdatoms *md, t_fcdata *fcd,
                       int *ddgatindex);

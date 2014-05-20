@@ -44,9 +44,10 @@
 
 #include <algorithm>
 
-#include "pbc.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 
 #include "gromacs/math/vec.h"
+#include "pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
