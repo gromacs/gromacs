@@ -58,6 +58,7 @@
 #include "ns.h"
 
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 

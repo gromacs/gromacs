@@ -36,7 +36,7 @@
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
-#include "nblist.h"
+#include "types/nblist.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -124,7 +124,7 @@ typedef struct {
                             */
 } nbnxn_excl_t;
 
-typedef struct {
+typedef struct nbnxn_pairlist_t {
     gmx_cache_protect_t cp0;
 
     nbnxn_alloc_t      *alloc;
@@ -225,7 +225,7 @@ enum {
 /* TODO: Remove need for forward declare */
 struct tMPI_Atomic;
 
-typedef struct {
+typedef struct nbnxn_atomdata_t {
     nbnxn_alloc_t           *alloc;
     nbnxn_free_t            *free;
     int                      ntype;           /* The number of different atom types                 */

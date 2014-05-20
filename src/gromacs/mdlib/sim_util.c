@@ -81,6 +81,7 @@
 #include "../gmxlib/nonbonded/nb_free_energy.h"
 
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/timing/wallcycle.h"
@@ -98,6 +99,8 @@
 
 #include "nbnxn_cuda_data_mgmt.h"
 #include "nbnxn_cuda/nbnxn_cuda.h"
+
+#include "nb_verlet.h"
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -797,6 +800,11 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
     }
 
     wallcycle_sub_stop(wcycle, ewcsNONBONDED);
+}
+
+gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
+{
+    return nbv != NULL && nbv->bUseGPU;
 }
 
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
@@ -2609,7 +2617,7 @@ void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                wallclock_gpu_t *gputimes,
+                nonbonded_verlet_t *nbv,
                 gmx_bool bWriteStat)
 {
     int     i, j;
@@ -2673,6 +2681,8 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
+        wallclock_gpu_t* gputimes = use_GPU(nbv) ?
+            nbnxn_cuda_get_timings(nbv->cu_nbv) : NULL;
         wallcycle_print(fplog, cr->nnodes, cr->npmenodes,
                         elapsed_time_over_all_ranks,
                         wcycle, gputimes);

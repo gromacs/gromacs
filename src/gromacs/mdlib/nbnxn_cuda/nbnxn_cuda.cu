@@ -46,8 +46,8 @@
 #include <cuda.h>
 
 #include "types/simple.h"
-#include "types/nbnxn_pairlist.h"
-#include "types/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "types/force_flags.h"
 #include "../nbnxn_consts.h"
 
