@@ -43,6 +43,7 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/ns.h"
@@ -52,7 +53,6 @@
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/simd/simd.h"

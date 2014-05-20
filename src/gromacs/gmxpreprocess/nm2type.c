@@ -43,7 +43,6 @@
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"

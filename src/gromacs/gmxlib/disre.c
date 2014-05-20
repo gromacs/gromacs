@@ -46,7 +46,6 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/main.h"

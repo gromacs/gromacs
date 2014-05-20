@@ -50,7 +50,6 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/pme.h"
@@ -59,6 +58,7 @@
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -150,7 +150,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        t_fcdata   *fcd,
                        gmx_localtop_t *top,
                        gmx_genborn_t *born,
-                       t_atomtypes *atype,
                        gmx_bool       bBornRadii,
                        matrix     box,
                        t_lambda   *fepvals,
@@ -378,8 +377,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     {
         wallcycle_sub_start(wcycle, ewcsBONDED);
         calc_bonds(cr->ms,
-                   idef, x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
+                   idef, (const rvec *) x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
+                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
                    flags);
 
         /* Check if we have to determine energy differences
@@ -399,7 +398,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 {
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
-                calc_bonds_lambda(idef, x, fr, &pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
+                calc_bonds_lambda(idef, (const rvec *) x, fr, &pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
                                   fcd, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
