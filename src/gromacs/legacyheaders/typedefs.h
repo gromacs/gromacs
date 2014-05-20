@@ -52,7 +52,6 @@
 #include "types/inputrec.h"
 #include "types/nrnb.h"
 #include "types/nblist.h"
-#include "types/nbnxn_pairlist.h"
 #include "types/nsgrid.h"
 #include "types/forcerec.h"
 #include "types/fcdata.h"
