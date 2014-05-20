@@ -54,7 +54,7 @@
 #include "viewit.h"
 #include "gstat.h"
 #include "gromacs/utility/cstringutil.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "correl.h"
 #include "gmx_ana.h"
 #include "geminate.h"

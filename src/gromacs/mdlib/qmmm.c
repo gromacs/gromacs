@@ -51,7 +51,7 @@
 #include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "network.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"

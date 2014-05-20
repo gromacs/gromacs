@@ -51,7 +51,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "princ.h"
 #include "gromacs/pbcutil/rmpbc.h"

@@ -49,7 +49,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gmx_ana.h"
 

@@ -52,7 +52,7 @@
 #include "force.h"
 #include "nonbonded.h"
 #include "ns.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "nrnb.h"

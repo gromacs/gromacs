@@ -47,7 +47,7 @@
 #include "copyrite.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"

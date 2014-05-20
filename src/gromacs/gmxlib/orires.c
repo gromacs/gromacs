@@ -44,7 +44,7 @@
 #include "orires.h"
 #include "main.h"
 #include "copyrite.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "mtop_util.h"
 
 #include "gromacs/linearalgebra/nrjac.h"

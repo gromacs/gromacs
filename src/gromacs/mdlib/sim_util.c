@@ -51,7 +51,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "txtdump.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "chargegroup.h"
 #include "gromacs/math/vec.h"
 #include "nrnb.h"

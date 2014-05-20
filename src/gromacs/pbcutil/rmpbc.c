@@ -42,7 +42,7 @@
 
 #include "typedefs.h"
 #include "gromacs/pbcutil/mshift.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"

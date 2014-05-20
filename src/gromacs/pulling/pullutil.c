@@ -53,7 +53,7 @@
 #include "index.h"
 #include "gromacs/fileio/confio.h"
 #include "network.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "pull.h"
 #include "gmx_ga2la.h"
 

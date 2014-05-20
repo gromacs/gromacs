@@ -64,7 +64,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "swapcoords.h"
 
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 
 static char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
 static char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */

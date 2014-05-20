@@ -49,7 +49,6 @@
 
 #include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/symtab.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -62,6 +61,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"

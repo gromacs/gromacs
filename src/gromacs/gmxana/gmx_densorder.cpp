@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "gstat.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"

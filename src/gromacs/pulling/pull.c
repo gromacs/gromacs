@@ -50,7 +50,7 @@
 #include "network.h"
 #include "pull.h"
 #include "names.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "mtop_util.h"
 #include "mdrun.h"
 #include "gmx_ga2la.h"

@@ -56,7 +56,7 @@
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "addconf.h"
 #include "read-conformation.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/fileio/xvgr.h"
 
 #include "gromacs/utility/cstringutil.h"

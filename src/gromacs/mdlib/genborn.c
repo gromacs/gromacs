@@ -51,7 +51,7 @@
 #include "domdec.h"
 #include "network.h"
 #include "mtop_util.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "nrnb.h"
 #include "bondf.h"
 

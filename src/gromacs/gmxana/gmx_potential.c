@@ -50,7 +50,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
-#include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "index.h"

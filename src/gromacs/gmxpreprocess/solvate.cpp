@@ -57,7 +57,6 @@
 #include "addconf.h"
 #include "read-conformation.h"
 #include "gromacs/fileio/pdbio.h"
-#include "pbc.h"
 
 #ifdef DEBUG
 static void print_stat(rvec *x, int natoms, matrix box)

@@ -85,7 +85,7 @@
 #include "tomorse.h"
 #include "gromacs/imd/imd.h"
 
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])

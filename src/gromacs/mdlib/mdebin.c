@@ -59,7 +59,7 @@
 #include "mdrun.h"
 #include "mdebin_bar.h"
 
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };

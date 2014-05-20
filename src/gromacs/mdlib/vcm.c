@@ -46,7 +46,7 @@
 #include "names.h"
 #include "txtdump.h"
 #include "network.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 
 t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir)
 {

@@ -44,7 +44,7 @@
 #include "constr.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 
 typedef struct
 {

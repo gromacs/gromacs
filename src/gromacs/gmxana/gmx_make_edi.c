@@ -51,7 +51,6 @@
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
