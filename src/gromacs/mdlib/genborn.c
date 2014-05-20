@@ -56,7 +56,6 @@
 #include "mtop_util.h"
 #include "pbc.h"
 #include "nrnb.h"
-#include "bondf.h"
 
 #include "gromacs/utility/gmxmpi.h"
 

@@ -55,7 +55,6 @@
 #include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"
-#include "bondf.h"
 #include "mshift.h"
 #include "txtdump.h"
 #include "qmmm.h"
@@ -64,7 +63,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "typedefs.h"
 #include <stdlib.h>
-
 
 /* TODO: this should be made thread-safe */
 

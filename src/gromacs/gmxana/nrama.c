@@ -42,9 +42,10 @@
 #include <stdlib.h>
 
 #include "nrama.h"
-#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "bondf.h"
+
+#include "gromacs/bonded/bonded.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/pbcutil/rmpbc.h"

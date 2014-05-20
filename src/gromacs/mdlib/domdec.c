@@ -66,7 +66,7 @@
 #include "gmx_ga2la.h"
 #include "macros.h"
 #include "nbnxn_search.h"
-#include "bondf.h"
+#include "gromacs/legacyheaders/bonded-threading.h"
 #include "gmx_omp_nthreads.h"
 #include "gpu_utils.h"
 
