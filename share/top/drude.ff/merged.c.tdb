@@ -48,49 +48,49 @@
  C  OT1  OT2  CA
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
-    N     C  cterm_COO_N_C
-   DN     C  cterm_COO_N_C
-    N    DC  cterm_COO_N_C
-   DN    DC  cterm_COO_N_C
-    C   OT1  cterm_COO_C_OT
-   DC   OT1  cterm_COO_C_OT
-    C  DOT1  cterm_COO_C_OT
-   DC  DOT1  cterm_COO_C_OT
-    C   OT2  cterm_COO_C_OT
-   DC   OT2  cterm_COO_C_OT
-    C  DOT2  cterm_COO_C_OT
-   DC  DOT2  cterm_COO_C_OT
-   CA     C  cterm_COO_CA_C
-  DCA     C  cterm_COO_CA_C
-   CA    DC  cterm_COO_CA_C
-  DCA    DC  cterm_COO_CA_C
-   CA   OT1  cterm_COO_CA_OT
-  DCA   OT1  cterm_COO_CA_OT
-   CA  DOT1  cterm_COO_CA_OT
-  DCA  DOT1  cterm_COO_CA_OT
-   CA   OT2  cterm_COO_CA_OT
-  DCA   OT2  cterm_COO_CA_OT
-   CA  DOT2  cterm_COO_CA_OT
-  DCA  DOT2  cterm_COO_CA_OT
-   CB     C  cterm_COO_CB_C
-  DCB     C  cterm_COO_CB_C
-   CB    DC  cterm_COO_CB_C
-  DCB    DC  cterm_COO_CB_C
-  OT2   OT1  cterm_COO_OT_OT
- DOT2   OT1  cterm_COO_OT_OT
-  OT2  DOT1  cterm_COO_OT_OT
- DOT2  DOT1  cterm_COO_OT_OT
+    N     C  2.60  0.2500  0.8990
+   DN     C  2.60  0.2500  0.8990
+    N    DC  2.60  0.2500  0.8990
+   DN    DC  2.60  0.2500  0.8990
+    C   OT1  2.60  0.8990  2.3990
+   DC   OT1  2.60  0.8990  2.3990
+    C  DOT1  2.60  0.8990  2.3990
+   DC  DOT1  2.60  0.8990  2.3990
+    C   OT2  2.60  0.8990  2.3990
+   DC   OT2  2.60  0.8990  2.3990
+    C  DOT2  2.60  0.8990  2.3990
+   DC  DOT2  2.60  0.8990  2.3990
+   CA     C  2.60  1.0780  0.8990
+  DCA     C  2.60  1.0780  0.8990
+   CA    DC  2.60  1.0780  0.8990
+  DCA    DC  2.60  1.0780  0.8990
+   CA   OT1  2.60  1.0780  2.3990
+  DCA   OT1  2.60  1.0780  2.3990
+   CA  DOT1  2.60  1.0780  2.3990
+  DCA  DOT1  2.60  1.0780  2.3990
+   CA   OT2  2.60  1.0780  2.3990
+  DCA   OT2  2.60  1.0780  2.3990
+   CA  DOT2  2.60  1.0780  2.3990
+  DCA  DOT2  2.60  1.0780  2.3990
+   CB     C  2.60  2.0800  0.8990
+  DCB     C  2.60  2.0800  0.8990
+   CB    DC  2.60  2.0800  0.8990
+  DCB    DC  2.60  2.0800  0.8990
+  OT2   OT1  2.60  2.3990  2.3990
+ DOT2   OT1  2.60  2.3990  2.3990
+  OT2  DOT1  2.60  2.3990  2.3990
+ DOT2  DOT1  2.60  2.3990  2.3990
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-   DOT1   OT1     C  LPT1  LPT2 aniso_COO_OT
-   DOT2   OT2     C  LPT3  LPT4 aniso_COO_OT 
+   DOT1   OT1     C  LPT1  LPT2 0.00082322 0.00114332 0.00103346
+   DOT2   OT2     C  LPT3  LPT4 0.00082322 0.00114332 0.00103346 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-     LPT1   OT1    C     CA      vsite_COO_LP1 
-     LPT2   OT1    C     CA      vsite_COO_LP2 
-     LPT3   OT2    C     CA      vsite_COO_LP1 
-     LPT4   OT2    C     CA      vsite_COO_LP2
+     LPT1   OT1    C     CA      3  110.000 0.035 
+     LPT2   OT1    C     CA      3  250.000 0.035 
+     LPT3   OT2    C     CA      3  110.000 0.035 
+     LPT4   OT2    C     CA      3  250.000 0.035
 
 ; normal C-terminus, neutral
 ; CHARMM name: CNEU
@@ -137,42 +137,42 @@
   DOT2  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
-    N     C  cterm_COOH_N_C
-   DN     C  cterm_COOH_N_C
-    N    DC  cterm_COOH_N_C
-   DN    DC  cterm_COOH_N_C
-    C   OT1  cterm_COOH_C_OT1
-   DC   OT1  cterm_COOH_C_OT1
-    C  DOT1  cterm_COOH_C_OT1
-   DC  DOT1  cterm_COOH_C_OT1
-    C   OT2  cterm_COOH_C_OT2
-   DC   OT2  cterm_COOH_C_OT2
-    C  DOT2  cterm_COOH_C_OT2
-   DC  DOT2  cterm_COOH_C_OT2
-   CA     C  cterm_COOH_CA_C
-  DCA     C  cterm_COOH_CA_C
-   CA    DC  cterm_COOH_CA_C
-  DCA    DC  cterm_COOH_CA_C
-   CA   OT1  cterm_COOH_CA_OT1
-  DCA   OT1  cterm_COOH_CA_OT1
-   CA  DOT1  cterm_COOH_CA_OT1
-  DCA  DOT1  cterm_COOH_CA_OT1
-   CA   OT2  cterm_COOH_CA_OT2
-  DCA   OT2  cterm_COOH_CA_OT2
-   CA  DOT2  cterm_COOH_CA_OT2
-  DCA  DOT2  cterm_COOH_CA_OT2
-  OT2   OT1  cterm_COOH_OT2_OT1
- DOT2   OT1  cterm_COOH_OT2_OT1
-  OT2  DOT1  cterm_COOH_OT2_OT1
- DOT2  DOT1  cterm_COOH_OT2_OT1
-   CB     C  cterm_COOH_CB_C
-  DCB     C  cterm_COOH_CB_C
-   CB    DC  cterm_COOH_CB_C
-  DCB    DC  cterm_COOH_CB_C
+    N     C  2.60  0.2500  0.7080
+   DN     C  2.60  0.2500  0.7080
+    N    DC  2.60  0.2500  0.7080
+   DN    DC  2.60  0.2500  0.7080
+    C   OT1  2.60  0.7080  1.5390
+   DC   OT1  2.60  0.7080  1.5390
+    C  DOT1  2.60  0.7080  1.5390
+   DC  DOT1  2.60  0.7080  1.5390
+    C   OT2  2.60  0.7080  1.1240
+   DC   OT2  2.60  0.7080  1.1240
+    C  DOT2  2.60  0.7080  1.1240
+   DC  DOT2  2.60  0.7080  1.1240
+   CA     C  2.60  1.0780  0.7080
+  DCA     C  2.60  1.0780  0.7080
+   CA    DC  2.60  1.0780  0.7080
+  DCA    DC  2.60  1.0780  0.7080
+   CA   OT1  2.60  0.7500  1.5390
+  DCA   OT1  2.60  0.7500  1.5390
+   CA  DOT1  2.60  0.7500  1.5390
+  DCA  DOT1  2.60  0.7500  1.5390
+   CA   OT2  2.60  0.7500  1.1240
+  DCA   OT2  2.60  0.7500  1.1240
+   CA  DOT2  2.60  0.7500  1.1240
+  DCA  DOT2  2.60  0.7500  1.1240
+  OT2   OT1  2.60  1.1240  1.5390
+ DOT2   OT1  2.60  1.1240  1.5390
+  OT2  DOT1  2.60  1.1240  1.5390
+ DOT2  DOT1  2.60  1.1240  1.5390
+   CB     C  2.60  2.0800  0.7080
+  DCB     C  2.60  2.0800  0.7080
+   CB    DC  2.60  2.0800  0.7080
+  DCB    DC  2.60  2.0800  0.7080
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-  DOT1    OT1     C  LPT1  LPT2 aniso_COOH_OT1 
-  DOT2    OT2     C  LPT3  LPT4 aniso_COOH_OT2 
+  DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
+  DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
 
 ; C-terminal Gly, charged
 ; CHARMM name: CTEG
@@ -214,45 +214,45 @@
   DOT2  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
-    N     C  cterm_GLY_COO_N_C
-   DN     C  cterm_GLY_COO_N_C
-    N    DC  cterm_GLY_COO_N_C
-   DN    DC  cterm_GLY_COO_N_C
-    C   OT1  cterm_GLY_COO_C_OT
-   DC   OT1  cterm_GLY_COO_C_OT
-    C  DOT1  cterm_GLY_COO_C_OT
-   DC  DOT1  cterm_GLY_COO_C_OT
-    C   OT2  cterm_GLY_COO_C_OT
-   DC   OT2  cterm_GLY_COO_C_OT
-    C  DOT2  cterm_GLY_COO_C_OT
-   DC  DOT2  cterm_GLY_COO_C_OT
-   CA     C  cterm_GLY_COO_CA_C
-  DCA     C  cterm_GLY_COO_CA_C
-   CA    DC  cterm_GLY_COO_CA_C
-  DCA    DC  cterm_GLY_COO_CA_C
-   CA   OT1  cterm_GLY_COO_CA_OT
-  DCA   OT1  cterm_GLY_COO_CA_OT
-   CA  DOT1  cterm_GLY_COO_CA_OT
-  DCA  DOT1  cterm_GLY_COO_CA_OT
-   CA   OT2  cterm_GLY_COO_CA_OT
-  DCA   OT2  cterm_GLY_COO_CA_OT
-   CA  DOT2  cterm_GLY_COO_CA_OT
-  DCA  DOT2  cterm_GLY_COO_CA_OT
-  OT2   OT1  cterm_GLY_COO_OT_OT
- DOT2   OT1  cterm_GLY_COO_OT_OT
-  OT2  DOT1  cterm_GLY_COO_OT_OT
- DOT2  DOT1  cterm_GLY_COO_OT_OT
+    N     C  2.60  0.2500  0.8990
+   DN     C  2.60  0.2500  0.8990
+    N    DC  2.60  0.2500  0.8990
+   DN    DC  2.60  0.2500  0.8990
+    C   OT1  2.60  0.8990  2.3990
+   DC   OT1  2.60  0.8990  2.3990
+    C  DOT1  2.60  0.8990  2.3990
+   DC  DOT1  2.60  0.8990  2.3990
+    C   OT2  2.60  0.8990  2.3990
+   DC   OT2  2.60  0.8990  2.3990
+    C  DOT2  2.60  0.8990  2.3990
+   DC  DOT2  2.60  0.8990  2.3990
+   CA     C  2.60  1.4140  0.8990
+  DCA     C  2.60  1.4140  0.8990
+   CA    DC  2.60  1.4140  0.8990
+  DCA    DC  2.60  1.4140  0.8990
+   CA   OT1  2.60  1.4140  2.3990
+  DCA   OT1  2.60  1.4140  2.3990
+   CA  DOT1  2.60  1.4140  2.3990
+  DCA  DOT1  2.60  1.4140  2.3990
+   CA   OT2  2.60  1.4140  2.3990
+  DCA   OT2  2.60  1.4140  2.3990
+   CA  DOT2  2.60  1.4140  2.3990
+  DCA  DOT2  2.60  1.4140  2.3990
+  OT2   OT1  2.60  2.3990  2.3990
+ DOT2   OT1  2.60  2.3990  2.3990
+  OT2  DOT1  2.60  2.3990  2.3990
+ DOT2  DOT1  2.60  2.3990  2.3990
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-   DOT1   OT1     C  LPT1  LPT2 aniso_COO_OT 
-   DOT2   OT2     C  LPT3  LPT4 aniso_COO_OT 
+   DOT1   OT1     C  LPT1  LPT2 0.00082322 0.00114332 0.00103346 
+   DOT2   OT2     C  LPT3  LPT4 0.00082322 0.00114332 0.00103346 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-     LPT1   OT1    C     CA      vsite_COO_LP1
-     LPT2   OT1    C     CA      vsite_COO_LP2 
-     LPT3   OT2    C     CA      vsite_COO_LP1 
-     LPT4   OT2    C     CA      vsite_COO_LP2 
+     LPT1   OT1    C     CA      3  110.000 0.035
+     LPT2   OT1    C     CA      3  250.000 0.035 
+     LPT3   OT2    C     CA      3  110.000 0.035 
+     LPT4   OT2    C     CA      3  250.000 0.035 
 
 ; C-terminal Gly, neutral
 ; CHARMM name: CNEG 
@@ -299,38 +299,38 @@
   DOT2  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
-    N     C  cterm_GLY_COOH_N_C
-   DN     C  cterm_GLY_COOH_N_C
-    N    DC  cterm_GLY_COOH_N_C
-   DN    DC  cterm_GLY_COOH_N_C
-    C   OT1  cterm_GLY_COOH_C_OT1
-   DC   OT1  cterm_GLY_COOH_C_OT1
-    C  DOT1  cterm_GLY_COOH_C_OT1
-   DC  DOT1  cterm_GLY_COOH_C_OT1
-    C   OT2  cterm_GLY_COOH_C_OT2
-   DC   OT2  cterm_GLY_COOH_C_OT2
-    C  DOT2  cterm_GLY_COOH_C_OT2
-   DC  DOT2  cterm_GLY_COOH_C_OT2
-   CA     C  cterm_GLY_COOH_CA_C
-  DCA     C  cterm_GLY_COOH_CA_C
-   CA    DC  cterm_GLY_COOH_CA_C
-  DCA    DC  cterm_GLY_COOH_CA_C
-   CA   OT1  cterm_GLY_COOH_CA_OT1
-  DCA   OT1  cterm_GLY_COOH_CA_OT1
-   CA  DOT1  cterm_GLY_COOH_CA_OT1
-  DCA  DOT1  cterm_GLY_COOH_CA_OT1
-   CA   OT2  cterm_GLY_COOH_CA_OT2
-  DCA   OT2  cterm_GLY_COOH_CA_OT2
-   CA  DOT2  cterm_GLY_COOH_CA_OT2
-  DCA  DOT2  cterm_GLY_COOH_CA_OT2
-  OT2   OT1  cterm_GLY_COOH_OT2_OT1
- DOT2   OT1  cterm_GLY_COOH_OT2_OT1
-  OT2  DOT1  cterm_GLY_COOH_OT2_OT1
- DOT2  DOT1  cterm_GLY_COOH_OT2_OT1
+    N     C  2.60  0.2500  0.7080
+   DN     C  2.60  0.2500  0.7080
+    N    DC  2.60  0.2500  0.7080
+   DN    DC  2.60  0.2500  0.7080
+    C   OT1  2.60  0.7080  1.5390
+   DC   OT1  2.60  0.7080  1.5390
+    C  DOT1  2.60  0.7080  1.5390
+   DC  DOT1  2.60  0.7080  1.5390
+    C   OT2  2.60  0.7080  1.1240
+   DC   OT2  2.60  0.7080  1.1240
+    C  DOT2  2.60  0.7080  1.1240
+   DC  DOT2  2.60  0.7080  1.1240
+   CA     C  2.60  0.7500  0.7080
+  DCA     C  2.60  0.7500  0.7080
+   CA    DC  2.60  0.7500  0.7080
+  DCA    DC  2.60  0.7500  0.7080
+   CA   OT1  2.60  0.7500  1.5390
+  DCA   OT1  2.60  0.7500  1.5390
+   CA  DOT1  2.60  0.7500  1.5390
+  DCA  DOT1  2.60  0.7500  1.5390
+   CA   OT2  2.60  0.7500  1.1240
+  DCA   OT2  2.60  0.7500  1.1240
+   CA  DOT2  2.60  0.7500  1.1240
+  DCA  DOT2  2.60  0.7500  1.1240
+  OT2   OT1  2.60  1.1240  1.5390
+ DOT2   OT1  2.60  1.1240  1.5390
+  OT2  DOT1  2.60  1.1240  1.5390
+ DOT2  DOT1  2.60  1.1240  1.5390
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-  DOT1    OT1     C  LPT1  LPT2 aniso_COOH_OT1 
-  DOT2    OT2     C  LPT3  LPT4 aniso_COOH_OT2 
+  DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
+  DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
 
 ; C-terminal Pro, charged
 ; CHARMM name: CTEP
@@ -384,85 +384,85 @@
   DOT2  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
-    N    CA  cterm_PRO_COO_N_CA
-   DN    CA  cterm_PRO_COO_N_CA
-    N   DCA  cterm_PRO_COO_N_CA
-   DN   DCA  cterm_PRO_COO_N_CA
-    N    CD  cterm_PRO_COO_N_CD
-   DN    CD  cterm_PRO_COO_N_CD
-    N   DCD  cterm_PRO_COO_N_CD
-   DN   DCD  cterm_PRO_COO_N_CD
-   CA     C  cterm_PRO_COO_CA_C
-  DCA     C  cterm_PRO_COO_CA_C
-   CA    DC  cterm_PRO_COO_CA_C
-  DCA    DC  cterm_PRO_COO_CA_C
-   CA    CB  cterm_PRO_COO_CA_CB
-  DCA    CB  cterm_PRO_COO_CA_CB
-   CA   DCB  cterm_PRO_COO_CA_CB
-  DCA   DCB  cterm_PRO_COO_CA_CB
-   CB    CG  cterm_PRO_COO_CB_CG
-  DCB    CG  cterm_PRO_COO_CB_CG
-   CB   DCG  cterm_PRO_COO_CB_CG
-  DCB   DCG  cterm_PRO_COO_CB_CG
-   CG    CD  cterm_PRO_COO_CG_CD
-  DCG    CD  cterm_PRO_COO_CG_CD
-   CG   DCD  cterm_PRO_COO_CG_CD
-  DCG   DCD  cterm_PRO_COO_CG_CD
-    N     C  cterm_PRO_COO_N_C
-   DN     C  cterm_PRO_COO_N_C
-    N    DC  cterm_PRO_COO_N_C
-   DN    DC  cterm_PRO_COO_N_C
-    N    CB  cterm_PRO_COO_N_CB
-   DN    CB  cterm_PRO_COO_N_CB
-    N   DCB  cterm_PRO_COO_N_CB
-   DN   DCB  cterm_PRO_COO_N_CB
-    N    CG  cterm_PRO_COO_N_CG
-   DN    CG  cterm_PRO_COO_N_CG
-    N   DCG  cterm_PRO_COO_N_CG
-   DN   DCG  cterm_PRO_COO_N_CG
-   CA    CG  cterm_PRO_COO_CA_CG
-  DCA    CG  cterm_PRO_COO_CA_CG
-   CA   DCG  cterm_PRO_COO_CA_CG
-  DCA   DCG  cterm_PRO_COO_CA_CG
-   CA    CD  cterm_PRO_COO_CA_CD
-  DCA    CD  cterm_PRO_COO_CA_CD
-   CA   DCD  cterm_PRO_COO_CA_CD
-  DCA   DCD  cterm_PRO_COO_CA_CD
-    C   OT1  cterm_PRO_COO_C_OT
-   DC   OT1  cterm_PRO_COO_C_OT
-    C  DOT1  cterm_PRO_COO_C_OT
-   DC  DOT1  cterm_PRO_COO_C_OT
-    C   OT2  cterm_PRO_COO_C_OT
-   DC   OT2  cterm_PRO_COO_C_OT
-    C  DOT2  cterm_PRO_COO_C_OT
-   DC  DOT2  cterm_PRO_COO_C_OT
-   CA   OT1  cterm_PRO_COO_CA_OT
-  DCA   OT1  cterm_PRO_COO_CA_OT
-   CA  DOT1  cterm_PRO_COO_CA_OT
-  DCA  DOT1  cterm_PRO_COO_CA_OT
-   CA   OT2  cterm_PRO_COO_CA_OT
-  DCA   OT2  cterm_PRO_COO_CA_OT
-   CA  DOT2  cterm_PRO_COO_CA_OT
-  DCA  DOT2  cterm_PRO_COO_CA_OT
-  OT2   OT1  cterm_PRO_COO_OT_OT
- DOT2   OT1  cterm_PRO_COO_OT_OT
-  OT2  DOT1  cterm_PRO_COO_OT_OT
- DOT2  DOT1  cterm_PRO_COO_OT_OT
-   CB    CD  cterm_PRO_COO_CB_CD
-  DCB    CD  cterm_PRO_COO_CB_CD
-   CB   DCD  cterm_PRO_COO_CB_CD
-  DCB   DCD  cterm_PRO_COO_CB_CD
+    N    CA  2.60  0.7540  0.4320
+   DN    CA  2.60  0.7540  0.4320
+    N   DCA  2.60  0.7540  0.4320
+   DN   DCA  2.60  0.7540  0.4320
+    N    CD  2.60  0.7540  1.1000
+   DN    CD  2.60  0.7540  1.1000
+    N   DCD  2.60  0.7540  1.1000
+   DN   DCD  2.60  0.7540  1.1000
+   CA     C  2.60  0.4320  0.8990
+  DCA     C  2.60  0.4320  0.8990
+   CA    DC  2.60  0.4320  0.8990
+  DCA    DC  2.60  0.4320  0.8990
+   CA    CB  2.60  0.4320  1.2950
+  DCA    CB  2.60  0.4320  1.2950
+   CA   DCB  2.60  0.4320  1.2950
+  DCA   DCB  2.60  0.4320  1.2950
+   CB    CG  2.60  1.2950  1.2950
+  DCB    CG  2.60  1.2950  1.2950
+   CB   DCG  2.60  1.2950  1.2950
+  DCB   DCG  2.60  1.2950  1.2950
+   CG    CD  2.60  1.2950  1.1000
+  DCG    CD  2.60  1.2950  1.1000
+   CG   DCD  2.60  1.2950  1.1000
+  DCG   DCD  2.60  1.2950  1.1000
+    N     C  2.60  0.7540  0.8990
+   DN     C  2.60  0.7540  0.8990
+    N    DC  2.60  0.7540  0.8990
+   DN    DC  2.60  0.7540  0.8990
+    N    CB  2.60  0.7540  1.2950
+   DN    CB  2.60  0.7540  1.2950
+    N   DCB  2.60  0.7540  1.2950
+   DN   DCB  2.60  0.7540  1.2950
+    N    CG  2.60  0.7540  1.2950
+   DN    CG  2.60  0.7540  1.2950
+    N   DCG  2.60  0.7540  1.2950
+   DN   DCG  2.60  0.7540  1.2950
+   CA    CG  2.60  0.4320  1.2950
+  DCA    CG  2.60  0.4320  1.2950
+   CA   DCG  2.60  0.4320  1.2950
+  DCA   DCG  2.60  0.4320  1.2950
+   CA    CD  2.60  0.4320  1.1000
+  DCA    CD  2.60  0.4320  1.1000
+   CA   DCD  2.60  0.4320  1.1000
+  DCA   DCD  2.60  0.4320  1.1000
+    C   OT1  2.60  0.8990  2.3990
+   DC   OT1  2.60  0.8990  2.3990
+    C  DOT1  2.60  0.8990  2.3990
+   DC  DOT1  2.60  0.8990  2.3990
+    C   OT2  2.60  0.8990  2.3990
+   DC   OT2  2.60  0.8990  2.3990
+    C  DOT2  2.60  0.8990  2.3990
+   DC  DOT2  2.60  0.8990  2.3990
+   CA   OT1  2.60  0.4320  2.3990
+  DCA   OT1  2.60  0.4320  2.3990
+   CA  DOT1  2.60  0.4320  2.3990
+  DCA  DOT1  2.60  0.4320  2.3990
+   CA   OT2  2.60  0.4320  2.3990
+  DCA   OT2  2.60  0.4320  2.3990
+   CA  DOT2  2.60  0.4320  2.3990
+  DCA  DOT2  2.60  0.4320  2.3990
+  OT2   OT1  2.60  2.3990  2.3990
+ DOT2   OT1  2.60  2.3990  2.3990
+  OT2  DOT1  2.60  2.3990  2.3990
+ DOT2  DOT1  2.60  2.3990  2.3990
+   CB    CD  2.60  0.4320  1.1000
+  DCB    CD  2.60  0.4320  1.1000
+   CB   DCD  2.60  0.4320  1.1000
+  DCB   DCD  2.60  0.4320  1.1000
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-   DOT1   OT1     C  LPT1  LPT2 aniso_COO_OT 
-   DOT2   OT2     C  LPT3  LPT4 aniso_COO_OT 
+   DOT1   OT1     C  LPT1  LPT2 0.00082322 0.00114332 0.00103346 
+   DOT2   OT2     C  LPT3  LPT4 0.00082322 0.00114332 0.00103346 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-     LPT1   OT1    C     CA      vsite_COO_LP1 
-     LPT2   OT1    C     CA      vsite_COO_LP2 
-     LPT3   OT2    C     CA      vsite_COO_LP1 
-     LPT4   OT2    C     CA      vsite_COO_LP2 
+     LPT1   OT1    C     CA      3  110.000 0.035 
+     LPT2   OT1    C     CA      3  250.000 0.035 
+     LPT3   OT2    C     CA      3  110.000 0.035 
+     LPT4   OT2    C     CA      3  250.000 0.035 
 
 ; Charged C-terminus for a single amino acid
 [ CTES ]
@@ -498,45 +498,45 @@
   DOT2  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
-    N     C  cterm_CTES_N_C
-   DN     C  cterm_CTES_N_C
-    N    DC  cterm_CTES_N_C
-   DN    DC  cterm_CTES_N_C
-    C   OT1  cterm_CTES_C_OT
-   DC   OT1  cterm_CTES_C_OT
-    C  DOT1  cterm_CTES_C_OT
-   DC  DOT1  cterm_CTES_C_OT
-    C   OT2  cterm_CTES_C_OT
-   DC   OT2  cterm_CTES_C_OT
-    C  DOT2  cterm_CTES_C_OT
-   DC  DOT2  cterm_CTES_C_OT
-   CA     C  cterm_CTES_CA_C
-  DCA     C  cterm_CTES_CA_C
-   CA    DC  cterm_CTES_CA_C
-  DCA    DC  cterm_CTES_CA_C
-   CA   OT1  cterm_CTES_CA_OT
-  DCA   OT1  cterm_CTES_CA_OT
-   CA  DOT1  cterm_CTES_CA_OT
-  DCA  DOT1  cterm_CTES_CA_OT
-   CA   OT2  cterm_CTES_CA_OT
-  DCA   OT2  cterm_CTES_CA_OT
-   CA  DOT2  cterm_CTES_CA_OT
-  DCA  DOT2  cterm_CTES_CA_OT
-  OT2   OT1  cterm_CTES_CA_OT
- DOT2   OT1  cterm_CTES_CA_OT
-  OT2  DOT1  cterm_CTES_CA_OT
- DOT2  DOT1  cterm_CTES_CA_OT
+    N     C  2.60  0.2500  0.8990
+   DN     C  2.60  0.2500  0.8990
+    N    DC  2.60  0.2500  0.8990
+   DN    DC  2.60  0.2500  0.8990
+    C   OT1  2.60  0.8990  2.3990
+   DC   OT1  2.60  0.8990  2.3990
+    C  DOT1  2.60  0.8990  2.3990
+   DC  DOT1  2.60  0.8990  2.3990
+    C   OT2  2.60  0.8990  2.3990
+   DC   OT2  2.60  0.8990  2.3990
+    C  DOT2  2.60  0.8990  2.3990
+   DC  DOT2  2.60  0.8990  2.3990
+   CA     C  2.60  1.0780  0.8990
+  DCA     C  2.60  1.0780  0.8990
+   CA    DC  2.60  1.0780  0.8990
+  DCA    DC  2.60  1.0780  0.8990
+   CA   OT1  2.60  1.0780  2.3990
+  DCA   OT1  2.60  1.0780  2.3990
+   CA  DOT1  2.60  1.0780  2.3990
+  DCA  DOT1  2.60  1.0780  2.3990
+   CA   OT2  2.60  1.0780  2.3990
+  DCA   OT2  2.60  1.0780  2.3990
+   CA  DOT2  2.60  1.0780  2.3990
+  DCA  DOT2  2.60  1.0780  2.3990
+  OT2   OT1  2.60  2.3990  2.3990
+ DOT2   OT1  2.60  2.3990  2.3990
+  OT2  DOT1  2.60  2.3990  2.3990
+ DOT2  DOT1  2.60  2.3990  2.3990
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-   DOT1   OT1     C  LPT1  LPT2 aniso_COO_OT 
-   DOT2   OT2     C  LPT3  LPT4 aniso_COO_OT 
+   DOT1   OT1     C  LPT1  LPT2 0.00082322 0.00114332 0.00103346 
+   DOT2   OT2     C  LPT3  LPT4 0.00082322 0.00114332 0.00103346 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-     LPT1   OT1    C     CA      vsite_COO_LP1 
-     LPT2   OT1    C     CA      vsite_COO_LP2 
-     LPT3   OT2    C     CA      vsite_COO_LP1 
-     LPT4   OT2    C     CA      vsite_COO_LP2 
+     LPT1   OT1    C     CA      3  110.000 0.035 
+     LPT2   OT1    C     CA      3  250.000 0.035 
+     LPT3   OT2    C     CA      3  110.000 0.035 
+     LPT4   OT2    C     CA      3  250.000 0.035 
 
 ; neutral C-terminus for a single amino acid
 [ CNES ]
@@ -575,38 +575,38 @@
   DOT2  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
-    N     C  cterm_CNES_N_C
-   DN     C  cterm_CNES_N_C
-    N    DC  cterm_CNES_N_C
-   DN    DC  cterm_CNES_N_C
-    C   OT1  cterm_CNES_C_OT1
-   DC   OT1  cterm_CNES_C_OT1
-    C  DOT1  cterm_CNES_C_OT1
-   DC  DOT1  cterm_CNES_C_OT1
-    C   OT2  cterm_CNES_C_OT2
-   DC   OT2  cterm_CNES_C_OT2
-    C  DOT2  cterm_CNES_C_OT2
-   DC  DOT2  cterm_CNES_C_OT2
-   CA     C  cterm_CNES_CA_C
-  DCA     C  cterm_CNES_CA_C
-   CA    DC  cterm_CNES_CA_C
-  DCA    DC  cterm_CNES_CA_C
-   CA   OT1  cterm_CNES_CA_OT1
-  DCA   OT1  cterm_CNES_CA_OT1
-   CA  DOT1  cterm_CNES_CA_OT1
-  DCA  DOT1  cterm_CNES_CA_OT1
-   CA   OT2  cterm_CNES_CA_OT2
-  DCA   OT2  cterm_CNES_CA_OT2
-   CA  DOT2  cterm_CNES_CA_OT2
-  DCA  DOT2  cterm_CNES_CA_OT2
-  OT2   OT1  cterm_CNES_OT2_OT1
- DOT2   OT1  cterm_CNES_OT2_OT1
-  OT2  DOT1  cterm_CNES_OT2_OT1
- DOT2  DOT1  cterm_CNES_OT2_OT1
+    N     C  2.60  0.2500  0.7080
+   DN     C  2.60  0.2500  0.7080
+    N    DC  2.60  0.2500  0.7080
+   DN    DC  2.60  0.2500  0.7080
+    C   OT1  2.60  0.7080  1.5390
+   DC   OT1  2.60  0.7080  1.5390
+    C  DOT1  2.60  0.7080  1.5390
+   DC  DOT1  2.60  0.7080  1.5390
+    C   OT2  2.60  0.7080  1.1240
+   DC   OT2  2.60  0.7080  1.1240
+    C  DOT2  2.60  0.7080  1.1240
+   DC  DOT2  2.60  0.7080  1.1240
+   CA     C  2.60  0.7500  0.7080
+  DCA     C  2.60  0.7500  0.7080
+   CA    DC  2.60  0.7500  0.7080
+  DCA    DC  2.60  0.7500  0.7080
+   CA   OT1  2.60  0.7500  1.5390
+  DCA   OT1  2.60  0.7500  1.5390
+   CA  DOT1  2.60  0.7500  1.5390
+  DCA  DOT1  2.60  0.7500  1.5390
+   CA   OT2  2.60  0.7500  1.1240
+  DCA   OT2  2.60  0.7500  1.1240
+   CA  DOT2  2.60  0.7500  1.1240
+  DCA  DOT2  2.60  0.7500  1.1240
+  OT2   OT1  2.60  1.1240  1.5390
+ DOT2   OT1  2.60  1.1240  1.5390
+  OT2  DOT1  2.60  1.1240  1.5390
+ DOT2  DOT1  2.60  1.1240  1.5390
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-  DOT1    OT1     C  LPT1  LPT2 aniso_COOH_OT1 
-  DOT2    OT2     C  LPT3  LPT4 aniso_COOH_OT2 
+  DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
+  DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
 
 ; amidated C-terminus for polypeptide
 ; HTC1 is trans to O
@@ -658,12 +658,12 @@
   DNT    DO  2.60   1.1320   1.2270
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-    DO      O     C  LPOA  LPOB aniso_COOH_OT1 
+    DO      O     C  LPOA  LPOB 0.00069680 0.00121940 0.00108380 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-     LPOA     O     C    CA      vsite_CONH_LP1
-     LPOB     O     C    CA      vsite_CONH_LP1 
+     LPOA     O     C    CA      3   91.000 0.030
+     LPOB     O     C    CA      3   91.000 0.030 
 
 ; amidated C-terminus for glycine
 [ CT2G ]
@@ -700,12 +700,12 @@
 ; TODO: add Thole
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-    DO      O     C  LPOA  LPOB aniso_COOH_OT1 
+    DO      O     C  LPOA  LPOB 0.00069680 0.00121940 0.00108380 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-     LPOA     O     C    CA      vsite_CONH_LP1 
-     LPOB     O     C    CA      vsite_CONH_LP2 
+     LPOA     O     C    CA      3   91.000 0.030 
+     LPOB     O     C    CA      3  269.000 0.030 
 
 ; amidated C-terminus for single amino acid
 [ CT2S ]
@@ -737,12 +737,12 @@
 ; TODO: may not need these since atom names do not change
 ;[ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
-;    DO      O     C  LPOA  LPOB aniso_COOH_OT1 
+;    DO      O     C  LPOA  LPOB 0.00069680 0.00121940 0.00108380 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-     LPOA     O     C    CA      vsite_CONH_LP1 
-     LPOB     O     C    CA      vsite_CONH_LP2 
+     LPOA     O     C    CA      3   91.000 0.030 
+     LPOB     O     C    CA      3  269.000 0.030 
 
 [ 3TER ]
 [ replace ]
