@@ -77,7 +77,7 @@
 #include "txtdump.h"
 #include "gromacs/utility/cstringutil.h"
 #include "pme_loadbal.h"
-#include "bondf.h"
+#include "gromacs/legacyheaders/bonded-threading.h"
 #include "membed.h"
 #include "types/nlistheuristics.h"
 #include "types/iteratedconstraints.h"

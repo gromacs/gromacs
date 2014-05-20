@@ -51,7 +51,6 @@
 #include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"
-#include "bondf.h"
 #include "mshift.h"
 #include "txtdump.h"
 #include "coulomb.h"
@@ -61,6 +60,7 @@
 #include "qmmm.h"
 #include "gmx_omp_nthreads.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"

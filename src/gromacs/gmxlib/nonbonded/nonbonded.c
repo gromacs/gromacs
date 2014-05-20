@@ -55,10 +55,11 @@
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "force.h"
-#include "bondf.h"
 #include "nrnb.h"
 #include "nonbonded.h"
 #include "gromacs/simd/simd.h"
+
+#include "gromacs/bonded/bonded.h"
 
 #include "nb_kernel.h"
 #include "nb_free_energy.h"

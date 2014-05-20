@@ -53,7 +53,6 @@
 #include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "force.h"
-#include "bondf.h"
 #include "pme.h"
 #include "disre.h"
 #include "orires.h"

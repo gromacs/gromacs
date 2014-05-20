@@ -48,8 +48,8 @@
 #include "index.h"
 #include "hxprops.h"
 #include "gromacs/utility/smalloc.h"
-#include "bondf.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/utility/fatalerror.h"
 
 real ellipticity(int nres, t_bb bb[])

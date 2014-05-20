@@ -41,11 +41,11 @@
 
 
 #include "typedefs.h"
-#include "bondf.h"
 #include "disre.h"
 #include "orires.h"
 #include "genborn.h"
 
+#include "gromacs/bonded/bonded.h"
 
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \
     {str, lstr, (nra), (nrpa), (nrpb), IF_BOND,                        (ind), (func)}
