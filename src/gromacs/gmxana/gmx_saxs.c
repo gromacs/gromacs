@@ -44,7 +44,6 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"

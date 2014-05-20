@@ -61,7 +61,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/pulling/pull.h"
 
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
 typedef struct gmx_constr {

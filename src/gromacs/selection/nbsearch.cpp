@@ -65,9 +65,9 @@
 #include "thread_mpi/mutex.h"
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/pbc.h"
 
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"

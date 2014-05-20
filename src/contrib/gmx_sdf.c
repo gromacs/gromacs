@@ -23,7 +23,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"

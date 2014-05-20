@@ -41,7 +41,7 @@
 #include <math.h>
 #include "typedefs.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "chargegroup.h"

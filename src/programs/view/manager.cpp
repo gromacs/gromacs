@@ -50,7 +50,7 @@
 #include "macros.h"
 #include "atomprop.h"
 #include "names.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "copyrite.h"
 
 #include "gromacs/math/utilities.h"

@@ -62,7 +62,6 @@
 #include <string.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/pbc.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/centerofmass.h"

@@ -52,7 +52,7 @@
 #include "domdec.h"
 #include "domdec_network.h"
 #include "nrnb.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "chargegroup.h"
 #include "constr.h"
 #include "mdatoms.h"

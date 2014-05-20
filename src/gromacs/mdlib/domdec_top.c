@@ -46,7 +46,7 @@
 #include "names.h"
 #include "network.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "chargegroup.h"
 #include "gromacs/gmxlib/topsort.h"
 #include "mtop_util.h"

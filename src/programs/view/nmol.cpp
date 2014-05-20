@@ -44,7 +44,7 @@
 
 #include "macros.h"
 #include "txtdump.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"

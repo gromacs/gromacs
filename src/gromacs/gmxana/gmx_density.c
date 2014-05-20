@@ -48,7 +48,7 @@
 #include "macros.h"
 #include "gstat.h"
 #include "viewit.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

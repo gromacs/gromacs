@@ -55,7 +55,7 @@
 #include "trxio.h"
 #include "gromacs/utility/fatalerror.h"
 #include "copyrite.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
 

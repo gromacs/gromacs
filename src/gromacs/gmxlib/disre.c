@@ -54,7 +54,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

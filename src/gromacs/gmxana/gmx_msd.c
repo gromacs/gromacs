@@ -51,7 +51,6 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "pbc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/confio.h"
 #include "gmx_ana.h"

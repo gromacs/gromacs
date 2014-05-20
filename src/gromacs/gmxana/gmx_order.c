@@ -46,7 +46,7 @@
 #include "gstat.h"
 #include "gromacs/math/vec.h"
 #include "viewit.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"
 #include "gromacs/fileio/tpxio.h"

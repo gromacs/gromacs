@@ -55,7 +55,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/pbcutil/rmpbc.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gmx_ana.h"
 
 

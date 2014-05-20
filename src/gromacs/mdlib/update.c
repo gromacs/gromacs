@@ -62,7 +62,7 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/pbcutil/mshift.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/futil.h"

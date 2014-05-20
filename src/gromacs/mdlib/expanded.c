@@ -36,14 +36,14 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "names.h"
 #include "gromacs/fileio/confio.h"
 #include "txtdump.h"
-#include "pbc.h"
 #include "chargegroup.h"
 #include "gromacs/math/vec.h"
 #include "nrnb.h"

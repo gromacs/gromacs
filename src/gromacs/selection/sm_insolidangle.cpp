@@ -117,11 +117,11 @@
 #include <math.h>
 
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/pbc.h"
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selection.h"

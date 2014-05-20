@@ -43,7 +43,6 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "pbc.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"

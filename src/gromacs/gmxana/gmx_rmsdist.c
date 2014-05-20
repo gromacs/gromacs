@@ -51,7 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "macros.h"
 #include "index.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/utility/futil.h"
