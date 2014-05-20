@@ -582,7 +582,7 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
 
     fprintf(log, "\nDetailed load balancing info in percentage of average\n");
 
-    fprintf(log, " Type                 NODE:");
+    fprintf(log, " Type                 RANK:");
     for (i = 0; (i < cr->nnodes); i++)
     {
         fprintf(log, "%3d ", i);

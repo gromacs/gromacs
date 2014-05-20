@@ -751,7 +751,7 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t pme,
     {
         if (atc->count[atc->nodeid] + nsend != n)
         {
-            gmx_fatal(FARGS, "%d particles communicated to PME node %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
+            gmx_fatal(FARGS, "%d particles communicated to PME rank %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
                       "This usually means that your system is not well equilibrated.",
                       n - (atc->count[atc->nodeid] + nsend),
                       pme->nodeid, 'x'+atc->dimind);
@@ -771,7 +771,7 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t pme,
             /* Communicate the count */
             if (debug)
             {
-                fprintf(debug, "dimind %d PME node %d send to node %d: %d\n",
+                fprintf(debug, "dimind %d PME rank %d send to rank %d: %d\n",
                         atc->dimind, atc->nodeid, commnode[i], scount);
             }
             pme_dd_sendrecv(atc, FALSE, i,
@@ -946,7 +946,7 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
         /* Copy data to contiguous send buffer */
         if (debug)
         {
-            fprintf(debug, "PME send node %d %d -> %d grid start %d Communicating %d to %d\n",
+            fprintf(debug, "PME send rank %d %d -> %d grid start %d Communicating %d to %d\n",
                     pme->nodeid, overlap->nodeid, send_id,
                     pme->pmegrid_start_iy,
                     send_index0-pme->pmegrid_start_iy,
@@ -978,7 +978,7 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
         /* Get data from contiguous recv buffer */
         if (debug)
         {
-            fprintf(debug, "PME recv node %d %d <- %d grid start %d Communicating %d to %d\n",
+            fprintf(debug, "PME recv rank %d %d <- %d grid start %d Communicating %d to %d\n",
                     pme->nodeid, overlap->nodeid, recv_id,
                     pme->pmegrid_start_iy,
                     recv_index0-pme->pmegrid_start_iy,
@@ -1042,12 +1042,12 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
 
         if (debug)
         {
-            fprintf(debug, "PME send node %d %d -> %d grid start %d Communicating %d to %d\n",
+            fprintf(debug, "PME send rank %d %d -> %d grid start %d Communicating %d to %d\n",
                     pme->nodeid, overlap->nodeid, send_id,
                     pme->pmegrid_start_ix,
                     send_index0-pme->pmegrid_start_ix,
                     send_index0-pme->pmegrid_start_ix+send_nindex);
-            fprintf(debug, "PME recv node %d %d <- %d grid start %d Communicating %d to %d\n",
+            fprintf(debug, "PME recv rank %d %d <- %d grid start %d Communicating %d to %d\n",
                     pme->nodeid, overlap->nodeid, recv_id,
                     pme->pmegrid_start_ix,
                     recv_index0-pme->pmegrid_start_ix,
@@ -3354,7 +3354,7 @@ void gmx_pme_check_restrictions(int pme_order,
             *bValidSettings = FALSE;
             return;
         }
-        gmx_fatal(FARGS, "The number of PME grid lines per node along x is %g. But when using OpenMP threads, the number of grid lines per node along x should be >= pme_order (%d) or = pmeorder-1. To resolve this issue, use less nodes along x (and possibly more along y and/or z) by specifying -dd manually.",
+        gmx_fatal(FARGS, "The number of PME grid lines per rank along x is %g. But when using OpenMP threads, the number of grid lines per rank along x should be >= pme_order (%d) or = pmeorder-1. To resolve this issue, use fewer ranks along x (and possibly more along y and/or z) by specifying -dd manually.",
                   nkx/(double)nnodes_major, pme_order);
     }
 
@@ -3407,7 +3407,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         MPI_Comm_size(pme->mpi_comm, &pme->nnodes);
         if (pme->nnodes != nnodes_major*nnodes_minor)
         {
-            gmx_incons("PME node count mismatch");
+            gmx_incons("PME rank count mismatch");
         }
     }
     else
@@ -3456,7 +3456,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         {
             if (pme->nnodes % nnodes_major != 0)
             {
-                gmx_incons("For 2D PME decomposition, #PME nodes must be divisible by the number of nodes in the major dimension");
+                gmx_incons("For 2D PME decomposition, #PME ranks must be divisible by the number of ranks in the major dimension");
             }
             pme->ndecompdim = 2;
 
@@ -3543,8 +3543,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                     "\n"
                     "NOTE: The load imbalance in PME FFT and solve is %d%%.\n"
                     "      For optimal PME load balancing\n"
-                    "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_nodes_x (%d)\n"
-                    "      and PME grid_y (%d) and grid_z (%d) should be divisible by #PME_nodes_y (%d)\n"
+                    "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_ranks_x (%d)\n"
+                    "      and PME grid_y (%d) and grid_z (%d) should be divisible by #PME_ranks_y (%d)\n"
                     "\n",
                     (int)((imbal-1)*100 + 0.5),
                     pme->nkx, pme->nky, pme->nnodes_major,
@@ -4805,7 +4805,7 @@ int gmx_pme_do(gmx_pme_t pme,
 
         if (debug)
         {
-            fprintf(debug, "PME: nnodes = %d, nodeid = %d\n",
+            fprintf(debug, "PME: number of ranks = %d, rank = %d\n",
                     cr->nnodes, cr->nodeid);
             fprintf(debug, "Grid = %p\n", (void*)grid);
             if (grid == NULL)
@@ -4830,7 +4830,7 @@ int gmx_pme_do(gmx_pme_t pme,
 
         if (debug)
         {
-            fprintf(debug, "Node= %6d, pme local particles=%6d\n",
+            fprintf(debug, "Rank= %6d, pme local particles=%6d\n",
                     cr->nodeid, atc->n);
         }
 

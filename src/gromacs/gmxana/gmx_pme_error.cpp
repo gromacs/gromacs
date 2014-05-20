@@ -672,7 +672,7 @@ static real estimate_reciprocal(
                     xtot, xtot == 1 ? "" : "s");
             if (PAR(cr))
             {
-                fprintf(stdout, " (%d sample%s per node)", x_per_core, x_per_core == 1 ? "" : "s");
+                fprintf(stdout, " (%d sample%s per rank)", x_per_core, x_per_core == 1 ? "" : "s");
             }
             fprintf(stdout, ".\n");
         }
@@ -763,7 +763,7 @@ static real estimate_reciprocal(
 #ifdef DEBUG
     if (PAR(cr))
     {
-        fprintf(stderr, "Node %3d: nx=[%3d...%3d]  e_rec3=%e\n",
+        fprintf(stderr, "Rank %3d: nx=[%3d...%3d]  e_rec3=%e\n",
                 cr->nodeid, startlocal, stoplocal, e_rec3);
     }
 #endif

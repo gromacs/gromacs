@@ -162,7 +162,7 @@ static void quit_gmx(const char *msg)
 
         if (nnodes > 1)
         {
-            fprintf(stderr, "Error on node %d, will try to stop all the nodes\n",
+            fprintf(stderr, "Error on rank %d, will try to stop all the ranks\n",
                     noderank);
         }
         gmx_abort(noderank, nnodes, -1);

@@ -1818,7 +1818,7 @@ static void pick_nbnxn_resources(const t_commrec     *cr,
         {
             /* At this point the init should never fail as we made sure that
              * we have all the GPUs we need. If it still does, we'll bail. */
-            gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
+            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
                       get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
                                         cr->rank_pp_intranode),

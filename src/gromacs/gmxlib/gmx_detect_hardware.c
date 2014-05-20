@@ -526,7 +526,7 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
 
     if (debug)
     {
-        fprintf(debug, "Detected %d processors, will use this as the number "
+        fprintf(debug, "Detected %d cores, will use this as the number "
                 "of supported hardware threads.\n", ret);
     }
 

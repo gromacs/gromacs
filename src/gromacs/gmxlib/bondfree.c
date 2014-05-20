@@ -4589,7 +4589,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
     }
     if (bPrintSepPot)
     {
-        fprintf(fplog, "Step %s: bonded V and dVdl for this node\n",
+        fprintf(fplog, "Step %s: bonded V and dVdl for this rank\n",
                 gmx_step_str(step, buf));
     }
 
