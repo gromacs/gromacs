@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _bondf_h
-#define _bondf_h
+#ifndef GMX_BONDED_BONDED_H
+#define GMX_BONDED_BONDED_H
 
 #include <stdio.h>
 
@@ -58,15 +58,20 @@ int glatnr(int *global_atom_index, int i);
  * When global_atom_index=NULL returns i+1.
  */
 
+/*! \brief Return whether this is a potential calculated in
+ * bonded.cpp, i.e. an interaction that actually calculates a
+ * potential and works on multiple atoms (not e.g. a connection or a
+ * position restraint). */
+gmx_bool ftype_is_bonded_potential(int ftype);
+
 void calc_bonds(const gmx_multisim_t *ms,
                 const t_idef *idef,
-                rvec x[], history_t *hist,
+                const rvec x[], history_t *hist,
                 rvec f[], t_forcerec *fr,
                 const struct t_pbc *pbc, const struct t_graph *g,
                 gmx_enerdata_t *enerd, t_nrnb *nrnb, real *lambda,
                 const t_mdatoms *md,
                 t_fcdata *fcd, int *ddgatindex,
-                t_atomtypes *atype, gmx_genborn_t *born,
                 int force_flags);
 /*
  * The function calc_bonds() calculates all bonded force interactions.
@@ -91,7 +96,7 @@ void calc_bonds(const gmx_multisim_t *ms,
  */
 
 void calc_bonds_lambda(const t_idef *idef,
-                       rvec x[],
+                       const rvec x[],
                        t_forcerec *fr,
                        const struct t_pbc *pbc, const struct t_graph *g,
                        gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
@@ -154,15 +159,8 @@ t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
 
 
-/* Divided the bonded interactions over the threads, count=fr->nthreads
- * and set up the bonded thread-force buffer reduction.
- * This should be called each time the bonded setup changes;
- * i.e. at start-up without domain decomposition and at DD.
- */
-void setup_bonded_threading(t_forcerec *fr, t_idef *idef);
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _bondf_h */
+#endif

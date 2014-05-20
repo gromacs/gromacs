@@ -55,7 +55,6 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/typedefs.h"

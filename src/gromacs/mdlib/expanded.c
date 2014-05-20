@@ -52,7 +52,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/orires.h"

@@ -60,7 +60,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/orires.h"
@@ -80,6 +79,7 @@
 #include "../gmxlib/nonbonded/nb_kernel.h"
 #include "../gmxlib/nonbonded/nb_free_energy.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -1335,7 +1335,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
                       x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
-                      &(top->atomtypes), bBornRadii, box,
+                      bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
 
@@ -1884,7 +1884,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
                       x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
-                      &(top->atomtypes), bBornRadii, box,
+                      bBornRadii, box,
                       inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
