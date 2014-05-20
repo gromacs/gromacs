@@ -319,7 +319,7 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     MPI_Comm_rank(nc->comm_intra, &nc->rank_intra);
     if (debug)
     {
-        fprintf(debug, "In gmx_setup_nodecomm: node rank %d rank_intra %d\n",
+        fprintf(debug, "In gmx_setup_nodecomm: node ID %d rank within node %d\n",
                 rank, nc->rank_intra);
     }
     /* The inter-node communicator, split on rank_intra.
@@ -342,7 +342,7 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
         nc->bUse = TRUE;
         if (fplog)
         {
-            fprintf(fplog, "Using two step summing over %d groups of on average %.1f processes\n\n",
+            fprintf(fplog, "Using two step summing over %d groups of on average %.1f ranks\n\n",
                     ng, (real)n/(real)ng);
         }
         if (nc->rank_intra > 0)
@@ -441,7 +441,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
         {
             sprintf(sbuf, "%s", cr->duty & DUTY_PP ? "PP" : "PME");
         }
-        fprintf(debug, "On %3s node %d: nrank_intranode=%d, rank_intranode=%d, "
+        fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d, "
                 "nrank_pp_intranode=%d, rank_pp_intranode=%d\n",
                 sbuf, cr->sim_nodeid,
                 nrank_intranode, rank_intranode,

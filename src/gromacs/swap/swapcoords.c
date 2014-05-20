@@ -710,7 +710,7 @@ static void compartmentalize_ions(
         }
         else
         {
-            fprintf(stderr, "%s node %d: Inconsistency during ion compartmentalization. !inA: %d, !inB: %d, total ions %d\n",
+            fprintf(stderr, "%s rank %d: Inconsistency during ion compartmentalization. !inA: %d, !inB: %d, total ions %d\n",
                     SwS, cr->nodeid, not_in_comp[eCompA], not_in_comp[eCompB], iong->nat);
 
         }
@@ -727,7 +727,7 @@ static void compartmentalize_ions(
         }
         else
         {
-            fprintf(stderr, "%s node %d: %d atoms are in the ion group, but altogether %d have been assigned to the compartments.\n",
+            fprintf(stderr, "%s rank %d: %d atoms are in the ion group, but altogether %d have been assigned to the compartments.\n",
                     SwS, cr->nodeid, iong->nat, sum);
         }
     }
@@ -802,7 +802,7 @@ static void compartmentalize_solvent(
         }
         else
         {
-            fprintf(stderr, "%s node %d: Inconsistency during solvent compartmentalization. !inA: %d, !inB: %d, solvent atoms %d\n",
+            fprintf(stderr, "%s rank %d: Inconsistency during solvent compartmentalization. !inA: %d, !inB: %d, solvent atoms %d\n",
                     SwS, cr->nodeid, not_in_comp[eCompA], not_in_comp[eCompB], solg->nat);
         }
     }
@@ -817,7 +817,7 @@ static void compartmentalize_solvent(
         }
         else
         {
-            fprintf(stderr, "%s node %d: %d atoms in solvent group, but %d have been assigned to the compartments.\n",
+            fprintf(stderr, "%s rank %d: %d atoms in solvent group, but %d have been assigned to the compartments.\n",
                     SwS, cr->nodeid, solg->nat, sum);
         }
     }
