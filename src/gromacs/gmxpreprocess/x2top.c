@@ -45,7 +45,6 @@
 #include "copyrite.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "bondf.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/units.h"
@@ -60,6 +59,7 @@
 #include "hackblock.h"
 #include "nm2type.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
