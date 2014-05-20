@@ -178,7 +178,7 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
         time_string[i] = '\0';
     }
 
-    fprintf(fplog, "%s on node %d %s\n", title, nodeid, time_string);
+    fprintf(fplog, "%s on rank %d %s\n", title, nodeid, time_string);
 }
 
 void print_start(FILE *fplog, t_commrec *cr,

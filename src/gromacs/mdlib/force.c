@@ -210,7 +210,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
 
     if (bSepDVDL)
     {
-        fprintf(fplog, "Step %s: non-bonded V and dVdl for node %d:\n",
+        fprintf(fplog, "Step %s: non-bonded V and dVdl for rank %d:\n",
                 gmx_step_str(step, buf), cr->nodeid);
     }
 
@@ -724,7 +724,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
         fr->t_wait += t3-t2;
         if (fr->timesteps == 11)
         {
-            fprintf(stderr, "* PP load balancing info: node %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
+            fprintf(stderr, "* PP load balancing info: rank %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n",
                     cr->nodeid, gmx_step_str(fr->timesteps, buf),
                     100*fr->t_wait/(fr->t_wait+fr->t_fnbf),
                     (fr->t_fnbf+fr->t_wait)/fr->t_fnbf);

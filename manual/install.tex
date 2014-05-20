@@ -288,7 +288,7 @@ you should consult your local documentation for details.
 \item   {\tt GMX_NBNXN_SIMD_4XN}: force the use of 4xN SIMD CPU non-bonded kernels,
         mutually exclusive of {\tt GMX_NBNXN_SIMD_2XNN}.
 \item   {\tt GMX_NO_ALLVSALL}: disables optimized all-vs-all kernels.
-\item   {\tt GMX_NO_CART_REORDER}: used in initializing domain decomposition communicators. Node reordering
+\item   {\tt GMX_NO_CART_REORDER}: used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
 \item   {\tt GMX_NO_CUDA_STREAMSYNC}: the opposite of {\tt GMX_CUDA_STREAMSYNC}. Disables the use of the
         standard cudaStreamSynchronize-based GPU waiting to improve performance when using CUDA driver API
@@ -382,14 +382,15 @@ you should consult your local documentation for details.
 \end{enumerate}
 
 \section{Running {\gromacs} in parallel}
-By default {\gromacs} will be compiled with the built-in threaded MPI library.
-This library supports MPI communication between threads instead of between
-processes. To run {\gromacs} in parallel over multiple nodes in a cluster
-of a supercomputer, you need to configure and compile {\gromacs} with an external
+By default {\gromacs} will be compiled with the built-in thread-MPI library.
+This library handles communication between threads on a single
+node more efficiently than using an external MPI library.
+To run {\gromacs} in parallel over multiple nodes, e.g. on a cluster,
+you need to configure and compile {\gromacs} with an external
 MPI library. All supercomputers are shipped with MPI libraries optimized for 
-that particular platform, and if you are using a cluster of workstations
-there are several good free MPI implementations; OpenMPI is usually a good choice.
-Note that MPI and threaded-MPI support are mutually incompatible.
+that particular platform, and there are several good free MPI
+implementations; OpenMPI is usually a good choice.
+Note that MPI and thread-MPI support are mutually incompatible.
 
 In addition to MPI parallelization, {\gromacs} supports also
 thread-parallelization through \normindex{OpenMP}. MPI and OpenMP parallelization

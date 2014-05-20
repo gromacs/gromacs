@@ -612,7 +612,7 @@ static void print_header(FILE *fplog, int nrank_pp, int nth_pp, int nrank_pme, i
 
     fprintf(fplog, "\n\n");
     fprintf(fplog, " Computing:          Num   Num      Call    Wall time         Giga-Cycles\n");
-    fprintf(fplog, "                     Nodes Threads  Count      (s)         total sum    %%\n");
+    fprintf(fplog, "                     Ranks Threads  Count      (s)         total sum    %%\n");
 }
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
@@ -719,7 +719,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     if (npme > 0)
     {
         fprintf(fplog,
-                "(*) Note that with separate PME nodes, the walltime column actually sums to\n"
+                "(*) Note that with separate PME ranks, the walltime column actually sums to\n"
                 "    twice the total reported, but the cycle count total and %% are correct.\n"
                 "%s\n", hline);
     }

@@ -918,12 +918,12 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
         *step = idum;
     }
     do_cpt_double_err(xd, "t", t, list);
-    do_cpt_int_err(xd, "#PP-nodes", nnodes, list);
+    do_cpt_int_err(xd, "#PP-ranks", nnodes, list);
     idum = 1;
     do_cpt_int_err(xd, "dd_nc[x]", dd_nc ? &(dd_nc[0]) : &idum, list);
     do_cpt_int_err(xd, "dd_nc[y]", dd_nc ? &(dd_nc[1]) : &idum, list);
     do_cpt_int_err(xd, "dd_nc[z]", dd_nc ? &(dd_nc[2]) : &idum, list);
-    do_cpt_int_err(xd, "#PME-only nodes", npme, list);
+    do_cpt_int_err(xd, "#PME-only ranks", npme, list);
     do_cpt_int_err(xd, "state flags", flags_state, list);
     if (*file_version >= 4)
     {
@@ -1815,10 +1815,10 @@ static void check_match(FILE *fplog,
     check_int   (fplog, "Double prec.", GMX_CPT_BUILD_DP, double_prec, &mm);
     check_string(fplog, "Program name", Program(), fprog, &mm);
 
-    check_int   (fplog, "#nodes", cr->nnodes, npp_f+npme_f, &mm);
+    check_int   (fplog, "#ranks", cr->nnodes, npp_f+npme_f, &mm);
     if (cr->nnodes > 1)
     {
-        check_int (fplog, "#PME-nodes", cr->npmenodes, npme_f, &mm);
+        check_int (fplog, "#PME-ranks", cr->npmenodes, npme_f, &mm);
 
         npp = cr->nnodes;
         if (cr->npmenodes >= 0)
