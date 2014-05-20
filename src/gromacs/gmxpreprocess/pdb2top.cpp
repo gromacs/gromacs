@@ -85,6 +85,12 @@ static gmx_bool is_cbeta(t_atoms *atoms, int ai)
     return (((*(atoms->atomname[ai]))[0] == 'C') && ((*(atoms->atomname[ai]))[1] == 'B'));
 }
 
+static gmx_bool is_cbeta_drude(t_atoms *atoms, int ai)
+{
+    return (((*(atoms->atomname[ai]))[0] == 'D') && ((*(atoms->atomname[ai]))[1] == 'C') &&
+            ((*(atoms->atomname[ai]))[2] == 'B'));
+}
+
 static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
 {
     int      j, k, nmiss;
@@ -1025,21 +1031,28 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
                  * by copying it to ps->param[i].s before param[i] is copied into param[j].
                  * We only need to check one set, because we've already determined that
                  * they're the same! */
-                if (is_cbeta(atoms, ps->param[i].a[0]))
+                if (is_cbeta(atoms, ps->param[i].a[0]) || is_cbeta_drude(atoms, ps->param[i].a[0]))
                 {
                     /* here, ai[0] is the value to keep */
                     sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
                     sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
-                    sprintf(buf, "%4.2f%8.4f%8.4f", alpha[0], ai[0], aj[1]);
-                    set_p_string(&(ps->param[i]), buf);
+                    /* only change value if we need to */
+                    if (ai[0] != ai[1])
+                    {
+                        sprintf(buf, "%4.2f%10.4f%10.4f", alpha[0], ai[0], aj[1]);
+                        set_p_string(&(ps->param[i]), buf);
+                    }
                 }
-                else if (is_cbeta(atoms, ps->param[i].a[1]))
+                else if (is_cbeta(atoms, ps->param[i].a[1]) || is_cbeta_drude(atoms, ps->param[i].a[1]))
                 {
                     /* here, aj[0] is the value to keep */
                     sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
                     sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
-                    sprintf(buf, "%4.2f%8.4f%8.4f", alpha[0], ai[1], aj[0]);
-                    set_p_string(&(ps->param[i]), buf);
+                    if (aj[0] != aj[1])
+                    {
+                        sprintf(buf, "%4.2f%10.4f%10.4f", alpha[0], ai[1], aj[0]);
+                        set_p_string(&(ps->param[i]), buf);
+                    }
                 }
                 /* copy params and shift the list */
                 if (j != i)
