@@ -37,6 +37,7 @@
 #define _nbnxn_search_h
 
 #include "typedefs.h"
+#include "nbnxn_pairlist.h"
 
 #ifdef __cplusplus
 extern "C" {
