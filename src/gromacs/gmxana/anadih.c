@@ -53,6 +53,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
 void print_one(const output_env_t oenv, const char *base, const char *name,

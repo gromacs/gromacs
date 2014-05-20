@@ -43,7 +43,6 @@
 #include <math.h>
 
 #include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "nrnb.h"
 #include "gromacs/math/units.h"
@@ -51,7 +50,6 @@
 #include "gromacs/math/vec.h"
 #include "update.h"
 #include "gromacs/random/random.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "tgroup.h"
 #include "force.h"
 #include "names.h"
@@ -63,10 +61,13 @@
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/gmxomp.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/

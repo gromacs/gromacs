@@ -47,7 +47,6 @@
 #include <limits.h>
 #include <assert.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "readir.h"
 #include "toputil.h"
@@ -86,6 +85,8 @@
 #include "tomorse.h"
 #include "gromacs/imd/imd.h"
 
+#include "pbc.h"
+#include "gromacs/utility/smalloc.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
