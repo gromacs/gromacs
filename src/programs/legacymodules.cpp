@@ -323,7 +323,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_traj, "traj",
                    "Plot x, v, f, box, temperature and rotational energy from trajectories");
     registerModule(manager, &gmx_tune_pme, "tune_pme",
-                   "Time mdrun as a function of PME nodes to optimize settings");
+                   "Time mdrun as a function of PME ranks to optimize settings");
     registerModule(manager, &gmx_vanhove, "vanhove",
                    "Compute Van Hove displacement and correlation functions");
     registerModule(manager, &gmx_velacc, "velacc",

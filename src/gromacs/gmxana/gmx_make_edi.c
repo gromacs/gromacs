@@ -622,7 +622,7 @@ int gmx_make_edi(int argc, char *argv[])
         "(collective coordinates etc.), at least on the 'protein' side, ED sampling",
         "is not very parallel-friendly from an implementation point of view. Because",
         "parallel ED requires some extra communication, expect the performance to be",
-        "lower as in a free MD simulation, especially on a large number of nodes and/or",
+        "lower as in a free MD simulation, especially on a large number of ranks and/or",
         "when the ED group contains a lot of atoms. [PAR]",
         "Please also note that if your ED group contains more than a single protein,",
         "then the [TT].tpr[tt] file must contain the correct PBC representation of the ED group.",

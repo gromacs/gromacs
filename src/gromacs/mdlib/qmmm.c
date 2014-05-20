@@ -494,7 +494,7 @@ void init_QMMMrec(t_commrec  *cr,
     /* issue a fatal if the user wants to run with more than one node */
     if (PAR(cr))
     {
-        gmx_fatal(FARGS, "QM/MM does not work in parallel, use a single node instead\n");
+        gmx_fatal(FARGS, "QM/MM does not work in parallel, use a single rank instead\n");
     }
 
     /* Make a local copy of the QMMMrec */

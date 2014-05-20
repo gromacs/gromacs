@@ -319,7 +319,7 @@ you should consult your local documentation for details.
 \item   {\tt GMX_NBNXN_SIMD_4XN}: force the use of 4xN SIMD CPU non-bonded kernels,
         mutually exclusive of {\tt GMX_NBNXN_SIMD_2XNN}.
 \item   {\tt GMX_NO_ALLVSALL}: disables optimized all-vs-all kernels.
-\item   {\tt GMX_NO_CART_REORDER}: used in initializing domain decomposition communicators. Node reordering
+\item   {\tt GMX_NO_CART_REORDER}: used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
 \item   {\tt GMX_NO_CUDA_STREAMSYNC}: the opposite of {\tt GMX_CUDA_STREAMSYNC}. Disables the use of the
         standard cudaStreamSynchronize-based GPU waiting to improve performance when using CUDA driver API
@@ -417,14 +417,14 @@ you should consult your local documentation for details.
 \end{enumerate}
 
 \section{Running {\gromacs} in parallel}
-By default {\gromacs} will be compiled with the built-in threaded MPI library.
-This library supports MPI communication between threads instead of between
-processes. To run {\gromacs} in parallel over multiple nodes in a cluster
-of a supercomputer, you need to configure and compile {\gromacs} with an external
+By default {\gromacs} will be compiled with the built-in thread-MPI library.
+This library handles communication between threads on a single
+node more efficiently than using an external MPI library.
+To run {\gromacs} in parallel over multiple nodes, e.g. on a cluster,
+you need to configure and compile {\gromacs} with an external
 MPI library. All supercomputers are shipped with MPI libraries optimized for 
-that particular platform, and if you are using a cluster of workstations
-there are several good free MPI implementations;
-Open MPI is usually a good choice. Once you have an MPI library
+that particular platform, and there are several good free MPI implementations;
+OpenMPI is usually a good choice. Once you have an MPI library
 installed it's trivial to compile {\gromacs} with MPI support: Just pass
 the option {\tt -DGMX_MPI=on} to {\tt cmake} and (re-)compile. Please see
 {\wwwpage} for more detailed instructions.
@@ -436,11 +436,11 @@ schemes.
 
 For communications over multiple nodes connected by a network,
 there is a program usually called {\tt mpirun} with which you can start 
-the parallel processes. A typical command line could look like:
+the parallel ranks. A typical command line could look like:
 {\tt mpirun -np 10 mdrun_mpi -s topol -v}
 
 With the implementation of threading available by default in {\gromacs} version 4.5, 
-if you have a single machine with multiple processors you don't have to
+if you have a single machine with multiple cores, you don't have to
 use the {\tt mpirun} command, or compile with MPI. Instead, you can
 allow {\gromacs} to determine the number of threads automatically, or use the {\tt mdrun} option {\tt -nt}:
 {\tt mdrun -nt 8 -s topol.tpr}
