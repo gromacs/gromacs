@@ -39,7 +39,7 @@
 
 #include "typedefs.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"

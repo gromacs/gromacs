@@ -53,7 +53,7 @@
 #include "macros.h"
 #include "index.h"
 #include "gromacs/random/random.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"

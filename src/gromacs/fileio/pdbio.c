@@ -49,7 +49,7 @@
 #include "gromacs/utility/futil.h"
 #include "atomprop.h"
 #include "gromacs/math/units.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gmxfio.h"
 
 #include "gromacs/math/vec.h"

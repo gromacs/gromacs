@@ -51,7 +51,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/utility/cstringutil.h"
 #include "membed.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "readinp.h"
 #include "gromacs/gmxpreprocess/readir.h"
 

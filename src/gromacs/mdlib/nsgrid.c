@@ -50,7 +50,7 @@
 #include "gromacs/math/vec.h"
 #include "network.h"
 #include "domdec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include <stdio.h>
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"

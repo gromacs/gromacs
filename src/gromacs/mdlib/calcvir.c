@@ -44,7 +44,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/mshift.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #define XXXX    0
 #define XXYY    1

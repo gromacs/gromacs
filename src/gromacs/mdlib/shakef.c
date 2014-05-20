@@ -39,9 +39,9 @@
 #endif
 
 #include <math.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "pbc.h"
 #include "txtdump.h"
 #include "gromacs/math/vec.h"
 #include "nrnb.h"

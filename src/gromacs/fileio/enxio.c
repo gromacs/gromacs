@@ -48,7 +48,7 @@
 #include "xdrf.h"
 #include "macros.h"
 
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

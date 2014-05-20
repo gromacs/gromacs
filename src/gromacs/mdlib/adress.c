@@ -36,7 +36,7 @@
 
 #include "adress.h"
 #include "gromacs/math/utilities.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "types/simple.h"
 #include "typedefs.h"
 #include "gromacs/math/vec.h"

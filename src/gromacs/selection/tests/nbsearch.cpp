@@ -52,9 +52,8 @@
 #include <set>
 #include <vector>
 
-#include "gromacs/legacyheaders/pbc.h"
-
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/utility/smalloc.h"

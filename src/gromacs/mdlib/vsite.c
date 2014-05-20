@@ -49,7 +49,7 @@
 #include "gromacs/math/vec.h"
 #include "network.h"
 #include "gromacs/pbcutil/mshift.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "domdec.h"
 #include "mtop_util.h"
 #include "gmx_omp_nthreads.h"

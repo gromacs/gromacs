@@ -45,7 +45,6 @@
 
 #include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/pbc.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
@@ -54,6 +53,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"

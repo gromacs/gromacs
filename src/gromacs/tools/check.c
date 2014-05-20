@@ -48,7 +48,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "atomprop.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/math/units.h"
 #include "index.h"
 #include "gromacs/utility/smalloc.h"

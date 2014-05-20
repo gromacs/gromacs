@@ -56,7 +56,7 @@
 #include "invblock.h"
 #include "names.h"
 #include "network.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "ns.h"
 #include "txtdump.h"
 #include "coulomb.h"
