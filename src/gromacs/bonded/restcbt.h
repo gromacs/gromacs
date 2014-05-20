@@ -50,9 +50,12 @@
  * \inlibraryapi
  */
 
-#ifndef _restcbt_h
-#define _restcbt_h
+#ifndef GMX_BONDED_RESTCBT_H
+#define GMX_BONDED_RESTCBT_H
 
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/idef.h"
+#include "gromacs/math/vec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -182,4 +185,4 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
 }
 #endif
 
-#endif  /* _restcbt_h */
+#endif

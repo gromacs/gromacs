@@ -49,11 +49,11 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "bondf.h"
 #include "copyrite.h"
 #include "disre.h"
 #include "main.h"
 #include "mtop_util.h"
+#include "pbc.h"
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,

@@ -54,7 +54,6 @@
 #include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"
-#include "bondf.h"
 #include "mshift.h"
 #include "txtdump.h"
 #include "qmmm.h"
@@ -64,7 +63,6 @@
 #include "typedefs.h"
 #include <stdlib.h>
 #include "mtop_util.h"
-
 
 /* declarations of the interfaces to the QM packages. The _SH indicate
  * the QM interfaces can be used for Surface Hopping simulations
