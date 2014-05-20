@@ -63,7 +63,7 @@ extern "C" {
 #define NBNXN_GPU_CLUSTER_SIZE         8
 
 /* With GPU kernels we group cluster pairs in 4 to optimize memory usage.
- * To change this, also change nbnxn_cj4_t in include/types/nbnxn_pairlist.h.
+ * To change this, also change nbnxn_cj4_t in gromacs/mdlib/nbnxn_pairlist.h.
  */
 #define NBNXN_GPU_JGROUP_SIZE       4
 #define NBNXN_GPU_JGROUP_SIZE_2LOG  2

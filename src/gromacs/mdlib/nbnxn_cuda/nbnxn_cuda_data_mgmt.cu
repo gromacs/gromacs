@@ -46,7 +46,7 @@
 #include "tables.h"
 #include "typedefs.h"
 #include "types/enums.h"
-#include "types/nb_verlet.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "types/interaction_const.h"
 #include "types/force_flags.h"
 #include "../nbnxn_consts.h"
@@ -428,9 +428,14 @@ static void init_nbparam(cu_nbparam_t              *nbp,
 
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
-void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t           cu_nb,
-                                         const interaction_const_t *ic)
+void nbnxn_cuda_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
+                                         const interaction_const_t   *ic)
 {
+    if (!nbv || nbv->grp[0].kernel_type != nbnxnk8x8x8_CUDA)
+    {
+        return;
+    }
+    nbnxn_cuda_ptr_t cu_nb = nbv->cu_nbv;
     cu_nbparam_t *nbp = cu_nb->nbparam;
 
     set_cutoff_parameters(nbp, ic);
@@ -439,6 +444,25 @@ void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t           cu_nb,
                                                  cu_nb->dev_info);
 
     init_ewald_coulomb_force_table(cu_nb->nbparam, cu_nb->dev_info);
+
+    /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
+     * also sharing texture references. To keep the code simple, we don't
+     * treat texture references as shared resources, but this means that
+     * the coulomb_tab texture ref will get updated by multiple threads.
+     * Hence, to ensure that the non-bonded kernels don't start before all
+     * texture binding operations are finished, we need to wait for all ranks
+     * to arrive here before continuing.
+     *
+     * Note that we could omit this barrier if GPUs are not shared (or
+     * texture objects are used), but as this is initialization code, there
+     * is not point in complicating things.
+     */
+#ifdef GMX_THREAD_MPI
+    if (PAR(cr))
+    {
+        gmx_barrier(cr);
+    }
+#endif  /* GMX_THREAD_MPI */
 }
 
 /*! Initializes the pair list data structure. */
@@ -1079,11 +1103,11 @@ wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
     return (cu_nb != NULL && cu_nb->bDoTime) ? cu_nb->timings : NULL;
 }
 
-void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
+void nbnxn_cuda_reset_timings(nonbonded_verlet_t* nbv)
 {
-    if (cu_nb->bDoTime)
+    if (nbv->cu_nbv && nbv->cu_nbv->bDoTime)
     {
-        init_timings(cu_nb->timings);
+        init_timings(nbv->cu_nbv->timings);
     }
 }
 
