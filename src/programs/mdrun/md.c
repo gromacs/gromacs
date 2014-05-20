@@ -104,7 +104,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                                gmx_int64_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
                                gmx_walltime_accounting_t walltime_accounting,
-                               nbnxn_cuda_ptr_t cu_nbv)
+                               struct nonbonded_verlet_t *nbv)
 {
     char sbuf[STEPSTRSIZE];
 
@@ -112,10 +112,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     md_print_warn(cr, fplog, "step %s: resetting all time and cycle counters\n",
                   gmx_step_str(step, sbuf));
 
-    if (cu_nbv)
-    {
-        nbnxn_cuda_reset_timings(cu_nbv);
-    }
+    nbnxn_cuda_reset_timings(nbv);
 
     wallcycle_stop(wcycle, ewcRUN);
     wallcycle_reset_all(wcycle);
@@ -472,7 +469,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
      */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
-        ( (fr->cutoff_scheme == ecutsVERLET && fr->nbv->bUseGPU) || !(cr->duty & DUTY_PME)) &&
+        ( use_GPU(fr->nbv) || !(cr->duty & DUTY_PME)) &&
         !bRerunMD)
     {
         pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata);
@@ -1912,7 +1909,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
-                               fr->nbv != NULL && fr->nbv->bUseGPU ? fr->nbv->cu_nbv : NULL);
+                               use_GPU(fr->nbv) ? fr->nbv : NULL);
             wcycle_set_reset_counters(wcycle, -1);
             if (!(cr->duty & DUTY_PME))
             {
@@ -1967,7 +1964,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     if (pme_loadbal != NULL)
     {
         pme_loadbal_done(pme_loadbal, cr, fplog,
-                         fr->nbv != NULL && fr->nbv->bUseGPU);
+                         use_GPU(fr->nbv));
     }
 
     if (shellfc && fplog)

@@ -60,6 +60,7 @@
 #include "ns.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/mdlib/nb_verlet.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
