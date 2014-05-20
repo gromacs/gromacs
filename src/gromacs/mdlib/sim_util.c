@@ -62,7 +62,6 @@
 #include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "force.h"
-#include "bondf.h"
 #include "pme.h"
 #include "disre.h"
 #include "orires.h"
@@ -82,6 +81,7 @@
 #include "../gmxlib/nonbonded/nb_kernel.h"
 #include "../gmxlib/nonbonded/nb_free_energy.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"

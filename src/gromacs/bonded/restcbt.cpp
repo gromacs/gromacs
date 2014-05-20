@@ -35,23 +35,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "restcbt.h"
+
 #include <math.h>
-#include <assert.h>
+
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
-#include "txtdump.h"
-#include "bondf.h"
 #include "gromacs/utility/smalloc.h"
 #include "pbc.h"
-#include "ns.h"
 #include "macros.h"
 #include "names.h"
-#include "mshift.h"
-#include "disre.h"
-#include "orires.h"
-#include "force.h"
-#include "nonbonded.h"
 
 /* This function computes factors needed for restricted angle potential.
  * For explanations on formula used see file "restcbt.h" */
@@ -104,7 +98,7 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
                                real *prefactor_phi, real *v)
 {
 
-    real phi0, sine_phi0, cosine_phi0;
+    real phi0, cosine_phi0;
     real k_torsion;
     real c_self_ante, c_self_crnt, c_self_post;
     real c_cros_ante, c_cros_acrs, c_cros_post;
@@ -112,12 +106,11 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
     real sine_phi_sq, cosine_phi;
     real delta_cosine, term_phi_phi0;
     real ratio_phi_ante, ratio_phi_post;
-    real cos_phi, norm_phi;
+    real norm_phi;
 
     /* Read parameters phi0 and k_torsion */
     phi0        = forceparams[type].pdihs.phiA * DEG2RAD;
     cosine_phi0 = cos(phi0);
-    sine_phi0   = sin(phi0);
     k_torsion   = forceparams[type].pdihs.cpA;
 
     /* Computation of the cosine of the dihedral angle. The scalar ("dot") product  method

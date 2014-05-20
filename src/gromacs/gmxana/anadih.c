@@ -45,7 +45,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "txtdump.h"
-#include "bondf.h"
 #include "gromacs/fileio/xvgr.h"
 #include "typedefs.h"
 #include "gromacs/math/vec.h"
@@ -53,6 +52,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/utility/fatalerror.h"
 
 void print_one(const output_env_t oenv, const char *base, const char *name,

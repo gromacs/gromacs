@@ -44,7 +44,6 @@
 
 #include "macros.h"
 #include "pbc.h"
-#include "bondf.h"
 #include "gromacs/utility/futil.h"
 #include "viewit.h"
 #include "txtdump.h"
@@ -60,6 +59,7 @@
 #include "copyrite.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"

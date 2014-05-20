@@ -34,17 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#include "bonded.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <math.h>
 #include <assert.h>
+
+#include <algorithm>
+
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "txtdump.h"
-#include "bondf.h"
 #include "gromacs/utility/smalloc.h"
 #include "pbc.h"
 #include "ns.h"
@@ -56,11 +61,12 @@
 #include "orires.h"
 #include "force.h"
 #include "nonbonded.h"
-#include "restcbt.h"
 
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+
+#include "restcbt.h"
 
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
@@ -83,7 +89,9 @@ const int cmap_coeff_matrix[] = {
 };
 
 
-
+/* TODO This function should go and live in nonbonded.c where it is
+   really needed. Here, it only supports giving a fatal error message
+   with FENE_bonds */
 int glatnr(int *global_atom_index, int i)
 {
     int atnr;
@@ -100,6 +108,7 @@ int glatnr(int *global_atom_index, int i)
     return atnr;
 }
 
+/* TODO This kind of code appears in many places. Consolidate it */
 static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
     if (pbc)
@@ -350,7 +359,7 @@ real FENE_bonds(int nbonds,
     const real half = 0.5;
     const real one  = 1.0;
     real       bm, kb;
-    real       dr, dr2, bm2, omdr2obm2, fbond, vbond, fij, vtot;
+    real       dr2, bm2, omdr2obm2, fbond, vbond, fij, vtot;
     rvec       dx;
     int        i, m, ki, type, ai, aj;
     ivec       dt;
@@ -749,7 +758,6 @@ real water_pol(int nbonds,
         kk[YY] = sqr(qS)*ONE_4PI_EPS0/forceparams[type0].wpol.al_y;
         kk[ZZ] = sqr(qS)*ONE_4PI_EPS0/forceparams[type0].wpol.al_z;
         r_HH   = 1.0/forceparams[type0].wpol.rHH;
-        r_OD   = 1.0/forceparams[type0].wpol.rOD;
         if (debug)
         {
             fprintf(debug, "WPOL: qS  = %10.5f aS = %5d\n", qS, aS);
@@ -864,7 +872,7 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
                        rvec fshift[], real afac)
 {
     rvec r12;
-    real r12sq, r12_1, r12n, r12bar, v0, v1, fscal, ebar, fff;
+    real r12sq, r12_1, r12bar, v0, v1, fscal, ebar, fff;
     int  m, t;
 
     t      = pbc_rvec_sub(pbc, xi, xj, r12);                      /*  3 */
@@ -903,9 +911,10 @@ real thole_pol(int nbonds,
                int gmx_unused *global_atom_index)
 {
     /* Interaction between two pairs of particles with opposite charge */
-    int  i, type, a1, da1, a2, da2;
-    real q1, q2, qq, a, al1, al2, afac;
-    real V = 0;
+    int        i, type, a1, da1, a2, da2;
+    real       q1, q2, qq, a, al1, al2, afac;
+    real       V             = 0;
+    const real minusOneOnSix = -1.0/6.0;
 
     for (i = 0; (i < nbonds); )
     {
@@ -920,7 +929,7 @@ real thole_pol(int nbonds,
         al1   = forceparams[type].thole.alpha1;
         al2   = forceparams[type].thole.alpha2;
         qq    = q1*q2;
-        afac  = a*pow(al1*al2, -1.0/6.0);
+        afac  = a*pow(al1*al2, minusOneOnSix);
         V    += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq, fshift, afac);
         V    += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, -qq, fshift, afac);
         V    += do_1_thole(x[a1], x[da2], f[a1], f[da2], pbc, -qq, fshift, afac);
@@ -1705,10 +1714,9 @@ do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
                     rvec m, rvec n, rvec f[])
 {
     rvec f_i, f_j, f_k, f_l;
-    rvec uvec, vvec, svec, dx_jl;
+    rvec uvec, vvec, svec;
     real iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
     real a, b, p, q, toler;
-    ivec jt, dt_ij, dt_kj, dt_lj;
 
     iprm  = iprod(m, m);       /*  5    */
     iprn  = iprod(n, n);       /*  5	*/
@@ -1978,11 +1986,9 @@ pdihs_noener_simd(int nbonds,
     const int             nfa1 = 5;
     int                   i, iu, s;
     int                   type, ai[GMX_SIMD_REAL_WIDTH], aj[GMX_SIMD_REAL_WIDTH], ak[GMX_SIMD_REAL_WIDTH], al[GMX_SIMD_REAL_WIDTH];
-    int                   t1[GMX_SIMD_REAL_WIDTH], t2[GMX_SIMD_REAL_WIDTH], t3[GMX_SIMD_REAL_WIDTH];
-    real                  ddphi;
     real                  dr_array[3*DIM*GMX_SIMD_REAL_WIDTH+GMX_SIMD_REAL_WIDTH], *dr;
     real                  buf_array[7*GMX_SIMD_REAL_WIDTH+GMX_SIMD_REAL_WIDTH], *buf;
-    real                 *cp, *phi0, *mult, *phi, *p, *q, *sf_i, *msf_l;
+    real                 *cp, *phi0, *mult, *p, *q;
     gmx_simd_real_t       phi0_S, phi_S;
     gmx_simd_real_t       mx_S, my_S, mz_S;
     gmx_simd_real_t       nx_S, ny_S, nz_S;
@@ -2003,8 +2009,6 @@ pdihs_noener_simd(int nbonds,
     mult  = buf + 2*GMX_SIMD_REAL_WIDTH;
     p     = buf + 3*GMX_SIMD_REAL_WIDTH;
     q     = buf + 4*GMX_SIMD_REAL_WIDTH;
-    sf_i  = buf + 5*GMX_SIMD_REAL_WIDTH;
-    msf_l = buf + 6*GMX_SIMD_REAL_WIDTH;
 
     set_pbc_simd(pbc, &pbc_simd);
 
@@ -2253,8 +2257,8 @@ real fbposres(int nbonds,
     int              i, ai, m, d, type, npbcdim = 0, fbdim;
     const t_iparams *pr;
     real             vtot, kk, v;
-    real             ref = 0, dr, dr2, rpot, rfb, rfb2, fact, invdr;
-    rvec             com_sc, rdist, pos, dx, dpdl, fm;
+    real             dr, dr2, rfb, rfb2, fact, invdr;
+    rvec             com_sc, rdist, dx, dpdl, fm;
     gmx_bool         bInvert;
 
     npbcdim = ePBC2npbcdim(ePBC);
@@ -2369,12 +2373,11 @@ real posres(int nbonds,
             real lambda, real *dvdlambda,
             int refcoord_scaling, int ePBC, rvec comA, rvec comB)
 {
-    int              i, ai, m, d, type, ki, npbcdim = 0;
+    int              i, ai, m, d, type, npbcdim = 0;
     const t_iparams *pr;
     real             L1;
     real             vtot, kk, fm;
-    real             posA, posB, ref = 0;
-    rvec             comA_sc, comB_sc, rdist, dpdl, pos, dx;
+    rvec             comA_sc, comB_sc, rdist, dpdl, dx;
     gmx_bool         bForceValid = TRUE;
 
     if ((f == NULL) || (vir_diag == NULL))    /* should both be null together! */
@@ -2567,7 +2570,7 @@ real dihres(int nbonds,
     real vtot = 0;
     int  ai, aj, ak, al, i, k, type, t1, t2, t3;
     real phi0A, phi0B, dphiA, dphiB, kfacA, kfacB, phi0, dphi, kfac;
-    real phi, ddphi, ddp, ddp2, dp, sign, d2r, fc, L1;
+    real phi, ddphi, ddp, ddp2, dp, sign, d2r, L1;
     rvec r_ij, r_kj, r_kl, m, n;
 
     L1 = 1.0-lambda;
@@ -2674,7 +2677,6 @@ real restrangles(int nbonds,
 {
     int  i, d, ai, aj, ak, type, m;
     int  t1, t2;
-    rvec r_ij, r_kj;
     real v, vtot;
     ivec jt, dt_ij, dt_kj;
     rvec f_i, f_j, f_k;
@@ -2802,7 +2804,7 @@ real restrdihs(int nbonds,
         t1 = pbc_rvec_sub(pbc, x[ai], x[aj], vec_temp);
         pbc_rvec_sub(pbc, x[aj], x[ai], delta_ante);
         t2 = pbc_rvec_sub(pbc, x[ak], x[aj], delta_crnt);
-        t3 = pbc_rvec_sub(pbc, x[ak], x[al], vec_temp);
+        pbc_rvec_sub(pbc, x[ak], x[al], vec_temp);
         pbc_rvec_sub(pbc, x[al], x[ak], delta_post);
 
         /* This function computes factors needed for restricted angle potential.
@@ -2913,7 +2915,7 @@ real cbtdihs(int nbonds,
         pbc_rvec_sub(pbc, x[aj], x[ai], delta_ante);
         t2 = pbc_rvec_sub(pbc, x[ak], x[aj], vec_temp);
         pbc_rvec_sub(pbc, x[ak], x[aj], delta_crnt);
-        t3 = pbc_rvec_sub(pbc, x[ak], x[al], vec_temp);
+        pbc_rvec_sub(pbc, x[ak], x[al], vec_temp);
         pbc_rvec_sub(pbc, x[al], x[ak], delta_post);
 
         /* \brief Compute factors for CBT potential
@@ -3143,13 +3145,13 @@ real cmap_dihs(int nbonds,
     int         t11, t21, t31, t12, t22, t32;
     int         iphi1, ip1m1, ip1p1, ip1p2;
     int         iphi2, ip2m1, ip2p1, ip2p2;
-    int         l1, l2, l3, l4;
-    int         pos1, pos2, pos3, pos4, tmp;
+    int         l1, l2, l3;
+    int         pos1, pos2, pos3, pos4;
 
     real        ty[4], ty1[4], ty2[4], ty12[4], tc[16], tx[16];
-    real        phi1, psi1, cos_phi1, sin_phi1, sign1, xphi1;
-    real        phi2, psi2, cos_phi2, sin_phi2, sign2, xphi2;
-    real        dx, xx, tt, tu, e, df1, df2, ddf1, ddf2, ddf12, vtot;
+    real        phi1, cos_phi1, sin_phi1, sign1, xphi1;
+    real        phi2, cos_phi2, sin_phi2, sign2, xphi2;
+    real        dx, xx, tt, tu, e, df1, df2, vtot;
     real        ra21, rb21, rg21, rg1, rgr1, ra2r1, rb2r1, rabr1;
     real        ra22, rb22, rg22, rg2, rgr2, ra2r2, rb2r2, rabr2;
     real        fg1, hg1, fga1, hgb1, gaa1, gbb1;
@@ -3211,7 +3213,7 @@ real cmap_dihs(int nbonds,
         b1[1] = r1_kl[2]*r1_kj[0]-r1_kl[0]*r1_kj[2];
         b1[2] = r1_kl[0]*r1_kj[1]-r1_kl[1]*r1_kj[0]; /* 9 */
 
-        tmp = pbc_rvec_sub(pbc, x[a1l], x[a1k], h1);
+        pbc_rvec_sub(pbc, x[a1l], x[a1k], h1);
 
         ra21  = iprod(a1, a1);       /* 5 */
         rb21  = iprod(b1, b1);       /* 5 */
@@ -3272,7 +3274,7 @@ real cmap_dihs(int nbonds,
         b2[1] = r2_kl[2]*r2_kj[0]-r2_kl[0]*r2_kj[2];
         b2[2] = r2_kl[0]*r2_kj[1]-r2_kl[1]*r2_kj[0]; /* 9 */
 
-        tmp = pbc_rvec_sub(pbc, x[a2l], x[a2k], h2);
+        pbc_rvec_sub(pbc, x[a2l], x[a2k], h2);
 
         ra22  = iprod(a2, a2);         /* 5 */
         rb22  = iprod(b2, b2);         /* 5 */
@@ -3403,9 +3405,6 @@ real cmap_dihs(int nbonds,
         e     = 0;
         df1   = 0;
         df2   = 0;
-        ddf1  = 0;
-        ddf2  = 0;
-        ddf12 = 0;
 
         for (i = 3; i >= 0; i--)
         {
@@ -3416,19 +3415,11 @@ real cmap_dihs(int nbonds,
             e     = tt * e    + ((tc[i*4+3]*tu+tc[i*4+2])*tu + tc[i*4+1])*tu+tc[i*4];
             df1   = tu * df1  + (3.0*tc[l1]*tt+2.0*tc[l2])*tt+tc[l3];
             df2   = tt * df2  + (3.0*tc[i*4+3]*tu+2.0*tc[i*4+2])*tu+tc[i*4+1];
-            ddf1  = tu * ddf1 + 2.0*3.0*tc[l1]*tt+2.0*tc[l2];
-            ddf2  = tt * ddf2 + 2.0*3.0*tc[4*i+3]*tu+2.0*tc[4*i+2];
         }
-
-        ddf12 = tc[5] + 2.0*tc[9]*tt + 3.0*tc[13]*tt*tt + 2.0*tu*(tc[6]+2.0*tc[10]*tt+3.0*tc[14]*tt*tt) +
-            3.0*tu*tu*(tc[7]+2.0*tc[11]*tt+3.0*tc[15]*tt*tt);
 
         fac     = RAD2DEG/dx;
         df1     = df1   * fac;
         df2     = df2   * fac;
-        ddf1    = ddf1  * fac * fac;
-        ddf2    = ddf2  * fac * fac;
-        ddf12   = ddf12 * fac * fac;
 
         /* CMAP energy */
         vtot += e;
@@ -3794,7 +3785,7 @@ real cross_bond_angle(int nbonds,
     /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
      * pp. 842-847
      */
-    int  i, ai, aj, ak, type, m, t1, t2, t3;
+    int  i, ai, aj, ak, type, m, t1, t2;
     rvec r_ij, r_kj, r_ik;
     real vtot, vrt, s1, s2, s3, r1, r2, r3, r1e, r2e, r3e, krt, k1, k2, k3;
     rvec f_i, f_j, f_k;
@@ -3815,7 +3806,7 @@ real cross_bond_angle(int nbonds,
         /* Compute distance vectors ... */
         t1 = pbc_rvec_sub(pbc, x[ai], x[aj], r_ij);
         t2 = pbc_rvec_sub(pbc, x[ak], x[aj], r_kj);
-        t3 = pbc_rvec_sub(pbc, x[ai], x[ak], r_ik);
+        pbc_rvec_sub(pbc, x[ai], x[ak], r_ik);
 
         /* ... and their lengths */
         r1 = norm(r_ij);
@@ -3873,7 +3864,7 @@ static real bonded_tab(const char *type, int table_nr,
 {
     real k, tabscale, *VFtab, rt, eps, eps2, Yt, Ft, Geps, Heps2, Fp, VV, FF;
     int  n0, nnn;
-    real v, f, dvdlambda;
+    real dvdlambda;
 
     k = (1.0 - lambda)*kA + lambda*kB;
 
@@ -3881,7 +3872,7 @@ static real bonded_tab(const char *type, int table_nr,
     VFtab    = table->data;
 
     rt    = r*tabscale;
-    n0    = rt;
+    n0    = (int) rt;
     if (n0 >= table->n)
     {
         gmx_fatal(FARGS, "A tabulated %s interaction table number %d is out of the table range: r %f, between table indices %d and %d, table length %d",
@@ -4008,7 +3999,7 @@ real tab_angles(int nbonds,
         if (cos_theta2 < 1)
         {
             int  m;
-            real snt, st, sth;
+            real st, sth;
             real cik, cii, ckk;
             real nrkj2, nrij2;
             rvec f_i, f_j, f_k;
@@ -4102,183 +4093,14 @@ real tab_dihs(int nbonds,
     return vtot;
 }
 
-/* Return if this is a potential calculated in bondfree.c,
- * i.e. an interaction that actually calculates a potential and
- * works on multiple atoms (not e.g. a connection or a position restraint).
- */
-static gmx_inline gmx_bool ftype_is_bonded_potential(int ftype)
+/* TODO This function could go away when idef is not a big bucket of
+   everything. */
+gmx_bool ftype_is_bonded_potential(int ftype)
 {
     return
         (interaction_function[ftype].flags & IF_BOND) &&
         !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES) &&
         (ftype < F_GB12 || ftype > F_GB14);
-}
-
-static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
-{
-    int ftype;
-    int nat1;
-    int t;
-    int il_nr_thread;
-
-    idef->nthreads = nthreads;
-
-    if (F_NRE*(nthreads+1) > idef->il_thread_division_nalloc)
-    {
-        idef->il_thread_division_nalloc = F_NRE*(nthreads+1);
-        snew(idef->il_thread_division, idef->il_thread_division_nalloc);
-    }
-
-    for (ftype = 0; ftype < F_NRE; ftype++)
-    {
-        if (ftype_is_bonded_potential(ftype))
-        {
-            nat1 = interaction_function[ftype].nratoms + 1;
-
-            for (t = 0; t <= nthreads; t++)
-            {
-                /* Divide the interactions equally over the threads.
-                 * When the different types of bonded interactions
-                 * are distributed roughly equally over the threads,
-                 * this should lead to well localized output into
-                 * the force buffer on each thread.
-                 * If this is not the case, a more advanced scheme
-                 * (not implemented yet) will do better.
-                 */
-                il_nr_thread = (((idef->il[ftype].nr/nat1)*t)/nthreads)*nat1;
-
-                /* Ensure that distance restraint pairs with the same label
-                 * end up on the same thread.
-                 * This is slighlty tricky code, since the next for iteration
-                 * may have an initial il_nr_thread lower than the final value
-                 * in the previous iteration, but this will anyhow be increased
-                 * to the approriate value again by this while loop.
-                 */
-                while (ftype == F_DISRES &&
-                       il_nr_thread > 0 &&
-                       il_nr_thread < idef->il[ftype].nr &&
-                       idef->iparams[idef->il[ftype].iatoms[il_nr_thread]].disres.label ==
-                       idef->iparams[idef->il[ftype].iatoms[il_nr_thread-nat1]].disres.label)
-                {
-                    il_nr_thread += nat1;
-                }
-
-                idef->il_thread_division[ftype*(nthreads+1)+t] = il_nr_thread;
-            }
-        }
-    }
-}
-
-static unsigned
-calc_bonded_reduction_mask(const t_idef *idef,
-                           int shift,
-                           int t, int nt)
-{
-    unsigned mask;
-    int      ftype, nb, nat1, nb0, nb1, i, a;
-
-    mask = 0;
-
-    for (ftype = 0; ftype < F_NRE; ftype++)
-    {
-        if (ftype_is_bonded_potential(ftype))
-        {
-            nb = idef->il[ftype].nr;
-            if (nb > 0)
-            {
-                nat1 = interaction_function[ftype].nratoms + 1;
-
-                /* Divide this interaction equally over the threads.
-                 * This is not stored: should match division in calc_bonds.
-                 */
-                nb0 = idef->il_thread_division[ftype*(nt+1)+t];
-                nb1 = idef->il_thread_division[ftype*(nt+1)+t+1];
-
-                for (i = nb0; i < nb1; i += nat1)
-                {
-                    for (a = 1; a < nat1; a++)
-                    {
-                        mask |= (1U << (idef->il[ftype].iatoms[i+a]>>shift));
-                    }
-                }
-            }
-        }
-    }
-
-    return mask;
-}
-
-void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
-{
-#define MAX_BLOCK_BITS 32
-    int t;
-    int ctot, c, b;
-
-    assert(fr->nthreads >= 1);
-
-    /* Divide the bonded interaction over the threads */
-    divide_bondeds_over_threads(idef, fr->nthreads);
-
-    if (fr->nthreads == 1)
-    {
-        fr->red_nblock = 0;
-
-        return;
-    }
-
-    /* We divide the force array in a maximum of 32 blocks.
-     * Minimum force block reduction size is 2^6=64.
-     */
-    fr->red_ashift = 6;
-    while (fr->natoms_force > (int)(MAX_BLOCK_BITS*(1U<<fr->red_ashift)))
-    {
-        fr->red_ashift++;
-    }
-    if (debug)
-    {
-        fprintf(debug, "bonded force buffer block atom shift %d bits\n",
-                fr->red_ashift);
-    }
-
-    /* Determine to which blocks each thread's bonded force calculation
-     * contributes. Store this is a mask for each thread.
-     */
-#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
-    for (t = 1; t < fr->nthreads; t++)
-    {
-        fr->f_t[t].red_mask =
-            calc_bonded_reduction_mask(idef, fr->red_ashift, t, fr->nthreads);
-    }
-
-    /* Determine the maximum number of blocks we need to reduce over */
-    fr->red_nblock = 0;
-    ctot           = 0;
-    for (t = 0; t < fr->nthreads; t++)
-    {
-        c = 0;
-        for (b = 0; b < MAX_BLOCK_BITS; b++)
-        {
-            if (fr->f_t[t].red_mask & (1U<<b))
-            {
-                fr->red_nblock = max(fr->red_nblock, b+1);
-                c++;
-            }
-        }
-        if (debug)
-        {
-            fprintf(debug, "thread %d flags %x count %d\n",
-                    t, fr->f_t[t].red_mask, c);
-        }
-        ctot += c;
-    }
-    if (debug)
-    {
-        fprintf(debug, "Number of blocks to reduce: %d of size %d\n",
-                fr->red_nblock, 1<<fr->red_ashift);
-        fprintf(debug, "Reduction density %.2f density/#thread %.2f\n",
-                ctot*(1<<fr->red_ashift)/(double)fr->natoms_force,
-                ctot*(1<<fr->red_ashift)/(double)(fr->natoms_force*fr->nthreads));
-    }
 }
 
 static void zero_thread_forces(f_thread_t *f_t, int n,
@@ -4299,7 +4121,7 @@ static void zero_thread_forces(f_thread_t *f_t, int n,
             if (f_t->red_mask && (1U<<b))
             {
                 a0 = b*blocksize;
-                a1 = min((b+1)*blocksize, n);
+                a1 = std::min((b+1)*blocksize, n);
                 for (a = a0; a < a1; a++)
                 {
                     clear_rvec(f_t->f[a]);
@@ -4369,7 +4191,7 @@ static void reduce_thread_force_buffer(int n, rvec *f,
             /* Reduce force buffers for threads that contribute */
             a0 =  b   *block_size;
             a1 = (b+1)*block_size;
-            a1 = min(a1, n);
+            a1 = std::min(a1, n);
             for (a = a0; a < a1; a++)
             {
                 for (fb = 0; fb < nfb; fb++)
@@ -4564,7 +4386,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
 {
     gmx_bool      bCalcEnerVir;
     int           i;
-    real          v, dvdl[efptNR], dvdl_dum[efptNR]; /* The dummy array is to have a place to store the dhdl at other values
+    real          dvdl[efptNR]; /* The dummy array is to have a place to store the dhdl at other values
                                                         of lambda, which will be thrown away in the end*/
     const  t_pbc *pbc_null;
     char          buf[22];
@@ -4701,7 +4523,7 @@ void calc_bonds_lambda(FILE *fplog,
                        t_fcdata *fcd,
                        int *global_atom_index)
 {
-    int           i, ftype, nr_nonperturbed, nr;
+    int           ftype, nr_nonperturbed, nr;
     real          v;
     real          dvdl_dum[efptNR];
     rvec         *f, *fshift;
