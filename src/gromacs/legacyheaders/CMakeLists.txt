@@ -35,7 +35,7 @@
 # includes: Nothing to build, just installation
 file(GLOB ROOT_LEGACY_HEADERS          *.h)
 file(GLOB ROOT_LEGACY_HEADERS_PRIVATE  thread_mpi.h tmpi.h gmx_hash.h 
-     gmx_ga2la.h gpu_utils.h pmalloc_cuda.h nbnxn_cuda_data_mgmt.h)
+     gmx_ga2la.h gpu_utils.h pmalloc_cuda.h)
 file(GLOB TYPES_LEGACY_HEADERS         types/*.h)
 file(GLOB TYPES_LEGACY_HEADERS_PRIVATE types/commrec.h)
 list(REMOVE_ITEM ROOT_LEGACY_HEADERS   ${ROOT_LEGACY_HEADERS_PRIVATE})
