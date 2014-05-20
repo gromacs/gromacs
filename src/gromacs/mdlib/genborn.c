@@ -52,7 +52,6 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/bondf.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -89,7 +88,7 @@ typedef struct gbtmpnbls {
     int         list_nalloc;
 } t_gbtmpnbls;
 
-/* This function is exactly the same as the one in bondfree.c. The reason
+/* This function is exactly the same as the one in bonded/bonded.cpp. The reason
  * it is copied here is that the bonded gb-interactions are evaluated
  * not in calc_bonds, but rather in calc_gb_forces
  */

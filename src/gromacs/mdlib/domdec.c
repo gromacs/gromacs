@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/math/vec.h"
@@ -63,7 +64,6 @@
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "nbnxn_search.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/gpu_utils.h"
 

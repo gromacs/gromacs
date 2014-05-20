@@ -45,7 +45,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
@@ -53,6 +52,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -677,7 +677,7 @@ void calc_distribution_props(int nh, int histo[], real start,
     *S2 = tdc*tdc+tds*tds;
 }
 
-static void calc_angles(t_pbc *pbc,
+static void calc_angles(struct t_pbc *pbc,
                         int n3, atom_id index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2;
@@ -731,7 +731,7 @@ static real calc_fraction(real angles[], int nangles)
     }
 }
 
-static void calc_dihs(t_pbc *pbc,
+static void calc_dihs(struct t_pbc *pbc,
                       int n4, atom_id index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
@@ -819,7 +819,7 @@ void read_ang_dih(const char *trj_fn,
                   real *dih[],
                   const output_env_t oenv)
 {
-    t_pbc       *pbc;
+    struct t_pbc *pbc;
     t_trxstatus *status;
     int          i, angind, natoms, total, teller;
     int          nangles, n_alloc;

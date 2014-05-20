@@ -50,7 +50,6 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/coulomb.h"
 #include "gromacs/legacyheaders/pme.h"
@@ -59,6 +58,7 @@
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
