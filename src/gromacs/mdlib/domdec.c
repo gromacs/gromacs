@@ -74,6 +74,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/imd/imd.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/swap/swapcoords.h"

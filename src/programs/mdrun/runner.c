@@ -1030,47 +1030,6 @@ static void override_nsteps_cmdline(FILE            *fplog,
     }
 }
 
-/* Frees GPU memory and destroys the CUDA context.
- *
- * Note that this function needs to be called even if GPUs are not used
- * in this run because the PME ranks have no knowledge of whether GPUs
- * are used or not, but all ranks need to enter the barrier below.
- */
-static void free_gpu_resources(const t_forcerec *fr,
-                               const t_commrec  *cr)
-{
-    gmx_bool bIsPPrankUsingGPU;
-    char     gpu_err_str[STRLEN];
-
-    bIsPPrankUsingGPU = (cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->bUseGPU;
-
-    if (bIsPPrankUsingGPU)
-    {
-        /* free nbnxn data in GPU memory */
-        nbnxn_cuda_free(fr->nbv->cu_nbv);
-
-        /* With tMPI we need to wait for all ranks to finish deallocation before
-         * destroying the context in free_gpu() as some ranks may be sharing
-         * GPU and context.
-         * Note: as only PP ranks need to free GPU resources, so it is safe to
-         * not call the barrier on PME ranks.
-         */
-#ifdef GMX_THREAD_MPI
-        if (PAR(cr))
-        {
-            gmx_barrier(cr);
-        }
-#endif  /* GMX_THREAD_MPI */
-
-        /* uninitialize GPU (by destroying the context) */
-        if (!free_gpu(gpu_err_str))
-        {
-            gmx_warning("On node %d failed to free GPU #%d: %s",
-                        cr->nodeid, get_current_gpu_device_id(), gpu_err_str);
-        }
-    }
-}
-
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
@@ -1774,8 +1733,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      */
     finish_run(fplog, cr,
                inputrec, nrnb, wcycle, walltime_accounting,
-               fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU ?
-               nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
+               fr->nbv,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
 
