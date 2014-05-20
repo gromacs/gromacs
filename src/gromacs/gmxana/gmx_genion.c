@@ -46,7 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "force.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

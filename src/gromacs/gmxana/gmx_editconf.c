@@ -56,7 +56,7 @@
 #include "atomprop.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "princ.h"
 #include "txtdump.h"
 #include "viewit.h"

@@ -55,7 +55,7 @@
 #include "mtop_util.h"
 #include "chargegroup.h"
 
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 
 static real box_margin;

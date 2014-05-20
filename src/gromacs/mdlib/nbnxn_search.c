@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "nbnxn_consts.h"
 /* nbnxn_internal.h included gromacs/simd/macros.h */
 #include "nbnxn_internal.h"

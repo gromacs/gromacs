@@ -44,7 +44,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/confio.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/math/vec.h"
 
 int main(int argc,char *argv[])

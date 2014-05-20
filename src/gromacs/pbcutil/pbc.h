@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _types_pbc_h
-#define _types_pbc_h
+#ifndef GMX_PBCUTIL_PBC_H
+#define GMX_PBCUTIL_PBC_H
 
 #include <stdio.h>
 

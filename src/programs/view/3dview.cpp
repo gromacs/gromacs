@@ -40,11 +40,10 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/pbc.h"
-
 #include "gromacs/math/3dtransforms.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

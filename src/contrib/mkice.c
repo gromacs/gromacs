@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/math/units.h"
 #include "names.h"
 #include "txtdump.h"

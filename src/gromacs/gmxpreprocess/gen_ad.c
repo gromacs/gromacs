@@ -49,7 +49,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
 #include "toputil.h"
 #include "topio.h"
 #include "gpp_nextnb.h"

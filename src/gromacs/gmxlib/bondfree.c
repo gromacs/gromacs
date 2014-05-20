@@ -46,7 +46,7 @@
 #include "txtdump.h"
 #include "bondf.h"
 #include "gromacs/utility/smalloc.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "ns.h"
 #include "macros.h"
 #include "names.h"

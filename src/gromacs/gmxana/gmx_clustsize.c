@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"

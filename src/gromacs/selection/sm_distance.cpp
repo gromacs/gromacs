@@ -43,7 +43,6 @@
  * \ingroup module_selection
  */
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/pbc.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/nbsearch.h"

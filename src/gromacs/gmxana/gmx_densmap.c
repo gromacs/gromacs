@@ -46,7 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/futil.h"
 #include "index.h"
 #include "txtdump.h"
@@ -54,7 +54,6 @@
 #include "gromacs/fileio/trxio.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
-#include "pbc.h"
 #include "viewit.h"
 #include "gmx_ana.h"
 

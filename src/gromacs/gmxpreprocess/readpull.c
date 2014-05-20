@@ -54,7 +54,7 @@
 #include "readinp.h"
 #include "readir.h"
 #include "mdatoms.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 
 

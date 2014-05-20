@@ -45,8 +45,6 @@
 #include "config.h"
 #endif
 
-#include "gromacs/legacyheaders/pbc.h"
-
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
@@ -54,6 +52,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/options.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"

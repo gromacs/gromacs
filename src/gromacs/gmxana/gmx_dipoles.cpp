@@ -43,7 +43,7 @@
 #include <algorithm>
 
 #include "macros.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "bondf.h"
 #include "gromacs/utility/futil.h"
 #include "viewit.h"

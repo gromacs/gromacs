@@ -35,7 +35,7 @@
 #include "copyrite.h"
 #include "gromacs/fileio/filenm.h"
 #include "macros.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"

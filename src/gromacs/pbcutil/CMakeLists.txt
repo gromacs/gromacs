@@ -36,6 +36,7 @@ file(GLOB PBCUTIL_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${PBCUTIL_SOURCES} PARENT_SCOPE)
 
 set(PBCUTIL_PUBLIC_HEADERS
+    pbc.h
     rmpbc.h)
 
 gmx_install_headers(pbcutil ${PBCUTIL_PUBLIC_HEADERS})

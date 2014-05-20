@@ -48,7 +48,6 @@
 #include "vmdio.h"
 #endif
 #include "gromacs/utility/smalloc.h"
-#include "pbc.h"
 #include "gmxfio.h"
 #include "trxio.h"
 #include "tpxio.h"

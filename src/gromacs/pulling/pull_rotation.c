@@ -45,7 +45,7 @@
 #include "domdec.h"
 #include "gromacs/utility/smalloc.h"
 #include "network.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "mdrun.h"
 #include "txtdump.h"
 #include "names.h"

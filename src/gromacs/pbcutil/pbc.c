@@ -34,25 +34,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/pbcutil/pbc.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <math.h>
 #include <assert.h>
+#include <math.h>
 
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/utilities.h"
-#include "pbc.h"
-#include "gromacs/utility/smalloc.h"
 #include "txtdump.h"
-#include "gromacs/utility/fatalerror.h"
 #include "names.h"
 #include "macros.h"
 #include "gmx_omp_nthreads.h"
+
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum {

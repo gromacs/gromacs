@@ -57,7 +57,7 @@
 #include "index.h"
 #include "network.h"
 #include "gromacs/math/vec.h"
-#include "pbc.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "mtop_util.h"
 #include "chargegroup.h"
 #include "inputrec.h"

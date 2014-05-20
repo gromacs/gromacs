@@ -48,7 +48,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/math/units.h"
-#include "pbc.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "index.h"
