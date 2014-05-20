@@ -80,6 +80,11 @@ static gmx_bool is_lp(t_atoms *atoms, int ai)
     return ((*(atoms->atomname[ai]))[0] == 'L');
 }
 
+static gmx_bool is_cbeta(t_atoms *atoms, int ai)
+{
+    return (((*(atoms->atomname[ai]))[0] == 'C') && ((*(atoms->atomname[ai]))[1] == 'B'));
+}
+
 static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
 {
     int      j, k, nmiss;
@@ -979,10 +984,12 @@ static void clean_bonds(t_params *ps)
  * This function is similar to clean_bonds, but we need to retain 
  * the second instance of a parameter instead of the first, so rather than
  * make clean_bonds more convoluted, there's a new function to handle all that. */
-static void clean_tholes(t_params *ps)
+static void clean_tholes(t_params *ps, t_atoms *atoms)
 {
     int     i, j, k;
     int     start;
+    float   alpha[2], ai[2], aj[2];  /* tmp values for sscanf */
+    char    buf[STRLEN];
     atom_id a;
 
     start = ps->nr; /* save original number for later printing */
@@ -1011,6 +1018,29 @@ static void clean_tholes(t_params *ps)
             if ((ps->param[i].a[0] == ps->param[j].a[0]) &&
                 (ps->param[i].a[1] == ps->param[j].a[1]))
             {
+                /* Check to see if either of the atoms is a CB */
+                /* We need this because CB Thole values vary based on the nature of
+                 * of the residue, but only a single value can be used in the .tdb,
+                 * so here we preserve whatever value is in the rtp (index j)
+                 * by copying it to ps->param[i].s before param[i] is copied into param[j].
+                 * We only need to check one set, because we've already determined that
+                 * they're the same! */
+                if (is_cbeta(atoms, ps->param[i].a[0]))
+                {
+                    /* here, ai[0] is the value to keep */
+                    sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
+                    sprintf(buf, "%4.2f%8.4f%8.4f", alpha[0], ai[0], aj[1]);
+                    set_p_string(&(ps->param[i]), buf);
+                }
+                else if (is_cbeta(atoms, ps->param[i].a[1]))
+                {
+                    /* here, aj[0] is the value to keep */
+                    sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
+                    sprintf(buf, "%4.2f%8.4f%8.4f", alpha[0], ai[1], aj[0]);
+                    set_p_string(&(ps->param[i]), buf);
+                }
                 /* copy params and shift the list */
                 if (j != i)
                 {
@@ -1027,6 +1057,23 @@ static void clean_tholes(t_params *ps)
                      (ps->param[i].a[1] != ps->param[j].a[1]))
             {
                 j++;
+                if (is_cbeta(atoms, ps->param[i].a[0]))
+                {
+                    /* here, ai[0] is the value to keep */
+                    sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
+                    sprintf(buf, "%4.2f%8.4f%8.4f", alpha[0], ai[0], aj[1]);
+                    set_p_string(&(ps->param[i]), buf);
+                }
+                else if (is_cbeta(atoms, ps->param[i].a[1]))
+                {
+                    /* here, aj[0] is the value to keep */
+                    sscanf(ps->param[j].s, "%f %f %f", &(alpha[0]), &(ai[0]), &(aj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f", &(alpha[1]), &(ai[1]), &(aj[1]));
+                    sprintf(buf, "%4.2f%8.4f%8.4f", alpha[0], ai[1], aj[0]);
+                    set_p_string(&(ps->param[i]), buf);
+                }
+
                 if (j != i)
                 {
                     cp_param(&(ps->param[j]), &(ps->param[i]));
@@ -1998,7 +2045,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
          * tdb are read and stored first, their terminus-specific values
          * will override what is stored in the rtp */
         fprintf(stderr, "Cleaning up merged Thole factors...\n");
-        clean_tholes(&(plist[F_THOLE_POL]));
+        clean_tholes(&(plist[F_THOLE_POL]), atoms);
     }
 
     /* set mass of all remaining hydrogen atoms */
