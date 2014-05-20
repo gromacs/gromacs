@@ -37,8 +37,9 @@
 #ifndef GMX_FILEIO_ENXIO_H
 #define GMX_FILEIO_ENXIO_H
 
-#include "../legacyheaders/pbc.h"
 #include "../legacyheaders/types/energy.h"
+#include "../legacyheaders/types/inputrec.h"
+#include "../legacyheaders/types/state.h"
 #include "../legacyheaders/types/topology.h"
 #include "gmxfio.h"
 #include "xdr_datatype.h"

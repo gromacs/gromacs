@@ -34,17 +34,43 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef _types_pbc_h
 #define _types_pbc_h
 
 #include <stdio.h>
 
-#include "typedefs.h"
+#include "../legacyheaders/types/commrec_fwd.h"
+#include "../legacyheaders/types/inputrec.h"
+#include "../math/vectypes.h"
+#include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Maximum number of combinations of single triclinic box vectors
+ * required to shift atoms that are within a brick of the size of
+ * the diagonal of the box to within the maximum cut-off distance.
+ */
+#define MAX_NTRICVEC 12
+
+typedef struct t_pbc {
+    int        ePBC;
+    int        ndim_ePBC;
+    int        ePBCDX;
+    int        dim;
+    matrix     box;
+    rvec       fbox_diag;
+    rvec       hbox_diag;
+    rvec       mhbox_diag;
+    real       max_cutoff2;
+    gmx_bool   bLimitDistance;
+    real       limit_distance2;
+    int        ntric_vec;
+    ivec       tric_shift[MAX_NTRICVEC];
+    rvec       tric_vec[MAX_NTRICVEC];
+} t_pbc;
 
 #define TRICLINIC(box) (box[YY][XX] != 0 || box[ZZ][XX] != 0 || box[ZZ][YY] != 0)
 
@@ -228,4 +254,4 @@ const char *put_atoms_in_compact_unitcell(int ePBC, int ecenter,
 }
 #endif
 
-#endif  /* _pbc_h */
+#endif

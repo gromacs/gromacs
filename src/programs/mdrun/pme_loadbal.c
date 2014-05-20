@@ -40,7 +40,6 @@
 #include "network.h"
 #include "calcgrid.h"
 #include "pme.h"
-#include "gromacs/math/vec.h"
 #include "domdec.h"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "force.h"
@@ -48,6 +47,8 @@
 #include "md_logging.h"
 #include "pme_loadbal.h"
 
+#include "gromacs/math/vec.h"
+#include "pbc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 

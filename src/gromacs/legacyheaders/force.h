@@ -41,7 +41,6 @@
 
 #include "typedefs.h"
 #include "types/force_flags.h"
-#include "pbc.h"
 #include "network.h"
 #include "tgroup.h"
 #include "vsite.h"
@@ -54,6 +53,7 @@ extern "C" {
 #endif
 
 struct t_graph;
+struct t_pbc;
 
 void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda);
 
@@ -67,7 +67,7 @@ void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
 
 real RF_excl_correction(const t_forcerec *fr, struct t_graph *g,
                         const t_mdatoms *mdatoms, const t_blocka *excl,
-                        rvec x[], rvec f[], rvec *fshift, const t_pbc *pbc,
+                        rvec x[], rvec f[], rvec *fshift, const struct t_pbc *pbc,
                         real lambda, real *dvdlambda);
 /* Calculate the reaction-field energy correction for this node:
  * epsfac q_i q_j (k_rf r_ij^2 - c_rf)

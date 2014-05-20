@@ -59,6 +59,7 @@
 #include "gromacs/simd/simd.h"
 
 #include "gromacs/pbcutil/mshift.h"
+#include "pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

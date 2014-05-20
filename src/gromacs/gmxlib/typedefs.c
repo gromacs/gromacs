@@ -35,19 +35,22 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
+#include "typedefs.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include <string.h>
+
 #include "thread_mpi/threads.h"
 
-#include "gromacs/utility/smalloc.h"
 #include "symtab.h"
 #include "gromacs/math/vec.h"
 #include "pbc.h"
 #include "macros.h"
-#include <string.h>
 #include "gromacs/random/random.h"
+#include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */

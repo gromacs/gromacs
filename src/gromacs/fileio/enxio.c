@@ -42,13 +42,15 @@
 #include <string.h>
 
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 #include "gmxfio.h"
 #include "enxio.h"
 #include "gromacs/math/vec.h"
 #include "xdrf.h"
 #include "macros.h"
+
+#include "pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */

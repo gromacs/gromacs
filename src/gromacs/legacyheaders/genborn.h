@@ -56,6 +56,7 @@ extern "C" {
 #define STILL_PIP5  (M_PI*STILL_P5)
 
 struct t_graph;
+struct t_pbc;
 
 /* Initialise GB stuff */
 int init_gb(gmx_genborn_t **p_born,
@@ -71,7 +72,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 /* Bonded GB interactions */
 real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
                   real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
-                  real gb_epsilon_solvent, real facel, const t_pbc *pbc,
+                  real gb_epsilon_solvent, real facel, const struct t_pbc *pbc,
                   const struct t_graph *graph);
 
 
@@ -81,7 +82,7 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
 void
 calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top,
                rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
-               const t_pbc *pbc, const struct t_graph *graph, gmx_enerdata_t *enerd);
+               const struct t_pbc *pbc, const struct t_graph *graph, gmx_enerdata_t *enerd);
 
 
 int
