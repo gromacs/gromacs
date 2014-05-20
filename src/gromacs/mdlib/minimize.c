@@ -63,7 +63,7 @@
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/legacyheaders/pme.h"
-#include "gromacs/legacyheaders/bondf.h"
+#include "gromacs/legacyheaders/bonded-threading.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/md_logging.h"
 

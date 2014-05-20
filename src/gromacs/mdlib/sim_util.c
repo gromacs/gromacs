@@ -60,7 +60,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/legacyheaders/pme.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/orires.h"
@@ -80,6 +79,7 @@
 #include "../gmxlib/nonbonded/nb_kernel.h"
 #include "../gmxlib/nonbonded/nb_free_energy.h"
 
+#include "gromacs/bonded/bonded.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"
