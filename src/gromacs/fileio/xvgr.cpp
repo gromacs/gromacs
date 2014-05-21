@@ -676,8 +676,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
             }
             if (k != nny)
             {
-                fprintf(stderr, "Only %d columns on line %d in file %s\n",
-                        k, line, fn);
+                /*  fprintf(stderr, "Only %d columns on line %d in file %s\n",
+                   k, line, fn);*/
                 for (; (k < nny); k++)
                 {
                     yy[k][nx] = 0.0;
@@ -690,6 +690,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
 
     *y = yy;
     sfree(tmpbuf);
+    sfree(base);
+    sfree(fmt);
 
     if (legend_nalloc > 0)
     {
