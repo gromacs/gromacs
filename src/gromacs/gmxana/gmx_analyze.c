@@ -58,7 +58,8 @@
 #include "viewit.h"
 #include "gmx_ana.h"
 #include "geminate.h"
-
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/linearalgebra/matrix.h"
 
 /* must correspond to char *avbar_opt[] declared in main() */

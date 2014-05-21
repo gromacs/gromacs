@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,24 +32,65 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_EXPFIT_H
+#define GMX_EXPFIT_H
+
+#include "gromacs/utility/real.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*! \brief
+ * Enum to select fitting functions
+ */
+enum {
+    effnNONE, effnEXP1, effnEXP2, effnEXP3,   effnVAC,
+    effnEXP5, effnEXP7, effnEXP9, effnERF, effnERREST, effnNR
+};
+
+extern const int   nfp_ffn[effnNR];
+
+extern const char *s_ffn[effnNR+2];
+
+extern const char *longs_ffn[effnNR];
 
 
-#ifndef _correl_h
-#define _correl_h
+/*! \brief
+ * Returns  corresponding to the selected enum option in sffn
+ * \param[in] sffn Two dimensional string array coming from parse_common_args
+ * \return the ffn enum
+ */
+int sffn2effn(const char **sffn);
 
-#include "typedefs.h"
-#include "gromacs/fft/fft.h"
+/*! \brief
+ * Fitting to exponential?
+ *
+ ***********************************************/
+/*void do_expfit(int ndata, real c1[], real dt,
+               real begintimefit, real endtimefit);
+ */
+/*! \brief
+ * This procedure fits y=exp(a+bx) for n (x,y) pairs to determine a and b.
+ * The standard deviations of a and b, sa and sb, are also calculated.
+ *
+ * Routine from Computers in physics, 7(3) (1993), p. 280-285.
+ * \param[in] n Number of data points in the x, y, dy arrays
+ * \param[in] x The x-axis
+ * \param[in] y The y-axis
+ * \param[in] Dy the uncertainties in the y values.
+ * \param[out] a The coefficient a in the eqn y = exp(a+bx)
+ * \param[out] sa The uncertainty in a
+ * \param[out] b The coefficient b in the eqn y = exp(a+bx)
+ * \param[out] sb The uncertainty in b
+ */
+void expfit(int n, real x[], real y[], real Dy[],
+            real *a, real *sa,
+            real *b, real *sb);
 
-typedef struct {
-    int        n;
-    gmx_fft_t  fft_setup;
-    real      *buf1, *buf2, *abuf;
-} correl_t;
 
-extern correl_t *init_correl(int n);
-extern void done_correl(correl_t *c);
-
-extern void correl(real data1[], real data2[], int n, real ans[]);
-extern void four1(real data[], int nn, int isign);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
