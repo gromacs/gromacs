@@ -47,30 +47,6 @@
 extern "C" {
 #endif
 
-/***********************************************
- *
- *     A U T O C O R R E L A T I O N
- *
- ***********************************************/
-
-real LegendreP(real x, unsigned long m);
-
-#define eacNormal (1<<0)
-#define eacCos    (1<<1)
-#define eacVector (1<<2)
-#define eacRcross (1<<3  | eacVector)
-#define eacP0     (1<<4  | eacVector)
-#define eacP1     (1<<5  | eacVector)
-#define eacP2     (1<<6  | eacVector)
-#define eacP3     (1<<7  | eacVector)
-#define eacP4     (1<<8  | eacVector)
-#define eacIden   (1<<9)
-
-enum {
-    effnNONE, effnEXP1, effnEXP2, effnEXP3,   effnVAC,
-    effnEXP5, effnEXP7, effnEXP9, effnERF, effnERREST, effnNR
-};
-
 /* must correspond with 'leg' g_chi.c:727 */
 enum {
     edPhi = 0, edPsi, edOmega, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax
@@ -101,95 +77,6 @@ typedef struct {
     real       rot_occ[edMax][NROT];
 
 } t_dlist;
-
-extern const int   nfp_ffn[effnNR];
-
-extern const char *s_ffn[effnNR+2];
-
-extern const char *longs_ffn[effnNR];
-
-int sffn2effn(const char **sffn);
-/* Returns the ffn enum corresponding to the selected enum option in sffn */
-
-t_pargs *add_acf_pargs(int *npargs, t_pargs *pa);
-/* Add options for autocorr to the current set of options.
- * *npargs must be initialised to the number of elements in pa,
- * it will be incremented appropriately.
- */
-
-void cross_corr(int n, real f[], real g[], real corr[]);
-/* Simple minded cross correlation algorithm */
-
-real fit_acf(int ncorr, int fitfn, const output_env_t oenv, gmx_bool bVerbose,
-             real tbeginfit, real tendfit, real dt, real c1[], real *fit);
-/* Fit an ACF to a given function */
-
-void do_autocorr(const char *fn, const output_env_t oenv,
-                 const char *title,
-                 int nframes, int nitem, real **c1,
-                 real dt, unsigned long mode, gmx_bool bAver);
-/* Calls low_do_autocorr (see below). After calling add_acf_pargs */
-
-void low_do_autocorr(const char *fn, const output_env_t oenv,
-                     const char *title, int  nframes, int nitem,
-                     int nout, real **c1, real dt, unsigned long mode,
-                     int nrestart, gmx_bool bAver, gmx_bool bNormalize,
-                     gmx_bool bVerbose, real tbeginfit, real tendfit,
-                     int nfitparm);
-/*
- * do_autocorr calculates autocorrelation functions for many things.
- * It takes a 2 d array containing nitem arrays of length nframes
- * for each item the ACF is calculated.
- *
- * A number of "modes" exist for computation of the ACF
- *
- * if (mode == eacNormal) {
- *   C(t) = < X (tau) * X (tau+t) >
- * }
- * else if (mode == eacCos) {
- *   C(t) = < cos (X(tau) - X(tau+t)) >
- * }
- * else if (mode == eacIden) { **not fully supported yet**
- *   C(t) = < (X(tau) == X(tau+t)) >
- * }
- * else if (mode == eacVector) {
- *   C(t) = < X(tau) * X(tau+t)
- * }
- * else if (mode == eacP1) {
- *   C(t) = < cos (X(tau) * X(tau+t) >
- * }
- * else if (mode == eacP2) {
- *   C(t) = 1/2 * < 3 cos (X(tau) * X(tau+t) - 1 >
- * }
- * else if (mode == eacRcross) {
- *   C(t) = < ( X(tau) * X(tau+t) )^2 >
- * }
- *
- * For modes eacVector, eacP1, eacP2 and eacRcross the input should be
- * 3 x nframes long, where each triplet is taken as a 3D vector
- *
- * For mode eacCos inputdata must be in radians, not degrees!
- *
- * Other parameters are:
- *
- * fn is output filename (.xvg) where the correlation function(s) are printed
- * title is the title in the output file
- * nframes is the number of frames in the time series
- * nitem is the number of items
- * c1       is an array of dimension [ 0 .. nitem-1 ] [ 0 .. nframes-1 ]
- *          on output, this array is filled with the correlation function
- *          to reduce storage
- * nrestart     is the number of steps between restarts for direct ACFs
- *              (i.e. without FFT) When set to 1 all points are used as
- *              time origin for averaging
- * dt       is the time between frames
- * bAver    If set, all ndih C(t) functions are averaged into a single
- *          C(t)
- * (bFour       If set, will use fast fourier transform (FFT) for evaluating
- *              the ACF: removed option, now on the command line only)
- * bNormalize   If set, all ACFs will be normalized to start at 0
- * nskip        Determines whether steps a re skipped in the output
- */
 
 typedef struct {
     const char *name;    /* Description of the J coupling constant */
@@ -223,25 +110,6 @@ void calc_distribution_props(int nh, int histo[],
  *         equation
  * S2      is the resulting dihedral order parameter
  *
- */
-
-
-/***********************************************
- *
- *     F I T   R O U T I N E S
- *
- ***********************************************/
-void do_expfit(int ndata, real c1[], real dt,
-               real begintimefit, real endtimefit);
-
-void expfit(int n, real x[], real y[], real Dy[],
-            real *a, real *sa,
-            real *b, real *sb);
-/* This procedure fits y=exp(a+bx) for n (x,y) pairs to determine a and b.
- * The uncertainties in the y values must be in the vector Dy.
- * The standard deviations of a and b, sa and sb, are also calculated.
- *
- * Routine from Computers in physics, 7(3) (1993), p. 280-285.
  */
 
 void ana_dih_trans(const char *fn_trans, const char *fn_histo,
@@ -345,47 +213,6 @@ void normalize_histo(int npoints, int histo[], real dx, real normhisto[]);
  * histo      input histogram
  * dx         distance between points on the X-axis
  * normhisto  normalized output histogram
- */
-
-real fit_function(int eFitFn, real *parm, real x);
-/* Returns the value of fit function eFitFn at x */
-
-/* Use Levenberg-Marquardt method to fit to a nfitparm parameter exponential */
-/* or to a transverse current autocorrelation function */
-/* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
-real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x,
-              real begintimefit, real endtimefit, const output_env_t oenv,
-              gmx_bool bVerbose, int eFitFn, real fitparms[], int fix);
-/* Returns integral.
- * If x == NULL, the timestep dt will be used to create a time axis.
- * fix fixes fit parameter i at it's starting value, when the i'th bit
- * of fix is set.
- */
-
-real evaluate_integral(int n, real x[], real y[], real dy[],
-                       real aver_start, real *stddev);
-/* Integrate data in y, and, if given, use dy as weighting
- * aver_start should be set to a value where the function has
- * converged to 0.
- */
-
-real print_and_integrate(FILE *fp, int n, real dt,
-                         real c[], real *fit, int nskip);
-/* Integrate the data in c[] from 0 to n using trapezium rule.
- * If fp != NULL output is written to it
- * nskip determines whether all elements are written to the output file
- * (written when i % nskip == 0)
- * If fit != NULL the fit is also written.
- */
-
-int get_acfnout(void);
-/* Return the output length for the correlation function
- * Works only AFTER do_auto_corr has been called!
- */
-
-int get_acffitfn(void);
-/* Return the fit function type.
- * Works only AFTER do_auto_corr has been called!
  */
 
 /* Routines from pp2shift (anadih.c etc.) */
