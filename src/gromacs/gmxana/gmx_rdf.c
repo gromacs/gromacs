@@ -40,6 +40,7 @@
 #include <math.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
