@@ -500,24 +500,25 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
 
 static int wordcount(char *ptr)
 {
-    int i, n, is[2];
+    int i, n = 0, is[2];
     int cur = 0;
 #define prev (1-cur)
 
-    if (strlen(ptr) == 0)
+    if (NULL != ptr)
     {
-        return 0;
-    }
-    /* fprintf(stderr,"ptr='%s'\n",ptr); */
-    n = 1;
-    for (i = 0; (ptr[i] != '\0'); i++)
-    {
-        is[cur] = isspace(ptr[i]);
-        if ((i > 0)  && (is[cur] && !is[prev]))
+        for (i = 0; (ptr[i] != '\0'); i++)
         {
-            n++;
+            is[cur] = isspace(ptr[i]);
+            if ((0 == i) && !is[cur])
+            {
+                n++;
+            }
+            else if ((i > 0)  && (!is[cur] && is[prev]))
+            {
+                n++;
+            }
+            cur = prev;
         }
-        cur = prev;
     }
     return n;
 }
@@ -689,6 +690,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
 
     *y = yy;
     sfree(tmpbuf);
+    sfree(base);
+    sfree(fmt);
 
     if (legend_nalloc > 0)
     {
