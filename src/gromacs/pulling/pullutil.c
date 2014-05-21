@@ -48,7 +48,6 @@
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "symtab.h"
 #include "index.h"
 #include "gromacs/fileio/confio.h"
 #include "network.h"
