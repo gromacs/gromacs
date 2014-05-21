@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="result">
+    <Int Name="Length">3</Int>
+    <Real>3.8061784829233738</Real>
+    <Real>0.82071484126758942</Real>
+    <Real>1.5394124967533032</Real>
+  </Sequence>
+</ReferenceData>

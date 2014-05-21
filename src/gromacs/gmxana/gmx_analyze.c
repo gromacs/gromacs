@@ -56,7 +56,9 @@
 #include "gromacs/legacyheaders/viewit.h"
 #include "gmx_ana.h"
 #include "geminate.h"
-
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/linearalgebra/matrix.h"
 
 /* must correspond to char *avbar_opt[] declared in main() */
@@ -392,7 +394,7 @@ static void average(const char *avfile, int avbar_opt,
     }
 }
 
-static real anal_ee_inf(real *parm, real T)
+static real anal_ee_inf(double *parm, real T)
 {
     return sqrt(parm[1]*2*parm[0]/T+parm[3]*2*parm[2]/T);
 }
@@ -409,7 +411,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
     double   blav, var;
     char   **leg;
     real    *tbs, *ybs, rtmp, dens, *fitsig, twooe, tau1_est, tau_sig;
-    real     fitparm[4];
+    double   fitparm[4];
     real     ee, a, tau1, tau2;
 
     if (n < 4)
@@ -793,9 +795,9 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
     int   i, efitfn, nparm;
 
     efitfn = get_acffitfn();
-    nparm  = nfp_ffn[efitfn];
+    nparm  = effnNparams(efitfn);
     fprintf(out, "Will fit to the following function:\n");
-    fprintf(out, "%s\n", longs_ffn[efitfn]);
+    fprintf(out, "%s\n", effnDescription(efitfn));
     c1 = val[n];
     if (bYdy)
     {
