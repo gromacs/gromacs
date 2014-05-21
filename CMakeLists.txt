@@ -842,6 +842,8 @@ endif()
 #Simpler to always install.
 install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
 
+# lmfit package.
+include_directories(${CMAKE_SOURCE_DIR}/src/external/lmfit)
 if(GMX_EXTERNAL_BOOST)
     include_directories(${Boost_INCLUDE_DIRS})
     set(PKG_CFLAGS "${PKG_CFLAGS} -I${Boost_INCLUDE_DIRS}")
