@@ -34,6 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#include "expfit.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -45,20 +48,21 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
-#include "gstat.h"
 #include "gromacs/math/vec.h"
-
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "integrate.h"
+#include "lmcurve.h"
 
-const int   nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 4, 3};
+static const int   nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 4, 3, 6};
 
-const char *s_ffn[effnNR+2] = {
+const char        *s_ffn[effnNR+2] = {
     NULL, "none", "exp", "aexp", "exp_exp", "vac",
-    "exp5", "exp7", "exp9", "erffit", NULL, NULL
+    "exp5", "exp7", "exp9", "erffit", "effnPRES", NULL, NULL
 };
 /* We don't allow errest as a choice on the command line */
 
-const char *longs_ffn[effnNR] = {
+static const char *longs_ffn[effnNR] = {
     "no fit",
     "y = exp(-x/a1)",
     "y = a2 exp(-x/a1)",
@@ -68,13 +72,50 @@ const char *longs_ffn[effnNR] = {
     "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7",
     "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7 exp(-x/a8) + a9",
     "y = 1/2*(a1+a2) - 1/2*(a1-a2)*erf( (x-a3) /a4^2)",
-    "y = a2*ee(a1,x) + (1-a2)*ee(a2,x)"
+    "y = a2 *2*a1*((exp(-x/a1)-1)*(a1/x)+1)+(1-a2)*2*a3*((exp(-x/a3)-1)*(a3/x)+1)",
+    "y = (1-a1) * exp(-(x/a3)^a4)*cos(x*a2) + a1*exp(-(x/a5)^a6)"
 };
 
-extern gmx_bool mrqmin_new(real x[], real y[], real sig[], int ndata, real a[],
-                           int ia[], int ma, real **covar, real **alpha, real *chisq,
-                           void (*funcs)(real, real [], real *, real []),
-                           real *alamda);
+
+int effnNparams(int effn)
+{
+    if ((0 <= effn) && (effn < effnNR))
+    {
+        return nfp_ffn[effn];
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+const char *effnDescription(int effn)
+{
+    if ((0 <= effn) && (effn < effnNR))
+    {
+        return longs_ffn[effn];
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+int sffn2effn(const char **sffn)
+{
+    int eFitFn, i;
+
+    eFitFn = 0;
+    for (i = 0; i < effnNR; i++)
+    {
+        if (sffn[i+1] && strcmp(sffn[0], sffn[i+1]) == 0)
+        {
+            eFitFn = i;
+        }
+    }
+
+    return eFitFn;
+}
 
 static real myexp(real x, real A, real tau)
 {
@@ -85,158 +126,137 @@ static real myexp(real x, real A, real tau)
     return A*exp(-x/tau);
 }
 
-void erffit (real x, real a[], real *y, real dyda[])
+static double lmc_erffit (double x, const double *a)
 {
-/* Fuction
- *	y=(a1+a2)/2-(a1-a2)/2*erf((x-a3)/a4^2)
- */
+    /* Fuction
+     *	y=(a0+a1)/2-(a0-a1)/2*erf((x-a2)/a3^2)
+     */
 
-    real erfarg;
-    real erfval;
-    real erfarg2;
-    real derf;
+    double erfarg, erfval, erfarg2, derf;
 
-    erfarg  = (x-a[3])/(a[4]*a[4]);
+    erfarg  = (x-a[2])/(a[3]*a[3]);
     erfarg2 = erfarg*erfarg;
     erfval  = gmx_erf(erfarg)/2;
-    derf    = M_2_SQRTPI*(a[1]-a[2])/2*exp(-erfarg2)/(a[4]*a[4]);
-    *y      = (a[1]+a[2])/2-(a[1]-a[2])*erfval;
-    dyda[1] = 1/2-erfval;
-    dyda[2] = 1/2+erfval;
-    dyda[3] = derf;
-    dyda[4] = 2*derf*erfarg;
+    derf    = M_2_SQRTPI*(a[0]-a[1])/2*exp(-erfarg2)/(a[3]*a[3]);
+    return (a[0]+a[1])/2-(a[1]-a[1])*erfval;
 }
 
-
-
-static void exp_one_parm(real x, real a[], real *y, real dyda[])
+static double lmc_exp_one_parm(double x, const double *a)
 {
     /* Fit to function
      *
-     * y = exp(-x/a1)
+     * y = exp(-x/a0)
      *
      */
 
-    real e1;
-
-    e1      = exp(-x/a[1]);
-    *y      = e1;
-    dyda[1] = x*e1/sqr(a[1]);
+    return exp(-x/a[0]);
 }
 
-static void exp_two_parm(real x, real a[], real *y, real dyda[])
+static double lmc_exp_two_parm(double x, const double *a)
 {
     /* Fit to function
      *
-     * y = a2 exp(-x/a1)
+     * y = a1 exp(-x/a0)
      *
      */
 
-    real e1;
-
-    e1      = exp(-x/a[1]);
-    *y      = a[2]*e1;
-    dyda[1] = x*a[2]*e1/sqr(a[1]);
-    dyda[2] = e1;
+    return a[1]*exp(-x/a[0]);
 }
 
-static void exp_3_parm(real x, real a[], real *y, real dyda[])
+static double lmc_exp_3_parm(double x, const double *a)
 {
     /* Fit to function
      *
-     * y = a2 exp(-x/a1) + (1-a2) exp(-x/a3)
+     * y = a1 exp(-x/a0) + (1-a1) exp(-x/a2)
      *
      */
 
-    real e1, e2;
+    double e1, e2;
+
+    e1      = exp(-x/a[0]);
+    e2      = exp(-x/a[2]);
+    return a[1]*e1 + (1-a[1])*e2;
+}
+
+static double lmc_exp_5_parm(double x, const double *a)
+{
+    /* Fit to function
+     *
+     * y = a0 exp(-x/a1) + a2 exp(-x/a3) + a4
+     *
+     */
+
+    double e1, e2;
 
     e1      = exp(-x/a[1]);
     e2      = exp(-x/a[3]);
-    *y      = a[2]*e1 + (1-a[2])*e2;
-    dyda[1] = x*a[2]*e1/sqr(a[1]);
-    dyda[2] = e1-e2;
-    dyda[3] = x*(1-a[2])*e2/sqr(a[3]);
+    return a[0]*e1 + a[2]*e2 + a[4];
 }
 
-static void exp_5_parm(real x, real a[], real *y, real dyda[])
+static double lmc_exp_7_parm(double x, const double *a)
 {
     /* Fit to function
      *
-     * y = a1 exp(-x/a2) + a3 exp(-x/a4) + a5
+     * y = a0 exp(-x/a1) + a2 exp(-x/a3) + a4 exp(-x/a5) + a6
      *
      */
 
-    real e1, e2;
+    double e1, e2, e3;
 
-    e1      = exp(-x/a[2]);
+    e1      = exp(-x/a[1]);
     e2      = exp(-x/a[4]);
-    *y      = a[1]*e1 + a[3]*e2 + a[5];
+    e3      = exp(-x/a[5]);
+    return a[0]*e1 + a[2]*e2 + a[4]*e3 + a[6];
+}
 
-    if (debug)
+static double lmc_exp_9_parm(double x, const double *a)
+{
+    /* Fit to function
+     *
+     * y = a0 exp(-x/a1) + a2 exp(-x/a3) + a4 exp(-x/a5) + a6 exp(-x/a7) + a8
+     *
+     */
+
+    double e1, e2, e3, e4;
+
+    e1      = exp(-x/a[1]);
+    e2      = exp(-x/a[3]);
+    e3      = exp(-x/a[5]);
+    e4      = exp(-x/a[7]);
+    return a[0]*e1 + a[2]*e2 + a[4]*e3 + a[6]*e4 + a[8];
+}
+
+static double effnPRES_fun(double x, const double *a)
+{
+    //"y = (1-a1) * exp(-(x/a3)^a4)*cos(x*a2) + a1*exp(-(x/a5)^a6)"
+    double term1, term2, term3;
+
+
+    if (a[0] != 0)
     {
-        fprintf(debug, "exp_5_parm called: x = %10.3f  y = %10.3f\n"
-                "a = ( %8.3f  %8.3f  %8.3f  %8.3f  %8.3f)\n",
-                x, *y, a[1], a[2], a[3], a[4], a[5]);
+        term3 = a[0] * exp(-pow((x/a[4]), a[5]));
     }
-    dyda[1] = e1;
-    dyda[2] = x*e1/sqr(a[2]);
-    dyda[3] = e2;
-    dyda[4] = x*e2/sqr(a[4]);
-    dyda[5] = 0;
+    else
+    {
+        term3 = 0;
+    }
+
+    term1 = 1-a[0];
+    if (term1 != 0)
+    {
+        term2 = exp(-pow((x/a[2]), a[3])) * cos(x*a[1]);
+    }
+    else
+    {
+        term2 = 0;
+    }
+
+    return term1*term2 + term3;
+
+
 }
 
-static void exp_7_parm(real x, real a[], real *y, real dyda[])
-{
-    /* Fit to function
-     *
-     * y = a1 exp(-x/a2) + a3 exp(-x/a4) + a5 exp(-x/a6) + a7
-     *
-     */
-
-    real e1, e2, e3;
-
-    e1      = exp(-x/a[2]);
-    e2      = exp(-x/a[4]);
-    e3      = exp(-x/a[6]);
-    *y      = a[1]*e1 + a[3]*e2 + a[5]*e3 + a[7];
-
-    dyda[1] = e1;
-    dyda[2] = x*e1/sqr(a[2]);
-    dyda[3] = e2;
-    dyda[4] = x*e2/sqr(a[4]);
-    dyda[5] = e3;
-    dyda[6] = x*e3/sqr(a[6]);
-    dyda[7] = 0;
-}
-
-static void exp_9_parm(real x, real a[], real *y, real dyda[])
-{
-    /* Fit to function
-     *
-     * y = a1 exp(-x/a2) + a3 exp(-x/a4) + a5 exp(-x/a6) + a7
-     *
-     */
-
-    real e1, e2, e3, e4;
-
-    e1      = exp(-x/a[2]);
-    e2      = exp(-x/a[4]);
-    e3      = exp(-x/a[6]);
-    e4      = exp(-x/a[8]);
-    *y      = a[1]*e1 + a[3]*e2 + a[5]*e3 + a[7]*e4 + a[9];
-
-    dyda[1] = e1;
-    dyda[2] = x*e1/sqr(a[2]);
-    dyda[3] = e2;
-    dyda[4] = x*e2/sqr(a[4]);
-    dyda[5] = e3;
-    dyda[6] = x*e3/sqr(a[6]);
-    dyda[7] = e4;
-    dyda[8] = x*e4/sqr(a[8]);
-    dyda[9] = 0;
-}
-
-static void vac_2_parm(real x, real a[], real *y, real dyda[])
+static double lmc_vac_2_parm(double x, const double *a)
 {
     /* Fit to function
      *
@@ -253,10 +273,10 @@ static void vac_2_parm(real x, real a[], real *y, real dyda[])
      *
      */
 
-    double v, det, omega, omega2, em, ec, es;
+    double y, v, det, omega, omega2, em, ec, es;
 
-    v   = x/(2*a[1]);
-    det = 1 - a[2];
+    v   = x/(2*a[0]);
+    det = 1 - a[1];
     em  = exp(-v);
     if (det != 0)
     {
@@ -272,33 +292,37 @@ static void vac_2_parm(real x, real a[], real *y, real dyda[])
             ec = em*cos(omega*v);
             es = em*sin(omega*v)/omega;
         }
-        *y      = ec + es;
-        dyda[2] = (v/det*ec+(v-1/det)*es)/(-2.0);
-        dyda[1] = (1-det)*v/a[1]*es;
+        y      = ec + es;
     }
     else
     {
-        *y      = (1+v)*em;
-        dyda[2] = -v*v*em*(0.5+v/6);
-        dyda[1] = v*v/a[1]*em;
+        y      = (1+v)*em;
     }
+    return y;
 }
 
-static void errest_3_parm(real x, real a[], real *y, real dyda[])
+static double lmc_errest_3_parm(double x, const double *a)
 {
-    real e1, e2, v1, v2;
+    /*
+       e1 = (exp(-x/a1) - 1)
+       e2 = (exp(-x/a3) - 1)
+       v1=  2*a1 * (e1*a1/x + 1)
+       v2 = 2*a3 * (e2*a3/x + 1)
+       fun = a2*v1 + (1 - a2) * v2
+     */
+    double e1, e2, v1, v2;
 
-    if (a[1])
+    if (a[0] != 0)
     {
-        e1 = exp(-x/a[1]) - 1;
+        e1 = exp(-x/a[0]) - 1;
     }
     else
     {
         e1 = 0;
     }
-    if (a[3])
+    if (a[2] != 0)
     {
-        e2 = exp(-x/a[3]) - 1;
+        e2 = exp(-x/a[2]) - 1;
     }
     else
     {
@@ -307,46 +331,51 @@ static void errest_3_parm(real x, real a[], real *y, real dyda[])
 
     if (x > 0)
     {
-        v1      = 2*a[1]*(e1*a[1]/x + 1);
-        v2      = 2*a[3]*(e2*a[3]/x + 1);
-        *y      = a[2]*v1 + (1-a[2])*v2;
-        dyda[1] = 2*     a[2] *(v1/a[1] + e1);
-        dyda[3] = 2*(1 - a[2])*(v2/a[3] + e2);
-        dyda[2] = (v1 - v2);
+        v1      = 2*a[0]*(e1*a[0]/x + 1);
+        v2      = 2*a[2]*(e2*a[2]/x + 1);
+        return a[1]*v1 + (1-a[1])*v2;
     }
     else
     {
-        *y      = 0;
-        dyda[1] = 0;
-        dyda[3] = 0;
-        dyda[2] = 0;
+        return 0;
     }
 }
 
-typedef void (*myfitfn)(real x, real a[], real *y, real dyda[]);
-myfitfn mfitfn[effnNR] = {
-    exp_one_parm, exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm,
-    exp_5_parm,   exp_7_parm,   exp_9_parm, erffit,  errest_3_parm
+typedef double (*t_lmcurve)(double x, const double *a);
+t_lmcurve lmcurves[effnNR] = {
+    lmc_exp_one_parm, lmc_exp_one_parm, lmc_exp_two_parm,
+    lmc_exp_3_parm, lmc_vac_2_parm,
+    lmc_exp_5_parm,   lmc_exp_7_parm,
+    lmc_exp_9_parm, lmc_erffit,  lmc_errest_3_parm, effnPRES_fun
 };
 
 real fit_function(int eFitFn, real *parm, real x)
 {
-    static real y, dum[8];
-
-    mfitfn[eFitFn](x, parm-1, &y, dum);
-
-    return y;
+    int     i;
+    double *ppp;
+    real    ff;
+    snew(ppp, nfp_ffn[eFitFn]);
+    for (i = 0; (i < nfp_ffn[eFitFn]); i++)
+    {
+        ppp[i] = parm[i];
+    }
+    ff = lmcurves[eFitFn](x, ppp);
+    sfree(ppp);
+    return ff;
 }
 
 /* lmfit_exp supports up to 3 parameter fitting of exponential functions */
-static gmx_bool lmfit_exp(int nfit, real x[], real y[], real dy[], real ftol,
-                          real parm[], real dparm[], gmx_bool bVerbose,
-                          int eFitFn, int fix)
+static gmx_bool lmfit_exp(int nfit, real x[], real y[],
+                          real ftol, int maxiter,
+                          double parm[], gmx_bool bVerbose,
+                          int eFitFn)
 {
-    real     chisq, ochisq, alamda;
-    real    *a, **covar, **alpha, *dum;
-    gmx_bool bCont;
-    int      i, j, ma, mfit, *lista, *ia;
+    real               chisq, ochisq;
+    gmx_bool           bCont;
+    int                i, j;
+    double            *parameters, *xx, *yy;
+    lm_control_struct *control;
+    lm_status_struct  *status;
 
     if ((eFitFn < 0) || (eFitFn >= effnNR))
     {
@@ -354,81 +383,54 @@ static gmx_bool lmfit_exp(int nfit, real x[], real y[], real dy[], real ftol,
                   effnNR-1, eFitFn, __FILE__, __LINE__);
     }
 
-    ma = mfit = nfp_ffn[eFitFn];   /* number of parameters to fit */
-    snew(a, ma+1);
-    snew(covar, ma+1);
-    snew(alpha, ma+1);
-    snew(lista, ma+1);
-    snew(ia, ma+1);
-    snew(dum, ma+1);
-    for (i = 1; (i < ma+1); i++)
+    snew(parameters, nfp_ffn[eFitFn]);
+    snew(xx, nfit);
+    snew(yy, nfit);
+    for (i = 0; (i < nfit); i++)
     {
-        lista[i] = i;
-        ia[i]    = 1; /* fixed bug B.S.S 19/11  */
-        snew(covar[i], ma+1);
-        snew(alpha[i], ma+1);
+        xx[i] = x[i];
+        yy[i] = y[i];
     }
-    if (fix)
-    {
-        if (bVerbose)
-        {
-            fprintf(stderr, "Will keep parameters fixed during fit procedure: %d\n",
-                    fix);
-        }
-        for (i = 0; i < ma; i++)
-        {
-            if (fix & 1<<i)
-            {
-                ia[i+1] = 0;
-            }
-        }
-    }
-    if (debug)
-    {
-        fprintf(debug, "%d parameter fit\n", mfit);
-    }
-
+    snew(control, 1);
+    control->ftol       = ftol;
+    control->xtol       = ftol;
+    control->gtol       = ftol;
+    control->epsilon    = 0.1;
+    control->stepbound  = 100;
+    control->patience   = maxiter;
+    control->scale_diag = 1;
+    control->msgfile    = stdout;
+    control->verbosity  = (bVerbose ? 1 : 0);
+    control->n_maxpri   = nfp_ffn[eFitFn];
+    control->m_maxpri   = 0;
+    snew(status, 1);
     /* Initial params */
-    alamda = -1;  /* Starting value   */
     chisq  = 1e12;
-    for (i = 0; (i < mfit); i++)
+    for (i = 0; (i < nfp_ffn[eFitFn]); i++)
     {
-        a[i+1] = parm[i];
+        parameters[i] = parm[i];
     }
 
     j = 0;
     if (bVerbose)
     {
-        fprintf(stderr, "%4s  %10s  %10s  %10s  %10s  %10s %10s\n",
-                "Step", "chi^2", "Lambda", "A1", "A2", "A3", "A4");
+        fprintf(stderr, "%4s  %10s  Parameters\n",
+                "Step", "chi^2");
     }
     do
     {
         ochisq = chisq;
-        /* mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
-         *   &chisq,expfn[mfit-1],&alamda)
-         */
-        if (!mrqmin_new(x-1, y-1, dy-1, nfit, a, ia, ma, covar, alpha, &chisq,
-                        mfitfn[eFitFn], &alamda))
-        {
-            return FALSE;
-        }
 
+        lmcurve(nfp_ffn[eFitFn], parameters, nfit, xx, yy,
+                lmcurves[eFitFn], control, status);
+        chisq = sqr(status->fnorm);
         if (bVerbose)
         {
-            fprintf(stderr, "%4d  %10.5e  %10.5e  %10.5e",
-                    j, chisq, alamda, a[1]);
-            if (mfit > 1)
+            int mmm;
+            fprintf(stderr, "%4d  %10.5e", j, chisq);
+            for (mmm = 0; (mmm < nfp_ffn[eFitFn]); mmm++)
             {
-                fprintf(stderr, "  %10.5e", a[2]);
-            }
-            if (mfit > 2)
-            {
-                fprintf(stderr, "  %10.5e", a[3]);
-            }
-            if (mfit > 3)
-            {
-                fprintf(stderr, " %10.5e", a[4]);
+                fprintf(stderr, "  %10.5e", parameters[mmm]);
             }
             fprintf(stderr, "\n");
         }
@@ -436,40 +438,22 @@ static gmx_bool lmfit_exp(int nfit, real x[], real y[], real dy[], real ftol,
         bCont = ((fabs(ochisq - chisq) > fabs(ftol*chisq)) ||
                  ((ochisq == chisq)));
     }
-    while (bCont && (alamda != 0.0) && (j < 50));
+    while (bCont && (j < maxiter));
     if (bVerbose)
     {
         fprintf(stderr, "\n");
     }
 
-    /* Now get the covariance matrix out */
-    alamda = 0;
-
-    /*  mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
-     * &chisq,expfn[mfit-1],&alamda)
-     */
-    if (!mrqmin_new(x-1, y-1, dy-1, nfit, a, ia, ma, covar, alpha, &chisq,
-                    mfitfn[eFitFn], &alamda))
+    for (j = 0; (j < nfp_ffn[eFitFn]); j++)
     {
-        return FALSE;
+        parm[j]  = parameters[j];
     }
 
-    for (j = 0; (j < mfit); j++)
-    {
-        parm[j]  = a[j+1];
-        dparm[j] = covar[j+1][j+1];
-    }
-
-    for (i = 0; (i < ma+1); i++)
-    {
-        sfree(covar[i]);
-        sfree(alpha[i]);
-    }
-    sfree(a);
-    sfree(covar);
-    sfree(alpha);
-    sfree(lista);
-    sfree(dum);
+    sfree(parameters);
+    sfree(xx);
+    sfree(yy);
+    sfree(control);
+    sfree(status);
 
     return TRUE;
 }
@@ -478,15 +462,20 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
               real begintimefit, real endtimefit, const output_env_t oenv,
               gmx_bool bVerbose, int eFitFn, real fitparms[], int fix)
 {
-    FILE *fp;
-    char  buf[32];
+    FILE    *fp;
+    char     buf[32];
 
-    int   i, j, nparm, nfitpnts;
-    real  integral, ttt;
-    real *parm, *dparm;
-    real *x, *y, *dy;
-    real  ftol = 1e-4;
+    int      i, j, nparm, nfitpnts;
+    real     integral, ttt;
+    double  *parm, *dparm;
+    real    *x, *y, *dy;
+    real     ftol    = 1e-4;
+    int      maxiter = 50;
 
+    if (0 != fix)
+    {
+        fprintf(stderr, "Using fixed parameters in curve fitting is not working anymore\n");
+    }
     nparm = nfp_ffn[eFitFn];
     if (debug)
     {
@@ -543,7 +532,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
             }
         }
 
-        if (!lmfit_exp(nfitpnts, x, y, dy, ftol, parm, dparm, bVerbose, eFitFn, fix))
+        if (!lmfit_exp(nfitpnts, x, y, ftol, maxiter, parm, bVerbose, eFitFn))
         {
             fprintf(stderr, "Fit failed!\n");
         }
@@ -589,7 +578,8 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
                 {
                     ttt = x0 ? x0[j] : dt*j;
                     fprintf(fp, "%10.5e  %10.5e  %10.5e\n",
-                            ttt, c1[j], fit_function(eFitFn, parm, ttt));
+                            ttt, c1[j],
+                            lmcurves[eFitFn](ttt, parm));
                 }
                 xvgrclose(fp);
             }
@@ -612,7 +602,8 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
     return integral;
 }
 
-void do_expfit(int ndata, real c1[], real dt, real begintimefit, real endtimefit)
+static void do_expfit(int ndata, real c1[], real dt,
+                      real begintimefit, real endtimefit)
 {
     int   i, n;
     real *x, *y, *Dy;
@@ -722,4 +713,149 @@ void expfit(int n, real *x, real *y, real *Dy, real *a, real *sa,
     *b  = B;
     *sa = SA;
     *sb = SB;
+}
+
+real fit_acf(int ncorr, int fitfn, const output_env_t oenv, gmx_bool bVerbose,
+             real tbeginfit, real tendfit, real dt, real c1[], real *fit)
+{
+    real        fitparm[3];
+    real        tStart, tail_corr, sum, sumtot = 0, c_start, ct_estimate, *sig;
+    int         i, j, jmax, nf_int;
+    gmx_bool    bPrint;
+
+    bPrint = bVerbose || bDebugMode();
+
+    if (bPrint)
+    {
+        printf("COR:\n");
+    }
+
+    if (tendfit <= 0)
+    {
+        tendfit = ncorr*dt;
+    }
+    nf_int = min(ncorr, (int)(tendfit/dt));
+    sum    = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
+
+    /* Estimate the correlation time for better fitting */
+    ct_estimate = 0.5*c1[0];
+    for (i = 1; (i < ncorr) && (c1[i] > 0); i++)
+    {
+        ct_estimate += c1[i];
+    }
+    ct_estimate *= dt/c1[0];
+
+    if (bPrint)
+    {
+        printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n",
+               0.0, dt*nf_int, sum);
+        printf("COR: Relaxation times are computed as fit to an exponential:\n");
+        printf("COR:   %s\n", longs_ffn[fitfn]);
+        printf("COR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n", tbeginfit, min(ncorr*dt, tendfit));
+    }
+
+    tStart = 0;
+    if (bPrint)
+    {
+        printf("COR:%11s%11s%11s%11s%11s%11s%11s\n",
+               "Fit from", "Integral", "Tail Value", "Sum (ps)", " a1 (ps)",
+               (nfp_ffn[fitfn] >= 2) ? " a2 ()" : "",
+               (nfp_ffn[fitfn] >= 3) ? " a3 (ps)" : "");
+    }
+
+    snew(sig, ncorr);
+
+    if (tbeginfit > 0)
+    {
+        jmax = 3;
+    }
+    else
+    {
+        jmax = 1;
+    }
+    for (j = 0; ((j < jmax) && (tStart < tendfit) && (tStart < ncorr*dt)); j++)
+    {
+        /* Estimate the correlation time for better fitting */
+        c_start     = -1;
+        ct_estimate = 0;
+        for (i = 0; (i < ncorr) && (dt*i < tStart || c1[i] > 0); i++)
+        {
+            if (c_start < 0)
+            {
+                if (dt*i >= tStart)
+                {
+                    c_start     = c1[i];
+                    ct_estimate = 0.5*c1[i];
+                }
+            }
+            else
+            {
+                ct_estimate += c1[i];
+            }
+        }
+        if (c_start > 0)
+        {
+            ct_estimate *= dt/c_start;
+        }
+        else
+        {
+            /* The data is strange, so we need to choose somehting */
+            ct_estimate = tendfit;
+        }
+        if (debug)
+        {
+            fprintf(debug, "tStart %g ct_estimate: %g\n", tStart, ct_estimate);
+        }
+
+        if (fitfn == effnEXP3)
+        {
+            fitparm[0] = 0.002*ncorr*dt;
+            fitparm[1] = 0.95;
+            fitparm[2] = 0.2*ncorr*dt;
+        }
+        else
+        {
+            /* Good initial guess, this increases the probability of convergence */
+            fitparm[0] = ct_estimate;
+            fitparm[1] = 1.0;
+            fitparm[2] = 1.0;
+        }
+
+        /* Generate more or less appropriate sigma's */
+        for (i = 0; i < ncorr; i++)
+        {
+            sig[i] = sqrt(ct_estimate+dt*i);
+        }
+
+        nf_int    = min(ncorr, (int)((tStart+1e-4)/dt));
+        sum       = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
+        tail_corr = do_lmfit(ncorr, c1, sig, dt, NULL, tStart, tendfit, oenv,
+                             bDebugMode(), fitfn, fitparm, 0);
+        sumtot = sum+tail_corr;
+        if (fit && ((jmax == 1) || (j == 1)))
+        {
+            double mfp[3];
+            for (i = 0; (i < 3); i++)
+            {
+                mfp[i] = fitparm[i];
+            }
+            for (i = 0; (i < ncorr); i++)
+            {
+                fit[i] = lmcurves[fitfn](i*dt, mfp);
+            }
+        }
+        if (bPrint)
+        {
+            printf("COR:%11.4e%11.4e%11.4e%11.4e", tStart, sum, tail_corr, sumtot);
+            for (i = 0; (i < nfp_ffn[fitfn]); i++)
+            {
+                printf(" %11.4e", fitparm[i]);
+            }
+            printf("\n");
+        }
+        tStart += tbeginfit;
+    }
+    sfree(sig);
+
+    return sumtot;
 }
