@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,24 +32,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "crosscorr.h"
 
-
-#ifndef _correl_h
-#define _correl_h
-
-#include "typedefs.h"
-#include "gromacs/fft/fft.h"
-
-typedef struct {
-    int        n;
-    gmx_fft_t  fft_setup;
-    real      *buf1, *buf2, *abuf;
-} correl_t;
-
-extern correl_t *init_correl(int n);
-extern void done_correl(correl_t *c);
-
-extern void correl(real data1[], real data2[], int n, real ans[]);
-extern void four1(real data[], int nn, int isign);
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+
+#include <stdio.h>
+
+void cross_corr(int n, real f[], real g[], real corr[])
+{
+    int i, j;
+
+    /* FFT version of cross-correlation not presently implemented.
+     * Switching to slow correlation calculation.
+     */
+    for (i = 0; (i < n); i++)
+    {
+        for (j = i; (j < n); j++)
+        {
+            corr[j-i] += f[i]*g[j];
+        }
+        corr[i] /= (real)(n-i);
+    }
+}

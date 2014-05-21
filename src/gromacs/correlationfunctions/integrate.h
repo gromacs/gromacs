@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,45 +32,55 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+/*! \file
+ * \brief
+ * Declares routines for integrating a data set
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inpublicapi
+ * \ingroup module_correlationfunctions
+ */
+#ifndef GMX_INTEGRATE_H
+#define GMX_INTEGRATE_H
 
 #include <stdio.h>
-#include <math.h>
-#include "typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gstat.h"
+#include "gromacs/utility/real.h"
 
-real LegendreP(real x, unsigned long m)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-{
-    real polynomial = 0, x2, x3;
+/*! \brief
+ * Integrate the equispaced data in c[] from 0 to n using trapezium rule.
+ * If fit != NULL the fit is written as well.
+ * \param[in] fp File pointer to write to (maybe NULL)
+ * \param[in] n Number of data points
+ * \param[in] dt The time step between data points
+ * \param[in] c The data set
+ * \param[out] fit
+ * \param[in] nskip Determines whether all elements are written to the output file
+ * (written when i % nskip == 0)
+ * \return The integral
+ */
+real print_and_integrate(FILE *fp, int n, real dt, real c[], real *fit, int nskip);
 
-    switch (m)
-    {
-        case eacP0:
-            polynomial = 1.0;
-            break;
-        case eacP1:
-            polynomial = x;
-            break;
-        case eacP2:
-            x2         = x*x;
-            polynomial = 1.5*x2 - 0.5;
-            break;
-        case eacP3:
-            x2         = x*x;
-            polynomial = (35*x2*x2 - 30*x2 + 3)/8;
-            break;
-        case eacP4:
-            x2         = x*x;
-            x3         = x2*x;
-            polynomial = (63*x3*x2 - 70*x3 + 15*x)/8;
-            break;
-        default:
-            gmx_fatal(FARGS, "Legendre polynomials of order %d are not supported, %s %d",
-                      m, __FILE__, __LINE__);
-    }
-    return (polynomial);
+/*! \brief
+ * Integrate data in y using the trapezium rule, and, if given, use dy as weighting
+ *
+ * \param[in] n The number of data points
+ * \param[in] x The x data
+ * \param[in] y The y data
+ * \param[in] dy The uncertainties
+ * \param[in] aver_start should be set to a value where the function has
+ * converged to 0.
+ * \param[out] stddev The standard deviation in the integral
+ * \return the integral
+ */
+real evaluate_integral(int n, real x[], real y[], real dy[], real aver_start,
+                       real *stddev);
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif

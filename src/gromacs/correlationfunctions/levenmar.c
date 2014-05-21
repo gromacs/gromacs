@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "levenmar.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -233,8 +235,6 @@ static real **convert_matrix(real *a, int nrl, int nrh, int ncl, int nch)
     return m;
 }
 
-
-
 static void free_convert_matrix(real **b, int nrl)
 {
     free((char*) (b+nrl));
@@ -256,7 +256,7 @@ static void dump_mat(int n, real **a)
     }
 }
 
-gmx_bool gaussj(real **a, int n, real **b, int m)
+static gmx_bool gaussj(real **a, int n, real **b, int m)
 {
     int *indxc, *indxr, *ipiv;
     int  i, icol = 0, irow = 0, j, k, l, ll;
@@ -360,65 +360,13 @@ gmx_bool gaussj(real **a, int n, real **b, int m)
     return TRUE;
 }
 
-#undef SWAP
-
-
-static void covsrt(real **covar, int ma, int lista[], int mfit)
-{
-    int  i, j;
-    real swap;
-
-    for (j = 1; j < ma; j++)
-    {
-        for (i = j+1; i <= ma; i++)
-        {
-            covar[i][j] = 0.0;
-        }
-    }
-    for (i = 1; i < mfit; i++)
-    {
-        for (j = i+1; j <= mfit; j++)
-        {
-            if (lista[j] > lista[i])
-            {
-                covar[lista[j]][lista[i]] = covar[i][j];
-            }
-            else
-            {
-                covar[lista[i]][lista[j]] = covar[i][j];
-            }
-        }
-    }
-    swap = covar[1][1];
-    for (j = 1; j <= ma; j++)
-    {
-        covar[1][j] = covar[j][j];
-        covar[j][j] = 0.0;
-    }
-    covar[lista[1]][lista[1]] = swap;
-    for (j = 2; j <= mfit; j++)
-    {
-        covar[lista[j]][lista[j]] = covar[1][j];
-    }
-    for (j = 2; j <= ma; j++)
-    {
-        for (i = 1; i <= j-1; i++)
-        {
-            covar[i][j] = covar[j][i];
-        }
-    }
-}
-
-#define SWAP(a, b) {swap = (a); (a) = (b); (b) = swap; }
-
-static void covsrt_new(real **covar, int ma, int ia[], int mfit)
+static void covsrt(real **covar, int ma, int ia[], int mfit)
 /* Expand in storage the covariance matrix covar, so as to take
  * into account parameters that are being held fixed. (For the
  * latter, return zero covariances.)
  */
 {
     int  i, j, k;
-    real swap;
     for (i = mfit+1; i <= ma; i++)
     {
         for (j = 1; j <= i; j++)
@@ -446,273 +394,8 @@ static void covsrt_new(real **covar, int ma, int ia[], int mfit)
 #undef SWAP
 
 static void mrqcof(real x[], real y[], real sig[], int ndata, real a[],
-                   int ma, int lista[], int mfit,
-                   real **alpha, real beta[], real *chisq,
-                   void (*funcs)(real, real *, real *, real *))
-{
-    int  k, j, i;
-    real ymod, wt, sig2i, dy, *dyda;
-
-    dyda = rvector(1, ma);
-    for (j = 1; j <= mfit; j++)
-    {
-        for (k = 1; k <= j; k++)
-        {
-            alpha[j][k] = 0.0;
-        }
-        beta[j] = 0.0;
-    }
-    *chisq = 0.0;
-    for (i = 1; i <= ndata; i++)
-    {
-        (*funcs)(x[i], a, &ymod, dyda);
-        sig2i = 1.0/(sig[i]*sig[i]);
-        dy    = y[i]-ymod;
-        for (j = 1; j <= mfit; j++)
-        {
-            wt = dyda[lista[j]]*sig2i;
-            for (k = 1; k <= j; k++)
-            {
-                alpha[j][k] += wt*dyda[lista[k]];
-            }
-            beta[j] += dy*wt;
-        }
-        (*chisq) += dy*dy*sig2i;
-    }
-    for (j = 2; j <= mfit; j++)
-    {
-        for (k = 1; k <= j-1; k++)
-        {
-            alpha[k][j] = alpha[j][k];
-        }
-    }
-    free_vector(dyda, 1);
-}
-
-
-gmx_bool mrqmin(real x[], real y[], real sig[], int ndata, real a[],
-                int ma, int lista[], int mfit,
-                real **covar, real **alpha, real *chisq,
-                void (*funcs)(real, real *, real *, real *),
-                real *alamda)
-{
-    int          k, kk, j, ihit;
-    static real *da, *atry, **oneda, *beta, ochisq;
-
-    if (*alamda < 0.0)
-    {
-        oneda = matrix1(1, mfit, 1, 1);
-        atry  = rvector(1, ma);
-        da    = rvector(1, ma);
-        beta  = rvector(1, ma);
-        kk    = mfit+1;
-        for (j = 1; j <= ma; j++)
-        {
-            ihit = 0;
-            for (k = 1; k <= mfit; k++)
-            {
-                if (lista[k] == j)
-                {
-                    ihit++;
-                }
-            }
-            if (ihit == 0)
-            {
-                lista[kk++] = j;
-            }
-            else if (ihit > 1)
-            {
-                nrerror("Bad LISTA permutation in MRQMIN-1", FALSE);
-                return FALSE;
-            }
-        }
-        if (kk != ma+1)
-        {
-            nrerror("Bad LISTA permutation in MRQMIN-2", FALSE);
-            return FALSE;
-        }
-        *alamda = 0.001;
-        mrqcof(x, y, sig, ndata, a, ma, lista, mfit, alpha, beta, chisq, funcs);
-        ochisq = (*chisq);
-    }
-    for (j = 1; j <= mfit; j++)
-    {
-        for (k = 1; k <= mfit; k++)
-        {
-            covar[j][k] = alpha[j][k];
-        }
-        covar[j][j] = alpha[j][j]*(1.0+(*alamda));
-        oneda[j][1] = beta[j];
-    }
-    if (!gaussj(covar, mfit, oneda, 1))
-    {
-        return FALSE;
-    }
-    for (j = 1; j <= mfit; j++)
-    {
-        da[j] = oneda[j][1];
-    }
-    if (*alamda == 0.0)
-    {
-        covsrt(covar, ma, lista, mfit);
-        free_vector(beta, 1);
-        free_vector(da, 1);
-        free_vector(atry, 1);
-        free_matrix(oneda, 1, mfit, 1);
-        return TRUE;
-    }
-    for (j = 1; j <= ma; j++)
-    {
-        atry[j] = a[j];
-    }
-    for (j = 1; j <= mfit; j++)
-    {
-        atry[lista[j]] = a[lista[j]]+da[j];
-    }
-    mrqcof(x, y, sig, ndata, atry, ma, lista, mfit, covar, da, chisq, funcs);
-    if (*chisq < ochisq)
-    {
-        *alamda *= 0.1;
-        ochisq   = (*chisq);
-        for (j = 1; j <= mfit; j++)
-        {
-            for (k = 1; k <= mfit; k++)
-            {
-                alpha[j][k] = covar[j][k];
-            }
-            beta[j]     = da[j];
-            a[lista[j]] = atry[lista[j]];
-        }
-    }
-    else
-    {
-        *alamda *= 10.0;
-        *chisq   = ochisq;
-    }
-    return TRUE;
-}
-
-
-gmx_bool mrqmin_new(real x[], real y[], real sig[], int ndata, real a[],
-                    int ia[], int ma, real **covar, real **alpha, real *chisq,
-                    void (*funcs)(real, real [], real *, real []),
-                    real *alamda)
-/* Levenberg-Marquardt method, attempting to reduce the value Chi^2
- * of a fit between a set of data points x[1..ndata], y[1..ndata]
- * with individual standard deviations sig[1..ndata], and a nonlinear
- * function dependent on ma coefficients a[1..ma]. The input array
- * ia[1..ma] indicates by nonzero entries those components of a that
- * should be fitted for, and by zero entries those components that
- * should be held fixed at their input values. The program returns
- * current best-fit values for the parameters a[1..ma], and
- * Chi^2 = chisq. The arrays covar[1..ma][1..ma], alpha[1..ma][1..ma]
- * are used as working space during most iterations. Supply a routine
- * funcs(x,a,yfit,dyda,ma) that evaluates the fitting function yfit,
- * and its derivatives dyda[1..ma] with respect to the fitting
- * parameters a at x. On the first call provide an initial guess for
- * the parameters a, and set alamda < 0 for initialization (which then
- * sets alamda=.001). If a step succeeds chisq becomes smaller and
- * alamda de-creases by a factor of 10. If a step fails alamda grows by
- * a factor of 10. You must call this routine repeatedly until
- * convergence is achieved. Then, make one final call with alamda=0,
- * so that covar[1..ma][1..ma] returns the covariance matrix, and alpha
- * the curvature matrix.
- * (Parameters held fixed will return zero covariances.)
- */
-{
-    void covsrt(real **covar, int ma, int ia[], int mfit);
-    gmx_bool gaussj(real **a, int n, real **b, int m);
-    void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
-                    int ia[], int ma, real **alpha, real beta[], real *chisq,
-                    void (*funcs)(real, real [], real *, real []));
-    int         j, k, l;
-    static int  mfit;
-    static real ochisq, *atry, *beta, *da, **oneda;
-
-    if (*alamda < 0.0)                    /* Initialization. */
-    {
-        atry = rvector(1, ma);
-        beta = rvector(1, ma);
-        da   = rvector(1, ma);
-        for (mfit = 0, j = 1; j <= ma; j++)
-        {
-            if (ia[j])
-            {
-                mfit++;
-            }
-        }
-        oneda   = matrix1(1, mfit, 1, 1);
-        *alamda = 0.001;
-        mrqcof_new(x, y, sig, ndata, a, ia, ma, alpha, beta, chisq, funcs);
-        ochisq = (*chisq);
-        for (j = 1; j <= ma; j++)
-        {
-            atry[j] = a[j];
-        }
-    }
-    for (j = 1; j <= mfit; j++) /* Alter linearized fitting matrix, by augmenting. */
-    {
-        for (k = 1; k <= mfit; k++)
-        {
-            covar[j][k] = alpha[j][k]; /* diagonal elements. */
-        }
-        covar[j][j] = alpha[j][j]*(1.0+(*alamda));
-        oneda[j][1] = beta[j];
-    }
-    if (!gaussj(covar, mfit, oneda, 1)) /* Matrix solution. */
-    {
-        return FALSE;
-    }
-    for (j = 1; j <= mfit; j++)
-    {
-        da[j] = oneda[j][1];
-    }
-    if (*alamda == 0.0) /* Once converged, evaluate covariance matrix. */
-    {
-        covsrt_new(covar, ma, ia, mfit);
-        free_matrix(oneda, 1, mfit, 1);
-        free_vector(da, 1);
-        free_vector(beta, 1);
-        free_vector(atry, 1);
-        return TRUE;
-    }
-    for (j = 0, l = 1; l <= ma; l++) /* Did the trial succeed? */
-    {
-        if (ia[l])
-        {
-            atry[l] = a[l]+da[++j];
-        }
-    }
-    mrqcof_new(x, y, sig, ndata, atry, ia, ma, covar, da, chisq, funcs);
-    if (*chisq < ochisq)
-    {
-        /* Success, accept the new solution. */
-        *alamda *= 0.1;
-        ochisq   = (*chisq);
-        for (j = 1; j <= mfit; j++)
-        {
-            for (k = 1; k <= mfit; k++)
-            {
-                alpha[j][k] = covar[j][k];
-            }
-            beta[j] = da[j];
-        }
-        for (l = 1; l <= ma; l++)
-        {
-            a[l] = atry[l];
-        }
-    }
-    else                 /* Failure, increase alamda and return. */
-    {
-        *alamda *= 10.0;
-        *chisq   = ochisq;
-    }
-    return TRUE;
-}
-
-void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
-                int ia[], int ma, real **alpha, real beta[], real *chisq,
-                void (*funcs)(real, real [], real *, real[]))
+                   int ia[], int ma, real **alpha, real beta[], real *chisq,
+                   void (*funcs)(real, real [], real *, real[]))
 /* Used by mrqmin to evaluate the linearized fitting matrix alpha, and
  * vector beta as in (15.5.8), and calculate Chi^2.
  */
@@ -767,4 +450,94 @@ void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
         }
     }
     free_vector(dyda, 1);
+}
+
+gmx_bool mrqmin(real x[], real y[], real sig[], int ndata, real a[],
+                int ia[], int ma, real **covar, real **alpha, real *chisq,
+                void (*funcs)(real, real [], real *, real []),
+                real *alamda)
+{
+    int         j, k, l;
+    static int  mfit;
+    static real ochisq, *atry, *beta, *da, **oneda;
+
+    if (*alamda < 0.0)                    /* Initialization. */
+    {
+        atry = rvector(1, ma);
+        beta = rvector(1, ma);
+        da   = rvector(1, ma);
+        for (mfit = 0, j = 1; j <= ma; j++)
+        {
+            if (ia[j])
+            {
+                mfit++;
+            }
+        }
+        oneda   = matrix1(1, mfit, 1, 1);
+        *alamda = 0.001;
+        mrqcof(x, y, sig, ndata, a, ia, ma, alpha, beta, chisq, funcs);
+        ochisq = (*chisq);
+        for (j = 1; j <= ma; j++)
+        {
+            atry[j] = a[j];
+        }
+    }
+    for (j = 1; j <= mfit; j++) /* Alter linearized fitting matrix, by augmenting. */
+    {
+        for (k = 1; k <= mfit; k++)
+        {
+            covar[j][k] = alpha[j][k]; /* diagonal elements. */
+        }
+        covar[j][j] = alpha[j][j]*(1.0+(*alamda));
+        oneda[j][1] = beta[j];
+    }
+    if (!gaussj(covar, mfit, oneda, 1)) /* Matrix solution. */
+    {
+        return FALSE;
+    }
+    for (j = 1; j <= mfit; j++)
+    {
+        da[j] = oneda[j][1];
+    }
+    if (*alamda == 0.0) /* Once converged, evaluate covariance matrix. */
+    {
+        covsrt(covar, ma, ia, mfit);
+        free_matrix(oneda, 1, mfit, 1);
+        free_vector(da, 1);
+        free_vector(beta, 1);
+        free_vector(atry, 1);
+        return TRUE;
+    }
+    for (j = 0, l = 1; l <= ma; l++) /* Did the trial succeed? */
+    {
+        if (ia[l])
+        {
+            atry[l] = a[l]+da[++j];
+        }
+    }
+    mrqcof(x, y, sig, ndata, atry, ia, ma, covar, da, chisq, funcs);
+    if (*chisq < ochisq)
+    {
+        /* Success, accept the new solution. */
+        *alamda *= 0.1;
+        ochisq   = (*chisq);
+        for (j = 1; j <= mfit; j++)
+        {
+            for (k = 1; k <= mfit; k++)
+            {
+                alpha[j][k] = covar[j][k];
+            }
+            beta[j] = da[j];
+        }
+        for (l = 1; l <= ma; l++)
+        {
+            a[l] = atry[l];
+        }
+    }
+    else                 /* Failure, increase alamda and return. */
+    {
+        *alamda *= 10.0;
+        *chisq   = ochisq;
+    }
+    return TRUE;
 }
