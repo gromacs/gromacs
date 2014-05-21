@@ -59,7 +59,7 @@
 #include "gmx_ana.h"
 #include "copyrite.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
