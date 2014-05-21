@@ -60,7 +60,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 
 #define NK  24
 #define NPK 4

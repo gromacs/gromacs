@@ -65,6 +65,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 
 #ifdef GMX_DOUBLE
 #define FLOOR(x) ((int) floor(x))
