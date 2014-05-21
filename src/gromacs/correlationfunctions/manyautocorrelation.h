@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,24 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal
+ * \file
+ * \brief
+ * Declares routine for computing many correlation functions using OpenMP
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inlibraryapi
+ * \ingroup module_correlationfunctions
+ */
+#ifndef GMX_MANYAUTOCORRELATION_H
+#define GMX_MANYAUTOCORRELATION_H
 
-
-#ifndef _correl_h
-#define _correl_h
-
-#include "typedefs.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/fft/fft.h"
 
-typedef struct {
-    int        n;
-    gmx_fft_t  fft_setup;
-    real      *buf1, *buf2, *abuf;
-} correl_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern correl_t *init_correl(int n);
-extern void done_correl(correl_t *c);
+/*! \brief
+ * Perform many autocorrelation calculations.
+ *
+ * This routine performs many autocorrelation function calculations using FFTs.
+ * The GROMACS FFT library wrapper is employed. On return the c[] arrays contain
+ * a symmetric function that is useful for further FFT:ing, for instance in order to
+ * compute spectra.
+ *
+ * The functions uses OpenMP parallellization.
+ *
+ * \param[in] nfunc   Number of data functions to autocorrelate
+ * \param[in] ndata   Number of valid data points in the data
+ * \param[in] nfft    Length of the data arrays, this should at least be 50% larger than ndata. The c arrays will filled with zero beyond ndata before computing the correlation.
+ * \param[inout] c    Data array of size nfunc x nfft, will also be used for output
+ * \return fft error code, or zero if everything went fine (see fft/fft.h)
+ */
+int many_auto_correl(int nfunc, int ndata, int nfft, real **c);
 
-extern void correl(real data1[], real data2[], int n, real ans[]);
-extern void four1(real data[], int nn, int isign);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
