@@ -58,7 +58,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 
 #define NK  24
 #define NPK 4
@@ -79,10 +80,10 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 {
     FILE  *fp, *fp_vk, *fp_cub = NULL;
     int    nk, ntc;
-    real **tcaf, **tcafc = NULL, eta;
+    real **tcaf, **tcafc = NULL, eta, *sig;
     int    i, j, k, kc;
     int    ncorr;
-    real   fitparms[3], *sig;
+    double fitparms[3];
 
     nk  = kset_c[nkc];
     ntc = nk*NPK;

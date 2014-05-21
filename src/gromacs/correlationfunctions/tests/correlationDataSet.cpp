@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,43 +32,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Implements helper class for autocorrelation tests
+ *
+ * \author Anders G&auml;rden&auml;s <anders.gardenas@gmail.com>
+ * \ingroup module_correlationfunctions
+ */
 #include "gmxpre.h"
+#include "correlationDataSet.h"
+#include <cmath>
+#include <sstream>
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/utility/smalloc.h"
+#include "testutils/testfilemanager.h"
 
-#include <stdio.h>
-#include <math.h>
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gstat.h"
-
-real LegendreP(real x, unsigned long m)
-
+CorrelationDataSet::CorrelationDataSet(std::string fileName)
 {
-    real polynomial = 0, x2, x3;
+    fileName    = gmx::test::TestFileManager::getInputFilePath(fileName.c_str());
+    nrLines_    = read_xvg(fileName.c_str(), &tempValues, &nrColumns_);
 
-    switch (m)
+    dt_         = tempValues[0][1] - tempValues[0][0];
+    startTime_  = tempValues[0][0];
+    endTime_    = tempValues[0][nrLines_-1];
+}
+
+CorrelationDataSet::~CorrelationDataSet()
+{
+    // Allocated in read_xvg, destroyed here.
+    for (int i = 0; i < nrColumns_; i++)
     {
-        case eacP0:
-            polynomial = 1.0;
-            break;
-        case eacP1:
-            polynomial = x;
-            break;
-        case eacP2:
-            x2         = x*x;
-            polynomial = 1.5*x2 - 0.5;
-            break;
-        case eacP3:
-            x2         = x*x;
-            polynomial = (35*x2*x2 - 30*x2 + 3)/8;
-            break;
-        case eacP4:
-            x2         = x*x;
-            x3         = x2*x;
-            polynomial = (63*x3*x2 - 70*x3 + 15*x)/8;
-            break;
-        default:
-            gmx_fatal(FARGS, "Legendre polynomials of order %d are not supported, %s %d",
-                      m, __FILE__, __LINE__);
+        sfree(tempValues[i]);
+        tempValues[i] = NULL;
     }
-    return (polynomial);
+    sfree(tempValues);
+    tempValues = NULL;
+}
+
+real CorrelationDataSet::getValue(int set, int time)
+{
+    if (set+1 < nrColumns_)
+    {
+        return tempValues[set+1][time];
+    }
+    else
+    {
+        return 0;
+    }
 }
