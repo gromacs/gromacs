@@ -101,6 +101,7 @@ add_subdirectory(imd)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
+    add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
     add_subdirectory(analysisdata)
     add_subdirectory(selection)
@@ -194,6 +195,7 @@ target_link_libraries(libgromacs
                       ${GMX_EXTRA_LIBRARIES}
                       ${TNG_IO_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
+                      ${LMFIT_LIBRARIES}
                       ${XML_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
