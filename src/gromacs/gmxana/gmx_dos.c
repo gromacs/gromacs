@@ -57,7 +57,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
-#include "correl.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gmx_ana.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/trxio.h"

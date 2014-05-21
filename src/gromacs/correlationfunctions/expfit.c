@@ -34,6 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#include "expfit.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -45,7 +48,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
-#include "gstat.h"
 #include "gromacs/math/vec.h"
 #include "index.h"
 
@@ -71,6 +73,23 @@ const char *longs_ffn[effnNR] = {
     "y = 1/2*(a1+a2) - 1/2*(a1-a2)*erf( (x-a3) /a4^2)",
     "y = a2*ee(a1,x) + (1-a2)*ee(a2,x)"
 };
+
+int sffn2effn(const char **sffn)
+{
+    int eFitFn, i;
+
+    eFitFn = 0;
+    for (i = 0; i < effnNR; i++)
+    {
+        if (sffn[i+1] && strcmp(sffn[0], sffn[i+1]) == 0)
+        {
+            eFitFn = i;
+        }
+    }
+
+    return eFitFn;
+}
+
 
 extern gmx_bool mrqmin_new(real x[], real y[], real sig[], int ndata, real a[],
                            int ia[], int ma, real **covar, real **alpha, real *chisq,
