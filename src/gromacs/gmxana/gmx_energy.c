@@ -56,6 +56,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gmx_ana.h"
 #include "gromacs/legacyheaders/mdebin.h"
