@@ -58,6 +58,7 @@
 #include "gmx_ana.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 
 static void index_atom2mol(int *n, atom_id *index, t_block *mols)
 {
