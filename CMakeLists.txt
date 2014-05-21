@@ -860,6 +860,8 @@ mark_as_advanced(TNG_BUILD_DOCUMENTATION)
 mark_as_advanced(TNG_BUILD_TEST)
 mark_as_advanced(TNG_EXAMPLE_FILES_DIR)
 
+add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/cminpack)
+
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
     # as by design most of the false branches are impossible to trigger in
