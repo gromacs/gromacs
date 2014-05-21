@@ -34,6 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#include "expfit.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -45,11 +48,12 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/futil.h"
-#include "gstat.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
-
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/fatalerror.h"
+#include "integrate.h"
+#include "levenmar.h"
 
 const int   nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 4, 3};
 
@@ -72,10 +76,21 @@ const char *longs_ffn[effnNR] = {
     "y = a2*ee(a1,x) + (1-a2)*ee(a2,x)"
 };
 
-extern gmx_bool mrqmin_new(real x[], real y[], real sig[], int ndata, real a[],
-                           int ia[], int ma, real **covar, real **alpha, real *chisq,
-                           void (*funcs)(real, real [], real *, real []),
-                           real *alamda);
+int sffn2effn(const char **sffn)
+{
+    int eFitFn, i;
+
+    eFitFn = 0;
+    for (i = 0; i < effnNR; i++)
+    {
+        if (sffn[i+1] && strcmp(sffn[0], sffn[i+1]) == 0)
+        {
+            eFitFn = i;
+        }
+    }
+
+    return eFitFn;
+}
 
 static real myexp(real x, real A, real tau)
 {
@@ -406,9 +421,6 @@ static gmx_bool lmfit_exp(int nfit, real x[], real y[], real dy[], real ftol,
     do
     {
         ochisq = chisq;
-        /* mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
-         *   &chisq,expfn[mfit-1],&alamda)
-         */
         if (!mrqmin_new(x-1, y-1, dy-1, nfit, a, ia, ma, covar, alpha, &chisq,
                         mfitfn[eFitFn], &alamda))
         {
@@ -446,9 +458,6 @@ static gmx_bool lmfit_exp(int nfit, real x[], real y[], real dy[], real ftol,
     /* Now get the covariance matrix out */
     alamda = 0;
 
-    /*  mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
-     * &chisq,expfn[mfit-1],&alamda)
-     */
     if (!mrqmin_new(x-1, y-1, dy-1, nfit, a, ia, ma, covar, alpha, &chisq,
                     mfitfn[eFitFn], &alamda))
     {
@@ -723,4 +732,144 @@ void expfit(int n, real *x, real *y, real *Dy, real *a, real *sa,
     *b  = B;
     *sa = SA;
     *sb = SB;
+}
+
+real fit_acf(int ncorr, int fitfn, const output_env_t oenv, gmx_bool bVerbose,
+             real tbeginfit, real tendfit, real dt, real c1[], real *fit)
+{
+    real        fitparm[3];
+    real        tStart, tail_corr, sum, sumtot = 0, c_start, ct_estimate, *sig;
+    int         i, j, jmax, nf_int;
+    gmx_bool    bPrint;
+
+    bPrint = bVerbose || bDebugMode();
+
+    if (bPrint)
+    {
+        printf("COR:\n");
+    }
+
+    if (tendfit <= 0)
+    {
+        tendfit = ncorr*dt;
+    }
+    nf_int = min(ncorr, (int)(tendfit/dt));
+    sum    = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
+
+    /* Estimate the correlation time for better fitting */
+    ct_estimate = 0.5*c1[0];
+    for (i = 1; (i < ncorr) && (c1[i] > 0); i++)
+    {
+        ct_estimate += c1[i];
+    }
+    ct_estimate *= dt/c1[0];
+
+    if (bPrint)
+    {
+        printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n",
+               0.0, dt*nf_int, sum);
+        printf("COR: Relaxation times are computed as fit to an exponential:\n");
+        printf("COR:   %s\n", longs_ffn[fitfn]);
+        printf("COR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n", tbeginfit, min(ncorr*dt, tendfit));
+    }
+
+    tStart = 0;
+    if (bPrint)
+    {
+        printf("COR:%11s%11s%11s%11s%11s%11s%11s\n",
+               "Fit from", "Integral", "Tail Value", "Sum (ps)", " a1 (ps)",
+               (nfp_ffn[fitfn] >= 2) ? " a2 ()" : "",
+               (nfp_ffn[fitfn] >= 3) ? " a3 (ps)" : "");
+    }
+
+    snew(sig, ncorr);
+
+    if (tbeginfit > 0)
+    {
+        jmax = 3;
+    }
+    else
+    {
+        jmax = 1;
+    }
+    for (j = 0; ((j < jmax) && (tStart < tendfit) && (tStart < ncorr*dt)); j++)
+    {
+        /* Estimate the correlation time for better fitting */
+        c_start     = -1;
+        ct_estimate = 0;
+        for (i = 0; (i < ncorr) && (dt*i < tStart || c1[i] > 0); i++)
+        {
+            if (c_start < 0)
+            {
+                if (dt*i >= tStart)
+                {
+                    c_start     = c1[i];
+                    ct_estimate = 0.5*c1[i];
+                }
+            }
+            else
+            {
+                ct_estimate += c1[i];
+            }
+        }
+        if (c_start > 0)
+        {
+            ct_estimate *= dt/c_start;
+        }
+        else
+        {
+            /* The data is strange, so we need to choose somehting */
+            ct_estimate = tendfit;
+        }
+        if (debug)
+        {
+            fprintf(debug, "tStart %g ct_estimate: %g\n", tStart, ct_estimate);
+        }
+
+        if (fitfn == effnEXP3)
+        {
+            fitparm[0] = 0.002*ncorr*dt;
+            fitparm[1] = 0.95;
+            fitparm[2] = 0.2*ncorr*dt;
+        }
+        else
+        {
+            /* Good initial guess, this increases the probability of convergence */
+            fitparm[0] = ct_estimate;
+            fitparm[1] = 1.0;
+            fitparm[2] = 1.0;
+        }
+
+        /* Generate more or less appropriate sigma's */
+        for (i = 0; i < ncorr; i++)
+        {
+            sig[i] = sqrt(ct_estimate+dt*i);
+        }
+
+        nf_int    = min(ncorr, (int)((tStart+1e-4)/dt));
+        sum       = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
+        tail_corr = do_lmfit(ncorr, c1, sig, dt, NULL, tStart, tendfit, oenv,
+                             bDebugMode(), fitfn, fitparm, 0);
+        sumtot = sum+tail_corr;
+        if (fit && ((jmax == 1) || (j == 1)))
+        {
+            for (i = 0; (i < ncorr); i++)
+            {
+                fit[i] = fit_function(fitfn, fitparm, i*dt);
+            }
+        }
+        if (bPrint)
+        {
+            printf("COR:%11.4e%11.4e%11.4e%11.4e", tStart, sum, tail_corr, sumtot);
+            for (i = 0; (i < nfp_ffn[fitfn]); i++)
+            {
+                printf(" %11.4e", fitparm[i]);
+            }
+            printf("\n");
+        }
+        tStart += tbeginfit;
+    }
+    sfree(sig);
+
+    return sumtot;
 }

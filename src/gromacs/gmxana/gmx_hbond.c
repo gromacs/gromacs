@@ -55,7 +55,10 @@
 #include "gstat.h"
 #include "gromacs/utility/cstringutil.h"
 #include "pbc.h"
-#include "correl.h"
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/crosscorr.h"
+#include "gromacs/correlationfunctions/integrate.h"
 #include "gmx_ana.h"
 #include "geminate.h"
 
