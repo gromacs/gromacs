@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,43 +32,35 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+/*! \libinternal
+ * \file
+ * \brief
+ * Declares routine for computing a Legendre polynomial
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inlibraryapi
+ * \ingroup module_correlationfunctions
+ */
+#ifndef GMX_POLYNOMIALS_H
+#define GMX_POLYNOMIALS_H
 
-#include <stdio.h>
-#include <math.h>
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gstat.h"
+#include "gromacs/utility/real.h"
 
-real LegendreP(real x, unsigned long m)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-{
-    real polynomial = 0, x2, x3;
+/*! \brief
+ * Return Legendre polynomial value Pm(x)
+ * http://en.wikipedia.org/wiki/Legendre_polynomials
+ * \param[in] x The value
+ * \param[in] m The order of the polynomial (0-4 are supported)
+ * \return Pm(x)
+ */
+real LegendreP(real x, unsigned int m);
 
-    switch (m)
-    {
-        case eacP0:
-            polynomial = 1.0;
-            break;
-        case eacP1:
-            polynomial = x;
-            break;
-        case eacP2:
-            x2         = x*x;
-            polynomial = 1.5*x2 - 0.5;
-            break;
-        case eacP3:
-            x2         = x*x;
-            polynomial = (35*x2*x2 - 30*x2 + 3)/8;
-            break;
-        case eacP4:
-            x2         = x*x;
-            x3         = x2*x;
-            polynomial = (63*x3*x2 - 70*x3 + 15*x)/8;
-            break;
-        default:
-            gmx_fatal(FARGS, "Legendre polynomials of order %d are not supported, %s %d",
-                      m, __FILE__, __LINE__);
-    }
-    return (polynomial);
+#ifdef __cplusplus
 }
+#endif
+
+#endif
