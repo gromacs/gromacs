@@ -53,6 +53,7 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 
 int gmx_rotacf(int argc, char *argv[])
 {
