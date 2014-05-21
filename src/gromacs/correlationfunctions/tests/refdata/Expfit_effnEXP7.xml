@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Param0">0.5</Real>
+  <Real Name="Param1">5</Real>
+  <Real Name="Param2">-0.02</Real>
+  <Real Name="Param3">0.5</Real>
+  <Real Name="Param4">0.5</Real>
+  <Real Name="Param5">50</Real>
+  <Real Name="Param6">-0.0020000001</Real>
+  <Real Name="Result0">0.49868628</Real>
+  <Real Name="Result1">5.4636278</Real>
+  <Real Name="Result2">-0.020645905</Real>
+  <Real Name="Result3">0.5</Real>
+  <Real Name="Result4">0.58774316</Real>
+  <Real Name="Result5">50.656017</Real>
+  <Real Name="Result6">-0.00247636</Real>
+</ReferenceData>
