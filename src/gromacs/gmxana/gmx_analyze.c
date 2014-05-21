@@ -41,10 +41,12 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/geminate.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/readinp.h"
@@ -391,7 +393,7 @@ static void average(const char *avfile, int avbar_opt,
     }
 }
 
-static real anal_ee_inf(real *parm, real T)
+static real anal_ee_inf(double *parm, real T)
 {
     return sqrt(parm[1]*2*parm[0]/T+parm[3]*2*parm[2]/T);
 }
@@ -408,7 +410,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
     double   blav, var;
     char   **leg;
     real    *tbs, *ybs, rtmp, dens, *fitsig, twooe, tau1_est, tau_sig;
-    real     fitparm[4];
+    double   fitparm[4];
     real     ee, a, tau1, tau2;
 
     if (n < 4)
@@ -628,8 +630,9 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
 
         if (bFitAc)
         {
-            int   fitlen;
-            real *ac, acint, ac_fit[4];
+            int    fitlen;
+            real  *ac, acint;
+            double ac_fit[4];
 
             snew(ac, n);
             for (i = 0; i < n; i++)
@@ -787,14 +790,15 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
                    int ny, real *x0, real **val,
                    int npargs, t_pargs *ppa, const output_env_t oenv)
 {
-    real *c1 = NULL, *sig = NULL, *fitparm;
-    real  tendfit, tbeginfit;
-    int   i, efitfn, nparm;
+    real   *c1 = NULL, *sig = NULL;
+    double *fitparm;
+    real    tendfit, tbeginfit;
+    int     i, efitfn, nparm;
 
     efitfn = get_acffitfn();
-    nparm  = nfp_ffn[efitfn];
+    nparm  = effnNparams(efitfn);
     fprintf(out, "Will fit to the following function:\n");
-    fprintf(out, "%s\n", longs_ffn[efitfn]);
+    fprintf(out, "%s\n", effnDescription(efitfn));
     c1 = val[n];
     if (bYdy)
     {

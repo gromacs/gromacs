@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,24 +32,59 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal
+ * \file
+ * \brief
+ * Declares routines for integrating a data set
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inlibraryapi
+ * \ingroup module_correlationfunctions
+ */
+#ifndef GMX_INTEGRATE_H
+#define GMX_INTEGRATE_H
 
+#include "gmxpre.h"
 
-#ifndef _correl_h
-#define _correl_h
+#include <stdio.h>
 
-#include "gromacs/fft/fft.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/real.h"
 
-typedef struct {
-    int        n;
-    gmx_fft_t  fft_setup;
-    real      *buf1, *buf2, *abuf;
-} correl_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern correl_t *init_correl(int n);
-extern void done_correl(correl_t *c);
+/*! \brief
+ * Integrate the equispaced data in c[] from 0 to n using trapezium rule.
+ * If fit != NULL the fit is written as well.
+ * \param[in] fp File pointer to write to (maybe NULL)
+ * \param[in] n Number of data points
+ * \param[in] dt The time step between data points
+ * \param[in] c The data set
+ * \param[out] fit
+ * \param[in] nskip Determines whether all elements are written to the output file
+ * (written when i % nskip == 0)
+ * \return The integral
+ */
+real print_and_integrate(FILE *fp, int n, real dt, real c[], real *fit, int nskip);
 
-extern void correl(real data1[], real data2[], int n, real ans[]);
-extern void four1(real data[], int nn, int isign);
+/*! \brief
+ * Integrate data in y using the trapezium rule, and, if given, use dy as weighting
+ *
+ * \param[in] n The number of data points
+ * \param[in] x The x data
+ * \param[in] y The y data
+ * \param[in] dy The uncertainties
+ * \param[in] aver_start should be set to a value where the function has
+ * converged to 0.
+ * \param[out] stddev The standard deviation in the integral
+ * \return the integral
+ */
+real evaluate_integral(int n, real x[], real y[], real dy[], real aver_start,
+                       real *stddev);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
