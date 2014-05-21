@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,24 +32,57 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Implements helper class for autocorrelation tests
+ *
+ * \author Anders G&auml;rden&auml;s <anders.gardenas@gmail.com>
+ * \ingroup module_correlationfunctions
+ */
+#include "gmxpre.h"
 
+#include "correlationdataset.h"
 
-#ifndef _correl_h
-#define _correl_h
+#include <cmath>
 
-#include "gromacs/fft/fft.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include <sstream>
 
-typedef struct {
-    int        n;
-    gmx_fft_t  fft_setup;
-    real      *buf1, *buf2, *abuf;
-} correl_t;
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/utility/smalloc.h"
 
-extern correl_t *init_correl(int n);
-extern void done_correl(correl_t *c);
+#include "testutils/testfilemanager.h"
 
-extern void correl(real data1[], real data2[], int n, real ans[]);
-extern void four1(real data[], int nn, int isign);
+CorrelationDataSet::CorrelationDataSet(const std::string fileName)
+{
+    std::string fileNm = gmx::test::TestFileManager::getInputFilePath(fileName.c_str());
+    nrLines_    = read_xvg(fileNm.c_str(), &tempValues_, &nrColumns_);
 
-#endif
+    dt_         = tempValues_[0][1] - tempValues_[0][0];
+    startTime_  = tempValues_[0][0];
+    endTime_    = tempValues_[0][nrLines_-1];
+}
+
+CorrelationDataSet::~CorrelationDataSet()
+{
+    // Allocated in read_xvg, destroyed here.
+    for (int i = 0; i < nrColumns_; i++)
+    {
+        sfree(tempValues_[i]);
+        tempValues_[i] = NULL;
+    }
+    sfree(tempValues_);
+    tempValues_ = NULL;
+}
+
+real CorrelationDataSet::getValue(int set, int time) const
+{
+    if (set+1 < nrColumns_)
+    {
+        return tempValues_[set+1][time];
+    }
+    else
+    {
+        return 0;
+    }
+}
