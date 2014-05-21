@@ -41,6 +41,7 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
@@ -58,6 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gmx_ana.h"
 
 static void index_atom2mol(int *n, atom_id *index, t_block *mols)
 {
