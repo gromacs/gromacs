@@ -97,7 +97,7 @@ class SelectionCollectionTest : public ::testing::Test
 
 int SelectionCollectionTest::s_debugLevel = 0;
 
-// \cond/\endcond do not seem to work here with Doxygen 1.8.5 parser.
+/* xcond/xendcond do not seem to work here with Doxygen 1.8.5 parser. */
 #ifndef DOXYGEN
 GMX_TEST_OPTIONS(SelectionCollectionTestOptions, options)
 {
