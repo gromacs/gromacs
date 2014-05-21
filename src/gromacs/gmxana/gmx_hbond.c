@@ -41,14 +41,15 @@
 #include <math.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/crosscorr.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxana/correl.h"
 #include "gromacs/gmxana/geminate.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
@@ -62,6 +63,10 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/correlationfunctions/integrate.h"
+#include "gmx_ana.h"
+#include "geminate.h"
+
 
 /*#define HAVE_NN_LOOPS*/
 
@@ -2374,9 +2379,10 @@ static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
 static void smooth_tail(int n, real t[], real c[], real sigma_c[], real start,
                         const output_env_t oenv)
 {
-    FILE *fp;
-    real  e_1, fitparm[4];
-    int   i;
+    FILE  *fp;
+    real   e_1;
+    double fitparm[4];
+    int    i;
 
     e_1 = exp(-1);
     for (i = 0; (i < n); i++)
@@ -2395,7 +2401,8 @@ static void smooth_tail(int n, real t[], real c[], real sigma_c[], real start,
         fitparm[0] = 10;
     }
     fitparm[1] = 0.95;
-    do_lmfit(n, c, sigma_c, 0, t, start, t[n-1], oenv, bDebugMode(), effnEXP2, fitparm, 0);
+    do_lmfit(n, c, sigma_c, 0, t, start, t[n-1], oenv, bDebugMode(),
+             effnEXP2, fitparm, 0);
 }
 
 void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],

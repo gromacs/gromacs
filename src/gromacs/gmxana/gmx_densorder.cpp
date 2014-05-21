@@ -61,6 +61,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 
 #ifdef GMX_DOUBLE
 #define FLOOR(x) ((int) floor(x))
@@ -353,21 +355,21 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                             t_interf ****intf2, const output_env_t oenv)
 {
     /*Returns two pointers to 3D arrays of t_interf structs containing (position,thickness) of the interface(s)*/
-    FILE       *xvg;
-    real       *zDensavg; /* zDensavg[z]*/
-    int         i, j, k, n;
-    int         xysize;
-    int         ndx1, ndx2, *zperm;
-    real        densmid;
-    real        splitpoint, startpoint, endpoint;
-    real       *sigma1, *sigma2;
-    real        beginfit1[4];
-    real        beginfit2[4];
-    real       *fit1 = NULL, *fit2 = NULL;
-    const real *avgfit1;
-    const real *avgfit2;
-    const real  onehalf = 1.00/2.00;
-    t_interf ***int1    = NULL, ***int2 = NULL; /*Interface matrices [t][x,y] - last index in row-major order*/
+    FILE         *xvg;
+    real         *zDensavg; /* zDensavg[z]*/
+    int           i, j, k, n;
+    int           xysize;
+    int           ndx1, ndx2, *zperm;
+    real          densmid;
+    real          splitpoint, startpoint, endpoint;
+    real         *sigma1, *sigma2;
+    double        beginfit1[4];
+    double        beginfit2[4];
+    double       *fit1 = NULL, *fit2 = NULL;
+    const double *avgfit1;
+    const double *avgfit2;
+    const real    onehalf = 1.00/2.00;
+    t_interf   ***int1    = NULL, ***int2 = NULL; /*Interface matrices [t][x,y] - last index in row-major order*/
     /*Create int1(t,xy) and int2(t,xy) arrays with correct number of interf_t elements*/
     xysize = xslices*yslices;
     snew(int1, tblocks);

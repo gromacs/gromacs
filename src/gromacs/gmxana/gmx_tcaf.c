@@ -41,6 +41,8 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -58,7 +60,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
+#include "gmx_ana.h"
 
 #define NK  24
 #define NPK 4
@@ -79,10 +81,10 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 {
     FILE  *fp, *fp_vk, *fp_cub = NULL;
     int    nk, ntc;
-    real **tcaf, **tcafc = NULL, eta;
+    real **tcaf, **tcafc = NULL, eta, *sig;
     int    i, j, k, kc;
     int    ncorr;
-    real   fitparms[3], *sig;
+    double fitparms[3];
 
     nk  = kset_c[nkc];
     ntc = nk*NPK;

@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,24 +32,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Implements helper class for autocorrelation tests
+ *
+ * \author Anders G&auml;rden&auml;s <anders.gardenas@gmail.com>
+ * \ingroup module_correlationfunctions
+ */
+#include "gmxpre.h"
+#include "correlationDataSet.h"
+#include <cmath>
+#include <sstream>
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/utility/smalloc.h"
+#include "testutils/testfilemanager.h"
 
+CorrelationDataSet::CorrelationDataSet(std::string fileName)
+{
+    fileName    = gmx::test::TestFileManager::getInputFilePath(fileName.c_str());
+    nrLines_    = read_xvg(fileName.c_str(), &tempValues, &nrColumns_);
 
-#ifndef _correl_h
-#define _correl_h
+    dt_         = tempValues[0][1] - tempValues[0][0];
+    startTime_  = tempValues[0][0];
+    endTime_    = tempValues[0][nrLines_-1];
+}
 
-#include "gromacs/fft/fft.h"
-#include "gromacs/legacyheaders/typedefs.h"
+CorrelationDataSet::~CorrelationDataSet()
+{
+    // Allocated in read_xvg, destroyed here.
+    for (int i = 0; i < nrColumns_; i++)
+    {
+        sfree(tempValues[i]);
+        tempValues[i] = NULL;
+    }
+    sfree(tempValues);
+    tempValues = NULL;
+}
 
-typedef struct {
-    int        n;
-    gmx_fft_t  fft_setup;
-    real      *buf1, *buf2, *abuf;
-} correl_t;
-
-extern correl_t *init_correl(int n);
-extern void done_correl(correl_t *c);
-
-extern void correl(real data1[], real data2[], int n, real ans[]);
-extern void four1(real data[], int nn, int isign);
-
-#endif
+real CorrelationDataSet::getValue(int set, int time)
+{
+    if (set+1 < nrColumns_)
+    {
+        return tempValues[set+1][time];
+    }
+    else
+    {
+        return 0;
+    }
+}

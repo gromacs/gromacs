@@ -34,23 +34,35 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Implements function to compute many autocorrelation functions
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_correlationfunctions
+ */
 #include "gmxpre.h"
-
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxana/correl.h"
-#include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "autocorr.h"
+#include "manyautocorrelation.h"
+#include "expfit.h"
+#include "polynomials.h"
+#include "integrate.h"
 
+/*! \brief Shortcut macro to select modes. */
 #define MODE(x) ((mode & (x)) == (x))
 
 typedef struct {
@@ -60,33 +72,22 @@ typedef struct {
     real          tbeginfit, tendfit;
 } t_acf;
 
+/*! \brief Global variable set true if initialization routines are called. */
 static gmx_bool  bACFinit = FALSE;
+
+/*! \brief Data structure for storing command line variables. */
 static t_acf     acf;
 
 enum {
     enNorm, enCos, enSin
 };
 
-int sffn2effn(const char **sffn)
-{
-    int eFitFn, i;
-
-    eFitFn = 0;
-    for (i = 0; i < effnNR; i++)
-    {
-        if (sffn[i+1] && strcmp(sffn[0], sffn[i+1]) == 0)
-        {
-            eFitFn = i;
-        }
-    }
-
-    return eFitFn;
-}
-
+/*! \brief Routine to compute ACF using FFT. */
 static void low_do_four_core(int nfour, int nframes, real c1[], real cfour[],
-                             int nCos, gmx_bool bPadding)
+                             int nCos)
 {
     int  i = 0;
+    int  fftcode;
     real aver, *ans;
 
     aver = 0.0;
@@ -114,42 +115,11 @@ static void low_do_four_core(int nfour, int nframes, real c1[], real cfour[],
         default:
             gmx_fatal(FARGS, "nCos = %d, %s %d", nCos, __FILE__, __LINE__);
     }
-    for (; (i < nfour); i++)
-    {
-        cfour[i] = 0.0;
-    }
 
-    if (bPadding)
-    {
-        aver /= nframes;
-        /* printf("aver = %g\n",aver); */
-        for (i = 0; (i < nframes); i++)
-        {
-            cfour[i] -= aver;
-        }
-    }
-
-    snew(ans, 2*nfour);
-    correl(cfour-1, cfour-1, nfour, ans-1);
-
-    if (bPadding)
-    {
-        for (i = 0; (i < nfour); i++)
-        {
-            cfour[i] = ans[i]+sqr(aver);
-        }
-    }
-    else
-    {
-        for (i = 0; (i < nfour); i++)
-        {
-            cfour[i] = ans[i];
-        }
-    }
-
-    sfree(ans);
+    fftcode = many_auto_correl(1, nframes, nfour, &cfour);
 }
 
+/*! \brief Routine to comput ACF without FFT. */
 static void do_ac_core(int nframes, int nout,
                        real corr[], real c1[], int nrestart,
                        unsigned long mode)
@@ -205,6 +175,8 @@ static void do_ac_core(int nframes, int nout,
             }
             else if (MODE(eacP1) || MODE(eacP2) || MODE(eacP3))
             {
+                unsigned int mmm;
+
                 for (m = 0; (m < DIM); m++)
                 {
                     xj[m] = c1[j3+m];
@@ -217,8 +189,16 @@ static void do_ac_core(int nframes, int nout,
                     printf("j: %d, k: %d, xj:(%g,%g,%g), xk:(%g,%g,%g)\n",
                            j, k, xj[XX], xj[YY], xj[ZZ], xk[XX], xk[YY], xk[ZZ]);
                 }
-
-                corr[k] += LegendreP(cth, mode); /* 1.5*cth*cth-0.5; */
+                mmm = 1;
+                if (MODE(eacP2))
+                {
+                    mmm = 2;
+                }
+                else if (MODE(eacP3))
+                {
+                    mmm = 3;
+                }
+                corr[k] += LegendreP(cth, mmm); /* 1.5*cth*cth-0.5; */
             }
             else if (MODE(eacRcross))
             {
@@ -256,6 +236,7 @@ static void do_ac_core(int nframes, int nout,
     }
 }
 
+/*! \brief Routine to normalize ACF, dividing by corr[0]. */
 void normalize_acf(int nout, real corr[])
 {
     int  j;
@@ -296,6 +277,7 @@ void normalize_acf(int nout, real corr[])
     }
 }
 
+/*! \brief Routine that averages ACFs. */
 void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
 {
     real c0;
@@ -317,6 +299,7 @@ void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
     }
 }
 
+/*! \brief Normalize ACFs. */
 void norm_and_scale_vectors(int nframes, real c1[], real scale)
 {
     int   j, m;
@@ -333,7 +316,8 @@ void norm_and_scale_vectors(int nframes, real c1[], real scale)
     }
 }
 
-void dump_tmp(char *s, int n, real c[])
+/*! \brief Debugging */
+static void dump_tmp(char *s, int n, real c[])
 {
     FILE *fp;
     int   i;
@@ -346,99 +330,7 @@ void dump_tmp(char *s, int n, real c[])
     gmx_ffclose(fp);
 }
 
-real print_and_integrate(FILE *fp, int n, real dt, real c[], real *fit, int nskip)
-{
-    real c0, sum;
-    int  j;
-
-    /* Use trapezoidal rule for calculating integral */
-    sum = 0.0;
-    for (j = 0; (j < n); j++)
-    {
-        c0 = c[j];
-        if (fp && (nskip == 0 || j % nskip == 0))
-        {
-            fprintf(fp, "%10.3f  %10.5f\n", j*dt, c0);
-        }
-        if (j > 0)
-        {
-            sum += dt*(c0+c[j-1]);
-        }
-    }
-    if (fp)
-    {
-        fprintf(fp, "&\n");
-        if (fit)
-        {
-            for (j = 0; (j < n); j++)
-            {
-                if (nskip == 0 || j % nskip == 0)
-                {
-                    fprintf(fp, "%10.3f  %10.5f\n", j*dt, fit[j]);
-                }
-            }
-            fprintf(fp, "&\n");
-        }
-    }
-    return sum*0.5;
-}
-
-real evaluate_integral(int n, real x[], real y[], real dy[], real aver_start,
-                       real *stddev)
-{
-    double sum, sum_var, w;
-    double sum_tail = 0, sum2_tail = 0;
-    int    j, nsum_tail = 0;
-
-    /* Use trapezoidal rule for calculating integral */
-    if (n <= 0)
-    {
-        gmx_fatal(FARGS, "Evaluating integral: n = %d (file %s, line %d)",
-                  n, __FILE__, __LINE__);
-    }
-
-    sum     = 0;
-    sum_var = 0;
-    for (j = 0; (j < n); j++)
-    {
-        w = 0;
-        if (j > 0)
-        {
-            w += 0.5*(x[j] - x[j-1]);
-        }
-        if (j < n-1)
-        {
-            w += 0.5*(x[j+1] - x[j]);
-        }
-        sum += w*y[j];
-        if (dy)
-        {
-            /* Assume all errors are uncorrelated */
-            sum_var += sqr(w*dy[j]);
-        }
-
-        if ((aver_start > 0) && (x[j] >= aver_start))
-        {
-            sum_tail  += sum;
-            sum2_tail += sqrt(sum_var);
-            nsum_tail += 1;
-        }
-    }
-
-    if (nsum_tail > 0)
-    {
-        sum = sum_tail/nsum_tail;
-        /* This is a worst case estimate, assuming all stddev's are correlated. */
-        *stddev = sum2_tail/nsum_tail;
-    }
-    else
-    {
-        *stddev = sqrt(sum_var);
-    }
-
-    return sum;
-}
-
+/*! \brief High level ACF routine. */
 void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
                   real c1[], real csum[], real ctmp[])
 {
@@ -454,7 +346,7 @@ void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
         /********************************************
          *  N O R M A L
          ********************************************/
-        low_do_four_core(nfour, nf2, c1, csum, enNorm, FALSE);
+        low_do_four_core(nfour, nf2, c1, csum, enNorm);
     }
     else if (MODE(eacCos))
     {
@@ -470,14 +362,14 @@ void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
         }
 
         /* Cosine term of AC function */
-        low_do_four_core(nfour, nf2, ctmp, cfour, enCos, FALSE);
+        low_do_four_core(nfour, nf2, ctmp, cfour, enCos);
         for (j = 0; (j < nf2); j++)
         {
             c1[j]  = cfour[j];
         }
 
         /* Sine term of AC function */
-        low_do_four_core(nfour, nf2, ctmp, cfour, enSin, FALSE);
+        low_do_four_core(nfour, nf2, ctmp, cfour, enSin);
         for (j = 0; (j < nf2); j++)
         {
             c1[j]  += cfour[j];
@@ -544,7 +436,7 @@ void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
                 dump_tmp(buf, nf2, ctmp);
             }
 
-            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm, FALSE);
+            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm);
 
             if (debug)
             {
@@ -572,7 +464,7 @@ void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
                 sprintf(buf, "c1off%d.xvg", m);
                 dump_tmp(buf, nf2, ctmp);
             }
-            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm, FALSE);
+            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm);
             if (debug)
             {
                 sprintf(buf, "c1ofout%d.xvg", m);
@@ -611,7 +503,7 @@ void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
             {
                 ctmp[j] = c1[DIM*j+m];
             }
-            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm, FALSE);
+            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm);
             for (j = 0; (j < nf2); j++)
             {
                 csum[j] += cfour[j];
@@ -628,146 +520,6 @@ void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
     {
         c1[j] = csum[j]/(real)(nframes-j);
     }
-}
-
-real fit_acf(int ncorr, int fitfn, const output_env_t oenv, gmx_bool bVerbose,
-             real tbeginfit, real tendfit, real dt, real c1[], real *fit)
-{
-    real        fitparm[3];
-    real        tStart, tail_corr, sum, sumtot = 0, c_start, ct_estimate, *sig;
-    int         i, j, jmax, nf_int;
-    gmx_bool    bPrint;
-
-    bPrint = bVerbose || bDebugMode();
-
-    if (bPrint)
-    {
-        printf("COR:\n");
-    }
-
-    if (tendfit <= 0)
-    {
-        tendfit = ncorr*dt;
-    }
-    nf_int = min(ncorr, (int)(tendfit/dt));
-    sum    = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
-
-    /* Estimate the correlation time for better fitting */
-    ct_estimate = 0.5*c1[0];
-    for (i = 1; (i < ncorr) && (c1[i] > 0); i++)
-    {
-        ct_estimate += c1[i];
-    }
-    ct_estimate *= dt/c1[0];
-
-    if (bPrint)
-    {
-        printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n",
-               0.0, dt*nf_int, sum);
-        printf("COR: Relaxation times are computed as fit to an exponential:\n");
-        printf("COR:   %s\n", longs_ffn[fitfn]);
-        printf("COR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n", tbeginfit, min(ncorr*dt, tendfit));
-    }
-
-    tStart = 0;
-    if (bPrint)
-    {
-        printf("COR:%11s%11s%11s%11s%11s%11s%11s\n",
-               "Fit from", "Integral", "Tail Value", "Sum (ps)", " a1 (ps)",
-               (nfp_ffn[fitfn] >= 2) ? " a2 ()" : "",
-               (nfp_ffn[fitfn] >= 3) ? " a3 (ps)" : "");
-    }
-
-    snew(sig, ncorr);
-
-    if (tbeginfit > 0)
-    {
-        jmax = 3;
-    }
-    else
-    {
-        jmax = 1;
-    }
-    for (j = 0; ((j < jmax) && (tStart < tendfit) && (tStart < ncorr*dt)); j++)
-    {
-        /* Estimate the correlation time for better fitting */
-        c_start     = -1;
-        ct_estimate = 0;
-        for (i = 0; (i < ncorr) && (dt*i < tStart || c1[i] > 0); i++)
-        {
-            if (c_start < 0)
-            {
-                if (dt*i >= tStart)
-                {
-                    c_start     = c1[i];
-                    ct_estimate = 0.5*c1[i];
-                }
-            }
-            else
-            {
-                ct_estimate += c1[i];
-            }
-        }
-        if (c_start > 0)
-        {
-            ct_estimate *= dt/c_start;
-        }
-        else
-        {
-            /* The data is strange, so we need to choose somehting */
-            ct_estimate = tendfit;
-        }
-        if (debug)
-        {
-            fprintf(debug, "tStart %g ct_estimate: %g\n", tStart, ct_estimate);
-        }
-
-        if (fitfn == effnEXP3)
-        {
-            fitparm[0] = 0.002*ncorr*dt;
-            fitparm[1] = 0.95;
-            fitparm[2] = 0.2*ncorr*dt;
-        }
-        else
-        {
-            /* Good initial guess, this increases the probability of convergence */
-            fitparm[0] = ct_estimate;
-            fitparm[1] = 1.0;
-            fitparm[2] = 1.0;
-        }
-
-        /* Generate more or less appropriate sigma's */
-        for (i = 0; i < ncorr; i++)
-        {
-            sig[i] = sqrt(ct_estimate+dt*i);
-        }
-
-        nf_int    = min(ncorr, (int)((tStart+1e-4)/dt));
-        sum       = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
-        tail_corr = do_lmfit(ncorr, c1, sig, dt, NULL, tStart, tendfit, oenv,
-                             bDebugMode(), fitfn, fitparm, 0);
-        sumtot = sum+tail_corr;
-        if (fit && ((jmax == 1) || (j == 1)))
-        {
-            for (i = 0; (i < ncorr); i++)
-            {
-                fit[i] = fit_function(fitfn, fitparm, i*dt);
-            }
-        }
-        if (bPrint)
-        {
-            printf("COR:%11.4e%11.4e%11.4e%11.4e", tStart, sum, tail_corr, sumtot);
-            for (i = 0; (i < nfp_ffn[fitfn]); i++)
-            {
-                printf(" %11.4e", fitparm[i]);
-            }
-            printf("\n");
-        }
-        tStart += tbeginfit;
-    }
-    sfree(sig);
-
-    return sumtot;
 }
 
 void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
@@ -802,7 +554,10 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
     }
     if ((MODE(eacP3) || MODE(eacRcross)) && bFour)
     {
-        fprintf(stderr, "Can't combine mode %lu with FFT, turning off FFT\n", mode);
+        if (bVerbose)
+        {
+            fprintf(stderr, "Can't combine mode %lu with FFT, turning off FFT\n", mode);
+        }
         bFour = FALSE;
     }
     if (MODE(eacNormal) && MODE(eacVector))
@@ -966,6 +721,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
     sfree(fit);
 }
 
+/*! \brief Legend for selecting Legendre polynomials. */
 static const char *Leg[]   = { NULL, "0", "1", "2", "3", NULL };
 
 t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
@@ -988,20 +744,20 @@ t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
         { "-endfit",   FALSE, etREAL, {&acf.tendfit},
           "Time where to end the exponential fit of the correlation function, -1 is until the end" },
     };
-#define NPA asize(acfpa)
     t_pargs *ppa;
-    int      i;
+    int      i, npa;
 
-    snew(ppa, *npargs+NPA);
+    npa = asize(pa);
+    snew(ppa, *npargs+npa);
     for (i = 0; (i < *npargs); i++)
     {
         ppa[i] = pa[i];
     }
-    for (i = 0; (i < NPA); i++)
+    for (i = 0; (i < npa); i++)
     {
         ppa[*npargs+i] = acfpa[i];
     }
-    (*npargs) += NPA;
+    (*npargs) += npa;
 
     acf.mode       = 0;
     acf.nrestart   = 1;
@@ -1070,25 +826,4 @@ int get_acffitfn(void)
     }
 
     return sffn2effn(s_ffn);
-}
-
-void cross_corr(int n, real f[], real g[], real corr[])
-{
-    int i, j;
-
-    if (acf.bFour)
-    {
-        correl(f-1, g-1, n, corr-1);
-    }
-    else
-    {
-        for (i = 0; (i < n); i++)
-        {
-            for (j = i; (j < n); j++)
-            {
-                corr[j-i] += f[i]*g[j];
-            }
-            corr[i] /= (real)(n-i);
-        }
-    }
 }

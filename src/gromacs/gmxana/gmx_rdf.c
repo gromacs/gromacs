@@ -58,6 +58,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/correlationfunctions/integrate.h"
 
 static void check_box_c(matrix box)
 {
