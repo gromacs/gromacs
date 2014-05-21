@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,22 +34,80 @@
  */
 
 
-#ifndef _correl_h
-#define _correl_h
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/fft/fft.h"
+#include <vector>
 
-typedef struct {
-    int        n;
-    gmx_fft_t  fft_setup;
-    real      *buf1, *buf2, *abuf;
-} correl_t;
+#ifndef GMX_CORRELATIONDATASET_H
+#define GMX_CORRELATIONDATASET_H
 
-extern correl_t *init_correl(int n);
-extern void done_correl(correl_t *c);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern void correl(real data1[], real data2[], int n, real ans[]);
-extern void four1(real data[], int nn, int isign);
+
+class CorrelationDataSet
+{
+    std::vector<real> values;
+
+    int               nrLines;
+    real              startTime;
+    real              endTime;
+    real              dt;
+    int               nrColums;
+
+    public:
+
+/*! \brief
+ * Constructor
+ * \param[in] file containing fucntion to test. *.xvg
+ * \param[in] the dimeson of the .xvg file, the nummber of colums to read
+ */
+        CorrelationDataSet(std::string fileName, int dim);
+
+/*! \brief
+ * Return a value at a index
+ * \param[in] x the index of the value
+ */
+        real getValue(int x);
+
+
+/*! \brief
+ * Return the nummber of colums
+ */
+        int getNrColums();
+
+/*! \brief
+ * Return the nummber of Lines
+ */
+        int getNrLines();
+
+/*! \brief
+ * Return the time witch the function starts at
+ */
+        real getStartTime();
+
+/*! \brief
+ * Return the time the function ends at
+ */
+        real getEndTime();
+
+/*! \brief
+ * return delta time
+ */
+        real getDt();
+
+/*! \brief
+ * Destructor
+ */
+        ~CorrelationDataSet()
+        {
+
+        }
+
+
+};
+#ifdef __cplusplus
+}
+#endif
 
 #endif
