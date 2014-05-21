@@ -689,6 +689,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
 
     *y = yy;
     sfree(tmpbuf);
+    sfree(base);
+    sfree(fmt);
 
     if (legend_nalloc > 0)
     {

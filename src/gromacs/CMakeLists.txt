@@ -101,6 +101,7 @@ add_subdirectory(imd)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
+    add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
     add_subdirectory(analysisdata)
     add_subdirectory(selection)
@@ -108,7 +109,8 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(tools)
 endif()
 
-list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
+file(GLOB LMFIT_SOURCES ${CMAKE_SOURCE_DIR}/src/external/lmfit/*.c)
+list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${LMFIT_SOURCES})
 
 # This would be the standard way to include thread_mpi, but
 # we want libgromacs to link the functions directly
