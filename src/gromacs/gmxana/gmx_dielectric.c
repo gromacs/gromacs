@@ -39,9 +39,12 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/integrate.h"
+#include "gromacs/fft/fft.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxana/correl.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -53,6 +56,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/utilities.h"
+#include "gmx_ana.h"
 
 /* Determines at which point in the array the fit should start */
 int calc_nbegin(int nx, real x[], real tbegin)
@@ -155,6 +162,8 @@ void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
     t_complex *tmp, gw, hw, kw;
     int        i, nnx, nxsav;
     real       fac, nu, dt, *ptr, maxeps, numax;
+    gmx_fft_t  fft;
+    int        fftcode;
 
     nxsav = nx;
     /*while ((dy[nx-1] == 0.0) && (nx > 0))
@@ -169,15 +178,24 @@ void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
     {
         nnx *= 2;
     }
+
     snew(tmp, 2*nnx);
     printf("Doing FFT of %d points\n", nnx);
     for (i = 0; (i < nx); i++)
     {
         tmp[i].re = dy[i];
     }
-    ptr = &tmp[0].re;
-    four1(ptr-1, nnx, -1);
-
+    if ((fftcode = gmx_fft_init_1d_real(&fft, nnx,
+                                        GMX_FFT_FLAG_NONE)) != 0)
+    {
+        gmx_fatal(FARGS, "gmx_fft_init_1d_real returned %d", fftcode);
+    }
+    if ((fftcode = gmx_fft_1d_real(fft, GMX_FFT_COMPLEX_TO_REAL,
+                                   (void *)tmp, (void *)tmp)) != 0)
+    {
+        gmx_fatal(FARGS, "gmx_fft_1d_real returned %d", fftcode);
+    }
+    gmx_fft_destroy(fft);
     dt = x[1]-x[0];
     if (epsRF == 0)
     {
@@ -259,17 +277,16 @@ int gmx_dielectric(int argc, char *argv[])
 #define NFILE asize(fnm)
     output_env_t oenv;
     int          i, j, nx, ny, nxtail, eFitFn, nfitparm;
-    real         dt, integral, fitintegral, *fitparms, fac, rffac;
+    real         dt, integral, fitintegral, fac, rffac;
+    double      *fitparms;
     double     **yd;
     real       **y;
     const char  *legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
-    static int   fix      = 0, bFour = 0, bX = 1, nsmooth = 3;
+    static int   fix      = 0, bX = 1, nsmooth = 3;
     static real  tendInt  = 5.0, tbegin = 5.0, tend = 500.0;
     static real  A        = 0.5, tau1 = 10.0, tau2 = 1.0, eps0 = 80, epsRF = 78.5, tail = 500.0;
     real         lambda;
     t_pargs      pa[] = {
-        { "-fft", FALSE, etBOOL, {&bFour},
-          "use fast fourier transform for correlation function" },
         { "-x1",  FALSE, etBOOL, {&bX},
           "use first column as [IT]x[it]-axis rather than first data set" },
         { "-eint", FALSE, etREAL, {&tendInt},
@@ -358,7 +375,7 @@ int gmx_dielectric(int argc, char *argv[])
     }
 
     eFitFn   = sffn2effn(s_ffn);
-    nfitparm = nfp_ffn[eFitFn];
+    nfitparm = effnNparams(eFitFn);
     snew(fitparms, 4);
     fitparms[0] = tau1;
     if (nfitparm > 1)
