@@ -58,7 +58,9 @@
 #include "viewit.h"
 #include "gmx_ana.h"
 #include "geminate.h"
-
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/linearalgebra/matrix.h"
 
 /* must correspond to char *avbar_opt[] declared in main() */
@@ -795,9 +797,9 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
     int   i, efitfn, nparm;
 
     efitfn = get_acffitfn();
-    nparm  = nfp_ffn[efitfn];
+    nparm  = effnNparams(efitfn);
     fprintf(out, "Will fit to the following function:\n");
-    fprintf(out, "%s\n", longs_ffn[efitfn]);
+    fprintf(out, "%s\n", effnDescription(efitfn));
     c1 = val[n];
     if (bYdy)
     {

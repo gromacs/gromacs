@@ -14,7 +14,13 @@
    fun:make_unsp
    fun:nsc_dclm_pbc
 }
+{
+   many_auto_correl
+   Memcheck:Leak
+   ...	
+   fun:many_auto_correl
 
+}
 {
    ctime_r
    Memcheck:Leak
@@ -264,3 +270,4 @@
    ...
    fun:__kmpc_global_thread_num
 }
+{
