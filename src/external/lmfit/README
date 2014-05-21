@@ -1,0 +1,5 @@
+This directory contains only the barebone version of the
+lmfit package, version 5.1. Full version is available from
+http://apps.jcns.fz-juelich.de/doku/sc/lmfit
+
+License in gromacs root directory in file COPYING
