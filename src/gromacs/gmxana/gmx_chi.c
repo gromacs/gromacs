@@ -60,6 +60,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gmx_ana.h"
 
 static gmx_bool bAllowed(real phi, real psi)

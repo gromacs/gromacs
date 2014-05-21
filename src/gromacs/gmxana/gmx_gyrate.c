@@ -57,6 +57,7 @@
 #include "txtdump.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gstat.h"
 #include "gmx_ana.h"
 
