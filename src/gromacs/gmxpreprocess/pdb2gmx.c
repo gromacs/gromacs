@@ -60,7 +60,6 @@
 #include "toputil.h"
 #include "h_db.h"
 #include "pgutil.h"
-#include "calch.h"
 #include "resall.h"
 #include "pdb2top.h"
 #include "ter_db.h"

@@ -40,7 +40,6 @@
 
 #include <stdlib.h>
 
-#include "princ.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"

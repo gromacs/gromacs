@@ -42,7 +42,6 @@
 #include <stdlib.h>
 
 #include "gromacs/utility/cstringutil.h"
-#include "princ.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
