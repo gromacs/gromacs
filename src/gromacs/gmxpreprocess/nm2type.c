@@ -198,7 +198,7 @@ static int match_str(const char *atom, const char *template_string)
     }
 }
 
-int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
+int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
             gpp_atomtype_t atype, int *nbonds, t_params *bonds)
 {
     int      cur = 0;

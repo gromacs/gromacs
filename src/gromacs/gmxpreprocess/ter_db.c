@@ -43,7 +43,6 @@
 
 #include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
-#include "symtab.h"
 #include "gromacs/utility/futil.h"
 #include "resall.h"
 #include "h_db.h"

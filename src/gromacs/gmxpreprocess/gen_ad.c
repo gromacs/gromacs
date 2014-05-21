@@ -52,7 +52,6 @@
 #include "toputil.h"
 #include "topio.h"
 #include "gpp_nextnb.h"
-#include "symtab.h"
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "pgutil.h"

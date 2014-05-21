@@ -42,6 +42,7 @@
 #include "../fileio/pdbio.h"
 #include "grompp-impl.h"
 #include "gpp_atomtype.h"
+#include "../legacyheaders/symtab.h"
 
 #ifdef __cplusplus
 extern "C" {
