@@ -54,6 +54,7 @@
 #include "viewit.h"
 #include "gstat.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gmx_ana.h"
 
 
