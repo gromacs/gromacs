@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,24 +32,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ * \libinternal
+ * \brief
+ * Declares routine for computing a cross correlation between two data sets
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inlibraryapi
+ * \ingroup module_correlationfunctions
+ */
+#ifndef GMX_CROSSCORR_H
+#define GMX_CROSSCORR_H
 
+#include "gromacs/utility/real.h"
 
-#ifndef _correl_h
-#define _correl_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "typedefs.h"
-#include "gromacs/fft/fft.h"
+/*! \brief
+ * Simple cross correlation algorithm.
+ * Computes corr = f (.) g
+ *
+ * \param[in] n number of data point
+ * \param[in] f First function
+ * \param[in] g Second function
+ * \param[out] corr The cross correlation
+ */
+void cross_corr(int n, real f[], real g[], real corr[]);
 
-typedef struct {
-    int        n;
-    gmx_fft_t  fft_setup;
-    real      *buf1, *buf2, *abuf;
-} correl_t;
-
-extern correl_t *init_correl(int n);
-extern void done_correl(correl_t *c);
-
-extern void correl(real data1[], real data2[], int n, real ans[]);
-extern void four1(real data[], int nn, int isign);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
