@@ -616,7 +616,6 @@ int gmx_fio_close(t_fileio *fio)
     sfree(fio);
 
     tMPI_Thread_mutex_unlock(&open_file_mutex);
-
     return rc;
 }
 
