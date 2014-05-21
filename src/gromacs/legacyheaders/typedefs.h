@@ -47,7 +47,6 @@
 #include "types/simple.h"
 #include "types/enums.h"
 #include "types/block.h"
-#include "types/symtab.h"
 #include "types/idef.h"
 #include "types/atoms.h"
 #include "../fileio/trx.h"
@@ -179,7 +178,7 @@ t_atoms *copy_t_atoms(t_atoms *src);
 void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra);
 /* allocate extra space for more atoms and or residues */
 
-void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
+void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
                          const char *resname, int resnr, unsigned char ic,
                          int chainnum, char chainid);
 /* Set the residue name, number, insertion code and chain identifier

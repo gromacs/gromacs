@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #include "idef.h"
 #include "block.h"
 #include "simple.h"
-#include "symtab.h"
+#include "../symtab.h"
 
 #ifdef __cplusplus
 extern "C" {

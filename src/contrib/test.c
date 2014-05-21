@@ -52,7 +52,6 @@
 #include "names.h"
 #include "txtdump.h"
 #include "gromacs/fileio/trnio.h"
-#include "symtab.h"
 #include "gromacs/fileio/confio.h"
 
 real pot(real x,real qq,real c6,real c12)

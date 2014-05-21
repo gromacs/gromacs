@@ -39,11 +39,23 @@
 #define _symtab_h
 
 #include <stdio.h>
-#include "types/symtab.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct t_symbuf
+{
+    int               bufsize;
+    char            **buf;
+    struct t_symbuf  *next;
+} t_symbuf;
+
+typedef struct t_symtab
+{
+    int       nr;
+    t_symbuf *symbuf;
+} t_symtab;
 
 /*
  * This module handles symbol table manipulation. All text strings

@@ -59,6 +59,7 @@
 #include "atomprop.h"
 #include "hackblock.h"
 #include "nm2type.h"
+#include "symtab.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"

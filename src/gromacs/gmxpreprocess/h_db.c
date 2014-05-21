@@ -45,7 +45,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
-#include "symtab.h"
 #include "h_db.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "fflibutil.h"
