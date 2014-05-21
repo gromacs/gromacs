@@ -55,6 +55,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "viewit.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gmx_ana.h"

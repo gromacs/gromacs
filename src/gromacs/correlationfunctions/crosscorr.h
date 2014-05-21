@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,43 +32,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+/*! \libinternal
+ * \file
+ * \brief
+ * Declares routine for computing a cross correlation between two data sets
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inlibraryapi
+ * \ingroup module_correlationfunctions
+ */
+#ifndef GMX_CROSSCORR_H
+#define GMX_CROSSCORR_H
 
-#include <stdio.h>
-#include <math.h>
-#include "typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gstat.h"
+#include "gromacs/utility/real.h"
 
-real LegendreP(real x, unsigned long m)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-{
-    real polynomial = 0, x2, x3;
+/*! \brief
+ * fft cross correlation algorithm.
+ * Computes corr = f (.) g
+ *
+ * \param[in] n number of data point
+ * \param[in] f First function
+ * \param[in] g Second function
+ * \param[out] corr The cross correlation
+ */
+void cross_corr(int n, real f[], real g[], real corr[]);
 
-    switch (m)
-    {
-        case eacP0:
-            polynomial = 1.0;
-            break;
-        case eacP1:
-            polynomial = x;
-            break;
-        case eacP2:
-            x2         = x*x;
-            polynomial = 1.5*x2 - 0.5;
-            break;
-        case eacP3:
-            x2         = x*x;
-            polynomial = (35*x2*x2 - 30*x2 + 3)/8;
-            break;
-        case eacP4:
-            x2         = x*x;
-            x3         = x2*x;
-            polynomial = (63*x3*x2 - 70*x3 + 15*x)/8;
-            break;
-        default:
-            gmx_fatal(FARGS, "Legendre polynomials of order %d are not supported, %s %d",
-                      m, __FILE__, __LINE__);
-    }
-    return (polynomial);
+
+
+/*! \brief
+ * fft cross correlation algorithm.
+ * Computes corr = f[i] (.) g[i]
+ *
+ * \param[in] nFunc nuber of function to crosscorrelate
+ * \param[in] nData number of data point in eatch function
+ * \param[in] f array of first function to crosscorrelate
+ * \param[in] g array of Second function to crosscorrelate
+ * \param[out] corr array of the cross correlation
+ */
+void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr);
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif
