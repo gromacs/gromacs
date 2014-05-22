@@ -128,8 +128,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ ALAD ]
   [ atoms ]
@@ -329,10 +329,10 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPY1    OY    CY   CAY      3       91.000    0.030
-	 LPY2    OY    CY   CAY      3      269.000    0.030
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPY1    OY    CY   CAY      3       91.000   0.0300
+	 LPY2    OY    CY   CAY      3      269.000   0.0300
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ ARG ]
   [ atoms ]
@@ -554,8 +554,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ ASN ]
   [ atoms ]
@@ -730,10 +730,10 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
-	 LPDA   OD1    CG    CB      3       91.000    0.030
-	 LPDB   OD1    CG    CB      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
+	 LPDA   OD1    CG    CB      3       91.000   0.0300
+	 LPDB   OD1    CG    CB      3      269.000   0.0300
 
 
 [ ASPP ] ; protonated Asp
@@ -1074,12 +1074,12 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
-	 LP1A   OD1    CG    CB      3      110.000    0.035
-	 LP1B   OD1    CG    CB      3      250.000    0.035
-	 LP2A   OD2    CG    CB      3      110.000    0.035
-	 LP2B   OD2    CG    CB      3      250.000    0.035
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
+	 LP1A   OD1    CG    CB      3      110.000   0.0350
+	 LP1B   OD1    CG    CB      3      250.000   0.0350
+	 LP2A   OD2    CG    CB      3      110.000   0.0350
+	 LP2B   OD2    CG    CB      3      250.000   0.0350
 
 [ BR ]
   [ atoms ]
@@ -1372,8 +1372,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
   ; 3out
   ; site from              func    a      b     c 
     LPGA  SG    CB    HG1   4     -0.045 -0.09 -3.1
@@ -1581,10 +1581,10 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
-	 LPEA   OE1    CD    CG      3       91.000    0.030
-	 LPEB   OE1    CD    CG      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
+	 LPEA   OE1    CD    CG      3       91.000   0.0300
+	 LPEB   OE1    CD    CG      3      269.000   0.0300
 
 
 [ GLUP ] ; protonated Glu 
@@ -1959,12 +1959,12 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
-	 LP1A   OE1    CD    CG      3      110.000    0.035
-	 LP1B   OE1    CD    CG      3      250.000    0.035
-	 LP2A   OE2    CD    CG      3      110.000    0.035
-	 LP2B   OE2    CD    CG      3      250.000    0.035
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
+	 LP1A   OE1    CD    CG      3      110.000   0.0350
+	 LP1B   OE1    CD    CG      3      250.000   0.0350
+	 LP2A   OE2    CD    CG      3      110.000   0.0350
+	 LP2B   OE2    CD    CG      3      250.000   0.0350
 
 [ GLY ]
   [ atoms ]
@@ -2057,8 +2057,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ HE ]
   [ atoms ]
@@ -2290,11 +2290,11 @@
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
-	 LPE2   NE2   CE1   CD2      2        0.500   -0.035
+	 LPE2   NE2   CE1   CD2      2        0.500  -0.0350
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ HSE ]
   [ atoms ]
@@ -2512,11 +2512,11 @@
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
-	 LPD1   ND1   CE1    CG      2        0.500   -0.035
+	 LPD1   ND1   CE1    CG      2        0.500  -0.0350
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ HSP ]
   [ atoms ]
@@ -2733,8 +2733,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ I ]
   [ atoms ]
@@ -2916,8 +2916,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ LEU ]
   [ atoms ]
@@ -3092,8 +3092,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ LI ]
   [ atoms ]
@@ -3290,8 +3290,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ MAG ]
   [ atoms ]
@@ -3474,8 +3474,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
   ; 3out
   ; site from              func    a             b             c 
     LP1A  SD    CE    CG    4     -0.0256722409 -0.0255158762 -2.167719568
@@ -3722,8 +3722,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ POT ]
   [ atoms ]
@@ -3894,8 +3894,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ RB ]
   [ atoms ]
@@ -4040,8 +4040,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
   ; 3out
   ; site from              func    a      b      c 
     LPGA  OG    CB    HG1   4     -0.095 -0.005 -2.513418287
@@ -4069,7 +4069,7 @@
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
-	   OM   OH2    H1    H2      2        0.500    0.024
+	   OM   OH2    H1    H2      2        0.500   0.0240
 
 [ SWM6 ]
   [ atoms ]
@@ -4084,13 +4084,15 @@
 	  OH2  DOH2
 	  OH2    H1
 	  OH2    H2
-	  OH2   OL1
-	  OH2   OL2
 	   H1    H2
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
-	   OM   OH2    H1    H2      2        0.500    0.025
+	   OM   OH2    H1    H2      2        0.500   0.0247
+  ; 3out
+  ; site  from          func   a             b             c
+    OL1   OH2  H1  H2    4    -0.1708164805 -0.1708164805 -2.74229881
+    OL2   OH2  H1  H2    4    -0.1708164805 -0.1708164805  2.74229881
 
 [ THR ]
   [ atoms ]
@@ -4251,8 +4253,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
   ; 3out
   ; site from              func   a      b      c 
     LPGA  OG1   CB    HG1   4    -0.095 -0.005 -2.513418287
@@ -4555,8 +4557,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ TYR ]
   [ atoms ]
@@ -4812,8 +4814,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
   ; 3out
   ; site from              func   a      b      c 
     LP1A  OH    CZ    HH    4    -0.095 -0.005 -2.513418287
@@ -4974,8 +4976,8 @@
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
-	 LPOA     O     C    CA      3       91.000    0.030
-	 LPOB     O     C    CA      3      269.000    0.030
+	 LPOA     O     C    CA      3       91.000   0.0300
+	 LPOB     O     C    CA      3      269.000   0.0300
 
 [ ZN ]
   [ atoms ]
