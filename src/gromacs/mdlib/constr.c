@@ -218,7 +218,7 @@ static void write_constr_pdb(const char *fn, const char *title,
                              int start, int homenr, t_commrec *cr,
                              rvec x[], matrix box)
 {
-    char          fname[STRLEN], format[STRLEN];
+    char          fname[STRLEN];
     FILE         *out;
     int           dd_ac0 = 0, dd_ac1 = 0, i, ii, resnr;
     gmx_domdec_t *dd;
@@ -241,7 +241,6 @@ static void write_constr_pdb(const char *fn, const char *title,
     {
         sprintf(fname, "%s.pdb", fn);
     }
-    sprintf(format, "%s\n", get_pdbformat());
 
     out = gmx_fio_fopen(fname, "w");
 
@@ -262,9 +261,9 @@ static void write_constr_pdb(const char *fn, const char *title,
             ii = i;
         }
         gmx_mtop_atominfo_global(mtop, ii, &anm, &resnr, &resnm);
-        fprintf(out, format, "ATOM", (ii+1)%100000,
-                anm, resnm, ' ', resnr%10000, ' ',
-                10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ]);
+        gmx_fprintf_pdb_atomline(out, FALSE,
+                                 "ATOM", ii+1, anm, ' ', resnm, ' ', resnr, ' ',
+                                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 0.0, "");
     }
     fprintf(out, "TER\n");
 
