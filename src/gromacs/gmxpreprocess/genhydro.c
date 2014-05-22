@@ -42,12 +42,9 @@
 #include <time.h>
 
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/confio.h"
-#include "symtab.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "calch.h"
 #include "genhydro.h"
 #include "h_db.h"
@@ -55,6 +52,10 @@
 #include "resall.h"
 #include "pgutil.h"
 #include "network.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
 {

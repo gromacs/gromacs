@@ -40,18 +40,19 @@
 
 #include <ctype.h>
 #include <string.h>
+
 #include "typedefs.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "symtab.h"
 #include "index.h"
-#include "gromacs/utility/futil.h"
 #include "fflibutil.h"
 #include "hackblock.h"
-#include "gromacs/utility/fatalerror.h"
 #include "xlate.h"
 
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     char *filebase;

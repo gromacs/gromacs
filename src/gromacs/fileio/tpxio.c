@@ -43,12 +43,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "names.h"
-#include "symtab.h"
 #include "gromacs/utility/futil.h"
 #include "filenm.h"
 #include "gmxfio.h"
@@ -57,8 +53,13 @@
 #include "confio.h"
 #include "atomprop.h"
 #include "copyrite.h"
-#include "gromacs/math/vec.h"
 #include "mtop_util.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define TPX_TAG_RELEASE  "release"
 

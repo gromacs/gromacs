@@ -38,15 +38,16 @@
 #include <config.h>
 #endif
 
+#include <errno.h>
 #include <math.h>
+
 #include "typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include <errno.h>
 #include "macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "confio.h"
 #include "gromacs/math/vec.h"
-#include "symtab.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/futil.h"
 #include "xdrf.h"
 #include "filenm.h"

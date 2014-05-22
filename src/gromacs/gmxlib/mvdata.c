@@ -46,11 +46,12 @@
 #include "mvdata.h"
 #include "types/commrec.h"
 #include "network.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "symtab.h"
 #include "gromacs/math/vec.h"
 #include "tgroup.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 /* Probably the test for (nr) > 0 in the next macro is only needed

@@ -59,11 +59,11 @@
 #include "atomprop.h"
 #include "hackblock.h"
 #include "nm2type.h"
-#include "symtab.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

@@ -39,10 +39,10 @@
 #define GMX_GMXPREPROCESS_HACKBLOCK_H
 
 #include "typedefs.h"
-#include "../fileio/pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "grompp-impl.h"
 #include "gpp_atomtype.h"
-#include "../legacyheaders/symtab.h"
+#include "gromacs/topology/symtab.h"
 
 #ifdef __cplusplus
 extern "C" {

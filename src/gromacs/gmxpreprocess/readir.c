@@ -39,16 +39,14 @@
 #endif
 
 #include <ctype.h>
-#include <stdlib.h>
 #include <limits.h>
-#include "gromacs/utility/smalloc.h"
+#include <stdlib.h>
+
 #include "typedefs.h"
 #include "gromacs/math/units.h"
 #include "names.h"
-#include "gromacs/utility/fatalerror.h"
 #include "macros.h"
 #include "index.h"
-#include "symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "readinp.h"
 #include "warninp.h"
@@ -62,6 +60,10 @@
 #include "chargegroup.h"
 #include "inputrec.h"
 #include "calc_verletbuf.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MAXPTR 254
 #define NOGID  255

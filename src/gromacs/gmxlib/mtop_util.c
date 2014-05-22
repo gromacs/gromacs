@@ -40,12 +40,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "mtop_util.h"
 #include "topsort.h"
-#include "symtab.h"
+
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static int gmx_mtop_maxresnr(const gmx_mtop_t *mtop, int maxres_renum)
 {

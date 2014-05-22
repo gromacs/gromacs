@@ -53,7 +53,6 @@
 #include "topio.h"
 #include "gromacs/fileio/confio.h"
 #include "readir.h"
-#include "symtab.h"
 #include "names.h"
 #include "grompp-impl.h"
 #include "gromacs/random/random.h"
@@ -86,6 +85,7 @@
 #include "gromacs/imd/imd.h"
 
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])

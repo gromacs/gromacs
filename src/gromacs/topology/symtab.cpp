@@ -34,18 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "symtab.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <stdio.h>
 #include <string.h>
-#include "typedefs.h"
+
+#include <algorithm>
+
+#include "gromacs/legacyheaders/txtdump.h"
+
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "txtdump.h"
-#include "symtab.h"
-#include "macros.h"
 
 #define BUFSIZE         1024
 #define TABLESIZE       5
@@ -90,15 +94,14 @@ static char *trim_string(const char *s, char *out, int maxlen)
 
 int lookup_symtab(t_symtab *symtab, char **name)
 {
-    int       base, index;
+    int       base;
     t_symbuf *symbuf;
 
     base   = 0;
-    index  = 0;
     symbuf = symtab->symbuf;
     while (symbuf != NULL)
     {
-        index = name-symbuf->buf;
+        const int index = name-symbuf->buf;
         if ( ( index >= 0 ) && ( index < symbuf->bufsize ) )
         {
             return index+base;
@@ -244,7 +247,7 @@ void free_symtab(t_symtab *symtab)
     symbuf = symtab->symbuf;
     while (symbuf != NULL)
     {
-        symtab->nr -= min(symbuf->bufsize, symtab->nr);
+        symtab->nr -= std::min(symbuf->bufsize, symtab->nr);
         freeptr     = symbuf;
         symbuf      = symbuf->next;
         sfree(freeptr);

@@ -34,9 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _symtab_h
-#define _symtab_h
+#ifndef GMX_TOPOLOGY_SYMTAB_H
+#define GMX_TOPOLOGY_SYMTAB_H
 
 #include <stdio.h>
 
@@ -127,4 +126,4 @@ void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab);
 }
 #endif
 
-#endif  /* _symtab_h */
+#endif
