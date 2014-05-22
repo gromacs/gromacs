@@ -42,17 +42,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "symtab.h"
 #include "macros.h"
 #include "resall.h"
 #include "pgutil.h"
 #include "fflibutil.h"
 
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
 {

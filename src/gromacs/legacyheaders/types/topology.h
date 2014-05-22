@@ -41,7 +41,7 @@
 #include "idef.h"
 #include "block.h"
 #include "simple.h"
-#include "../symtab.h"
+#include "../../topology/symtab.h"
 
 #ifdef __cplusplus
 extern "C" {

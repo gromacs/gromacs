@@ -49,11 +49,11 @@
 #include "toppush.h"
 #include "topdirs.h"
 #include "readir.h"
-#include "symtab.h"
 #include "warninp.h"
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
 
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

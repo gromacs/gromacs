@@ -47,15 +47,11 @@
 
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/utility/smalloc.h"
 #include "copyrite.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
-#include "symtab.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/pdbio.h"
 #include "toputil.h"
 #include "h_db.h"
@@ -71,7 +67,11 @@
 #include "fflibutil.h"
 #include "macros.h"
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "hizzie.h"
 #include "specbond.h"

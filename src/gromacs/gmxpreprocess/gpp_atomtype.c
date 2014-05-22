@@ -41,15 +41,14 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "topdirs.h"
 #include "toputil.h"
-#include "topdirs.h"
-#include "toputil.h"
-#include "symtab.h"
-#include "gromacs/utility/fatalerror.h"
 #include "txtdump.h"
 #include "gpp_atomtype.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct gpp_atomtype {
     int              nr;           /* The number of atomtypes		*/
