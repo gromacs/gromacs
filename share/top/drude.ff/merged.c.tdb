@@ -670,9 +670,6 @@
  C  CA  NT  O
  NT C   HT1 HT2
  NT C   HT2 HT1
-[ exclusions ]
-  DO  LPOA
-  DO  LPOB
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     C    NT  2.60   1.0950   1.1320
@@ -687,14 +684,6 @@
   DNT     O  2.60   1.1320   1.2270
    NT    DO  2.60   1.1320   1.2270
   DNT    DO  2.60   1.1320   1.2270
-[ anisotropic_polarization ]
-; drude    ai    aj    ak    al a11        a22        a33
-    DO      O     C  LPOA  LPOB 0.00069680 0.00121940 0.00108380 
-[ virtual_sites3 ]
-  ; 3fad
-  ; site  from              func        theta        d
-     LPOA     O     C    CA      3   91.000 0.030
-     LPOB     O     C    CA      3   91.000 0.030 
 
 ; amidated C-terminus for glycine
 [ CT2G ]
@@ -725,18 +714,20 @@
  C  CA  NT  O
  NT C   HT1 HT2
  NT C   HT2 HT1
-[ exclusions ]
-  DO  LPOA
-  DO  LPOB
-; TODO: add Thole
-[ anisotropic_polarization ]
-; drude    ai    aj    ak    al a11        a22        a33
-    DO      O     C  LPOA  LPOB 0.00069680 0.00121940 0.00108380 
-[ virtual_sites3 ]
-  ; 3fad
-  ; site  from              func        theta        d
-     LPOA     O     C    CA      3   91.000 0.030 
-     LPOB     O     C    CA      3  269.000 0.030 
+[ thole_polarization ]
+ ; ai    aj  a      alpha_i  alpha_j
+    C    NT  2.60   1.0950   1.1320
+   DC    NT  2.60   1.0950   1.1320
+    C   DNT  2.60   1.0950   1.1320
+   DC   DNT  2.60   1.0950   1.1320
+   CA    NT  2.60   1.1300   1.1320
+  DCA    NT  2.60   1.1300   1.1320
+   CA   DNT  2.60   1.1300   1.1320
+  DCA   DNT  2.60   1.1300   1.1320
+   NT     O  2.60   1.1320   1.2270
+  DNT     O  2.60   1.1320   1.2270
+   NT    DO  2.60   1.1320   1.2270
+  DNT    DO  2.60   1.1320   1.2270
 
 ; amidated C-terminus for single amino acid
 [ CT2S ]
@@ -762,17 +753,21 @@
  C  CA  NT  O
  NT C   HT1 HT2
  NT C   HT2 HT1
-[ exclusions ]
-  DO  LPOA
-  DO  LPOB
-[ anisotropic_polarization ]
- drude    ai    aj    ak    al a11        a22        a33
-    DO      O     C  LPOA  LPOB 0.00069680 0.00121940 0.00108380 
-[ virtual_sites3 ]
-  ; 3fad
-  ; site  from              func        theta        d
-     LPOA     O     C    CA      3   91.000 0.030 
-     LPOB     O     C    CA      3  269.000 0.030 
+[ thole_polarization ]
+ ; ai    aj  a      alpha_i  alpha_j
+    C    NT  2.60   1.0950   1.1320
+   DC    NT  2.60   1.0950   1.1320
+    C   DNT  2.60   1.0950   1.1320
+   DC   DNT  2.60   1.0950   1.1320
+   CA    NT  2.60   1.1300   1.1320
+  DCA    NT  2.60   1.1300   1.1320
+   CA   DNT  2.60   1.1300   1.1320
+  DCA   DNT  2.60   1.1300   1.1320
+   NT     O  2.60   1.1320   1.2270
+  DNT     O  2.60   1.1320   1.2270
+   NT    DO  2.60   1.1320   1.2270
+  DNT    DO  2.60   1.1320   1.2270
+
 
 [ 3TER ]
 [ replace ]
