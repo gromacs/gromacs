@@ -220,10 +220,6 @@
  DO5' DO5'  D        0.4000 -1.75947
  C5'  C5'   CCD32A  11.6110  1.67534
  DC5' DC5'  D        0.4000 -1.73534
- H5'1 H5'   HDA2A    1.0080  0.08000
- H5'2 H5''  HDA2A    1.0080  0.08000
- LP51 LP5A  LP       0.0000 -0.23000
- LP52 LP5B  LP       0.0000 -0.23000
 [ add ]
  1  2  H5T  O5'  C5'  C4'
     HDP1A            1.0080  0.36000    -1
@@ -231,6 +227,11 @@
     LP               0.0000 -0.23000    -1
  2  4  H5'  C5'  C4'  C3'
     HDA2A            1.0080  0.08000    -1
+[ replace ]
+ H5'1 H5'   HDA2A    1.0080  0.08000
+ H5'2 H5''  HDA2A    1.0080  0.08000
+ LP51 LP5A  LP       0.0000 -0.23000
+ LP52 LP5B  LP       0.0000 -0.23000 
 [ delete ]
  P
  DP
@@ -238,3 +239,16 @@
  DO1P
  O2P
  DO2P
+[ exclusions ]
+;  ai    aj
+   DO5'  LP5A
+   DO5'  LP5B
+   LP5A  LP5B
+[ anisotropic_polarization ]
+; drude    ai    aj    ak    al   a11        a22        a33
+   DO5'    O5'   C5'   LP5A  LP5B 0.00081080 0.00121620 0.00097300
+[ virtual_sites3 ]
+  ; 3out
+  ; site from              func    a      b      c 
+    LP5A  O5'   C5'   H5T   4     -0.095 -0.005 -2.513418287
+    LP5B  O5'   C5'   H5T   4     -0.095 -0.005  2.513418287

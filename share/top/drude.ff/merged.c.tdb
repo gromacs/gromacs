@@ -42,8 +42,10 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  LPT3  LPT4
 [ impropers ]
  C  OT1  OT2  CA
 [ thole_polarization ]
@@ -133,8 +135,10 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.7080
@@ -173,6 +177,15 @@
 ; drude    ai    aj    ak    al a11        a22        a33
   DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
   DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
+[ virtual_sites3 ]
+ ; 3fad
+   LPT1   OT1    C     CA      3   91.000 0.030 
+   LPT2   OT1    C     CA      3  269.000 0.030 
+ ; 3out
+ ; site from              func    a      b      c 
+   LPT3  OT2   C    HT2   4     -0.095 -0.005 -2.513418287
+   LPT4  OT2   C    HT2   4     -0.095 -0.005  2.513418287
+
 
 ; C-terminal Gly, charged
 ; CHARMM name: CTEG
@@ -210,8 +223,10 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.8990
@@ -295,8 +310,10 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.7080
@@ -331,6 +348,14 @@
 ; drude    ai    aj    ak    al a11        a22        a33
   DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
   DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
+[ virtual_sites3 ]
+ ; 3fad
+   LPT1   OT1    C     CA      3   91.000 0.030 
+   LPT2   OT1    C     CA      3  269.000 0.030 
+ ; 3out
+ ; site from              func    a      b      c 
+   LPT3  OT2   C    HT2   4     -0.095 -0.005 -2.513418287
+   LPT4  OT2   C    HT2   4     -0.095 -0.005  2.513418287
 
 ; C-terminal Pro, charged
 ; CHARMM name: CTEP
@@ -380,8 +405,10 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N    CA  2.60  0.7540  0.4320
@@ -494,8 +521,10 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.8990
@@ -571,8 +600,10 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.7080
@@ -641,7 +672,7 @@
  NT C   HT2 HT1
 [ exclusions ]
   DO  LPOA
-  DO  LPOA
+  DO  LPOB
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     C    NT  2.60   1.0950   1.1320
@@ -696,7 +727,7 @@
  NT C   HT2 HT1
 [ exclusions ]
   DO  LPOA
-  DO  LPOA
+  DO  LPOB
 ; TODO: add Thole
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al a11        a22        a33
@@ -733,11 +764,10 @@
  NT C   HT2 HT1
 [ exclusions ]
   DO  LPOA
-  DO  LPOA
-; TODO: may not need these since atom names do not change
-;[ anisotropic_polarization ]
-; drude    ai    aj    ak    al a11        a22        a33
-;    DO      O     C  LPOA  LPOB 0.00069680 0.00121940 0.00108380 
+  DO  LPOB
+[ anisotropic_polarization ]
+ drude    ai    aj    ak    al a11        a22        a33
+    DO      O     C  LPOA  LPOB 0.00069680 0.00121940 0.00108380 
 [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -751,10 +781,19 @@
  H3'  H3'   HDA1R5   1.0080  0.08000
  O3'  O3'   ON5     15.5994  1.75947
  DO3' DO3'  D        0.4000 -1.75947
- LP31 LP3A  LP       0.0000 -0.23000
- LP32 LP3B  LP       0.0000 -0.23000
 [ add ]
  1  2  H3T  O3'  C3'  C4'
     HDP1A            1.0080  0.26000   -1
  2  13 LP3  O3'  C3'  C4'
     LP               0.0000 -0.23000   -1
+[ replace ]
+ LP31 LP3A  LP       0.0000 -0.23000
+ LP32 LP3B  LP       0.0000 -0.23000
+[ anisotropic_polarization ]
+; drude    ai    aj    ak    al   a11        a22        a33
+   DO3'    O3'   C3'   LP3A  LP3B 0.00081080 0.00121620 0.00097300
+[ virtual_sites3 ]
+  ; 3out
+  ; site from              func    a      b      c 
+    LP3A  O3'   C3'   H3T   4     -0.095 -0.005 -2.513418287
+    LP3B  O3'   C3'   H3T   4     -0.095 -0.005  2.513418287

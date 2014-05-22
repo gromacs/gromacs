@@ -53,6 +53,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -367,6 +368,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	   CZ   NH1   NH2    NE
 	    C    CA    +N     O
@@ -539,8 +541,10 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   DOD1  LPDA
   DOD1  LPDB
+  LPDA  LPDB
   [ impropers ]
 	   CG    CB   ND2   OD1
 	  ND2  HD21  HD22    CG
@@ -689,21 +693,18 @@
        CB    CG
        CG   OD1
        CG   OD2
-        O  LPOA
-        O  LPOB
-      OD1  LPP1
-      OD1  LPP2
-      OD2  LPP3
-      OD2  LPP4
       OD2   HD2
    [ exclusions ]
     ; ai  aj
-      DO  LPOA
-      DO  LPOB
+      DO    LPOA
+      DO    LPOB
+      LPOA  LPOB
       DOD1  LPP1
       DOD1  LPP2
+      LPP1  LPP2
       DOD2  LPP3
-      DOD2  LPP3
+      DOD2  LPP4
+      LPP3  LPP4
   [ impropers ]
         C    CA    +N     O
         N    -C    CA    HN
@@ -788,6 +789,17 @@
     DC   +CA   0.2950   1.0780
      C  +DCA   0.2950   1.0780
     DC  +DCA   0.2950   1.0780
+ [ virtual_sites3 ]
+  ; 3fad
+  ; site from              func   theta   d
+    LPOA   O     C    CA      3   91.000  0.030
+    LPOB   O     C    CA      3  269.000  0.030
+    LPP1   OD1   CG   CB      3   91.000  0.030 
+    LPP2   OD1   CG   CB      3  269.000  0.030 
+  ; 3out
+  ; site from              func   a      b      c
+    LPP3  OD2   CG   HD2   4     -0.095 -0.005 -2.513418287
+    LPP4  OD2   CG   HD2   4     -0.095 -0.005  2.513418287
 
 [ ASP ] 
   [ atoms ]
@@ -842,10 +854,13 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   DOD1  LP1A
   DOD1  LP1B
+  LP1A  LP1B
   DOD2  LP2A
   DOD2  LP2B
+  LP2A  LP2B
   [ impropers ]
 	   CG   OD1   OD2    CB
 	    C    CA    +N     O
@@ -1021,10 +1036,12 @@
         O  LPOB
    [ exclusions ]
     ; ai  aj
-      DO  LPOA
-      DO  LPOB
-      DSG LPSA
-      DSG LPSB
+      DO    LPOA
+      DO    LPOB
+      LPOA  LPOB
+      DSG   LPSA
+      DSG   LPSB
+      LPSA  LPSB
   [ impropers ]
         C    CA    +N     O
         N    -C    CA    HN
@@ -1134,8 +1151,10 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
-  DSG  LPGA
-  DSG  LPGB
+  LPOA  LPOB
+  DSG   LPGA
+  DSG   LPGB
+  LPGA  LPGB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -1287,8 +1306,10 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   DOE1  LPEA
   DOE1  LPEB
+  LPEA  LPEB
   [ impropers ]
 	   CD    CG   NE2   OE1
 	  NE2  HE21  HE22    CD
@@ -1453,21 +1474,18 @@
        CG    CD
        CD   OE1
        CD   OE2
-        O  LPOA
-        O  LPOB
-      OE1  LPP1
-      OE1  LPP2
-      OE2  LPP3
-      OE2  LPP4
       OE2   HE2
    [ exclusions ]
     ; ai  aj
-      DO  LPOA
-      DO  LPOB
-      DOD1  LPP1
-      DOD1  LPP2
-      DOD2  LPP3
-      DOD2  LPP3
+      DO    LPOA
+      DO    LPOB
+      LPOA  LPOB
+      DOE1  LPP1
+      DOE1  LPP2
+      LPP1  LPP2
+      DOE2  LPP3
+      DOE2  LPP4
+      LPP3  LPP4
   [ impropers ]
         C    CA    +N     O
         N    -C    CA    HN
@@ -1560,6 +1578,17 @@
     DC   +CA   0.2950   1.0780
      C  +DCA   0.2950   1.0780
     DC  +DCA   0.2950   1.0780
+ [ virtual_sites3 ]
+  ; 3fad
+  ; site from              func   theta   d
+    LPOA   O     C    CA      3   91.000  0.030
+    LPOB   O     C    CA      3  269.000  0.030
+    LPP1   OE1   CE   CD      3   91.000  0.030 
+    LPP2   OE1   CE   CD      3  269.000  0.030 
+  ; 3out
+  ; site from              func   a      b      c
+    LPP3  OE2   CD   HE2   4     -0.095 -0.005 -2.513418287
+    LPP4  OE2   CD   HE2   4     -0.095 -0.005  2.513418287
 
 [ GLU ] 
   [ atoms ]
@@ -1622,10 +1651,13 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   DOE1  LP1A
   DOE1  LP1B
+  LP1A  LP1B
   DOE2  LP2A
   DOE2  LP2B
+  LP2A  LP2B
   [ impropers ]
 	   CD   OE1   OE2    CG
 	    C    CA    +N     O
@@ -1764,6 +1796,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -1895,6 +1928,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   DNE2  LPE2
   [ impropers ]
 	  ND1    CG   CE1   HD1
@@ -2088,6 +2122,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   DND1  LPD1
   [ impropers ]
 	  NE2   CD2   CE1   HE2
@@ -2282,6 +2317,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	  ND1   CE1    CG   HD1
 	  NE2   CE1   CD2   HE2
@@ -2476,6 +2512,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -2631,6 +2668,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -2803,6 +2841,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -2969,8 +3008,10 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
-  DSD  LP1A
-  DSD  LP1B
+  LPOA  LPOB
+  DSD   LP1A
+  DSD   LP1B
+  LP1A  LP1B
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -3150,6 +3191,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -3337,6 +3379,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    CD
@@ -3481,8 +3524,10 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
-  DOG  LPGA
-  DOG  LPGB
+  LPOA  LPOB
+  DOG   LPGA
+  DOG   LPGB
+  LPGA  LPGB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -3556,9 +3601,9 @@
 	 LPOA     O     C    CA      3       91.000    0.030
 	 LPOB     O     C    CA      3      269.000    0.030
   ; 3out
-  ; site from              func    a            b             c 
-    LPGA  OG    CB    HG1   4      0.164660621  0.0241898335  0.0306424667
-    LPGB  OG    CB    HG1   4      0.164660621  0.0241898335 -0.0306424667
+  ; site from              func    a      b      c 
+    LPGA  OG    CB    HG1   4     -0.095 -0.005 -2.513418287
+    LPGB  OG    CB    HG1   4     -0.095 -0.005  2.513418287
 
 [ SOD ]
   [ atoms ]
@@ -3660,8 +3705,10 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   DOG1  LPGA
   DOG1  LPGB
+  LPGA  LPGB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -3747,9 +3794,9 @@
 	 LPOA     O     C    CA      3       91.000    0.030
 	 LPOB     O     C    CA      3      269.000    0.030
   ; 3out
-  ; site from              func    a            b             c 
-    LPGA  OG1   CB    HG1   4      0.164660621  0.0241898335  0.0306424667
-    LPGB  OG1   CB    HG1   4      0.164660621  0.0241898335 -0.0306424667
+  ; site from              func   a      b      c 
+    LPGA  OG1   CB    HG1   4    -0.095 -0.005 -2.513418287
+    LPGB  OG1   CB    HG1   4    -0.095 -0.005 -2.513418287
 
 [ TRP ]
   [ atoms ]
@@ -3838,6 +3885,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -4088,8 +4136,10 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
-  DOH  LP1A
-  DOH  LP1B
+  LPOA  LPOB
+  DOH   LP1A
+  DOH   LP1B
+  LP1A  LP1B
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -4231,9 +4281,9 @@
 	 LPOA     O     C    CA      3       91.000    0.030
 	 LPOB     O     C    CA      3      269.000    0.030
   ; 3out
-  ; site from              func    a            b             c 
-    LP1A  OH    CZ    HH    4      0.164660621  0.0241898335  0.0306424667
-    LP1B  OH    CZ    HH    4      0.164660621  0.0241898335 -0.0306424667
+  ; site from              func   a      b      c 
+    LP1A  OH    CZ    HH    4    -0.095 -0.005 -2.513418287
+    LP1B  OH    CZ    HH    4    -0.095 -0.005 -2.513418287
 
 [ VAL ]
   [ atoms ]
@@ -4290,6 +4340,7 @@
   ; ai  aj
   DO    LPOA
   DO    LPOB
+  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -4662,6 +4713,9 @@
   DO4'  LPX
   DO4'  LPRA
   DO4'  LPRB
+  LPX   LPRA
+  LPX   LPRB
+  LPRA  LPRB
   DN1   LP1
   DN3   LP3
   DN7   LP7
@@ -4942,9 +4996,10 @@
        C6    H6
   [ exclusions ]
    ; ai  aj
-   DN3  LP3
-   DO2  LP2A
-   DO2  LP2B
+   DN3   LP3
+   DO2   LP2A
+   DO2   LP2B
+   LP2A  LP2B
   [ impropers ]
        C2    N1    N3    O2
        C4    N3    C5    N4
@@ -5131,6 +5186,9 @@
    DO4'  LPX
    DO4'  LPRA
    DO4'  LPRB
+   LPX   LPRA
+   LPX   LPRB
+   LPRA  LPRB
    DN3   LP3
    DO2   LP2A
    DO2   LP2B
@@ -5407,6 +5465,7 @@
    DN7   LP7
    DO6   LP6A
    DO6   LP6B
+   LP6A  LP6B
   [ impropers ]
        C2    N3    N1    N2
        C6    N1    C5    O6
@@ -5636,10 +5695,14 @@
    DO4'  LPX
    DO4'  LPRA
    DO4'  LPRB
+   LPX   LPRA
+   LPX   LPRB
+   LPRA  LPRB
    DN3   LP3
    DN7   LP7
    DO6   LP6A
    DO6   LP6B
+   LP6A  LP6B
   [ impropers ]
        C2    N3    N1    N2
        C6    N1    C5    O6
@@ -5934,8 +5997,10 @@
    ; ai  aj
    DO2   LP2A
    DO2   LP2B
+   LP2A  LP2B
    DO4   LP4A
    DO4   LP4B
+   LP4A  LP4B
   [ impropers ]
        C2    N1    N3    O2
        C4    N3    C5    O4
@@ -6132,10 +6197,15 @@
    DO4'  LPX
    DO4'  LPRA
    DO4'  LPRB
+   LPX   LPRA
+   LPX   LPRB
+   LPRA  LPRB
    DO2   LP2A
    DO2   LP2B
+   LP2A  LP2B
    DO4   LP4A
    DO4   LP4B
+   LP4A  LP4B
   [ impropers ]
        C2    N1    N3    O2
        C4    N3    C5    O4
@@ -6374,6 +6444,11 @@
        OY      DOY
   [ impropers ]
        CY      CAY     +N      OY
+  [ exclusions ]
+  ;  ai    aj
+     DOY   LPY1
+     DOY   LPY2
+     LPY1  LPY2
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
       DOY    OY    CY  LPY1  LPY2 0.00082322 0.00114332 0.00103346
@@ -6433,6 +6508,11 @@
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
       DOY    OY    CY  LPY1  LPY2 0.00082322 0.00114332 0.00103346
+  [ exclusions ]
+  ;  ai    aj
+     DOY   LPY1
+     DOY   LPY2
+     LPY1  LPY2
   [ thole_polarization ]
   ; ai    aj   alpha_i  alpha_j
    CAY    CY   2.1220   0.2950
