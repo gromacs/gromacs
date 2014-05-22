@@ -434,6 +434,14 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
             for (j = j0; (j < j1 && nremove < natoms_solvt); j++)
             {
                 jnr = nlist->jjnr[j];
+                if(jnr < 0)
+                {
+                    /* This module uses the core gromacs neighborlists that
+                     * might be padded for SIMD usage. In this case there will
+                     * be negative indices that should be ignored.
+                     */
+                    continue;
+                }
                 copy_rvec(x_all[jnr], xj);
 
                 /* Check solvent-protein and solvent-solvent */
