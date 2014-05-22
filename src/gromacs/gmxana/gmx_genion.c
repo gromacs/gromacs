@@ -474,8 +474,7 @@ int gmx_genion(int argc, char *argv[])
 
     if ((p_num == 0) && (n_num == 0))
     {
-        fprintf(stderr, "No ions to add.\n");
-        exit(0);
+        fprintf(stderr, "No ions to add, will just copy input configuration.\n");
     }
     else
     {
@@ -510,52 +509,51 @@ int gmx_genion(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Not enough solvent for adding ions");
         }
-    }
 
-    if (opt2bSet("-p", NFILE, fnm))
-    {
-        update_topol(opt2fn("-p", NFILE, fnm), p_num, n_num, p_name, n_name, grpname);
-    }
+        if (opt2bSet("-p", NFILE, fnm))
+        {
+            update_topol(opt2fn("-p", NFILE, fnm), p_num, n_num, p_name, n_name, grpname);
+        }
 
-    snew(bSet, nw);
-    snew(repl, nw);
+        snew(bSet, nw);
+        snew(repl, nw);
 
-    snew(v, atoms.nr);
-    snew(atoms.pdbinfo, atoms.nr);
+        snew(v, atoms.nr);
+        snew(atoms.pdbinfo, atoms.nr);
 
-    set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, ePBC, box);
 
-    if (seed == 0)
-    {
-        rng = gmx_rng_init(gmx_rng_make_seed());
-    }
-    else
-    {
-        rng = gmx_rng_init(seed);
-    }
-    /* Now loop over the ions that have to be placed */
-    while (p_num-- > 0)
-    {
-        insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                   1, p_q, p_name, &atoms, rmin, rng);
-    }
-    while (n_num-- > 0)
-    {
-        insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                   -1, n_q, n_name, &atoms, rmin, rng);
-    }
-    gmx_rng_destroy(rng);
-    fprintf(stderr, "\n");
+        if (seed == 0)
+        {
+            rng = gmx_rng_init(gmx_rng_make_seed());
+        }
+        else
+        {
+            rng = gmx_rng_init(seed);
+        }
+        /* Now loop over the ions that have to be placed */
+        while (p_num-- > 0)
+        {
+            insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
+                       1, p_q, p_name, &atoms, rmin, rng);
+        }
+        while (n_num-- > 0)
+        {
+            insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
+                       -1, n_q, n_name, &atoms, rmin, rng);
+        }
+        gmx_rng_destroy(rng);
+        fprintf(stderr, "\n");
 
-    if (nw)
-    {
-        sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name);
-    }
+        if (nw)
+        {
+            sort_ions(nsa, nw, repl, index, &atoms, x, p_name, n_name);
+        }
 
-    sfree(atoms.pdbinfo);
-    atoms.pdbinfo = NULL;
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, NULL, ePBC,
-                   box);
+        sfree(atoms.pdbinfo);
+        atoms.pdbinfo = NULL;
+    }
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, NULL, ePBC, box);
 
     return 0;
 }
