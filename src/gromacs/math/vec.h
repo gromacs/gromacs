@@ -139,8 +139,8 @@ extern "C" {
 #define EXP_ADDR(val)   (((val)&EXP_MASK)>>EXP_SHIFT)
 #define FRACT_ADDR(val) (((val)&(FRACT_MASK|EXP_LSB))>>FRACT_SHIFT)
 
-extern const unsigned int *gmx_invsqrt_exptab;
-extern const unsigned int *gmx_invsqrt_fracttab;
+extern const unsigned int gmx_invsqrt_exptab[];
+extern const unsigned int gmx_invsqrt_fracttab[];
 
 typedef union
 {
