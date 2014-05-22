@@ -49,11 +49,6 @@
 	   CB   HB1
 	   CB   HB2
 	   CB   HB3
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -112,6 +107,24 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -281,6 +294,38 @@
     DO    NT  2.60   0.3100   0.2500
      O   DNT  2.60   0.3100   0.2500
     DO   DNT  2.60   0.3100   0.2500
+ [ exclusions ]
+  ; ai   aj
+  DOY    LPY1
+  DOY    LPY2
+  OY     LPY1
+  OY     LPY2
+  LPY1   LPY2
+  DO     LPOA
+  DO     LPOB
+  O      LPOA
+  O      LPOB
+  LPOA   LPOB
+  DCAY	 DCY 
+  DCY 	 DN  
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 DNT 
+  DNT 	 DCAT
+  DCY 	 DOY 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCAY	 DN  
+  DCAY	 DOY 
+  DCY 	 DCA 
+  DOY 	 DN  
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 DNT 
+  DCA 	 DO  
+  DCB 	 DC  
+  DC  	 DCAT
+  DO  	 DNT 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -364,11 +409,6 @@
 	   CZ   NH2
 	  NH2  HH21
 	  NH2  HH22
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	   CZ   NH1   NH2    NE
 	    C    CA    +N     O
@@ -480,6 +520,37 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD 
+  DCD 	 DNE 
+  DNE 	 DCZ 
+  DCZ 	 DNH1
+  DCZ 	 DNH2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD 
+  DCG 	 DNE 
+  DCD 	 DCZ 
+  DNE 	 DNH1
+  DNE 	 DNH2
+  DNH2	 DNH1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -537,14 +608,6 @@
 	   CG   ND2
 	  ND2  HD21
 	  ND2  HD22
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DOD1  LPDA
-  DOD1  LPDB
-  LPDA  LPDB
   [ impropers ]
 	   CG    CB   ND2   OD1
 	  ND2  HD21  HD22    CG
@@ -634,6 +697,36 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DOD1  LPDA
+  DOD1  LPDB
+  OD1   LPDA
+  OD1   LPDB
+  LPDA  LPDB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DOD1
+  DCG 	 DND2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DOD1
+  DCB 	 DND2
+  DND2	 DOD1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -698,12 +791,18 @@
     ; ai  aj
       DO    LPOA
       DO    LPOB
+      O     LPOA
+      O     LPOB
       LPOA  LPOB
       DOD1  LPP1
       DOD1  LPP2
+      OD1   LPP1
+      OD1   LPP2
       LPP1  LPP2
       DOD2  LPP3
       DOD2  LPP4
+      OD2   LPP3
+      OD2   LPP4
       LPP3  LPP4
   [ impropers ]
         C    CA    +N     O
@@ -850,17 +949,6 @@
 	   CB    CG
 	   CG   OD1
 	   CG   OD2
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DOD1  LP1A
-  DOD1  LP1B
-  LP1A  LP1B
-  DOD2  LP2A
-  DOD2  LP2B
-  LP2A  LP2B
   [ impropers ]
 	   CG   OD1   OD2    CB
 	    C    CA    +N     O
@@ -950,6 +1038,39 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DOD1  LP1A
+  DOD1  LP1B
+  OD1   LP1A
+  OD1   LP1B
+  LP1A  LP1B
+  DOD2  LP2A
+  DOD2  LP2B
+  LP2A  LP2B
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DOD1
+  DCG 	 DOD2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DOD1
+  DCB 	 DOD2
+  DOD2	 DOD1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -1030,17 +1151,17 @@
        CB   HB1
        CB   HB2
        CB    SG
-       SG  LPSA
-       SG  LPSB
-        O  LPOA
-        O  LPOB
    [ exclusions ]
     ; ai  aj
       DO    LPOA
       DO    LPOB
+      O     LPOA
+      O     LPOB
       LPOA  LPOB
       DSG   LPSA
       DSG   LPSB
+      SG    LPSA
+      SG    LPSB
       LPSA  LPSB
   [ impropers ]
         C    CA    +N     O
@@ -1105,6 +1226,15 @@
     DC   +CA   0.2950   1.0780
      C  +DCA   0.2950   1.0780
     DC  +DCA   0.2950   1.0780
+  [ virtual_sites3 ]
+  ; 3fad
+  ; site  from              func        theta        d
+    LPOA     O     C    CA      3       91.000    0.030
+    LPOB     O     C    CA      3      269.000    0.030
+  ; 3out
+  ; site from              func    a      b     c 
+    LPSA  SG    CB    HG1   4     -0.045 -0.09 -3.1
+    LPSB  SG    CB    HG1   4     -0.045 -0.09  3.1
 
 [ CYS ] 
   [ atoms ]
@@ -1147,14 +1277,6 @@
 	   CB   HB2
 	   CB    SG
 	   SG   HG1
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DSG   LPGA
-  DSG   LPGB
-  LPGA  LPGB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -1222,15 +1344,40 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DSG   LPGA
+  DSG   LPGB
+  SG    LPGA
+  SG    LPGB
+  LPGA  LPGB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DSG 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DSG 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
 	 LPOA     O     C    CA      3       91.000    0.030
 	 LPOB     O     C    CA      3      269.000    0.030
   ; 3out
-  ; site from              func    a            b             c 
-    LPGA  SG    CB    HG1   4      0.1971227928 0.2643493036  3.165895009
-    LPGB  SG    CB    HG1   4      0.1971227928 0.2643493036 -3.165895009
+  ; site from              func    a      b     c 
+    LPGA  SG    CB    HG1   4     -0.045 -0.09 -3.1
+    LPGB  SG    CB    HG1   4     -0.045 -0.09  3.1
 
 [ DUM ]
   [ atoms ]
@@ -1302,14 +1449,6 @@
 	   CD   NE2
 	  NE2  HE21
 	  NE2  HE22
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DOE1  LPEA
-  DOE1  LPEB
-  LPEA  LPEB
   [ impropers ]
 	   CD    CG   NE2   OE1
 	  NE2  HE21  HE22    CD
@@ -1407,6 +1546,38 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DOE1  LPEA
+  DOE1  LPEB
+  OE1   LPEA
+  OE1   LPEB
+  LPEA  LPEB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD 
+  DCD 	 DOE1
+  DCD 	 DNE2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD 
+  DCG 	 DOE1
+  DCG 	 DNE2
+  DNE2	 DOE1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -1479,12 +1650,18 @@
     ; ai  aj
       DO    LPOA
       DO    LPOB
+      O     LPOA
+      O     LPOB
       LPOA  LPOB
       DOE1  LPP1
       DOE1  LPP2
+      OE1   LPP1
+      OE1   LPP2
       LPP1  LPP2
       DOE2  LPP3
       DOE2  LPP4
+      OE2   LPP3
+      OE2   LPP4
       LPP3  LPP4
   [ impropers ]
         C    CA    +N     O
@@ -1647,17 +1824,6 @@
 	   CG    CD
 	   CD   OE1
 	   CD   OE2
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DOE1  LP1A
-  DOE1  LP1B
-  LP1A  LP1B
-  DOE2  LP2A
-  DOE2  LP2B
-  LP2A  LP2B
   [ impropers ]
 	   CD   OE1   OE2    CG
 	    C    CA    +N     O
@@ -1755,6 +1921,41 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DOE1  LP1A
+  DOE1  LP1B
+  OE1   LP1A
+  OE1   LP1B
+  LP1A  LP1B
+  DOE2  LP2A
+  DOE2  LP2B
+  LP2A  LP2B
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD 
+  DCD 	 DOE1
+  DCD 	 DOE2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD 
+  DCG 	 DOE1
+  DCG 	 DOE2
+  DOE2	 DOE1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -1792,11 +1993,6 @@
 	    C     O
 	   CA   HA1
 	   CA   HA2
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -1843,6 +2039,21 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DN  	 DC  
+  DCA 	 +DN 
+  DCA 	 DO  
+  DO  	 +DN 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -1924,12 +2135,6 @@
 	  ND1   HD1
 	  CE1   HE1
 	  CD2   HD2
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DNE2  LPE2
   [ impropers ]
 	  ND1    CG   CE1   HD1
 	  CD2    CG   NE2   HD2
@@ -2048,6 +2253,40 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DNE2  LPE2
+  NE2   LPE2
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DND1
+  DND1	 DCE1
+  DCE1	 DNE2
+  DNE2	 DCD2
+  DCD2	 DCG 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DND1
+  DCB 	 DCD2
+  DCG 	 DCE1
+  DCD2	 DND1
+  DND1	 DNE2
+  DCE1	 DCD2
+  DNE2	 DCG 
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -2118,12 +2357,6 @@
 	  NE2   HE2
 	  CE1   HE1
 	  CD2   HD2
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DND1  LPD1
   [ impropers ]
 	  NE2   CD2   CE1   HE2
 	  CD2    CG   NE2   HD2
@@ -2242,6 +2475,40 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DND1  LPD1
+  ND1   LPD1
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DND1
+  DND1	 DCE1
+  DCE1	 DNE2
+  DNE2	 DCD2
+  DCD2	 DCG 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DND1
+  DCB 	 DCD2
+  DCG 	 DCE1
+  DCD2	 DND1
+  DND1	 DNE2
+  DCE1	 DCD2
+  DNE2	 DCG 
   [ virtual_sites3 ]
   ; 3fd
   ; site  from              func            a        d
@@ -2313,11 +2580,6 @@
 	  CE1   HE1
 	  CD2   HD2
 	  NE2   HE2
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	  ND1   CE1    CG   HD1
 	  NE2   CE1   CD2   HE2
@@ -2436,6 +2698,38 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DND1
+  DND1	 DCE1
+  DCE1	 DNE2
+  DNE2	 DCD2
+  DCD2	 DCG 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DND1
+  DCB 	 DCD2
+  DCG 	 DCE1
+  DCD2	 DND1
+  DND1	 DNE2
+  DCE1	 DCD2
+  DNE2	 DCG 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -2505,14 +2799,9 @@
 	  CG2  HG22
 	  CG2  HG23
 	  CG1    CD
-	   CD  HD11
-	   CD  HD12
-	   CD  HD13
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
+	   CD   HD1
+	   CD   HD2
+	   CD   HD3
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -2599,6 +2888,31 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG1
+  DCB 	 DCG2
+  DCG1	 DCD1
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG1
+  DCA 	 DCG2
+  DCG2	 DCG1
+  DCB 	 DCD1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -2664,11 +2978,6 @@
 	  CD2  HD21
 	  CD2  HD22
 	  CD2  HD23
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -2755,6 +3064,31 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD1
+  DCG 	 DCD2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD1
+  DCB 	 DCD2
+  DCD2	 DCD1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -2837,11 +3171,6 @@
 	   NZ   HZ1
 	   NZ   HZ2
 	   NZ   HZ3
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -2932,6 +3261,32 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD 
+  DCD 	 DCE 
+  DCE 	 DNZ 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD 
+  DCG 	 DCE 
+  DCD 	 DNZ 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -3004,14 +3359,6 @@
 	   CE   HE1
 	   CE   HE2
 	   CE   HE3
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DSD   LP1A
-  DSD   LP1B
-  LP1A  LP1B
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -3095,15 +3442,44 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DSD   LP1A
+  DSD   LP1B
+  SD    LP1A
+  SD    LP1B
+  LP1A  LP1B
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DSD 
+  DSD 	 DCE 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DSD 
+  DCG 	 DCE 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
 	 LPOA     O     C    CA      3       91.000    0.030
 	 LPOB     O     C    CA      3      269.000    0.030
   ; 3out
-  ; site from              func    a            b             c 
-    LP1A  SD    CE    CG    4      0.1843887623 0.1843887623  1.650335678
-    LP1B  SD    CE    CG    4      0.1843887623 0.1843887623 -1.650335678
+  ; site from              func    a             b             c 
+    LP1A  SD    CE    CG    4     -0.0256722409 -0.0255158762 -2.167719568
+    LP1B  SD    CE    CG    4     -0.0256722409 -0.0255158762  2.167719568
 
 [ NE ]
   [ atoms ]
@@ -3187,11 +3563,6 @@
 	  CE1   HE1
 	  CE2   HE2
 	   CZ    HZ
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -3314,6 +3685,40 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD1
+  DCD1	 DCE1
+  DCE1	 DCZ 
+  DCG 	 DCD2
+  DCD2	 DCE2
+  DCE2	 DCZ 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD1
+  DCB 	 DCD2
+  DCG 	 DCE1
+  DCD2	 DCD1
+  DCD1	 DCZ 
+  DCE1	 DCE2
+  DCG 	 DCE2
+  DCD2	 DCZ 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -3375,11 +3780,6 @@
 	   CD   HD1
 	   CD   HD2
 	   CD     N
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    CD
@@ -3466,6 +3866,31 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD 
+  DCD 	 DN  
+  DN  	 DC  
+  DN  	 DCB 
+  DCD 	 DCA 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD 
+  DCG 	 DN  
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -3520,14 +3945,6 @@
 	   CB   HB2
 	   CB    OG
 	   OG   HG1
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DOG   LPGA
-  DOG   LPGB
-  LPGA  LPGB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -3595,6 +4012,31 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DOG   LPGA
+  DOG   LPGB
+  OG    LPGA
+  OG    LPGB
+  LPGA  LPGB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DOG 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DOG 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -3623,7 +4065,6 @@
 	  OH2  DOH2
 	  OH2    H1
 	  OH2    H2
-	  OH2    OM
 	   H1    H2
   [ virtual_sites3 ]
   ; 3fd
@@ -3645,7 +4086,6 @@
 	  OH2    H2
 	  OH2   OL1
 	  OH2   OL2
-	  OH2    OM
 	   H1    H2
   [ virtual_sites3 ]
   ; 3fd
@@ -3701,14 +4141,6 @@
 	  CG2  HG21
 	  CG2  HG22
 	  CG2  HG23
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DOG1  LPGA
-  DOG1  LPGB
-  LPGA  LPGB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -3788,6 +4220,34 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DOG1  LPGA
+  DOG1  LPGB
+  OG1   LPGA
+  OG1   LPGB
+  LPGA  LPGB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DOG1
+  DCB 	 DCG2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DOG1
+  DCA 	 DCG2
+  DCG2	 DOG1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -3796,7 +4256,7 @@
   ; 3out
   ; site from              func   a      b      c 
     LPGA  OG1   CB    HG1   4    -0.095 -0.005 -2.513418287
-    LPGB  OG1   CB    HG1   4    -0.095 -0.005 -2.513418287
+    LPGB  OG1   CB    HG1   4    -0.095 -0.005  2.513418287
 
 [ TRP ]
   [ atoms ]
@@ -3881,11 +4341,6 @@
 	  CZ3   HZ3
 	  CH2   HH2
 	  CZ2   HZ2
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -4052,6 +4507,51 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD1
+  DCD1	 DNE1
+  DNE1	 DCE2
+  DCE2	 DCD2
+  DCD2	 DCG 
+  DCD2	 DCE3
+  DCE3	 DCZ3
+  DCZ3	 DCH2
+  DCH2	 DCZ2
+  DCZ2	 DCE2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD1
+  DCB 	 DCD2
+  DCG 	 DNE1
+  DCD2	 DCD1
+  DCD1	 DCE2
+  DNE1	 DCD2
+  DNE1	 DCZ2
+  DCE2	 DCG 
+  DCE2	 DCE3
+  DCZ2	 DCD2
+  DCE3	 DCG 
+  DCD2	 DCZ3
+  DCE3	 DCH2
+  DCZ3	 DCZ2
+  DCH2	 DCE2
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -4132,14 +4632,6 @@
 	  CE2   HE2
 	   CZ    OH
 	   OH    HH
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
-  DOH   LP1A
-  DOH   LP1B
-  LP1A  LP1B
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -4275,6 +4767,48 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DOH   LP1A
+  DOH   LP1B
+  OH    LP1A
+  OH    LP1B
+  LP1A  LP1B
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG 
+  DCG 	 DCD1
+  DCD1	 DCE1
+  DCE1	 DCZ 
+  DCG 	 DCD2
+  DCD2	 DCE2
+  DCE2	 DCZ 
+  DCZ 	 DOH 
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG 
+  DCB 	 DCD1
+  DCB 	 DCD2
+  DCG 	 DCE1
+  DCD2	 DCD1
+  DCD1	 DCZ 
+  DCE1	 DCE2
+  DCE1	 DOH 
+  DCG 	 DCE2
+  DCD2	 DCZ 
+  DCE2	 DOH 
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -4283,7 +4817,7 @@
   ; 3out
   ; site from              func   a      b      c 
     LP1A  OH    CZ    HH    4    -0.095 -0.005 -2.513418287
-    LP1B  OH    CZ    HH    4    -0.095 -0.005 -2.513418287
+    LP1B  OH    CZ    HH    4    -0.095 -0.005  2.513418287
 
 [ VAL ]
   [ atoms ]
@@ -4336,11 +4870,6 @@
 	  CG2  HG21
 	  CG2  HG22
 	  CG2  HG23
- [ exclusions ]
-  ; ai  aj
-  DO    LPOA
-  DO    LPOB
-  LPOA  LPOB
   [ impropers ]
 	    C    CA    +N     O
 	    N    -C    CA    HN
@@ -4419,6 +4948,29 @@
     DC   +CA  2.60   0.2950   1.0780
      C  +DCA  2.60   0.2950   1.0780
     DC  +DCA  2.60   0.2950   1.0780
+ [ exclusions ]
+  ; ai  aj
+  DO    LPOA
+  DO    LPOB
+  O     LPOA
+  O     LPOB
+  LPOA  LPOB
+  DN  	 DCA 
+  DCA 	 DC  
+  DC  	 +DN 
+  DC  	 DO  
+  DCA 	 DCB 
+  DCB 	 DCG1
+  DCB 	 DCG2
+  DN  	 DC  
+  DN  	 DCB 
+  DCA 	 +DN 
+  DCA 	 DO  
+  DCB 	 DC  
+  DO  	 +DN 
+  DCA 	 DCG1
+  DCA 	 DCG2
+  DCG2	 DCG1
   [ virtual_sites3 ]
   ; 3fad
   ; site  from              func        theta        d
@@ -4495,8 +5047,11 @@
    [ exclusions ]
    ; ai  aj
    DN1  LP1
+   N1   LP1
    DN3  LP3
+   N3   LP3
    DN7  LP7
+   N7   LP7
   [ impropers ]
        N6    C6   H61   H62
        C6    N1    C5    N6
@@ -4713,12 +5268,18 @@
   DO4'  LPX
   DO4'  LPRA
   DO4'  LPRB
+  O4'   LPX
+  O4'   LPRA
+  O4'   LPRB
   LPX   LPRA
   LPX   LPRB
   LPRA  LPRB
   DN1   LP1
+  N1    LP1
   DN3   LP3
+  N3    LP3
   DN7   LP7
+  N7    LP7
   [ impropers ]
        N6    C6   H61   H62
        C6    N1    C5    N6
@@ -4997,8 +5558,11 @@
   [ exclusions ]
    ; ai  aj
    DN3   LP3
+   N3    LP3
    DO2   LP2A
    DO2   LP2B
+   O2    LP2A
+   O2    LP2B
    LP2A  LP2B
   [ impropers ]
        C2    N1    N3    O2
@@ -5186,12 +5750,19 @@
    DO4'  LPX
    DO4'  LPRA
    DO4'  LPRB
+   O4'   LPX
+   O4'   LPRA
+   O4'   LPRB
    LPX   LPRA
    LPX   LPRB
    LPRA  LPRB
    DN3   LP3
+   N3    LP3
    DO2   LP2A
    DO2   LP2B
+   O2    LP2A
+   O2    LP2B
+   LP2A  LP2B
   [ impropers ]
        C2    N1    N3    O2
        C4    N3    C5    N4
@@ -5462,9 +6033,13 @@
   [ exclusions ]
    ; ai  aj
    DN3   LP3
+   N3    LP3
    DN7   LP7
+   N7    LP7
    DO6   LP6A
    DO6   LP6B
+   O6    LP6A
+   O6    LP6B
    LP6A  LP6B
   [ impropers ]
        C2    N3    N1    N2
@@ -5695,13 +6270,20 @@
    DO4'  LPX
    DO4'  LPRA
    DO4'  LPRB
+   O4'   LPX
+   O4'   LPRA
+   O4'   LPRB
    LPX   LPRA
    LPX   LPRB
    LPRA  LPRB
    DN3   LP3
+   N3    LP3
    DN7   LP7
+   N7    LP7
    DO6   LP6A
    DO6   LP6B
+   O6    LP6A
+   O6    LP6B
    LP6A  LP6B
   [ impropers ]
        C2    N3    N1    N2
@@ -5997,9 +6579,13 @@
    ; ai  aj
    DO2   LP2A
    DO2   LP2B
+   O2    LP2A
+   O2    LP2B
    LP2A  LP2B
    DO4   LP4A
    DO4   LP4B
+   O4    LP4A
+   O4    LP4B
    LP4A  LP4B
   [ impropers ]
        C2    N1    N3    O2
@@ -6197,14 +6783,21 @@
    DO4'  LPX
    DO4'  LPRA
    DO4'  LPRB
+   O4'   LPX
+   O4'   LPRA
+   O4'   LPRB
    LPX   LPRA
    LPX   LPRB
    LPRA  LPRB
    DO2   LP2A
    DO2   LP2B
+   O2    LP2A
+   O2    LP2B
    LP2A  LP2B
    DO4   LP4A
    DO4   LP4B
+   O4    LP4A
+   O4    LP4B
    LP4A  LP4B
   [ impropers ]
        C2    N1    N3    O2
@@ -6448,6 +7041,8 @@
   ;  ai    aj
      DOY   LPY1
      DOY   LPY2
+     OY    LPY1
+     OY    LPY2
      LPY1  LPY2
   [ anisotropic_polarization ]
   ; drude    ai    aj    ak    al a11        a22        a33
@@ -6512,6 +7107,8 @@
   ;  ai    aj
      DOY   LPY1
      DOY   LPY2
+     OY    LPY1
+     OY    LPY2
      LPY1  LPY2
   [ thole_polarization ]
   ; ai    aj   alpha_i  alpha_j

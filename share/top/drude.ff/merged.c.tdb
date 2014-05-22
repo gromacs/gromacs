@@ -42,9 +42,13 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  OT1   LPT1
+  OT1   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  OT2   LPT3
+  OT2   LPT4
   LPT3  LPT4
 [ impropers ]
  C  OT1  OT2  CA
@@ -135,9 +139,13 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  OT1   LPT1
+  OT2   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  OT2   LPT3
+  OT2   LPT4
   LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
@@ -223,9 +231,13 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  OT1   LPT1
+  OT1   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  OT2   LPT3
+  OT2   LPT4
   LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
@@ -310,9 +322,13 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  OT1   LPT1
+  OT1   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  OT2   LPT3
+  OT2   LPT4
   LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
@@ -405,9 +421,13 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  OT1   LPT1
+  OT2   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  OT2   LPT3
+  OT2   LPT4
   LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
@@ -521,9 +541,13 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  OT1   LPT1
+  OT1   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  OT2   LPT3
+  OT2   LPT4
   LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
@@ -600,9 +624,13 @@
 [ exclusions ]
   DOT1  LPT1
   DOT1  LPT2
+  OT1   LPT1
+  OT1   LPT2
   LPT1  LPT2
   DOT2  LPT3
   DOT2  LPT4
+  OT2   LPT3
+  OT2   LPT4
   LPT3  LPT4
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j

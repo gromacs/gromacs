@@ -243,6 +243,8 @@
 ;  ai    aj
    DO5'  LP5A
    DO5'  LP5B
+   O5'   LP5A
+   O5'   LP5B
    LP5A  LP5B
 [ anisotropic_polarization ]
 ; drude    ai    aj    ak    al   a11        a22        a33
