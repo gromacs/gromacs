@@ -1053,8 +1053,8 @@ real thole_pol(int nbonds,
                const t_mdatoms *md, t_fcdata gmx_unused *fcd,
                int gmx_unused *global_atom_index)
 {
-    /* Interaction between two pairs of particles with opposite charge */
-    int  i, type, a1, da1, a2, da2;
+    /* Screened interaction between two particles */
+    int  i, type, a1, a2;
     real q1, q2, qq, a, al1, al2, afac;
     real V = 0;
 
@@ -1062,20 +1062,23 @@ real thole_pol(int nbonds,
     {
         type  = forceatoms[i++];
         a1    = forceatoms[i++];
-        da1   = forceatoms[i++];
         a2    = forceatoms[i++];
-        da2   = forceatoms[i++];
-        q1    = md->chargeA[da1];
-        q2    = md->chargeA[da2];
+        q1    = md->chargeA[a1];
+        q2    = md->chargeA[a2];
         a     = forceparams[type].thole.a;
         al1   = forceparams[type].thole.alpha1;
         al2   = forceparams[type].thole.alpha2;
         qq    = q1*q2;
         afac  = a*pow(al1*al2, -1.0/6.0);
+
+        if (debug)
+        {
+            fprintf(debug, "THOLE: a1 = %d, a2 = %d, q1 = %f, q2 = %f\n",
+                    a1, a2, q1, q2);
+            fprintf(debug, "THOLE: a = %f, al1 = %f, al2 = %f, qq = %f, afac = %f\n", 
+                    a, al1, al2, qq, afac);
+        }
         V    += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq, fshift, afac);
-        V    += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, -qq, fshift, afac);
-        V    += do_1_thole(x[a1], x[da2], f[a1], f[da2], pbc, -qq, fshift, afac);
-        V    += do_1_thole(x[da1], x[da2], f[da1], f[da2], pbc, qq, fshift, afac);
     }
     /* 290 flops */
     return V;
