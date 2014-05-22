@@ -58,7 +58,7 @@
 #include "macros.h"
 #include "names.h"
 #include "gromacs/utility/cstringutil.h"
-#include "symtab.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "vsite_parm.h"

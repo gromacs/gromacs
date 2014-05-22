@@ -38,11 +38,12 @@
 #include <config.h>
 #endif
 
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "symtab.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gpp_bond_atomtype.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int              nr;       /* The number of atomtypes		*/

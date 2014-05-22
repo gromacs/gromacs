@@ -43,7 +43,6 @@
 #include <string.h>
 
 #include "typedefs.h"
-#include "symtab.h"
 #include "pdbio.h"
 #include "copyrite.h"
 #include "gromacs/utility/futil.h"
@@ -53,6 +52,7 @@
 #include "gmxfio.h"
 
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

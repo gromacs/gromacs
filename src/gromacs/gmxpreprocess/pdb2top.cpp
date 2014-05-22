@@ -43,11 +43,8 @@
 #include <ctype.h>
 
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "symtab.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
 #include "topdirs.h"
@@ -68,8 +65,11 @@
 #include "copyrite.h"
 
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/smalloc.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
