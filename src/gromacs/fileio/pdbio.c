@@ -380,7 +380,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         if (bWideFormat)
         {
             strcpy(pdbform,
-                   "%-6s%5u %-4.4s %3.3s %c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f    %2s\n");
+                   "%-6s%5u %-4.4s %4.4s%c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f    %2s\n");
         }
         else
         {
@@ -413,7 +413,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], occup, bfac, atoms->atom[i].elem);
         if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
         {
-            fprintf(out, "ANISOU%5u  %-4.4s%3.3s %c%4d%c %7d%7d%7d%7d%7d%7d\n",
+            fprintf(out, "ANISOU%5u  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
                     (i+1)%100000, nm, resnm, ch, resnr,
                     (resic == '\0') ? ' ' : resic,
                     atoms->pdbinfo[i].uij[0], atoms->pdbinfo[i].uij[1],
@@ -1062,12 +1062,12 @@ gmx_conect gmx_conect_generate(t_topology *top)
 
 const char* get_pdbformat()
 {
-    static const char *pdbformat = "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f";
+    static const char *pdbformat = "%-6s%5u  %-4.4s%4.4s%c%4d%c   %8.3f%8.3f%8.3f";
     return pdbformat;
 }
 
 const char* get_pdbformat4()
 {
-    static const char *pdbformat4 = "%-6s%5u %-4.4s %3.3s %c%4d%c   %8.3f%8.3f%8.3f";
+    static const char *pdbformat4 = "%-6s%5u %-4.4s %4.4s%c%4d%c   %8.3f%8.3f%8.3f";
     return pdbformat4;
 }
