@@ -89,16 +89,6 @@ static gmx_bool gmx_ask_yesno(gmx_bool bASK)
     }
 }
 
-t_blocka *new_blocka(void)
-{
-    t_blocka *block;
-
-    snew(block, 1);
-    snew(block->index, 1);
-
-    return block;
-}
-
 void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms)
 {
     FILE *out;

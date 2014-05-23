@@ -41,11 +41,12 @@
 #include <stdio.h>
 
 #include "types/atoms.h"
-#include "types/block.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_blocka;
 
 void check_index(char *gname, int n, atom_id index[],
                  char *traj, int natoms);
@@ -54,7 +55,7 @@ void check_index(char *gname, int n, atom_id index[],
  * and traj (if traj=NULL, "the trajectory" is used).
  */
 
-t_blocka *init_index(const char *gfile, char ***grpname);
+struct t_blocka *init_index(const char *gfile, char ***grpname);
 /* Lower level routine than the next */
 
 void rd_index(const char *statfile, int ngrps, int isize[],
@@ -86,10 +87,10 @@ void get_index(t_atoms *atoms, const char *fnm, int ngrps,
  */
 
 typedef struct {
-    int        maxframe;
-    char     **grpname;
-    t_blocka  *clust;
-    atom_id   *inv_clust;
+    int               maxframe;
+    char            **grpname;
+    struct t_blocka  *clust;
+    atom_id          *inv_clust;
 } t_cluster_ndx;
 
 t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx);
@@ -142,16 +143,13 @@ gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
 
 
 
-t_blocka *new_blocka(void);
-/* allocate new block */
-
-void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms);
+void write_index(const char *outf, struct t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms);
 /* Writes index blocks to outf (writes an indexfile) */
 
-void add_grp(t_blocka *b, char ***gnames, int nra, atom_id a[], const char *name);
+void add_grp(struct t_blocka *b, char ***gnames, int nra, atom_id a[], const char *name);
 /* Ads group a with name name to block b and namelist gnames */
 
-void analyse(t_atoms *atoms, t_blocka *gb, char ***gn,
+void analyse(t_atoms *atoms, struct t_blocka *gb, char ***gn,
              gmx_bool bASK, gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.

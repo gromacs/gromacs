@@ -48,8 +48,8 @@
 #include <vector>
 
 #include "gromacs/legacyheaders/index.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 

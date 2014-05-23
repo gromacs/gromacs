@@ -70,6 +70,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
