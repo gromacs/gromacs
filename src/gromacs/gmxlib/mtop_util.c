@@ -44,6 +44,7 @@
 #include "mtop_util.h"
 #include "topsort.h"
 
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

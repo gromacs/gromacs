@@ -46,6 +46,7 @@
 #include "toputil.h"
 #include "gpp_atomtype.h"
 
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

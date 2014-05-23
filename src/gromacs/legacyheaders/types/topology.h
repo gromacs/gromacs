@@ -39,8 +39,8 @@
 
 #include "atoms.h"
 #include "idef.h"
-#include "block.h"
 #include "simple.h"
+#include "../../topology/block.h"
 #include "../../topology/symtab.h"
 
 #ifdef __cplusplus

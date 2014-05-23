@@ -49,6 +49,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -104,29 +105,6 @@ char *gmx_step_str(gmx_int64_t i, char *buf)
     sprintf(buf, "%"GMX_PRId64, i);
 
     return buf;
-}
-
-void init_block(t_block *block)
-{
-    int i;
-
-    block->nr           = 0;
-    block->nalloc_index = 1;
-    snew(block->index, block->nalloc_index);
-    block->index[0]     = 0;
-}
-
-void init_blocka(t_blocka *block)
-{
-    int i;
-
-    block->nr           = 0;
-    block->nra          = 0;
-    block->nalloc_index = 1;
-    snew(block->index, block->nalloc_index);
-    block->index[0]     = 0;
-    block->nalloc_a     = 0;
-    block->a            = NULL;
 }
 
 void init_atom(t_atoms *at)
@@ -201,91 +179,6 @@ void init_inputrec(t_inputrec *ir)
     snew(ir->fepvals, 1);
     snew(ir->expandedvals, 1);
     snew(ir->simtempvals, 1);
-}
-
-void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup)
-{
-    int i;
-
-    if (bOneIndexGroup)
-    {
-        grp->nalloc_index = 2;
-        snew(grp->index, grp->nalloc_index);
-        grp->index[0] = 0;
-        grp->index[1] = natom;
-        grp->nr       = 1;
-    }
-    else
-    {
-        grp->nalloc_index = natom+1;
-        snew(grp->index, grp->nalloc_index);
-        snew(grp->index, natom+1);
-        for (i = 0; (i <= natom); i++)
-        {
-            grp->index[i] = i;
-        }
-        grp->nr = natom;
-    }
-}
-
-void stupid_fill_blocka(t_blocka *grp, int natom)
-{
-    int i;
-
-    grp->nalloc_a = natom;
-    snew(grp->a, grp->nalloc_a);
-    for (i = 0; (i < natom); i++)
-    {
-        grp->a[i] = i;
-    }
-    grp->nra = natom;
-
-    grp->nalloc_index = natom + 1;
-    snew(grp->index, grp->nalloc_index);
-    for (i = 0; (i <= natom); i++)
-    {
-        grp->index[i] = i;
-    }
-    grp->nr = natom;
-}
-
-void copy_blocka(const t_blocka *src, t_blocka *dest)
-{
-    int i;
-
-    dest->nr           = src->nr;
-    dest->nalloc_index = dest->nr + 1;
-    snew(dest->index, dest->nalloc_index);
-    for (i = 0; i < dest->nr+1; i++)
-    {
-        dest->index[i] = src->index[i];
-    }
-    dest->nra      = src->nra;
-    dest->nalloc_a = dest->nra + 1;
-    snew(dest->a, dest->nalloc_a);
-    for (i = 0; i < dest->nra+1; i++)
-    {
-        dest->a[i] = src->a[i];
-    }
-}
-
-void done_block(t_block *block)
-{
-    block->nr    = 0;
-    sfree(block->index);
-    block->nalloc_index = 0;
-}
-
-void done_blocka(t_blocka *block)
-{
-    block->nr    = 0;
-    block->nra   = 0;
-    sfree(block->index);
-    sfree(block->a);
-    block->index        = NULL;
-    block->a            = NULL;
-    block->nalloc_index = 0;
-    block->nalloc_a     = 0;
 }
 
 void done_atom (t_atoms *at)

@@ -62,6 +62,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/topology/block.h"
 
 #include "compare.h"
 

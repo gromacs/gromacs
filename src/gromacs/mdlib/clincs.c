@@ -55,6 +55,7 @@
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"

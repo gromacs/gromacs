@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,11 +34,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _block_h
-#define _block_h
+#ifndef GMX_TOPOLOGY_BLOCK_H
+#define GMX_TOPOLOGY_BLOCK_H
 
-
-#include "idef.h"
+#include "../legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,26 +51,50 @@ extern "C" {
 
    This makes the mapping from atoms to molecules O(Nmolecules) instead
    of O(Natoms) in size.  */
-typedef struct {
-    int      nr;           /* The number of blocks			*/
+typedef struct t_block
+{
+    int      nr;           /* The number of blocks          */
     atom_id *index;        /* Array of indices (dim: nr+1)  */
-    int      nalloc_index; /* The allocation size for index        */
+    int      nalloc_index; /* The allocation size for index */
 } t_block;
 
-typedef struct {
-    int      nr;    /* The number of blocks			*/
-    atom_id *index; /* Array of indices in a (dim: nr+1)	*/
-    int      nra;   /* The number of atoms          */
+typedef struct t_blocka
+{
+    int      nr;    /* The number of blocks              */
+    atom_id *index; /* Array of indices in a (dim: nr+1) */
+    int      nra;   /* The number of atoms               */
     atom_id *a;     /* Array of atom numbers in each group  */
-    /* (dim: nra)				*/
-    /* Block i (0<=i<nr) runs from		*/
+    /* (dim: nra)                           */
+    /* Block i (0<=i<nr) runs from          */
     /* index[i] to index[i+1]-1. There will */
-    /* allways be an extra entry in index	*/
-    /* to terminate the table		*/
+    /* allways be an extra entry in index   */
+    /* to terminate the table               */
     int nalloc_index;           /* The allocation size for index        */
     int nalloc_a;               /* The allocation size for a            */
 } t_blocka;
 
+void init_block(t_block *block);
+void init_blocka(t_blocka *block);
+t_blocka *new_blocka(void);
+/* allocate new block */
+
+void done_block(t_block *block);
+void done_blocka(t_blocka *block);
+
+void copy_blocka(const t_blocka *src, t_blocka *dest);
+
+void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup);
+/* Fill a block structure with numbers identical to the index
+ * (0, 1, 2, .. natom-1)
+ * If bOneIndexGroup, then all atoms are  lumped in one index group,
+ * otherwise there is one atom per index entry
+ */
+
+void stupid_fill_blocka(t_blocka *grp, int natom);
+/* Fill a block structure with numbers identical to the index
+ * (0, 1, 2, .. natom-1)
+ * There is one atom per index entry
+ */
 
 #ifdef __cplusplus
 }

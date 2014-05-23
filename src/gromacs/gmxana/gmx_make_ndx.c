@@ -43,16 +43,17 @@
 
 #include "gromacs/utility/futil.h"
 #include "macros.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "typedefs.h"
 #include "index.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "index.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MAXNAMES 30
 #define NAME_LEN 30

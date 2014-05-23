@@ -46,7 +46,6 @@
 
 #include "types/simple.h"
 #include "types/enums.h"
-#include "types/block.h"
 #include "types/idef.h"
 #include "types/atoms.h"
 #include "../fileio/trx.h"
@@ -122,8 +121,6 @@ char *gmx_step_str(gmx_int64_t i, char *buf);
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c
  */
-void init_block(t_block *block);
-void init_blocka(t_blocka *block);
 void init_atom (t_atoms *at);
 void init_mtop(gmx_mtop_t *mtop);
 void init_top(t_topology *top);
@@ -136,11 +133,6 @@ t_state *serial_init_local_state(t_state *state_global);
 void init_df_history(df_history_t *dfhist, int nlambda);
 void done_df_history(df_history_t *dfhist);
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
-
-void copy_blocka(const t_blocka *src, t_blocka *dest);
-
-void done_block(t_block *block);
-void done_blocka(t_blocka *block);
 void done_atom (t_atoms *at);
 void done_moltype(gmx_moltype_t *molt);
 void done_molblock(gmx_molblock_t *molb);
@@ -154,19 +146,6 @@ void set_box_rel(t_inputrec *ir, t_state *state);
 
 void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
 /* Preserve the box shape, b can be box or boxv */
-
-void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup);
-/* Fill a block structure with numbers identical to the index
- * (0, 1, 2, .. natom-1)
- * If bOneIndexGroup, then all atoms are  lumped in one index group,
- * otherwise there is one atom per index entry
- */
-
-void stupid_fill_blocka(t_blocka *grp, int natom);
-/* Fill a block structure with numbers identical to the index
- * (0, 1, 2, .. natom-1)
- * There is one atom per index entry
- */
 
 void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
