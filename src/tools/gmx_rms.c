@@ -322,6 +322,8 @@ int gmx_rms(int argc, char *argv[])
     bPrev = (prev > 0);
     if (bPrev)
     {
+        fprintf(stderr, "WARNING: using option -prev with large trajectories will\n"
+                        "         require a lot of memory and could lead to crashes\n");
         prev = abs(prev);
         if (freq != 1)
         {
