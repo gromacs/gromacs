@@ -34,72 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
+#ifndef GMX_TOPOLOGY_INVBLOCK_H
+#define GMX_TOPOLOGY_INVBLOCK_H
+
+#include "../legacyheaders/types/simple.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "invblock.h"
-#include "gromacs/utility/fatalerror.h"
+struct t_block;
+struct t_blocka;
 
-atom_id *make_invblock(const t_block *block, int nr)
-{
-    int      i, j;
-    atom_id *invblock;
+atom_id *make_invblock(const struct t_block *block, int nr);
+/* Inverse the block structure. nr is the maximum entry in the inversed
+ * array, and therefore the dimension of the returned array
+ */
 
-    snew(invblock, nr+1);
-    /* Mark unused numbers */
-    for (i = 0; i <= nr; i++)
-    {
-        invblock[i] = NO_ATID;
-    }
-    for (i = 0; (i < block->nr); i++)
-    {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
-        {
-            if (invblock[j] == NO_ATID)
-            {
-                invblock[j] = i;
-            }
-            else
-            {
-                gmx_fatal(FARGS, "Double entries in block structure. Item %d is in blocks %d and %d\n"
-                          " Cannot make an unambiguous inverse block.",
-                          j, i, invblock[j]);
-            }
-        }
-    }
-    return invblock;
+atom_id *make_invblocka(const struct t_blocka *block, int nr);
+/* Inverse the block structure. nr is the maximum entry in the inversed
+ * array, and therefore the dimension of the returned array
+ */
+
+#ifdef __cplusplus
 }
+#endif
 
-atom_id *make_invblocka(const t_blocka *block, int nr)
-{
-    int      i, j;
-    atom_id *invblock;
-
-    snew(invblock, nr+1);
-    /* Mark unused numbers */
-    for (i = 0; i <= nr; i++)
-    {
-        invblock[i] = NO_ATID;
-    }
-    for (i = 0; (i < block->nr); i++)
-    {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
-        {
-            if (invblock[block->a[j]] == NO_ATID)
-            {
-                invblock[block->a[j]] = i;
-            }
-            else
-            {
-                gmx_fatal(FARGS, "Double entries in block structure. Item %d is in blocks %d and %d\n"
-                          " Cannot make an unambiguous inverse block.",
-                          j, i, invblock[block->a[j]]);
-            }
-        }
-    }
-    return invblock;
-}
+#endif

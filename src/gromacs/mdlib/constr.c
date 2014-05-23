@@ -44,10 +44,8 @@
 #include "types/commrec.h"
 #include "constr.h"
 #include "copyrite.h"
-#include "invblock.h"
 #include "mdrun.h"
 #include "nrnb.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "names.h"
 #include "txtdump.h"
@@ -63,7 +61,9 @@
 
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/invblock.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_constr {
     int                ncon_tot;       /* The total number of constraints    */

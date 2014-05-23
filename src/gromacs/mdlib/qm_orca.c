@@ -49,7 +49,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "force.h"
-#include "invblock.h"
 #include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "network.h"
