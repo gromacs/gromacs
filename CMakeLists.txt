@@ -1153,8 +1153,11 @@ else()
     set(GMX_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/")
 endif()
 
+# Use GNUInstallDirst to set paths on multiarch systems
+include(GNUInstallDirs)
+
 if ( NOT DEFINED GMXLIB )
-    set(GMXLIB lib)
+    set(GMXLIB ${CMAKE_INSTALL_LIBDIR})
 endif()
 set(LIB_INSTALL_DIR "${GMX_INSTALL_PREFIX}${GMXLIB}")
 set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
