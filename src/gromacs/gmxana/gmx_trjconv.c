@@ -1032,9 +1032,10 @@ int gmx_trjconv(int argc, char *argv[])
         {
             /* check if velocities are possible in input and output files */
             ftpin = fn2ftp(in_file);
-            bVels = (ftp == efTRR || ftp == efTRJ || ftp == efGRO || ftp == efG96)
-                && (ftpin == efTRR || ftpin == efTRJ || ftpin == efGRO || ftpin == efG96 ||
-                    ftpin == efCPT);
+            bVels = (ftp == efTRR || ftp == efTRJ || ftp == efGRO ||
+                     ftp == efG96 || ftp == efTNG)
+                && (ftpin == efTRR || ftpin == efTRJ || ftpin == efGRO ||
+                    ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
         {
