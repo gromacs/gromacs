@@ -58,6 +58,7 @@
 #include "pmalloc_cuda.h"
 #include "gpu_utils.h"
 
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

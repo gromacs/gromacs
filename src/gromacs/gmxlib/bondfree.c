@@ -38,29 +38,31 @@
 #include <config.h>
 #endif
 
-#include <math.h>
 #include <assert.h>
+#include <math.h>
+
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "txtdump.h"
 #include "bondf.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "ns.h"
 #include "macros.h"
 #include "names.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "disre.h"
 #include "orires.h"
 #include "force.h"
 #include "nonbonded.h"
 #include "restcbt.h"
 
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {

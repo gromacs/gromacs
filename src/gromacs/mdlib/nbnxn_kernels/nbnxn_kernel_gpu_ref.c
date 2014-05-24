@@ -39,10 +39,13 @@
 #include <math.h>
 
 #include "types/simple.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "typedefs.h"
 #include "force.h"
+
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+
 #include "nbnxn_kernel_gpu_ref.h"
 #include "../nbnxn_consts.h"
 #include "nbnxn_kernel_common.h"

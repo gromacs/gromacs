@@ -41,12 +41,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "types/commrec.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "nbnxn_consts.h"
 /* nbnxn_internal.h included gromacs/simd/macros.h */
 #include "nbnxn_internal.h"
@@ -59,7 +57,9 @@
 #include "nrnb.h"
 #include "ns.h"
 
-#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */

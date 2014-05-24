@@ -38,7 +38,6 @@
 #endif
 #include <assert.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "constr.h"
 #include "types/commrec.h"
@@ -50,7 +49,9 @@
 #include "gmx_omp_nthreads.h"
 #include "macros.h"
 
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int  nsend;
