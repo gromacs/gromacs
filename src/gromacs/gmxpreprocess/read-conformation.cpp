@@ -37,8 +37,8 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/types/atoms.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 

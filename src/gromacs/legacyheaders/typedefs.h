@@ -47,7 +47,6 @@
 #include "types/simple.h"
 #include "types/enums.h"
 #include "types/idef.h"
-#include "types/atoms.h"
 #include "../fileio/trx.h"
 #include "types/topology.h"
 #include "types/energy.h"
@@ -120,7 +119,6 @@ char *gmx_step_str(gmx_int64_t i, char *buf);
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c
  */
-void init_atom (t_atoms *at);
 void init_mtop(gmx_mtop_t *mtop);
 void init_top(t_topology *top);
 void init_inputrec(t_inputrec *ir);
@@ -132,7 +130,6 @@ t_state *serial_init_local_state(t_state *state_global);
 void init_df_history(df_history_t *dfhist, int nlambda);
 void done_df_history(df_history_t *dfhist);
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
-void done_atom (t_atoms *at);
 void done_moltype(gmx_moltype_t *molt);
 void done_molblock(gmx_molblock_t *molb);
 void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab);
@@ -145,29 +142,6 @@ void set_box_rel(t_inputrec *ir, t_state *state);
 
 void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
 /* Preserve the box shape, b can be box or boxv */
-
-void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
-/* allocate memory for the arrays, set nr to natoms and nres to 0
- * set pdbinfo to NULL or allocate memory for it */
-
-t_atoms *copy_t_atoms(t_atoms *src);
-/* copy an atoms struct from src to a new one */
-
-void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra);
-/* allocate extra space for more atoms and or residues */
-
-void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
-                         const char *resname, int resnr, unsigned char ic,
-                         int chainnum, char chainid);
-/* Set the residue name, number, insertion code and chain identifier
- * of atom index atom_ind.
- */
-
-void free_t_atoms(t_atoms *atoms, gmx_bool bFreeNames);
-/* Free all the arrays and set the nr and nres to 0.
- * bFreeNames tells if to free the atom and residue name strings,
- * don't free them if they still need to be used in e.g. the topology struct.
- */
 
 t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 /* generate a t_atoms struct for the system from gmx_mtop_t */
