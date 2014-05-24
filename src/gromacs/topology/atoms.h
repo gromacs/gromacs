@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,22 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _atoms_h
-#define _atoms_h
+#ifndef GMX_TOPOLOGY_ATOMS_H
+#define GMX_TOPOLOGY_ATOMS_H
 
-
-#include "simple.h"
+#include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_symtab;
 
 enum {
     eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
 /* The particle type */
 
-typedef struct {
+typedef struct t_atom
+{
     real           m, q;        /* Mass and charge                      */
     real           mB, qB;      /* Mass and charge for Free Energy calc */
     unsigned short type;        /* Atom type                            */
@@ -60,7 +63,8 @@ typedef struct {
     char           elem[4];     /* Element name                         */
 } t_atom;
 
-typedef struct {
+typedef struct t_resinfo
+{
     char          **name;       /* Pointer to the residue name          */
     int             nr;         /* Residue number                       */
     unsigned char   ic;         /* Code for insertion of residues       */
@@ -69,7 +73,8 @@ typedef struct {
     char          **rtp;        /* rtp building block name (optional)   */
 } t_resinfo;
 
-typedef struct {
+typedef struct t_pdbinfo
+{
     int      type;              /* PDB record name                      */
     int      atomnr;            /* PDB atom number                      */
     char     altloc;            /* Alternate location indicator         */
@@ -80,12 +85,14 @@ typedef struct {
     int      uij[6];            /* Anisotropic B-factor                 */
 } t_pdbinfo;
 
-typedef struct {
+typedef struct t_grps
+{
     int   nr;                   /* Number of different groups           */
     int  *nm_ind;               /* Index in the group names             */
 } t_grps;
 
-typedef struct {
+typedef struct t_atoms
+{
     int            nr;          /* Nr of atoms                          */
     t_atom        *atom;        /* Array of atoms (dim: nr)             */
                                 /* The following entries will not       */
@@ -101,7 +108,8 @@ typedef struct {
     t_pdbinfo       *pdbinfo;   /* PDB Information, such as aniso. Bfac */
 } t_atoms;
 
-typedef struct {
+typedef struct t_atomtypes
+{
     int           nr;           /* number of atomtypes                          */
     real         *radius;       /* GBSA radius for each atomtype                */
     real         *vol;          /* GBSA efective volume for each atomtype       */
@@ -111,8 +119,35 @@ typedef struct {
     int          *atomnumber;   /* Atomic number, used for QM/MM                */
 } t_atomtypes;
 
-
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
+
+void init_atom(t_atoms *at);
+void init_atomtypes(t_atomtypes *at);
+void done_atom(t_atoms *at);
+void done_atomtypes(t_atomtypes *at);
+
+void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
+/* allocate memory for the arrays, set nr to natoms and nres to 0
+ * set pdbinfo to NULL or allocate memory for it */
+
+t_atoms *copy_t_atoms(t_atoms *src);
+/* copy an atoms struct from src to a new one */
+
+void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra);
+/* allocate extra space for more atoms and or residues */
+
+void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
+                         const char *resname, int resnr, unsigned char ic,
+                         int chainnum, char chainid);
+/* Set the residue name, number, insertion code and chain identifier
+ * of atom index atom_ind.
+ */
+
+void free_t_atoms(t_atoms *atoms, gmx_bool bFreeNames);
+/* Free all the arrays and set the nr and nres to 0.
+ * bFreeNames tells if to free the atom and residue name strings,
+ * don't free them if they still need to be used in e.g. the topology struct.
+ */
 
 #ifdef __cplusplus
 }

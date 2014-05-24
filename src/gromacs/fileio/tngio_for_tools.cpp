@@ -47,8 +47,6 @@
 #include "../../external/tng_io/include/tng_io.h"
 #endif
 
-#include "gromacs/legacyheaders/types/atoms.h"
-
 #include "gromacs/math/units.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/fatalerror.h"

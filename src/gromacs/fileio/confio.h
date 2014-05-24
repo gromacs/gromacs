@@ -40,7 +40,6 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/atoms.h"
 #include "../legacyheaders/types/simple.h"
 #include "../legacyheaders/types/topology.h"
 
@@ -52,6 +51,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_atoms;
 
 int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line);
 /* read a Gromos96 coordinate or trajectory file,                       *
@@ -71,23 +72,23 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr);
 int gro_first_x_or_v(FILE *status, t_trxframe *fr);
 /* read first/next x and/or v frame from gro file */
 
-void write_hconf_indexed_p(FILE *out, const char *title, t_atoms *atoms,
+void write_hconf_indexed_p(FILE *out, const char *title, struct t_atoms *atoms,
                            int nx, const atom_id index[], int ndec,
                            rvec *x, rvec *v, matrix box);
 
-void write_hconf_p(FILE *out, const char *title, t_atoms *atoms, int ndec,
+void write_hconf_p(FILE *out, const char *title, struct t_atoms *atoms, int ndec,
                    rvec *x, rvec *v, matrix box);
 /* Write a Gromos file with precision ndec: number of decimal places in x,
  * v has one place more. */
 
 void write_sto_conf_indexed(const char *outfile, const char *title,
-                            t_atoms *atoms,
+                            struct t_atoms *atoms,
                             rvec x[], rvec *v, int ePBC, matrix box,
                             atom_id nindex, atom_id index[]);
 /* like write_sto_conf, but indexed */
 
 void write_sto_conf(const char *outfile, const char *title,
-                    t_atoms *atoms,
+                    struct t_atoms *atoms,
                     rvec x[], rvec *v, int ePBC, matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL)
  * to an STO (.gro or .pdb) file */
@@ -101,7 +102,7 @@ void get_stx_coordnum (const char *infile, int *natoms);
 /* read the number of atoms from an STX file */
 
 void read_stx_conf(const char *infile, char *title,
-                   t_atoms *atoms,
+                   struct t_atoms *atoms,
                    rvec x[], rvec *v, int *ePBC, matrix box);
 /* Read atoms, x, v and box from an STX file.
  * If ePBC!=NULL return the type of pbc in *ePBC or -1 if unknown.

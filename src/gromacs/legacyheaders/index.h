@@ -40,12 +40,13 @@
 
 #include <stdio.h>
 
-#include "types/atoms.h"
+#include "types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct t_atoms;
 struct t_blocka;
 
 void check_index(char *gname, int n, atom_id index[],
@@ -79,7 +80,7 @@ void rd_index_nrs(char *statfile, int ngrps, int isize[],
                   atom_id *index[], char *grpnames[], int grpnr[]);
 /* the same but also reads the number of the selected group*/
 
-void get_index(t_atoms *atoms, const char *fnm, int ngrps,
+void get_index(struct t_atoms *atoms, const char *fnm, int ngrps,
                int isize[], atom_id *index[], char *grpnames[]);
 /* Does the same as rd_index, but if the fnm pointer is NULL it
  * will not read from fnm, but it will make default index groups
@@ -149,7 +150,7 @@ void write_index(const char *outf, struct t_blocka *b, char **gnames, gmx_bool b
 void add_grp(struct t_blocka *b, char ***gnames, int nra, atom_id a[], const char *name);
 /* Ads group a with name name to block b and namelist gnames */
 
-void analyse(t_atoms *atoms, struct t_blocka *gb, char ***gn,
+void analyse(struct t_atoms *atoms, struct t_blocka *gb, char ***gn,
              gmx_bool bASK, gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.

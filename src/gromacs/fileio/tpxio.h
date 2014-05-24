@@ -56,6 +56,9 @@
 extern "C" {
 #endif
 
+struct t_atoms;
+struct t_block;
+
 typedef struct
 {
     int   bIr;       /* Non zero if input_rec is present		*/
@@ -145,7 +148,7 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top,
  * else if bMass=TRUE, read the masses into top.atoms from the mass database.
  */
 
-void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols);
+void tpx_make_chain_identifiers(struct t_atoms *atoms, struct t_block *mols);
 
 #ifdef __cplusplus
 }

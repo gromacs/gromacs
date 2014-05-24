@@ -37,9 +37,9 @@
 #ifndef GMX_LEGACYHEADERS_TOPOLOGY_H
 #define GMX_LEGACYHEADERS_TOPOLOGY_H
 
-#include "atoms.h"
 #include "idef.h"
 #include "simple.h"
+#include "../../topology/atoms.h"
 #include "../../topology/block.h"
 #include "../../topology/symtab.h"
 
