@@ -43,6 +43,7 @@
 #include "macros.h"
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 

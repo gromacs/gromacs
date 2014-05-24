@@ -42,7 +42,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -52,9 +51,7 @@
 #include "force.h"
 #include "nonbonded.h"
 #include "ns.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "names.h"
-#include "gromacs/utility/fatalerror.h"
 #include "nrnb.h"
 #include "txtdump.h"
 #include "mtop_util.h"
@@ -62,6 +59,10 @@
 #include "domdec.h"
 #include "adress.h"
 
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /*
  *    E X C L U S I O N   H A N D L I N G
