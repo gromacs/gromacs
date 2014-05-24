@@ -40,13 +40,15 @@
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/legacyheaders/types/idef.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_idef;
+struct t_ilist;
 
 typedef enum {
     egcolWhite, egcolGrey, egcolBlack, egcolNR
@@ -70,7 +72,7 @@ typedef struct t_graph {
 #define SHIFT_IVEC(g, i) ((g)->ishift[i])
 
 t_graph *mk_graph(FILE *fplog,
-                  t_idef *idef, int at_start, int at_end,
+                  struct t_idef *idef, int at_start, int at_end,
                   gmx_bool bShakeOnly, gmx_bool bSettle);
 /* Build a graph from an idef description. The graph can be used
  * to generate mol-shift indices.
@@ -81,7 +83,7 @@ t_graph *mk_graph(FILE *fplog,
  */
 
 void mk_graph_ilist(FILE *fplog,
-                    t_ilist *ilist, int at_start, int at_end,
+                    struct t_ilist *ilist, int at_start, int at_end,
                     gmx_bool bShakeOnly, gmx_bool bSettle,
                     t_graph *g);
 /* As mk_graph, but takes t_ilist iso t_idef and does not allocate g */

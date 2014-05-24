@@ -39,7 +39,7 @@
 #ifndef _ifunc_h
 #define _ifunc_h
 
-#include "idef.h"
+#include "../../topology/idef.h"
 #include "mdatom.h"
 #include "fcdata.h"
 

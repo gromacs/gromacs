@@ -37,7 +37,6 @@
 #ifndef GMX_PBCUTIL_RMPBC_H
 #define GMX_PBCUTIL_RMPBC_H
 
-#include "../legacyheaders/types/idef.h"
 #include "../fileio/trx.h"
 #include "../math/vectypes.h"
 
@@ -46,10 +45,11 @@ extern "C" {
 #endif
 
 struct t_atoms;
+struct t_idef;
 
 typedef struct gmx_rmpbc *gmx_rmpbc_t;
 
-gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef, int ePBC, int natoms);
+gmx_rmpbc_t gmx_rmpbc_init(struct t_idef *idef, int ePBC, int natoms);
 
 void gmx_rmpbc_done(gmx_rmpbc_t gpbc);
 

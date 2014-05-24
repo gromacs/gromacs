@@ -39,7 +39,6 @@
 
 #include "../../utility/gmxmpi.h"
 #include "../typedefs.h"
-#include "idef.h"
 
 #ifdef __cplusplus
 extern "C" {

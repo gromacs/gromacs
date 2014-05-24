@@ -38,6 +38,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOPOLOGY_SOURCES} PARENT_SCOPE)
 set(TOPOLOGY_PUBLIC_HEADERS
     atoms.h
     block.h
+    idef.h
     symtab.h)
 
 gmx_install_headers(topology ${TOPOLOGY_PUBLIC_HEADERS})

@@ -38,7 +38,7 @@
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
-#include "idef.h"
+#include "../../topology/idef.h"
 #include "nb_verlet.h"
 #include "interaction_const.h"
 #include "hw_info.h"

@@ -34,12 +34,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_TOPOLOGY_IDEF_H
+#define GMX_TOPOLOGY_IDEF_H
 
-
-#ifndef _idef_h
-#define _idef_h
-
-#include "simple.h"
+#include "../legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -149,7 +147,7 @@ enum {
     F_DVDL_BONDED,
     F_DVDL_RESTRAINT,
     F_DVDL_TEMPERATURE, /* not calculated for now, but should just be the energy (NVT) or enthalpy (NPT), or 0 (NVE) */
-    F_NRE               /* This number is for the total number of energies	*/
+    F_NRE               /* This number is for the total number of energies      */
 };
 
 #define IS_RESTRAINT_TYPE(ifunc) (((ifunc == F_POSRES) || (ifunc == F_FBPOSRES) || (ifunc == F_DISRES) || (ifunc == F_RESTRBONDS) || (ifunc == F_DISRESVIOL) || (ifunc == F_ORIRES) || (ifunc == F_ORIRESDEV) || (ifunc == F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc == F_DIHRES)))
@@ -160,7 +158,7 @@ enum {
  */
 #define IS_LISTED_LJ_C(ftype) ((ftype) >= F_LJ14 && (ftype) <= F_LJC_PAIRS_NB)
 
-typedef union
+typedef union t_iparams
 {
     /* Some parameters have A and B values for free energy calculations.
      * The B values are not used for regular simulations of course.
@@ -292,7 +290,7 @@ typedef int t_functype;
  * the remaining ones from nr_nonperturbed..(nr-1) are perturbed bonded
  * interactions.
  */
-typedef struct
+typedef struct t_ilist
 {
     int      nr;
     int      nr_nonperturbed;
@@ -304,36 +302,36 @@ typedef struct
  * The struct t_ilist defines a list of atoms with their interactions.
  * General field description:
  *   int nr
- *	the size (nr elements) of the interactions array (iatoms[]).
+ *      the size (nr elements) of the interactions array (iatoms[]).
  *   t_iatom *iatoms
  *  specifies which atoms are involved in an interaction of a certain
  *       type. The layout of this array is as follows:
  *
- *	  +-----+---+---+---+-----+---+---+-----+---+---+---+-----+---+---+...
- *	  |type1|at1|at2|at3|type2|at1|at2|type1|at1|at2|at3|type3|at1|at2|
- *	  +-----+---+---+---+-----+---+---+-----+---+---+---+-----+---+---+...
+ *        +-----+---+---+---+-----+---+---+-----+---+---+---+-----+---+---+...
+ *        |type1|at1|at2|at3|type2|at1|at2|type1|at1|at2|at3|type3|at1|at2|
+ *        +-----+---+---+---+-----+---+---+-----+---+---+---+-----+---+---+...
  *
  *  So for interaction type type1 3 atoms are needed, and for type2 and
  *      type3 only 2. The type identifier is used to select the function to
- *	calculate the interaction and its actual parameters. This type
- *	identifier is an index in a params[] and functype[] array.
+ *      calculate the interaction and its actual parameters. This type
+ *      identifier is an index in a params[] and functype[] array.
  */
 
 typedef struct
 {
     real *cmap; /* Has length 4*grid_spacing*grid_spacing, */
     /* there are 4 entries for each cmap type (V,dVdx,dVdy,d2dVdxdy) */
-} cmapdata_t;
+} gmx_cmapdata_t;
 
-typedef struct
+typedef struct gmx_cmap_t
 {
-    int         ngrid;        /* Number of allocated cmap (cmapdata_t ) grids */
-    int         grid_spacing; /* Grid spacing */
-    cmapdata_t *cmapdata;     /* Pointer to grid with actual, pre-interpolated data */
+    int             ngrid;        /* Number of allocated cmap (cmapdata_t ) grids */
+    int             grid_spacing; /* Grid spacing */
+    gmx_cmapdata_t *cmapdata;     /* Pointer to grid with actual, pre-interpolated data */
 } gmx_cmap_t;
 
 
-typedef struct
+typedef struct gmx_ffparams_t
 {
     int         ntypes;
     int         atnr;
@@ -348,7 +346,7 @@ enum {
     ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED
 };
 
-typedef struct
+typedef struct t_idef
 {
     int         ntypes;
     int         atnr;
@@ -372,24 +370,24 @@ typedef struct
  * version of the program  can use it as easy as the single node version.
  * General field description:
  *   int ntypes
- *	defines the number of elements in functype[] and param[].
+ *      defines the number of elements in functype[] and param[].
  *   int nodeid
  *      the node id (if parallel machines)
  *   int atnr
  *      the number of atomtypes
  *   t_functype *functype
- *	array of length ntypes, defines for every force type what type of
+ *      array of length ntypes, defines for every force type what type of
  *      function to use. Every "bond" with the same function but different
- *	force parameters is a different force type. The type identifier in the
- *	forceatoms[] array is an index in this array.
+ *      force parameters is a different force type. The type identifier in the
+ *      forceatoms[] array is an index in this array.
  *   t_iparams *iparams
- *	array of length ntypes, defines the parameters for every interaction
+ *      array of length ntypes, defines the parameters for every interaction
  *      type. The type identifier in the actual interaction list
  *      (ilist[ftype].iatoms[]) is an index in this array.
  *   gmx_cmap_t cmap_grid
  *      the grid for the dihedral pair correction maps.
  *   t_iparams *iparams_posres, *iparams_fbposres
- *	defines the parameters for position restraints only.
+ *      defines the parameters for position restraints only.
  *      Position restraints are the only interactions that have different
  *      parameters (reference positions) for different molecules
  *      of the same type. ilist[F_POSRES].iatoms[] is an index in this array.
@@ -409,15 +407,8 @@ typedef struct
  *      should be at least F_NRE*(nthreads+1).
  */
 
-typedef struct {
-    int   n;      /* n+1 is the number of points */
-    real  scale;  /* distance between two points */
-    real *data;   /* the actual table data, per point there are 4 numbers */
-} bondedtable_t;
-
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif

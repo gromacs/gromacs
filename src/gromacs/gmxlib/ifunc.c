@@ -86,7 +86,7 @@
 #define    def_nofc(str, lstr) \
     {str, lstr,    0,     0,     0, IF_NULL,                    -1, unimplemented}
 
-/* this MUST correspond to the enum in include/types/idef.h */
+/* this MUST correspond to the enum in src/gromacs/topology/idef.h */
 const t_interaction_function interaction_function[F_NRE] =
 {
     def_bond    ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds         ),

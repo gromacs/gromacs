@@ -46,7 +46,6 @@
 
 #include "types/simple.h"
 #include "types/enums.h"
-#include "types/idef.h"
 #include "../fileio/trx.h"
 #include "types/topology.h"
 #include "types/energy.h"
