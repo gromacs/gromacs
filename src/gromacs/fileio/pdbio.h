@@ -47,6 +47,8 @@
 extern "C" {
 #endif
 
+struct t_atoms;
+
 typedef struct gmx_conect_t *gmx_conect;
 
 /* THE pdb format (for ATOM/HETATOM lines) */
@@ -86,7 +88,7 @@ void write_pdbfile_indexed(FILE *out, const char *title, t_atoms *atoms,
                            gmx_conect conect, gmx_bool bTerSepChains);
 /* REALLY low level */
 
-void write_pdbfile(FILE *out, const char *title, t_atoms *atoms,
+void write_pdbfile(FILE *out, const char *title, struct t_atoms *atoms,
                    rvec x[], int ePBC, matrix box, char chain,
                    int model_nr, gmx_conect conect, gmx_bool bTerSepChains);
 /* Low level pdb file writing routine.
@@ -102,18 +104,18 @@ void write_pdbfile(FILE *out, const char *title, t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
 
-void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps);
+void get_pdb_atomnumber(struct t_atoms *atoms, gmx_atomprop_t aps);
 /* Routine to extract atomic numbers from the atom names */
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,
-                 t_atoms *atoms, rvec x[], int *ePBC, matrix box,
+                 struct t_atoms *atoms, rvec x[], int *ePBC, matrix box,
                  gmx_bool bChange, gmx_conect conect);
 /* Function returns number of atoms found.
  * ePBC and gmx_conect structure may be NULL.
  */
 
 void read_pdb_conf(const char *infile, char *title,
-                   t_atoms *atoms, rvec x[], int *ePBC, matrix box,
+                   struct t_atoms *atoms, rvec x[], int *ePBC, matrix box,
                    gmx_bool bChange, gmx_conect conect);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.

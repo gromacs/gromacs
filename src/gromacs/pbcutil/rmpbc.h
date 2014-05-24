@@ -37,7 +37,6 @@
 #ifndef GMX_PBCUTIL_RMPBC_H
 #define GMX_PBCUTIL_RMPBC_H
 
-#include "../legacyheaders/types/atoms.h"
 #include "../legacyheaders/types/idef.h"
 #include "../fileio/trx.h"
 #include "../math/vectypes.h"
@@ -45,6 +44,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_atoms;
 
 typedef struct gmx_rmpbc *gmx_rmpbc_t;
 
@@ -67,7 +68,7 @@ void gmx_rmpbc_copy(gmx_rmpbc_t gpbc, int natoms, matrix box, rvec x[],
 void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc, t_trxframe *fr);
 /* As gmx_rmpbc but operates on a t_trxframe data structure. */
 
-void rm_gropbc(t_atoms *atoms, rvec x[], matrix box);
+void rm_gropbc(struct t_atoms *atoms, rvec x[], matrix box);
 /* Simple routine for use in analysis tools that just have a pdb or
  * similar file.
  */
