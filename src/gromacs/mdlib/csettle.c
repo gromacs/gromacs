@@ -40,11 +40,14 @@
 
 #include <math.h>
 #include <stdio.h>
-#include "gromacs/math/vec.h"
+
 #include "constr.h"
+
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/pbcutil/pbc.h"
 
 typedef struct
 {

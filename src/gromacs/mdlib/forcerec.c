@@ -38,24 +38,22 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
+
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/units.h"
 #include "force.h"
 #include "tables.h"
 #include "nonbonded.h"
 #include "names.h"
 #include "network.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "ns.h"
 #include "txtdump.h"
 #include "coulomb.h"
@@ -72,6 +70,11 @@
 #include "gmx_omp_nthreads.h"
 #include "gmx_detect_hardware.h"
 #include "inputrec.h"
+
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "types/nbnxn_cuda_types_ext.h"
 #include "gpu_utils.h"

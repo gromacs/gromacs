@@ -42,9 +42,10 @@
 #include "force.h"
 #include "names.h"
 #include "copyrite.h"
-#include "gromacs/pbcutil/pbc.h"
 
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 

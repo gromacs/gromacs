@@ -39,10 +39,13 @@
 #endif
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "typedefs.h"
 #include "types/commrec.h"
 #include "macros.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
@@ -50,19 +53,18 @@
 #include "gromacs/fileio/confio.h"
 #include "names.h"
 #include "network.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "ns.h"
 #include "nrnb.h"
 #include "bondf.h"
 #include "txtdump.h"
 #include "qmmm.h"
-#include <stdio.h>
-#include <string.h>
-#include "gromacs/utility/fatalerror.h"
 #include "typedefs.h"
-#include <stdlib.h>
 #include "mtop_util.h"
 
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* declarations of the interfaces to the QM packages. The _SH indicate
  * the QM interfaces can be used for Surface Hopping simulations

@@ -49,7 +49,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/utilities.h"
 #include "macros.h"
-#include "gromacs/utility/cstringutil.h"
 #include "force.h"
 #include "names.h"
 #include "force.h"
@@ -58,8 +57,10 @@
 #include "nonbonded.h"
 #include "gromacs/simd/simd.h"
 
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

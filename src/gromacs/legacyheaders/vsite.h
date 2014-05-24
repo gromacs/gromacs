@@ -39,7 +39,9 @@
 #define _vsite_h
 
 #include <stdio.h>
+
 #include "typedefs.h"
+#include "../pbcutil/ishift.h"
 
 #ifdef __cplusplus
 extern "C" {

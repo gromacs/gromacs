@@ -34,6 +34,7 @@
  */
 
 #include "gromacs/math/utilities.h"
+#include "gromacs/pbcutil/ishift.h"
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.

@@ -40,26 +40,26 @@
 #include <config.h>
 #endif
 
-
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/fileio/confio.h"
 #include "macros.h"
-#include "gromacs/random/random.h"
-#include "gromacs/utility/futil.h"
 #include "atomprop.h"
 #include "names.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "addconf.h"
 #include "read-conformation.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/fileio/xvgr.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/random/random.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static gmx_bool in_box(t_pbc *pbc, rvec x)
 {
