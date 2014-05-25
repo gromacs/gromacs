@@ -49,14 +49,17 @@
 #include <dmalloc.h>
 #endif
 
+#include "thread_mpi/threads.h"
+
 #include "gromacs/utility/fatalerror.h"
 #ifdef PRINT_ALLOC_KB
 #include "gromacs/utility/gmxmpi.h"
 #endif
 
-#ifdef DEBUG
-#include "thread_mpi/threads.h"
+static gmx_bool            g_bOverAllocDD     = FALSE;
+static tMPI_Thread_mutex_t g_over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
+#ifdef DEBUG
 static void log_action(int bMal, const char *what, const char *file, int line,
                        int nelem, int size, void *ptr)
 {
@@ -356,5 +359,26 @@ void save_free_aligned(const char *name, const char *file, int line, void *ptr)
 #else
         _aligned_free(free);
 #endif
+    }
+}
+
+void set_over_alloc_dd(gmx_bool set)
+{
+    tMPI_Thread_mutex_lock(&g_over_alloc_mutex);
+    /* we just make sure that we don't set this at the same time.
+       We don't worry too much about reading this rarely-set variable */
+    g_bOverAllocDD = set;
+    tMPI_Thread_mutex_unlock(&g_over_alloc_mutex);
+}
+
+int over_alloc_dd(int n)
+{
+    if (g_bOverAllocDD)
+    {
+        return OVER_ALLOC_FAC*n + 100;
+    }
+    else
+    {
+        return n;
     }
 }

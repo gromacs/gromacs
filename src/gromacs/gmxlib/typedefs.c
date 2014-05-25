@@ -43,8 +43,6 @@
 
 #include <string.h>
 
-#include "thread_mpi/threads.h"
-
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -53,33 +51,6 @@
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
-
-
-
-static gmx_bool            bOverAllocDD     = FALSE;
-static tMPI_Thread_mutex_t over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
-
-void set_over_alloc_dd(gmx_bool set)
-{
-    tMPI_Thread_mutex_lock(&over_alloc_mutex);
-    /* we just make sure that we don't set this at the same time.
-       We don't worry too much about reading this rarely-set variable */
-    bOverAllocDD = set;
-    tMPI_Thread_mutex_unlock(&over_alloc_mutex);
-}
-
-int over_alloc_dd(int n)
-{
-    if (bOverAllocDD)
-    {
-        return OVER_ALLOC_FAC*n + 100;
-    }
-    else
-    {
-        return n;
-    }
-}
 
 int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 {
@@ -96,13 +67,6 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn)
     }
 
     return i;
-}
-
-char *gmx_step_str(gmx_int64_t i, char *buf)
-{
-    sprintf(buf, "%"GMX_PRId64, i);
-
-    return buf;
 }
 
 void init_inputrec(t_inputrec *ir)

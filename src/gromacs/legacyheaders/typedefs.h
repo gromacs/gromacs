@@ -69,50 +69,12 @@
 extern "C" {
 #endif
 
-/*
- * Memory (re)allocation can be VERY slow, especially with some
- * MPI libraries that replace the standard malloc and realloc calls.
- * To avoid slow memory allocation we use over_alloc to set the memory
- * allocation size for large data blocks. Since this scales the size
- * with a factor, we use log(n) realloc calls instead of n.
- * This can reduce allocation times from minutes to seconds.
- */
-/* This factor leads to 4 realloc calls to double the array size */
-#define OVER_ALLOC_FAC 1.19
-
-void set_over_alloc_dd(gmx_bool set);
-/* Turns over allocation for variable size atoms/cg/top arrays on or off,
- * default is off.
- */
-
-int over_alloc_dd(int n);
-/* Returns n when domain decomposition over allocation is off.
- * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
- * This is to avoid frequent reallocation
- * during domain decomposition in mdrun.
- */
-
-/* Over allocation for small data types: int, real etc. */
-#define over_alloc_small(n) (int)(OVER_ALLOC_FAC*(n) + 8000)
-
-/* Over allocation for large data types: complex structs */
-#define over_alloc_large(n) (int)(OVER_ALLOC_FAC*(n) + 1000)
-
 int gmx_int64_to_int(gmx_int64_t step, const char *warn);
 /* Convert a gmx_int64_t value to int.
  * If warn!=NULL a warning message will be written
  * to stderr when step does not fit in an int,
  * the first line is:
  * "WARNING during %s:", where warn is printed in %s.
- */
-
-#define STEPSTRSIZE 22
-
-char *gmx_step_str(gmx_int64_t i, char *buf);
-/* Prints a gmx_int64_t value in buf and returns the pointer to buf.
- * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
- * When multiple gmx_int64_t values are printed in the same printf call,
- * be sure to call gmx_step_str with different buffers.
  */
 
 /* Functions to initiate and delete structures *

@@ -203,6 +203,17 @@ char *wrap_lines(const char *buf, int line_width, int indent,
  */
 gmx_int64_t str_to_int64_t(const char *str, char **endptr);
 
+#define STEPSTRSIZE 22
+
+/*! \brief
+ * Prints a gmx_int64_t value in buf and returns the pointer to buf.
+ *
+ * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
+ * When multiple gmx_int64_t values are printed in the same printf call,
+ * be sure to call gmx_step_str with different buffers.
+ */
+char *gmx_step_str(gmx_int64_t i, char *buf);
+
 #ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
