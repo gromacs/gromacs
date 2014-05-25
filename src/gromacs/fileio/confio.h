@@ -41,7 +41,6 @@
 #include <stdio.h>
 
 #include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/types/topology.h"
 
 #include "trx.h"
 
@@ -52,6 +51,7 @@
 extern "C" {
 #endif
 
+struct gmx_mtop_t;
 struct t_atoms;
 
 int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line);
@@ -94,7 +94,7 @@ void write_sto_conf(const char *outfile, const char *title,
  * to an STO (.gro or .pdb) file */
 
 void write_sto_conf_mtop(const char *outfile, const char *title,
-                         gmx_mtop_t *mtop,
+                         struct gmx_mtop_t *mtop,
                          rvec x[], rvec *v, int ePBC, matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 

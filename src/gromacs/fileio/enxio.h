@@ -40,13 +40,14 @@
 #include "../legacyheaders/types/energy.h"
 #include "../legacyheaders/types/inputrec.h"
 #include "../legacyheaders/types/state.h"
-#include "../legacyheaders/types/topology.h"
 #include "gmxfio.h"
 #include "xdr_datatype.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmx_groups_t;
 
 /**************************************************************
  * These are the base datatypes + functions for reading and
@@ -187,7 +188,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr);
 /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
 void get_enx_state(const char *fn, real t,
-                   gmx_groups_t *groups, t_inputrec *ir,
+                   struct gmx_groups_t *groups, t_inputrec *ir,
                    t_state *state);
 /*
  * Reads state variables from enx file fn at time t.

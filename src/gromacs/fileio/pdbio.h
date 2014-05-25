@@ -41,13 +41,13 @@
 #include <stdio.h>
 
 #include "../legacyheaders/atomprop.h"
-#include "../legacyheaders/types/topology.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct t_atoms;
+struct t_topology;
 
 typedef struct gmx_conect_t *gmx_conect;
 
@@ -82,7 +82,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box);
  * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
-void write_pdbfile_indexed(FILE *out, const char *title, t_atoms *atoms,
+void write_pdbfile_indexed(FILE *out, const char *title, struct t_atoms *atoms,
                            rvec x[], int ePBC, matrix box, char chain,
                            int model_nr, atom_id nindex, const atom_id index[],
                            gmx_conect conect, gmx_bool bTerSepChains);
@@ -141,7 +141,7 @@ gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj);
 void gmx_conect_add(gmx_conect conect, int ai, int aj);
 /* Add a connection between ai and aj (numbered from 0 to natom-1) */
 
-gmx_conect gmx_conect_generate(t_topology *top);
+gmx_conect gmx_conect_generate(struct t_topology *top);
 /* Generate a conect structure from a topology */
 
 gmx_conect gmx_conect_init(void);

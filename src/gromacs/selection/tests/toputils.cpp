@@ -43,11 +43,11 @@
 
 #include <cstring>
 
-#include "gromacs/legacyheaders/typedefs.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 

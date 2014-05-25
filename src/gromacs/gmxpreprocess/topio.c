@@ -60,6 +60,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "vsite_parm.h"

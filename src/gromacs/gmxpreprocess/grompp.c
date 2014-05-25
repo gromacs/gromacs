@@ -55,15 +55,12 @@
 #include "readir.h"
 #include "names.h"
 #include "grompp-impl.h"
-#include "gromacs/random/random.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/commandline/pargs.h"
 #include "splitter.h"
 #include "gromacs/gmxpreprocess/sortwater.h"
 #include "convparm.h"
-#include "gromacs/utility/fatalerror.h"
 #include "warninp.h"
 #include "index.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -84,8 +81,12 @@
 #include "tomorse.h"
 #include "gromacs/imd/imd.h"
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/random/random.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])

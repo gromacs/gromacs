@@ -34,14 +34,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_LEGACYHEADERS_TOPOLOGY_H
-#define GMX_LEGACYHEADERS_TOPOLOGY_H
+#ifndef GMX_TOPOLOGY_TOPOLOGY_H
+#define GMX_TOPOLOGY_TOPOLOGY_H
 
-#include "simple.h"
-#include "../../topology/idef.h"
-#include "../../topology/atoms.h"
-#include "../../topology/block.h"
-#include "../../topology/symtab.h"
+#include "../math/vectypes.h"
+#include "atoms.h"
+#include "block.h"
+#include "idef.h"
+#include "symtab.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,7 +54,8 @@ enum {
     egcNR
 };
 
-typedef struct {
+typedef struct gmx_moltype_t
+{
     char          **name;       /* Name of the molecule type            */
     t_atoms         atoms;      /* The atoms                            */
     t_ilist         ilist[F_NRE];
@@ -62,7 +63,8 @@ typedef struct {
     t_blocka        excls;      /* The exclusions                       */
 } gmx_moltype_t;
 
-typedef struct {
+typedef struct gmx_molblock_t
+{
     int            type;        /* The molcule type index in mtop.moltype */
     int            nmol;        /* The number of molecules in this block  */
     int            natoms_mol;  /* The number of atoms in one molecule    */
@@ -72,7 +74,8 @@ typedef struct {
     rvec          *posres_xB;   /* The posres coords for top B            */
 } gmx_molblock_t;
 
-typedef struct {
+typedef struct gmx_groups_t
+{
     t_grps            grps[egcNR];  /* Groups of things                     */
     int               ngrpname;     /* Number of groupnames                 */
     char           ***grpname;      /* Names of the groups                  */
@@ -88,7 +91,8 @@ typedef struct {
 
 /* The global, complete system topology struct, based on molecule types.
    This structure should contain no data that is O(natoms) in memory. */
-typedef struct {
+typedef struct gmx_mtop_t
+{
     char           **name;      /* Name of the topology                 */
     gmx_ffparams_t   ffparams;
     int              nmoltype;
@@ -105,17 +109,19 @@ typedef struct {
 } gmx_mtop_t;
 
 /* The mdrun node-local topology struct, completely written out */
-typedef struct {
-    t_idef        idef;         /* The interaction function definition	*/
+typedef struct gmx_localtop_t
+{
+    t_idef        idef;         /* The interaction function definition  */
     t_atomtypes   atomtypes;    /* Atomtype properties                  */
     t_block       cgs;          /* The charge groups                    */
     t_blocka      excls;        /* The exclusions                       */
 } gmx_localtop_t;
 
 /* The old topology struct, completely written out, used in analysis tools */
-typedef struct {
+typedef struct t_topology
+{
     char          **name;       /* Name of the topology                 */
-    t_idef          idef;       /* The interaction function definition	*/
+    t_idef          idef;       /* The interaction function definition  */
     t_atoms         atoms;      /* The atoms                            */
     t_atomtypes     atomtypes;  /* Atomtype properties                  */
     t_block         cgs;        /* The charge groups                    */
@@ -123,6 +129,16 @@ typedef struct {
     t_blocka        excls;      /* The exclusions                       */
     t_symtab        symtab;     /* The symbol table                     */
 } t_topology;
+
+void init_mtop(gmx_mtop_t *mtop);
+void init_top(t_topology *top);
+void done_moltype(gmx_moltype_t *molt);
+void done_molblock(gmx_molblock_t *molb);
+void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab);
+void done_top(t_topology *top);
+
+t_atoms *mtop2atoms(gmx_mtop_t *mtop);
+/* generate a t_atoms struct for the system from gmx_mtop_t */
 
 #ifdef __cplusplus
 }

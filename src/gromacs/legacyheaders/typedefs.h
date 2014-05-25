@@ -47,7 +47,7 @@
 #include "types/simple.h"
 #include "types/enums.h"
 #include "../fileio/trx.h"
-#include "types/topology.h"
+#include "../topology/topology.h"
 #include "types/energy.h"
 #include "types/inputrec.h"
 #include "types/nrnb.h"
@@ -118,8 +118,6 @@ char *gmx_step_str(gmx_int64_t i, char *buf);
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c
  */
-void init_mtop(gmx_mtop_t *mtop);
-void init_top(t_topology *top);
 void init_inputrec(t_inputrec *ir);
 void init_energyhistory(energyhistory_t * enerhist);
 void done_energyhistory(energyhistory_t * enerhist);
@@ -129,10 +127,6 @@ t_state *serial_init_local_state(t_state *state_global);
 void init_df_history(df_history_t *dfhist, int nlambda);
 void done_df_history(df_history_t *dfhist);
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
-void done_moltype(gmx_moltype_t *molt);
-void done_molblock(gmx_molblock_t *molb);
-void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab);
-void done_top(t_topology *top);
 void done_inputrec(t_inputrec *ir);
 void done_state(t_state *state);
 
@@ -141,9 +135,6 @@ void set_box_rel(t_inputrec *ir, t_state *state);
 
 void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
 /* Preserve the box shape, b can be box or boxv */
-
-t_atoms *mtop2atoms(gmx_mtop_t *mtop);
-/* generate a t_atoms struct for the system from gmx_mtop_t */
 
 real max_cutoff(real cutoff1, real cutoff2);
 /* Returns the maximum of the cut-off's, taking into account that 0=inf. */

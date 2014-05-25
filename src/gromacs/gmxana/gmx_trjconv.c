@@ -44,14 +44,12 @@
 
 #include "copyrite.h"
 #include "macros.h"
-#include "gromacs/utility/smalloc.h"
 #include "typedefs.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
@@ -59,14 +57,17 @@
 #include "index.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "viewit.h"
-#include "gromacs/fileio/xvgr.h"
 #include "gmx_ana.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

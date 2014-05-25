@@ -49,9 +49,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
-#include "gromacs/topology/atoms.h"
-#include "gromacs/topology/block.h"
-#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
@@ -108,132 +105,12 @@ char *gmx_step_str(gmx_int64_t i, char *buf)
     return buf;
 }
 
-void init_groups(gmx_groups_t *groups)
-{
-    int g;
-
-    groups->ngrpname = 0;
-    groups->grpname  = NULL;
-    for (g = 0; (g < egcNR); g++)
-    {
-        groups->grps[g].nm_ind = NULL;
-        groups->ngrpnr[g]      = 0;
-        groups->grpnr[g]       = NULL;
-    }
-
-}
-
-void init_mtop(gmx_mtop_t *mtop)
-{
-    mtop->name         = NULL;
-    mtop->nmoltype     = 0;
-    mtop->moltype      = NULL;
-    mtop->nmolblock    = 0;
-    mtop->molblock     = NULL;
-    mtop->maxres_renum = 0;
-    mtop->maxresnr     = -1;
-    init_groups(&mtop->groups);
-    init_block(&mtop->mols);
-    open_symtab(&mtop->symtab);
-}
-
-void init_top(t_topology *top)
-{
-    int i;
-
-    top->name = NULL;
-    init_atom (&(top->atoms));
-    init_atomtypes(&(top->atomtypes));
-    init_block(&top->cgs);
-    init_block(&top->mols);
-    init_blocka(&top->excls);
-    open_symtab(&top->symtab);
-}
-
 void init_inputrec(t_inputrec *ir)
 {
     memset(ir, 0, (size_t)sizeof(*ir));
     snew(ir->fepvals, 1);
     snew(ir->expandedvals, 1);
     snew(ir->simtempvals, 1);
-}
-
-void done_moltype(gmx_moltype_t *molt)
-{
-    int f;
-
-    done_atom(&molt->atoms);
-    done_block(&molt->cgs);
-    done_blocka(&molt->excls);
-
-    for (f = 0; f < F_NRE; f++)
-    {
-        sfree(molt->ilist[f].iatoms);
-        molt->ilist[f].nalloc = 0;
-    }
-}
-
-void done_molblock(gmx_molblock_t *molb)
-{
-    if (molb->nposres_xA > 0)
-    {
-        molb->nposres_xA = 0;
-        sfree(molb->posres_xA);
-    }
-    if (molb->nposres_xB > 0)
-    {
-        molb->nposres_xB = 0;
-        sfree(molb->posres_xB);
-    }
-}
-
-void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab)
-{
-    int i;
-
-    if (bDoneSymtab)
-    {
-        done_symtab(&mtop->symtab);
-    }
-
-    sfree(mtop->ffparams.functype);
-    sfree(mtop->ffparams.iparams);
-
-    for (i = 0; i < mtop->nmoltype; i++)
-    {
-        done_moltype(&mtop->moltype[i]);
-    }
-    sfree(mtop->moltype);
-    for (i = 0; i < mtop->nmolblock; i++)
-    {
-        done_molblock(&mtop->molblock[i]);
-    }
-    sfree(mtop->molblock);
-    done_block(&mtop->mols);
-}
-
-void done_top(t_topology *top)
-{
-    int f;
-
-    sfree(top->idef.functype);
-    sfree(top->idef.iparams);
-    for (f = 0; f < F_NRE; ++f)
-    {
-        sfree(top->idef.il[f].iatoms);
-        top->idef.il[f].iatoms = NULL;
-        top->idef.il[f].nalloc = 0;
-    }
-
-    done_atom (&(top->atoms));
-
-    /* For GB */
-    done_atomtypes(&(top->atomtypes));
-
-    done_symtab(&(top->symtab));
-    done_block(&(top->cgs));
-    done_block(&(top->mols));
-    done_blocka(&(top->excls));
 }
 
 static void done_pull_group(t_pull_group *pgrp)

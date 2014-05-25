@@ -42,23 +42,25 @@
 #include <math.h>
 
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
-#include "gromacs/utility/cstringutil.h"
 #include "confio.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/futil.h"
 #include "xdrf.h"
 #include "filenm.h"
 #include "pdbio.h"
 #include "tpxio.h"
 #include "trxio.h"
-#include "gromacs/utility/fatalerror.h"
 #include "copyrite.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
+
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define CHAR_SHIFT 24
 

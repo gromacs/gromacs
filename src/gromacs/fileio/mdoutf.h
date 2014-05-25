@@ -38,7 +38,6 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/topology.h"
 #include "../legacyheaders/types/inputrec.h"
 #include "../legacyheaders/types/oenv.h"
 #include "../legacyheaders/network.h"
@@ -47,6 +46,8 @@
 #include "../utility/basedefinitions.h"
 #include "filenm.h"
 #include "enxio.h"
+
+struct gmx_mtop_t;
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
@@ -61,7 +62,7 @@ gmx_mdoutf_t init_mdoutf(FILE              *fplog,
                          int                mdrun_flags,
                          const t_commrec   *cr,
                          const t_inputrec  *ir,
-                         gmx_mtop_t        *mtop,
+                         struct gmx_mtop_t *mtop,
                          const output_env_t oenv);
 
 /*! \brief Getter for file pointer */

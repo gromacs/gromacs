@@ -57,6 +57,7 @@
 
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
 static real box_margin;

@@ -39,7 +39,8 @@ set(TOPOLOGY_PUBLIC_HEADERS
     atoms.h
     block.h
     idef.h
-    symtab.h)
+    symtab.h
+    topology.h)
 
 gmx_install_headers(topology ${TOPOLOGY_PUBLIC_HEADERS})
 
