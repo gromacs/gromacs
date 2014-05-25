@@ -1520,7 +1520,7 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
 
             Ek_new  = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i],
                                            opts->tau_t[i]/dt,
-                                           ir->ld_seed, step);
+                                           step, ir->ld_seed);
 
             /* Analytically Ek_new>=0, but we check for rounding errors */
             if (Ek_new <= 0)
