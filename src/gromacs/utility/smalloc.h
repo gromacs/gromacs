@@ -73,6 +73,8 @@
 
 #include <stddef.h>
 
+#include "basedefinitions.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -346,5 +348,44 @@ void gmx_snew_aligned_impl(const char *name, const char *file, int line,
  * \hideinitializer
  */
 #define sfree_aligned(ptr) save_free_aligned(#ptr, __FILE__, __LINE__, (ptr))
+
+/*! \brief
+ * Over allocation factor for memory allocations.
+ *
+ * Memory (re)allocation can be VERY slow, especially with some
+ * MPI libraries that replace the standard malloc and realloc calls.
+ * To avoid slow memory allocation we use over_alloc to set the memory
+ * allocation size for large data blocks. Since this scales the size
+ * with a factor, we use log(n) realloc calls instead of n.
+ * This can reduce allocation times from minutes to seconds.
+ *
+ * This factor leads to 4 realloc calls to double the array size.
+ */
+#define OVER_ALLOC_FAC 1.19
+
+/*! \brief
+ * Turns over allocation for variable size atoms/cg/top arrays on or off,
+ * default is off.
+ *
+ * \todo
+ * This is mdrun-specific, so it might be better to put this and
+ * over_alloc_dd() much higher up.
+ */
+void set_over_alloc_dd(gmx_bool set);
+
+/*! \brief
+ * Returns new allocation count for domain decomposition allocations.
+ *
+ * Returns n when domain decomposition over allocation is off.
+ * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
+ * This is to avoid frequent reallocation during domain decomposition in mdrun.
+ */
+int over_alloc_dd(int n);
+
+/** Over allocation for small data types: int, real etc. */
+#define over_alloc_small(n) (int)(OVER_ALLOC_FAC*(n) + 8000)
+
+/** Over allocation for large data types: complex structs */
+#define over_alloc_large(n) (int)(OVER_ALLOC_FAC*(n) + 1000)
 
 #endif

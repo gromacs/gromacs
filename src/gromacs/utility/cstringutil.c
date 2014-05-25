@@ -586,6 +586,12 @@ str_to_int64_t(const char *str, char **endptr)
 #endif
 }
 
+char *gmx_step_str(gmx_int64_t i, char *buf)
+{
+    sprintf(buf, "%"GMX_PRId64, i);
+    return buf;
+}
+
 void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int **digitlist)
 {
     int i;

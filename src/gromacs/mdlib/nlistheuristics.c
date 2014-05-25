@@ -40,8 +40,10 @@
 
 #include "typedefs.h"
 #include "types/nlistheuristics.h"
-#include "gromacs/utility/fatalerror.h"
+
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 
 void reset_nlistheuristics(gmx_nlheur_t *nlh, gmx_int64_t step)
 {
