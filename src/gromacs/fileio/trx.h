@@ -55,7 +55,7 @@ struct t_atoms;
 
 typedef struct gmxvmdplugin t_gmxvmdplugin;
 
-typedef struct trxframe
+typedef struct t_trxframe
 {
     int      flags;            /* flags for read_first/next_frame  */
     int      not_ok;           /* integrity flags                  */

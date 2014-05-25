@@ -46,6 +46,7 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"

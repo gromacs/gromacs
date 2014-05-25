@@ -43,7 +43,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "types/commrec.h"
 #include "txtdump.h"
 #include "names.h"

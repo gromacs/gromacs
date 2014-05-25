@@ -40,6 +40,7 @@
 #include <config.h>
 #endif
 
+#include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"

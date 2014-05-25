@@ -32,6 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "vmdio.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -102,10 +103,8 @@
 #include <shlobj.h>
 #endif
 
-#include "vmdio.h"
-
-#include "gmxfio.h"
-
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/futil.h"

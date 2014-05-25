@@ -43,16 +43,21 @@
 #ifndef GMX_SELECTION_SELECTIONCOLLECTION_H
 #define GMX_SELECTION_SELECTIONCOLLECTION_H
 
+#include <cstdio>
+
 #include <string>
 #include <vector>
 
-#include "../legacyheaders/typedefs.h"
+#include "../legacyheaders/types/oenv.h"
 
 #include "../onlinehelp/helptopicinterface.h"
 #include "../utility/common.h"
 #include "selection.h" // For gmx::SelectionList
 
 struct gmx_ana_indexgrps_t;
+struct t_pbc;
+struct t_topology;
+struct t_trxframe;
 
 namespace gmx
 {

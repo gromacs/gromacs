@@ -61,8 +61,7 @@
  */
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-
+#include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/centerofmass.h"
 #include "gromacs/selection/indexutil.h"
@@ -187,11 +186,11 @@ struct gmx_ana_poscalc_t
      * already been calculated in \p sbase.
      * The structure pointed by \p sbase is always a static calculation.
      */
-    struct gmx_ana_poscalc_t                 *sbase;
+    gmx_ana_poscalc_t                        *sbase;
     /** Next structure in the linked list of calculations. */
-    struct gmx_ana_poscalc_t                 *next;
+    gmx_ana_poscalc_t                        *next;
     /** Previous structure in the linked list of calculations. */
-    struct gmx_ana_poscalc_t                 *prev;
+    gmx_ana_poscalc_t                        *prev;
     /** Number of references to this structure. */
     int                                       refcount;
     /** Collection this calculation belongs to. */
