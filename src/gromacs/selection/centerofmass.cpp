@@ -43,10 +43,10 @@
 
 #include <errno.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/topology.h"
 
 int
 gmx_calc_cog(t_topology * /* top */, rvec x[], int nrefat, atom_id index[], rvec xout)

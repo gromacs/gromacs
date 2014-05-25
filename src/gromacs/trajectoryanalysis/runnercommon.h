@@ -42,8 +42,9 @@
 #ifndef GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 #define GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 
-#include "gromacs/fileio/trx.h"
 #include "gromacs/utility/common.h"
+
+struct t_trxframe;
 
 namespace gmx
 {

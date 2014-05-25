@@ -49,6 +49,7 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"

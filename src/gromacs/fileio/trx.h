@@ -43,9 +43,9 @@
 #ifndef GMX_FILEIO_TRX_H
 #define GMX_FILEIO_TRX_H
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
+#include "../math/vectypes.h"
+#include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +55,7 @@ struct t_atoms;
 
 typedef struct gmxvmdplugin t_gmxvmdplugin;
 
-typedef struct trxframe
+typedef struct t_trxframe
 {
     int      flags;            /* flags for read_first/next_frame  */
     int      not_ok;           /* integrity flags                  */

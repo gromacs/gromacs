@@ -50,6 +50,7 @@
 #include "gromacs/legacyheaders/index.h"
 
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -247,7 +248,7 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
     int n = find_group(const_cast<char *>(name), src->nr,
                        const_cast<char **>(names));
     sfree(names);
-    if (n == NOTSET)
+    if (n < 0)
     {
         dest->isize = 0;
         return false;

@@ -46,15 +46,14 @@
 #include <string>
 #include <vector>
 
-#include "../legacyheaders/typedefs.h"
-
 #include "../utility/arrayref.h"
 #include "../utility/common.h"
 #include "../utility/gmxassert.h"
 
 #include "position.h"
-#include "indexutil.h"
 #include "selectionenums.h"
+
+struct t_topology;
 
 namespace gmx
 {

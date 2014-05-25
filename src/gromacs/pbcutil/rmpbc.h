@@ -37,7 +37,6 @@
 #ifndef GMX_PBCUTIL_RMPBC_H
 #define GMX_PBCUTIL_RMPBC_H
 
-#include "../fileio/trx.h"
 #include "../math/vectypes.h"
 
 #ifdef __cplusplus
@@ -46,6 +45,7 @@ extern "C" {
 
 struct t_atoms;
 struct t_idef;
+struct t_trxframe;
 
 typedef struct gmx_rmpbc *gmx_rmpbc_t;
 
@@ -65,7 +65,7 @@ void gmx_rmpbc_copy(gmx_rmpbc_t gpbc, int natoms, matrix box, rvec x[],
                     rvec x_s[]);
 /* As gmx_rmpbc, but outputs in x_s and does not modify x. */
 
-void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc, t_trxframe *fr);
+void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc, struct t_trxframe *fr);
 /* As gmx_rmpbc but operates on a t_trxframe data structure. */
 
 void rm_gropbc(struct t_atoms *atoms, rvec x[], matrix box);

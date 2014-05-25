@@ -47,11 +47,12 @@
 #include <string>
 #include <vector>
 
-#include "../legacyheaders/typedefs.h"
-
 #include "../selection/selection.h" // For gmx::SelectionList
 #include "../utility/common.h"
 #include "../utility/uniqueptr.h"
+
+struct t_pbc;
+struct t_trxframe;
 
 namespace gmx
 {

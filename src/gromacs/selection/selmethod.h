@@ -293,9 +293,6 @@
 #ifndef GMX_SELECTION_SELMETHOD_H
 #define GMX_SELECTION_SELMETHOD_H
 
-#include "../legacyheaders/typedefs.h"
-
-#include "indexutil.h"
 #include "selparam.h"
 #include "selvalue.h"
 
@@ -305,8 +302,12 @@ class PositionCalculationCollection;
 class SelectionParserSymbolTable;
 } // namespace gmx
 
+struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
 struct gmx_ana_selcollection_t;
+struct t_pbc;
+struct t_topology;
+struct t_trxframe;
 
 /*! \name Selection method flags
  * \anchor selmethod_flags
@@ -573,8 +574,7 @@ typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * pointers that can be discarded without memory leaks.
  */
 typedef void  (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                                    struct gmx_ana_pos_t *pos,
-                                    gmx_ana_selvalue_t *out,
+                                    gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out,
                                     void *data);
 
 /*! \internal
@@ -584,7 +584,7 @@ typedef void  (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * If some information is not available, the corresponding field can be set to
  * 0/NULL.
  */
-typedef struct gmx_ana_selmethod_help_t
+struct gmx_ana_selmethod_help_t
 {
     /*! \brief
      * One-line description of the syntax of the method.
@@ -605,7 +605,7 @@ typedef struct gmx_ana_selmethod_help_t
      * to NULL.
      */
     const char        **help;
-} gmx_ana_selmethod_help_t;
+};
 
 /*! \internal
  * \brief
@@ -620,7 +620,7 @@ typedef struct gmx_ana_selmethod_help_t
  * More details on implementing new selection methods can be found on a
  * separate page: \ref page_module_selection_custom.
  */
-typedef struct gmx_ana_selmethod_t
+struct gmx_ana_selmethod_t
 {
     /** Name of the method. */
     const char         *name;
@@ -657,7 +657,7 @@ typedef struct gmx_ana_selmethod_t
 
     /** Help data for the method. */
     gmx_ana_selmethod_help_t help;
-} gmx_ana_selmethod_t;
+};
 
 /** Registers a selection method. */
 int

@@ -47,8 +47,10 @@
 #include "gromacs/math/vec.h"
 #include "xdrf.h"
 #include "macros.h"
+#include "typedefs.h"
 
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
