@@ -1600,9 +1600,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                       ekind, NULL, upd, bInitStep, etrtVELOCITY1,
                       cr, nrnb, constr, idef, TRUE);
 
-        /* Scale Drude velocities according to multi-step thermostat */
-        /* scale_drude_vel(inputrec, md, state); */
-
         /* Step 2. Update Drude positions */
         update_coords(fplog, mdstep, inputrec, md, state, fr->bMolPBC,
                       f, FALSE, fr->f_twin, fcd,
