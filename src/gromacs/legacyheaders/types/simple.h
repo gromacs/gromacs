@@ -92,22 +92,22 @@ typedef int         atom_id;      /* To indicate an atoms id         */
 #define NO_ATID     (atom_id)(~0) /* Use this to indicate invalid atid */
 
 /*! \brief Double precision accuracy */
-#define GMX_DOUBLE_EPS   1.11022302E-16
+#define GMX_DOUBLE_EPS   2.2204460492503131e-16
 
 /*! \brief Maximum double precision value - reduced 1 unit in last digit for MSVC */
-#define GMX_DOUBLE_MAX   1.79769312E+308
+#define GMX_DOUBLE_MAX   1.7976931348623157e+308
 
 /*! \brief Minimum double precision value */
-#define GMX_DOUBLE_MIN   2.22507386E-308
+#define GMX_DOUBLE_MIN   2.2250738585072014e-308
 
 /*! \brief Single precision accuracy */
-#define GMX_FLOAT_EPS    5.96046448E-08
+#define GMX_FLOAT_EPS    1.19209290e-07F
 
 /*! \brief Maximum single precision value - reduced 1 unit in last digit for MSVC */
-#define GMX_FLOAT_MAX    3.40282346E+38
+#define GMX_FLOAT_MAX    3.40282347E+38F
 
 /*! \brief Minimum single precision value */
-#define GMX_FLOAT_MIN    1.17549435E-38
+#define GMX_FLOAT_MIN    1.17549435E-38F
 
 
 /* Check whether we already have a real type! */
