@@ -766,8 +766,11 @@ set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 ########################################################################
 # Specify install locations
 ########################################################################
-set(GMX_LIB_INSTALL_DIR lib CACHE STRING
-    "Library installation directory (default: lib)")
+# Use GNUInstallDirst to set paths on multiarch systems
+include(GNUInstallDirs)
+
+set(GMX_LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING
+    "Library installation directory (default: ${CMAKE_INSTALL_LIBDIR})")
 set(GMX_DATA_INSTALL_DIR gromacs CACHE STRING
     "Data installation directory under share/ (default: gromacs)")
 mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
