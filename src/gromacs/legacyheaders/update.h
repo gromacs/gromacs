@@ -186,7 +186,7 @@ void destroy_bufstate(t_state *state);
 
 void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
-                    t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
+                    t_vcm *vcm, t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
 int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
 
@@ -242,7 +242,8 @@ void correct_ekin(FILE *log, int start, int end, rvec v[],
 /* Correct ekin for vcm */
 
 
-void scale_drude_vel(t_inputrec *ir, t_mdatoms *md, t_state *state, t_extmass *MassQ, t_vcm *vcm);
+void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_extmass *MassQ, t_vcm *vcm, 
+                               gmx_ekindata_t *ekind);
 /* special scaling for Drudes */
 
 void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind,
