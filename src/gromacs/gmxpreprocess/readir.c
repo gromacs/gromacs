@@ -3474,6 +3474,12 @@ void do_index(const char* mdparin, const char *ndx,
                 "In most cases one should use one group for the whole system.");
     }
 
+    /* Drude FF with extended Lagrangian can only deal with 1 COM removal group at this point */
+    if (ir->bDrude && (ir->drude->drudemode == edrudeLagrangian) && (nvcm > 1))
+    {
+        gmx_fatal(FARGS, "Cannot have more than 1 comm-grp with extended Lagrangian for Drude.\n");
+    }
+
     /* Now we have filled the freeze struct, so we can calculate NRDF */
     calc_nrdf(mtop, ir, gnames);
 
