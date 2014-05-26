@@ -325,6 +325,18 @@ set(EXTRA_CXX_FLAGS "")
 # Run through a number of tests for buggy compilers and other issues
 include(gmxTestCompilerProblems)
 gmx_test_compiler_problems()
+# GMX_CPU_ACCELERATION will not be set automatically until the second
+# pass (which is not strictly guaranteed to occur), so putting this
+# check here among logically-related tests is inefficient, but the
+# potential loss is likely zero.
+if(GMX_CPU_ACCELERATION STREQUAL "AVX_256"
+        AND CMAKE_COMPILER_IS_GNUCC
+        AND (C_COMPILER_VERSION VERSION_EQUAL "4.6.1"
+            OR CXX_COMPILER_VERSION VERSION_EQUAL "4.6.1"))
+    message(FATAL_ERROR "gcc 4.6.1 has buggy support for AVX, and GROMACS mdrun will not work. If you want simulation performance, use a more recent compiler. Otherwise, use GMX_CPU_ACCELERATION=SSE4.1")
+    # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
+endif()
+
 
 
 set(PKG_CFLAGS "")
