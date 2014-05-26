@@ -79,7 +79,11 @@ int gmx_principal(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[THISMODULE] calculates the three principal axes of inertia for a group",
-        "of atoms.",
+        "of atoms. NOTE: Old versions of Gromacs wrote the output data in a",
+        "strange transposed way. As of Gromacs-5.0, the output file paxis1.dat",
+        "contains the x/y/z components of the first (major) principal axis for",
+        "each frame, and similarly for the middle and minor axes in paxis2.dat",
+        "and paxis3.dat."
     };
     static gmx_bool foo = FALSE;
 
@@ -110,9 +114,9 @@ int gmx_principal(int argc, char *argv[])
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },
-        { efDAT, "-a1",  "axis1",    ffWRITE },
-        { efDAT, "-a2",  "axis2",    ffWRITE },
-        { efDAT, "-a3",  "axis3",    ffWRITE },
+        { efDAT, "-a1",  "paxis1",   ffWRITE },
+        { efDAT, "-a2",  "paxis2",   ffWRITE },
+        { efDAT, "-a3",  "paxis3",   ffWRITE },
         { efDAT, "-om",  "moi",      ffWRITE }
     };
 #define NFILE asize(fnm)
@@ -143,9 +147,9 @@ int gmx_principal(int argc, char *argv[])
 
         calc_principal_axes(&top, x, index, gnx, axes, moi);
 
-        fprintf(axis1, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][XX], axes[YY][XX], axes[ZZ][XX]);
-        fprintf(axis2, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][YY], axes[YY][YY], axes[ZZ][YY]);
-        fprintf(axis3, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][ZZ], axes[YY][ZZ], axes[ZZ][ZZ]);
+        fprintf(axis1, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][XX], axes[XX][YY], axes[XX][ZZ]);
+        fprintf(axis2, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[YY][XX], axes[YY][YY], axes[YY][ZZ]);
+        fprintf(axis3, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[ZZ][XX], axes[ZZ][YY], axes[ZZ][ZZ]);
         fprintf(fmoi,  "%15.10f     %15.10f  %15.10f  %15.10f\n", t, moi[XX], moi[YY], moi[ZZ]);
     }
     while (read_next_x(oenv, status, &t, x, box));
