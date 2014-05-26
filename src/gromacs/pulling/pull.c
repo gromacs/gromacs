@@ -331,7 +331,7 @@ static void low_get_pull_coord_dr(const t_pull *pull,
     }
     if (max_dist2 >= 0 && dr2 > 0.98*0.98*max_dist2)
     {
-        gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f)",
+        gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f).\nYou might want to consider using \"pull-geometry = direction-periodic\" instead.\n",
                   pcrd->group[0], pcrd->group[1], sqrt(dr2), sqrt(max_dist2));
     }
 
