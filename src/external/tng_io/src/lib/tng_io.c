@@ -1029,6 +1029,41 @@ static tng_function_status tng_block_header_read
 //     return(TNG_SUCCESS);
 // }
 */
+
+static tng_function_status tng_reread_frame_set_at_file_pos
+                (tng_trajectory_t tng_data,
+                 const int64_t pos)
+{
+    tng_gen_block_t block;
+    tng_function_status stat;
+
+    tng_block_init(&block);
+
+    fseek(tng_data->input_file, pos, SEEK_SET);
+    if(pos > 0)
+    {
+        stat = tng_block_header_read(tng_data, block);
+        if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
+        {
+            fprintf(stderr, "TNG library: Cannot read block header at pos %"PRId64". %s: %d\n", pos,
+                    __FILE__, __LINE__);
+            tng_block_destroy(&block);
+            return(TNG_FAILURE);
+        }
+
+        if(tng_block_read_next(tng_data, block,
+                               TNG_SKIP_HASH) != TNG_SUCCESS)
+        {
+            tng_block_destroy(&block);
+            return(TNG_CRITICAL);
+        }
+    }
+
+    tng_block_destroy(&block);
+
+    return(TNG_SUCCESS);
+}
+
 /** Write the header of a data block, regardless of its type
  * @param tng_data is a trajectory data container.
  * @param block is a general block container.
@@ -16007,7 +16042,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length
     tng_function_status stat;
     tng_non_particle_data_t np_data;
     tng_particle_data_t p_data;
-    long file_pos;
+    long orig_file_pos, file_pos;
     int is_particle_data;
 
     if(tng_data->current_trajectory_frame_set_input_file_pos <= 0)
@@ -16023,6 +16058,7 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length
             return(stat);
         }
     }
+    orig_file_pos = tng_data->current_trajectory_frame_set_input_file_pos;
     stat = tng_data_find(tng_data, block_id, &np_data);
     if(stat != TNG_SUCCESS)
     {
@@ -16042,6 +16078,8 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length
             }
             if(stat != TNG_SUCCESS)
             {
+                tng_reread_frame_set_at_file_pos(tng_data, orig_file_pos);
+
                 return(stat);
             }
             stat = tng_data_find(tng_data, block_id, &np_data);
@@ -16050,6 +16088,8 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length
                 stat = tng_particle_data_find(tng_data, block_id, &p_data);
                 if(stat != TNG_SUCCESS)
                 {
+                    tng_reread_frame_set_at_file_pos(tng_data, orig_file_pos);
+
                     return(stat);
                 }
                 else
@@ -16079,6 +16119,8 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length
     {
         *stride_length = np_data->stride_length;
     }
+    tng_reread_frame_set_at_file_pos(tng_data, orig_file_pos);
+
     return(TNG_SUCCESS);
 }
 
@@ -16572,7 +16614,14 @@ tng_function_status DECLSPECDLLEXPORT tng_util_particle_data_next_frame_read
     }
     else
     {
-        i = data->last_retrieved_frame + data->stride_length;
+        if(data->n_frames == 1)
+        {
+            i = data->last_retrieved_frame + 1;
+        }
+        else
+        {
+            i = data->last_retrieved_frame + data->stride_length;
+        }
         if(i < frame_set->first_frame || i >= frame_set->first_frame + frame_set->n_frames)
         {
             stat = tng_frame_set_of_frame_find(tng_data, i);
@@ -16725,7 +16774,14 @@ tng_function_status DECLSPECDLLEXPORT tng_util_non_particle_data_next_frame_read
     }
     else
     {
-        i = data->last_retrieved_frame + data->stride_length;
+        if(data->n_frames == 1)
+        {
+            i = data->last_retrieved_frame + 1;
+        }
+        else
+        {
+            i = data->last_retrieved_frame + data->stride_length;
+        }
         if(i < frame_set->first_frame || i >= frame_set->first_frame + frame_set->n_frames)
         {
             stat = tng_frame_set_of_frame_find(tng_data, i);
