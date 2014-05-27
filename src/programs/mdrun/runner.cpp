@@ -34,9 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <algorithm>
 
 #include <assert.h>
 #include <signal.h>
@@ -73,7 +76,6 @@
 #include "gmx_omp_nthreads.h"
 #include "gromacs/gmxpreprocess/calc_verletbuf.h"
 #include "membed.h"
-#include "macros.h"
 #include "gmx_thread_affinity.h"
 #include "inputrec.h"
 #include "main.h"
@@ -88,6 +90,7 @@
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -296,7 +299,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
     else if (hw_opt->nthreads_omp > 0)
     {
         /* Here we could oversubscribe, when we do, we issue a warning later */
-        nthreads_tmpi = max(1, nthreads_tot/hw_opt->nthreads_omp);
+        nthreads_tmpi = std::max(1, nthreads_tot/hw_opt->nthreads_omp);
     }
     else
     {
@@ -315,8 +318,6 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
         const int nthreads_omp_always_faster             =  4;
         const int nthreads_omp_always_faster_Nehalem     = 12;
         const int nthreads_omp_always_faster_SandyBridge = 16;
-        const int first_model_Nehalem                    = 0x1A;
-        const int first_model_SandyBridge                = 0x2A;
         gmx_bool  bIntel_Family6;
 
         bIntel_Family6 =
@@ -357,8 +358,6 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 {
     int      nthreads_hw, nthreads_tot_max, nthreads_tmpi, nthreads_new, ngpu;
     int      min_atoms_per_mpi_thread;
-    char    *env;
-    char     sbuf[STRLEN];
     gmx_bool bCanUseGPU;
 
     if (hw_opt->nthreads_tmpi > 0)
@@ -433,7 +432,7 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     {
         /* the thread number was chosen automatically, but there are too many
            threads (too few atoms per thread) */
-        nthreads_new = max(1, mtop->natoms/min_atoms_per_mpi_thread);
+        nthreads_new = std::max(1, mtop->natoms/min_atoms_per_mpi_thread);
 
         /* Avoid partial use of Hyper-Threading */
         if (gmx_cpuid_x86_smt(hwinfo->cpuid_info) == GMX_CPUID_X86_SMT_ENABLED &&
@@ -481,7 +480,7 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 /* We determine the extra cost of the non-bonded kernels compared to
  * a reference nstlist value of 10 (which is the default in grompp).
  */
-static const int    nbnxn_reference_nstlist = 10;
+static const int    nbnxnReferenceNstlist = 10;
 /* The values to try when switching  */
 const int           nstlist_try[] = { 20, 25, 40 };
 #define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
@@ -510,9 +509,9 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     float                  listfac_ok, listfac_max;
     int                    nstlist_orig, nstlist_prev;
     verletbuf_list_setup_t ls;
-    real                   rlist_nstlist10, rlist_inc, rlist_ok, rlist_max;
+    real                   rlistWithReferenceNstlist, rlist_inc, rlist_ok, rlist_max;
     real                   rlist_new, rlist_prev;
-    int                    nstlist_ind = 0;
+    size_t                 nstlist_ind = 0;
     t_state                state_tmp;
     gmx_bool               bBox, bDD, bCont;
     const char            *nstl_gpu = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
@@ -521,6 +520,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     const char            *box_err  = "Can not increase nstlist because the box is too small";
     const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
     char                   buf[STRLEN];
+    const float            oneThird = 1.0f / 3.0f;
 
     if (nstlist_cmdline <= 0)
     {
@@ -598,19 +598,19 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     verletbuf_get_list_setup(bGPU, &ls);
 
     /* Allow rlist to make the list a given factor larger than the list
-     * would be with nstlist=10.
+     * would be with the reference value for nstlist (10).
      */
     nstlist_prev = ir->nstlist;
-    ir->nstlist  = 10;
+    ir->nstlist  = nbnxnReferenceNstlist;
     calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL,
-                            &rlist_nstlist10);
+                            &rlistWithReferenceNstlist);
     ir->nstlist  = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
     rlist_inc = nbnxn_get_rlist_effective_inc(ls.cluster_size_j,
                                               mtop->natoms/det(box));
-    rlist_ok  = (rlist_nstlist10 + rlist_inc)*pow(listfac_ok, 1.0/3.0) - rlist_inc;
-    rlist_max = (rlist_nstlist10 + rlist_inc)*pow(listfac_max, 1.0/3.0) - rlist_inc;
+    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*pow(listfac_ok, oneThird) - rlist_inc;
+    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*pow(listfac_max, oneThird) - rlist_inc;
     if (debug)
     {
         fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n",
@@ -754,7 +754,7 @@ static void convert_to_verlet_scheme(FILE *fplog,
                                      t_inputrec *ir,
                                      gmx_mtop_t *mtop, real box_vol)
 {
-    char *conv_mesg = "Converting input file with group cut-off scheme to the Verlet cut-off scheme";
+    const char *conv_mesg = "Converting input file with group cut-off scheme to the Verlet cut-off scheme";
 
     md_print_warn(NULL, fplog, "%s\n", conv_mesg);
 
@@ -837,7 +837,7 @@ static void convert_to_verlet_scheme(FILE *fplog,
             rlist_fac       = 1 + verlet_buffer_ratio_nodynamics;
         }
         ir->verletbuf_tol   = -1;
-        ir->rlist           = rlist_fac*max(ir->rvdw, ir->rcoulomb);
+        ir->rlist           = rlist_fac*std::max(ir->rvdw, ir->rcoulomb);
     }
 
     gmx_mtop_remove_chargegroups(mtop);
@@ -1043,7 +1043,7 @@ static void free_gpu_resources(const t_forcerec *fr,
     gmx_bool bIsPPrankUsingGPU;
     char     gpu_err_str[STRLEN];
 
-    bIsPPrankUsingGPU = (cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->bUseGPU;
+    bIsPPrankUsingGPU = (cr->duty & DUTY_PP) && fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU;
 
     if (bIsPPrankUsingGPU)
     {
@@ -1086,13 +1086,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *deviceOptions, int imdport, unsigned long Flags)
 {
     gmx_bool                  bForceUseGPU, bTryUseGPU;
-    double                    nodetime = 0, realtime;
     t_inputrec               *inputrec;
     t_state                  *state = NULL;
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
-    real                      tmpr1, tmpr2;
     t_nrnb                   *nrnb;
     gmx_mtop_t               *mtop          = NULL;
     t_mdatoms                *mdatoms       = NULL;
@@ -1103,16 +1101,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_pme_t                *pmedata       = NULL;
     gmx_vsite_t              *vsite         = NULL;
     gmx_constr_t              constr;
-    int                       i, m, nChargePerturbed = -1, nTypePerturbed = 0, status, nalloc;
-    char                     *gro;
+    int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
     gmx_wallcycle_t           wcycle;
     gmx_bool                  bReadEkin;
-    int                       list;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
     gmx_int64_t               reset_counters;
     gmx_edsam_t               ed           = NULL;
-    t_commrec                *cr_old       = cr;
     int                       nthreads_pme = 1;
     int                       nthreads_pp  = 1;
     gmx_membed_t              membed       = NULL;
@@ -1249,6 +1244,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (hw_opt->nthreads_tmpi > 1)
         {
+            t_commrec *cr_old       = cr;
             /* now start the threads. */
             cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
                                         oenv, bVerbose, bCompact, nstglobalcomm,
@@ -1726,6 +1722,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (DOMAINDECOMP(cr))
         {
+            GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
             dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
                             Flags & MD_DDBONDCHECK, fr->cginfo_mb);
 
@@ -1763,6 +1760,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
     else
     {
+        GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
         gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec);
