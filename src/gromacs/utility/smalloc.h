@@ -330,6 +330,10 @@ void gmx_snew_aligned_impl(const char *name, const char *file, int line,
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief
  * Frees memory referenced by \p ptr.
  *
@@ -387,5 +391,9 @@ int over_alloc_dd(int n);
 
 /** Over allocation for large data types: complex structs */
 #define over_alloc_large(n) (int)(OVER_ALLOC_FAC*(n) + 1000)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
