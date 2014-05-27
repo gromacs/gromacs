@@ -1448,13 +1448,16 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                 {
                    drude_tstat_for_particles(ir, md, state, MassQ, vcm, ekind, scalefac); 
                 }
-                if (debug)
+                else
                 {
-                    fprintf(debug, "TROTTER: calling NHC_trotter for thermostat\n");
-                    fprintf(debug, "TROTTER: there are %d tc-grps\n", opts->ngtc);
+                    if (debug)
+                    {
+                        fprintf(debug, "TROTTER: calling NHC_trotter for thermostat\n");
+                        fprintf(debug, "TROTTER: there are %d tc-grps\n", opts->ngtc);
+                    }
+                    NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
+                                state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
                 }
-                NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
-                            state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
                 /* need to rescale the kinetic energies and velocities here.  Could
                    scale the velocities later, but we need them scaled in order to
                    produce the correct outputs, so we'll scale them here. */
