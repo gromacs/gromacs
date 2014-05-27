@@ -47,6 +47,10 @@
 #include "filenm.h"
 #include "mdoutf.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Wrapper routine for writing trajectories during mdrun
  *
  * This routine does communication (e.g. collecting distributed coordinates)
@@ -78,5 +82,9 @@ do_md_trajectory_writing(FILE           *fplog,
                          gmx_bool        bSumEkinhOld
                          );
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GMX_FILEIO_TRAJECTORY_WRITING_H */
