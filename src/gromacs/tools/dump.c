@@ -384,6 +384,9 @@ static void list_tng(const char gmx_unused *fn)
                 /* Can't write any output because we don't know what
                    arrays are valid. */
                 fprintf(stderr, "\nWARNING: Incomplete frame at time %g, will not write output\n", frame_time);
+            }
+            else
+            {
                 list_tng_inner(fn, (0 == i), values, step, frame_time,
                                n_values_per_frame, n_atoms, prec, nframe, block_name);
             }
