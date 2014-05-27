@@ -47,6 +47,10 @@
 #include "filenm.h"
 #include "enxio.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct gmx_mtop_t;
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
@@ -98,5 +102,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
 #define MDOF_CPT          (1<<4)
 #define MDOF_IMD          (1<<5)
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GMX_FILEIO_MDOUTF_H */
