@@ -81,8 +81,11 @@
 #include "types/nlistheuristics.h"
 #include "types/iteratedconstraints.h"
 #include "nbnxn_cuda_data_mgmt.h"
+#include "repl_ex.h"
+#include "deform.h"
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/mdoutf.h"
 #include "gromacs/fileio/trajectory_writing.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/trxio.h"
@@ -171,7 +174,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     rvec              mu_tot;
     t_vcm            *vcm;
     t_state          *bufstate = NULL;
-    matrix           *scale_tot, pcoupl_mu, M, ebox;
+    matrix            pcoupl_mu, M;
     gmx_nlheur_t      nlh;
     t_trxframe        rerun_fr;
     gmx_repl_ex_t     repl_ex = NULL;
@@ -190,10 +193,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_ekindata_t   *ekind, *ekind_save;
     gmx_shellfc_t     shellfc;
     int               count, nconverged = 0;
-    real              timestep   = 0;
-    double            tcount     = 0;
-    gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged, bNeedRepartition;
-    gmx_bool          bAppend;
+    double            tcount                 = 0;
+    gmx_bool          bConverged             = TRUE, bOK, bSumEkinhOld, bExchanged, bNeedRepartition;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
@@ -208,7 +209,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     double            cycles;
     real              saved_conserved_quantity = 0;
     real              last_ekin                = 0;
-    int               iter_i;
     t_extmass         MassQ;
     int             **trotter_seq;
     char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
@@ -232,7 +232,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
-    bAppend  = (Flags & MD_APPENDFILES);
     if (Flags & MD_RESETCOUNTERSHALFWAY)
     {
         if (ir->nsteps > 0)
