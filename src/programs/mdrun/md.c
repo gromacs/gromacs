@@ -1083,8 +1083,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         fprintf(debug, "MD: step = %d, applying Drude velocity scaling #1\n", (int)step);
                     }
-                    /* nosehoover_KE(ir, mdatoms, state, ekind, &MassQ, vcm); */
-                    drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind);
+                    /* TODO: temporarily commented to put it inside trotter_update() */
+                    /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
                 }
 
                 /* TODO: remove */
@@ -1149,7 +1149,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             {
                                 fprintf(debug, "MD: step = %d, applying Drude velocity scaling #2\n", (int)step);
                             }
-                            drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind);
+                            /* TODO: testing within trotter_update() */
+                            /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
                         }
 
                         /* TODO: remove */
@@ -1239,8 +1240,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             {
                                 fprintf(debug, "MD: step = %d, applying Drude velocity scaling #3\n", (int)step);
                             }
-                            /* nosehoover_KE(ir, mdatoms, state, ekind, &MassQ, vcm); */
-                            drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind);
+                            /* TODO: moved inside trotter_update() */
+                            /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
                         }
 
                         m_add(force_vir, shake_vir, total_vir); /* we need the un-dispersion corrected total vir here */
@@ -1531,7 +1532,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         {
                             fprintf(debug, "MD: step = %d, applying Drude velocity scaling #4\n", (int)step);
                         }
-                        drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind);
+                        /* TODO: moved inside trotter_update() */
+                        /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
                     }
 
                     /* TODO: remove */
@@ -1605,7 +1607,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         {
                             fprintf(debug, "MD: step = %d, applying Drude velocity scaling #5\n", (int)step);
                         }
-                        drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind);
+                        /* TODO: moved inside trotter_update() */
+                        /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
                     }
 
                     /* TODO: remove */

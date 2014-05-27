@@ -291,8 +291,8 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
 
 /* CHARMM function RelativeTstat */
 /* Thermostat scaling velocities relative to the system COM */
-static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extmass *MassQ, 
-                           t_vcm *vcm, gmx_bool bSwitch, gmx_bool bComputeCM)
+static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_vcm *vcm, gmx_bool bSwitch, 
+                           gmx_bool bComputeCM)
 {
 
     if (debug)
@@ -308,7 +308,7 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
         }
     }
 
-    int         g, i, j, m;
+    int         g, i, j, k, m;
     int         ti;                 /* NH thermostat index */
     real        mass;               /* mass of an atom */
     real       *grpmass;            /* array of masses of each tc-grp */
@@ -316,9 +316,11 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
     rvec        p;                  /* linear momentum */
     double     *vxi;                /* for ease of referencing */
     t_grpopts  *opts;
+    int         nh;                 /* NH chain length */
 
     opts = &(ir->opts);
     snew(grpmass, opts->ngtc);
+    nh = opts->nhchainlength;
 
     /* calculate mass of each tc-grp */
     for (i=0; i<opts->ngtc; i++)
@@ -345,13 +347,17 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
         for (i=0; i<opts->ngtc; i++)
         {
             /* initialize velocities */
-            vxi = &state->nosehoover_vxi[i];
-            clear_dvec(vxi);
+            for (j=0; j<nh; j++)
+            {
+                vxi = &state->nosehoover_vxi[i*nh+j];
+                clear_dvec(vxi);
+            }
         }
 
         /* if we are doing COM motion removal, initialize */
         if (vcm->mode != ecmNO)
         {
+            /*
             if (debug)
             {
                 fprintf(debug, "REL TSTAT: initializing vcm to zero\n");
@@ -361,6 +367,7 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
             {
                 clear_rvec(vcm->group_v[g]);
             }
+            */
         }
 
         for (j = 0; j < md->homenr; j++)
@@ -380,40 +387,47 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
             }
 
             /* do relative velocity correction based on momentum */
-            vxi = &state->nosehoover_vxi[ti];
             copy_rvec(state->v[j], v);
-
             mass = md->massT[j];
             svmul(mass, v, p);
-
-            for (m=0; m<DIM; m++)
+            for (k=0; k<nh; k++)
             {
-                vxi[m] += p[m];
+                vxi = &state->nosehoover_vxi[ti*nh+k];
+
+                for (m=0; m<DIM; m++)
+                {
+                    vxi[m] += p[m];
+                }
             }
-        } /* end if (bComputeCM) */
+        }
 
         /* Scale relative velocities */
         for (i=0; i<opts->ngtc; i++)
         {
-            vxi = &state->nosehoover_vxi[i];
-
-            if (debug)
+            for (j=0; j<nh; j++)
             {
-                fprintf(debug, "REL TSTAT: vxi b4 scale: %f %f %f\n", vxi[XX], vxi[YY], vxi[ZZ]);
-            }
+                vxi = &state->nosehoover_vxi[i*nh+j];
 
-            /* scale velocity by mass, i.e. multiply by inverse mass */
-            dsvmul((1.0/grpmass[i]), vxi, vxi);
-
-            /* TODO: check */
-            for (g=0; g<vcm->nr; g++)
-            {
-                /* since we divided by mass above, reverse that by multipling by mass */
-                dsvmul(grpmass[i], vxi, vxi);
-
-                for (m=0; m<DIM; m++)
+                if (debug)
                 {
-                    vcm->group_v[g][m] += vxi[m];
+                    fprintf(debug, "REL TSTAT: vxi[%d] b4 scale: %f %f %f\n", (i*nh+j), vxi[XX], vxi[YY], vxi[ZZ]);
+                }
+
+                /* scale velocity by mass, i.e. multiply by inverse mass */
+                dsvmul((1.0/grpmass[i]), vxi, vxi);
+
+                if (debug)
+                {
+                    fprintf(debug, "REL TSTAT: vxi[%d] after scale: %f %f %f\n", (i*nh+j), vxi[XX], vxi[YY], vxi[ZZ]);
+                }
+
+                /* TODO: check */
+                for (g=0; g<vcm->nr; g++)
+                {
+                    for (m=0; m<DIM; m++)
+                    {
+                        vcm->group_v[g][m] += grpmass[i]*vxi[m];
+                    }
                 }
             }
         }
@@ -426,7 +440,7 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
                 vcm->group_v[g][m] /= vcm->group_mass[g];
             }
         }
-    }
+    } /* end of bComputeCM */
 
     /* loop back over the particles and remove drift associated with the thermostat */
     for (j = 0; j < md->homenr; j++)
@@ -459,6 +473,7 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
         clear_rvec(v);
     }
 
+    /*
     if (!bSwitch)
     {
         if (vcm->mode != ecmNO)
@@ -469,6 +484,7 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
             }
         }
     }
+    */
 }
 
 /* CHARMM function KineticEFNH */
@@ -477,8 +493,7 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_extm
  * in the extended Lagrangian formalism, the thermostats are integrated based
  * on relative motion of atom-Drude pairs. Other functions take care of the
  * actual velocity scaling. */
-void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind,
-                   t_extmass *MassQ, t_vcm *vcm)
+void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind, t_vcm *vcm)
 {
 
     int             i, j, m;
@@ -506,7 +521,7 @@ void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t
         clear_mat(ekind->tcstat[i].ekinh);
     }
 */
-    relative_tstat(state, md, ir, MassQ, vcm, TRUE, TRUE);
+    relative_tstat(state, md, ir, vcm, TRUE, TRUE);
 
     mv2 = 0;
     for (i=0; i<md->homenr; i++)
@@ -565,7 +580,7 @@ void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t
         }
     }
 
-    relative_tstat(state, md, ir, MassQ, vcm, FALSE, FALSE);
+    relative_tstat(state, md, ir, vcm, FALSE, FALSE);
 
 }
 
@@ -575,7 +590,7 @@ void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t
  * along the bond between the two. 
  */
 void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_extmass *MassQ, t_vcm *vcm, 
-                     gmx_ekindata_t *ekind)
+                               gmx_ekindata_t *ekind, double scalefac[])
 {
 
     int             i, j, n;
@@ -585,7 +600,7 @@ void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_
     real            dt;                     /* time step */
     double          dtsy;                   /* subdivided time step */
     double         *expfac;                 /* array of factors for (size: ngtc) */
-    double          fac_int, fac_ext;       /* internal and extenral scaling factors */
+    double          fac_int, fac_ext;       /* internal and external scaling factors */
     real            ma, mb, mtot, invmtot;  /* stuff related to masses */
     rvec            va, vb;                 /* velocities of atoms */
     rvec            vcom, vtot;             /* center-of-mass and total velocity of Drude-atom pair */
@@ -611,10 +626,10 @@ void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies associated with thermostats */
-        nosehoover_KE(ir, md, state, ekind, MassQ, vcm);
+        nosehoover_KE(ir, md, state, ekind, vcm);
 
         /* scale relative to COM, subtracting COM velocity */
-        relative_tstat(state, md, ir, MassQ, vcm, TRUE, TRUE);
+        relative_tstat(state, md, ir, vcm, TRUE, TRUE);
 
         /* get forces and velocities on all thermostats */
         /* NOTE: state->nosehoover_xi is NH positions, state->nosehoover_vxi is NH velocities */
@@ -768,15 +783,14 @@ void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_
         }    
 
         /* scale relative to COM, adding COM velocity */
-        relative_tstat(state, md, ir, MassQ, vcm, FALSE, FALSE);
+        relative_tstat(state, md, ir, vcm, FALSE, FALSE);
 
         /* calculate new kinetic energies */
-        nosehoover_KE(ir, md, state, ekind, MassQ, vcm);
+        nosehoover_KE(ir, md, state, ekind, vcm);
 
-        /*
+        /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
                     state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
-        */
     } /* end for-loop over thermostat subdivided time steps */
 }
 
@@ -1430,6 +1444,10 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                 break;
             case etrtNHC:
             case etrtNHC2:
+                if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
+                {
+                   drude_tstat_for_particles(ir, md, state, MassQ, vcm, ekind, scalefac); 
+                }
                 if (debug)
                 {
                     fprintf(debug, "TROTTER: calling NHC_trotter for thermostat\n");
@@ -1440,10 +1458,6 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                 /* need to rescale the kinetic energies and velocities here.  Could
                    scale the velocities later, but we need them scaled in order to
                    produce the correct outputs, so we'll scale them here. */
-
-                /* Scaling applies only to real atoms and applies to absolute velocities; 
-                 * Drude systems have relative velocitiess that are scaled elsewhere, 
-                 * before thermotsat variables were updated, so we don't re-scale here. */
                 for (i = 0; i < ngtc; i++)
                 {
                     tcstat                  = &ekind->tcstat[i];

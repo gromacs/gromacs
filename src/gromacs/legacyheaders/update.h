@@ -243,11 +243,11 @@ void correct_ekin(FILE *log, int start, int end, rvec v[],
 
 
 void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_extmass *MassQ, t_vcm *vcm, 
-                               gmx_ekindata_t *ekind);
+                               gmx_ekindata_t *ekind, double scalefac[]);
 /* special scaling for Drudes */
 
 void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind,
-                   t_extmass *MassQ, t_vcm *vcm);
+                   t_vcm *vcm);
 /* calculates KE for Nose-Hoover based on relative motion */
 
 #ifdef __cplusplus
