@@ -1620,6 +1620,11 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
+    if (nvsite && ir->eI == eiNM)
+    {
+        gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+    }
+
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         fprintf(stderr, "Removing all charge groups because cutoff-scheme=%s\n",

@@ -408,7 +408,7 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, 
 static void pr_int(FILE *fp, int indent, const char *title, int i)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%-20s = %d\n", title, i);
+    fprintf(fp, "%-30s = %d\n", title, i);
 }
 
 static void pr_int64(FILE *fp, int indent, const char *title, gmx_int64_t i)
@@ -416,19 +416,19 @@ static void pr_int64(FILE *fp, int indent, const char *title, gmx_int64_t i)
     char buf[STEPSTRSIZE];
 
     pr_indent(fp, indent);
-    fprintf(fp, "%-20s = %s\n", title, gmx_step_str(i, buf));
+    fprintf(fp, "%-30s = %s\n", title, gmx_step_str(i, buf));
 }
 
 static void pr_real(FILE *fp, int indent, const char *title, real r)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%-20s = %g\n", title, r);
+    fprintf(fp, "%-30s = %g\n", title, r);
 }
 
 static void pr_double(FILE *fp, int indent, const char *title, double d)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "%-20s = %g\n", title, d);
+    fprintf(fp, "%-30s = %g\n", title, d);
 }
 
 static void pr_str(FILE *fp, int indent, const char *title, const char *s)

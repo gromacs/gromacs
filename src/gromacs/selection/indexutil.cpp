@@ -268,7 +268,7 @@ gmx_ana_indexgrps_print(FILE *fp, gmx_ana_indexgrps_t *g, int maxn)
 {
     for (int i = 0; i < g->nr; ++i)
     {
-        fprintf(fp, " Group %2d \"%s\" ", i + 1, g->names[i].c_str());
+        fprintf(fp, " Group %2d \"%s\" ", i, g->names[i].c_str());
         gmx_ana_index_dump(fp, &g->g[i], maxn);
     }
 }

@@ -119,30 +119,6 @@ diagonalization of the Hessian
 \item long-term energy conservation, especially for large systems
 \end{itemize}
 
-\section{Porting {\gromacs}}
-The {\gromacs} system is designed with portability as a major design
-goal. However there are a number of things we assume to be present on
-the system {\gromacs} is being ported on. We assume the following
-features:
-
-\begin{enumerate}
-\item   A UNIX-like operating system (BSD 4.x or SYSTEM V rev.3 or higher) 
-        or UNIX-like libraries running under {\eg} Cygwin
-\item   an ANSI C compiler 
-\end{enumerate}
-
-There are some additional features in the package that require extra
-stuff to be present, but it is checked for in the configuration script
-and you will be warned if anything important is missing.
-
-That's the requirements for a single node system. If you want
-to compile {\gromacs} for running a single simulation across multiple nodes,
-you also need an MPI library (Message-Passing Interface) to perform the 
-parallel communication. This is always shipped with supercomputers, and
-for workstations you can find links to free MPI implementations through
-the {\gromacs} homepage at {\wwwpage}.
-
-
 \section{Environment Variables}
 {\gromacs} programs may be influenced by the use of
 \normindex{environment variables}.  First of all, the variables set in
