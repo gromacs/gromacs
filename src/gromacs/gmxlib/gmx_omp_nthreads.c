@@ -393,6 +393,85 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
     modth.initialized = TRUE;
 }
 
+/*! \brief Report on the OpenMP settings that will be used */
+static void
+reportOpenmpSettings(FILE *fplog,
+                     const t_commrec *cr,
+                     gmx_bool bOMP,
+                     gmx_bool bFullOmpSupport,
+                     gmx_bool bSepPME)
+{
+    /* inform the user about the settings */
+    if (!bOMP)
+    {
+        return;
+    }
+
+#ifdef GMX_THREAD_MPI
+    const char *mpi_str = "per tMPI thread";
+#else
+    const char *mpi_str = "per MPI process";
+#endif
+
+    /* for group scheme we print PME threads info only */
+    if (bFullOmpSupport)
+    {
+        md_print_info(cr, fplog, "Using %d OpenMP thread%s %s\n",
+                      modth.gnth, modth.gnth > 1 ? "s" : "",
+                      cr->nnodes > 1 ? mpi_str : "");
+    }
+    if (bSepPME && modth.gnth_pme != modth.gnth)
+    {
+        md_print_info(cr, fplog, "Using %d OpenMP thread%s %s for PME\n",
+                      modth.gnth_pme, modth.gnth_pme > 1 ? "s" : "",
+                      cr->nnodes > 1 ? mpi_str : "");
+    }
+}
+
+/*! \brief Detect and warn about oversubscription of cores.
+ *
+ * \todo This could probably live elsewhere, since it is not specifc
+ * to OpenMP, and only needs modth.gnth.
+ *
+ * \todo Enable this for separate PME nodes as well! */
+static void
+issueOversubscriptionWarning(FILE *fplog,
+                             const t_commrec *cr,
+                             int nthreads_hw_avail,
+                             int nppn,
+                             gmx_bool bSepPME)
+{
+    if (bSepPME || 0 != cr->rank_pp_intranode)
+    {
+        return;
+    }
+
+    char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
+
+    if (modth.gnth*nppn > nthreads_hw_avail)
+    {
+        sprintf(sbuf, "threads");
+        sbuf1[0] = '\0';
+        sprintf(sbuf2, "O");
+#ifdef GMX_MPI
+        if (modth.gnth == 1)
+        {
+#ifdef GMX_THREAD_MPI
+            sprintf(sbuf, "thread-MPI threads");
+#else
+            sprintf(sbuf, "MPI processes");
+            sprintf(sbuf1, " per rank");
+            sprintf(sbuf2, "On rank %d: o", cr->sim_nodeid);
+#endif
+        }
+#endif
+        md_print_warn(cr, fplog,
+                      "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
+                      "         This will cause considerable performance loss!",
+                      sbuf2, nthreads_hw_avail, sbuf1, nppn*modth.gnth, sbuf);
+    }
+}
+
 void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
@@ -430,59 +509,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     }
 #endif
 
-    /* inform the user about the settings */
-    if (bOMP)
-    {
-#ifdef GMX_THREAD_MPI
-        const char *mpi_str = "per tMPI thread";
-#else
-        const char *mpi_str = "per MPI process";
-#endif
-
-        /* for group scheme we print PME threads info only */
-        if (bFullOmpSupport)
-        {
-            md_print_info(cr, fplog, "Using %d OpenMP thread%s %s\n",
-                          modth.gnth, modth.gnth > 1 ? "s" : "",
-                          cr->nnodes > 1 ? mpi_str : "");
-        }
-        if (bSepPME && modth.gnth_pme != modth.gnth)
-        {
-            md_print_info(cr, fplog, "Using %d OpenMP thread%s %s for PME\n",
-                          modth.gnth_pme, modth.gnth_pme > 1 ? "s" : "",
-                          cr->nnodes > 1 ? mpi_str : "");
-        }
-    }
-
-    /* detect and warn about oversubscription
-     * TODO: enable this for separate PME nodes as well! */
-    if (!bSepPME && cr->rank_pp_intranode == 0)
-    {
-        char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
-
-        if (modth.gnth*nppn > nthreads_hw_avail)
-        {
-            sprintf(sbuf, "threads");
-            sbuf1[0] = '\0';
-            sprintf(sbuf2, "O");
-#ifdef GMX_MPI
-            if (modth.gnth == 1)
-            {
-#ifdef GMX_THREAD_MPI
-                sprintf(sbuf, "thread-MPI threads");
-#else
-                sprintf(sbuf, "MPI processes");
-                sprintf(sbuf1, " per rank");
-                sprintf(sbuf2, "On rank %d: o", cr->sim_nodeid);
-#endif
-            }
-#endif
-            md_print_warn(cr, fplog,
-                          "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
-                          "         This will cause considerable performance loss!",
-                          sbuf2, nthreads_hw_avail, sbuf1, nppn*modth.gnth, sbuf);
-        }
-    }
+    reportOpenmpSettings(fplog, cr, bOMP, bSepPME, bFullOmpSupport);
+    issueOversubscriptionWarning(fplog, cr, bSepPME, nthreads_hw_avail, nppn);
 }
 
 int gmx_omp_nthreads_get(int mod)
