@@ -34,18 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+#include "repl_ex.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <math.h>
-#include "repl_ex.h"
+
 #include "network.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
 #include "copyrite.h"
-#include "macros.h"
 #include "gromacs/math/vec.h"
 #include "names.h"
 #include "domdec.h"
@@ -107,7 +109,7 @@ static gmx_bool repl_quantity(const gmx_multisim_t *ms,
 {
     real    *qall;
     gmx_bool bDiff;
-    int      i, s;
+    int      s;
 
     snew(qall, ms->nsim);
     qall[re->repl] = q;
@@ -143,7 +145,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
                                     const t_inputrec *ir,
                                     int nst, int nex, int init_seed)
 {
-    real                temp, pres;
+    real                pres;
     int                 i, j, k;
     struct gmx_repl_ex *re;
     gmx_bool            bTemp;
@@ -888,7 +890,7 @@ test_for_replica_exchange(FILE                 *fplog,
                           real                  time)
 {
     int       m, i, j, a, b, ap, bp, i0, i1, tmp;
-    real      ediff = 0, delta = 0, dpV = 0;
+    real      delta = 0;
     gmx_bool  bPrint, bMultiEx;
     gmx_bool *bEx      = re->bEx;
     real     *prob     = re->prob;
@@ -896,10 +898,9 @@ test_for_replica_exchange(FILE                 *fplog,
     gmx_bool  bEpot    = FALSE;
     gmx_bool  bDLambda = FALSE;
     gmx_bool  bVol     = FALSE;
-    gmx_rng_t rng;
 
     bMultiEx = (re->nex > 1);  /* multiple exchanges at each state */
-    fprintf(fplog, "Replica exchange at step " "%"GMX_PRId64 " time %g\n", step, time);
+    fprintf(fplog, "Replica exchange at step " "%" GMX_PRId64 " time %g\n", step, time);
 
     if (re->bNPT)
     {
@@ -1301,7 +1302,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
                           t_state *state, gmx_enerdata_t *enerd,
                           t_state *state_local, gmx_int64_t step, real time)
 {
-    int i, j;
+    int j;
     int replica_id = 0;
     int exchange_partner;
     int maxswap = 0;
