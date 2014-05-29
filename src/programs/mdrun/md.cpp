@@ -60,7 +60,6 @@
 #include "orires.h"
 #include "pme.h"
 #include "mdatoms.h"
-#include "repl_ex.h"
 #include "deform.h"
 #include "qmmm.h"
 #include "domdec.h"
@@ -92,6 +91,7 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/replicaexchange/replicaexchange.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -175,7 +175,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     matrix            pcoupl_mu, M;
     gmx_nlheur_t      nlh;
     t_trxframe        rerun_fr;
-    gmx_repl_ex_t     repl_ex = NULL;
+    gmx_repl_ex_t    *repl_ex = NULL;
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
     t_mdebin         *mdebin   = NULL;

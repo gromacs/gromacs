@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "repl_ex.h"
+#include "replicaexchange.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -54,6 +54,8 @@
 #include "main.h"
 #include "gromacs/random/random.h"
 
+#include "state.h"
+
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
 
@@ -66,7 +68,7 @@ const char *erename[ereNR] = { "temperature", "lambda", "end_single_marker", "te
 /* Eventually, should add 'pressure', 'temperature and pressure', 'lambda_and_pressure', 'temperature_lambda_pressure'?;
    Let's wait until we feel better about the pressure control methods giving exact ensembles.  Right now, we assume constant pressure  */
 
-typedef struct gmx_repl_ex
+struct gmx_repl_ex_t
 {
     int       repl;
     int       nrepl;
@@ -101,11 +103,10 @@ typedef struct gmx_repl_ex
     real  *beta;
     real  *Vol;
     real **de;
-
-} t_gmx_repl_ex;
+};
 
 static gmx_bool repl_quantity(const gmx_multisim_t *ms,
-                              struct gmx_repl_ex *re, int ere, real q)
+                              gmx_repl_ex_t *re, int ere, real q)
 {
     real    *qall;
     gmx_bool bDiff;
@@ -139,15 +140,16 @@ static gmx_bool repl_quantity(const gmx_multisim_t *ms,
     return bDiff;
 }
 
-gmx_repl_ex_t init_replica_exchange(FILE *fplog,
-                                    const gmx_multisim_t *ms,
-                                    const t_state *state,
-                                    const t_inputrec *ir,
-                                    int nst, int nex, int init_seed)
+gmx_repl_ex_t *
+init_replica_exchange(FILE *fplog,
+                      const gmx_multisim_t *ms,
+                      const t_state *state,
+                      const t_inputrec *ir,
+                      int nst, int nex, int init_seed)
 {
     real                pres;
     int                 i, j, k;
-    struct gmx_repl_ex *re;
+    gmx_repl_ex_t      *re;
     gmx_bool            bTemp;
     gmx_bool            bLambda = FALSE;
 
@@ -413,242 +415,6 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     return re;
 }
 
-static void exchange_reals(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, real *v, int n)
-{
-    real *buf;
-    int   i;
-
-    if (v)
-    {
-        snew(buf, n);
-#ifdef GMX_MPI
-        /*
-           MPI_Sendrecv(v,  n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
-           buf,n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
-         */
-        {
-            MPI_Request mpi_req;
-
-            MPI_Isend(v, n*sizeof(real), MPI_BYTE, MSRANK(ms, b), 0,
-                      ms->mpi_comm_masters, &mpi_req);
-            MPI_Recv(buf, n*sizeof(real), MPI_BYTE, MSRANK(ms, b), 0,
-                     ms->mpi_comm_masters, MPI_STATUS_IGNORE);
-            MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
-        }
-#endif
-        for (i = 0; i < n; i++)
-        {
-            v[i] = buf[i];
-        }
-        sfree(buf);
-    }
-}
-
-
-static void exchange_ints(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, int *v, int n)
-{
-    int *buf;
-    int  i;
-
-    if (v)
-    {
-        snew(buf, n);
-#ifdef GMX_MPI
-        /*
-           MPI_Sendrecv(v,  n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
-             buf,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
-             ms->mpi_comm_masters,MPI_STATUS_IGNORE);
-         */
-        {
-            MPI_Request mpi_req;
-
-            MPI_Isend(v, n*sizeof(int), MPI_BYTE, MSRANK(ms, b), 0,
-                      ms->mpi_comm_masters, &mpi_req);
-            MPI_Recv(buf, n*sizeof(int), MPI_BYTE, MSRANK(ms, b), 0,
-                     ms->mpi_comm_masters, MPI_STATUS_IGNORE);
-            MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
-        }
-#endif
-        for (i = 0; i < n; i++)
-        {
-            v[i] = buf[i];
-        }
-        sfree(buf);
-    }
-}
-
-static void exchange_doubles(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, double *v, int n)
-{
-    double *buf;
-    int     i;
-
-    if (v)
-    {
-        snew(buf, n);
-#ifdef GMX_MPI
-        /*
-           MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
-           buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
-         */
-        {
-            MPI_Request mpi_req;
-
-            MPI_Isend(v, n*sizeof(double), MPI_BYTE, MSRANK(ms, b), 0,
-                      ms->mpi_comm_masters, &mpi_req);
-            MPI_Recv(buf, n*sizeof(double), MPI_BYTE, MSRANK(ms, b), 0,
-                     ms->mpi_comm_masters, MPI_STATUS_IGNORE);
-            MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
-        }
-#endif
-        for (i = 0; i < n; i++)
-        {
-            v[i] = buf[i];
-        }
-        sfree(buf);
-    }
-}
-
-static void exchange_rvecs(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, rvec *v, int n)
-{
-    rvec *buf;
-    int   i;
-
-    if (v)
-    {
-        snew(buf, n);
-#ifdef GMX_MPI
-        /*
-           MPI_Sendrecv(v[0],  n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
-           buf[0],n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
-         */
-        {
-            MPI_Request mpi_req;
-
-            MPI_Isend(v[0], n*sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0,
-                      ms->mpi_comm_masters, &mpi_req);
-            MPI_Recv(buf[0], n*sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0,
-                     ms->mpi_comm_masters, MPI_STATUS_IGNORE);
-            MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
-        }
-#endif
-        for (i = 0; i < n; i++)
-        {
-            copy_rvec(buf[i], v[i]);
-        }
-        sfree(buf);
-    }
-}
-
-static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
-{
-    /* When t_state changes, this code should be updated. */
-    int ngtc, nnhpres;
-    ngtc    = state->ngtc * state->nhchainlength;
-    nnhpres = state->nnhpres* state->nhchainlength;
-    exchange_rvecs(ms, b, state->box, DIM);
-    exchange_rvecs(ms, b, state->box_rel, DIM);
-    exchange_rvecs(ms, b, state->boxv, DIM);
-    exchange_reals(ms, b, &(state->veta), 1);
-    exchange_reals(ms, b, &(state->vol0), 1);
-    exchange_rvecs(ms, b, state->svir_prev, DIM);
-    exchange_rvecs(ms, b, state->fvir_prev, DIM);
-    exchange_rvecs(ms, b, state->pres_prev, DIM);
-    exchange_doubles(ms, b, state->nosehoover_xi, ngtc);
-    exchange_doubles(ms, b, state->nosehoover_vxi, ngtc);
-    exchange_doubles(ms, b, state->nhpres_xi, nnhpres);
-    exchange_doubles(ms, b, state->nhpres_vxi, nnhpres);
-    exchange_doubles(ms, b, state->therm_integral, state->ngtc);
-    exchange_rvecs(ms, b, state->x, state->natoms);
-    exchange_rvecs(ms, b, state->v, state->natoms);
-    exchange_rvecs(ms, b, state->sd_X, state->natoms);
-}
-
-static void copy_rvecs(rvec *s, rvec *d, int n)
-{
-    int i;
-
-    if (d != NULL)
-    {
-        for (i = 0; i < n; i++)
-        {
-            copy_rvec(s[i], d[i]);
-        }
-    }
-}
-
-static void copy_doubles(const double *s, double *d, int n)
-{
-    int i;
-
-    if (d != NULL)
-    {
-        for (i = 0; i < n; i++)
-        {
-            d[i] = s[i];
-        }
-    }
-}
-
-static void copy_reals(const real *s, real *d, int n)
-{
-    int i;
-
-    if (d != NULL)
-    {
-        for (i = 0; i < n; i++)
-        {
-            d[i] = s[i];
-        }
-    }
-}
-
-static void copy_ints(const int *s, int *d, int n)
-{
-    int i;
-
-    if (d != NULL)
-    {
-        for (i = 0; i < n; i++)
-        {
-            d[i] = s[i];
-        }
-    }
-}
-
-#define scopy_rvecs(v, n)   copy_rvecs(state->v, state_local->v, n);
-#define scopy_doubles(v, n) copy_doubles(state->v, state_local->v, n);
-#define scopy_reals(v, n) copy_reals(state->v, state_local->v, n);
-#define scopy_ints(v, n)   copy_ints(state->v, state_local->v, n);
-
-static void copy_state_nonatomdata(t_state *state, t_state *state_local)
-{
-    /* When t_state changes, this code should be updated. */
-    int ngtc, nnhpres;
-    ngtc    = state->ngtc * state->nhchainlength;
-    nnhpres = state->nnhpres* state->nhchainlength;
-    scopy_rvecs(box, DIM);
-    scopy_rvecs(box_rel, DIM);
-    scopy_rvecs(boxv, DIM);
-    state_local->veta = state->veta;
-    state_local->vol0 = state->vol0;
-    scopy_rvecs(svir_prev, DIM);
-    scopy_rvecs(fvir_prev, DIM);
-    scopy_rvecs(pres_prev, DIM);
-    scopy_doubles(nosehoover_xi, ngtc);
-    scopy_doubles(nosehoover_vxi, ngtc);
-    scopy_doubles(nhpres_xi, nnhpres);
-    scopy_doubles(nhpres_vxi, nnhpres);
-    scopy_doubles(therm_integral, state->ngtc);
-    scopy_rvecs(x, state->natoms);
-    scopy_rvecs(v, state->natoms);
-    scopy_rvecs(sd_X, state->natoms);
-    copy_ints(&(state->fep_state), &(state_local->fep_state), 1);
-    scopy_reals(lambda, efptNR);
-}
-
 static void scale_velocities(t_state *state, real fac)
 {
     int i;
@@ -783,7 +549,7 @@ static void print_count(FILE *fplog, const char *leg, int n, int *count)
     fprintf(fplog, "\n");
 }
 
-static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int a, int b, int ap, int bp)
+static real calc_delta(FILE *fplog, gmx_bool bPrint, gmx_repl_ex_t *re, int a, int b, int ap, int bp)
 {
 
     real   ediff, dpV, delta = 0;
@@ -883,7 +649,7 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
 static void
 test_for_replica_exchange(FILE                 *fplog,
                           const gmx_multisim_t *ms,
-                          struct gmx_repl_ex   *re,
+                          gmx_repl_ex_t *re,
                           gmx_enerdata_t       *enerd,
                           real                  vol,
                           gmx_int64_t           step,
@@ -1298,9 +1064,10 @@ prepare_to_do_exchange(FILE      *fplog,
     }
 }
 
-gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *re,
-                          t_state *state, gmx_enerdata_t *enerd,
-                          t_state *state_local, gmx_int64_t step, real time)
+gmx_bool
+replica_exchange(FILE *fplog, const t_commrec *cr, gmx_repl_ex_t *re,
+                 t_state *state, gmx_enerdata_t *enerd,
+                 t_state *state_local, gmx_int64_t step, real time)
 {
     int j;
     int replica_id = 0;
@@ -1384,7 +1151,8 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
     return bThisReplicaExchanged;
 }
 
-void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
+void
+print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t *re)
 {
     int  i;
 

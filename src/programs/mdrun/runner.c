@@ -58,7 +58,6 @@
 #include "orires.h"
 #include "pme.h"
 #include "mdatoms.h"
-#include "repl_ex.h"
 #include "deform.h"
 #include "qmmm.h"
 #include "domdec.h"
