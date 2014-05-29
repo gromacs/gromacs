@@ -161,60 +161,60 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
                     bFirstStep, bStateFromCP, bStateFromTPX, bInitStep, bLastStep,
                     bBornRadii, bStartingFromCpt;
-    gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
-    gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
-                      bForceUpdate = FALSE, bCPT;
-    gmx_bool          bMasterState;
-    int               force_flags, cglo_flags;
-    tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
-    int               i, m;
-    t_trxstatus      *status;
-    rvec              mu_tot;
-    t_vcm            *vcm;
-    t_state          *bufstate = NULL;
-    matrix            pcoupl_mu, M;
-    gmx_nlheur_t      nlh;
-    t_trxframe        rerun_fr;
-    gmx_repl_ex_t    *repl_ex = NULL;
-    int               nchkpt  = 1;
-    gmx_localtop_t   *top;
-    t_mdebin         *mdebin   = NULL;
-    t_state          *state    = NULL;
-    rvec             *f_global = NULL;
-    gmx_enerdata_t   *enerd;
-    rvec             *f = NULL;
-    gmx_global_stat_t gstat;
-    gmx_update_t      upd   = NULL;
-    t_graph          *graph = NULL;
-    globsig_t         gs;
-    gmx_groups_t     *groups;
-    gmx_ekindata_t   *ekind, *ekind_save;
-    gmx_shellfc_t     shellfc;
-    int               count, nconverged = 0;
-    double            tcount                 = 0;
-    gmx_bool          bConverged             = TRUE, bOK, bSumEkinhOld, bExchanged, bNeedRepartition;
-    gmx_bool          bResetCountersHalfMaxH = FALSE;
-    gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
-    gmx_bool          bUpdateDoLR;
-    real              dvdl_constr;
-    rvec             *cbuf = NULL;
-    matrix            lastbox;
-    real              veta_save, scalevir, tracevir;
-    real              vetanew = 0;
-    int               lamnew  = 0;
+    gmx_bool                bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
+    gmx_bool                do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
+                            bForceUpdate = FALSE, bCPT;
+    gmx_bool                bMasterState;
+    int                     force_flags, cglo_flags;
+    tensor                  force_vir, shake_vir, total_vir, tmp_vir, pres;
+    int                     i, m;
+    t_trxstatus            *status;
+    rvec                    mu_tot;
+    t_vcm                  *vcm;
+    t_state                *bufstate = NULL;
+    matrix                  pcoupl_mu, M;
+    gmx_nlheur_t            nlh;
+    t_trxframe              rerun_fr;
+    ReplicaExchangeManager *replicaExchanger = NULL;
+    int                     nchkpt           = 1;
+    gmx_localtop_t         *top;
+    t_mdebin               *mdebin   = NULL;
+    t_state                *state    = NULL;
+    rvec                   *f_global = NULL;
+    gmx_enerdata_t         *enerd;
+    rvec                   *f = NULL;
+    gmx_global_stat_t       gstat;
+    gmx_update_t            upd   = NULL;
+    t_graph                *graph = NULL;
+    globsig_t               gs;
+    gmx_groups_t           *groups;
+    gmx_ekindata_t         *ekind, *ekind_save;
+    gmx_shellfc_t           shellfc;
+    int                     count, nconverged = 0;
+    double                  tcount                 = 0;
+    gmx_bool                bConverged             = TRUE, bOK, bSumEkinhOld, bExchanged, bNeedRepartition;
+    gmx_bool                bResetCountersHalfMaxH = FALSE;
+    gmx_bool                bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
+    gmx_bool                bUpdateDoLR;
+    real                    dvdl_constr;
+    rvec                   *cbuf = NULL;
+    matrix                  lastbox;
+    real                    veta_save, scalevir, tracevir;
+    real                    vetanew = 0;
+    int                     lamnew  = 0;
     /* for FEP */
-    int               nstfep;
-    double            cycles;
-    real              saved_conserved_quantity = 0;
-    real              last_ekin                = 0;
-    t_extmass         MassQ;
-    int             **trotter_seq;
-    char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
-    int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
-    gmx_iterate_t     iterate;
-    gmx_int64_t       multisim_nsteps = -1;                        /* number of steps to do  before first multisim
-                                                                          simulation stops. If equal to zero, don't
-                                                                          communicate any more between multisims.*/
+    int                     nstfep;
+    double                  cycles;
+    real                    saved_conserved_quantity = 0;
+    real                    last_ekin                = 0;
+    t_extmass               MassQ;
+    int                   **trotter_seq;
+    char                    sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
+    int                     handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
+    gmx_iterate_t           iterate;
+    gmx_int64_t             multisim_nsteps = -1;                        /* number of steps to do  before first multisim
+                                                                                simulation stops. If equal to zero, don't
+                                                                                communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
@@ -462,8 +462,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
     if (repl_ex_nst > 0 && MASTER(cr))
     {
-        repl_ex = init_replica_exchange(fplog, cr->ms, state_global, ir,
-                                        repl_ex_nst, repl_ex_nex, repl_ex_seed);
+        replicaExchanger = init_replica_exchange(fplog, cr->ms, state_global, ir,
+                                                 repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
     /* PME tuning is only supported with GPUs or PME nodes and not with rerun.
@@ -1781,7 +1781,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
             do_per_step(step, repl_ex_nst))
         {
-            bExchanged = replica_exchange(fplog, cr, repl_ex,
+            bExchanged = replica_exchange(fplog, cr, replicaExchanger,
                                           state_global, enerd,
                                           state, step, t);
         }
@@ -1975,7 +1975,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (repl_ex_nst > 0 && MASTER(cr))
     {
-        print_replica_exchange_statistics(fplog, repl_ex);
+        print_replica_exchange_statistics(fplog, replicaExchanger);
     }
 
     /* IMD cleanup, if bIMD is TRUE. */

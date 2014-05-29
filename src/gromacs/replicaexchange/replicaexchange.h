@@ -65,15 +65,15 @@ extern "C" {
  *  @{
  */
 
-/*! \brief Abstract type for replica exchange */
-typedef struct gmx_repl_ex_t gmx_repl_ex_t;
+/*! \brief Forward declarartion for replica exchange manager */
+class ReplicaExchangeManager;
 
 /*! \brief Initialize replica change
  *
  * Does communication for checking for consistency of input .tpr
  * files. Should only be called on the master ranks of each
  * simulation. */
-gmx_repl_ex_t *
+ReplicaExchangeManager *
 init_replica_exchange(FILE *fplog,
                       const gmx_multisim_t *ms,
                       const t_state *state,
@@ -92,7 +92,7 @@ init_replica_exchange(FILE *fplog,
 gmx_bool
 replica_exchange(FILE *fplog,
                  const t_commrec *cr,
-                 gmx_repl_ex_t *re,
+                 ReplicaExchangeManager *re,
                  t_state *state, gmx_enerdata_t *enerd,
                  t_state *state_local,
                  gmx_int64_t step, real time);
@@ -101,7 +101,7 @@ replica_exchange(FILE *fplog,
  *
  * Should only be called on the master ranks of each simulation. */
 void
-print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t *re);
+print_replica_exchange_statistics(FILE *fplog, ReplicaExchangeManager *re);
 
 /** @}*/
 
