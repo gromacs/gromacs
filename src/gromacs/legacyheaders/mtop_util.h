@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,32 +34,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "typedefs.h"
+#ifndef GMX_LEGACYHEADERS_MTOP_UTIL_H
+#define GMX_LEGACYHEADERS_MTOP_UTIL_H
+
+#include "types/inputrec.h"
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmx_localtop_t;
+struct gmx_moltype_t;
+struct gmx_mtop_t;
+struct t_atom;
+struct t_atoms;
+struct t_block;
+struct t_ilist;
+struct t_topology;
 
 /* Should be called after generating or reading mtop,
  * to set some compute intesive variables to avoid
  * N^2 operations later on.
  */
 void
-gmx_mtop_finalize(gmx_mtop_t *mtop);
+gmx_mtop_finalize(struct gmx_mtop_t *mtop);
 
 /* Counts the number of atoms of each type. State should be 0 for
  * state A and 1 for state B types.  typecount should have at
  * least mtop->ffparams.atnr elements.
  */
 void
-gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]);
+gmx_mtop_count_atomtypes(const struct gmx_mtop_t *mtop, int state, int typecount[]);
 
 /* Returns the total number of charge groups in mtop */
 int
-ncg_mtop(const gmx_mtop_t *mtop);
+ncg_mtop(const struct gmx_mtop_t *mtop);
 
 /* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
-void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
+void gmx_mtop_remove_chargegroups(struct gmx_mtop_t *mtop);
 
 
 /* Abstract data type for looking up atoms by global atom number */
@@ -67,11 +80,11 @@ typedef struct gmx_mtop_atomlookup *gmx_mtop_atomlookup_t;
 
 /* Initialize atom lookup by global atom number */
 gmx_mtop_atomlookup_t
-gmx_mtop_atomlookup_init(const gmx_mtop_t *mtop);
+gmx_mtop_atomlookup_init(const struct gmx_mtop_t *mtop);
 
 /* As gmx_mtop_atomlookup_init, but optimized for atoms involved in settle */
 gmx_mtop_atomlookup_t
-gmx_mtop_atomlookup_settle_init(const gmx_mtop_t *mtop);
+gmx_mtop_atomlookup_settle_init(const struct gmx_mtop_t *mtop);
 
 /* Destroy a gmx_mtop_atomlookup_t data structure */
 void
@@ -85,7 +98,7 @@ gmx_mtop_atomlookup_destroy(gmx_mtop_atomlookup_t alook);
 void
 gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
                         int                         atnr_global,
-                        t_atom                    **atom);
+                        struct t_atom             **atom);
 
 
 /* Returns a pointer to the molecule interaction array ilist_mol[F_NRE]
@@ -94,7 +107,7 @@ gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
 void
 gmx_mtop_atomnr_to_ilist(const gmx_mtop_atomlookup_t alook,
                          int atnr_global,
-                         t_ilist **ilist_mol, int *atnr_offset);
+                         struct t_ilist **ilist_mol, int *atnr_offset);
 
 
 /* Returns the molecule block index
@@ -110,7 +123,7 @@ gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_atomlookup_t alook,
 
 /* Returns atom name, global resnr and residue name  of atom atnr_global */
 void
-gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
+gmx_mtop_atominfo_global(const struct gmx_mtop_t *mtop, int atnr_global,
                          char **atomname, int *resnr, char **resname);
 
 
@@ -124,7 +137,7 @@ typedef struct gmx_mtop_atomloop_all *gmx_mtop_atomloop_all_t;
  * otherwise use gmx_mtop_atomloop_block.
  */
 gmx_mtop_atomloop_all_t
-gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop);
+gmx_mtop_atomloop_all_init(const struct gmx_mtop_t *mtop);
 
 /* Loop to the next atom.
  * When not at the end:
@@ -141,7 +154,7 @@ gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop);
  */
 gmx_bool
 gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
-                           int *at_global, t_atom **atom);
+                           int *at_global, struct t_atom **atom);
 
 /* Return the atomname, the residue number and residue name
  * of the current atom in the loop.
@@ -155,7 +168,7 @@ gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
  */
 void
 gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
-                              gmx_moltype_t **moltype, int *at_mol);
+                              struct gmx_moltype_t **moltype, int *at_mol);
 
 
 /* Abstract type for atom loop over atoms in all molecule blocks */
@@ -164,7 +177,7 @@ typedef struct gmx_mtop_atomloop_block *gmx_mtop_atomloop_block_t;
 /* Initialize an atom loop over atoms in all molecule blocks the system.
  */
 gmx_mtop_atomloop_block_t
-gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
+gmx_mtop_atomloop_block_init(const struct gmx_mtop_t *mtop);
 
 /* Loop to the next atom.
  * When not at the end:
@@ -181,7 +194,7 @@ gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
  */
 gmx_bool
 gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                             t_atom **atom, int *nmol);
+                             struct t_atom **atom, int *nmol);
 
 
 /* Abstract type for ilist loop over all ilists */
@@ -189,7 +202,7 @@ typedef struct gmx_mtop_ilistloop *gmx_mtop_ilistloop_t;
 
 /* Initialize an ilist loop over all molecule types in the system. */
 gmx_mtop_ilistloop_t
-gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop);
+gmx_mtop_ilistloop_init(const struct gmx_mtop_t *mtop);
 
 
 /* Loop to the next molecule,
@@ -200,7 +213,7 @@ gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop);
  */
 gmx_bool
 gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-                        t_ilist **ilist_mol, int *nmol);
+                        struct t_ilist **ilist_mol, int *nmol);
 
 
 /* Abstract type for ilist loop over all ilists of all molecules */
@@ -212,7 +225,7 @@ typedef struct gmx_mtop_ilistloop_all *gmx_mtop_ilistloop_all_t;
  * otherwise use gmx_mtop_ilistloop.
  */
 gmx_mtop_ilistloop_all_t
-gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop);
+gmx_mtop_ilistloop_all_init(const struct gmx_mtop_t *mtop);
 
 /* Loop to the next molecule,
  * When not at the end:
@@ -222,22 +235,22 @@ gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop);
  */
 gmx_bool
 gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
-                            t_ilist **ilist_mol, int *atnr_offset);
+                            struct t_ilist **ilist_mol, int *atnr_offset);
 
 
 /* Returns the total number of interactions in the system of type ftype */
 int
-gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype);
+gmx_mtop_ftype_count(const struct gmx_mtop_t *mtop, int ftype);
 
 
 /* Returns a charge group index for the whole system */
-t_block
-gmx_mtop_global_cgs(const gmx_mtop_t *mtop);
+struct t_block
+gmx_mtop_global_cgs(const struct gmx_mtop_t *mtop);
 
 
 /* Returns a single t_atoms struct for the whole system */
-t_atoms
-gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
+struct t_atoms
+gmx_mtop_global_atoms(const struct gmx_mtop_t *mtop);
 
 
 /* Make all charge groups the size of one atom.
@@ -245,22 +258,24 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
  * that consist of a single charge group.
  */
 void
-gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop, gmx_bool bKeepSingleMolCG);
+gmx_mtop_make_atomic_charge_groups(struct gmx_mtop_t *mtop, gmx_bool bKeepSingleMolCG);
 
 
 /* Generate a 'local' topology for the whole system.
  * When ir!=NULL the free energy interactions will be sorted to the end.
  */
-gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir);
+struct gmx_localtop_t *
+gmx_mtop_generate_local_top(const struct gmx_mtop_t *mtop, const t_inputrec *ir);
 
 
 /* Converts a gmx_mtop_t struct to t_topology.
  * All memory relating only to mtop will be freed.
  */
-t_topology
-gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
+struct t_topology
+gmx_mtop_t_to_t_topology(struct gmx_mtop_t *mtop);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

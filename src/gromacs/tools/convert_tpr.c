@@ -39,22 +39,27 @@
 #endif
 
 #include <math.h>
+
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/state.h"
 #include "index.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "names.h"
-#include "typedefs.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/math/vec.h"
 #include "mtop_util.h"
 #include "checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/utility/futil.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
 

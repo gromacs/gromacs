@@ -34,17 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "confio.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <errno.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "typedefs.h"
 #include "macros.h"
-#include "confio.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "xdrf.h"
 #include "filenm.h"
@@ -52,10 +53,12 @@
 #include "tpxio.h"
 #include "trxio.h"
 #include "copyrite.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
 
+#include "gromacs/fileio/trx.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"

@@ -51,6 +51,7 @@
 
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -60,6 +61,7 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"

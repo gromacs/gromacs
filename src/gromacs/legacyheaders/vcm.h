@@ -40,12 +40,17 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
+#include "types/inputrec.h"
+#include "types/mdatom.h"
+#include "../math/vectypes.h"
+#include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_groups_t;
 
 typedef struct {
     int        nr;             /* Number of groups                    */
@@ -62,7 +67,7 @@ typedef struct {
     char     **group_name;     /* These two are copies to pointers in */
 } t_vcm;
 
-t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir);
+t_vcm *init_vcm(FILE *fp, struct gmx_groups_t *groups, t_inputrec *ir);
 
 /* Do a per group center of mass things */
 void calc_vcm_grp(int start, int homenr, t_mdatoms *md,

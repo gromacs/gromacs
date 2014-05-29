@@ -45,8 +45,10 @@
 #include <string.h>
 
 #include "macros.h"
-#include "gromacs/pbcutil/mshift.h"
 
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

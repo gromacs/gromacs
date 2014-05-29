@@ -49,7 +49,6 @@
 #include "mdatoms.h"
 #include "mdrun.h"
 #include "names.h"
-#include "calcgrid.h"
 #include "update.h"
 #include "mdebin.h"
 

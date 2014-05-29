@@ -40,27 +40,31 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
+#include "../math/vectypes.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
+struct gmx_mtop_t;
+struct t_block;
+
+void calc_chargegroup_radii(const struct gmx_mtop_t *mtop, rvec *x,
                             real *rvdw1, real *rvdw2,
                             real *rcoul1, real *rcoul2);
 /* This routine calculates the two largest charge group radii in x,
  * separately for VdW and Coulomb interactions.
  */
 
-void calc_cgcm(FILE *log, int cg0, int cg1, t_block *cgs,
+void calc_cgcm(FILE *log, int cg0, int cg1, struct t_block *cgs,
                rvec pos[], rvec cg_cm[]);
 /* Routine to compute centers of geometry of charge groups. No periodicity
  * is used.
  */
 
 void put_charge_groups_in_box (FILE *log, int cg0, int cg1,
-                               int ePBC, matrix box, t_block *cgs,
+                               int ePBC, matrix box, struct t_block *cgs,
                                rvec pos[],
                                rvec cg_cm[]);
 /* This routine puts charge groups in the periodic box, keeping them

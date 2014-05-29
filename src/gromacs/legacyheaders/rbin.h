@@ -38,11 +38,13 @@
 #ifndef _rbin_h
 #define _rbin_h
 
-#include "typedefs.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_commrec;
 
 typedef struct {
     int     nreal;
@@ -63,7 +65,7 @@ int add_binr(t_bin *b, int nr, real r[]);
 int add_bind(t_bin *b, int nr, double r[]);
 /* Add reals to the bin. Returns index */
 
-void sum_bin(t_bin *b, t_commrec *cr);
+void sum_bin(t_bin *b, struct t_commrec *cr);
 /* Globally sum the reals in the bin */
 
 void extract_binr(t_bin *b, int index, int nr, real r[]);

@@ -37,7 +37,8 @@
 #define GMX_OMP_NTHREADS_H
 
 #include <stdio.h>
-#include "typedefs.h"
+
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +46,8 @@ extern "C" {
 #if 0
 }
 #endif
+
+struct t_commrec;
 
 /** Enum values corresponding to multithreaded algorithmic modules. */
 typedef enum module_nth
@@ -62,7 +65,7 @@ typedef enum module_nth
  * It is compatible with tMPI, thread-safety is ensured (for the features
  * available with tMPI).
  * This function should caled only once during the initialization of mdrun. */
-void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
+void gmx_omp_nthreads_init(FILE *fplog, struct t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,

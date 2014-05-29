@@ -38,18 +38,19 @@
 #include <config.h>
 #endif
 
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/smalloc.h"
 #include "macros.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/xvgr.h"
 #include "viewit.h"
 #include "index.h"
 #include "gmx_ana.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static real dointerp(int n, rvec x1[], rvec x2[], rvec xx[],
                      int I, int N, real first, real last)
