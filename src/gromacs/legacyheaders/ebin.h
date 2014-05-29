@@ -40,8 +40,9 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
+#include "../legacyheaders/types/energy.h"
 #include "../fileio/enxio.h"
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

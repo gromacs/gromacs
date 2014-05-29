@@ -38,18 +38,22 @@
 #ifndef _mvdata_h
 #define _mvdata_h
 
-#include "typedefs.h"
+#include "types/inputrec.h"
+#include "types/state.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void bcast_ir_mtop(const t_commrec *cr,
-                   t_inputrec *inputrec, gmx_mtop_t *mtop);
+struct gmx_mtop_t;
+struct t_commrec;
+
+void bcast_ir_mtop(const struct t_commrec *cr,
+                   t_inputrec *inputrec, struct gmx_mtop_t *mtop);
 /* Broadcasts ir and mtop from the master to all nodes in cr->mpi_comm_mygroup.
  */
 
-void bcast_state(const t_commrec *cr, t_state *state);
+void bcast_state(const struct t_commrec *cr, t_state *state);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
  */
 

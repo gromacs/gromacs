@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2013, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,21 +35,23 @@
 #ifndef _topsort_h
 #define _topsort_h
 
-
-#include "typedefs.h"
+#include "../utility/basedefinitions.h"
+#include "../utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_mtop_t;
+struct t_idef;
 
 /* Returns if there are perturbed bonded interactions */
-gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop);
+gmx_bool gmx_mtop_bondeds_free_energy(const struct gmx_mtop_t *mtop);
 
 /* Sort all the bonded ilists in idef to have the perturbed ones at the end
  * and set nr_nr_nonperturbed in ilist.
  */
-void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB);
+void gmx_sort_ilist_fe(struct t_idef *idef, const real *qA, const real *qB);
 
 #ifdef __cplusplus
 }

@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "enxio.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -42,13 +44,11 @@
 #include <string.h>
 
 #include "gromacs/utility/futil.h"
-#include "gmxfio.h"
-#include "enxio.h"
-#include "gromacs/math/vec.h"
-#include "xdrf.h"
 #include "macros.h"
-#include "typedefs.h"
 
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
@@ -925,7 +925,6 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     int           i, b;
     gmx_bool      bRead, bOK, bOK1, bSane;
     real          tmp1, tmp2, rdum;
-    char          buf[22];
     /*int       d_size;*/
 
     bOK   = TRUE;
@@ -978,9 +977,9 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     {
         fprintf(stderr, "\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr, "Found: step=%s, nre=%d, nblock=%d, time=%g.\n"
+        fprintf(stderr, "Found: step=%"GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n"
                 "Trying to skip frame expect a crash though\n",
-                gmx_step_str(fr->step, buf), fr->nre, fr->nblock, fr->t);
+                fr->step, fr->nre, fr->nblock, fr->t);
     }
     if (bRead && fr->nre > fr->e_alloc)
     {

@@ -40,7 +40,7 @@
 
 #include <string.h>
 
-#include "typedefs.h"
+#include "../utility/basedefinitions.h"
 #include "warninp.h"
 
 #ifdef __cplusplus

@@ -48,6 +48,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/3dtransforms.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

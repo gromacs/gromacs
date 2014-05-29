@@ -35,14 +35,15 @@
 #include "copyrite.h"
 #include "gromacs/fileio/filenm.h"
 #include "macros.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/fileio/trxio.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_dyecoupl(int argc, char *argv[])
 {
@@ -98,7 +99,6 @@ int gmx_dyecoupl(int argc, char *argv[])
     int          ndon, nacc;
     atom_id     *donindex, *accindex;
     char        *grpnm;
-    t_atoms     *atoms = NULL;
     t_trxstatus *status;
     t_trxframe   fr;
 
@@ -162,10 +162,10 @@ int gmx_dyecoupl(int argc, char *argv[])
     }
 
     printf("Select group with donor atom pairs defining the transition moment\n");
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
+    get_index(NULL, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
 
     printf("Select group with acceptor atom pairs defining the transition moment\n");
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
+    get_index(NULL, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
 
     /*check if groups are identical*/
     grident = TRUE;

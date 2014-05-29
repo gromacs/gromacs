@@ -51,7 +51,6 @@
 #include "gromacs/fileio/trxio.h"
 #include "index.h"
 #include "gromacs/utility/smalloc.h"
-#include "calcgrid.h"
 #include "nrnb.h"
 #include "gromacs/math/units.h"
 #include "coulomb.h"

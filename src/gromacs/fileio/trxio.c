@@ -43,11 +43,9 @@
 #include <assert.h>
 #include <math.h>
 
-#include "typedefs.h"
 #ifdef GMX_USE_PLUGINS
 #include "vmdio.h"
 #endif
-#include "gromacs/utility/smalloc.h"
 #include "gmxfio.h"
 #include "trxio.h"
 #include "tpxio.h"
@@ -64,7 +62,10 @@
 #include "xdrf.h"
 
 #include "gromacs/fileio/timecontrol.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* defines for frame counter output */
 #define SKIP1   10

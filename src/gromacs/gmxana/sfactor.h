@@ -34,22 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef _sfactor_h
 #define _sfactor_h
-
 
 #include "index.h"
 #include "types/simple.h"
 #include "../math/gmxcomplex.h"
 #include "oenv.h"
 
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct t_topology;
+struct t_trxframe;
 
 typedef struct gmx_structurefactors gmx_structurefactors_t;
 
@@ -79,8 +77,8 @@ double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda, doubl
 
 int return_atom_type (const char *name, gmx_structurefactors_t *gsf);
 
-void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, atom_id * index,
-                      int isize, t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf);
+void rearrange_atoms (reduced_atom_t * positions, struct t_trxframe *fr, atom_id * index,
+                      int isize, struct t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf);
 
 int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
                              const char* fnXVG, const char *fnTRX,

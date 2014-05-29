@@ -86,7 +86,7 @@ void done_mdoutf(gmx_mdoutf_t of);
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
-                                      gmx_mtop_t *top_global,
+                                      struct gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       rvec *f_local, rvec *f_global);

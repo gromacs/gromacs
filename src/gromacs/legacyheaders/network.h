@@ -45,64 +45,67 @@
 
 #include <stdio.h>
 
-#include "types/simple.h"
-#include "typedefs.h"
+#include "../utility/basedefinitions.h"
 #include "../utility/fatalerror.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-t_commrec *init_commrec(void);
+struct gmx_domdec_t;
+struct gmx_multisim_t;
+struct t_commrec;
+
+struct t_commrec *init_commrec(void);
 /* Allocate, initialize and return the commrec. */
 
-t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
+struct t_commrec *reinitialize_commrec_for_this_thread(const struct t_commrec *cro);
 /* Initialize communication records for thread-parallel simulations.
    Must be called on all threads before any communication takes place by
    the individual threads. Copies the original commrec to
    thread-local versions (a small memory leak results because we don't
    deallocate the old shared version).  */
 
-void gmx_fill_commrec_from_mpi(t_commrec *cr);
+void gmx_fill_commrec_from_mpi(struct t_commrec *cr);
 /* Continues t_commrec construction */
 
-void gmx_setup_nodecomm(FILE *fplog, t_commrec *cr);
+void gmx_setup_nodecomm(FILE *fplog, struct t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
-void gmx_init_intranode_counters(t_commrec *cr);
+void gmx_init_intranode_counters(struct t_commrec *cr);
 /* Initializes intra-physical-node MPI process/thread counts and ID. */
 
-void gmx_barrier(const t_commrec *cr);
+void gmx_barrier(const struct t_commrec *cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
 
-void gmx_bcast(int nbytes, void *b, const t_commrec *cr);
+void gmx_bcast(int nbytes, void *b, const struct t_commrec *cr);
 /* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */
 
-void gmx_bcast_sim(int nbytes, void *b, const t_commrec *cr);
+void gmx_bcast_sim(int nbytes, void *b, const struct t_commrec *cr);
 /* Broadcast nbytes bytes from the sim master to cr->mpi_comm_mysim */
 
-void gmx_sumi(int nr, int r[], const t_commrec *cr);
+void gmx_sumi(int nr, int r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of ints */
 
-void gmx_sumli(int nr, gmx_int64_t r[], const t_commrec *cr);
+void gmx_sumli(int nr, gmx_int64_t r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of large ints */
 
-void gmx_sumf(int nr, float r[], const t_commrec *cr);
+void gmx_sumf(int nr, float r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of floats */
 
-void gmx_sumd(int nr, double r[], const t_commrec *cr);
+void gmx_sumd(int nr, double r[], const struct t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
-void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms);
+void gmx_sumi_sim(int nr, int r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of ints */
 
-void gmx_sumli_sim(int nr, gmx_int64_t r[], const gmx_multisim_t *ms);
+void gmx_sumli_sim(int nr, gmx_int64_t r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of large ints */
 
-void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms);
+void gmx_sumf_sim(int nr, float r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of floats */
 
-void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
+void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of doubles */
 
 #ifdef GMX_DOUBLE
@@ -113,12 +116,12 @@ void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
 #define gmx_sum_sim   gmx_sumf_sim
 #endif
 
-gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr);
+gmx_bool gmx_fexist_master(const char *fname, struct t_commrec *cr);
 /* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
 
 void
 gmx_fatal_collective(int f_errno, const char *file, int line,
-                     const t_commrec *cr, gmx_domdec_t *dd,
+                     const struct t_commrec *cr, struct gmx_domdec_t *dd,
                      const char *fmt, ...);
 /* As gmx_fatal declared in utility/fatalerror.h,
  * but only the master process prints the error message.

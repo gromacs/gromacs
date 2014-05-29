@@ -35,7 +35,10 @@
 #ifndef GMX_THREAD_AFFINITY_H_
 #define GMX_THREAD_AFFINITY_H_
 
-#include "typedefs.h"
+#include <stdio.h>
+
+#include "types/hw_info.h"
+#include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,14 +47,16 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+struct t_commrec;
+
 /* Sets the thread affinity using the requested setting stored in hw_opt.
  * The hardware topologu is requested from hwinfo, when present.
  */
 void
-gmx_set_thread_affinity(FILE                *fplog,
-                        const t_commrec     *cr,
-                        gmx_hw_opt_t        *hw_opt,
-                        const gmx_hw_info_t *hwinfo);
+gmx_set_thread_affinity(FILE                       *fplog,
+                        const struct t_commrec     *cr,
+                        gmx_hw_opt_t               *hw_opt,
+                        const gmx_hw_info_t        *hwinfo);
 
 /* Check the process affinity mask and if it is found to be non-zero,
  * will honor it and disable mdrun internal affinity setting.
@@ -66,7 +71,7 @@ gmx_set_thread_affinity(FILE                *fplog,
  * variables for setting the affinity are set.
  */
 void
-gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
+gmx_check_thread_affinity_set(FILE *fplog, const struct t_commrec *cr,
                               gmx_hw_opt_t *hw_opt, int ncpus,
                               gmx_bool bAfterOpenmpInit);
 
