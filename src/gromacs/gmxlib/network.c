@@ -243,30 +243,7 @@ int gmx_hostname_num()
     hostnum *= personality.Network_Config.Enodes;
     hostnum += personality.Network_Config.Ecoord;
 #else
-    /* This procedure can only differentiate nodes with host names
-     * that end on unique numbers.
-     */
-    i = 0;
-    j = 0;
-    /* Only parse the host name up to the first dot */
-    while (i < resultlen && mpi_hostname[i] != '.')
-    {
-        if (isdigit(mpi_hostname[i]))
-        {
-            hostnum_str[j++] = mpi_hostname[i];
-        }
-        i++;
-    }
-    hostnum_str[j] = '\0';
-    if (j == 0)
-    {
-        hostnum = 0;
-    }
-    else
-    {
-        /* Use only the last 9 decimals, so we don't overflow an int */
-        hostnum = strtol(hostnum_str + max(0, j-9), NULL, 10);
-    }
+    hostnum = gmx_physicalnode_id_hash();
 #endif
 
     if (debug)
