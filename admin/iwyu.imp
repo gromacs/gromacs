@@ -1,0 +1,9 @@
+[
+{ include: ["<boost/smart_ptr/shared_ptr.hpp>", "private", "<boost/shared_ptr.hpp>", "public"] },
+{ include: ["<xmmintrin.h>", "public", "<emmintrin.h>", "public"] },
+{ include: ["<emmintrin.h>", "public", "<pmmintrin.h>", "public"] },
+{ include: ["<pmmintrin.h>", "public", "<smmintrin.h>", "public"] },
+{ include: ["<smmintrin.h>", "public", "<immintrin.h>", "public"] },
+{ include: ["<avxintrin.h>", "private", "<immintrin.h>", "public"] },
+{ include: ['"mpi.h"', "public", '"gromacs/utility/gmxmpi.h"', "public"] },
+]

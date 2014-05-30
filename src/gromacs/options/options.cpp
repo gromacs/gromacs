@@ -41,15 +41,16 @@
  */
 #include "gromacs/options/options.h"
 
+#include <cstddef>
+
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/options-impl.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "gromacs/options/options-impl.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
