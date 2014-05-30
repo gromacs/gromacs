@@ -37,12 +37,12 @@
 #ifndef GMX_MATH_VECTYPES_H
 #define GMX_MATH_VECTYPES_H
 
-#include "gromacs/utility/real.h"
+#include "gromacs/utility/real.h" /* IWYU pragma: export */
 
-#define XX      0 /* Defines for indexing in */
-#define YY      1 /* vectors                 */
+#define XX      0                 /* Defines for indexing in */
+#define YY      1                 /* vectors                 */
 #define ZZ      2
-#define DIM     3 /* Dimension of vectors    */
+#define DIM     3                 /* Dimension of vectors    */
 
 typedef real    rvec[DIM];
 
