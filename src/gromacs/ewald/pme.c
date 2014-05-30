@@ -67,31 +67,40 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "gromacs/ewald/pme-internal.h"
+#include "gromacs/fft/fft.h"
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/timing/cyclecounter.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/gmxomp.h"
-#include "gromacs/utility/smalloc.h"
-
+#include "gromacs/math/vectypes.h"
 /* Include the SIMD macro file and then check for support */
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
+#include "gromacs/timing/cyclecounter.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
+
+#ifdef DEBUG_PME
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#endif
+
 #ifdef GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
 #    define PME_SIMD_SOLVE
@@ -1438,7 +1447,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                    *pm
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "gromacs/ewald/pme-simd4.h"
+#include "gromacs/ewald/pme-simd4.h" /* IWYU pragma: keep */
 #else
                     DO_BSPLINE(4);
 #endif
@@ -1447,7 +1456,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                    *pm
 #ifdef PME_SIMD4_SPREAD_GATHER
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "gromacs/ewald/pme-simd4.h"
+#include "gromacs/ewald/pme-simd4.h" /* IWYU pragma: keep */
 #else
                     DO_BSPLINE(5);
 #endif
@@ -2601,7 +2610,7 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
 #define PME_GATHER_F_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "gromacs/ewald/pme-simd4.h"
+#include "gromacs/ewald/pme-simd4.h" /* IWYU pragma: keep */
 #else
                     DO_FSPLINE(4);
 #endif
@@ -2610,7 +2619,7 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
 #ifdef PME_SIMD4_SPREAD_GATHER
 #define PME_GATHER_F_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "gromacs/ewald/pme-simd4.h"
+#include "gromacs/ewald/pme-simd4.h" /* IWYU pragma: keep */
 #else
                     DO_FSPLINE(5);
 #endif
