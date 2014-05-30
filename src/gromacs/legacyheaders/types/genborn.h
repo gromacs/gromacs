@@ -35,12 +35,14 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifndef GMX_LEGACYHEADERS_TYPES_GENBORN_H
+#define GMX_LEGACYHEADERS_TYPES_GENBORN_H
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "gromacs/legacyheaders/types/simple.h"
 
 typedef struct
 {
@@ -112,4 +114,5 @@ gmx_genborn_t;
 
 #ifdef __cplusplus
 }
+#endif
 #endif

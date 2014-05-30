@@ -35,13 +35,21 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gromacs/legacyheaders/types/ns.h"
+#ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
+#define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
+
+#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/genborn.h"
-#include "gromacs/legacyheaders/types/qmmmrec.h"
-#include "gromacs/topology/idef.h"
-#include "gromacs/legacyheaders/types/nb_verlet.h"
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/nb_verlet.h"
+#include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/legacyheaders/types/ns.h"
+#include "gromacs/legacyheaders/types/qmmmrec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -498,4 +506,5 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
 #endif

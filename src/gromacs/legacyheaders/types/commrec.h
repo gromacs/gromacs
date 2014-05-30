@@ -37,8 +37,13 @@
 #ifndef _commrec_h
 #define _commrec_h
 
+#include <stddef.h>
+
+#include "gromacs/legacyheaders/types/commrec_fwd.h" // IWYU pragma: export
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
