@@ -41,7 +41,7 @@
 #include "config.h"
 
 #include <cerrno>
-#include <cstdarg>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 
@@ -49,14 +49,17 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
-#include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/smalloc.h"
+
+#ifdef GMX_MPI
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxmpi.h"
+#else
+#include "gromacs/utility/common.h"
+#endif
 
 static bool                bDebug         = false;
 static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;

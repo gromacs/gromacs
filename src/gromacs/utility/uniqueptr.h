@@ -46,10 +46,10 @@
 
 #include "config.h"
 
-#ifdef GMX_CXX11 // C++11 Compiler
-#include <memory>
-#include <utility>
-#else      // C++03 Compiler
+#ifdef GMX_CXX11   // C++11 Compiler
+#include <memory>  // IWYU pragma: export
+#include <utility> // IWYU pragma: export
+#else              // C++03 Compiler
 #include <boost/shared_ptr.hpp>
 #endif
 
