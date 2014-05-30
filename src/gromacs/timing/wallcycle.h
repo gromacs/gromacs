@@ -43,6 +43,8 @@
 #include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_wallcycle;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

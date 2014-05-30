@@ -58,7 +58,7 @@
 /* MPI C++ binding is deprecated and can cause name conflicts (e.g. stdio/mpi seek) */
 #define MPICH_SKIP_MPICXX 1
 #define OMPI_SKIP_MPICXX 1
-#include <mpi.h>
+#include <mpi.h> // IWYU pragma: export
 /* Starting with 2.2 MPI_INT64_T is required. Earlier version still might have it.
    In theory MPI_Datatype doesn't have to be a #define, but current available MPI
    implementations (OpenMPI + MPICH (+derivates)) use #define and future versions
@@ -75,8 +75,8 @@
 #endif /*MPI_INT64_T*/
 #else
 #ifdef GMX_THREAD_MPI
-#include "thread_mpi/tmpi.h"
-#include "thread_mpi/mpi_bindings.h"
+#include "thread_mpi/tmpi.h" // IWYU pragma: export
+#include "thread_mpi/mpi_bindings.h" // IWYU pragma: export
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;

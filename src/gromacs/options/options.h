@@ -48,19 +48,14 @@
 
 #include <string>
 
+#include "gromacs/options/abstractoption.h" // IWYU pragma: export
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/gmxassert.h"
-
-#include "gromacs/options/abstractoption.h"
 
 namespace gmx
 {
 
 template <typename T> class ConstArrayRef;
-
-class AbstractOption;
-class OptionsAssigner;
-class OptionsIterator;
 
 /*! \brief
  * Base class for option managers.
