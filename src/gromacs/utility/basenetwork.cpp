@@ -34,28 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
-
 #include "basenetwork.h"
 
 #include "config.h"
 
-#include <cctype>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
-
-#include <algorithm>
-#include <exception>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/programcontext.h"
 
 int gmx_gethostname(char *name, size_t len)
 {
