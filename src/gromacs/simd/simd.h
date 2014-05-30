@@ -118,7 +118,7 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
 #elif defined GMX_SIMD_X86_AVX2_256
 #    include "gromacs/simd/impl_x86_avx2_256/impl_x86_avx2_256.h"
 #elif defined GMX_SIMD_X86_AVX_256
-#    include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256.h"
+#    include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256.h" // IWYU pragma: export
 #elif defined GMX_SIMD_X86_AVX_128_FMA
 #    include "gromacs/simd/impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
 #elif defined GMX_SIMD_X86_SSE4_1
