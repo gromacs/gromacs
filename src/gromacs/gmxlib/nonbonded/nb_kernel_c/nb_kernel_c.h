@@ -35,7 +35,7 @@
 #ifndef nb_kernel_c_h
 #define nb_kernel_c_h
 
-#include "../nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 
 
 /* List of kernels for this architecture with metadata about them */

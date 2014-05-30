@@ -40,12 +40,12 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/commrec_fwd.h"
-#include "../legacyheaders/mdebin.h"
-#include "../timing/wallcycle.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/timing/wallcycle.h"
 
-#include "filenm.h"
-#include "mdoutf.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/mdoutf.h"
 
 /*! \brief Wrapper routine for writing trajectories during mdrun
  *

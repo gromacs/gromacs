@@ -53,7 +53,7 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
-#include "toputils.h"
+#include "gromacs/selection/tests/toputils.h"
 
 using gmx::test::TestFileManager;
 

@@ -38,8 +38,8 @@
 #ifndef _logo_h
 #define _logo_h
 
-#include "x11.h"
-#include "xutil.h"
+#include "programs/view/x11.h"
+#include "programs/view/xutil.h"
 
 typedef struct {
     XFontStruct *bigfont;

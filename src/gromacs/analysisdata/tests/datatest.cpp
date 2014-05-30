@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include "datatest.h"
+#include "gromacs/analysisdata/tests/datatest.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

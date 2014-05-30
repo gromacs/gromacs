@@ -61,15 +61,15 @@
 #include <sys/locking.h>
 #endif
 
-#include "copyrite.h"
-#include "names.h"
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/smalloc.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
-#include "network.h"
-#include "checkpoint.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/fileio/filenm.h"

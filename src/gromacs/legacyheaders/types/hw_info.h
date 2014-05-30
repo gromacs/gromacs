@@ -36,9 +36,9 @@
 #ifndef HWINFO_H
 #define HWINFO_H
 
-#include "simple.h"
-#include "nbnxn_cuda_types_ext.h"
-#include "../gmx_cpuid.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/legacyheaders/gmx_cpuid.h"
 
 #ifdef __cplusplus
 extern "C" {

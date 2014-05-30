@@ -38,15 +38,15 @@
 #include <config.h>
 #endif
 
-#include "macros.h"
-#include "gstat.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/units.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"

@@ -45,7 +45,7 @@
 #include <limits.h>
 #include <string.h>
 
-#include "gmx_system_xdr.h"
+#include "gromacs/fileio/gmx_system_xdr.h"
 
 
 /* NB - THIS FILE IS ONLY USED ON MICROSOFT WINDOWS, since that

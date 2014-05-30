@@ -1,4 +1,4 @@
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void F77_FUNC(dlasrt2,DLASRT2)(const char *id, 
 	      int *n, 

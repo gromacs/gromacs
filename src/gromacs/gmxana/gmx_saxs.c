@@ -41,22 +41,22 @@
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/utility/smalloc.h"
-#include "calcgrid.h"
-#include "nrnb.h"
-#include "coulomb.h"
-#include "gstat.h"
-#include "gmx_ana.h"
-#include "names.h"
-#include "sfactor.h"
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/coulomb.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/gmxana/sfactor.h"
 
 int gmx_saxs(int argc, char *argv[])
 {

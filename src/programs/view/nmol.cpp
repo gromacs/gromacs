@@ -42,19 +42,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "3dview.h"
-#include "buttons.h"
-#include "manager.h"
-#include "nmol.h"
-#include "xutil.h"
+#include "programs/view/3dview.h"
+#include "programs/view/buttons.h"
+#include "programs/view/manager.h"
+#include "programs/view/nmol.h"
+#include "programs/view/xutil.h"
 
 #define MSIZE 4
 

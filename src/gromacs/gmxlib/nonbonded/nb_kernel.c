@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "nb_kernel.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

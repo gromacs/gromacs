@@ -47,9 +47,9 @@
  * can also be used with the routines in gmxfio.h
  *
  **************************************************************/
-#include "../legacyheaders/types/inputrec.h"
-#include "../legacyheaders/types/state.h"
-#include "gmxfio.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/fileio/gmxfio.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -39,7 +39,7 @@
 #ifndef _correl_h
 #define _correl_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fft/fft.h"
 
 typedef struct {

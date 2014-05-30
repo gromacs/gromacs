@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include "dataproxy.h"
+#include "gromacs/analysisdata/dataproxy.h"
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"

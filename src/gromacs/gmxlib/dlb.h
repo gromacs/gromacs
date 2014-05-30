@@ -38,7 +38,7 @@
 #ifndef _dlb_h
 #define _dlb_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 extern void count_nb(t_commrec *cr, t_nsborder *nsb, t_block *cgs, int nns,
                      int nlr, t_idef *idef, int ngner);

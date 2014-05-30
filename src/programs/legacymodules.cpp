@@ -37,7 +37,7 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-#include "legacymodules.h"
+#include "programs/legacymodules.h"
 
 #include <cstdio>
 
@@ -56,8 +56,8 @@
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/tools/dump.h"
 
-#include "mdrun/mdrun_main.h"
-#include "view/view.h"
+#include "programs/mdrun/mdrun_main.h"
+#include "programs/view/view.h"
 
 namespace
 {

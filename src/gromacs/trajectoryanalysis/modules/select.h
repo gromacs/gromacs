@@ -42,7 +42,7 @@
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_SELECT_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_SELECT_H
 
-#include "../analysismodule.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 
 namespace gmx
 {

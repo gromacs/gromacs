@@ -41,19 +41,19 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gstat.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/vec.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/futil.h"
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/confio.h"
-#include "cmat.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/cmat.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"

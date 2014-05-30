@@ -39,9 +39,9 @@
 #define _xdlghi_h
 
 #include <stdarg.h>
-#include "Xstuff.h"
-#include "x11.h"
-#include "xdlg.h"
+#include "programs/view/Xstuff.h"
+#include "programs/view/x11.h"
+#include "programs/view/xdlg.h"
 
 typedef struct {
     int         nitem;

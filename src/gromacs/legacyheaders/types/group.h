@@ -36,7 +36,7 @@
  */
 
 
-#include "simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

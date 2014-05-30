@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
-#include "testoptions.h"
+#include "testutils/testoptions.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -62,9 +62,9 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/programcontext.h"
 
-#include "refdata.h"
-#include "testfilemanager.h"
-#include "mpi-printer.h"
+#include "testutils/refdata.h"
+#include "testutils/testfilemanager.h"
+#include "testutils/mpi-printer.h"
 
 namespace gmx
 {

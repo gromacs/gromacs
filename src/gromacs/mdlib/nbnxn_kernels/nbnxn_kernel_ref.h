@@ -36,7 +36,7 @@
 #ifndef _nbnxn_kernel_ref_h
 #define _nbnxn_kernel_ref_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

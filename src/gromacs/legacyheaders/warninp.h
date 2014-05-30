@@ -38,7 +38,7 @@
 #ifndef _warninp_h
 #define _warninp_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

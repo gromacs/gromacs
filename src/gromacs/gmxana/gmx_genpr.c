@@ -43,15 +43,15 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/futil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 int gmx_genpr(int argc, char *argv[])
 {

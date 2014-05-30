@@ -38,7 +38,7 @@
 #ifndef _cmat_h
 #define _cmat_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 typedef struct {
     int  i, j;

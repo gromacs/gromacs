@@ -37,14 +37,14 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "types/commrec.h"
-#include "domdec.h"
-#include "domdec_network.h"
-#include "nsgrid.h"
-#include "network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/domdec_network.h"
+#include "gromacs/legacyheaders/nsgrid.h"
+#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/utility/fatalerror.h"
 

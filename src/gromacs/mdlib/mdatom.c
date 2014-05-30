@@ -40,12 +40,12 @@
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "mdatoms.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/utility/smalloc.h"
-#include "qmmm.h"
-#include "mtop_util.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/qmmm.h"
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
 #define ALMOST_ZERO 1e-30
 

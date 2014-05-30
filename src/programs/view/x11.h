@@ -39,8 +39,8 @@
 #define _x11_h
 
 #include <stdio.h>
-#include "typedefs.h"
-#include "Xstuff.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "programs/view/Xstuff.h"
 
 /* These colours will be mapped to black on a monochrome screen */
 extern unsigned long BLACK, BLUE, GREEN, CYAN, RED, BROWN, GREY, DARKGREY;

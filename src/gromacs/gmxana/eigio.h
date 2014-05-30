@@ -38,7 +38,7 @@
 #ifndef _eigio_h
 #define _eigio_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 enum {
     eWXR_NO, eWXR_YES, eWXR_NOFIT

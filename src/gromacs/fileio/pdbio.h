@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/atomprop.h"
+#include "gromacs/legacyheaders/atomprop.h"
 
 #ifdef __cplusplus
 extern "C" {

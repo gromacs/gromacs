@@ -39,8 +39,8 @@
 #define _calcmu_h
 
 
-#include "typedefs.h"
-#include "network.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
 
 #ifdef __cplusplus
 extern "C" {

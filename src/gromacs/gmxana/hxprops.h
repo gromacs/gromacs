@@ -39,7 +39,7 @@
 #define _hxprops_h
 
 #include <stdio.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #define PHI_AHX (-55.0)
 #define PSI_AHX (-45.0)

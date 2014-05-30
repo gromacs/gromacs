@@ -41,18 +41,18 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/units.h"
-#include "domdec.h"
-#include "network.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/utility/fatalerror.h"
-#include "mtop_util.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/legacyheaders/genborn.h"
 
 #include "gromacs/utility/gmxmpi.h"
 
@@ -61,7 +61,7 @@
 #include <gmx_sse2_double.h>
 #include <emmintrin.h>
 
-#include "genborn_sse2_double.h"
+#include "gromacs/mdlib/genborn_sse2_double.h"
 
 int
 calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,

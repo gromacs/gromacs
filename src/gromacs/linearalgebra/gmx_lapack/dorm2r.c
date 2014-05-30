@@ -1,4 +1,4 @@
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void 
 F77_FUNC(dorm2r,DORM2R)(const char *side, 

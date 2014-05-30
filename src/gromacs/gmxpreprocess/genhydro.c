@@ -41,17 +41,17 @@
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "calch.h"
-#include "genhydro.h"
-#include "h_db.h"
-#include "ter_db.h"
-#include "resall.h"
-#include "pgutil.h"
-#include "network.h"
+#include "gromacs/gmxpreprocess/calch.h"
+#include "gromacs/gmxpreprocess/genhydro.h"
+#include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/ter_db.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"

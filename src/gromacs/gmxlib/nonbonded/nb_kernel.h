@@ -48,8 +48,8 @@ extern "C" {
 #endif
 
 
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.

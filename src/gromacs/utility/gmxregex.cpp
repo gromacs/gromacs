@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "gmxregex.h"
+#include "gromacs/utility/gmxregex.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -55,8 +55,8 @@
 #define USE_CXX11_REGEX
 #endif
 
-#include "exceptions.h"
-#include "stringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {

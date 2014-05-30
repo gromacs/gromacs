@@ -51,7 +51,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "frameaverager.h"
+#include "gromacs/analysisdata/modules/frameaverager.h"
 
 namespace
 {

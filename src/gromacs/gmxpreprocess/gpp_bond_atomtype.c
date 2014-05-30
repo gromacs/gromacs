@@ -38,8 +38,8 @@
 #include <config.h>
 #endif
 
-#include "macros.h"
-#include "gpp_bond_atomtype.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"

@@ -35,7 +35,7 @@
 #ifndef GMX_THREAD_AFFINITY_H_
 #define GMX_THREAD_AFFINITY_H_
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

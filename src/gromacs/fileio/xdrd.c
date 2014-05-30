@@ -38,8 +38,8 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "xdrf.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

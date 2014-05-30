@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "mpi-printer.h"
+#include "testutils/mpi-printer.h"
 
 #include "config.h"
 #include "gromacs/utility/gmxmpi.h"

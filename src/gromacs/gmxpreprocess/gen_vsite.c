@@ -43,17 +43,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gen_vsite.h"
-#include "resall.h"
-#include "add_par.h"
+#include "gromacs/gmxpreprocess/gen_vsite.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/math/vec.h"
-#include "toputil.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/units.h"
-#include "index.h"
-#include "names.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/futil.h"
-#include "gpp_atomtype.h"
-#include "fflibutil.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"

@@ -39,17 +39,17 @@
 #endif
 
 #include <math.h>
-#include "repl_ex.h"
-#include "network.h"
+#include "programs/mdrun/repl_ex.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
-#include "copyrite.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "names.h"
-#include "domdec.h"
-#include "main.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/main.h"
 #include "gromacs/random/random.h"
 
 #define PROBABILITYCUTOFF 100

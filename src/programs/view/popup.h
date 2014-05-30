@@ -38,8 +38,8 @@
 #ifndef _popup_h
 #define _popup_h
 
-#include "x11.h"
-#include "xutil.h"
+#include "programs/view/x11.h"
+#include "programs/view/xutil.h"
 
 typedef struct {
     Window      send_to;  /* Window to send messages to			*/

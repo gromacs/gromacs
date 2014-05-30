@@ -38,7 +38,7 @@
 #ifndef _constr_h
 #define _constr_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

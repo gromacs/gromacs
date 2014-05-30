@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -44,8 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"

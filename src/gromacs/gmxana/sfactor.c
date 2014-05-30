@@ -43,17 +43,17 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
-#include "macros.h"
-#include "index.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "typedefs.h"
-#include "oenv.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "names.h"
-#include "sfactor.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/gmxana/sfactor.h"
 
 
 typedef struct gmx_structurefactors {

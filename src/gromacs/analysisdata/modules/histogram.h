@@ -43,10 +43,10 @@
 #ifndef GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 #define GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 
-#include "../abstractdata.h"
-#include "../arraydata.h"
-#include "../datamodule.h"
-#include "../../utility/uniqueptr.h"
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/arraydata.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {

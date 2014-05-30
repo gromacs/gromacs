@@ -38,7 +38,7 @@
 #ifndef _buttons_h
 #define _buttons_h
 
-#include "xutil.h"
+#include "programs/view/xutil.h"
 
 enum {
     IDROTX, IDROTY, IDROTZ, IDTRANSX, IDTRANSY, IDTRANSZ, IDZOOM, IDBUTNR,

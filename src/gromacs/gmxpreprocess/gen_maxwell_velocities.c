@@ -42,10 +42,10 @@
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/units.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "gen_maxwell_velocities.h"
-#include "mtop_util.h"
+#include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
+#include "gromacs/legacyheaders/mtop_util.h"
 
 static void low_mspeed(real tempi,
                        gmx_mtop_t *mtop, rvec v[], gmx_rng_t rng)

@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "x2top.h"
+#include "gromacs/gmxpreprocess/x2top.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -42,23 +42,23 @@
 
 #include <assert.h>
 
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/utilities.h"
-#include "macros.h"
-#include "bondf.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/bondf.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/units.h"
-#include "txtdump.h"
-#include "readinp.h"
-#include "names.h"
-#include "toppush.h"
-#include "pdb2top.h"
-#include "gen_ad.h"
-#include "gpp_nextnb.h"
-#include "atomprop.h"
-#include "hackblock.h"
-#include "nm2type.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/gmxpreprocess/gen_ad.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/legacyheaders/atomprop.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/gmxpreprocess/nm2type.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"

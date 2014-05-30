@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include "average.h"
+#include "gromacs/analysisdata/modules/average.h"
 
 #include <cmath>
 
@@ -49,7 +49,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 
-#include "frameaverager.h"
+#include "gromacs/analysisdata/modules/frameaverager.h"
 
 namespace gmx
 {

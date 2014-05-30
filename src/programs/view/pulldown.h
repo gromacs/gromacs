@@ -38,7 +38,7 @@
 #ifndef _pulldown_h
 #define _pulldown_h
 
-#include "popup.h"
+#include "programs/view/popup.h"
 
 typedef struct {
     t_windata    wd;

@@ -43,7 +43,7 @@
 
 #include <boost/exception_ptr.hpp>
 
-#include "parser.h"
+#include "gromacs/selection/parser.h"
 
 namespace gmx
 {
@@ -62,7 +62,7 @@ struct gmx_sel_lexer_t;
  * gets included in other files than scanner.cpp... */
 #ifndef FLEX_SCANNER
 #define YY_NO_UNISTD_H
-#include "scanner_flex.h"
+#include "gromacs/selection/scanner_flex.h"
 #endif
 
 /*! \internal \brief

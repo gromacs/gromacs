@@ -42,7 +42,7 @@
 #ifndef GMX_SELECTION_SELHELP_H
 #define GMX_SELECTION_SELHELP_H
 
-#include "../onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/helptopicinterface.h"
 
 namespace gmx
 {

@@ -38,7 +38,7 @@
 #ifndef _rbin_h
 #define _rbin_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

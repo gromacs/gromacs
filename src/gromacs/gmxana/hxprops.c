@@ -41,14 +41,14 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
-#include "hxprops.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/gmxana/hxprops.h"
 #include "gromacs/utility/smalloc.h"
-#include "bondf.h"
+#include "gromacs/legacyheaders/bondf.h"
 
 #include "gromacs/utility/fatalerror.h"
 

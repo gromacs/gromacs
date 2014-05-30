@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "exceptions.h"
+#include "gromacs/utility/exceptions.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -61,7 +61,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "errorformat.h"
+#include "gromacs/utility/errorformat.h"
 
 namespace gmx
 {

@@ -49,7 +49,7 @@
 
 #include "gromacs/utility/common.h"
 
-#include "selelem.h"
+#include "gromacs/selection/selelem.h"
 
 struct gmx_ana_selmethod_t;
 

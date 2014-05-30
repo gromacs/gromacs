@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "addconf.h"
+#include "gromacs/gmxpreprocess/addconf.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -44,16 +44,16 @@
 #include <string.h>
 
 #include "gromacs/math/vec.h"
-#include "macros.h"
-#include "types/commrec.h"
-#include "force.h"
-#include "names.h"
-#include "nsgrid.h"
-#include "mdatoms.h"
-#include "nrnb.h"
-#include "ns.h"
-#include "mtop_util.h"
-#include "chargegroup.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nsgrid.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/legacyheaders/chargegroup.h"
 
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"

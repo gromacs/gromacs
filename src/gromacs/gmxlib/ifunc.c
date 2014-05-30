@@ -40,11 +40,11 @@
 #endif
 
 
-#include "typedefs.h"
-#include "bondf.h"
-#include "disre.h"
-#include "orires.h"
-#include "genborn.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/bondf.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/genborn.h"
 
 
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \

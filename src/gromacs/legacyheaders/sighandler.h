@@ -40,7 +40,7 @@
 
 #include <signal.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

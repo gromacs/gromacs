@@ -41,9 +41,9 @@
 #include <math.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/futil.h"
@@ -51,12 +51,12 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 
 #define FARAWAY 10000

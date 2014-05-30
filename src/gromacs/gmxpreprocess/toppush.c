@@ -43,15 +43,15 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "macros.h"
-#include "names.h"
-#include "toputil.h"
-#include "toppush.h"
-#include "topdirs.h"
-#include "readir.h"
-#include "warninp.h"
-#include "gpp_atomtype.h"
-#include "gpp_bond_atomtype.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"

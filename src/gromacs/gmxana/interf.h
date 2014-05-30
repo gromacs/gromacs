@@ -36,7 +36,7 @@
 #ifndef _interf_h
 #define _interf_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 typedef struct {
     real Z; /* Interface height-coordinate */

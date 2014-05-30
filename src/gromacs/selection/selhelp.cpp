@@ -51,9 +51,9 @@
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "selhelp.h"
-#include "selmethod.h"
-#include "symrec.h"
+#include "gromacs/selection/selhelp.h"
+#include "gromacs/selection/selmethod.h"
+#include "gromacs/selection/symrec.h"
 
 namespace
 {

@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
-#include "helpmanager.h"
+#include "gromacs/onlinehelp/helpmanager.h"
 
 #include <string>
 #include <vector>
