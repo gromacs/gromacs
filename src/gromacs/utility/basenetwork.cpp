@@ -40,12 +40,11 @@
 
 #include "config.h"
 
-#include <cctype>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-#include <algorithm>
 #include <exception>
 
 #ifdef HAVE_UNISTD_H
