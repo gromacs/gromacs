@@ -38,10 +38,8 @@
 
 #include "fatalerror.h"
 
-#include "config.h"
-
 #include <cerrno>
-#include <cstdarg>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 
@@ -49,14 +47,18 @@
 
 #include "thread_mpi/threads.h"
 
+#ifdef GMX_MPI
+#include "config.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/baseversion.h"
+#else
 #include "gromacs/utility/common.h"
+#endif
+
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/smalloc.h"
 
 static bool                bDebug         = false;
 static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
