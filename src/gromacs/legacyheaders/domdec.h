@@ -36,10 +36,25 @@
 #ifndef _domdec_h
 #define _domdec_h
 
-#include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include <stdio.h>
+
 #include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/legacyheaders/types/constr.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/legacyheaders/types/shellfc.h"
+#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

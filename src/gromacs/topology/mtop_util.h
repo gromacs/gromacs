@@ -44,14 +44,10 @@
 extern "C" {
 #endif
 
-struct gmx_localtop_t;
 struct gmx_moltype_t;
 struct gmx_mtop_t;
 struct t_atom;
-struct t_atoms;
-struct t_block;
 struct t_ilist;
-struct t_topology;
 
 /* Should be called after generating or reading mtop,
  * to set some compute intesive variables to avoid
