@@ -32,21 +32,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include <limits.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/mtop_util.h"
 #include "gromacs/gmxlib/topsort.h"
-
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
-#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 static int gmx_mtop_maxresnr(const gmx_mtop_t *mtop, int maxres_renum)
