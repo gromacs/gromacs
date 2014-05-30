@@ -39,10 +39,10 @@
 #endif
 
 #include <string.h>
-#include "typedefs.h"
-#include "xdrf.h"
-#include "gmxfio.h"
-#include "xtcio.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"

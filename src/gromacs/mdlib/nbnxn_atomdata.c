@@ -42,13 +42,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "nbnxn_consts.h"
-#include "nbnxn_internal.h"
-#include "nbnxn_atomdata.h"
-#include "nbnxn_search.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
+#include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "thread_mpi/atomic.h"
 
 #include "gromacs/pbcutil/ishift.h"

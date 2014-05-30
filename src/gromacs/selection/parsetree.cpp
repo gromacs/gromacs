@@ -234,13 +234,13 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "keywords.h"
-#include "parsetree.h"
-#include "selectioncollection-impl.h"
-#include "selelem.h"
-#include "symrec.h"
+#include "gromacs/selection/keywords.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/selectioncollection-impl.h"
+#include "gromacs/selection/selelem.h"
+#include "gromacs/selection/symrec.h"
 
-#include "scanner.h"
+#include "gromacs/selection/scanner.h"
 
 using gmx::SelectionParserValue;
 using gmx::SelectionParserValueList;

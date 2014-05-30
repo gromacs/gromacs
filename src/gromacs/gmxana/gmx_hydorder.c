@@ -40,17 +40,17 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gstat.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/futil.h"
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "binsearch.h"
-#include "powerspect.h"
+#include "gromacs/gmxana/binsearch.h"
+#include "gromacs/gmxana/powerspect.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"

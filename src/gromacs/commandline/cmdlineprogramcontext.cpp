@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-#include "cmdlineprogramcontext.h"
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

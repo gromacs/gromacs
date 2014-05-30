@@ -1,7 +1,7 @@
 #include <math.h>
 
-#include "../gmx_blas.h"
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void 
 F77_FUNC(dorg2r,DORG2R)(int *m, 

@@ -47,9 +47,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "keywords.h"
-#include "parsetree.h"
-#include "selelem.h"
+#include "gromacs/selection/keywords.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/selelem.h"
 
 /*! \internal
  * \brief

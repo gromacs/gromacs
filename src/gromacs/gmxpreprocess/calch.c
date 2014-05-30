@@ -38,8 +38,8 @@
 #include <config.h>
 #endif
 
-#include "macros.h"
-#include "calch.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxpreprocess/calch.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"

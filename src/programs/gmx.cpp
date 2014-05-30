@@ -43,7 +43,7 @@
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
 
-#include "legacymodules.h"
+#include "programs/legacymodules.h"
 
 int
 main(int argc, char *argv[])

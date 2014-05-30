@@ -48,21 +48,21 @@
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/mdlib/groupcoord.h"
-#include "mtop_util.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "names.h"
-#include "network.h"
-#include "mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/fileio/xvgr.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/timing/wallcycle.h"
-#include "swapcoords.h"
+#include "gromacs/swap/swapcoords.h"
 
 #include "gromacs/pbcutil/pbc.h"
 

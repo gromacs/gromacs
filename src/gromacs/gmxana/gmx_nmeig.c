@@ -41,17 +41,17 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/futil.h"
-#include "index.h"
-#include "gstat.h"
-#include "txtdump.h"
-#include "eigio.h"
-#include "mtop_util.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/legacyheaders/mtop_util.h"
 #include "gromacs/math/units.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/mtxio.h"

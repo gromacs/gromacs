@@ -44,14 +44,14 @@
 #include <io.h>
 #endif
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
-#include "md5.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/md5.h"
 
-#include "gmxfio_int.h"
+#include "gromacs/fileio/gmxfio_int.h"
 
 
 /*******************************************************************

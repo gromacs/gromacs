@@ -40,7 +40,7 @@
  * \author Carsten Kutzner <ckutzne@gwdg.de>
  * \ingroup module_mdrun
  */
-#include "moduletest.h"
+#include "programs/mdrun/tests/moduletest.h"
 
 namespace gmx
 {

@@ -1,5 +1,5 @@
 #include <math.h>
-#include "../gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
 
 double
 F77_FUNC(dasum,DASUM)(int *n__, 

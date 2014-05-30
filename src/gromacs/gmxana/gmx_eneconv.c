@@ -42,16 +42,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
-#include "disre.h"
-#include "names.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/math/vec.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 
 #define TIME_EXPLICIT 0

@@ -40,23 +40,23 @@
 
 #include <math.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
-#include "names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
-#include "macros.h"
-#include "index.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 
 static void calc_dist(int nind, atom_id index[], rvec x[], int ePBC, matrix box,

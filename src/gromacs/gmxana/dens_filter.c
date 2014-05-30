@@ -41,8 +41,8 @@
  */
 
 #include <math.h>
-#include "typedefs.h"
-#include "dens_filter.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxana/dens_filter.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
 

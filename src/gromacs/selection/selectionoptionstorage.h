@@ -44,10 +44,10 @@
 
 #include <string>
 
-#include "../options/optionstoragetemplate.h"
-#include "selection.h"
-#include "selectionenums.h"
-#include "selectionoption.h"
+#include "gromacs/options/optionstoragetemplate.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
+#include "gromacs/selection/selectionoption.h"
 
 namespace gmx
 {

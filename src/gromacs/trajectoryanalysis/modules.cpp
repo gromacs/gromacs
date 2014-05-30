@@ -44,11 +44,11 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
-#include "modules/angle.h"
-#include "modules/distance.h"
-#include "modules/freevolume.h"
-#include "modules/sasa.h"
-#include "modules/select.h"
+#include "gromacs/trajectoryanalysis/modules/angle.h"
+#include "gromacs/trajectoryanalysis/modules/distance.h"
+#include "gromacs/trajectoryanalysis/modules/freevolume.h"
+#include "gromacs/trajectoryanalysis/modules/sasa.h"
+#include "gromacs/trajectoryanalysis/modules/select.h"
 
 namespace gmx
 {

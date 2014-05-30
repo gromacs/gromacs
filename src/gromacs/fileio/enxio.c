@@ -42,12 +42,12 @@
 #include <string.h>
 
 #include "gromacs/utility/futil.h"
-#include "gmxfio.h"
-#include "enxio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/math/vec.h"
-#include "xdrf.h"
-#include "macros.h"
-#include "typedefs.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"

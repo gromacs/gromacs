@@ -39,8 +39,8 @@
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "topsort.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/topsort.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 

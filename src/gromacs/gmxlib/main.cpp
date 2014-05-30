@@ -54,14 +54,14 @@
 #include <process.h>
 #endif
 
-#include "types/commrec.h"
-#include "network.h"
-#include "main.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"

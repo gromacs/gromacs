@@ -45,7 +45,7 @@
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/smalloc.h"
-#include "correl.h"
+#include "gromacs/gmxana/correl.h"
 
 #define SWAP(a, b) tempr = (a); (a) = (b); (b) = tempr
 

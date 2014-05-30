@@ -3,7 +3,7 @@
 
 
 #include "gromacs/utility/real.h"
-#include "../gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
 
 void
 F77_FUNC(dsyr2k,DSYR2K)(const char *uplo, 

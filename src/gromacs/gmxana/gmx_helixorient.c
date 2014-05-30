@@ -40,12 +40,12 @@
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
-#include "gstat.h"
-#include "gmx_ana.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/trxio.h"

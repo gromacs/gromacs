@@ -540,9 +540,9 @@ static yyconst flex_int16_t yy_chk[147] =
 #line 56 "scanner.l"
 #include "gromacs/utility/cstringutil.h"
 
-#include "parser.h"
-#include "scanner.h"
-#include "scanner_internal.h"
+#include "gromacs/selection/parser.h"
+#include "gromacs/selection/scanner.h"
+#include "gromacs/selection/scanner_internal.h"
 
 // This macro makes the actions a bit shorter, since nearly every action needs
 // this call.

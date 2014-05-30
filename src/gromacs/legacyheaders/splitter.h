@@ -38,8 +38,8 @@
 #ifndef _splitter_h
 #define _splitter_h
 
-#include "typedefs.h"
-#include "types/inputrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 
 #ifdef __cplusplus
 extern "C" {

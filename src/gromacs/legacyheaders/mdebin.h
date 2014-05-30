@@ -40,10 +40,10 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "ebin.h"
-#include "../fileio/enxio.h"
-#include "types/state.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/ebin.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/legacyheaders/types/state.h"
 
 #ifdef __cplusplus
 extern "C" {

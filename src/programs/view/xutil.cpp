@@ -42,9 +42,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
-#include "xutil.h"
-#include "Xstuff.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "programs/view/xutil.h"
+#include "programs/view/Xstuff.h"
 
 int CheckWin(Window win, const char *file, int line)
 {

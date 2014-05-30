@@ -40,16 +40,16 @@
 
 #include <math.h>
 
-#include "types/simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
-#include "typedefs.h"
-#include "nb_generic.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/nonbonded/nb_generic.h"
+#include "gromacs/legacyheaders/nrnb.h"
 
 #include "gromacs/utility/fatalerror.h"
 
-#include "nonbonded.h"
-#include "nb_kernel.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,

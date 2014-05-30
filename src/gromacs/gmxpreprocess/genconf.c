@@ -34,15 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "genconf.h"
+#include "gromacs/gmxpreprocess/genconf.h"
 
 #include "gromacs/math/utilities.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/confio.h"
-#include "txtdump.h"
-#include "readinp.h"
-#include "names.h"
-#include "sortwater.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/gmxpreprocess/sortwater.h"
 #include "gromacs/fileio/trxio.h"
 
 #include "gromacs/commandline/pargs.h"

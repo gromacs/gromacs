@@ -49,7 +49,7 @@
 #include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "options-impl.h"
+#include "gromacs/options/options-impl.h"
 
 namespace gmx
 {

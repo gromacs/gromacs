@@ -54,7 +54,7 @@
 
 #include <cstdio>
 
-#include "../utility/common.h"
+#include "gromacs/utility/common.h"
 
 /*! \name Flags for position calculation.
  * \anchor poscalc_flags

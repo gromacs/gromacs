@@ -42,12 +42,12 @@
 #include <string.h>
 
 #include "gromacs/utility/futil.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/fileio/confio.h"
-#include "typedefs.h"
-#include "index.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/block.h"

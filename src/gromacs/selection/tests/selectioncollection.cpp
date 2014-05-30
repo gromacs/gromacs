@@ -58,7 +58,7 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 
-#include "toputils.h"
+#include "gromacs/selection/tests/toputils.h"
 
 namespace
 {
