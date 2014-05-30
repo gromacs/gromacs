@@ -37,7 +37,7 @@
 #ifndef GMX_PBCUTIL_RMPBC_H
 #define GMX_PBCUTIL_RMPBC_H
 
-#include "../math/vectypes.h"
+#include "gromacs/math/vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {

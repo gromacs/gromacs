@@ -42,14 +42,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "pdbio.h"
-#include "copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/futil.h"
-#include "atomprop.h"
+#include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/math/units.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/symtab.h"

@@ -36,7 +36,7 @@
 #ifndef GMX_HARDWARE_DETECT_H
 #define GMX_HARDWARE_DETECT_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

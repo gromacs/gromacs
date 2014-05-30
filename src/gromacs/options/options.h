@@ -48,10 +48,10 @@
 
 #include <string>
 
-#include "../utility/common.h"
-#include "../utility/gmxassert.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/gmxassert.h"
 
-#include "abstractoption.h"
+#include "gromacs/options/abstractoption.h"
 
 namespace gmx
 {

@@ -2,9 +2,9 @@
 
 #include "gromacs/utility/real.h"
 
-#include "../gmx_blas.h"
-#include "../gmx_lapack.h"
-#include "lapack_limits.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_lapack/lapack_limits.h"
 
 void
 F77_FUNC(ssyevr,SSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 

@@ -39,7 +39,7 @@
 #include <math.h>
 #include "gromacs/math/utilities.h"
 
-#include "simd.h"
+#include "gromacs/simd/tests/simd.h"
 
 namespace gmx
 {

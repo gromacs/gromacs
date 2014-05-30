@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "vmdio.h"
+#include "gromacs/fileio/vmdio.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

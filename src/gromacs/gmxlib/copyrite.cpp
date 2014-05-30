@@ -34,7 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "copyrite.h"
+#include "gromacs/legacyheaders/copyrite.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -1,6 +1,6 @@
 #include <math.h>
-#include "../gmx_blas.h"
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void 
 F77_FUNC(slasd8,SLASD8)(int *icompq, 

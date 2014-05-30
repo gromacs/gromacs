@@ -45,9 +45,9 @@
 
 #include <stdio.h>
 
-#include "types/simple.h"
-#include "typedefs.h"
-#include "../utility/fatalerror.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/fatalerror.h"
 
 #ifdef __cplusplus
 extern "C" {

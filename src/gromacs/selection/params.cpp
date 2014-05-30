@@ -52,10 +52,10 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "parsetree.h"
-#include "position.h"
-#include "scanner.h"
-#include "selelem.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/position.h"
+#include "gromacs/selection/scanner.h"
+#include "gromacs/selection/selelem.h"
 
 using gmx::SelectionParserValue;
 using gmx::SelectionParserValueList;

@@ -37,8 +37,8 @@
 #ifndef _commrec_h
 #define _commrec_h
 
-#include "../../utility/gmxmpi.h"
-#include "../typedefs.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

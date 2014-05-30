@@ -36,9 +36,9 @@
 #ifndef _nbnxn_internal_h
 #define _nbnxn_internal_h
 
-#include "typedefs.h"
-#include "nbnxn_simd.h"
-#include "domdec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/mdlib/nbnxn_simd.h"
+#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/timing/cyclecounter.h"
 
 

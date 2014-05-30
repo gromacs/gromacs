@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2013, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,8 @@
 #ifndef GMX_SELECTION_SELPARAM_H
 #define GMX_SELECTION_SELPARAM_H
 
-#include "indexutil.h"
-#include "selvalue.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/selvalue.h"
 
 /*! \name Parameter flags
  * \anchor selparam_flags

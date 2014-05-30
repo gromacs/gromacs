@@ -39,7 +39,7 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
-#include "cmdlinetest.h"
+#include "testutils/cmdlinetest.h"
 
 #include <cstdlib>
 #include <cstring>

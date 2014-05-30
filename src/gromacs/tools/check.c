@@ -42,18 +42,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/commandline/pargs.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/utility/fatalerror.h"
-#include "atomprop.h"
+#include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/math/units.h"
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/utility/smalloc.h"
-#include "names.h"
-#include "mtop_util.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/mtop_util.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
@@ -64,7 +64,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/topology/block.h"
 
-#include "compare.h"
+#include "gromacs/tools/compare.h"
 
 typedef struct {
     int bStep;

@@ -78,7 +78,7 @@
 #include <gtest/gtest.h>
 #include "gromacs/simd/simd.h"
 
-#include "base.h"
+#include "gromacs/simd/tests/base.h"
 
 namespace gmx
 {

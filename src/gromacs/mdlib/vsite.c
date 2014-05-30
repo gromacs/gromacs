@@ -40,16 +40,16 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "vsite.h"
-#include "macros.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/math/vec.h"
-#include "network.h"
-#include "domdec.h"
-#include "mtop_util.h"
-#include "gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"

@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "tngio.h"
+#include "gromacs/fileio/tngio.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -43,7 +43,7 @@
 #endif
 
 #ifdef GMX_USE_TNG
-#include "../../external/tng_io/include/tng_io.h"
+#include "external/tng_io/include/tng_io.h"
 #endif
 
 #include "gromacs/legacyheaders/copyrite.h"

@@ -44,11 +44,11 @@
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "index.h"
-#include "xdlghi.h"
-#include "dialogs.h"
-#include "index.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/index.h"
+#include "programs/view/xdlghi.h"
+#include "programs/view/dialogs.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/utility/fatalerror.h"
 
 t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)

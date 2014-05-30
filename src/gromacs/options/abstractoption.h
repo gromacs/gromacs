@@ -57,10 +57,10 @@
 #include <string>
 #include <vector>
 
-#include "../utility/common.h"
-#include "../utility/uniqueptr.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/uniqueptr.h"
 
-#include "optionflags.h"
+#include "gromacs/options/optionflags.h"
 
 namespace gmx
 {

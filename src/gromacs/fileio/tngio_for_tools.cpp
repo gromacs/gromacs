@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "tngio_for_tools.h"
+#include "gromacs/fileio/tngio_for_tools.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -40,11 +40,11 @@
 
 #include <math.h>
 
-#include "tngio.h"
-#include "trx.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/trx.h"
 
 #ifdef GMX_USE_TNG
-#include "../../external/tng_io/include/tng_io.h"
+#include "external/tng_io/include/tng_io.h"
 #endif
 
 #include "gromacs/math/units.h"

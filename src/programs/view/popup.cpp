@@ -43,12 +43,12 @@
 
 #include <algorithm>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "x11.h"
-#include "xutil.h"
-#include "popup.h"
+#include "programs/view/x11.h"
+#include "programs/view/xutil.h"
+#include "programs/view/popup.h"
 
 bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {

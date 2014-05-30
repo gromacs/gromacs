@@ -35,7 +35,7 @@
 
 #ifndef _tables_h
 #define _tables_h
-#include "types/simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

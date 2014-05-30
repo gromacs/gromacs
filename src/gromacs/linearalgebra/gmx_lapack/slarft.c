@@ -1,8 +1,8 @@
 #include <math.h>
 #include "gromacs/utility/real.h"
 
-#include "../gmx_blas.h"
-#include "../gmx_lapack.h"
+#include "gromacs/linearalgebra/gmx_blas.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 
 void 
 F77_FUNC(slarft,SLARFT)(const char *direct, 

@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#include "simd.h"
+#include "gromacs/simd/tests/simd.h"
 
 /* Some notes on the setup of these tests:
  *

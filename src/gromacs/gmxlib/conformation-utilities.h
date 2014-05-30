@@ -37,7 +37,7 @@
 #ifndef GMX_CONFORMATION_UTILITIES_H
 #define GMX_CONFORMATION_UTILITIES_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

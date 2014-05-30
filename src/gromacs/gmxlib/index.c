@@ -43,12 +43,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "names.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "index.h"
-#include "txtdump.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/legacyheaders/txtdump.h"
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"

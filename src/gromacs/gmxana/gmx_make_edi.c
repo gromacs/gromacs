@@ -44,11 +44,11 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include "readinp.h"
+#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
@@ -56,9 +56,9 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "txtdump.h"
-#include "eigio.h"
-#include "index.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/utility/cstringutil.h"
 
 typedef struct

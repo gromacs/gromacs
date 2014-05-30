@@ -40,12 +40,12 @@
 #endif
 
 #include <string.h>
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
-#include "grompp-impl.h"
-#include "macros.h"
-#include "toputil.h"
-#include "hackblock.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 

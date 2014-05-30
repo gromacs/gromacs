@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_SPECBOND_H
 #define GMX_GMXPREPROCESS_SPECBOND_H
 
-#include "pdb2top.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
 
 #ifdef __cplusplus
 extern "C" {

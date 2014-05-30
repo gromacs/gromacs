@@ -37,11 +37,11 @@
 #ifndef GMX_FILEIO_ENXIO_H
 #define GMX_FILEIO_ENXIO_H
 
-#include "../legacyheaders/types/energy.h"
-#include "../legacyheaders/types/inputrec.h"
-#include "../legacyheaders/types/state.h"
-#include "gmxfio.h"
-#include "xdr_datatype.h"
+#include "gromacs/legacyheaders/types/energy.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xdr_datatype.h"
 
 #ifdef __cplusplus
 extern "C" {

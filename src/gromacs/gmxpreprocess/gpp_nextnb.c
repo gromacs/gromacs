@@ -42,8 +42,8 @@
 #include <stdlib.h>
 
 /* #define DEBUG_NNB */
-#include "gpp_nextnb.h"
-#include "toputil.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/toputil.h"
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

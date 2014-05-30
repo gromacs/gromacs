@@ -39,10 +39,10 @@
 #define _sfactor_h
 
 
-#include "index.h"
-#include "types/simple.h"
-#include "../math/gmxcomplex.h"
-#include "oenv.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/legacyheaders/oenv.h"
 
 
 

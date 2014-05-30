@@ -40,8 +40,8 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "../fileio/enxio.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/fileio/enxio.h"
 
 #ifdef __cplusplus
 extern "C" {

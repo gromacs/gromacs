@@ -41,11 +41,11 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "index.h"
-#include "fflibutil.h"
-#include "hackblock.h"
-#include "xlate.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/gmxpreprocess/xlate.h"
 
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/topology/symtab.h"

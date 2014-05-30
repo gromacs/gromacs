@@ -39,17 +39,17 @@
 #endif
 
 #include <math.h>
-#include "index.h"
+#include "gromacs/legacyheaders/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "names.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
-#include "mtop_util.h"
-#include "checkpoint.h"
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/enxio.h"

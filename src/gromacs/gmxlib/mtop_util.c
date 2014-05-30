@@ -40,9 +40,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "mtop_util.h"
-#include "topsort.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/mtop_util.h"
+#include "gromacs/gmxlib/topsort.h"
 
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"

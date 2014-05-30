@@ -48,7 +48,7 @@
 #include <limits.h>
 #include <stdio.h>
 
-#include "basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,7 +57,7 @@ extern "C" {
 }
 #endif
 
-#include "gmx_header_config.h"
+#include "gromacs/utility/gmx_header_config.h"
 /*! \def DIR_SEPARATOR
  * \brief
  * Directory separator on this OS.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,11 +44,11 @@
 #ifndef GMX_ONLINEHELP_HELPTOPIC_H
 #define GMX_ONLINEHELP_HELPTOPIC_H
 
-#include "../utility/common.h"
-#include "../utility/stringutil.h"
-#include "../utility/uniqueptr.h"
+#include "gromacs/utility/common.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/uniqueptr.h"
 
-#include "helptopicinterface.h"
+#include "gromacs/onlinehelp/helptopicinterface.h"
 
 namespace gmx
 {

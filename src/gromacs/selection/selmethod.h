@@ -293,8 +293,8 @@
 #ifndef GMX_SELECTION_SELMETHOD_H
 #define GMX_SELECTION_SELMETHOD_H
 
-#include "selparam.h"
-#include "selvalue.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
 
 namespace gmx
 {

@@ -43,7 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "fgrid.h"
+#include "programs/view/fgrid.h"
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"

@@ -35,7 +35,7 @@
 #ifndef _gmx_hash_h
 #define _gmx_hash_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
 

@@ -47,7 +47,7 @@
 
 // Forward declaration of class CommandLineProgramContext is not sufficient for
 // MSVC if the return value of initForCommandLine() is ignored(!)
-#include "cmdlineprogramcontext.h"
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 
 namespace gmx
 {

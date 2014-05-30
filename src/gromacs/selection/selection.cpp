@@ -39,14 +39,14 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "selection.h"
+#include "gromacs/selection/selection.h"
 
 #include "gromacs/topology/topology.h"
 
-#include "nbsearch.h"
-#include "position.h"
-#include "selelem.h"
-#include "selvalue.h"
+#include "gromacs/selection/nbsearch.h"
+#include "gromacs/selection/position.h"
+#include "gromacs/selection/selelem.h"
+#include "gromacs/selection/selvalue.h"
 
 namespace gmx
 {
