@@ -41,13 +41,11 @@
 #include "config.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -56,6 +54,10 @@
  * one that was opened and if you do nest too deep.
  */
 /* #define DEBUG_WCYCLE */
+
+#ifdef DEBUG_WCYCLE
+#include "gromacs/utility/fatalerror.h"
+#endif
 
 typedef struct
 {

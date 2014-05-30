@@ -38,8 +38,6 @@
 
 #include "config.h"
 
-#include <math.h>
-
 #include <immintrin.h>
 
 /* It is cleaner to start the AVX implementation from scratch rather than
