@@ -73,7 +73,7 @@
 
 #include <stddef.h>
 
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h" /* IWYU pragma: export */
 
 #ifdef __cplusplus
 extern "C" {

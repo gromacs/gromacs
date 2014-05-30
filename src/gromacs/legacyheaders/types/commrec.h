@@ -37,8 +37,22 @@
 #ifndef _commrec_h
 #define _commrec_h
 
+#include <stddef.h>
+
+#include "gromacs/legacyheaders/types/commrec_fwd.h" /* IWYU pragma: export */
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_domdec_comm;
+struct gmx_domdec_constraints;
+struct gmx_domdec_master;
+struct gmx_domdec_specat_comm;
+struct gmx_ga2la;
+struct gmx_hash;
+struct gmx_pme_comm_n_box;
+struct gmx_reverse_top;
 
 #ifdef __cplusplus
 extern "C" {
