@@ -36,8 +36,9 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_256_H
 #define GMX_SIMD_IMPL_X86_AVX_256_H
 
-#include <math.h>
-#include <immintrin.h>
+#include <immintrin.h> /* IWYU pragma: export */
+
+#include "gromacs/utility/basedefinitions.h"
 
 /* It is cleaner to start the AVX implementation from scratch rather than
  * first inheriting from SSE4.1, which in turn inherits from SSE2. However,

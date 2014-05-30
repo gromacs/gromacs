@@ -44,8 +44,6 @@
 #ifndef GMX_UTILITY_BASEDEFINITIONS_H
 #define GMX_UTILITY_BASEDEFINITIONS_H
 
-/* Information about integer data type sizes */
-#include <limits.h>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #ifndef _MSC_VER
