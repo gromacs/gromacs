@@ -36,9 +36,14 @@
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
+#include <stddef.h>
+
 #include "thread_mpi/atomic.h"
 
 #include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
