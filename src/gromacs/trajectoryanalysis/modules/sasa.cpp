@@ -47,7 +47,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -64,6 +63,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"

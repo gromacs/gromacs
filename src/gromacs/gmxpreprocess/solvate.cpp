@@ -43,20 +43,21 @@
 #include <string.h>
 
 #include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
 #include "macros.h"
 #include "gromacs/utility/futil.h"
-#include "atomprop.h"
 #include "names.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "addconf.h"
 #include "read-conformation.h"
 #include "gromacs/fileio/pdbio.h"
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #ifdef DEBUG
 static void print_stat(rvec *x, int natoms, matrix box)

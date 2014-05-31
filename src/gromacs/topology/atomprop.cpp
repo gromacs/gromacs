@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/topology/atomprop.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -42,11 +44,8 @@
 #include <string.h>
 
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/index.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -226,7 +225,7 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
     while (get_a_line(fp, line, STRLEN))
     {
         line_no++;
-        if (sscanf(line, "%s %s %lf", resnm, atomnm, &pp) == 3)
+        if (sscanf(line, "%31s %31s %20lf", resnm, atomnm, &pp) == 3)
         {
             pp *= factor;
             add_prop(ap, aps->restype, resnm, atomnm, pp, line_no);
@@ -281,7 +280,6 @@ static void set_prop(gmx_atomprop_t aps, int eprop)
 gmx_atomprop_t gmx_atomprop_init(void)
 {
     gmx_atomprop *aps;
-    int           p;
 
     snew(aps, 1);
 
@@ -350,7 +348,6 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
                             real *value)
 {
     gmx_atomprop *ap = (gmx_atomprop*) aps;
-    size_t        i;
     int           j;
 #define MAXQ 32
     char          atomname[MAXQ], resname[MAXQ];
@@ -367,8 +364,9 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
     }
     if (isdigit(atomnm[0]))
     {
+        int i;
         /* put digit after atomname */
-        for (i = 1; (i < min(MAXQ-1, strlen(atomnm))); i++)
+        for (i = 1; i < MAXQ-1 && atomnm[i] != '\0'; i++)
         {
             atomname[i-1] = atomnm[i];
         }
@@ -430,5 +428,5 @@ int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)
             return gmx_nint(ap->prop[epropElement].value[i]);
         }
     }
-    return NOTSET;
+    return -1;
 }
