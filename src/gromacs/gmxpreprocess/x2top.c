@@ -56,7 +56,6 @@
 #include "pdb2top.h"
 #include "gen_ad.h"
 #include "gpp_nextnb.h"
-#include "atomprop.h"
 #include "hackblock.h"
 #include "nm2type.h"
 

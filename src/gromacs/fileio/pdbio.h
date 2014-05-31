@@ -40,12 +40,13 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/atomprop.h"
+#include "../legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_atomprop;
 struct t_atoms;
 struct t_topology;
 
@@ -104,7 +105,7 @@ void write_pdbfile(FILE *out, const char *title, struct t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
 
-void get_pdb_atomnumber(struct t_atoms *atoms, gmx_atomprop_t aps);
+void get_pdb_atomnumber(struct t_atoms *atoms, struct gmx_atomprop *aps);
 /* Routine to extract atomic numbers from the atom names */
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,

@@ -51,7 +51,6 @@
 #include "typedefs.h"
 #include "gbutil.h"
 #include "gromacs/math/units.h"
-#include "atomprop.h"
 
 void copy_atom(t_symtab *tab,t_atoms *a1,int i1,t_atoms *a2,int i2,
 	       rvec xin[],rvec xout[],rvec vin[],rvec vout[])
