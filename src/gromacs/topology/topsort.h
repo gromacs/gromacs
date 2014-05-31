@@ -32,11 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _topsort_h
-#define _topsort_h
+#ifndef GMX_TOPOLOGY_TOPSORT_H
+#define GMX_TOPOLOGY_TOPSORT_H
 
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -66,7 +66,7 @@
 #include "constr.h"
 #include "mvdata.h"
 #include "checkpoint.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "sighandler.h"
 #include "txtdump.h"
 #include "gmx_detect_hardware.h"

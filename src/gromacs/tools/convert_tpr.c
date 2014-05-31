@@ -47,7 +47,7 @@
 #include "macros.h"
 #include "names.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"

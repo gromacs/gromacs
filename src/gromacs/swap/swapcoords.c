@@ -52,7 +52,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/mdlib/groupcoord.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "names.h"

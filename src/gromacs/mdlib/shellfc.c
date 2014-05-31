@@ -54,7 +54,7 @@
 #include "domdec.h"
 #include "gromacs/math/units.h"
 #include "shellfc.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "chargegroup.h"
 #include "macros.h"
 

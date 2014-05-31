@@ -51,7 +51,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/enxio.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 
 static void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)

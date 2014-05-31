@@ -49,7 +49,7 @@
 #include "network.h"
 #include "update.h"
 #include "rbin.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
 static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])

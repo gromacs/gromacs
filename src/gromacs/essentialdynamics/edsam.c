@@ -52,7 +52,7 @@
 #include "nrnb.h"
 #include "mdrun.h"
 #include "update.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"

@@ -34,10 +34,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_LEGACYHEADERS_MTOP_UTIL_H
-#define GMX_LEGACYHEADERS_MTOP_UTIL_H
+#ifndef GMX_TOPOLOGY_MTOP_UTIL_H
+#define GMX_TOPOLOGY_MTOP_UTIL_H
 
-#include "types/inputrec.h"
+#include "../legacyheaders/types/inputrec.h"
 #include "../utility/basedefinitions.h"
 
 #ifdef __cplusplus

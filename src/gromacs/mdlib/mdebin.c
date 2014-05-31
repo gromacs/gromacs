@@ -52,7 +52,7 @@
 #include "names.h"
 #include "orires.h"
 #include "constr.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "macros.h"

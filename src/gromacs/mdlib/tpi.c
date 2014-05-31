@@ -67,7 +67,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "mdatoms.h"
 #include "ns.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "pme.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 

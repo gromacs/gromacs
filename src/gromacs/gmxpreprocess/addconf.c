@@ -52,7 +52,7 @@
 #include "mdatoms.h"
 #include "nrnb.h"
 #include "ns.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "chargegroup.h"
 
 #include "gromacs/pbcutil/pbc.h"

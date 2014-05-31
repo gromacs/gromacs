@@ -67,7 +67,7 @@
 #include "gmx_ga2la.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/fileio/confio.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "names.h"
 #include "gromacs/timing/wallcycle.h"
 

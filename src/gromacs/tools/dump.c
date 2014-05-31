@@ -48,7 +48,7 @@
 #include "names.h"
 #include "txtdump.h"
 #include "checkpoint.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"

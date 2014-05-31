@@ -75,7 +75,7 @@
 #include "perf_est.h"
 #include "compute_io.h"
 #include "gpp_atomtype.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "genborn.h"
 #include "calc_verletbuf.h"
 #include "tomorse.h"

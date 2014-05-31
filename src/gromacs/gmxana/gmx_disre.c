@@ -59,7 +59,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "mdrun.h"
 #include "names.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ana.h"
 
 #include "gromacs/commandline/pargs.h"

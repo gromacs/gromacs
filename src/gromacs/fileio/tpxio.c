@@ -53,7 +53,7 @@
 #include "confio.h"
 #include "atomprop.h"
 #include "copyrite.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"

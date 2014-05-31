@@ -59,7 +59,7 @@
 #include "txtdump.h"
 #include "qmmm.h"
 #include "typedefs.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"

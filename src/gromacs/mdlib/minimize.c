@@ -61,7 +61,7 @@
 #include "domdec.h"
 #include "mdatoms.h"
 #include "ns.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "pme.h"
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"

@@ -53,7 +53,7 @@
 #include "index.h"
 #include "gromacs/utility/smalloc.h"
 #include "names.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"

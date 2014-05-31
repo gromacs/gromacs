@@ -53,7 +53,7 @@
 #include "tpxio.h"
 #include "trxio.h"
 #include "copyrite.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmxfio.h"
 
 #include "gromacs/fileio/trx.h"

@@ -41,7 +41,7 @@
 #include "typedefs.h"
 #include "mdrun.h"
 #include "domdec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "vcm.h"
 #include "nrnb.h"
 #include "macros.h"

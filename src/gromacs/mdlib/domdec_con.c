@@ -43,7 +43,7 @@
 #include "types/commrec.h"
 #include "domdec.h"
 #include "domdec_network.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ga2la.h"
 #include "gmx_hash.h"
 #include "gmx_omp_nthreads.h"

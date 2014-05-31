@@ -52,7 +52,7 @@
 #include "domdec.h"
 #include "gromacs/fileio/pdbio.h"
 #include "splitter.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "macros.h"
 #include "gmx_omp_nthreads.h"

@@ -58,7 +58,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "viewit.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ana.h"
 #include "mdebin.h"
 

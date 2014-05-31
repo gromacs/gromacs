@@ -51,7 +51,6 @@
 #include "domdec.h"
 #include "network.h"
 #include "gromacs/utility/fatalerror.h"
-#include "mtop_util.h"
 #include "genborn.h"
 
 #include "gromacs/utility/gmxmpi.h"

@@ -49,7 +49,7 @@
 #include "gstat.h"
 #include "txtdump.h"
 #include "eigio.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/math/units.h"
 #include "gmx_ana.h"
 

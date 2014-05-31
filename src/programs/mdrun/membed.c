@@ -47,7 +47,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "index.h"
 #include "names.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/utility/cstringutil.h"
 #include "membed.h"

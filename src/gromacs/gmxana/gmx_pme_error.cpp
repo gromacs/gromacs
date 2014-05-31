@@ -49,7 +49,7 @@
 #include "gromacs/math/units.h"
 #include "mdatoms.h"
 #include "coulomb.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "network.h"
 #include "main.h"
 #include "macros.h"

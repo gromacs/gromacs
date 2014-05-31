@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gen_maxwell_velocities.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 
 static void low_mspeed(real tempi,
                        gmx_mtop_t *mtop, rvec v[], gmx_rng_t rng)

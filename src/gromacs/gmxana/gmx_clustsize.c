@@ -57,7 +57,7 @@
 #include "pme.h"
 #include "gstat.h"
 #include "gromacs/fileio/matio.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_ana.h"
 
 #include "gromacs/utility/fatalerror.h"

@@ -44,7 +44,7 @@
 #include "mdatoms.h"
 #include "gromacs/utility/smalloc.h"
 #include "qmmm.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
 #define ALMOST_ZERO 1e-30

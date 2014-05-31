@@ -51,7 +51,7 @@
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/fileio/gmxfio.h"

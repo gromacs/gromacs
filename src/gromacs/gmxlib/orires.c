@@ -45,7 +45,7 @@
 #include "main.h"
 #include "copyrite.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"

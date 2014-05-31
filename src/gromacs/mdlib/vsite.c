@@ -48,7 +48,7 @@
 #include "gromacs/math/vec.h"
 #include "network.h"
 #include "domdec.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/pbcutil/ishift.h"

@@ -50,7 +50,7 @@
 #include "gromacs/math/units.h"
 #include "domdec.h"
 #include "network.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "nrnb.h"
 #include "bondf.h"
 

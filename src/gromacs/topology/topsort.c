@@ -34,15 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/topology/topsort.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "topsort.h"
-#include "gromacs/utility/smalloc.h"
+#include <stdio.h>
+
+#include "gromacs/legacyheaders/types/ifunc.h"
+
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static gmx_bool ip_pert(int ftype, const t_iparams *ip)
 {

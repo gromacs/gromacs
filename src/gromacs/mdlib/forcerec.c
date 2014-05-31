@@ -62,7 +62,7 @@
 #include "domdec.h"
 #include "qmmm.h"
 #include "copyrite.h"
-#include "mtop_util.h"
+#include "gromacs/topology/mtop_util.h"
 #include "nbnxn_simd.h"
 #include "nbnxn_search.h"
 #include "nbnxn_atomdata.h"
