@@ -58,7 +58,7 @@ int glatnr(int *global_atom_index, int i);
  * When global_atom_index=NULL returns i+1.
  */
 
-void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
+void calc_bonds(const gmx_multisim_t *ms,
                 const t_idef *idef,
                 rvec x[], history_t *hist,
                 rvec f[], t_forcerec *fr,
@@ -67,8 +67,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
                 const t_mdatoms *md,
                 t_fcdata *fcd, int *ddgatindex,
                 t_atomtypes *atype, gmx_genborn_t *born,
-                int force_flags,
-                gmx_bool bPrintSepPot, gmx_int64_t step);
+                int force_flags);
 /*
  * The function calc_bonds() calculates all bonded force interactions.
  * The "bonds" are specified as follows:
@@ -87,16 +86,11 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
  *     total potential energy split up over the function types.
  *   int *ddgatindex
  *     global atom number indices, should be NULL when not using DD.
- *   gmx_bool bPrintSepPot
- *     if TRUE print local potential and dVdlambda for each bonded type.
- *   int step
- *     used with bPrintSepPot
  *   return value:
  *	    the total potential energy (sum over epot).
  */
 
-void calc_bonds_lambda(FILE *fplog,
-                       const t_idef *idef,
+void calc_bonds_lambda(const t_idef *idef,
                        rvec x[],
                        t_forcerec *fr,
                        const struct t_pbc *pbc, const struct t_graph *g,

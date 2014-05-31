@@ -1565,10 +1565,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        state->veta);
                 }
 
-                if (fr->bSepDVDL && fplog && do_log)
-                {
-                    gmx_print_sepdvdl(fplog, "Constraint dV/dl", 0.0, dvdl_constr);
-                }
                 if (bVV)
                 {
                     /* this factor or 2 correction is necessary

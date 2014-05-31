@@ -463,7 +463,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     if (bEner || bPres || bConstrain)
     {
-        calc_dispcorr(fplog, ir, fr, 0, top_global->natoms, box, state->lambda[efptVDW],
+        calc_dispcorr(ir, fr, top_global->natoms, box, state->lambda[efptVDW],
                       corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
     }
 

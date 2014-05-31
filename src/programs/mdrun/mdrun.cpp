@@ -82,8 +82,7 @@ int gmx_mdrun(int argc, char *argv[])
         "The [TT]mdrun[tt] program reads the run input file ([TT]-s[tt])",
         "and distributes the topology over ranks if needed.",
         "[TT]mdrun[tt] produces at least four output files.",
-        "A single log file ([TT]-g[tt]) is written, unless the option",
-        "[TT]-seppot[tt] is used, in which case each rank writes a log file.",
+        "A single log file ([TT]-g[tt]) is written.",
         "The trajectory file ([TT]-o[tt]), contains coordinates, velocities and",
         "optionally forces.",
         "The structure file ([TT]-c[tt]) contains the coordinates and",
@@ -454,7 +453,6 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bTestVerlet   = FALSE;
     gmx_bool        bVerbose      = FALSE;
     gmx_bool        bCompact      = TRUE;
-    gmx_bool        bSepPot       = FALSE;
     gmx_bool        bRerunVSite   = FALSE;
     gmx_bool        bConfout      = TRUE;
     gmx_bool        bReproducible = FALSE;
@@ -564,8 +562,6 @@ int gmx_mdrun(int argc, char *argv[])
           "Be loud and noisy" },
         { "-compact", FALSE, etBOOL, {&bCompact},
           "Write a compact log file" },
-        { "-seppot",  FALSE, etBOOL, {&bSepPot},
-          "Write separate V and dVdl terms for each interaction type and rank to the log file(s)" },
         { "-pforce",  FALSE, etREAL, {&pforce},
           "Print all forces larger than this (kJ/mol nm)" },
         { "-reprod",  FALSE, etBOOL, {&bReproducible},
@@ -697,11 +693,6 @@ int gmx_mdrun(int argc, char *argv[])
     sim_part_fn = sim_part;
     if (opt2bSet("-cpi", NFILE, fnm))
     {
-        if (bSepPot && bAppendFiles)
-        {
-            gmx_fatal(FARGS, "Output file appending is not supported with -seppot");
-        }
-
         bAppendFiles =
             read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
                                                           fnm, cr),
@@ -756,7 +747,6 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
-    Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
     Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
@@ -776,18 +766,14 @@ int gmx_mdrun(int argc, char *argv[])
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
        there instead.  */
-    if ((MASTER(cr) || bSepPot) && !bAppendFiles)
+    if (MASTER(cr) && !bAppendFiles)
     {
         gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
-                     !bSepPot, Flags & MD_APPENDFILES, &fplog);
+                     Flags & MD_APPENDFILES, &fplog);
         please_cite(fplog, "Hess2008b");
         please_cite(fplog, "Spoel2005a");
         please_cite(fplog, "Lindahl2001a");
         please_cite(fplog, "Berendsen95a");
-    }
-    else if (!MASTER(cr) && bSepPot)
-    {
-        gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr, !bSepPot, Flags, &fplog);
     }
     else
     {

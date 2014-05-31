@@ -114,8 +114,8 @@ void finish_run(FILE *log, t_commrec *cr,
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
 
-void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
-                   gmx_int64_t step, int natoms,
+void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
+                   int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr);
 

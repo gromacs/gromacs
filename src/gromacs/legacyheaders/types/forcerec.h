@@ -293,7 +293,6 @@ typedef struct {
     real     sc_r_power;
     real     sc_sigma6_def;
     real     sc_sigma6_min;
-    gmx_bool bSepDVDL;
 
     /* NS Stuff */
     int  eeltype;

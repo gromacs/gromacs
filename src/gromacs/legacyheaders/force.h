@@ -55,8 +55,6 @@ extern "C" {
 struct t_graph;
 struct t_pbc;
 
-void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda);
-
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box);
 /* Calculate virial for nxf atoms, and add it to vir */
@@ -256,9 +254,7 @@ void ns(FILE              *fplog,
         gmx_bool           bDoLongRangeNS);
 /* Call the neighborsearcher */
 
-extern void do_force_lowlevel(FILE         *fplog,
-                              gmx_int64_t   step,
-                              t_forcerec   *fr,
+extern void do_force_lowlevel(t_forcerec   *fr,
                               t_inputrec   *ir,
                               t_idef       *idef,
                               t_commrec    *cr,
