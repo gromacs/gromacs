@@ -43,7 +43,6 @@
 
 #include <string>
 
-#include "gromacs/legacyheaders/atomprop.h"
 #include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -59,6 +58,7 @@
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"

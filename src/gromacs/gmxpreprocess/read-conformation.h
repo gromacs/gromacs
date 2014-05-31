@@ -36,12 +36,12 @@
 #define GMX_GMXPREPROCESS_READ_CONFORMATION_H
 
 #include "types/simple.h"
-#include "atomprop.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_atomprop;
 struct t_atoms;
 
 /*! \brief Allocate and fill an array of inter-atomic half distances
@@ -50,7 +50,7 @@ struct t_atoms;
  * default value. Used directly and indirectly by solvate and
  * insert-molecules for deciding whether molecules clash. The return
  * pointer should be freed by the caller. */
-real *makeExclusionDistances(const struct t_atoms *a, gmx_atomprop_t aps,
+real *makeExclusionDistances(const struct t_atoms *a, struct gmx_atomprop *aps,
                              real defaultDistance, real scaleFactor);
 
 /*! \brief Read a conformation from a file, allocate and fill data structures.
