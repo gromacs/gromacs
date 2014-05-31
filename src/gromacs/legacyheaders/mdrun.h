@@ -61,7 +61,6 @@ extern "C" {
 #define MD_POLARISE       (1<<2)
 #define MD_RERUN          (1<<4)
 #define MD_RERUN_VSITE    (1<<5)
-#define MD_SEPPOT         (1<<7)
 #define MD_DDBONDCHECK    (1<<10)
 #define MD_DDBONDCOMM     (1<<11)
 #define MD_CONFOUT        (1<<12)

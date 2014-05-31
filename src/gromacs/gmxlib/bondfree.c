@@ -4440,7 +4440,7 @@ static void reduce_thread_forces(int n, rvec *f, rvec *fshift,
     }
 }
 
-static real calc_one_bond(FILE *fplog, int thread,
+static real calc_one_bond(int thread,
                           int ftype, const t_idef *idef,
                           rvec x[], rvec f[], rvec fshift[],
                           t_forcerec *fr,
@@ -4450,7 +4450,7 @@ static real calc_one_bond(FILE *fplog, int thread,
                           real *lambda, real *dvdl,
                           const t_mdatoms *md, t_fcdata *fcd,
                           gmx_bool bCalcEnerVir,
-                          int *global_atom_index, gmx_bool bPrintSepPot)
+                          int *global_atom_index)
 {
     int      nat1, nbonds, efptFTYPE;
     real     v = 0;
@@ -4520,27 +4520,11 @@ static real calc_one_bond(FILE *fplog, int thread,
                                                   pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                                                   md, fcd, global_atom_index);
         }
-        if (bPrintSepPot)
-        {
-            fprintf(fplog, "  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-                    interaction_function[ftype].longname,
-                    nbonds, v, lambda[efptFTYPE]);
-        }
     }
     else
     {
         v = do_nonbonded_listed(ftype, nbn, iatoms+nb0, idef->iparams, (const rvec*)x, f, fshift,
                                 pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
-
-        if (bPrintSepPot)
-        {
-            fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-                    interaction_function[ftype].longname,
-                    interaction_function[F_LJ14].longname, nbonds, dvdl[efptVDW]);
-            fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-                    interaction_function[ftype].longname,
-                    interaction_function[F_COUL14].longname, nbonds, dvdl[efptCOUL]);
-        }
     }
 
     if (thread == 0)
@@ -4551,7 +4535,7 @@ static real calc_one_bond(FILE *fplog, int thread,
     return v;
 }
 
-void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
+void calc_bonds(const gmx_multisim_t *ms,
                 const t_idef *idef,
                 rvec x[], history_t *hist,
                 rvec f[], t_forcerec *fr,
@@ -4561,8 +4545,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
                 const t_mdatoms *md,
                 t_fcdata *fcd, int *global_atom_index,
                 t_atomtypes gmx_unused *atype, gmx_genborn_t gmx_unused *born,
-                int force_flags,
-                gmx_bool bPrintSepPot, gmx_int64_t step)
+                int force_flags)
 {
     gmx_bool      bCalcEnerVir;
     int           i;
@@ -4587,11 +4570,6 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
     else
     {
         pbc_null = NULL;
-    }
-    if (bPrintSepPot)
-    {
-        fprintf(fplog, "Step %s: bonded V and dVdl for this node\n",
-                gmx_step_str(step, buf));
     }
 
 #ifdef DEBUG
@@ -4658,11 +4636,11 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
         {
             if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
             {
-                v = calc_one_bond(fplog, thread, ftype, idef, x,
+                v = calc_one_bond(thread, ftype, idef, x,
                                   ft, fshift, fr, pbc_null, g, grpp,
                                   nrnb, lambda, dvdlt,
                                   md, fcd, bCalcEnerVir,
-                                  global_atom_index, bPrintSepPot);
+                                  global_atom_index);
                 epot[ftype] += v;
             }
         }
@@ -4692,8 +4670,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
     }
 }
 
-void calc_bonds_lambda(FILE *fplog,
-                       const t_idef *idef,
+void calc_bonds_lambda(const t_idef *idef,
                        rvec x[],
                        t_forcerec *fr,
                        const t_pbc *pbc, const t_graph *g,
@@ -4744,11 +4721,11 @@ void calc_bonds_lambda(FILE *fplog,
 
             if (nr - nr_nonperturbed > 0)
             {
-                v = calc_one_bond(fplog, 0, ftype, &idef_fe,
+                v = calc_one_bond(0, ftype, &idef_fe,
                                   x, f, fshift, fr, pbc_null, g,
                                   grpp, nrnb, lambda, dvdl_dum,
                                   md, fcd, TRUE,
-                                  global_atom_index, FALSE);
+                                  global_atom_index);
                 epot[ftype] += v;
             }
         }

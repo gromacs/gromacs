@@ -772,7 +772,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     }
 
     /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(fplog, inputrec, fr, count, top_global->natoms, ems->s.box, ems->s.lambda[efptVDW],
+    calc_dispcorr(inputrec, fr, top_global->natoms, ems->s.box, ems->s.lambda[efptVDW],
                   pres, force_vir, &prescorr, &enercorr, &dvdlcorr);
     enerd->term[F_DISPCORR] = enercorr;
     enerd->term[F_EPOT]    += enercorr;
@@ -791,10 +791,6 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                   ems->s.x, ems->f, ems->f, fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
                   NULL, &shake_vir, nrnb, econqForceDispl, FALSE, 0, 0);
-        if (fr->bSepDVDL && fplog)
-        {
-            gmx_print_sepdvdl(fplog, "Constraints", t, dvdl_constr);
-        }
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);

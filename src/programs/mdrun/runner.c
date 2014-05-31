@@ -1410,16 +1410,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
     }
 
-    if (((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
-#ifdef GMX_THREAD_MPI
-        /* With thread MPI only the master node/thread exists in mdrun.c,
-         * therefore non-master nodes need to open the "seppot" log file here.
-         */
-        || (!MASTER(cr) && (Flags & MD_SEPPOT))
-#endif
-        )
+    if (MASTER(cr) && (Flags & MD_APPENDFILES))
     {
-        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr, !(Flags & MD_SEPPOT),
+        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
                      Flags, &fplog);
     }
 
@@ -1586,7 +1579,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
            "nofile","nofile","nofile","nofile",FALSE,pforce);
          */
-        fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
 
         /* Initialize QM-MM */
         if (fr->bQMMM)

@@ -313,9 +313,7 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
     }
 }
 
-static void posres_wrapper(FILE *fplog,
-                           int flags,
-                           gmx_bool bSepDVDL,
+static void posres_wrapper(int flags,
                            t_inputrec *ir,
                            t_nrnb *nrnb,
                            gmx_localtop_t *top,
@@ -337,10 +335,6 @@ static void posres_wrapper(FILE *fplog,
                   ir->ePBC == epbcNONE ? NULL : &pbc,
                   lambda[efptRESTRAINT], &dvdl,
                   fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
-    if (bSepDVDL)
-    {
-        gmx_print_sepdvdl(fplog, interaction_function[F_POSRES].longname, v, dvdl);
-    }
     enerd->term[F_POSRES] += v;
     /* If just the force constant changes, the FEP term is linear,
      * but if k changes, it is not.
@@ -386,9 +380,7 @@ static void fbposres_wrapper(t_inputrec *ir,
     inc_nrnb(nrnb, eNR_FBPOSRES, top->idef.il[F_FBPOSRES].nr/2);
 }
 
-static void pull_potential_wrapper(FILE *fplog,
-                                   gmx_bool bSepDVDL,
-                                   t_commrec *cr,
+static void pull_potential_wrapper(t_commrec *cr,
                                    t_inputrec *ir,
                                    matrix box, rvec x[],
                                    rvec f[],
@@ -411,16 +403,10 @@ static void pull_potential_wrapper(FILE *fplog,
     enerd->term[F_COM_PULL] +=
         pull_potential(ir->ePull, ir->pull, mdatoms, &pbc,
                        cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
-    if (bSepDVDL)
-    {
-        gmx_print_sepdvdl(fplog, "Com pull", enerd->term[F_COM_PULL], dvdl);
-    }
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
 }
 
-static void pme_receive_force_ener(FILE           *fplog,
-                                   gmx_bool        bSepDVDL,
-                                   t_commrec      *cr,
+static void pme_receive_force_ener(t_commrec      *cr,
                                    gmx_wallcycle_t wcycle,
                                    gmx_enerdata_t *enerd,
                                    t_forcerec     *fr)
@@ -440,11 +426,6 @@ static void pme_receive_force_ener(FILE           *fplog,
     gmx_pme_receive_f(cr, fr->f_novirsum, fr->vir_el_recip, &e_q,
                       fr->vir_lj_recip, &e_lj, &dvdl_q, &dvdl_lj,
                       &cycles_seppme);
-    if (bSepDVDL)
-    {
-        gmx_print_sepdvdl(fplog, "Electrostatic PME mesh", e_q, dvdl_q);
-        gmx_print_sepdvdl(fplog, "Lennard-Jones PME mesh", e_lj, dvdl_lj);
-    }
     enerd->term[F_COUL_RECIP] += e_q;
     enerd->term[F_LJ_RECIP]   += e_lj;
     enerd->dvdl_lin[efptCOUL] += dvdl_q;
@@ -820,7 +801,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     int                 start, homenr;
     int                 nb_kernel_type;
     double              mu[2*DIM];
-    gmx_bool            bSepDVDL, bStateChanged, bNS, bFillGrid, bCalcCGCM, bBS;
+    gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM, bBS;
     gmx_bool            bDoLongRange, bDoForces, bSepLRF, bUseGPU, bUseOrEmulGPU;
     gmx_bool            bDiffKernels = FALSE;
     matrix              boxs;
@@ -836,8 +817,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     start  = 0;
     homenr = mdatoms->homenr;
-
-    bSepDVDL = (fr->bSepDVDL && do_per_step(step, inputrec->nstlog));
 
     clear_mat(vir_force);
 
@@ -1333,7 +1312,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
-        posres_wrapper(fplog, flags, bSepDVDL, inputrec, nrnb, top, box, x,
+        posres_wrapper(flags, inputrec, nrnb, top, box, x,
                        enerd, lambda, fr);
     }
 
@@ -1343,7 +1322,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
+    do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
                       x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
                       &(top->atomtypes), bBornRadii, box,
@@ -1527,7 +1506,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
     {
-        pull_potential_wrapper(fplog, bSepDVDL, cr, inputrec, box, x,
+        pull_potential_wrapper(cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t);
     }
 
@@ -1547,7 +1526,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(fplog, bSepDVDL, cr, wcycle, enerd, fr);
+        pme_receive_force_ener(cr, wcycle, enerd, fr);
     }
 
     if (bDoForces)
@@ -1580,7 +1559,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     int        cg0, cg1, i, j;
     int        start, homenr;
     double     mu[2*DIM];
-    gmx_bool   bSepDVDL, bStateChanged, bNS, bFillGrid, bCalcCGCM, bBS;
+    gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM, bBS;
     gmx_bool   bDoLongRangeNS, bDoForces, bDoPotential, bSepLRF;
     gmx_bool   bDoAdressWF;
     matrix     boxs;
@@ -1591,8 +1570,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     start  = 0;
     homenr = mdatoms->homenr;
-
-    bSepDVDL = (fr->bSepDVDL && do_per_step(step, inputrec->nstlog));
 
     clear_mat(vir_force);
 
@@ -1880,7 +1857,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
-        posres_wrapper(fplog, flags, bSepDVDL, inputrec, nrnb, top, box, x,
+        posres_wrapper(flags, inputrec, nrnb, top, box, x,
                        enerd, lambda, fr);
     }
 
@@ -1890,7 +1867,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
+    do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
                       x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
                       &(top->atomtypes), bBornRadii, box,
@@ -2001,7 +1978,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
     {
-        pull_potential_wrapper(fplog, bSepDVDL, cr, inputrec, box, x,
+        pull_potential_wrapper(cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t);
     }
 
@@ -2021,7 +1998,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(fplog, bSepDVDL, cr, wcycle, enerd, fr);
+        pme_receive_force_ener(cr, wcycle, enerd, fr);
     }
 
     if (bDoForces)
@@ -2399,8 +2376,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
     }
 }
 
-void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
-                   gmx_int64_t step, int natoms,
+void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
+                   int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
@@ -2501,10 +2478,6 @@ void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
             }
         }
 
-        if (fr->bSepDVDL && do_per_step(step, ir->nstlog))
-        {
-            gmx_print_sepdvdl(fplog, "Dispersion correction", *enercorr, dvdlambda);
-        }
         if (fr->efep != efepNO)
         {
             *dvdlcorr += dvdlambda;

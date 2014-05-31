@@ -220,62 +220,21 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
 }
 
 
-void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
+void gmx_log_open(const char *lognm, const t_commrec *cr,
                   gmx_bool bAppendFiles, FILE** fplog)
 {
-    int    len, pid;
-    char   buf[256], host[256];
+    int    pid;
+    char   host[256];
     time_t t;
     char   timebuf[STRLEN];
     FILE  *fp = *fplog;
-    char  *tmpnm;
 
     debug_gmx();
 
-    /* Communicate the filename for logfile */
-    if (cr->nnodes > 1 && !bMasterOnly
-#ifdef GMX_THREAD_MPI
-        /* With thread MPI the non-master log files are opened later
-         * when the files names are already known on all nodes.
-         */
-        && FALSE
-#endif
-        )
+    if (!bAppendFiles)
     {
-        if (MASTER(cr))
-        {
-            len = strlen(lognm) + 1;
-        }
-        gmx_bcast(sizeof(len), &len, cr);
-        if (!MASTER(cr))
-        {
-            snew(tmpnm, len+8);
-        }
-        else
-        {
-            tmpnm = gmx_strdup(lognm);
-        }
-        gmx_bcast(len*sizeof(*tmpnm), tmpnm, cr);
+        fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+" );
     }
-    else
-    {
-        tmpnm = gmx_strdup(lognm);
-    }
-
-    debug_gmx();
-
-    if (!bMasterOnly && !MASTER(cr))
-    {
-        /* Since log always ends with '.log' let's use this info */
-        par_fn(tmpnm, efLOG, cr, FALSE, !bMasterOnly, buf, 255);
-        fp = gmx_fio_fopen(buf, bAppendFiles ? "a+" : "w+" );
-    }
-    else if (!bAppendFiles)
-    {
-        fp = gmx_fio_fopen(tmpnm, bAppendFiles ? "a+" : "w+" );
-    }
-
-    sfree(tmpnm);
 
     gmx_fatal_set_log_file(fp);
 

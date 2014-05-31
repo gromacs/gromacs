@@ -1578,10 +1578,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
                 }
 
-                if (fr->bSepDVDL && fplog && do_log)
-                {
-                    gmx_print_sepdvdl(fplog, "Constraint dV/dl", 0.0, dvdl_constr);
-                }
                 if (bVV)
                 {
                     /* this factor or 2 correction is necessary
