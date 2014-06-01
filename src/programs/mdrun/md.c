@@ -1076,25 +1076,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
             else
             {
-                /* special scaling for Drudes before update of thermostat variables */
-                if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
-                {
-                    if (debug)
-                    {
-                        fprintf(debug, "MD: step = %d, applying Drude velocity scaling #1\n", (int)step);
-                    }
-                    /* TODO: temporarily commented to put it inside trotter_update() */
-                    /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
-                }
-
-                /* TODO: remove */
+                /* TODO: remove, just for debugging */
                 if (debug)
                 {
                     fprintf(debug, "MD: step = %d, calling trotter ettTSEQ1\n", (int)step);
                 }
 
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ1);
+                trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ1);
 
             }
 
@@ -1142,17 +1131,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                            !(first time), we start with the previous value
                            of veta.  */
 
-                        /* special scaling for Drudes before update of thermostat variables */
-                        if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
-                        {
-                            if (debug)
-                            {
-                                fprintf(debug, "MD: step = %d, applying Drude velocity scaling #2\n", (int)step);
-                            }
-                            /* TODO: testing within trotter_update() */
-                            /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
-                        }
-
                         /* TODO: remove */
                         if (debug)
                         {
@@ -1160,7 +1138,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         }
 
                         veta_save = state->veta;
-                        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ0);
+                        trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ0);
                         vetanew     = state->veta;
                         state->veta = veta_save;
                     }
@@ -1233,17 +1211,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     if (bTrotter)
                     {
-                        /* special scaling for Drudes before update of thermostat variables */
-                        if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
-                        {
-                            if (debug)
-                            {
-                                fprintf(debug, "MD: step = %d, applying Drude velocity scaling #3\n", (int)step);
-                            }
-                            /* TODO: moved inside trotter_update() */
-                            /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
-                        }
-
                         m_add(force_vir, shake_vir, total_vir); /* we need the un-dispersion corrected total vir here */
 
                         /* TODO: remove */
@@ -1251,7 +1218,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         {
                             fprintf(debug, "MD: step = %d, calling trotter ettTSEQ2\n", (int)step);
                         }
-                        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ2);
+                        trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ2);
 
                         if (debug)
                         {
@@ -1525,24 +1492,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         clear_mat(shake_vir);
                     }
 
-                    /* special scaling for Drudes before update of thermostat variables */
-                    if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "MD: step = %d, applying Drude velocity scaling #4\n", (int)step);
-                        }
-                        /* TODO: moved inside trotter_update() */
-                        /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
-                    }
-
                     /* TODO: remove */
                     if (debug)
                     {
                         fprintf(debug, "MD: step = %d, calling trotter ettTSEQ3\n", (int)step);
                     }
 
-                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ3);
+                    trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ3);
                     /* We can only do Berendsen coupling after we have summed
                      * the kinetic energy or virial. Since the happens
                      * in global_state after update, we should only do it at
@@ -1600,23 +1556,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     );
                     wallcycle_start(wcycle, ewcUPDATE);
 
-                    /* special scaling for Drudes before update of thermostat variables */
-                    if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "MD: step = %d, applying Drude velocity scaling #5\n", (int)step);
-                        }
-                        /* TODO: moved inside trotter_update() */
-                        /* drude_tstat_for_particles(ir, mdatoms, state, &MassQ, vcm, ekind); */
-                    }
-
                     /* TODO: remove */
                     if (debug)
                     {
                         fprintf(debug, "MD: step = %d, calling trotter ettTSEQ4\n", (int)step);
                     }
-                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
+                    trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ4);
 
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf, state->x, 0, state->natoms);

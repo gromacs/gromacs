@@ -291,8 +291,8 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
 
 /* CHARMM function RelativeTstat */
 /* Thermostat scaling velocities relative to the system COM */
-static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_vcm *vcm, gmx_bool bSwitch, 
-                           gmx_bool bComputeCM)
+static void relative_tstat(FILE *fplog, t_state *state, t_mdatoms *md, t_inputrec *ir, 
+                           t_vcm *vcm, t_nrnb *nrnb, gmx_bool bSwitch, gmx_bool bComputeCM)
 {
 
     if (debug)
@@ -354,20 +354,18 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_vcm 
             }
         }
 
-        /* if we are doing COM motion removal, initialize */
+        /* TODO: Testing! CHARMM manually sets VCM to zero, but GROMACS handles
+           this elsewhere, so start this routine by calculating VCM, instead */
         if (vcm->mode != ecmNO)
         {
-            /*
             if (debug)
             {
-                fprintf(debug, "REL TSTAT: initializing vcm to zero\n");
+                fprintf(debug, "REL TSTAT: stopping COM motion before scaling\n");
             }
-
-            for (g=0; g<vcm->nr; g++)
-            {
-                clear_rvec(vcm->group_v[g]);
-            }
-            */
+            /* calc_vcm_grp(0, md->homenr, md, state->x, state->v, vcm); */
+            check_cm_grp(fplog, vcm, ir, 1);
+            do_stopcm_grp(0, md->homenr, md->cVCM, state->x, state->v, vcm);
+            inc_nrnb(nrnb, eNR_STOPCM, md->homenr);
         }
 
         for (j = 0; j < md->homenr; j++)
@@ -440,6 +438,7 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_vcm 
                 vcm->group_v[g][m] /= vcm->group_mass[g];
             }
         }
+
     } /* end of bComputeCM */
 
     /* loop back over the particles and remove drift associated with the thermostat */
@@ -473,18 +472,25 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_vcm 
         clear_rvec(v);
     }
 
-    /*
     if (!bSwitch)
     {
         if (vcm->mode != ecmNO)
         {
-            for (g=0; g<vcm->nr+1; g++)
+            /* TODO: check this, stopping CM motion using only GROMACS routines */
+            check_cm_grp(fplog, vcm, ir, 1);
+            do_stopcm_grp(0, md->homenr, md->cVCM, state->x, state->v, vcm);
+            inc_nrnb(nrnb, eNR_STOPCM, md->homenr);
+
+            if (debug)
             {
-                clear_rvec(vcm->group_v[g]);
+                for (g=0; g<vcm->nr; g++)
+                {
+                    fprintf(debug, "REL TSTAT: !bSwitch vcm[%d] = %f %f %f\n", g, vcm->group_v[g][XX],
+                            vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
+                }
             }
         }
     }
-    */
 }
 
 /* CHARMM function KineticEFNH */
@@ -493,7 +499,8 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_vcm 
  * in the extended Lagrangian formalism, the thermostats are integrated based
  * on relative motion of atom-Drude pairs. Other functions take care of the
  * actual velocity scaling. */
-void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind, t_vcm *vcm)
+void nosehoover_KE(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind, t_vcm *vcm,
+                   t_nrnb *nrnb)
 {
 
     int             i, j, m;
@@ -510,18 +517,17 @@ void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t
     rvec            vi, vj, vcom;   /* velocities of Drude, atom, and their COM */
     rvec            vrel;           /* relative velocity of atom-Drude pair */
     t_grpopts      *opts;
-    /* t_grp_tcstat   *tcstat; */
 
     opts = &(ir->opts);
     ngtc = opts->ngtc;
 
     /* TODO: check to see if this should be here */ 
-/*    for (i=0; i<ngtc; i++)
+    for (i=0; i<ngtc; i++)
     {
         clear_mat(ekind->tcstat[i].ekinh);
     }
-*/
-    relative_tstat(state, md, ir, vcm, TRUE, TRUE);
+
+    relative_tstat(fplog, state, md, ir, vcm, nrnb, TRUE, TRUE);
 
     mv2 = 0;
     for (i=0; i<md->homenr; i++)
@@ -580,7 +586,7 @@ void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t
         }
     }
 
-    relative_tstat(state, md, ir, vcm, FALSE, FALSE);
+    relative_tstat(fplog, state, md, ir, vcm, nrnb, FALSE, FALSE);
 
 }
 
@@ -589,13 +595,15 @@ void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t
  * of atom-Drude pairs.  Scaling is done with respect to the COM of the pair and
  * along the bond between the two. 
  */
-void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_extmass *MassQ, t_vcm *vcm, 
-                               gmx_ekindata_t *ekind, double scalefac[])
+void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state, 
+                               t_extmass *MassQ, t_vcm *vcm, t_nrnb *nrnb, gmx_ekindata_t *ekind, 
+                               double scalefac[])
 {
 
-    int             i, j, n;
+    int             i, j, n, g;
     int             nc;                     /* time steps for thermostat */
     int             ti;                     /* thermostat index */
+    int             nh;                     /* NH chain lengths */
     atom_id         ia, ib;                 /* atom indices */
     real            dt;                     /* time step */
     double          dtsy;                   /* subdivided time step */
@@ -613,6 +621,8 @@ void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_
 
     opts = &(ir->opts);
 
+    nh = opts->nhchainlength;
+
     /* set subdivided time step */
     dtsy = (double)(ir->delta_t)/(double)nc;
 
@@ -626,29 +636,23 @@ void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies associated with thermostats */
-        nosehoover_KE(ir, md, state, ekind, vcm);
+        nosehoover_KE(fplog, ir, md, state, ekind, vcm, nrnb);
 
         /* scale relative to COM, subtracting COM velocity */
-        relative_tstat(state, md, ir, vcm, TRUE, TRUE);
+        relative_tstat(fplog, state, md, ir, vcm, nrnb, TRUE, TRUE);
 
         /* get forces and velocities on all thermostats */
-        /* NOTE: state->nosehoover_xi is NH positions, state->nosehoover_vxi is NH velocities */
+        /* propagate thermostat variables for subdivided time step */
+        NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
+                    state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
+
         for (i=0; i<opts->ngtc; i++)
         {
-            /* In CHARMM, we calculate the velocity and force acting on each NH
-             * thermostat on the fly, but this is already taken care of in NHC_trotter(),
-             * so at this point, the necessary information should already by in state */
-            /* copy_dvec(state->nosehoover_vxi[i], vxi);
-             * vxi2 = diprod(vxi, vxi);
-             * nhf[i] = 2*(vxi2/MassQ->Qinv[i]) - (opts->nrdf[i] * BOLTZ * opts->ref_t[i]);
-             * nhv[i] += (0.25 * dtsy) * (nhf[i] * MassQ->Qinv[i]);
-             * expfac[i] = exp((-1.0)*nhv[i] * (0.5)*dtsy);
-             */
-            expfac[i] = exp((-1.0)*state->nosehoover_vxi[i] * (0.5)*dtsy);
+            expfac[i] = exp((-1.0)*state->nosehoover_vxi[i*nh] * (0.5)*dtsy);
 
             if (debug)
             {
-                fprintf(debug, "SCALE DRUDE VEL: vxi[%d] = %f\n", i, state->nosehoover_vxi[i]);
+                fprintf(debug, "SCALE DRUDE VEL: ref_t[%d] = %f\n", i, opts->ref_t[i]);
                 fprintf(debug, "SCALE DRUDE VEL: expfac[%d] = %f\n", i, expfac[i]);
             }
         }
@@ -780,13 +784,33 @@ void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, t_
                 svmul(fac_ext, va, va);
                 copy_rvec(va, state->v[i]);
             }
-        }    
+        }
+
+        /* In GROMACS, there is not a separate "absolute" thermostat attached to COM
+         * motion, so here we will approximate the CHARMM damping method. */
+        fac_ext = exp(-1.0 * (0.5*dtsy));
+
+        if (debug)
+        {
+            fprintf(debug, "SCALE DRUDE VEL: fac_ext set to %f for scaling COM velocity.\n", fac_ext);
+        }
+
+        for (g=0; g<vcm->nr; g++)
+        {
+            svmul(fac_ext, vcm->group_v[g], vcm->group_v[g]);
+        }
 
         /* scale relative to COM, adding COM velocity */
-        relative_tstat(state, md, ir, vcm, FALSE, FALSE);
+        relative_tstat(fplog, state, md, ir, vcm, nrnb, FALSE, FALSE);
+
+        /* propagate thermostat positions */
+        for (i=0; i<opts->ngtc; i++)
+        {
+            state->nosehoover_xi[i] += 0.5*dtsy*state->nosehoover_vxi[i*nh];
+        }
 
         /* calculate new kinetic energies */
-        nosehoover_KE(ir, md, state, ekind, vcm);
+        nosehoover_KE(fplog, ir, md, state, ekind, vcm, nrnb);
 
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
@@ -1344,9 +1368,9 @@ void destroy_bufstate(t_state *state)
     sfree(state);
 }
 
-void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
+void trotter_update(FILE *fplog, t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state,
-                    tensor vir, t_mdatoms *md, t_vcm *vcm,
+                    tensor vir, t_mdatoms *md, t_vcm *vcm, t_nrnb *nrnb,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
 {
 
@@ -1446,7 +1470,7 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
             case etrtNHC2:
                 if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
                 {
-                   drude_tstat_for_particles(ir, md, state, MassQ, vcm, ekind, scalefac); 
+                   drude_tstat_for_particles(fplog, ir, md, state, MassQ, vcm, nrnb, ekind, scalefac); 
                 }
                 else
                 {
