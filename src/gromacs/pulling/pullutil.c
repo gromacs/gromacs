@@ -153,7 +153,7 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
     double        r0_2, sum_a, sum_ap, dr2, mass, weight, wmass, wwmass, inp;
     t_pull_coord *pcrd;
     t_pull_group *pref, *pgrp, *pdyna;
-    gmx_ga2la_t   ga2la = NULL;
+    gmx_ga2la_t  *ga2la = NULL;
 
     if (pull->dbuf_cyl == NULL)
     {

@@ -61,6 +61,7 @@
 #include "shellfc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gmx_ga2la.h"
+#include "domdec_ga2la.h"
 #include "macros.h"
 #include "nbnxn_search.h"
 #include "bondf.h"
@@ -4253,7 +4254,7 @@ static int compact_and_copy_vec_cg(int ncg, int *move,
 static int compact_ind(int ncg, int *move,
                        int *index_gl, int *cgindex,
                        int *gatindex,
-                       gmx_ga2la_t ga2la, char *bLocalCG,
+                       gmx_ga2la_t *ga2la, char *bLocalCG,
                        int *cginfo)
 {
     int cg, nat, a0, a1, a, a_gl;
@@ -4304,7 +4305,7 @@ static int compact_ind(int ncg, int *move,
 
 static void clear_and_mark_ind(int ncg, int *move,
                                int *index_gl, int *cgindex, int *gatindex,
-                               gmx_ga2la_t ga2la, char *bLocalCG,
+                               gmx_ga2la_t *ga2la, char *bLocalCG,
                                int *cell_index)
 {
     int cg, a0, a1, a;

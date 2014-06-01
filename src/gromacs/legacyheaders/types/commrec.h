@@ -39,6 +39,7 @@
 
 #include "../../utility/gmxmpi.h"
 #include "../typedefs.h"
+#include "gmx_ga2la.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,8 +84,6 @@ struct gmx_domdec_zones_t {
     /* The cg density of the home zone */
     real                   dens_zone0;
 };
-
-typedef struct gmx_ga2la *gmx_ga2la_t;
 
 typedef struct gmx_hash *gmx_hash_t;
 
@@ -209,7 +208,7 @@ struct gmx_domdec_t {
     int   gatindex_nalloc;
 
     /* Global atom number to local atom number list */
-    gmx_ga2la_t ga2la;
+    gmx_ga2la_t *ga2la;
 
     /* Communication stuff */
     gmx_domdec_comm_p_t comm;

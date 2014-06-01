@@ -3617,7 +3617,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
 
 extern void dd_make_local_rotation_groups(gmx_domdec_t *dd, t_rot *rot)
 {
-    gmx_ga2la_t     ga2la;
+    gmx_ga2la_t    *ga2la;
     int             g;
     t_rotgrp       *rotg;
     gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */

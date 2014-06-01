@@ -874,7 +874,7 @@ void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     do_constraint(pull, pbc, xp, v, pull->bVirial && MASTER(cr), vir, dt, t);
 }
 
-static void make_local_pull_group(gmx_ga2la_t ga2la,
+static void make_local_pull_group(gmx_ga2la_t *ga2la,
                                   t_pull_group *pg, int start, int end)
 {
     int i, ii;
@@ -914,8 +914,8 @@ static void make_local_pull_group(gmx_ga2la_t ga2la,
 
 void dd_make_local_pull_groups(gmx_domdec_t *dd, t_pull *pull, t_mdatoms *md)
 {
-    gmx_ga2la_t ga2la;
-    int         g;
+    gmx_ga2la_t *ga2la;
+    int          g;
 
     if (dd)
     {

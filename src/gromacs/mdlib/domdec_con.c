@@ -747,7 +747,7 @@ static int setup_specat_communication(gmx_domdec_t             *dd,
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      int ncon1, const t_iatom *ia1, const t_iatom *ia2,
                      const t_blocka *at2con,
-                     const gmx_ga2la_t ga2la, gmx_bool bHomeConnect,
+                     const gmx_ga2la_t *ga2la, gmx_bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
                      gmx_domdec_specat_comm_t *dcc,
                      t_ilist *il_local,
@@ -849,17 +849,17 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                              t_ilist *ils_local,
                              ind_req_t *ireq)
 {
-    gmx_ga2la_t           ga2la;
-    gmx_mtop_atomlookup_t alook;
-    int                   settle;
-    int                   nral, sa;
-    int                   cg, a, a_gl, a_glsa, a_gls[3], a_locs[3];
-    int                   mb, molnr, a_mol, offset;
-    const gmx_molblock_t *molb;
-    const t_iatom        *ia1;
-    gmx_bool              a_home[3];
-    int                   nlocal;
-    gmx_bool              bAssign;
+    gmx_ga2la_t           *ga2la;
+    gmx_mtop_atomlookup_t  alook;
+    int                    settle;
+    int                    nral, sa;
+    int                    cg, a, a_gl, a_glsa, a_gls[3], a_locs[3];
+    int                    mb, molnr, a_mol, offset;
+    const gmx_molblock_t  *molb;
+    const t_iatom         *ia1;
+    gmx_bool               a_home[3];
+    int                    nlocal;
+    gmx_bool               bAssign;
 
     ga2la  = dd->ga2la;
 
@@ -951,7 +951,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                                  ind_req_t *ireq)
 {
     const t_blocka           *at2con;
-    gmx_ga2la_t               ga2la;
+    gmx_ga2la_t              *ga2la;
     gmx_mtop_atomlookup_t     alook;
     int                       ncon1;
     gmx_molblock_t           *molb;

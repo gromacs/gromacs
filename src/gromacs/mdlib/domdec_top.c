@@ -48,6 +48,7 @@
 #include "chargegroup.h"
 #include "vsite.h"
 #include "gmx_ga2la.h"
+#include "domdec_ga2la.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"
 
@@ -888,7 +889,7 @@ static void add_fbposres(int mol, int a_mol, const gmx_molblock_t *molb,
     iatoms[0] = n;
 }
 
-static void add_vsite(gmx_ga2la_t ga2la, int *index, int *rtil,
+static void add_vsite(gmx_ga2la_t *ga2la, int *index, int *rtil,
                       int ftype, int nral,
                       gmx_bool bHomeA, int a, int a_gl, int a_mol,
                       t_iatom *iatoms,
@@ -1192,7 +1193,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
     t_iatom                      *iatoms, tiatoms[1+MAXATOMLIST];
     gmx_bool                      bBCheck, bUse, bLocal;
     ivec                          k_zero, k_plus;
-    gmx_ga2la_t                   ga2la;
+    gmx_ga2la_t                  *ga2la;
     int                           a_loc;
     int                           kz;
     int                           nizone;
@@ -1423,7 +1424,7 @@ static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     int             nizone, n, count, jla0, jla1, jla;
     int             cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
     const t_blocka *excls;
-    gmx_ga2la_t     ga2la;
+    gmx_ga2la_t    *ga2la;
     int             a_loc;
     int             cell;
 

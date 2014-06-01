@@ -35,11 +35,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* TODO This file should eventually form part of the interface to a
+/* TODO This file should eventually form part of the internals of a
    domain decomposition module */
 
-#ifndef GMX_LEGACYHEADERS_GA2LA_H
-#define GMX_LEGACYHEADERS_GA2LA_H
+#ifndef GMX_DOMDEC_GA2LA_H
+#define GMX_DOMDEC_GA2LA_H
+
+#include "gmx_ga2la.h"
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -47,16 +49,27 @@
 extern "C" {
 #endif
 
-typedef struct gmx_ga2la_t gmx_ga2la_t;
+/* Clear all the entries in the ga2la list */
+void ga2la_clear(gmx_ga2la_t *ga2la);
 
-/* Returns if the global atom a_gl is a home atom.
- * Sets the local atom.
- */
-gmx_bool ga2la_get_home(const gmx_ga2la_t *ga2la, int a_gl, int *a_loc);
+gmx_ga2la_t *ga2la_init(int nat_tot, int nat_loc);
 
-/* Returns if the global atom a_gl is a home atom.
+/* Set the ga2la entry for global atom a_gl to local atom a_loc and cell. */
+void ga2la_set(gmx_ga2la_t *ga2la, int a_gl, int a_loc, int cell);
+
+/* Delete the ga2la entry for global atom a_gl */
+void ga2la_del(gmx_ga2la_t *ga2la, int a_gl);
+
+/* Change the local atom for present ga2la entry for global atom a_gl */
+void ga2la_change_la(gmx_ga2la_t *ga2la, int a_gl, int a_loc);
+
+/* Returns if the global atom a_gl available locally.
+ * Sets the local atom and cell,
+ * cell can be larger than the number of zones,
+ * in which case it indicates that it is more than one cell away
+ * in zone cell - #zones.
  */
-gmx_bool ga2la_is_home(const gmx_ga2la_t *ga2la, int a_gl);
+gmx_bool ga2la_get(const gmx_ga2la_t *ga2la, int a_gl, int *a_loc, int *cell);
 
 #ifdef __cplusplus
 }

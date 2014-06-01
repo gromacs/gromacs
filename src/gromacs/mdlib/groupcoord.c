@@ -55,7 +55,7 @@
  * in communicate_group_positions()
  */
 extern void dd_make_local_group_indices(
-        gmx_ga2la_t    ga2la,
+        gmx_ga2la_t   *ga2la,
         const int      nr,         /* IN:  Total number of atoms in the group */
         int            anrs[],     /* IN:  Global atom numbers of the groups atoms */
         int           *nr_loc,     /* OUT: Number of group atoms found locally */
