@@ -44,7 +44,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gstat.h"
 #include "gromacs/utility/fatalerror.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 
 t_dlist *mk_dlist(FILE *log,
                   t_atoms *atoms, int *nlist,

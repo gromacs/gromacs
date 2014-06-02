@@ -47,7 +47,7 @@
 #include "viewit.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

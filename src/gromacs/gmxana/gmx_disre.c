@@ -53,7 +53,7 @@
 #include "gstat.h"
 #include "main.h"
 #include "gromacs/fileio/pdbio.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "mdatoms.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

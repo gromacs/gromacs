@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
-#include "index.h"
+#include "gromacs/topology/index.h"
 
 #ifdef __cplusplus
 extern "C" {

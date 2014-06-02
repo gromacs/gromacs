@@ -58,7 +58,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "txtdump.h"
 #include "eigio.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/cstringutil.h"
 
 typedef struct

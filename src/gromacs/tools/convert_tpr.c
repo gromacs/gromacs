@@ -43,7 +43,7 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "macros.h"
 #include "names.h"
 #include "gromacs/gmxpreprocess/readir.h"

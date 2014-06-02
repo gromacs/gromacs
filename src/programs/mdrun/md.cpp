@@ -46,7 +46,6 @@
 #include "mdebin.h"
 #include "nrnb.h"
 #include "calcmu.h"
-#include "index.h"
 #include "vsite.h"
 #include "update.h"
 #include "ns.h"

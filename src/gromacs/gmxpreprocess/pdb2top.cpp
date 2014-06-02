@@ -57,7 +57,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gen_ad.h"
 #include "gromacs/fileio/filenm.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gen_vsite.h"
 #include "add_par.h"
 #include "toputil.h"

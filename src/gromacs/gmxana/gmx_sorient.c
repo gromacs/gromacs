@@ -43,7 +43,7 @@
 #include "gromacs/math/vec.h"
 #include "viewit.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gmx_ana.h"

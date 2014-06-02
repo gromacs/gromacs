@@ -50,7 +50,7 @@
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
 #include "macros.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"

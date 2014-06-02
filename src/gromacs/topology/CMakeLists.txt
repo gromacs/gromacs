@@ -40,6 +40,7 @@ set(TOPOLOGY_PUBLIC_HEADERS
     atoms.h
     block.h
     idef.h
+    index.h
     mtop_util.h
     symtab.h
     topology.h)

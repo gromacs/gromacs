@@ -49,7 +49,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/smalloc.h"
 #include "nrnb.h"
 #include "gromacs/math/units.h"

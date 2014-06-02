@@ -46,7 +46,7 @@
 #include "txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "names.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
