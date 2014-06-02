@@ -358,15 +358,13 @@ static void relative_tstat(FILE *fplog, t_state *state, t_mdatoms *md, t_inputre
             }
         }
 
-        /* TODO: Testing! CHARMM manually sets VCM to zero, but GROMACS handles
-           this elsewhere, so start this routine by calculating VCM, instead */
+        /* Stop COM motion */
         if (vcm->mode != ecmNO)
         {
             if (debug)
             {
                 fprintf(debug, "REL TSTAT: stopping COM motion before scaling\n");
             }
-            /* calc_vcm_grp(0, md->homenr, md, state->x, state->v, vcm); */
             check_cm_grp(fplog, vcm, ir, 1);
             do_stopcm_grp(0, md->homenr, md->cVCM, state->x, state->v, vcm);
             inc_nrnb(nrnb, eNR_STOPCM, md->homenr);
@@ -410,18 +408,8 @@ static void relative_tstat(FILE *fplog, t_state *state, t_mdatoms *md, t_inputre
             {
                 vxi = &state->nosehoover_vxi[i*nh+j];
 
-                if (debug)
-                {
-                    fprintf(debug, "REL TSTAT: vxi[%d] b4 scale: %f %f %f\n", (i*nh+j), vxi[XX], vxi[YY], vxi[ZZ]);
-                }
-
                 /* scale velocity by mass, i.e. multiply by inverse mass */
                 dsvmul((1.0/grpmass[i]), vxi, vxi);
-
-                if (debug)
-                {
-                    fprintf(debug, "REL TSTAT: vxi[%d] after scale: %f %f %f\n", (i*nh+j), vxi[XX], vxi[YY], vxi[ZZ]);
-                }
 
                 /* TODO: check */
                 for (g=0; g<vcm->nr; g++)
@@ -480,7 +468,7 @@ static void relative_tstat(FILE *fplog, t_state *state, t_mdatoms *md, t_inputre
     {
         if (vcm->mode != ecmNO)
         {
-            /* TODO: check this, stopping CM motion using only GROMACS routines */
+            /* Stop COM motion using only GROMACS routines */
             check_cm_grp(fplog, vcm, ir, 1);
             do_stopcm_grp(0, md->homenr, md->cVCM, state->x, state->v, vcm);
             inc_nrnb(nrnb, eNR_STOPCM, md->homenr);
@@ -516,7 +504,7 @@ void nosehoover_KE(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state, g
     real            mrel;           /* relative mass */
     real            mv2;            /* running values of KE for each atom */
                                     /* NOTE that these are different from CHARMM, which tracks
-                                     * 2 x KE in "kin2" and "mv2" - here they are the actual KE */
+                                     * 2*KE in "kin2" and "mv2" - here they are the actual KE */
     rvec            va;             /* velocity of any atom */
     rvec            vi, vj, vcom;   /* velocities of Drude, atom, and their COM */
     rvec            vrel;           /* relative velocity of atom-Drude pair */
@@ -525,7 +513,6 @@ void nosehoover_KE(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state, g
     opts = &(ir->opts);
     ngtc = opts->ngtc;
 
-    /* TODO: check to see if this should be here */ 
     for (i=0; i<ngtc; i++)
     {
         clear_mat(ekind->tcstat[i].ekinh);
