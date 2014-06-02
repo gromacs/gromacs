@@ -51,7 +51,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/pbcutil/rmpbc.h"

@@ -56,7 +56,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "mdrun.h"
 #include "gromacs/random/random.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gmx_ana.h"
 
 static void insert_ion(int nsa, int *nwater,

@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/units.h"
 #include "gmx_ana.h"

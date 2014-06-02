@@ -49,7 +49,6 @@
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "macros.h"
-#include "index.h"
 #include "readinp.h"
 #include "readir.h"
 #include "mdatoms.h"

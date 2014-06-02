@@ -47,7 +47,7 @@
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "princ.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "txtdump.h"

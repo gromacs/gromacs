@@ -50,7 +50,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "index.h"
 #include "nrama.h"
 #include "gmx_ana.h"
 

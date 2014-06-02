@@ -49,7 +49,7 @@
 #include "macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/units.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "txtdump.h"

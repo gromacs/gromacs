@@ -50,7 +50,6 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "index.h"
 #include "gromacs/utility/smalloc.h"
 #include "txtdump.h"
 #include "typedefs.h"

@@ -46,7 +46,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "copyrite.h"
-#include "index.h"
 #include "gromacs/fileio/tpxio.h"
 
 int main(int argc,char *argv[])

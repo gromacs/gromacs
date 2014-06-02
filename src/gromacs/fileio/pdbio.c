@@ -45,7 +45,6 @@
 #include <string.h>
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/index.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/futil.h"
@@ -55,6 +54,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"

@@ -48,7 +48,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gstat.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/pdbio.h"
 
 void cat(FILE *out,char *fn,real t)

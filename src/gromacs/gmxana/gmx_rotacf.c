@@ -43,7 +43,7 @@
 
 #include "typedefs.h"
 #include "gromacs/utility/futil.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "macros.h"
 #include "gstat.h"
 #include "gromacs/math/vec.h"

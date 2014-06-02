@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/essentialdynamics/edsam.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "names.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/tpxio.h"

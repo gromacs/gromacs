@@ -47,7 +47,6 @@
 #include "gromacs/utility/futil.h"
 #include "gstat.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
 
 #include "gromacs/utility/fatalerror.h"
 
