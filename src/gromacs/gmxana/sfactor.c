@@ -44,7 +44,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/math/vec.h"
 #include "macros.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

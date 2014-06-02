@@ -45,9 +45,8 @@
 #include "macros.h"
 #include "gromacs/fileio/confio.h"
 #include "typedefs.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/block.h"

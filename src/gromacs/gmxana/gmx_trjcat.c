@@ -56,7 +56,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "names.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"

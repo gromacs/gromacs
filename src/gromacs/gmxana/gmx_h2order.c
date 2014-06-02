@@ -51,7 +51,7 @@
 #include "viewit.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 

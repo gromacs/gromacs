@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/topology/index.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -43,15 +45,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "names.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "index.h"
-#include "txtdump.h"
+#include <algorithm>
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -182,8 +184,6 @@ static void
 p_status(const char **restype, int nres, const char **typenames, int ntypes)
 {
     int   i, j;
-    int   found;
-
     int * counter;
 
     snew(counter, ntypes);
@@ -193,7 +193,6 @@ p_status(const char **restype, int nres, const char **typenames, int ntypes)
     }
     for (i = 0; i < nres; i++)
     {
-        found = 0;
         for (j = 0; j < ntypes; j++)
         {
             if (!gmx_strcasecmp(restype[i], typenames[j]))
@@ -215,7 +214,7 @@ p_status(const char **restype, int nres, const char **typenames, int ntypes)
 }
 
 
-atom_id *
+static atom_id *
 mk_aid(t_atoms *atoms, const char ** restype, const char * typestring, int *nra, gmx_bool bMatch)
 /* Make an array of atom_ids for all atoms with residuetypes matching typestring, or the opposite if bMatch is false */
 {
@@ -422,7 +421,7 @@ static void analyse_prot(const char ** restype, t_atoms *atoms,
 
     int         n, j;
     atom_id    *aid;
-    int         nra, nnpres, npres;
+    int         nra, npres;
     gmx_bool    match;
     char        ndx_name[STRLEN], *atnm;
     int         i;
@@ -580,7 +579,6 @@ static void analyse_prot(const char ** restype, t_atoms *atoms,
             if (nra > 0)
             {
                 add_grp(gb, gn, nra, aid, "SwapSC-CO");
-                nra = 0;
             }
         }
     }
@@ -612,7 +610,6 @@ gmx_residuetype_get_type(gmx_residuetype_t rt, const char * resname, const char 
 int
 gmx_residuetype_add(gmx_residuetype_t rt, const char *newresname, const char *newrestype)
 {
-    int           i;
     int           found;
     const char *  p_oldtype;
 
@@ -643,8 +640,6 @@ gmx_residuetype_init(gmx_residuetype_t *prt)
     FILE                 *  db;
     char                    line[STRLEN];
     char                    resname[STRLEN], restype[STRLEN], dum[STRLEN];
-    char                 *  p;
-    int                     i;
     struct gmx_residuetype *rt;
 
     snew(rt, 1);
@@ -699,24 +694,21 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
                              const char ***       p_typenames,
                              int *                ntypes)
 {
-    int            i, j, n;
-    int            found;
+    int            i, n;
     const char **  my_typename;
-    char       *   p;
 
-    n = 0;
-
+    n           = 0;
     my_typename = NULL;
     for (i = 0; i < rt->n; i++)
     {
-        p     = rt->restype[i];
-        found = 0;
-        for (j = 0; j < n && !found; j++)
+        const char *const p      = rt->restype[i];
+        bool              bFound = false;
+        for (int j = 0; j < n && !bFound; j++)
         {
-            found = !gmx_strcasecmp(p, my_typename[j]);
+            assert(my_typename != NULL);
+            bFound = !gmx_strcasecmp(p, my_typename[j]);
         }
-
-        if (!found)
+        if (!bFound)
         {
             srenew(my_typename, n+1);
             my_typename[n] = p;
@@ -835,9 +827,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
     const char    **  restype;
     int               nra;
     int               i, k;
-    size_t            j;
     int               ntypes;
-    char           *  p;
     const char     ** p_typename;
     int               iwater, iion;
     int               nwater, nion;
@@ -874,6 +864,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
         found = 0;
         for (k = 0; k < ntypes && !found; k++)
         {
+            assert(p_typename != NULL);
             found = !strcmp(restype[i], p_typename[k]);
         }
         if (!found)
@@ -1008,7 +999,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
     FILE      *in;
     t_blocka  *b;
     int        a, maxentries;
-    int        i, j, ng, nread;
+    int        i, j, ng;
     char       line[STRLEN], *pt, str[STRLEN];
 
     in = gmx_fio_fopen(gfile, "r");
@@ -1071,7 +1062,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
         snew(b->a, b->nra);
         for (i = 0; (i < b->nr); i++)
         {
-            nread         = fscanf(in, "%s%d", str, &ng);
+            fscanf(in, "%s%d", str, &ng);
             (*grpname)[i] = strdup(str);
             b->index[i+1] = b->index[i]+ng;
             if (b->index[i+1] > b->nra)
@@ -1080,7 +1071,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
             }
             for (j = 0; (j < ng); j++)
             {
-                nread               = fscanf(in, "%d", &a);
+                fscanf(in, "%d", &a);
                 b->a[b->index[i]+j] = a;
             }
         }
@@ -1329,7 +1320,7 @@ t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx)
     c->maxframe  = -1;
     for (i = 0; (i < c->clust->nra); i++)
     {
-        c->maxframe = max(c->maxframe, c->clust->a[i]);
+        c->maxframe = std::max(c->maxframe, c->clust->a[i]);
     }
     fprintf(fplog ? fplog : stdout,
             "There are %d clusters containing %d structures, highest framenr is %d\n",

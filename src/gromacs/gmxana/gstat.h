@@ -38,9 +38,9 @@
 #define GMX_GMXANA_GSTAT_H
 
 #include "../legacyheaders/typedefs.h"
-#include "../commandline/pargs.h"
 #include "../legacyheaders/oenv.h"
-#include "../legacyheaders/index.h"
+#include "../commandline/pargs.h"
+#include "../topology/index.h"
 
 #ifdef __cplusplus
 extern "C" {

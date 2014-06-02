@@ -48,7 +48,7 @@
 #include "gromacs/utility/futil.h"
 #include "macros.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gmx_ana.h"

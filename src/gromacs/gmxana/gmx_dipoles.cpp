@@ -50,7 +50,7 @@
 #include "txtdump.h"
 #include "gromacs/statistics/statistics.h"
 #include "gstat.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/random/random.h"
 #include "names.h"
 #include "gromacs/math/units.h"

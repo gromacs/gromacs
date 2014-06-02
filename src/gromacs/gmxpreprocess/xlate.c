@@ -42,7 +42,7 @@
 #include <string.h>
 
 #include "typedefs.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "fflibutil.h"
 #include "hackblock.h"
 #include "xlate.h"

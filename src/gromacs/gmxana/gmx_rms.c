@@ -48,7 +48,7 @@
 #include "copyrite.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "princ.h"

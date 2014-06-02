@@ -51,7 +51,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/math/vec.h"
 #include "macros.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/random/random.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"

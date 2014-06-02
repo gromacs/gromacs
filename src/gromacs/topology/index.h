@@ -34,13 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _index_h
-#define _index_h
+#ifndef GMX_TOPOLOGY_INDEX_H
+#define GMX_TOPOLOGY_INDEX_H
 
 #include <stdio.h>
 
-#include "types/simple.h"
+#include "../legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,13 +95,7 @@ typedef struct {
 
 t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx);
 
-typedef struct {
-    int    n;
-    char **name;
-} t_names;
-
-typedef struct gmx_residuetype *
-    gmx_residuetype_t;
+typedef struct gmx_residuetype *gmx_residuetype_t;
 
 int
 gmx_residuetype_init(gmx_residuetype_t *rt);
@@ -163,4 +156,4 @@ int find_group(char s[], int ngrps, char **grpname);
 }
 #endif
 
-#endif  /* _index_h */
+#endif

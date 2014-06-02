@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "hxprops.h"
 #include "gromacs/utility/smalloc.h"
 #include "bondf.h"

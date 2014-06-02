@@ -62,7 +62,7 @@
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "genhydro.h"
 #include "readinp.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "fflibutil.h"
 #include "macros.h"
 
@@ -70,6 +70,7 @@
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"

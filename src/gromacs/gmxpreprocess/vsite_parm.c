@@ -50,7 +50,6 @@
 #include "gromacs/math/vec.h"
 #include "toputil.h"
 #include "gromacs/math/units.h"
-#include "index.h"
 #include "names.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/cstringutil.h"
