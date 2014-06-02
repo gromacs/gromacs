@@ -47,7 +47,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/xvgr.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "viewit.h"

@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "gromacs/fileio/pdbio.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gstat.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"

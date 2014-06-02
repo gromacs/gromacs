@@ -62,7 +62,6 @@
 #include "gromacs/gmxpreprocess/sortwater.h"
 #include "convparm.h"
 #include "warninp.h"
-#include "index.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/tpxio.h"

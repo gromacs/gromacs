@@ -41,7 +41,7 @@
 #include "macros.h"
 #include "gromacs/fileio/confio.h"
 #include "viewit.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gmx_ana.h"
 #include "gromacs/fileio/trxio.h"
 

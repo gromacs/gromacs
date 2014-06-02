@@ -45,7 +45,7 @@
 #include "gromacs/fileio/confio.h"
 #include "macros.h"
 #include "gromacs/fileio/strdb.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "typedefs.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/math/units.h"

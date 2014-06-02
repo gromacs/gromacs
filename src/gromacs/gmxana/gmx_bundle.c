@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/tpxio.h"

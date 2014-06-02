@@ -37,7 +37,6 @@
 #ifndef _sfactor_h
 #define _sfactor_h
 
-#include "index.h"
 #include "types/simple.h"
 #include "../math/gmxcomplex.h"
 #include "oenv.h"

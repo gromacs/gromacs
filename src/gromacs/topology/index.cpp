@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/topology/index.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -43,15 +45,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "names.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "index.h"
-#include "txtdump.h"
+#include <algorithm>
+
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -215,7 +217,7 @@ p_status(const char **restype, int nres, const char **typenames, int ntypes)
 }
 
 
-atom_id *
+static atom_id *
 mk_aid(t_atoms *atoms, const char ** restype, const char * typestring, int *nra, gmx_bool bMatch)
 /* Make an array of atom_ids for all atoms with residuetypes matching typestring, or the opposite if bMatch is false */
 {
@@ -422,7 +424,7 @@ static void analyse_prot(const char ** restype, t_atoms *atoms,
 
     int         n, j;
     atom_id    *aid;
-    int         nra, nnpres, npres;
+    int         nra, npres;
     gmx_bool    match;
     char        ndx_name[STRLEN], *atnm;
     int         i;
@@ -612,7 +614,6 @@ gmx_residuetype_get_type(gmx_residuetype_t rt, const char * resname, const char 
 int
 gmx_residuetype_add(gmx_residuetype_t rt, const char *newresname, const char *newrestype)
 {
-    int           i;
     int           found;
     const char *  p_oldtype;
 
@@ -643,8 +644,6 @@ gmx_residuetype_init(gmx_residuetype_t *prt)
     FILE                 *  db;
     char                    line[STRLEN];
     char                    resname[STRLEN], restype[STRLEN], dum[STRLEN];
-    char                 *  p;
-    int                     i;
     struct gmx_residuetype *rt;
 
     snew(rt, 1);
@@ -835,9 +834,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
     const char    **  restype;
     int               nra;
     int               i, k;
-    size_t            j;
     int               ntypes;
-    char           *  p;
     const char     ** p_typename;
     int               iwater, iion;
     int               nwater, nion;
@@ -1329,7 +1326,7 @@ t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx)
     c->maxframe  = -1;
     for (i = 0; (i < c->clust->nra); i++)
     {
-        c->maxframe = max(c->maxframe, c->clust->a[i]);
+        c->maxframe = std::max(c->maxframe, c->clust->a[i]);
     }
     fprintf(fplog ? fplog : stdout,
             "There are %d clusters containing %d structures, highest framenr is %d\n",

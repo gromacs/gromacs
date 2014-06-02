@@ -48,7 +48,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/futil.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "typedefs.h"
 #include "gromacs/fileio/xvgr.h"
 #include "viewit.h"

@@ -98,6 +98,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=unnecessaryForwardDeclaration
         --suppress=invalidscanf:src/gromacs/fileio/matio.cpp
         --suppress=invalidscanf:src/gromacs/fileio/xvgr.cpp
+        --suppress=invalidscanf:src/gromacs/topology/index.cpp
         --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp)
 
     # This list will hold the list of all files with cppcheck errors

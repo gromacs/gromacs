@@ -49,7 +49,7 @@
 #include "gromacs/math/vec.h"
 #include "toputil.h"
 #include "gromacs/math/units.h"
-#include "index.h"
+#include "gromacs/topology/index.h"
 #include "names.h"
 #include "gromacs/utility/futil.h"
 #include "gpp_atomtype.h"
