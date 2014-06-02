@@ -88,7 +88,8 @@ static const double* sy_const[] = {
 
 /* these integration routines are only referenced inside this file */
 static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real dtfull,
-                        double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
+                        double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel,
+                        gmx_bool bUpdateXi)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
@@ -215,9 +216,12 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                 GQ[0] = iQinv[0]*(Ekin - nd*kT);
 
                 /* update thermostat positions */
-                for (j = 0; j < nh; j++)
+                if (bUpdateXi)
                 {
-                    ixi[j] += 0.5*dt*ivxi[j];
+                    for (j = 0; j < nh; j++)
+                    {
+                        ixi[j] += 0.5*dt*ivxi[j];
+                    }
                 }
 
                 for (j = 0; j < nh-1; j++)
@@ -609,6 +613,7 @@ void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_sta
     double          dtsy;                   /* subdivided time step */
     double         *expfac;                 /* array of factors for (size: ngtc) */
     double          fac_int, fac_ext;       /* internal and external scaling factors */
+    double         *ixi, *ivxi;             /* thermostat positions and velocities*/
     real            ma, mb, mtot, invmtot;  /* stuff related to masses */
     rvec            va, vb;                 /* velocities of atoms */
     rvec            vcom, vtot;             /* center-of-mass and total velocity of Drude-atom pair */
@@ -644,7 +649,7 @@ void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_sta
         /* get forces and velocities on all thermostats */
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
-                    state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
+                    state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), FALSE);
 
         for (i=0; i<opts->ngtc; i++)
         {
@@ -803,10 +808,15 @@ void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_sta
         /* scale relative to COM, adding COM velocity */
         relative_tstat(fplog, state, md, ir, vcm, nrnb, FALSE, FALSE);
 
-        /* propagate thermostat positions */
+        /* Thermostat positions are only updated here, NOT within NHC_trotter */
         for (i=0; i<opts->ngtc; i++)
         {
-            state->nosehoover_xi[i] += 0.5*dtsy*state->nosehoover_vxi[i*nh];
+            ixi = &state->nosehoover_xi[i*nh];
+            ivxi = &state->nosehoover_vxi[i*nh];
+            for (j=0; j<nh; j++)
+            {
+                ixi[j] += 0.5*dtsy*ivxi[j];
+            }
         }
 
         /* calculate new kinetic energies */
@@ -814,7 +824,7 @@ void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_sta
 
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
-                    state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
+                    state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), FALSE);
     } /* end for-loop over thermostat subdivided time steps */
 }
 
@@ -1464,7 +1474,7 @@ void trotter_update(FILE *fplog, t_inputrec *ir, gmx_int64_t step, gmx_ekindata_
                     fprintf(debug, "TROTTER: calling NHC_trotter for barostat\n");
                 }
                 NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
-                            state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE);
+                            state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE, TRUE);
                 break;
             case etrtNHC:
             case etrtNHC2:
@@ -1480,7 +1490,7 @@ void trotter_update(FILE *fplog, t_inputrec *ir, gmx_int64_t step, gmx_ekindata_
                         fprintf(debug, "TROTTER: there are %d tc-grps\n", opts->ngtc);
                     }
                     NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
-                                state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
+                                state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), TRUE);
                 }
                 /* need to rescale the kinetic energies and velocities here.  Could
                    scale the velocities later, but we need them scaled in order to
