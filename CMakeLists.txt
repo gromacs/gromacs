@@ -218,6 +218,8 @@ gmx_detect_target_architecture()
 if(GMX_CPU_ACCELERATION)
     # Stay compatible with old Jenkins command line options for specific SIMD acceleration
     set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
+    message("You set GMX_CPU_ACCELERATION, which is deprecated, and will be removed in a later version of GROMACS. It is replaced by GMX_SIMD. For now, copying the value from GMX_CPU_ACCELERATION to GMX_SIMD.")
+    # TODO remove all references to GMX_CPU_ACCELERATION in master branch
 endif()
 
 if(NOT GMX_TARGET_MIC)
@@ -592,7 +594,7 @@ gmx_set_build_information()
 # Note: it's better to not use the later set value of GMX_SIMD because
 # it reflects the system's capability of both compiling and running AVX code.
 # TODO: After merge with 5.0 one could implement a cache variable dependency
-# such that GMX_USE_RDTSCP can change if GMX_CPU_ACCELERATION is changed to AVX
+# such that GMX_USE_RDTSCP can change if GMX_SIMD is changed to AVX
 # after the first cmake pass.
 if (BUILD_CPU_FEATURES MATCHES "rdtscp" OR GMX_SIMD MATCHES "AVX")
     set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
