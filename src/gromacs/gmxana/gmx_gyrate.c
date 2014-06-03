@@ -237,7 +237,7 @@ int gmx_gyrate(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -284,17 +284,17 @@ int gmx_gyrate(int argc, char *argv[])
     if (bQ)
     {
         out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Radius of Charge", "Time (ps)", "Rg (nm)", oenv);
+                       "Radius of Charge", output_env_get_xvgr_tlabel(oenv), "Rg (nm)", oenv);
     }
     else if (bMOI)
     {
         out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Moments of inertia", "Time (ps)", "I (a.m.u. nm\\S2\\N)", oenv);
+                       "Moments of inertia", output_env_get_xvgr_tlabel(oenv), "I (a.m.u. nm\\S2\\N)", oenv);
     }
     else
     {
         out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Radius of gyration", "Time (ps)", "Rg (nm)", oenv);
+                       "Radius of gyration", output_env_get_xvgr_tlabel(oenv), "Rg (nm)", oenv);
     }
     if (bMOI)
     {
@@ -363,12 +363,12 @@ int gmx_gyrate(int argc, char *argv[])
                     copy_rvec(trans[m], moi_trans[m]+DIM*j);
                 }
                 fprintf(out, "%10g  %10g  %10g  %10g  %10g\n",
-                        t, gyro, d[XX], d[YY], d[ZZ]);
+                        t*output_env_get_time_factor(oenv), gyro, d[XX], d[YY], d[ZZ]);
             }
             else
             {
                 fprintf(out, "%10g  %10g  %10g  %10g  %10g\n",
-                        t, gyro, gvec[XX], gvec[YY], gvec[ZZ]);
+                        t*output_env_get_time_factor(oenv), gyro, gvec[XX], gvec[YY], gvec[ZZ]);
             }
         }
         j++;

@@ -90,7 +90,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 
     if (fn_trans)
     {
-        fp = xvgropen(fn_trans, "Transverse Current", "Time (ps)", "TC (nm/ps)",
+        fp = xvgropen(fn_trans, "Transverse Current", output_env_get_xvgr_tlabel(oenv), "TC (nm/ps)",
                       oenv);
         for (i = 0; i < nframes; i++)
         {
@@ -135,11 +135,11 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
     do_view(oenv, fn_tca, "-nxy");
 
     fp = xvgropen(fn_tc, "Transverse Current Autocorrelation Functions",
-                  "Time (ps)", "TCAF", oenv);
+                  output_env_get_xvgr_tlabel(oenv), "TCAF", oenv);
     for (i = 0; i < ncorr; i++)
     {
         kc = 0;
-        fprintf(fp, "%g", i*dt);
+        fprintf(fp, "%g", i*dt*output_env_get_time_factor(oenv));
         for (k = 0; k < nk; k++)
         {
             for (j = 0; j < NPK; j++)
@@ -174,14 +174,14 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 
     if (fn_cub)
     {
-        fp_cub = xvgropen(fn_cub, "TCAFs and fits", "Time (ps)", "TCAF", oenv);
+        fp_cub = xvgropen(fn_cub, "TCAFs and fits", output_env_get_xvgr_tlabel(oenv), "TCAF", oenv);
         for (kc = 0; kc < nkc; kc++)
         {
             fprintf(fp_cub, "%g %g\n", 0.0, 1.0);
             for (i = 1; i < ncorr; i++)
             {
                 tcafc[kc][i] /= tcafc[kc][0];
-                fprintf(fp_cub, "%g %g\n", i*dt, tcafc[kc][i]);
+                fprintf(fp_cub, "%g %g\n", i*dt*output_env_get_time_factor(oenv), tcafc[kc][i]);
             }
             fprintf(fp_cub, "&\n");
             tcafc[kc][0] = 1.0;
@@ -198,7 +198,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         fprintf(fp_vk, "@    s1 symbol 3\n");
         fprintf(fp_vk, "@    s1 symbol color 2\n");
     }
-    fp = xvgropen(fn_tcf, "TCAF Fits", "Time (ps)", "", oenv);
+    fp = xvgropen(fn_tcf, "TCAF Fits", output_env_get_xvgr_tlabel(oenv), "", oenv);
     for (k = 0; k < nk; k++)
     {
         tcaf[k][0]   = 1.0;
@@ -213,7 +213,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         fprintf(fp_vk, "%6.3f %g\n", norm(kfac[k]), eta);
         for (i = 0; i < ncorr; i++)
         {
-            fprintf(fp, "%g %g\n", i*dt, fit_function(effnVAC, fitparms, i*dt));
+            fprintf(fp, "%g %g\n", i*dt*output_env_get_time_factor(oenv), fit_function(effnVAC, fitparms, i*dt));
         }
         fprintf(fp, "&\n");
     }
@@ -239,7 +239,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             fprintf(fp_vk, "%6.3f %g\n", norm(kfac[kset_c[k]]), eta);
             for (i = 0; i < ncorr; i++)
             {
-                fprintf(fp_cub, "%g %g\n", i*dt, fit_function(effnVAC, fitparms, i*dt));
+                fprintf(fp_cub, "%g %g\n", i*dt*output_env_get_time_factor(oenv), fit_function(effnVAC, fitparms, i*dt));
             }
             fprintf(fp_cub, "&\n");
         }
@@ -336,7 +336,7 @@ int gmx_tcaf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

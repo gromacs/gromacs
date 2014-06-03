@@ -319,7 +319,7 @@ int gmx_dos(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, npargs, ppa, asize(desc), desc,
                            asize(bugs), bugs, &oenv))
     {
@@ -432,19 +432,19 @@ int gmx_dos(int argc, char *argv[])
         }
     }
     fp = xvgropen(opt2fn("-vacf", NFILE, fnm), "Velocity ACF",
-                  "Time (ps)", "C(t)", oenv);
+                  output_env_get_xvgr_tlabel(oenv), "C(t)", oenv);
     snew(tt, nframes/2);
     for (j = 0; (j < nframes/2); j++)
     {
         tt[j] = j*dt;
-        fprintf(fp, "%10g  %10g\n", tt[j], dos[VACF][j]);
+        fprintf(fp, "%10g  %10g\n", tt[j]*output_env_get_time_factor(oenv), dos[VACF][j]);
     }
     xvgrclose(fp);
     fp = xvgropen(opt2fn("-mvacf", NFILE, fnm), "Mass-weighted velocity ACF",
-                  "Time (ps)", "C(t)", oenv);
+                  output_env_get_xvgr_tlabel(oenv), "C(t)", oenv);
     for (j = 0; (j < nframes/2); j++)
     {
-        fprintf(fp, "%10g  %10g\n", tt[j], dos[MVACF][j]);
+        fprintf(fp, "%10g  %10g\n", tt[j]*output_env_get_time_factor(oenv), dos[MVACF][j]);
     }
     xvgrclose(fp);
 

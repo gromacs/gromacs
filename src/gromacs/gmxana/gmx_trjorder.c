@@ -151,7 +151,7 @@ int gmx_trjorder(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -227,7 +227,7 @@ int gmx_trjorder(int argc, char *argv[])
     {
         rcut2   = rcut*rcut;
         fp      = xvgropen(opt2fn("-nshell", NFILE, fnm), "Number of molecules",
-                           "Time (ps)", "N", oenv);
+                           output_env_get_xvgr_tlabel(oenv), "N", oenv);
         printf("Will compute the number of molecules within a radius of %g\n",
                rcut);
     }
@@ -343,7 +343,7 @@ int gmx_trjorder(int argc, char *argv[])
                     ncut++;
                 }
             }
-            fprintf(fp, "%10.3f  %8d\n", t, ncut);
+            fprintf(fp, "%10.3f  %8d\n", t*output_env_get_time_factor(oenv), ncut);
         }
         if (out)
         {

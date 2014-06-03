@@ -165,7 +165,7 @@ int gmx_helixorient(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -236,18 +236,18 @@ int gmx_helixorient(int argc, char *argv[])
     if (bIncremental)
     {
         fptilt = xvgropen(opt2fn("-otilt", NFILE, fnm),
-                          "Incremental local helix tilt", "Time(ps)", "Tilt (degrees)",
+                          "Incremental local helix tilt", output_env_get_xvgr_tlabel(oenv), "Tilt (degrees)",
                           oenv);
         fprotation = xvgropen(opt2fn("-orot", NFILE, fnm),
-                              "Incremental local helix rotation", "Time(ps)",
+                              "Incremental local helix rotation", output_env_get_xvgr_tlabel(oenv),
                               "Rotation (degrees)", oenv);
     }
     else
     {
         fptilt = xvgropen(opt2fn("-otilt", NFILE, fnm),
-                          "Cumulative local helix tilt", "Time(ps)", "Tilt (degrees)", oenv);
+                          "Cumulative local helix tilt", output_env_get_xvgr_tlabel(oenv), "Tilt (degrees)", oenv);
         fprotation = xvgropen(opt2fn("-orot", NFILE, fnm),
-                              "Cumulative local helix rotation", "Time(ps)",
+                              "Cumulative local helix rotation", output_env_get_xvgr_tlabel(oenv),
                               "Rotation (degrees)", oenv);
     }
 
@@ -414,11 +414,11 @@ int gmx_helixorient(int argc, char *argv[])
         }
         else
         {
-            fprintf(fptilt, "%15.12g       ", t);
-            fprintf(fprotation, "%15.12g       ", t);
-            fprintf(fptheta1, "%15.12g      ", t);
-            fprintf(fptheta2, "%15.12g      ", t);
-            fprintf(fptheta3, "%15.12g      ", t);
+            fprintf(fptilt, "%15.12g       ", t*output_env_get_time_factor(oenv));
+            fprintf(fprotation, "%15.12g       ", t*output_env_get_time_factor(oenv));
+            fprintf(fptheta1, "%15.12g      ", t*output_env_get_time_factor(oenv));
+            fprintf(fptheta2, "%15.12g      ", t*output_env_get_time_factor(oenv));
+            fprintf(fptheta3, "%15.12g      ", t*output_env_get_time_factor(oenv));
 
             for (i = 0; i < iCA; i++)
             {

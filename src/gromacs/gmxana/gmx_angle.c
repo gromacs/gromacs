@@ -181,7 +181,7 @@ int gmx_g_angle(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
                            &oenv))
     {
@@ -285,10 +285,10 @@ int gmx_g_angle(int argc, char *argv[])
     {
         sprintf(title, "Average Angle: %s", grpname);
         out = xvgropen(opt2fn("-ov", NFILE, fnm),
-                       title, "Time (ps)", "Angle (degrees)", oenv);
+                       title, output_env_get_time_label(oenv), "Angle (degrees)", oenv);
         for (i = 0; (i < nframes); i++)
         {
-            fprintf(out, "%10.5f  %8.3f", time[i], aver_angle[i]*RAD2DEG);
+            fprintf(out, "%10.5f  %8.3f", time[i]*output_env_get_time_factor(oenv), aver_angle[i]*RAD2DEG);
             if (bALL)
             {
                 for (j = 0; (j < nangles); j++)
@@ -317,11 +317,11 @@ int gmx_g_angle(int argc, char *argv[])
     {
         sprintf(title, "Trans fraction: %s", grpname);
         out = xvgropen(opt2fn("-of", NFILE, fnm),
-                       title, "Time (ps)", "Fraction", oenv);
+                       title, output_env_get_time_label(oenv), "Fraction", oenv);
         tfrac = 0.0;
         for (i = 0; (i < nframes); i++)
         {
-            fprintf(out, "%10.5f  %10.3f\n", time[i], trans_frac[i]);
+            fprintf(out, "%10.5f  %10.3f\n", time[i]*output_env_get_time_factor(oenv), trans_frac[i]);
             tfrac += trans_frac[i];
         }
         gmx_ffclose(out);

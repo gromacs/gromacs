@@ -167,7 +167,7 @@ int gmx_helix(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -199,7 +199,7 @@ int gmx_helix(int argc, char *argv[])
         sprintf(buf, "%s.xvg", xf[i].filenm);
         remove(buf);
         xf[i].fp = xvgropen(buf, xf[i].title,
-                            xf[i].xaxis ? xf[i].xaxis : "Time (ps)",
+                            xf[i].xaxis ? xf[i].xaxis : output_env_get_xvgr_tlabel(oenv),
                             xf[i].yaxis, oenv);
         if (xf[i].bfp2)
         {
@@ -262,7 +262,7 @@ int gmx_helix(int argc, char *argv[])
 
             for (j = 0; (j <= efhCPHI); j++)
             {
-                fprintf(xf[j].fp,   "%10g  %10g\n", t, xf[j].val);
+                fprintf(xf[j].fp,   "%10g  %10g\n", t*output_env_get_time_factor(oenv), xf[j].val);
             }
 
             av_phipsi(xf[efhPHI].fp, xf[efhPSI].fp, xf[efhPHI].fp2, xf[efhPSI].fp2,

@@ -242,7 +242,7 @@ int gmx_rotmat(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -280,7 +280,7 @@ int gmx_rotmat(int argc, char *argv[])
     }
 
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                   "Fit matrix", "Time (ps)", "", oenv);
+                   "Fit matrix", output_env_get_xvgr_tlabel(oenv), "", oenv);
     xvgr_legend(out, NLEG, leg, oenv);
 
     do
@@ -298,7 +298,7 @@ int gmx_rotmat(int argc, char *argv[])
 
         fprintf(out,
                 "%7g %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f\n",
-                t,
+                t*output_env_get_time_factor(oenv),
                 R[XX][XX], R[XX][YY], R[XX][ZZ],
                 R[YY][XX], R[YY][YY], R[YY][ZZ],
                 R[ZZ][XX], R[ZZ][YY], R[ZZ][ZZ]);

@@ -728,7 +728,7 @@ int gmx_disre(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -784,7 +784,7 @@ int gmx_disre(int argc, char *argv[])
     if (ftp2bSet(efNDX, NFILE, fnm))
     {
         rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
-        xvg = xvgropen(opt2fn("-dr", NFILE, fnm), "Individual Restraints", "Time (ps)",
+        xvg = xvgropen(opt2fn("-dr", NFILE, fnm), "Individual Restraints", output_env_get_xvgr_tlabel(oenv),
                        "nm", oenv);
         snew(vvindex, isize);
         snew(leg, isize);
@@ -820,13 +820,13 @@ int gmx_disre(int argc, char *argv[])
     else
     {
         out = xvgropen(opt2fn("-ds", NFILE, fnm),
-                       "Sum of Violations", "Time (ps)", "nm", oenv);
+                       "Sum of Violations", output_env_get_xvgr_tlabel(oenv), "nm", oenv);
         aver = xvgropen(opt2fn("-da", NFILE, fnm),
-                        "Average Violation", "Time (ps)", "nm", oenv);
+                        "Average Violation", output_env_get_xvgr_tlabel(oenv), "nm", oenv);
         numv = xvgropen(opt2fn("-dn", NFILE, fnm),
-                        "# Violations", "Time (ps)", "#", oenv);
+                        "# Violations", output_env_get_xvgr_tlabel(oenv), "#", oenv);
         maxxv = xvgropen(opt2fn("-dm", NFILE, fnm),
-                         "Largest Violation", "Time (ps)", "nm", oenv);
+                         "Largest Violation", output_env_get_xvgr_tlabel(oenv), "nm", oenv);
     }
 
     mdatoms = init_mdatoms(fplog, &mtop, ir.efep != efepNO);
@@ -897,10 +897,10 @@ int gmx_disre(int argc, char *argv[])
                 }
                 fprintf(xvg, "\n");
             }
-            fprintf(out,  "%10g  %10g\n", t, dr.sumv);
-            fprintf(aver, "%10g  %10g\n", t, dr.averv);
-            fprintf(maxxv, "%10g  %10g\n", t, dr.maxv);
-            fprintf(numv, "%10g  %10d\n", t, dr.nv);
+            fprintf(out,  "%10g  %10g\n", t*output_env_get_time_factor(oenv), dr.sumv);
+            fprintf(aver, "%10g  %10g\n", t*output_env_get_time_factor(oenv), dr.averv);
+            fprintf(maxxv, "%10g  %10g\n", t*output_env_get_time_factor(oenv), dr.maxv);
+            fprintf(numv, "%10g  %10d\n", t*output_env_get_time_factor(oenv), dr.nv);
         }
         j++;
     }

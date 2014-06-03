@@ -322,7 +322,7 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
 
 }
 
-static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, real refr[])
+static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, real refr[], const output_env_t oenv)
 {
 
     int     i;
@@ -340,7 +340,7 @@ static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], i
         if (refr[i] != 0.0)
         {
             dsp2[i] *= prefactor/refr[i];
-            fprintf(fmjdsp, "%.3f\t%10.6g\n", time[i], dsp2[i]);
+            fprintf(fmjdsp, "%.3f\t%10.6g\n", time[i]*output_env_get_time_factor(oenv), dsp2[i]);
         }
 
 
@@ -605,9 +605,9 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         mj2 += iprod(mtrans[nfr], mtrans[nfr]);
         md2 += iprod(mu[nfr], mu[nfr]);
 
-        fprintf(fmj, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr], mtrans[nfr][XX], mtrans[nfr][YY], mtrans[nfr][ZZ], mj2/refr, norm(mja_tmp)/refr);
+        fprintf(fmj, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr]*output_env_get_time_factor(oenv), mtrans[nfr][XX], mtrans[nfr][YY], mtrans[nfr][ZZ], mj2/refr, norm(mja_tmp)/refr);
         fprintf(fmd, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n",    \
-                time[nfr], mu[nfr][XX], mu[nfr][YY], mu[nfr][ZZ], md2/refr, norm(mdvec)/refr);
+                time[nfr]*output_env_get_time_factor(oenv), mu[nfr][XX], mu[nfr][YY], mu[nfr][ZZ], md2/refr, norm(mdvec)/refr);
 
         nfr++;
 
@@ -627,7 +627,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 
     fprintf(stderr, "Prefactor fit E-H: 1 / 6.0*V*k_B*T: %g\n", prefactorav);
 
-    calc_mjdsp(fmjdsp, prefactorav, dsp2, time, nfr, xshfr);
+    calc_mjdsp(fmjdsp, prefactorav, dsp2, time, nfr, xshfr, oenv);
 
     /*
      * Now we can average and calculate the correlation functions
@@ -905,7 +905,7 @@ int gmx_current(int argc, char *argv[])
 
 
     /* At first the arguments will be parsed and the system information processed */
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

@@ -298,9 +298,9 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     }
     check_index(NULL, ng, index[0], NULL, natoms);
 
-    fpsg = xvgropen(sgfn, "S\\sg\\N Angle Order Parameter", "Time (ps)", "S\\sg\\N",
+    fpsg = xvgropen(sgfn, "S\\sg\\N Angle Order Parameter", output_env_get_xvgr_tlabel(oenv), "S\\sg\\N",
                     oenv);
-    fpsk = xvgropen(skfn, "S\\sk\\N Distance Order Parameter", "Time (ps)", "S\\sk\\N",
+    fpsk = xvgropen(skfn, "S\\sk\\N Distance Order Parameter", output_env_get_xvgr_tlabel(oenv), "S\\sk\\N",
                     oenv);
 
     /* loop over frames */
@@ -315,8 +315,8 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
             sg_slice_tot[i] += sg_slice[i];
             sk_slice_tot[i] += sk_slice[i];
         }
-        fprintf(fpsg, "%f %f\n", t, sg);
-        fprintf(fpsk, "%f %f\n", t, sk);
+        fprintf(fpsg, "%f %f\n", t*output_env_get_time_factor(oenv), sg);
+        fprintf(fpsk, "%f %f\n", t*output_env_get_time_factor(oenv), sk);
         nframes++;
     }
     while (read_next_x(oenv, status, &t, x, box));
@@ -978,7 +978,7 @@ int gmx_order(int argc, char *argv[])
     const char   *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
     output_env_t  oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

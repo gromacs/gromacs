@@ -182,7 +182,7 @@ int gmx_lie(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -195,7 +195,7 @@ int gmx_lie(int argc, char *argv[])
     snew(fr, 1);
 
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "LIE free energy estimate",
-                   "Time (ps)", "DGbind (kJ/mol)", oenv);
+                   output_env_get_xvgr_tlabel(oenv), "DGbind (kJ/mol)", oenv);
     while (do_enx(fp, fr))
     {
         ct = check_times(fr->t);
@@ -205,7 +205,7 @@ int gmx_lie(int argc, char *argv[])
             lieaver += lie;
             lieav2  += lie*lie;
             nframes++;
-            fprintf(out, "%10g  %10g\n", fr->t, lie);
+            fprintf(out, "%10g  %10g\n", fr->t*output_env_get_time_factor(oenv), lie);
         }
     }
     close_enx(fp);

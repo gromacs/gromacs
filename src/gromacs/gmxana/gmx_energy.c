@@ -585,9 +585,9 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
         avold[i] = 0;
     }
     fp0 = xvgropen(fni, "Shear viscosity integral",
-                   "Time (ps)", "(kg m\\S-1\\N s\\S-1\\N ps)", oenv);
+                   output_env_get_xvgr_tlabel(oenv), "(kg m\\S-1\\N s\\S-1\\N ps)", oenv);
     fp1 = xvgropen(fn, "Shear viscosity using Einstein relation",
-                   "Time (ps)", "(kg m\\S-1\\N s\\S-1\\N)", oenv);
+                   output_env_get_xvgr_tlabel(oenv), "(kg m\\S-1\\N s\\S-1\\N)", oenv);
     for (i = 0; i < nf4; i++)
     {
         for (m = 0; m <= nsets; m++)
@@ -606,14 +606,14 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
         }
         /* Convert to SI for the viscosity */
         fac = (V*NANO*NANO*NANO*PICO*1e10)/(2*BOLTZMANN*T)/(nint - i);
-        fprintf(fp0, "%10g", i*dt);
+        fprintf(fp0, "%10g", i*dt*output_env_get_time_factor(oenv));
         for (m = 0; (m <= nsets); m++)
         {
             av[m] = fac*av[m];
             fprintf(fp0, "  %10g", av[m]);
         }
         fprintf(fp0, "\n");
-        fprintf(fp1, "%10g", (i + 0.5)*dt);
+        fprintf(fp1, "%10g", (i + 0.5)*dt*output_env_get_time_factor(oenv));
         for (m = 0; (m <= nsets); m++)
         {
             fprintf(fp1, "  %10g", (av[m]-avold[m])/dt);
@@ -1403,7 +1403,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                             eacNormal, 1, TRUE, FALSE, FALSE, 0.0, 0.0, 0);
 
             factor = (Vaver*1e-26/(BOLTZMANN*Temp))*Dt;
-            fp     = xvgropen(visfn, buf, "Time (ps)", "\\8h\\4 (cp)", oenv);
+            fp     = xvgropen(visfn, buf, output_env_get_xvgr_tlabel(oenv), "\\8h\\4 (cp)", oenv);
             xvgr_legend(fp, asize(leg), leg, oenv);
 
             /* Use trapezium rule for integration */
@@ -1418,7 +1418,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             {
                 integral += 0.5*(eneset[0][i-1]  + eneset[0][i])*factor;
                 intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
-                fprintf(fp, "%10g  %10g  %10g\n", (i*Dt), integral, intBulk);
+                fprintf(fp, "%10g  %10g  %10g\n", (i*Dt*output_env_get_time_factor(oenv)), integral, intBulk);
             }
             gmx_ffclose(fp);
 
@@ -1554,7 +1554,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
     if (runavgfn)
     {
         fp = xvgropen(runavgfn, "Running average free energy difference",
-                      "Time (" unit_time ")", "\\8D\\4E (" unit_energy ")", oenv);
+                      output_env_get_xvgr_tlabel(oenv), "\\8D\\4E (" unit_energy ")", oenv);
         xvgr_legend(fp, asize(ravgleg), ravgleg, oenv);
     }
     fprintf(stdout, "\n%-24s %10s\n",
@@ -1575,7 +1575,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
             if (fp)
             {
                 fprintf(fp, "%10g %10g %10g\n",
-                        time[j], dE, -BOLTZ*reftemp*log(sum/(j+1)) );
+                        time[j]*output_env_get_time_factor(oenv), dE, -BOLTZ*reftemp*log(sum/(j+1)) );
             }
         }
         aver = -BOLTZ*reftemp*log(sum/nenergy);
@@ -2050,7 +2050,7 @@ int gmx_energy(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -2135,7 +2135,7 @@ int gmx_energy(int argc, char *argv[])
                 strcat(buf, ")");
             }
         }
-        out = xvgropen(opt2fn("-o", NFILE, fnm), "Gromacs Energies", "Time (ps)", buf,
+        out = xvgropen(opt2fn("-o", NFILE, fnm), "Gromacs Energies", output_env_get_xvgr_tlabel(oenv), buf,
                        oenv);
 
         snew(leg, nset+1);
@@ -2302,7 +2302,7 @@ int gmx_energy(int argc, char *argv[])
                              &mtop, &top, &ir);
         snew(violaver, npairs);
         out = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations",
-                       "Time (ps)", "nm", oenv);
+                       output_env_get_xvgr_tlabel(oenv), "nm", oenv);
         xvgr_legend(out, 2, drleg, oenv);
         if (bDRAll)
         {
@@ -2525,7 +2525,7 @@ int gmx_energy(int argc, char *argv[])
                         double *disre_rm3tav = blk_disre->sub[1].dval;
  #endif
 
-                        print_time(out, fr->t);
+                        print_time(out, fr->t*output_env_get_time_factor(oenv));
                         if (violaver == NULL)
                         {
                             snew(violaver, ndisre);
@@ -2569,7 +2569,7 @@ int gmx_energy(int argc, char *argv[])
                              */
                             if (fr->nsum > 1)
                             {
-                                print_time(out, fr->t);
+                                print_time(out, fr->t*output_env_get_time_factor(oenv));
                                 print1(out, bDp, fr->ener[set[0]].e);
                                 print1(out, bDp, fr->ener[set[0]].esum/fr->nsum);
                                 print1(out, bDp, sqrt(fr->ener[set[0]].eav/fr->nsum));
@@ -2578,7 +2578,7 @@ int gmx_energy(int argc, char *argv[])
                         }
                         else
                         {
-                            print_time(out, fr->t);
+                            print_time(out, fr->t*output_env_get_time_factor(oenv));
                             if (bSum)
                             {
                                 sum = 0;

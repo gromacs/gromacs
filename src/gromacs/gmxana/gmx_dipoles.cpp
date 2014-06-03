@@ -896,11 +896,11 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     /* Open all the files */
     outmtot = xvgropen(out_mtot,
                        "Total dipole moment of the simulation box vs. time",
-                       "Time (ps)", "Total Dipole Moment (Debye)", oenv);
+                       output_env_get_xvgr_tlabel(oenv), "Total Dipole Moment (Debye)", oenv);
     outeps  = xvgropen(out_eps, "Epsilon and Kirkwood factors",
-                       "Time (ps)", "", oenv);
+                       output_env_get_xvgr_tlabel(oenv), "", oenv);
     outaver = xvgropen(out_aver, "Total dipole moment",
-                       "Time (ps)", "D", oenv);
+                       output_env_get_xvgr_tlabel(oenv), "D", oenv);
     if (bSlab)
     {
         idim = axtitle[0] - 'X';
@@ -934,7 +934,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     if (cosaver)
     {
         caver = xvgropen(cosaver, bPairs ? "Average pair orientation" :
-                         "Average absolute dipole orientation", "Time (ps)", "", oenv);
+                         "Average absolute dipole orientation", output_env_get_xvgr_tlabel(oenv), "", oenv);
         xvgr_legend(caver, NLEGCOSAVER, bPairs ? leg_cosaver : &(leg_cosaver[1]),
                     oenv);
     }
@@ -1212,13 +1212,13 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                            sqr(dipaxis[ZZ]-0.5));
             if (bPairs)
             {
-                fprintf(caver, "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
-                        t, dd, rms_cos, dipaxis[XX], dipaxis[YY], dipaxis[ZZ]);
+                fprintf(caver, "%10g  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
+                        t*output_env_get_time_factor(oenv), dd, rms_cos, dipaxis[XX], dipaxis[YY], dipaxis[ZZ]);
             }
             else
             {
-                fprintf(caver, "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
-                        t, rms_cos, dipaxis[XX], dipaxis[YY], dipaxis[ZZ]);
+                fprintf(caver, "%10g  %10.3e  %10.3e  %10.3e  %10.3e\n",
+                        t*output_env_get_time_factor(oenv), rms_cos, dipaxis[XX], dipaxis[YY], dipaxis[ZZ]);
             }
         }
 
@@ -1242,7 +1242,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         if ((skip == 0) || ((teller % skip) == 0))
         {
             fprintf(outmtot, "%10g  %12.8e %12.8e %12.8e %12.8e\n",
-                    t, M_av[XX], M_av[YY], M_av[ZZ],
+                    t*output_env_get_time_factor(oenv), M_av[XX], M_av[YY], M_av[ZZ],
                     sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
         }
 
@@ -1283,13 +1283,13 @@ static void do_dip(t_topology *top, int ePBC, real volume,
              * Kirkwood G factor and epsilon.
              */
             fprintf(outaver, "%10g  %10.3e %10.3e %10.3e %10.3e\n",
-                    t, M2_ave, M_ave2, M_diff, M_ave2/M2_ave);
+                    t*output_env_get_time_factor(oenv), M2_ave, M_ave2, M_diff, M_ave2/M2_ave);
 
             if (fnadip)
             {
                 real aver;
                 gmx_stats_get_average(muframelsq, &aver);
-                fprintf(adip, "%10g %f \n", t, aver);
+                fprintf(adip, "%10g %f \n", t*output_env_get_time_factor(oenv), aver);
             }
             /*if (dipole)
                printf("%f %f\n", norm(dipole[0]), norm(dipole[1]));
@@ -1309,12 +1309,12 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                            Gk/(3*epsilon*(2*epsilonRF+1)));
                 }
 
-                fprintf(outeps, "%10g  %10.3e %10.3e %10.3e\n", t, epsilon, Gk, g_k);
+                fprintf(outeps, "%10g  %10.3e %10.3e %10.3e\n", t*output_env_get_time_factor(oenv), epsilon, Gk, g_k);
 
             }
             else
             {
-                fprintf(outeps, "%10g  %12.8e\n", t, epsilon);
+                fprintf(outeps, "%10g  %12.8e\n", t*output_env_get_time_factor(oenv), epsilon);
             }
         }
         gmx_stats_done(muframelsq);
@@ -1385,7 +1385,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         else
         {
             dt = (t1 - t0)/(teller-1);
-            printf("t0 %g, t %g, teller %d\n", t0, t, teller);
+            printf("t0 %g, t %g, teller %d\n", t0, t*output_env_get_time_factor(oenv), teller);
 
             mode = eacVector;
 
@@ -1615,7 +1615,7 @@ int gmx_dipoles(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

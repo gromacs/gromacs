@@ -186,7 +186,7 @@ int gmx_saltbr(int argc, char *argv[])
     matrix             box;
     output_env_t       oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -243,10 +243,10 @@ int gmx_saltbr(int argc, char *argv[])
                 if (nWithin[i][j])
                 {
                     sprintf(buf, "sb-%s:%s.xvg", cg[i].label, cg[j].label);
-                    fp = xvgropen(buf, buf, "Time (ps)", "Distance (nm)", oenv);
+                    fp = xvgropen(buf, buf, output_env_get_xvgr_tlabel(oenv), "Distance (nm)", oenv);
                     for (k = 0; (k < teller); k++)
                     {
-                        fprintf(fp, "%10g  %10g\n", time[k], cgdist[i][j][k]);
+                        fprintf(fp, "%10g  %10g\n", time[k]*output_env_get_time_factor(oenv), cgdist[i][j][k]);
                     }
                     gmx_ffclose(fp);
                 }
@@ -259,7 +259,7 @@ int gmx_saltbr(int argc, char *argv[])
 
         for (m = 0; (m < 3); m++)
         {
-            out[m] = xvgropen(fn[m], title[m], "Time (ps)", "Distance (nm)", oenv);
+            out[m] = xvgropen(fn[m], title[m], output_env_get_xvgr_tlabel(oenv), "Distance (nm)", oenv);
         }
 
         snew(buf, 256);
@@ -309,7 +309,7 @@ int gmx_saltbr(int argc, char *argv[])
         {
             for (m = 0; (m < 3); m++)
             {
-                fprintf(out[m], "%10g", time[k]);
+                fprintf(out[m], "%10g", time[k]*output_env_get_time_factor(oenv));
             }
 
             for (i = 0; (i < ncg); i++)

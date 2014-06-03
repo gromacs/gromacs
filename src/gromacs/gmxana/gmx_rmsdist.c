@@ -706,7 +706,7 @@ int gmx_rmsdist(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -778,7 +778,7 @@ int gmx_rmsdist(int argc, char *argv[])
     sfree(x);
 
     /*open output files*/
-    fp = xvgropen(ftp2fn(efXVG, NFILE, fnm), "RMS Deviation", "Time (ps)", "RMSD (nm)",
+    fp = xvgropen(ftp2fn(efXVG, NFILE, fnm), "RMS Deviation", output_env_get_xvgr_tlabel(oenv), "RMSD (nm)",
                   oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -794,7 +794,7 @@ int gmx_rmsdist(int argc, char *argv[])
         calc_dist_tot(isize, index, x, ePBC, box, d, dtot, dtot2, bNMR, dtot1_3, dtot1_6);
 
         rmsnow = rms_diff(isize, d, d_r);
-        fprintf(fp, "%g  %g\n", t, rmsnow);
+        fprintf(fp, "%g  %g\n", t*output_env_get_time_factor(oenv), rmsnow);
         teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
