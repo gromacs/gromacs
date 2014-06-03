@@ -2050,7 +2050,7 @@ int gmx_energy(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
