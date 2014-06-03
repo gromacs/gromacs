@@ -85,7 +85,7 @@ struct gmx_domdec_zones_t {
     real                   dens_zone0;
 };
 
-typedef struct gmx_hash *gmx_hash_t;
+struct gmx_hash_t;
 
 typedef struct gmx_reverse_top *gmx_reverse_top_p_t;
 
@@ -127,7 +127,6 @@ typedef struct {
     double          *dbuf; /* for doubles */
     int              dbuf_alloc;
 } mpi_in_place_buf_t;
-
 
 struct gmx_domdec_t {
     /* The DD particle-particle nodes only */
@@ -182,8 +181,8 @@ struct gmx_domdec_t {
     int  n_intercg_excl;
 
     /* Vsite stuff */
-    gmx_hash_t                 ga2la_vsite;
-    gmx_domdec_specat_comm_p_t vsite_comm;
+    struct gmx_hash_t          *ga2la_vsite;
+    gmx_domdec_specat_comm_p_t  vsite_comm;
 
     /* Constraint stuff */
     gmx_domdec_constraints_p_t constraints;

@@ -45,7 +45,7 @@
 #include "domdec_network.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gmx_ga2la.h"
-#include "gmx_hash.h"
+#include "domdec_hash.h"
 #include "gmx_omp_nthreads.h"
 #include "macros.h"
 
@@ -92,18 +92,18 @@ typedef struct gmx_domdec_specat_comm {
 } gmx_domdec_specat_comm_t;
 
 typedef struct gmx_domdec_constraints {
-    int       *molb_con_offset;
-    int       *molb_ncon_mol;
+    int        *molb_con_offset;
+    int        *molb_ncon_mol;
     /* The fully local and connected constraints */
-    int        ncon;
+    int         ncon;
     /* The global constraint number, only required for clearing gc_req */
-    int       *con_gl;
-    int       *con_nlocat;
-    int        con_nalloc;
+    int        *con_gl;
+    int        *con_nlocat;
+    int         con_nalloc;
     /* Boolean that tells if a global constraint index has been requested */
-    char      *gc_req;
+    char       *gc_req;
     /* Global to local communicated constraint atom only index */
-    gmx_hash_t ga2la;
+    gmx_hash_t *ga2la;
 
     /* Multi-threading stuff */
     int      nthread;
@@ -480,7 +480,7 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 static int setup_specat_communication(gmx_domdec_t             *dd,
                                       ind_req_t                *ireq,
                                       gmx_domdec_specat_comm_t *spac,
-                                      gmx_hash_t                ga2la_specat,
+                                      gmx_hash_t               *ga2la_specat,
                                       int                       at_start,
                                       int                       vbuf_fac,
                                       const char               *specat_type,
@@ -1071,7 +1071,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     ind_req_t                *ireq;
     const t_blocka           *at2con_mt;
     const int               **at2settle_mt;
-    gmx_hash_t                ga2la_specat;
+    gmx_hash_t               *ga2la_specat;
     int at_end, i, j;
     t_iatom                  *iap;
 
@@ -1255,7 +1255,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
 {
     gmx_domdec_specat_comm_t *spac;
     ind_req_t                *ireq;
-    gmx_hash_t                ga2la_specat;
+    gmx_hash_t               *ga2la_specat;
     int  ftype, nral, i, j, gat, a;
     t_ilist                  *lilf;
     t_iatom                  *iatoms;
