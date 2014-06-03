@@ -156,7 +156,7 @@ int gmx_spatial(int argc, char *argv[])
 
     /* This is the routine responsible for adding default options,
      * calling the X/motif interface, etc. */
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
