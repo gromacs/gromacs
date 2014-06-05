@@ -64,12 +64,7 @@ if(GMX_GPU OR GMX_GPU_AUTO)
         # Noise is acceptable when there is a GPU or the user required one.
         set(FIND_CUDA_QUIETLY QUIET)
     endif()
-    # We support CUDA >=v4.0 on *nix, but <= v4.1 doesn't work with MSVC
-    if(MSVC)
-        find_package(CUDA 4.1 ${FIND_CUDA_QUIETLY})
-    else()
-        find_package(CUDA 4.0 ${FIND_CUDA_QUIETLY})
-    endif()
+    find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
 endif()
 
 # Depending on the current vale of GMX_GPU and GMX_GPU_AUTO:
@@ -107,7 +102,7 @@ Compute capability information not available, consult the NVIDIA website:
 https://developer.nvidia.com/cuda-gpus")
     endif()
 
-        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >=2.0 (Fermi or later). This requires the NVIDIA CUDA toolkit, which was not found. Its location can be hinted by setting the CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable). The typical location would be /usr/local/cuda[-version]. Note that CPU or GPU acceleration can be selected at runtime.
+        set(CUDA_NOTFOUND_MESSAGE "mdrun supports native GPU acceleration on NVIDIA hardware with compute capability >= ${REQUIRED_CUDA_COMPUTE_CAPABILITY} (Fermi or later). This requires the NVIDIA CUDA toolkit, which was not found. Its location can be hinted by setting the CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable). The typical location would be /usr/local/cuda[-version]. Note that CPU or GPU acceleration can be selected at runtime.
 
 ${_msg}")
         unset(_msg)
