@@ -1773,7 +1773,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         warning_note(wi, warn_buf);
     }
 
-    /* remove the following deprecated commands */
+    /* ignore the following deprecated commands */
     REM_TYPE("title");
     REM_TYPE("cpp");
     REM_TYPE("domain-decomposition");
@@ -1783,6 +1783,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     REM_TYPE("dihre-tau");
     REM_TYPE("nstdihreout");
     REM_TYPE("nstcheckpoint");
+    REM_TYPE("optimize-fft");
 
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
@@ -1843,7 +1844,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nstxout", ir->nstxout,    0);
     ITYPE ("nstvout", ir->nstvout,    0);
     ITYPE ("nstfout", ir->nstfout,    0);
-    ir->nstcheckpoint = 1000;
     CTYPE ("Output frequency for energies to log file and energy file");
     ITYPE ("nstlog",  ir->nstlog, 1000);
     ITYPE ("nstcalcenergy", ir->nstcalcenergy, 100);
@@ -1916,7 +1916,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     EETYPE("lj-pme-comb-rule", ir->ljpme_combination_rule, eljpme_names);
     EETYPE("ewald-geometry", ir->ewald_geometry, eewg_names);
     RTYPE ("epsilon-surface", ir->epsilon_surface, 0.0);
-    EETYPE("optimize-fft", ir->bOptFFT,  yesno_names);
 
     CCTYPE("IMPLICIT SOLVENT ALGORITHM");
     EETYPE("implicit-solvent", ir->implicit_solvent, eis_names);
