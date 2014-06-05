@@ -138,7 +138,7 @@ static void done_xlatom(int nxlate, t_xlate_atom *xlatom)
 
 void rename_atoms(const char *xlfile, const char *ffdir,
                   t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
-                  gmx_bool bResname, gmx_residuetype_t rt, gmx_bool bReorderNum,
+                  gmx_bool bResname, gmx_residuetype_t *rt, gmx_bool bReorderNum,
                   gmx_bool bVerbose)
 {
     FILE         *fp;
