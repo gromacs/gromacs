@@ -1181,8 +1181,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, ir->epsilon_surface);
     }
 
-    gmx_fio_do_gmx_bool(fio, ir->bOptFFT);
-
     if (file_version >= 93)
     {
         gmx_fio_do_int(fio, ir->ljpme_combination_rule);
