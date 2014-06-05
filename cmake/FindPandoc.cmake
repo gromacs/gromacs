@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,17 +32,21 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-#TODO: add check that source doesn't contain any untracked files
-if(CPACK_SOURCE_PACKAGE_FILE_NAME) #building source package
-    get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
-    if (NOT EXISTS "${CMAKE_BINARY_DIR}/share/man/man1/gmx-view.1" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/INSTALL" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/share/html/final/online.html")
-        message(FATAL_ERROR
-            "To create a complete source package all man and HTML pages need "
-            "to be generated, and the INSTALL file generated. "
-            "Run 'make man html' to build these parts. You can also set "
-            "GMX_BUILD_HELP=ON to automatically build the HTML parts. "
-            "The latter also requires you to execute 'make install-guide'.")
-    endif()
+# This module looks for Pandoc, and sets PANDOC_EXECUTABLE to the
+# location of its binary.
+#
+# It respects the variable Pandoc_FIND_QUIETLY
+
+include(FindPackageHandleStandardArgs)
+
+if(Pandoc_FIND_QUIETLY OR DEFINED PANDOC_EXECUTABLE)
+  set(PANDOC_FIND_QUIETLY TRUE)
 endif()
+
+find_program(PANDOC_EXECUTABLE
+  NAMES pandoc
+  DOC "Pandoc - a universal document converter")
+
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(Pandoc REQUIRED_VARS PANDOC_EXECUTABLE)
+
+mark_as_advanced(PANDOC_EXECUTABLE)
