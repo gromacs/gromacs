@@ -176,7 +176,7 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
     char     buf[256];
     int      i, mb, nmol, ri, pt;
     double   q;
-    real     m;
+    real     m, mB;
     t_atoms *atoms;
 
     /* Check mass and charge */
@@ -190,30 +190,31 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
         {
             q += nmol*atoms->atom[i].q;
             m  = atoms->atom[i].m;
+            mB = atoms->atom[i].mB;
             pt = atoms->atom[i].ptype;
             /* If the particle is an atom or a nucleus it must have a mass,
              * else, if it is a shell, a vsite or a bondshell it can have mass zero
              */
-            if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus)))
+            if (((m <= 0.0) || (mB <= 0.0)) && ((pt == eptAtom) || (pt == eptNucleus)))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "atom %s (Res %s-%d) has mass %g\n",
+                sprintf(buf, "atom %s (Res %s-%d) has mass %g (state A) / %g (state B)\n",
                         *(atoms->atomname[i]),
                         *(atoms->resinfo[ri].name),
                         atoms->resinfo[ri].nr,
-                        m);
+                        m, mB);
                 warning_error(wi, buf);
             }
             else
-            if ((m != 0) && (pt == eptVSite))
+            if (((m != 0) || (mB != 0)) && (pt == eptVSite))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g\n"
+                sprintf(buf, "virtual site %s (Res %s-%d) has non-zero mass %g (state A) / %g (state B)\n"
                         "     Check your topology.\n",
                         *(atoms->atomname[i]),
                         *(atoms->resinfo[ri].name),
                         atoms->resinfo[ri].nr,
-                        m);
+                        m, mB);
                 warning_error(wi, buf);
                 /* The following statements make LINCS break! */
                 /* atoms->atom[i].m=0; */
