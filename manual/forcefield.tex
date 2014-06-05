@@ -2495,31 +2495,14 @@ by selecting the electrostatics type:
 coulombtype     = P3M-AD
 \end{verbatim}
 
-\subsection{Optimizing Fourier transforms}
-To get the best possible performance you should try to avoid large
-prime numbers for grid dimensions.
-The FFT code used in {\gromacs} is
-optimized for grid sizes of the form $2^a 3^b 5^c 7^d 11^e 13^f$,
-where $e+f$ is $0$ or $1$ and the other exponents arbitrary. (See
-further the documentation of the FFT algorithms at
-\href{http://www.fftw.org}{www.fftw.org}.
+\subsection{Optimizing Fourier transforms and PME calculations}
+It is recommended to optimize the parameters for calculation of
+electrostatic interaction such as PME grid dimensions and cut-off radii.
+This is particularly relevant to do before launching long production runs.
 
-It is also possible to optimize the transforms for the current problem
-by performing some calculations at the start of the run. This is not
-done by default since it takes a couple of minutes, but for large
-runs it will save time. Turn it on by specifying
-
-\begin{verbatim}
-optimize-fft      = yes
-\end{verbatim}
-in your {\tt .mdp} file.
-
-When running in parallel, the grid must be communicated several times,
-thus hurting scaling performance. With PME you can improve this
-by increasing grid spacing while simultaneously increasing the
-interpolation to {\eg} sixth order.
-Since the interpolation is entirely local, doing so will
-improve the scaling in most cases.
+{\gromacs} includes a special tool, {\tt g_tune_pme}, which automates the 
+process of selecting the optimal size of the grid and number of PME-only
+notes.
 
 %
 % Temporarily removed since I am not sure about the state of the testlr
