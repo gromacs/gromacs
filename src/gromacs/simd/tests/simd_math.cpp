@@ -451,9 +451,9 @@ TEST_F(SimdMathTest, gmxSimdPmecorrForceR)
 {
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #ifdef GMX_DOUBLE
-    setUlpTol((gmx_int64_t)(1e-10/GMX_REAL_EPS));
+    setUlpTol((gmx_int64_t)(5e-10/GMX_REAL_EPS));
 #else
-    setUlpTol((gmx_int64_t)(1e-6/GMX_REAL_EPS));
+    setUlpTol((gmx_int64_t)(5e-6/GMX_REAL_EPS));
 #endif
 
     setRange(0.15, 4);
@@ -473,9 +473,9 @@ TEST_F(SimdMathTest, gmxSimdPmecorrPotentialR)
 {
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #ifdef GMX_DOUBLE
-    setUlpTol((gmx_int64_t)(1e-10/GMX_REAL_EPS));
+    setUlpTol((gmx_int64_t)(5e-10/GMX_REAL_EPS));
 #else
-    setUlpTol((gmx_int64_t)(1e-6/GMX_REAL_EPS));
+    setUlpTol((gmx_int64_t)(5e-6/GMX_REAL_EPS));
 #endif
     setRange(0.15, 4);
     setAbsTol(GMX_REAL_EPS);
