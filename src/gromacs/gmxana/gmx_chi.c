@@ -50,7 +50,7 @@
 #include "macros.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/units.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"

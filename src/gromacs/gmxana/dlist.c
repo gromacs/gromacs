@@ -41,10 +41,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/smalloc.h"
 #include "gstat.h"
+
+#include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/utility/smalloc.h"
 
 t_dlist *mk_dlist(FILE *log,
                   t_atoms *atoms, int *nlist,

@@ -49,12 +49,12 @@
 #include "gromacs/math/vec.h"
 #include "toputil.h"
 #include "gromacs/math/units.h"
-#include "gromacs/topology/index.h"
 #include "names.h"
 #include "gromacs/utility/futil.h"
 #include "gpp_atomtype.h"
 #include "fflibutil.h"
 
+#include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
