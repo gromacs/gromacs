@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(TNG_IO)
+set(PROJECT_VERSION "1.0")
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall")
