@@ -441,7 +441,7 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
     return j;
 }
 
-static void histogramming(FILE *log, int nbin, gmx_residuetype_t rt,
+static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int nf, int maxchi, real **dih,
                           int nlist, t_dlist dlist[],
                           atom_id index[],
@@ -1354,7 +1354,7 @@ int gmx_chi(int argc, char *argv[])
     gmx_bool           bDo_rt, bDo_oh, bDo_ot, bDo_jc;
     real               dt = 0, traj_t_ns;
     output_env_t       oenv;
-    gmx_residuetype_t  rt;
+    gmx_residuetype_t *rt;
 
     atom_id            isize, *index;
     int                ndih, nactdih, nf;

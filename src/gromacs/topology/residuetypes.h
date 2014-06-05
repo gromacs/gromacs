@@ -42,42 +42,42 @@ extern "C"
 {
 #endif
 
-typedef struct gmx_residuetype *gmx_residuetype_t;
+typedef struct gmx_residuetype_t gmx_residuetype_t;
 
 int
-gmx_residuetype_init(gmx_residuetype_t *rt);
+gmx_residuetype_init(gmx_residuetype_t **rt);
 
 int
-gmx_residuetype_destroy(gmx_residuetype_t rt);
+gmx_residuetype_destroy(gmx_residuetype_t *rt);
 
 int
-gmx_residuetype_get_type(gmx_residuetype_t rt, const char *resname, const char **p_restype);
+gmx_residuetype_get_type(gmx_residuetype_t *rt, const char *resname, const char **p_restype);
 
 int
-gmx_residuetype_add(gmx_residuetype_t rt, const char *newresname, const char *newrestype);
+gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype);
 
 int
-gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
+gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
                              const char        ***p_typenames,
                              int                 *ntypes);
 
 gmx_bool
-gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm);
+gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm);
 
 gmx_bool
-gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm);
+gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm);
 
 gmx_bool
-gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
+gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm);
 
 int
-gmx_residuetype_get_size(gmx_residuetype_t rt);
+gmx_residuetype_get_size(gmx_residuetype_t *rt);
 
 int
-gmx_residuetype_get_index(gmx_residuetype_t rt, const char *resnm);
+gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm);
 
 const char *
-gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
+gmx_residuetype_get_name(gmx_residuetype_t *rt, int index);
 
 #ifdef __cplusplus
 }

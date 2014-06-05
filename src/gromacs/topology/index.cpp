@@ -577,7 +577,7 @@ static void analyse_prot(const char ** restype, t_atoms *atoms,
 
 void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    gmx_residuetype_t rt = NULL;
+    gmx_residuetype_t*rt = NULL;
     char             *resnm;
     atom_id          *aid;
     const char    **  restype;

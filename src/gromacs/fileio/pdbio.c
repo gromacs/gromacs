@@ -283,7 +283,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     int               nlongname = 0;
     int               chainnum, lastchainnum;
     int               lastresind, lastchainresind;
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
     const char       *p_restype;
     const char       *p_lastrestype;
 
