@@ -756,7 +756,6 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_int(fp, "inputrec->ndelta", -1, ir1->ndelta, ir2->ndelta);
     cmp_int(fp, "inputrec->nstcomm", -1, ir1->nstcomm, ir2->nstcomm);
     cmp_int(fp, "inputrec->comm_mode", -1, ir1->comm_mode, ir2->comm_mode);
-    cmp_int(fp, "inputrec->nstcheckpoint", -1, ir1->nstcheckpoint, ir2->nstcheckpoint);
     cmp_int(fp, "inputrec->nstlog", -1, ir1->nstlog, ir2->nstlog);
     cmp_int(fp, "inputrec->nstxout", -1, ir1->nstxout, ir2->nstxout);
     cmp_int(fp, "inputrec->nstvout", -1, ir1->nstvout, ir2->nstvout);
@@ -775,7 +774,6 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_real(fp, "inputrec->ewald_rtol", -1, ir1->ewald_rtol, ir2->ewald_rtol, ftol, abstol);
     cmp_int(fp, "inputrec->ewald_geometry", -1, ir1->ewald_geometry, ir2->ewald_geometry);
     cmp_real(fp, "inputrec->epsilon_surface", -1, ir1->epsilon_surface, ir2->epsilon_surface, ftol, abstol);
-    cmp_int(fp, "inputrec->bOptFFT", -1, ir1->bOptFFT, ir2->bOptFFT);
     cmp_int(fp, "inputrec->bContinuation", -1, ir1->bContinuation, ir2->bContinuation);
     cmp_int(fp, "inputrec->bShakeSOR", -1, ir1->bShakeSOR, ir2->bShakeSOR);
     cmp_int(fp, "inputrec->etc", -1, ir1->etc, ir2->etc);
@@ -857,7 +855,6 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_real(fp, "inputrec->orires_fc", -1, ir1->orires_fc, ir2->orires_fc, ftol, abstol);
     cmp_real(fp, "inputrec->orires_tau", -1, ir1->orires_tau, ir2->orires_tau, ftol, abstol);
     cmp_int(fp, "inputrec->nstorireout", -1, ir1->nstorireout, ir2->nstorireout);
-    cmp_real(fp, "inputrec->dihre_fc", -1, ir1->dihre_fc, ir2->dihre_fc, ftol, abstol);
     cmp_real(fp, "inputrec->em_stepsize", -1, ir1->em_stepsize, ir2->em_stepsize, ftol, abstol);
     cmp_real(fp, "inputrec->em_tol", -1, ir1->em_tol, ir2->em_tol, ftol, abstol);
     cmp_int(fp, "inputrec->niter", -1, ir1->niter, ir2->niter);
