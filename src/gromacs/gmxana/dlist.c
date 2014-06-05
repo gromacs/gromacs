@@ -50,7 +50,7 @@
 t_dlist *mk_dlist(FILE *log,
                   t_atoms *atoms, int *nlist,
                   gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
-                  int maxchi, int r0, gmx_residuetype_t rt)
+                  int maxchi, int r0, gmx_residuetype_t *rt)
 {
     int       ires, i, j, k, ii;
     t_dihatms atm, prev;

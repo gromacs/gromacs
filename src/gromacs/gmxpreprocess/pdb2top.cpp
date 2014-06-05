@@ -442,7 +442,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 }
 
 static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
-                     t_restp restp[], gmx_residuetype_t rt)
+                     t_restp restp[], gmx_residuetype_t *rt)
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
@@ -1426,7 +1426,7 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuetype_t rt)
+static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuetype_t *rt)
 {
     int         residx, i, j, k;
     const char *ptr;
@@ -1540,7 +1540,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     int              *vsite_type;
     int               i, nmissat;
     int               bts[ebtsNR];
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
 
     init_plist(plist);
     gmx_residuetype_init(&rt);
