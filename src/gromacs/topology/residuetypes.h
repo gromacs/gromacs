@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,23 +32,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_TOPOLOGY_RESIDUETYPES_H
+#define GMX_TOPOLOGY_RESIDUETYPES_H
 
-#ifndef GMX_GMXPREPROCESS_XLATE_H
-#define GMX_GMXPREPROCESS_XLATE_H
-
-#include "gromacs/topology/residuetypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/* If bResname is true renames atoms based on residue names,
- * otherwise renames atoms based on rtp entry names.
- */
-void rename_atoms(const char *xlfile, const char *ffdir,
-                  t_atoms *atoms, struct t_symtab *symtab, const t_restp *restp,
-                  gmx_bool bResname, gmx_residuetype_t rt, gmx_bool bReorderNum,
-                  gmx_bool bVerbose);
+typedef struct gmx_residuetype *gmx_residuetype_t;
+
+int
+gmx_residuetype_init(gmx_residuetype_t *rt);
+
+int
+gmx_residuetype_destroy(gmx_residuetype_t rt);
+
+int
+gmx_residuetype_get_type(gmx_residuetype_t rt, const char *resname, const char **p_restype);
+
+int
+gmx_residuetype_add(gmx_residuetype_t rt, const char *newresname, const char *newrestype);
+
+int
+gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
+                             const char        ***p_typenames,
+                             int                 *ntypes);
+
+gmx_bool
+gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm);
+
+gmx_bool
+gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm);
+
+gmx_bool
+gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
+
+int
+gmx_residuetype_get_size(gmx_residuetype_t rt);
+
+int
+gmx_residuetype_get_index(gmx_residuetype_t rt, const char *resnm);
+
+const char *
+gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
 
 #ifdef __cplusplus
 }

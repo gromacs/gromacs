@@ -41,6 +41,7 @@
 #include "../legacyheaders/oenv.h"
 #include "../commandline/pargs.h"
 #include "../topology/index.h"
+#include "../topology/residuetypes.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -57,7 +57,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gen_ad.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/topology/index.h"
 #include "gen_vsite.h"
 #include "add_par.h"
 #include "toputil.h"
@@ -65,6 +64,7 @@
 #include "copyrite.h"
 
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
