@@ -55,7 +55,6 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
-#include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -999,81 +998,51 @@ t_blocka *init_index(const char *gfile, char ***grpname)
 {
     FILE      *in;
     t_blocka  *b;
-    int        a, maxentries;
-    int        i, j, ng;
+    int        maxentries;
+    int        i, j;
     char       line[STRLEN], *pt, str[STRLEN];
 
     in = gmx_fio_fopen(gfile, "r");
     snew(b, 1);
-    get_a_line(in, line, STRLEN);
-    if (line[0] == '[')
+    b->nr      = 0;
+    b->index   = NULL;
+    b->nra     = 0;
+    b->a       = NULL;
+    *grpname   = NULL;
+    maxentries = 0;
+    while (get_a_line(in, line, STRLEN))
     {
-        /* new format */
-        b->nr      = 0;
-        b->index   = NULL;
-        b->nra     = 0;
-        b->a       = NULL;
-        *grpname   = NULL;
-        maxentries = 0;
-        do
+        if (get_header(line, str))
         {
-            if (get_header(line, str))
+            b->nr++;
+            srenew(b->index, b->nr+1);
+            srenew(*grpname, b->nr);
+            if (b->nr == 1)
             {
-                b->nr++;
-                srenew(b->index, b->nr+1);
-                srenew(*grpname, b->nr);
-                if (b->nr == 1)
-                {
-                    b->index[0] = 0;
-                }
-                b->index[b->nr]     = b->index[b->nr-1];
-                (*grpname)[b->nr-1] = strdup(str);
+                b->index[0] = 0;
             }
-            else
-            {
-                if (b->nr == 0)
-                {
-                    gmx_fatal(FARGS, "The first header of your indexfile is invalid");
-                }
-                pt = line;
-                while (sscanf(pt, "%s", str) == 1)
-                {
-                    i = b->index[b->nr];
-                    if (i >= maxentries)
-                    {
-                        maxentries += 1024;
-                        srenew(b->a, maxentries);
-                    }
-                    b->a[i] = strtol(str, NULL, 10)-1;
-                    b->index[b->nr]++;
-                    (b->nra)++;
-                    pt = strstr(pt, str)+strlen(str);
-                }
-            }
+            b->index[b->nr]     = b->index[b->nr-1];
+            (*grpname)[b->nr-1] = strdup(str);
         }
-        while (get_a_line(in, line, STRLEN));
-    }
-    else
-    {
-        /* old format */
-        sscanf(line, "%d%d", &b->nr, &b->nra);
-        snew(b->index, b->nr+1);
-        snew(*grpname, b->nr);
-        b->index[0] = 0;
-        snew(b->a, b->nra);
-        for (i = 0; (i < b->nr); i++)
+        else
         {
-            GMX_IGNORE_RETURN_VALUE(fscanf(in, "%s%d", str, &ng));
-            (*grpname)[i] = strdup(str);
-            b->index[i+1] = b->index[i]+ng;
-            if (b->index[i+1] > b->nra)
+            if (b->nr == 0)
             {
-                gmx_fatal(FARGS, "Something wrong in your indexfile at group %s", str);
+                gmx_fatal(FARGS, "The first header of your indexfile is invalid");
             }
-            for (j = 0; (j < ng); j++)
+            pt = line;
+            while (sscanf(pt, "%s", str) == 1)
             {
-                GMX_IGNORE_RETURN_VALUE(fscanf(in, "%d", &a));
-                b->a[b->index[i]+j] = a;
+                i = b->index[b->nr];
+                if (i >= maxentries)
+                {
+                    maxentries += 1024;
+                    srenew(b->a, maxentries);
+                }
+                b->a[i] = strtol(str, NULL, 10)-1;
+                b->index[b->nr]++;
+                (b->nra)++;
+                pt = strstr(pt, str)+strlen(str);
             }
         }
     }
