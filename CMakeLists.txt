@@ -33,6 +33,9 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 cmake_minimum_required(VERSION 2.8.8)
+# When we require 2.8.12, it will provide
+# CMAKE_MINMUM_VERSION_REQUIRED automatically
+set(CMAKE_REQUIRED_MINIMUM_VERSION "2.8.8")
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -203,7 +206,14 @@ option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
-# decide on GPU settings based on user-settings and GPU/CUDA detection
+# Decide on GPU settings based on user-settings and GPU/CUDA detection.
+# We support CUDA >=v4.0 on *nix, but <= v4.1 doesn't work with MSVC
+if(MSVC)
+    set(REQUIRED_CUDA_VERSION 4.1)
+else()
+    set(REQUIRED_CUDA_VERSION 4.0)
+endif()
+set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 include(gmxManageGPU)
 
 # Detect the architecture the compiler is targetting, detect
@@ -884,6 +894,7 @@ endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(doxygen)
+    add_subdirectory(install-guide)
     add_subdirectory(share)
     add_subdirectory(scripts)
 endif()
