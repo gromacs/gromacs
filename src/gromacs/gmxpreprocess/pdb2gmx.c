@@ -516,7 +516,7 @@ void write_posres(char *fn, t_atoms *pdba, real fc)
 static int read_pdball(const char *inf, const char *outf, char *title,
                        t_atoms *atoms, rvec **x,
                        int *ePBC, matrix box, gmx_bool bRemoveH,
-                       t_symtab *symtab, gmx_residuetype_t rt, const char *watres,
+                       t_symtab *symtab, gmx_residuetype_t *rt, const char *watres,
                        gmx_atomprop_t aps, gmx_bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
@@ -837,7 +837,8 @@ static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], gmx_bool bVerbose)
     return pdba->nr;
 }
 
-void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end, gmx_residuetype_t rt)
+void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
+                 gmx_residuetype_t *rt)
 {
     int         i;
     const char *p_startrestype;
@@ -1233,7 +1234,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     t_hackblock      *ah;
     t_symtab          symtab;
     gpp_atomtype_t    atype;
-    gmx_residuetype_t rt;
+    gmx_residuetype_t*rt;
     const char       *top_fn;
     char              fn[256], itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
     char              molname[STRLEN], title[STRLEN], quote[STRLEN];

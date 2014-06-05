@@ -64,9 +64,9 @@ typedef struct {
 } aprop_t;
 
 typedef struct gmx_atomprop {
-    gmx_bool          bWarned, bWarnVDW;
-    aprop_t           prop[epropNR];
-    gmx_residuetype_t restype;
+    gmx_bool           bWarned, bWarnVDW;
+    aprop_t            prop[epropNR];
+    gmx_residuetype_t *restype;
 } gmx_atomprop;
 
 
@@ -95,7 +95,7 @@ static int dbcmp_len(char *search, char *database)
     return i;
 }
 
-static int get_prop_index(aprop_t *ap, gmx_residuetype_t restype,
+static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
                           char *resnm, char *atomnm,
                           gmx_bool *bExact)
 {
@@ -156,7 +156,7 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t restype,
     return j;
 }
 
-static void add_prop(aprop_t *ap, gmx_residuetype_t restype,
+static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
                      char *resnm, char *atomnm,
                      real p, int line)
 {
