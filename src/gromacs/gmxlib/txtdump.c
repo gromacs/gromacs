@@ -895,7 +895,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PR("ewald-rtol-lj", ir->ewald_rtol_lj);
         PR("ewald-geometry", ir->ewald_geometry);
         PR("epsilon-surface", ir->epsilon_surface);
-        PS("optimize-fft", EBOOL(ir->bOptFFT));
         PS("lj-pme-comb-rule", ELJPMECOMBNAMES(ir->ljpme_combination_rule));
         PS("ePBC", EPBC(ir->ePBC));
         PS("bPeriodicMols", EBOOL(ir->bPeriodicMols));
@@ -1022,8 +1021,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PR("orires-fc", ir->orires_fc);
         PR("orires-tau", ir->orires_tau);
         PR("nstorireout", ir->nstorireout);
-
-        PR("dihre-fc", ir->dihre_fc);
 
         PR("em-stepsize", ir->em_stepsize);
         PR("em-tol", ir->em_tol);
