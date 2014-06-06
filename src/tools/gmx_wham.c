@@ -1596,13 +1596,16 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
             bsProfiles_av2[i] += tmp*tmp;
             fprintf(fp, "%e\t%e\n", (i+0.5)*opt->dz+opt->min, tmp);
         }
-        fprintf(fp, "&\n");
+        fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
     }
     ffclose(fp);
 
     /* write average and stddev */
     fp = xvgropen(fnres, "Average and stddev from bootstrapping", "z", ylabel, opt->oenv);
-    fprintf(fp, "@TYPE xydy\n");
+    if(output_env_get_print_xvgr_codes(opt->oenv))
+    {
+        fprintf(fp, "@TYPE xydy\n");
+    }
     for (i = 0; i < opt->bins; i++)
     {
         bsProfiles_av [i] /= opt->nBootStrap;
@@ -2523,7 +2526,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
                 {
                     fprintf(fpcorr, "%g  %g\n", k*dt, corr[k]);
                 }
-                fprintf(fpcorr, "&\n");
+                fprintf(fpcorr, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
             }
 
             /* esimate integrated correlation time, fitting is too unstable */
@@ -2551,16 +2554,19 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
 
     /* plot IACT along reaction coordinate */
     fp = xvgropen(fn, "Integrated autocorrelation times", "z", "IACT [ps]", opt->oenv);
-    fprintf(fp, "@    s0 symbol 1\n@    s0 symbol size 0.5\n@    s0 line linestyle 0\n");
-    fprintf(fp, "#  WIN   tau(gr1)  tau(gr2) ...\n");
-    for (i = 0; i < nwins; i++)
+    if(output_env_get_print_xvgr_codes(opt->oenv))
     {
-        fprintf(fp, "# %3d   ", i);
-        for (ig = 0; ig < window[i].nPull; ig++)
+        fprintf(fp, "@    s0 symbol 1\n@    s0 symbol size 0.5\n@    s0 line linestyle 0\n");
+        fprintf(fp, "#  WIN   tau(gr1)  tau(gr2) ...\n");
+        for (i = 0; i < nwins; i++)
         {
-            fprintf(fp, " %11g", window[i].tau[ig]);
+            fprintf(fp, "# %3d   ", i);
+            for (ig = 0; ig < window[i].nPull; ig++)
+            {
+                fprintf(fp, " %11g", window[i].tau[ig]);
+            }
+            fprintf(fp, "\n");
         }
-        fprintf(fp, "\n");
     }
     for (i = 0; i < nwins; i++)
     {
@@ -2575,8 +2581,12 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
                opt->sigSmoothIact);
         /* smooth IACT along reaction coordinate and overwrite g=1+2tau */
         smoothIact(window, nwins, opt);
-        fprintf(fp, "&\n@    s1 symbol 1\n@    s1 symbol size 0.5\n@    s1 line linestyle 0\n");
-        fprintf(fp, "@    s1 symbol color 2\n");
+        fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
+        if(output_env_get_print_xvgr_codes(opt->oenv))
+        {
+            fprintf(fp, "@    s1 symbol 1\n@    s1 symbol size 0.5\n@    s1 line linestyle 0\n");
+            fprintf(fp, "@    s1 symbol color 2\n");
+        }
         for (i = 0; i < nwins; i++)
         {
             for (ig = 0; ig < window[i].nPull; ig++)

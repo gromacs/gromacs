@@ -442,15 +442,18 @@ int gmx_g_angle(int argc, char *argv[])
         {
             maxstat = max(maxstat, angstat[i]*norm_fac);
         }
-        fprintf(out, "@with g0\n");
-        fprintf(out, "@    world xmin -180\n");
-        fprintf(out, "@    world xmax  180\n");
-        fprintf(out, "@    world ymin 0\n");
-        fprintf(out, "@    world ymax %g\n", maxstat*1.05);
-        fprintf(out, "@    xaxis  tick major 60\n");
-        fprintf(out, "@    xaxis  tick minor 30\n");
-        fprintf(out, "@    yaxis  tick major 0.005\n");
-        fprintf(out, "@    yaxis  tick minor 0.0025\n");
+        if (output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(out, "@with g0\n");
+            fprintf(out, "@    world xmin -180\n");
+            fprintf(out, "@    world xmax  180\n");
+            fprintf(out, "@    world ymin 0\n");
+            fprintf(out, "@    world ymax %g\n", maxstat*1.05);
+            fprintf(out, "@    xaxis  tick major 60\n");
+            fprintf(out, "@    xaxis  tick minor 30\n");
+            fprintf(out, "@    yaxis  tick major 0.005\n");
+            fprintf(out, "@    yaxis  tick minor 0.0025\n");
+        }
     }
     for (i = first; (i <= last); i++)
     {
