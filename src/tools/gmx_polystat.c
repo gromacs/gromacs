@@ -493,7 +493,10 @@ int gmx_polystat(int argc, char *argv[])
     /* Handle printing of internal distances. */
     if (outi)
     {
-        fprintf(outi, "@    xaxes scale Logarithmic\n");
+        if(output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(outi, "@    xaxes scale Logarithmic\n");
+        }
         ymax = -1;
         ymin = 1e300;
         j    = index[molind[1]-1] - index[molind[0]]; /* Polymer length -1. */

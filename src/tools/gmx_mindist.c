@@ -174,7 +174,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
         }
         if (bSplit && !bFirst && fabs(t/output_env_get_time_factor(oenv)) < 1e-5)
         {
-            fprintf(out, "&\n");
+            fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(out, "\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n",
                 output_env_conv_time(oenv, t), rmin, rmax, norm(box[0]), norm(box[1]), norm(box[2]));
@@ -425,14 +425,14 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     {
         if (bSplit && !bFirst && fabs(t/output_env_get_time_factor(oenv)) < 1e-5)
         {
-            fprintf(dist, "&\n");
+            fprintf(dist, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             if (num)
             {
-                fprintf(num, "&\n");
+                fprintf(num, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
             if (atm)
             {
-                fprintf(atm, "&\n");
+                fprintf(atm, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
         }
         fprintf(dist, "%12e", output_env_conv_time(oenv, t));

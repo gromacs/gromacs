@@ -102,10 +102,12 @@ int gmx_rama(int argc, char *argv[])
     xvgr_line_props(out, 0, elNone, ecFrank, oenv);
     xvgr_view(out, 0.2, 0.2, 0.8, 0.8, oenv);
     xvgr_world(out, -180, -180, 180, 180, oenv);
-    fprintf(out, "@    xaxis  tick on\n@    xaxis  tick major 60\n@    xaxis  tick minor 30\n");
-    fprintf(out, "@    yaxis  tick on\n@    yaxis  tick major 60\n@    yaxis  tick minor 30\n");
-    fprintf(out, "@ s0 symbol 2\n@ s0 symbol size 0.4\n@ s0 symbol fill 1\n");
-
+    if(output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(out, "@    xaxis  tick on\n@    xaxis  tick major 60\n@    xaxis  tick minor 30\n");
+        fprintf(out, "@    yaxis  tick on\n@    yaxis  tick major 60\n@    yaxis  tick minor 30\n");
+        fprintf(out, "@ s0 symbol 2\n@ s0 symbol size 0.4\n@ s0 symbol fill 1\n");
+    }
     j = 0;
     do
     {

@@ -371,17 +371,20 @@ int gmx_mdmat(int argc, char *argv[])
         tot_nmat(nres, natoms, nframes, totnmat, tot_n, mean_n);
         fp = xvgropen(ftp2fn(efXVG, NFILE, fnm),
                       "Increase in number of contacts", "Residue", "Ratio", oenv);
-        fprintf(fp, "@ legend on\n");
-        fprintf(fp, "@ legend box on\n");
-        fprintf(fp, "@ legend loctype view\n");
-        fprintf(fp, "@ legend 0.75, 0.8\n");
-        fprintf(fp, "@ legend string 0 \"Total/mean\"\n");
-        fprintf(fp, "@ legend string 1 \"Total\"\n");
-        fprintf(fp, "@ legend string 2 \"Mean\"\n");
-        fprintf(fp, "@ legend string 3 \"# atoms\"\n");
-        fprintf(fp, "@ legend string 4 \"Mean/# atoms\"\n");
-        fprintf(fp, "#%3s %8s  %3s  %8s  %3s  %8s\n",
-                "res", "ratio", "tot", "mean", "natm", "mean/atm");
+        if(output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@ legend on\n");
+            fprintf(fp, "@ legend box on\n");
+            fprintf(fp, "@ legend loctype view\n");
+            fprintf(fp, "@ legend 0.75, 0.8\n");
+            fprintf(fp, "@ legend string 0 \"Total/mean\"\n");
+            fprintf(fp, "@ legend string 1 \"Total\"\n");
+            fprintf(fp, "@ legend string 2 \"Mean\"\n");
+            fprintf(fp, "@ legend string 3 \"# atoms\"\n");
+            fprintf(fp, "@ legend string 4 \"Mean/# atoms\"\n");
+            fprintf(fp, "#%3s %8s  %3s  %8s  %3s  %8s\n",
+                    "res", "ratio", "tot", "mean", "natm", "mean/atm");
+        }
         for (i = 0; (i < nres); i++)
         {
             if (mean_n[i] == 0)

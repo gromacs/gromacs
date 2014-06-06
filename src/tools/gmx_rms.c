@@ -1139,7 +1139,7 @@ int gmx_rms(int argc, char *argv[])
         if (bSplit && i > 0 &&
             fabs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
         {
-            fprintf(fp, "&\n");
+            fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(fp, "%12.7f", time[bPrev ? freq*i : i]);
         for (j = 0; (j < nrms); j++)
@@ -1181,7 +1181,7 @@ int gmx_rms(int argc, char *argv[])
         {
             if (bSplit && i > 0 && fabs(time[i]) < 1e-5)
             {
-                fprintf(fp, "&\n");
+                fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
             fprintf(fp, "%12.7f", time[i]);
             for (j = 0; (j < nrms); j++)
