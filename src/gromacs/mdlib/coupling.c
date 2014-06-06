@@ -365,9 +365,13 @@ static void relative_tstat(FILE *fplog, t_state *state, t_mdatoms *md, t_inputre
             {
                 fprintf(debug, "REL TSTAT: stopping COM motion before scaling\n");
             }
+            /* TODO: if we don't do COM removal here, run proceeds but temp wrong */
+            calc_vcm_grp(0, md->homenr, md, state->x, state->v, vcm);
+/*
             check_cm_grp(fplog, vcm, ir, 1);
             do_stopcm_grp(0, md->homenr, md->cVCM, state->x, state->v, vcm);
             inc_nrnb(nrnb, eNR_STOPCM, md->homenr);
+*/
         }
 
         for (j = 0; j < md->homenr; j++)
@@ -813,6 +817,70 @@ void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_sta
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
                     state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV), FALSE);
     } /* end for-loop over thermostat subdivided time steps */
+}
+
+/* CHARMM function PropagateTFB
+ * Updates thermostat associated with barostat
+ */
+static void drude_tstat_for_barostat(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state,
+                                     t_extmass *MassQ, t_vcm *vcm, t_nrnb *nrnb, gmx_ekindata_t *ekind)
+{
+    int             i, j, n, g;
+    int             nc;                     /* time steps for thermostat */
+    int             ti;                     /* thermostat index */
+    int             nh;                     /* NH chain lengths */
+    atom_id         ia, ib;                 /* atom indices */
+    real            dt;                     /* time step */
+    double          dtsy;                   /* subdivided time step */
+    double         *ixi, *ivxi;             /* thermostat positions and velocities*/
+    t_grpopts      *opts;
+
+    nc = ir->drude->tsteps;
+
+    opts = &(ir->opts);
+
+    nh = opts->nhchainlength;
+
+    /* TODO: remove */
+    if (debug)
+    {
+        fprintf(debug, "DRUDE TFB: MassQ->Winv = %f\n", MassQ->Winv);
+    }
+
+    /* set subdivided time step */
+    dtsy = (double)(ir->delta_t)/(double)nc;
+
+    for (n=0; n<nc; n++)
+    {
+        /* calculate kinetic energies */
+        nosehoover_KE(fplog, ir, md, state, ekind, vcm, nrnb);
+
+        /* propagate thermostat variables for subdivided time step */
+        NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
+                    state->nosehoover_vxi, NULL, &(state->veta), MassQ, (ir->eI == eiVV), FALSE);
+
+        /* TODO: scale barostat velocity, or allow that to be done in boxv_trotter? */
+
+        /* propagate thermostat positions */
+        for (i=0; i<opts->ngtc; i++)
+        {
+            ixi = &state->nosehoover_xi[i*nh];
+            ivxi = &state->nosehoover_vxi[i*nh];
+            for (j=0; j<nh; j++)
+            {
+                ixi[j] += 0.5*dtsy*ivxi[j];
+            }
+        }
+
+        /* update thermostat kinetic energies */
+        nosehoover_KE(fplog, ir, md, state, ekind, vcm, nrnb);
+
+        /* propagate thermostat variables for subdivided time step */
+        NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
+                    state->nosehoover_vxi, NULL, &(state->veta), MassQ, (ir->eI == eiVV), FALSE);
+
+    } /* end for-loop over thermostat subdivided time steps */
+
 }
 
 /*
@@ -1452,22 +1520,36 @@ void trotter_update(FILE *fplog, t_inputrec *ir, gmx_int64_t step, gmx_ekindata_
                 }
                 boxv_trotter(ir, &(state->veta), dt, state->box, ekind, vir,
                              enerd->term[F_PDISPCORR], MassQ);
-                /* TODO: write TFB function */
                 break;
             case etrtBARONHC:
             case etrtBARONHC2:
-                if (debug)
+                if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
                 {
-                    fprintf(debug, "TROTTER: calling NHC_trotter for barostat\n");
+                    if (debug)
+                    {
+                        fprintf(debug, "TROTTER: Calling Drude tstat for barostat\n");
+                    }
+                    drude_tstat_for_barostat(fplog, ir, md, state, MassQ, vcm, nrnb, ekind);
                 }
-                NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
-                            state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE, TRUE);
+                else
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, "TROTTER: calling NHC_trotter for barostat\n");
+                    }
+                    NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
+                                state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE, TRUE);
+                }
                 break;
             case etrtNHC:
             case etrtNHC2:
                 if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
                 {
-                   drude_tstat_for_particles(fplog, ir, md, state, MassQ, vcm, nrnb, ekind, scalefac); 
+                    if (debug)
+                    {
+                        fprintf(debug, "TROTTER: Calling Drude tstat for particles\n");
+                    }
+                    drude_tstat_for_particles(fplog, ir, md, state, MassQ, vcm, nrnb, ekind, scalefac); 
                 }
                 else
                 {
