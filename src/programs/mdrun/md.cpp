@@ -1108,7 +1108,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
-                          f, bUpdateDoLR, fr->f_twin, fcd,
+                          f, bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                           ekind, M, upd, bInitStep, etrtVELOCITY1,
                           cr, nrnb, constr, &top->idef);
 
@@ -1158,6 +1158,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        &top->idef, shake_vir,
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
+
+                    if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
+                    {
+                        /* Correct the virial for multiple time stepping */
+                        m_sub(shake_vir, fr->vir_twin_constr, shake_vir);
+                    }
 
                     if (!bOK)
                     {
@@ -1503,7 +1509,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     /* velocity half-step update */
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                                  bUpdateDoLR, fr->f_twin, fcd,
+                                  bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                                   ekind, M, upd, FALSE, etrtVELOCITY2,
                                   cr, nrnb, constr, &top->idef);
                 }
@@ -1520,7 +1526,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                              bUpdateDoLR, fr->f_twin, fcd,
+                              bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                               ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1529,6 +1535,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    FALSE, bCalcVir, state->veta);
+
+                if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
+                {
+                    /* Correct the virial for multiple time stepping */
+                    m_sub(shake_vir, fr->vir_twin_constr, shake_vir);
+                }
 
                 if (ir->eI == eiVVAK)
                 {
@@ -1548,7 +1560,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                                  bUpdateDoLR, fr->f_twin, fcd,
+                                  bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                                   ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                     wallcycle_stop(wcycle, ewcUPDATE);
 
