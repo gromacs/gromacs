@@ -93,6 +93,7 @@ void update_coords(FILE             *fplog,
                    rvec             *f, /* forces on home particles */
                    gmx_bool          bDoLR,
                    rvec             *f_lr,
+                   tensor           *vir_lr_constr,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
