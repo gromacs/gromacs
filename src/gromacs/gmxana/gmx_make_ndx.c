@@ -55,8 +55,11 @@
 
 #include "gromacs/legacyheaders/gmx_fatal.h"
 
-#define MAXNAMES 30
-#define NAME_LEN 30
+/* It's not nice to have size limits, but we should not spend more time
+ * on this ancient tool, but instead use the new selection library.
+ */
+#define MAXNAMES 1024
+#define NAME_LEN 1024
 
 gmx_bool bCase = FALSE;
 
