@@ -143,12 +143,12 @@ static double v_ewald_lr(double beta, double r)
     }
 }
 
-void table_spline3_fill_ewald_lr(real *table_f,
-                                 real *table_v,
-                                 real *table_fdv0,
-                                 int   ntab,
-                                 real  dx,
-                                 real  beta)
+void table_spline3_fill_ewald_lr(real  *table_f,
+                                 real  *table_v,
+                                 real  *table_fdv0,
+                                 int    ntab,
+                                 double dx,
+                                 real   beta)
 {
     real     tab_max;
     int      i, i_inrange;
