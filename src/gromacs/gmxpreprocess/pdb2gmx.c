@@ -1487,8 +1487,9 @@ int gmx_pdb2gmx(int argc, char *argv[])
     {
         watres = "HO4";
     }
-    else if (watermodel != NULL && (strstr(watermodel, "5p") ||
-                                    strstr(watermodel, "5P")))
+    elserif (watermodel != NULL && (strstr(watermodel, "5p") ||
+                                    strstr(watermodel, "5P") || strstr(watermodel, "5pe") ||
+                                    strstr(watermodel, "5PE")))
     {
         watres = "HO5";
     }
