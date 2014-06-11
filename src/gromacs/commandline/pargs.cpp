@@ -648,11 +648,11 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         {
             setTimeValue(TBEGIN, tbegin);
         }
-        if (FF(PCA_CAN_END) && options.isSet("-e"))
+        if (FF(PCA_CAN_END) && options.isSet("e"))
         {
             setTimeValue(TEND, tend);
         }
-        if (FF(PCA_CAN_DT) && options.isSet("-dt"))
+        if (FF(PCA_CAN_DT) && options.isSet("dt"))
         {
             setTimeValue(TDELTA, tdelta);
         }
