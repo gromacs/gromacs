@@ -1255,7 +1255,7 @@ prepare_to_do_exchange(FILE      *fplog,
 
     for (i = 0; i < nrepl; i++)
     {
-        if (destinations[i] != i)
+        if (destinations[i] != re->ind[i])
         {
             /* only mark as exchanged if the index has been shuffled */
             bAnyReplicaExchanged = TRUE;
