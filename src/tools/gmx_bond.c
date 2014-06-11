@@ -276,7 +276,8 @@ static void do_bonds(FILE *log, const char *fn, const char *fbond,
 int gmx_bond(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_bond[tt] makes a distribution of bond lengths. If all is well a",
+        "[TT]g_bond[tt] makes a distribution of bond lengths by using the",
+        "connectivity information in the structure file. If all is well a",
         "Gaussian distribution should be made when using a harmonic potential.",
         "Bonds are read from a single group in the index file in order i1-j1",
         "i2-j2 through in-jn.[PAR]",
@@ -284,12 +285,11 @@ int gmx_bond(int argc, char *argv[])
         "of the bondlength ([TT]-blen[tt]). That means, for a bond of 0.2",
         "a tol of 0.1 gives a distribution from 0.18 to 0.22.[PAR]",
         "Option [TT]-d[tt] plots all the distances as a function of time.",
-        "This requires a structure file for the atom and residue names in",
-        "the output. If however the option [TT]-averdist[tt] is given (as well",
+        "If however the option [TT]-averdist[tt] is given (as well",
         "or separately) the average bond length is plotted instead."
     };
     const char     *bugs[] = {
-        "It should be possible to get bond information from the topology."
+        "It should be possible to get information about specific bonds from the topology."
     };
     static real     blen  = -1.0, tol = 0.1;
     static gmx_bool bAver = TRUE, bAverDist = TRUE;
@@ -318,7 +318,7 @@ int gmx_bond(int argc, char *argv[])
     t_filenm        fnm[] = {
         { efTRX, "-f", NULL, ffREAD  },
         { efNDX, NULL, NULL, ffREAD  },
-        { efTPS, NULL, NULL, ffOPTRD },
+        { efTPS, NULL, NULL, ffREAD },
         { efXVG, "-o", "bonds", ffWRITE },
         { efLOG, NULL, "bonds", ffOPTWR },
         { efXVG, "-d", "distance", ffOPTWR }
@@ -330,6 +330,8 @@ int gmx_bond(int argc, char *argv[])
                       NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
                       &oenv);
 
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x, NULL, box, FALSE);
+
     if (bAverDist)
     {
         fdist = opt2fn("-d", NFILE, fnm);
@@ -337,11 +339,6 @@ int gmx_bond(int argc, char *argv[])
     else
     {
         fdist = opt2fn_null("-d", NFILE, fnm);
-        if (fdist)
-        {
-            read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x, NULL, box,
-                          FALSE);
-        }
     }
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
