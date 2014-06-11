@@ -38,7 +38,7 @@ file(GLOB TESTUTILS_SOURCES *.cpp)
 
 add_library(testutils STATIC ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
-target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
+target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES} ${TNG_IO_LIBRARIES})
 
 set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)

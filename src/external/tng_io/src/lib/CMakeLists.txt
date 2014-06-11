@@ -3,7 +3,8 @@ if(TNG_BUILD_FORTRAN)
   list(APPEND source_files tng_io_fortran.c)
 endif()
 
-add_library(tng_io ${source_files})
+add_library(tng_io_objlib OBJECT ${source_files})
+add_library(tng_io $<TARGET_OBJECTS:tng_io_objlib>)
 
 # Now add source-file compilation properties to the source-file
 # targets

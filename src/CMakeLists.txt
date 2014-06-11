@@ -32,6 +32,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Targets from ExternalProjects might need to be set up before they
+# can be used
+add_subdirectory(external)
+message(STATUS "value of TNG_IO_LIBRARIES is ${TNG_IO_LIBRARIES}")
+
 ######################################
 # Output compiler and CFLAGS used
 ######################################
@@ -63,6 +68,7 @@ endif()
 
 add_subdirectory(gromacs)
 add_subdirectory(programs)
+add_subdirectory(../share/template template)
 
 if (NOT GMX_FAHCORE)
     add_subdirectory(contrib)

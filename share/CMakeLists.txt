@@ -34,7 +34,7 @@
 
 add_subdirectory(html)
 add_subdirectory(man)
-add_subdirectory(template)
+#add_subdirectory(template)
 
 install(FILES README.tutor README_FreeEnergyModifications.txt
     DESTINATION ${DATA_INSTALL_DIR}
