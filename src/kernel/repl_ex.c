@@ -904,7 +904,7 @@ test_for_replica_exchange(FILE                 *fplog,
     gmx_bool  bVol     = FALSE;
 
     bMultiEx = (re->nex > 1);  /* multiple exchanges at each state */
-    fprintf(fplog, "Replica exchange at step " gmx_large_int_pfmt " time %.15e\n", step, time);
+    fprintf(fplog, "Replica exchange at step " gmx_large_int_pfmt " time %.5f\n", step, time);
 
     if (re->bNPT)
     {
