@@ -142,9 +142,7 @@ VerletKernelTypeDict = {
     },
     '4xn' : {
         'Define' : 'GMX_NBNXN_SIMD_4XN',
-        'WidthSetup' : ('#ifdef GMX_NBNXN_HALF_WIDTH_SIMD\n' \
-                        '#define GMX_USE_HALF_WIDTH_SIMD_HERE\n' \
-                        '#endif\n'),
+        'WidthSetup' : (''),
         'WidthCheck' : ('#if !(GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8)\n' \
                         '#error "unsupported SIMD width"\n' \
                         '#endif\n'),
