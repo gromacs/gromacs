@@ -226,7 +226,7 @@ int gmx_genpr(int argc, char *argv[])
                         hi = d+dd;
                         fprintf(out, "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
                                 ind_grp[i]+1, ind_grp[j]+1, 1, k, 1,
-                                lo, hi, hi+1, 1.0);
+                                lo, hi, hi+disre_up2, 1.0);
                     }
                 }
             }
