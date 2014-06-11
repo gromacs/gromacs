@@ -155,7 +155,7 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${GMX_TNG_LIBRARIES}
+                      ${TNG_IO_LIBRARIES}
                       ${EXTRAE_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}

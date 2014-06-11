@@ -32,6 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Targets from ExternalProjects need to be set up before they
+# can be used
+add_subdirectory(external)
+if(GMX_USE_TNG)
+    include_directories(${TNG_IO_INCLUDE_DIR})
+endif()
+
 ######################################
 # Output compiler and CFLAGS used
 ######################################

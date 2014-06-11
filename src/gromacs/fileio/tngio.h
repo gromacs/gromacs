@@ -37,7 +37,7 @@
 #define GMX_FILEIO_TNGIO_H
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "../../external/tng_io/include/tng_io_fwd.h"
+#include "tng/tng_io_fwd.h"
 
 #ifdef __cplusplus
 extern "C" {

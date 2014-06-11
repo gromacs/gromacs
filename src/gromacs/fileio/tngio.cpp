@@ -43,7 +43,7 @@
 #endif
 
 #ifdef GMX_USE_TNG
-#include "../../external/tng_io/include/tng_io.h"
+#include "tng/tng_io.h"
 #endif
 
 #include "gromacs/legacyheaders/copyrite.h"
