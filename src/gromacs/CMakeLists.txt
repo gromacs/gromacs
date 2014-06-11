@@ -126,6 +126,51 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
 
+if(GMX_USE_TNG)
+    # Set variables to control the TNG build for GROMACS purposes
+    set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
+    set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
+    set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
+    set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
+    set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
+    # We only want to build the targets that are actually used,
+    # e.g. so that the libraries are not automatically installed
+    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io tng_io EXCLUDE_FROM_ALL)
+    # TNG puts these variables into the (common) cache, which is too
+    # noisy for GROMACS use
+    mark_as_advanced(TNG_BUILD_WITH_ZLIB)
+    mark_as_advanced(TNG_BUILD_FORTRAN)
+    mark_as_advanced(TNG_BUILD_EXAMPLES)
+    mark_as_advanced(TNG_BUILD_COMPRESSION_TESTS)
+    mark_as_advanced(TNG_BUILD_DOCUMENTATION)
+    mark_as_advanced(TNG_BUILD_TEST)
+    mark_as_advanced(TNG_EXAMPLE_FILES_DIR)
+
+    # TODO simplify this when we require CMake version >= 2.8.9.
+    if(BUILD_SHARED_LIBS AND NOT MSVC)
+        # Windows does shared libraries in a fundamentally different
+        # way from Unix. Not sure how icc on Windows behaves.
+        if(CMAKE_VERSION VERSION_LESS "2.8.9")
+            # TNG only compiles C code
+            GMX_TEST_CFLAG(CFLAG_FPIC "-fPIC" C_FPIC_TNG_FLAG)
+            if(NOT C_FPIC_TNG_FLAG)
+                # gcc, icc and clang all support -fPIC, and platforms
+                # not using those compilers likely won't build shared
+                # libraries (e.g. xlc on BlueGene/Q), so in practice
+                # this fatal error will not be reached.
+                message(FATAL_ERROR "Cannot build TNG support into a GROMACS build using shared libraries with CMake version < 2.8.9 unless the compiler supports the -fPIC flag. Use a more recent CMake, a different compiler, or -DBUILD_SHARED_LIBS=OFF")
+            endif()
+            set_target_properties(tng_io_objlib PROPERTIES COMPILE_FLAGS "-fPIC")
+            set_target_properties(tng_compress_objlib PROPERTIES COMPILE_FLAGS "-fPIC")
+        else()
+            set_target_properties(tng_io_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+            set_target_properties(tng_compress_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        endif()
+    endif()
+
+    list(APPEND LIBGROMACS_SOURCES $<TARGET_OBJECTS:tng_io_objlib> $<TARGET_OBJECTS:tng_compress_objlib>)
+endif()
+
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx-version)
@@ -155,7 +200,6 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${GMX_TNG_LIBRARIES}
                       ${EXTRAE_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}

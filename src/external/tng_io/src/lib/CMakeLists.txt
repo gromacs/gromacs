@@ -1,8 +1,9 @@
+set(source_files tng_io.c md5.c)
 if(TNG_BUILD_FORTRAN)
-  add_library(tng_io tng_io.c md5.c tng_io_fortran.c)
-else()
-  add_library(tng_io tng_io.c md5.c)
+    list(APPEND source_files tng_io_fortran.c)
 endif()
+add_library(tng_io ${source_files})
+add_library(tng_io_objlib OBJECT ${source_files})
 
 set_property(TARGET tng_io PROPERTY LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 set_property(TARGET tng_io PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})

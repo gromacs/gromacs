@@ -34,6 +34,11 @@
 
 file(GLOB FILEIO_SOURCES *.cpp *.c)
 
+if(GMX_USE_TNG)
+    # TNG bundles this file also
+    list(REMOVE_ITEM FILEIO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/md5.c)
+endif()
+
 if(GMX_USE_PLUGINS)
   set(FILEIO_SOURCES ${FILEIO_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
 else()
