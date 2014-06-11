@@ -48,6 +48,7 @@
 #ifdef GMX_NBNXN_SIMD_4XN
 
 #include "gromacs/simd/vector_operations.h"
+
 #if !(GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8)
 #error "unsupported SIMD width"
 #endif
