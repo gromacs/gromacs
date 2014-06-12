@@ -48,7 +48,6 @@ extern "C" {
  */
 GMX_LIBMD_EXPORT
 gmx_shellfc_t init_shell_flexcon(FILE *fplog,
-                                 gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x);
 
