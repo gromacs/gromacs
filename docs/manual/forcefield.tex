@@ -1914,8 +1914,10 @@ When soft core potentials are selected (by setting {\tt sc-alpha} \textgreater
 sequentially, then the Coulombic interaction is turned off linearly,
 rather than using soft core interactions, which should be less
 statistically noisy in most cases.  This behavior can be overwritten
-by using the mdp option {\tt sc-coul} to {\tt yes}. Additionally, the
-soft-core interaction potential is only applied when either the A or B
+by using the mdp option {\tt sc-coul} to {\tt yes}. The soft-core is
+automatically switched on when {\tt init-lambda} is used instead
+of lambda states. Additionally, the soft-core interaction potential
+is only applied when either the A or B
 state has zero interaction potential.  If both A and B states have
 nonzero interaction potential, default linear scaling described above
 is used. When both Coulombic and Lennard-Jones interactions are turned
