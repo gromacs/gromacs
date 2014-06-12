@@ -43,8 +43,7 @@ if(GMX_FAHCORE)
     add_library(fahcore $<TARGET_OBJECTS:mdrun_objlib>)
 elseif(GMX_BUILD_MDRUN_ONLY)
     add_executable(mdrun $<TARGET_OBJECTS:mdrun_objlib> mdrun_main.cpp)
-    target_link_libraries(mdrun
-        ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
+    target_link_libraries(mdrun libgromacs ${GMX_EXE_LINKER_FLAGS})
     set(BINARY_NAME "mdrun${GMX_BINARY_SUFFIX}")
     set_target_properties(mdrun PROPERTIES
         OUTPUT_NAME "${BINARY_NAME}"
@@ -66,8 +65,7 @@ else()
         ${GMX_MAIN_SOURCES}
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
-    target_link_libraries(gmx
-        ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
+    target_link_libraries(gmx libgromacs ${GMX_EXE_LINKER_FLAGS})
     if(GMX_X11)
         target_link_libraries(gmx ${X11_LIBRARIES})
     endif()
