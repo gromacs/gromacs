@@ -417,7 +417,8 @@ void mk_chi_lookup (int **lookup, int maxchi, real **dih,
     int i, j, Dih, Chi;
 
     j = 0;
-    for (Dih = 0; (Dih < NONCHI+maxchi); Dih++)
+    /* NONCHI points to chi1, therefore we have to start counting there. */
+    for (Dih = NONCHI; (Dih < NONCHI+maxchi); Dih++)
     {
         for (i = 0; (i < nlist); i++)
         {
