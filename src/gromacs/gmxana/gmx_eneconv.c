@@ -66,7 +66,7 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
     int      *set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
     {
         bVerbose = FALSE;
     }

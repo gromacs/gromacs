@@ -163,12 +163,12 @@ you should consult your local documentation for details.
         Be careful not to use a command which blocks the terminal
         ({\eg} {\tt vi}), since multiple instances might be run.
 \item   {\tt GMX_VIRIAL_TEMPERATURE}: print virial temperature energy term
-\item   {\tt LOG_BUFS}: the size of the buffer for file I/O. When set
+\item   {\tt GMX_LOG_BUFFER}: the size of the buffer for file I/O. When set
         to 0, all file I/O will be unbuffered and therefore very slow.
         This can be handy for debugging purposes, because it ensures
         that all files are always totally up-to-date.
-\item   {\tt LOGO}: set display color for logo in {\tt \normindex{ngmx}}.
-\item   {\tt LONGFORMAT}: use long float format when printing
+\item   {\tt GMX_LOGO_COLOR}: set display color for logo in {\tt \normindex{ngmx}}.
+\item   {\tt GMX_PRINT_LONGFORMAT}: use long float format when printing
         decimal values.
 \item   {\tt GMX_COMPELDUMP}: Applies for computational electrophysiology setups
         only (see section \ref{sec:compel}). The initial structure gets dumped to 
@@ -181,12 +181,7 @@ you should consult your local documentation for details.
 
 \begin{enumerate}
 
-\item   {\tt DUMPNL}: dump neighbor list. 
-        If set to a positive number the {\em entire}
-        neighbor list is printed in the log file (may be many megabytes).
-        Mainly for debugging purposes, but may also be handy for
-        porting to other platforms.
-\item   {\tt WHERE}: when set, print debugging info on line numbers.
+\item   {\tt GMX_PRINT_DEBUG_LINES}: when set, print debugging info on line numbers.
 \item   {\tt GMX_DD_NST_DUMP}: number of steps that elapse between dumping
         the current DD to a PDB file (default 0). This only takes effect
         during domain decomposition, so it should typically be
@@ -210,9 +205,7 @@ you should consult your local documentation for details.
 
 \begin{enumerate}
 
-\item   {\tt DISTGCT}: couple distances between two atoms when doing general coupling
-        theory processes. The format is a string containing two integers, separated by a space.
-\item   {\tt GALACTIC_DYNAMICS}: planetary simulations are made possible (just for fun) by setting
+\item   {\tt GMX_DO_GALACTIC_DYNAMICS}: planetary simulations are made possible (just for fun) by setting
         this environment variable, which allows setting {\tt epsilon_r = -1} in the {\tt .mdp}
         file. Normally, {\tt epsilon_r} must be greater than zero to prevent a fatal error.
         See {\wwwpage} for example input files for a planetary simulation.
@@ -350,45 +343,41 @@ you should consult your local documentation for details.
 
 \begin{enumerate}
 
-\item   {\tt ACC}: accuracy in Gaussian L510 (MC-SCF) component program.
-\item   {\tt BASENAME}: prefix of {\tt .tpr} files, used in Orca calculations
+\item   {\tt GMX_QM_ACCURACY}: accuracy in Gaussian L510 (MC-SCF) component program.
+\item   {\tt GMX_QM_ORCA_BASENAME}: prefix of {\tt .tpr} files, used in Orca calculations
         for input and output file names.
-\item   {\tt CPMCSCF}: when set to a nonzero value, Gaussian QM calculations will
+\item   {\tt GMX_QM_CPMCSCF}: when set to a nonzero value, Gaussian QM calculations will
         iteratively solve the CP-MCSCF equations.
-\item   {\tt DEVEL_DIR}: location of modified links in Gaussian.
+\item   {\tt GMX_QM_MODIFIED_LINKS_DIR}: location of modified links in Gaussian.
 \item   {\tt DSSP}: used by {\tt \normindex{do_dssp}} to point to the {\tt dssp}
         executable (not just its path).
-\item   {\tt GAUSS_DIR}: directory where Gaussian is installed.
-\item   {\tt GAUSS_EXE}: name of the Gaussian executable.
-\item   {\tt GKRWIDTH}: spacing used by {\tt \normindex{g_dipoles}}.
+\item   {\tt GMX_QM_GAUSS_DIR}: directory where Gaussian is installed.
+\item   {\tt GMX_QM_GAUSS_EXE}: name of the Gaussian executable.
+\item   {\tt GMX_DIPOLE_SPACING}: spacing used by {\tt \normindex{g_dipoles}}.
 \item   {\tt GMX_MAXRESRENUM}: sets the maximum number of residues to be renumbered by
         {\tt \normindex{grompp}}. A value of -1 indicates all residues should be renumbered.
 \item   {\tt GMX_FFRTP_TER_RENAME}: Some force fields (like AMBER) use specific names for N- and C-
         terminal residues (NXXX and CXXX) as {\tt .rtp} entries that are normally renamed. Setting
         this environment variable disables this renaming.
 \item   {\tt GMX_PATH_GZIP}: {\tt gunzip} executable, used by {\tt \normindex{g_wham}}.
-\item   {\tt GMXFONT}: name of X11 font used by {\tt \normindex{ngmx}}.
+\item   {\tt GMX_FONT}: name of X11 font used by {\tt \normindex{ngmx}}.
 \item   {\tt GMXTIMEUNIT}: the time unit used in output files, can be
         anything in fs, ps, ns, us, ms, s, m or h.
-\item   {\tt MEM}: memory used for Gaussian QM calculation.
+\item   {\tt GMX_QM_GAUSSIAN_MEMORY}: memory used for Gaussian QM calculation.
 \item   {\tt MULTIPROT}: name of the {\tt multiprot} executable, used by the
         contributed program {\tt \normindex{do_multiprot}}.
 \item   {\tt NCPUS}: number of CPUs to be used for Gaussian QM calculation
-\item   {\tt OPENMM_PLUGIN_DIR}: the location of OpenMM plugins, needed for
-        {\tt \normindex{mdrun-gpu}}.
-\item   {\tt ORCA_PATH}: directory where Orca is installed.
-\item   {\tt SASTEP}: simulated annealing step size for Gaussian QM calculation.
-\item   {\tt STATE}: defines state for Gaussian surface hopping calculation.
-\item   {\tt TESTMC}: perform 1000 random swaps in Monte Carlo clustering method
-        within {\tt \normindex{g_cluster}}.
-\item   {\tt TOTAL}: name of the {\tt total} executable used by the contributed
+\item   {\tt GMX_ORCA_PATH}: directory where Orca is installed.
+\item   {\tt GMX_QM_SA_STEP}: simulated annealing step size for Gaussian QM calculation.
+\item   {\tt GMX_QM_GROUND_STATE}: defines state for Gaussian surface hopping calculation.
+\item   {\tt GMX_TOTAL}: name of the {\tt total} executable used by the contributed
         {\tt \normindex{do_shift}} program.
-\item   {\tt VERBOSE}: make {\tt \normindex{g_energy}} and {\tt \normindex{eneconv}}
+\item   {\tt GMX_ENER_VERBOSE}: make {\tt \normindex{g_energy}} and {\tt \normindex{eneconv}}
         loud and noisy.
 \item   {\tt VMD_PLUGIN_PATH}: where to find VMD plug-ins. Needed to be
         able to read file formats recognized only by a VMD plug-in.
 \item   {\tt VMDDIR}: base path of VMD installation.
-\item   {\tt XMGR}: sets viewer to {\tt xmgr} (deprecated) instead of {\tt xmgrace}.
+\item   {\tt GMX_USE_XMGR}: sets viewer to {\tt xmgr} (deprecated) instead of {\tt xmgrace}.
 
 \end{enumerate}
 
@@ -471,5 +460,5 @@ Please check {\wwwpage} for up to date information on GPU usage.
 % LocalWords:  MAXRESRENUM grompp FFRTP TER NXXX CXXX rtp GZIP gunzip
 % LocalWords:  GMXFONT ns MEM MULTIPROT multiprot NCPUS CPUs OPENMM
 % LocalWords:  PLUGIN OpenMM plugins SASTEP TESTMC eneconv VMD VMDDIR
-% LocalWords:  XMGR xmgr parallelization nt online Nvidia nb cpu
+% LocalWords:  GMX_USE_XMGR xmgr parallelization nt online Nvidia nb cpu
 % LocalWords:  testverlet grommp
