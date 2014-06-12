@@ -49,7 +49,21 @@ FUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
             set(CMAKE_REQUIRED_FLAGS "${${CFLAGSVAR}} ${_testflag}")
             # make a valid variable name from the flag string: replace all non-alphanumerical chars
             string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_VARIABLE "C_FLAG_${_testflag}")
-            check_c_source_compiles("${SOURCE}" ${COMPILE_VARIABLE})
+            check_c_source_compiles("${SOURCE}" ${COMPILE_VARIABLE}
+                # Some compilers do not fail with a bad flag
+                FAIL_REGEX "command line option .* is valid for .* but not for C" # GNU
+                FAIL_REGEX "unrecognized .*option"                     # GNU
+                FAIL_REGEX "unknown .*option"                          # Clang
+                FAIL_REGEX "ignoring unknown option"                   # MSVC
+                FAIL_REGEX "warning D9002"                             # MSVC, any lang
+                FAIL_REGEX "option.*not supported"                     # Intel
+                FAIL_REGEX "invalid argument .*option"                 # Intel
+                FAIL_REGEX "ignoring option .*argument required"       # Intel
+                FAIL_REGEX "[Uu]nknown option"                         # HP
+                FAIL_REGEX "[Ww]arning: [Oo]ption"                     # SunPro
+                FAIL_REGEX "command option .* is not recognized"       # XL
+                FAIL_REGEX "WARNING: unknown flag:"                    # Open64
+                )
             if(${${COMPILE_VARIABLE}})
                 set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
                 set(${VARIABLE} 1 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
@@ -84,7 +98,21 @@ FUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
             set(CMAKE_REQUIRED_FLAGS "${${CXXFLAGSVAR}} ${_testflag}")
             # make a valid variable name from the flag string: replace all non-alphanumerical chars
             string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_VARIABLE "CXX_FLAG_${_testflag}")
-            check_cxx_source_compiles("${SOURCE}" ${COMPILE_VARIABLE})
+            check_cxx_source_compiles("${SOURCE}" ${COMPILE_VARIABLE}
+                # Some compilers do not fail with a bad flag
+                FAIL_REGEX "command line option .* is valid for .* but not for C" # GNU
+                FAIL_REGEX "unrecognized .*option"                     # GNU
+                FAIL_REGEX "unknown .*option"                          # Clang
+                FAIL_REGEX "ignoring unknown option"                   # MSVC
+                FAIL_REGEX "warning D9002"                             # MSVC, any lang
+                FAIL_REGEX "option.*not supported"                     # Intel
+                FAIL_REGEX "invalid argument .*option"                 # Intel
+                FAIL_REGEX "ignoring option .*argument required"       # Intel
+                FAIL_REGEX "[Uu]nknown option"                         # HP
+                FAIL_REGEX "[Ww]arning: [Oo]ption"                     # SunPro
+                FAIL_REGEX "command option .* is not recognized"       # XL
+                FAIL_REGEX "WARNING: unknown flag:"                    # Open64
+                )
             if(${${COMPILE_VARIABLE}})
                 set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
                 set(${VARIABLE} 1 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
