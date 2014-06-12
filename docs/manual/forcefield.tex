@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -1909,14 +1909,17 @@ and close to 0 and/or 1 with $p=2$. Lowering {\tt\mbox{sc-sigma}} will decrease
 this effect, but it will also increase the interactions with hydrogens
 relative to the other interactions in the soft-core state.
 
-When soft core potentials are selected (by setting {\tt sc-alpha} \textgreater
+When soft-core potentials are selected (by setting {\tt sc-alpha} \textgreater
 0), and the Coulomb and Lennard-Jones potentials are turned on or off
 sequentially, then the Coulombic interaction is turned off linearly,
-rather than using soft core interactions, which should be less
-statistically noisy in most cases.  This behavior can be overwritten
-by using the mdp option {\tt sc-coul} to {\tt yes}. Additionally, the
-soft-core interaction potential is only applied when either the A or B
-state has zero interaction potential.  If both A and B states have
+rather than using soft-core interactions, which should be less
+statistically noisy in most cases. This behavior can be overwritten
+by using the mdp option {\tt sc-coul} to {\tt yes}. Note that the {\tt sc-coul}
+is only taken into account when lambda states are used, not with
+{\tt couple-lambda0/couple-lambda1}, and you can still turn off soft-core
+interactions by setting {\tt sc-alpha=0}. Additionally, the soft-core
+interaction potential is only applied when either the A or B
+state has zero interaction potential. If both A and B states have
 nonzero interaction potential, default linear scaling described above
 is used. When both Coulombic and Lennard-Jones interactions are turned
 off simultaneously, a soft-core potential is used, and a hydrogen is
