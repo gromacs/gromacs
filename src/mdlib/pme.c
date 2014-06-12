@@ -3644,7 +3644,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     /* Now loop over all the thread data blocks that contribute
      * to the grid region we (our thread) are operating on.
      */
-    /* Note that ffy_nx/y is equal to the number of grid points
+    /* Note that fft_nx/y is equal to the number of grid points
      * between the first point of our node grid and the one of the next node.
      */
     for (sx = 0; sx >= -pmegrids->nthread_comm[XX]; sx--)
@@ -3660,14 +3660,8 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
         }
         pmegrid_g = &pmegrids->grid_th[fx*pmegrids->nc[YY]*pmegrids->nc[ZZ]];
         ox       += pmegrid_g->offset[XX];
-        if (!bCommX)
-        {
-            tx1 = min(ox + pmegrid_g->n[XX], ne[XX]);
-        }
-        else
-        {
-            tx1 = min(ox + pmegrid_g->n[XX], pme->pme_order);
-        }
+        /* Determine the end of our part of the source grid */
+        tx1 = min(ox + pmegrid_g->n[XX], ne[XX]);
 
         for (sy = 0; sy >= -pmegrids->nthread_comm[YY]; sy--)
         {
@@ -3682,14 +3676,8 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
             }
             pmegrid_g = &pmegrids->grid_th[fy*pmegrids->nc[ZZ]];
             oy       += pmegrid_g->offset[YY];
-            if (!bCommY)
-            {
-                ty1 = min(oy + pmegrid_g->n[YY], ne[YY]);
-            }
-            else
-            {
-                ty1 = min(oy + pmegrid_g->n[YY], pme->pme_order);
-            }
+            /* Determine the end of our part of the source grid */
+            ty1 = min(oy + pmegrid_g->n[YY], ne[YY]);
 
             for (sz = 0; sz >= -pmegrids->nthread_comm[ZZ]; sz--)
             {
