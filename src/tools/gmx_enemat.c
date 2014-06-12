@@ -514,20 +514,32 @@ int gmx_enemat(int argc, char *argv[])
         j = 0;
         if (output_env_get_print_xvgr_codes(oenv))
         {
+            char str1[STRLEN],str2[STRLEN];
+            if(output_env_get_xvg_format(oenv) == exvgXMGR)
+            {
+                sprintf(str1,"@ legend string ");
+                sprintf(str2," ");
+            }
+            else
+            {
+                sprintf(str1,"@ s");
+                sprintf(str2," legend ");
+            }
+            
             for (m = 0; (m < egNR+egSP); m++)
             {
                 if (egrp_use[m])
                 {
-                    fprintf(out, "@ legend string %d \"%s\"\n", j++, egrp_nm[m]);
+                    fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, egrp_nm[m]);
                 }
             }
             if (bFree)
             {
-                fprintf(out, "@ legend string %d \"%s\"\n", j++, "Free");
+                fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Free");
             }
             if (bFree)
             {
-                fprintf(out, "@ legend string %d \"%s\"\n", j++, "Diff");
+                fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Diff");
             }
             fprintf(out, "@TYPE xy\n");
             fprintf(out, "#%3s", "grp");

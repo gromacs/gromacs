@@ -615,10 +615,15 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
         }
         fprintf(stdout, "Set %3d:  err.est. %g  a %g  tau1 %g  tau2 %g\n",
                 s+1, ee, a, tau1, tau2);
-        if(output_env_get_print_xvgr_codes(oenv))
+        if (output_env_get_xvg_format(oenv) == exvgXMGR)
         {
             fprintf(fp, "@ legend string %d \"av %f\"\n", 2*s, av[s]);
             fprintf(fp, "@ legend string %d \"ee %6g\"\n",2*s+1, sig[s]*anal_ee_inf(fitparm, n*dt));
+        }
+        else if (output_env_get_xvg_format(oenv) == exvgXMGRACE)
+        {
+            fprintf(fp, "@ s%d legend \"av %f\"\n", 2*s, av[s]);
+            fprintf(fp, "@ s%d legend \"ee %6g\"\n",2*s+1, sig[s]*anal_ee_inf(fitparm, n*dt));
         }
         for (i = 0; i < nbs; i++)
         {
