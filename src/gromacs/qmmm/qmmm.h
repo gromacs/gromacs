@@ -112,7 +112,7 @@ class HybridQuantumClassical
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       const t_forcerec *fr);
-        ~HybridQuantumClassical();
+        virtual ~HybridQuantumClassical();
 
         /*! \brief
          * Fills the MM stuff before calling the QM calculation.
