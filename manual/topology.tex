@@ -1188,7 +1188,7 @@ in \tabref{topfile2}} \\
 \newcommand{\ttss}{\tt \scriptsize}
 
 \begin{landscape}
-\begin{longtable}{|l|lcc>{\raggedright}p{2.5in}cc|}
+\begin{longtable}{|p{1.8in}|lcc>{\raggedright}p{2.5in}cc|}
 \caption{Details of {\tt [~moleculetype~]} directives}\\
 \dline
 Name of interaction              & Topology file directive          & num.  & func. & Order of parameters and their units                   & use in     & Cross- \\
@@ -1197,8 +1197,11 @@ Name of interaction              & Topology file directive          & num.  & fu
 \endhead
 \dline
 \endfoot
-\label{tab:topfile2}\footnotetext[1]{The required number of atom indices for this directive}\footnotetext[2]{The index to use to select this function type}\footnotetext[3]{Indicates which of the parameters for this interaction can be interpolated during free energy calculations}\footnotetext[4]{This interaction type will be used by {{\tts grompp}} for generating exclusions}\footnotetext[5]{This interaction type can be converted to constraints by {{\tts grompp}}}\footnotetext[7]{The combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\footnotetext[6]{No connection, and so no exclusions, are generated for this interaction}bond
-                                   & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 1     & $b_0$ (nm); $k_b$ (\kJmolnm{-2})                      & all        & \ssecref{harmonicbond} \\
+% The footnotetext fields only work inside the body, and not from a
+% column with ``p'' formatting'!
+bond                               & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 1     & $b_0$ (nm); $k_b$ (\kJmolnm{-2})                      & all        & \ssecref{harmonicbond}
+\label{tab:topfile2} \footnotetext[1]{The required number of atom indices for this directive}\footnotetext[2]{The index to use to select this function type}\footnotetext[3]{Indicates which of the parameters for this interaction can be interpolated during free energy calculations}\footnotetext[4]{This interaction type will be used by {{\tts grompp}} for generating exclusions}\footnotetext[5]{This interaction type can be converted to constraints by {{\tts grompp}}}\footnotetext[7]{The combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\footnotetext[6]{No connection, and so no exclusions, are generated for this interaction}
+\\
 G96 bond                           & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 2     & $b_0$ (nm); $k_b$ (\kJmolnm{-4})                      & all        & \ssecref{G96bond} \\
 Morse                              & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 3     & $b_0$ (nm); $D$ (\kJmol); $\beta$ (nm$^{-1}$)         & all        & \ssecref{Morsebond} \\
 cubic bond                         & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 4     & $b_0$ (nm); $C_{i=2,3}$ (\kJmolnm{-i})                &            & \ssecref{cubicbond} \\
@@ -1861,7 +1864,7 @@ tensor, not a vector.
 \label{subsec:fffiles}
 Many force fields are available by default.
 Force fields are detected by the presence of {\tt <name>.ff} directories
-in the {\gromacs} {\tt /share/top} sub-directory and/or the working directory.
+in the {\tt \$GMXLIB/share/gromacs/top} sub-directory and/or the working directory.
 The information regarding the location of the force field files is printed
 by {\tt pdb2gmx} so you can easily keep track of which version of a force field
 is being called, in case you have made modifications in one location or another.
