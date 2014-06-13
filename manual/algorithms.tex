@@ -263,7 +263,7 @@ atoms to perform certain actions on. The maximum number of groups is
 256, but each atom can only belong to six different groups, one 
 each of the following:
 \begin{description}
-\item[temperature-coupling group \swapindex{temperature-coupling}{group}]
+\item[\swapindex{temperature-coupling}{group}]
 The \normindex{temperature coupling} parameters (reference
 temperature, time constant, number of degrees of freedom, see
 \ssecref{update}) can be defined for each T-coupling group
@@ -362,7 +362,7 @@ is computed by calculating the force between non-bonded atom pairs: \\
 $\ve{F}_i = \sum_j \ve{F}_{ij}$ \\
 plus the forces due to bonded interactions (which may depend on 1, 2,
 3, or 4 atoms), plus restraining and/or external forces. \\
-The potential and kinetic energies and the pressure tensor are computed. \\   
+The potential and kinetic energies and the pressure tensor may be computed. \\
 $\Downarrow$\\
 {\bf 3. Update configuration} \\[1ex]
 The movement of the atoms is simulated by numerically solving Newton's
@@ -496,7 +496,11 @@ buffer. There are some important differences that affect results,
 performance and feature support. The group scheme can be made to work
 (almost) like the Verlet scheme, but this will lead to a decrease in
 performance. The group scheme is especially fast for water molecules,
-which are abundant in many simulations.
+which are abundant in many simulations, but on the most recent x86
+processors, this advantage is negated by the better instruction-level
+parallelism available in the Verlet-scheme implementation. The group
+scheme is deprecated in version 5.0, and will be removed in a future
+version.
 
 In the group scheme, a neighbor list is generated consisting of pairs
 of groups of at least one atom. These groups were originally
@@ -529,22 +533,23 @@ The Verlet cut-off scheme uses a buffered pair list by default. It
 also uses clusters of atoms, but these are not static as in the group
 scheme. Rather, the clusters are defined spatially and consist of 4 or
 8 atoms, which is convenient for stream computing, using e.g. SSE, AVX
-or CUDA on GPUs. At neighbor search steps, an atom pair list (or
-cluster pair list, but that's an implementation detail) is created
-with a Verlet buffer. Thus the pair-list cut-off is larger than the
+or CUDA on GPUs. At neighbor search steps, a pair list is created
+with a Verlet buffer, ie. the pair-list cut-off is larger than the
 interaction cut-off. In the non-bonded force kernels, forces are only
 added when an atom pair is within the cut-off distance at that
 particular time step. This ensures that as atoms move between pair
 search steps, forces between nearly all atoms within the cut-off
 distance are calculated. We say {\em nearly} all atoms, because
 {\gromacs} uses a fixed pair list update frequency for
-efficiency. There is a small chance that an atom pair distance is
-decreased to within the cut-off in this fixed number of steps. This
-small chance results in a small energy drift. When temperature
+efficiency. An atom-pair, whose distance was outside the cut-off,
+could possibly move enough during this fixed number of
+steps that its distance is now within the cut-off. This
+small chance results in a small energy drift, and the size of the
+chance depends on the temperature. When temperature
 coupling is used, the buffer size can be determined automatically,
-given a certain limit on the energy drift.
+given a certain tolerance on the energy drift.
 
-The Verlet scheme specific settings in the {\tt mdp} file are:
+The {\tt mdp} file settings specific to the Verlet scheme are:
 \begin{verbatim}
 cutoff-scheme           = Verlet
 verlet-buffer-tolerance = 0.005
@@ -554,11 +559,15 @@ by default set to 0.005 kJ/mol/ps pair energy error per atom. Note that
 errors in pair energies cancel and the effect on the total energy drift
 is usually at least an order of magnitude smaller than the tolerance.
 Furthermore, the drift of the total energy is affected by many other
-factors, the constraint contribution is often the dominating one.
-For constant energy (NVE) simulations, this drift should be set to -1
-and a buffer has to be set manually by specifying {\tt rlist} $>$ {\tt
-  rcoulomb}. The simplest way to get a reasonable buffer size is to
-use an NVT {\tt mdp} file with the target temperature set to what you
+factors; often, the contribution from the constraint algorithm dominates.
+
+For constant-energy (NVE) simulations, the buffer size will be
+inferred from the temperature that corresponds to the velocities
+(either those generated, if applicable, or those found in the input
+configuration). Alternatively, the tolerance can be set to -1 and a
+buffer set manually by specifying {\tt rlist} $>$ {\tt max(rcoulomb,
+  rvdw)}. The simplest way to get a reasonable buffer size is to use
+an NVT {\tt mdp} file with the target temperature set to what you
 expect in your NVE simulation, and transfer the buffer size printed by
 {\tt grompp} to your NVE {\tt mdp} file.
 
@@ -572,10 +581,10 @@ calculate all 16 particle-pair interactions at once, which maps nicely
 to SIMD units which can perform multiple floating operations at once
 (e.g. SSE, AVX, CUDA on GPUs, BlueGene FPUs). These non-bonded kernels
 are much faster than the kernels used in the group scheme for most
-types of systems, except for water molecules when not using a buffered
-pair list. This latter case is quite common for (bio-)molecular
-simulations, so for greatest speed, it is worth comparing the
-performance of both schemes.
+types of systems, except for water molecules on processors with short
+SIMD widths when not using a buffered pair list. This latter case is
+common for (bio-)molecular simulations, so for greatest speed, it is
+worth comparing the performance of both schemes.
 
 As the Verlet cut-off scheme was introduced in version 4.6, not
 all features of the group scheme are supported yet. The Verlet scheme
@@ -589,18 +598,20 @@ given in \tabref{cutoffschemesupport}.
 \dline
 Non-bonded interaction feature    & group & Verlet \\
 \dline
-unbuffered cut-off scheme         & $\surd$ & \\
+unbuffered cut-off scheme         & $\surd$ & not by default \\
 exact cut-off                     & shift/switch & $\surd$ \\
 shifted interactions              & force+energy & energy \\
-switched forces                   & $\surd$ & \\
+switched potential                & $\surd$ & $\surd$ \\
+switched forces                   & $\surd$ & $\surd$ \\
 non-periodic systems              & $\surd$ & Z  + walls \\
 implicit solvent                  & $\surd$ & \\
-free energy perturbed non-bondeds & $\surd$ & \\
+free energy perturbed non-bondeds & $\surd$ & $\surd$ \\
 group energy contributions        & $\surd$ & CPU (not on GPU) \\
 energy group exclusions           & $\surd$ & \\
 AdResS multi-scale                & $\surd$ & \\
 OpenMP multi-threading            & only PME & $\surd$ \\
 native GPU support                &         & $\surd$ \\
+Lennard-Jones PME                 & $\surd$ & $\surd$ \\
 \dline
 \end{tabular}
 }
@@ -611,7 +622,7 @@ native GPU support                &         & $\surd$ \\
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Energy drift and pair-list buffering}
-For a canonical ensemble, the average energy error caused by the
+For a canonical (NVT) ensemble, the average energy error caused by the
 finite Verlet buffer size can be determined from the atomic
 displacements and the shape of the potential at the cut-off.
 %Since we are interested in the small drift regime, we will assume
@@ -753,17 +764,21 @@ don't move freely over 18 fs, but rather vibrate.
 
 \subsubsection{Cut-off artifacts and switched interactions}
 With the Verlet scheme, the pair potentials are shifted to be zero at
-the cut-off, such that the potential is the integral of the force.
-Note that in the group scheme this is not possible, because no exact
-cut-off distance is used. There can still be energy drift from
-non-zero forces at the cut-off. This effect is extremely small and
-often not noticeable, as other integration errors may dominate. To
+the cut-off, which makes the potential the integral of the force.
+This is only possible in the group scheme if the shape of the potential
+is such that its value is zero at the cut-off distance.
+However, there can still be energy drift when the
+forces are non-zero at the cut-off. This effect is extremely small and
+often not noticeable, as other integration errors (e.g. from constraints)
+may dominate. To
 completely avoid cut-off artifacts, the non-bonded forces can be
 switched exactly to zero at some distance smaller than the neighbor
 list cut-off (there are several ways to do this in {\gromacs}, see
 \secref{mod_nb_int}). One then has a buffer with the size equal to the
-neighbor list cut-off less the longest interaction cut-off. With the
-group cut-off scheme, one can then also choose to let {\tt mdrun} only
+neighbor list cut-off less the longest interaction cut-off.
+
+With the
+group cut-off scheme, one can also choose to let {\tt mdrun} only
 update the neighbor list when required. That is when one or more
 particles have moved more than half the buffer size from the center of
 geometry of the \swapindex{charge}{group} to which they belong (see
@@ -773,8 +788,9 @@ This option guarantees that there are no cut-off artifacts.  {\bf
 cost, since the neighbor list update frequency will be determined by
 just one or two particles moving slightly beyond the half buffer
 length (which not even necessarily implies that the neighbor list is
-invalid), while 99.99\% of the particles are fine.  } % Brace matches
-ifthenelse test for gmxlite
+invalid), while 99.99\% of the particles are fine.
+
+} % Brace matches ifthenelse test for gmxlite
 
 \subsubsection{Simple search\swapindexquiet{simple}{search}}
 Due to \eqnsref{box_rot}{simplerc}, the vector $\rvij$
@@ -833,12 +849,12 @@ of atoms with net charge zero, called charge groups, in and
 out of the neighbor list. This reduces the cut-off effects from
 the charge-charge level to the dipole-dipole level, which decay
 much faster. With the advent of full range electrostatics methods,
-such as particle mesh Ewald (\secref{pme}), the use of charge groups is
+such as particle-mesh Ewald (\secref{pme}), the use of charge groups is
 no longer required for accuracy. It might even have a slight negative effect
 on the accuracy or efficiency, depending on how the neighbor list is made
 and the interactions are calculated.
 
-But there is still an important reason for using ``charge groups'': efficiency.
+But there is still an important reason for using ``charge groups'': efficiency with the group cut-off scheme.
 Where applicable, neighbor searching is carried out on the basis of
 charge groups which are defined in the molecular topology.
 If the nearest image distance between the {\em
@@ -856,6 +872,9 @@ of 3 to 4 atoms for optimal performance. For all-atom force fields
 this is relatively easy, as one can simply put hydrogen atoms, and in some
 case oxygen atoms, in the same charge group as the heavy atom they
 are connected to; for example: CH$_3$, CH$_2$, CH, NH$_2$, NH, OH, CO$_2$, CO.
+
+With the Verlet cut-off scheme, charge groups are ignored.
+
 } % Brace matches ifthenelse test for gmxlite
 
 \subsection{Compute forces}
@@ -877,39 +896,39 @@ E_{kin} = \half \sum_{i=1}^N m_i v_i^2
 \eeq
 From this the absolute temperature $T$ can be computed using:
 \beq
-\half N_{df} kT = E_{kin}
+\half N_{\mathrm{df}} kT = E_{\mathrm{kin}}
 \label{eqn:E-T}
 \eeq
 where $k$ is Boltzmann's constant and $N_{df}$ is the number of
 degrees of freedom which can be computed from:
 \beq
-N_{df}  ~=~     3 N - N_c - N_{com}
+N_{\mathrm{df}}  ~=~     3 N - N_c - N_{\mathrm{com}}
 \eeq
 Here $N_c$ is the number of {\em \normindex{constraints}} imposed on the system.
-When performing molecular dynamics $N_{com}=3$ additional degrees of
+When performing molecular dynamics $N_{\mathrm{com}}=3$ additional degrees of
 freedom must be removed, because the three
 center-of-mass velocities are constants of the motion, which are usually
 set to zero. When simulating in vacuo, the rotation around the center of mass
-can also be removed, in this case $N_{com}=6$.
+can also be removed, in this case $N_{\mathrm{com}}=6$.
 When more than one temperature-coupling group\index{temperature-coupling group} is used, the number of degrees
 of freedom for group $i$ is:
 \beq
-N^i_{df}  ~=~  (3 N^i - N^i_c) \frac{3 N - N_c - N_{com}}{3 N - N_c}
+N^i_{\mathrm{df}}  ~=~  (3 N^i - N^i_c) \frac{3 N - N_c - N_{\mathrm{com}}}{3 N - N_c}
 \eeq
 
 The kinetic energy can also be written as a tensor, which is necessary
 for pressure calculation in a triclinic system, or systems where shear
 forces  are imposed:
 \beq
-{\bf E}_{kin} = \half \sum_i^N m_i \vvi \otimes \vvi
+{\bf E}_{\mathrm{kin}} = \half \sum_i^N m_i \vvi \otimes \vvi
 \eeq
 
 \subsubsection{Pressure and virial}
 The \normindex{pressure} 
 tensor {\bf P} is calculated from the difference between 
-kinetic energy $E_{kin}$ and the \normindex{virial} ${\bf \Xi}$:
+kinetic energy $E_{\mathrm{kin}}$ and the \normindex{virial} ${\bf \Xi}$:
 \beq
-{\bf P} = \frac{2}{V} ({\bf E}_{kin}-{\bf \Xi})
+{\bf P} = \frac{2}{V} ({\bf E}_{\mathrm{kin}}-{\bf \Xi})
 \label{eqn:P}
 \eeq
 where $V$ is the volume of the computational box. 
@@ -2910,7 +2929,8 @@ of the domain decomposition cell can scale down by at least
 a factor of 0.8. For 3-D domain decomposition this allows cells
 to change their volume by about a factor of 0.5, which should allow
 for compensation of a load imbalance of 100\%.
-The required scaling can be changed with the {\tt -dds} option of {\tt mdrun}.
+The minimum allowed scaling can be changed with the {\tt -dds}
+option of {\tt mdrun}.
 
 \subsection{Constraints in parallel\index{constraints}}
 \label{subsec:plincs}
@@ -2960,11 +2980,11 @@ and their default values is given in \tabref{dd_ranges}.
 \dline
 interaction & range & option & default \\
 \dline
-non-bonded        & $r_c$ = max($r_{list}$,$r_{VdW}$,$r_{Coul}$) & {\tt mdp} file & \\
-two-body bonded   & max($r_{mb}$,$r_c$) & {\tt mdrun -rdd} & starting conf. + 10\% \\
-multi-body bonded & $r_{mb}$ & {\tt mdrun -rdd} & starting conf. + 10\% \\
-constraints       & $r_{con}$ & {\tt mdrun -rcon} & est. from bond lengths \\
-virtual sites     & $r_{con}$ & {\tt mdrun -rcon} & 0 \\
+non-bonded        & $r_c$ = max($r_{\mathrm{list}}$,$r_{\mathrm{VdW}}$,$r_{\mathrm{Coul}}$) & {\tt mdp} file & \\
+two-body bonded   & max($r_{\mathrm{mb}}$,$r_c$) & {\tt mdrun -rdd} & starting conf. + 10\% \\
+multi-body bonded & $r_{\mathrm{mb}}$ & {\tt mdrun -rdd} & starting conf. + 10\% \\
+constraints       & $r_{\mathrm{con}}$ & {\tt mdrun -rcon} & est. from bond lengths \\
+virtual sites     & $r_{\mathrm{con}}$ & {\tt mdrun -rcon} & 0 \\
 \dline
 \end{tabular}
 }
@@ -2976,13 +2996,13 @@ In most cases the defaults of {\tt mdrun} should not cause the simulation
 to stop with an error message of missing interactions.
 The range for the bonded interactions is determined from the distance
 between bonded charge-groups in the starting configuration, with 10\% added
-for headroom. For the constraints, the value of $r_{con}$ is determined by
+for headroom. For the constraints, the value of $r_{\mathrm{con}}$ is determined by
 taking the maximum distance that ({\tt lincs_order + 1}) bonds can cover
 when they all connect at angles of 120 degrees.
-The actual constraint communication is not limited by $r_{con}$,
+The actual constraint communication is not limited by $r_{\mathrm{con}}$,
 but by the minimum cell size $L_C$, which has the following lower limit:
 \beq
-L_C \geq \max(r_{mb},r_{con})
+L_C \geq \max(r_{\mathrm{mb}},r_{\mathrm{con}})
 \eeq
 Without dynamic load balancing the system is actually allowed to scale
 beyond this limit when pressure scaling is used.
@@ -2992,15 +3012,15 @@ rather it is the shortest distance between the triclinic cells borders.
 For rhombic dodecahedra this is a factor of $\sqrt{3/2}$ shorter
 along $x$ and $y$.
 
-When $r_{mb} > r_c$, {\tt mdrun} employs a smart algorithm to reduce
+When $r_{\mathrm{mb}} > r_c$, {\tt mdrun} employs a smart algorithm to reduce
 the communication. Simply communicating all charge groups within
-$r_{mb}$ would increase the amount of communication enormously.
+$r_{\mathrm{mb}}$ would increase the amount of communication enormously.
 Therefore only charge-groups that are connected by bonded interactions
 to charge groups which are not locally present are communicated.
 This leads to little extra communication, but also to a slightly
 increased cost for the domain decomposition setup.
 In some cases, {\eg} coarse-grained simulations with a very short cut-off,
-one might want to set $r_{mb}$ by hand to reduce this cost.
+one might want to set $r_{\mathrm{mb}}$ by hand to reduce this cost.
 
 \subsection{Multiple-Program, Multiple-Data PME parallelization\index{PME}}
 \label{subsec:mpmd_pme}
@@ -3111,27 +3131,27 @@ Implicit solvent calculations in {\gromacs} can be done using the
 generalized Born-formalism, and the Still~\cite{Still97}, HCT~\cite{Truhlar96}, 
 and OBC~\cite{Case04} models are available for calculating the Born radii.
 
-Here, the free energy $G_{solv}$ of solvation is the sum of three terms, 
-a solvent-solvent cavity term ($G_{cav}$), a solute-solvent van der 
-Waals term ($G_{vdw}$), and finally a solvent-solute electrostatics 
-polarization term ($G_{pol}$).
+Here, the free energy $G_{\mathrm{solv}}$ of solvation is the sum of three terms,
+a solvent-solvent cavity term ($G_{\mathrm{cav}}$), a solute-solvent van der
+Waals term ($G_{\mathrm{vdw}}$), and finally a solvent-solute electrostatics
+polarization term ($G_{\mathrm{pol}}$).
 
-The sum of $G_{cav}$ and $G_{vdw}$ corresponds to the (non-polar) 
-free energy of solvation for a molecule from which all charges 
-have been removed, and is commonly called $G_{np}$,
+The sum of $G_{\mathrm{cav}}$ and $G_{\mathrm{vdw}}$ corresponds to the (non-polar)
+free energy of solvation for a molecule from which all charges
+have been removed, and is commonly called $G_{\mathrm{np}}$,
 calculated from the total solvent accessible surface area 
 multiplied with a surface tension. 
 The total expression for the solvation free energy then becomes:
 
 \beq
-G_{solv} = G_{np}  + G_{pol}
+G_{\mathrm{solv}} = G_{\mathrm{np}}  + G_{\mathrm{pol}}
 \label{eqn:gb_solv}
 \eeq
 
-Under the generalized Born model, $G_{pol}$ is calculated from the generalized Born equation~\cite{Still97}:
+Under the generalized Born model, $G_{\mathrm{pol}}$ is calculated from the generalized Born equation~\cite{Still97}:
 
 \beq
-G_{pol} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac {q_i q_j}{\sqrt{r^2_{ij} + b_i b_j \exp\left(\frac{-r^2_{ij}}{4 b_i b_j}\right)}}
+G_{\mathrm{pol}} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac {q_i q_j}{\sqrt{r^2_{ij} + b_i b_j \exp\left(\frac{-r^2_{ij}}{4 b_i b_j}\right)}}
 \label{eqn:gb_still}
 \eeq
 
@@ -3153,11 +3173,11 @@ x=\frac{r_{ij}}{\sqrt{b_i b_j }} = r_{ij} c_i c_j
 In the end, the full re-formulation of~\ref{eqn:gb_still} becomes:
  
 \beq
-G_{pol} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac{q_i q_j}{\sqrt{b_i  b_j}} ~\xi (x) = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n q_i c_i \sum_{j>i}^n q_j c_j~\xi (x)
+G_{\mathrm{pol}} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac{q_i q_j}{\sqrt{b_i  b_j}} ~\xi (x) = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n q_i c_i \sum_{j>i}^n q_j c_j~\xi (x)
 \label{eqn:gb_final}
 \eeq 
 
-The non-polar part ($G_{np}$) of Equation~\ref{eqn:gb_solv} is calculated 
+The non-polar part ($G_{\mathrm{np}}$) of Equation~\ref{eqn:gb_solv} is calculated 
 directly from the Born radius of each atom using a simple ACE type 
 approximation by Schaefer {\em et al.}~\cite{Karplus98}, including a 
 simple loop over all atoms. 
