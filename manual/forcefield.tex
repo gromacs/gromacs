@@ -349,7 +349,7 @@ The modified Coulomb potential function is:
 See also \figref{shift}.
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=10cm]{plots/shiftf}}
+\centerline{\includegraphics[width=10cm]{plots/shiftf}}
 \caption[The Coulomb Force, Shifted Force and Shift Function
 $S(r)$,.]{The Coulomb Force, Shifted Force and Shift Function $S(r)$,
 using r$_1$ = 2 and r$_c$ = 4.} 
@@ -390,7 +390,7 @@ The \swapindex{bond}{stretching} between two covalently bonded atoms
 $i$ and $j$ is represented by a harmonic potential:
 
 \begin{figure}
-\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f-bond}}
+\centerline{\raisebox{2cm}{\includegraphics[width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f-bond}}
 \caption[Bond stretching.]{Principle of bond stretching (left), and the bond
 stretching potential (right).}
 \label{fig:bstretch1}
@@ -417,9 +417,9 @@ The corresponding force is:
 \ve{F}_i(\rvij) = k^b_{ij}(\rij^2-b_{ij}^2)~\rvij
 \eeq
 The force constants for this form of the potential are related to the usual
-harmonic force constant $k^{b,harm}$ (\secref{bondpot}) as
+harmonic force constant $k^{b,\mathrm{harm}}$ (\secref{bondpot}) as
 \beq
-2 k^b b_{ij}^2 = k^{b,harm}
+2 k^b b_{ij}^2 = k^{b,\mathrm{harm}}
 \eeq
 The force constants are mostly derived from the harmonic ones used in 
 \gromosv{87}~\cite{biomos}. Although this form is computationally more 
@@ -534,7 +534,7 @@ The bond-\swapindex{angle}{vibration} between a triplet of atoms $i$ - $j$ - $k$
 is also represented by a harmonic potential on the angle $\tijk$
 
 \begin{figure}
-\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f-angle}}
+\centerline{\raisebox{1cm}{\includegraphics[width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f-angle}}
 \caption[Angle vibration.]{Principle of angle vibration (left) and the
 bond angle potential (right).}
 \label{fig:angle}
@@ -576,10 +576,10 @@ where
 \eeq
 The corresponding force can be derived by partial differentiation with respect
 to the atomic positions. The force constants in this function are related
-to the force constants in the harmonic form $k^{\theta,harm}$
+to the force constants in the harmonic form $k^{\theta,\mathrm{harm}}$
 (\ssecref{harmonicangle}) by:
 \beq
-k^{\theta} \sin^2(\tijk^0) = k^{\theta,harm}
+k^{\theta} \sin^2(\tijk^0) = k^{\theta,\mathrm{harm}}
 \eeq
 In the \gromosv{96} manual there is a much more complicated conversion formula
 which is temperature dependent. The formulas are equivalent at 0 K
@@ -708,8 +708,8 @@ aromatic rings) planar, or to prevent molecules from flipping over to their
 \normindex{mirror image}s, see \figref{imp}.
 
 \begin {figure}
-\centerline{\includegraphics[angle=270,width=4cm]{plots/ring-imp}\hspace{1cm}
-\includegraphics[angle=270,width=3cm]{plots/subst-im}\hspace{1cm}\includegraphics[angle=270,width=3cm]{plots/tetra-im}}
+\centerline{\includegraphics[width=4cm]{plots/ring-imp}\hspace{1cm}
+\includegraphics[width=3cm]{plots/subst-im}\hspace{1cm}\includegraphics[width=3cm]{plots/tetra-im}}
 \caption[Improper dihedral angles.]{Principle of improper
 dihedral angles. Out of plane bending for rings (left), substituents
 of rings (middle), out of tetrahedral (right). The improper dihedral
@@ -772,7 +772,7 @@ when multiple parameters are defined for the same atomtypes
 in the {\tt [ dihedraltypes ]} section.
 
 \begin{figure}
-\centerline{\raisebox{4.5cm}{\includegraphics[angle=270,width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f-dih}}
+\centerline{\raisebox{1cm}{\includegraphics[width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f-dih}}
 \caption[Proper dihedral angle.]{Principle of proper dihedral angle
 (left, in {\em trans} form) and the dihedral angle potential (right).} 
 \label{fig:pdihf}
@@ -1377,7 +1377,7 @@ definition in your topology file, like in the following example:
 
 \begin{verbatim}
 [ distance_restraints ]
-; ai  aj    type  index  type'   low    up1     up2    fac
+; ai   aj   type   index   type'      low     up1     up2     fac
 10     16      1       0       1      0.0     0.3     0.4     1.0
 10     28      1       1       1      0.0     0.3     0.4     1.0
 10     46      1       1       1      0.0     0.3     0.4     1.0
@@ -1912,7 +1912,7 @@ When soft core potentials are selected (by setting {\tt sc-alpha} \textgreater
 sequentially, then the Coulombic interaction is turned off linearly,
 rather than using soft core interactions, which should be less
 statistically noisy in most cases.  This behavior can be overwritten
-by using the mdp option {\tt sc-coul} to 'yes'. Additionally, the
+by using the mdp option {\tt sc-coul} to {\tt yes}. Additionally, the
 soft-core interaction potential is only applied when either the A or B
 state has zero interaction potential.  If both A and B states have
 nonzero interaction potential, default linear scaling described above
@@ -1933,7 +1933,7 @@ r_A &=& \left(\alpha \sigma_A^{48} \LAM^p + r^{48} \right)^\frac{1}{48}
 r_B &=& \left(\alpha \sigma_B^{48} \LL^p + r^{48} \right)^\frac{1}{48}
 \eea
 This ``1-1-48'' path is also implemented in {\gromacs}. Note that for this path the soft core $\alpha$
-should satisfy $0.001 < \alpha < 0.003$,rather than $\alpha \approx
+should satisfy $0.001 < \alpha < 0.003$, rather than $\alpha \approx
 0.5$.
 
 %} % Brace matches ifthenelse test for gmxlite
@@ -1956,7 +1956,7 @@ of atom {\bf i};
 atoms {\bf i+1} and {\bf i+2} are called {\em \normindex{exclusions}} of atom {\bf i}.
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=8cm]{plots/chain}}
+\centerline{\includegraphics[width=8cm]{plots/chain}}
 \caption{Atoms along an alkane chain.}
 \label{fig:chain}
 \end{figure}
@@ -1985,14 +1985,16 @@ in most cases, acceptable, except when applying the cut-off implies
 the creation of charges, in which case you should consider using the
 lattice sum methods provided by {\gromacs}.
 
-Consider a water molecule interacting with another atom. When we would apply
-the cut-off on an atom-atom basis we might include the atom-oxygen
+Consider a water molecule interacting with another atom. If we would apply
+a plain cut-off on an atom-atom basis we might include the atom-oxygen
 interaction (with a charge of $-0.82$) without the compensating charge
 of the protons, and as a result, induce a large dipole moment over the system.
 Therefore, we have to keep groups of atoms with total charge
-0 together. These groups are called {\em charge groups}.
+0 together. These groups are called {\em charge groups}. Note that with
+a proper treatment of long-range electrostatics (e.g. particle-mesh Ewald
+(\secref{pme}), keeping charge groups together is not required.
 
-\subsection{Treatment of Cut-offs\index{cut-off}}
+\subsection{Treatment of Cut-offs in the group scheme\index{cut-off}}
 \newcommand{\rs}{$r_{short}$}
 \newcommand{\rl}{$r_{long}$}
 {\gromacs} is quite flexible in treating cut-offs, which implies
@@ -2369,11 +2371,11 @@ crystals~\cite{Ewald21}. The idea is to convert the single
 slowly-converging sum \eqnref{totalcoulomb} into two
 quickly-converging terms and a constant term:
 \begin{eqnarray}
-V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
-V_{dir} &=& \frac{f}{2} \sum_{i,j}^{N}
+V &=& V_{\mathrm{dir}} + V_{\mathrm{rec}} + V_{0} \\[0.5ex]
+V_{\mathrm{dir}} &=& \frac{f}{2} \sum_{i,j}^{N}
 \sum_{n_x}\sum_{n_y}
 \sum_{n_{z}*} q_i q_j \frac{\mbox{erfc}(\beta {r}_{ij,{\bf n}} )}{{r}_{ij,{\bf n}}} \\[0.5ex]
-V_{rec} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j
+V_{\mathrm{rec}} &=& \frac{f}{2 \pi V} \sum_{i,j}^{N} q_i q_j
 \sum_{m_x}\sum_{m_y}
 \sum_{m_{z}*} \frac{\exp{\left( -(\pi {\bf m}/\beta)^2 + 2 \pi i
       {\bf m} \cdot ({\bf r}_i - {\bf r}_j)\right)}}{{\bf m}^2} \\[0.5ex]
@@ -2682,11 +2684,11 @@ non-homogeneous outside of the cut-off distance, we can instead use
 the Particle-mesh Ewald method as discussed for electrostatics above.
 In this case the modified Ewald equations become
 \begin{eqnarray}
-V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
-V_{dir} &=& -\frac{1}{2} \sum_{i,j}^{N}
+V &=& V_{\mathrm{dir}} + V_{\mathrm{rec}} + V_{0} \\[0.5ex]
+V_{\mathrm{dir}} &=& -\frac{1}{2} \sum_{i,j}^{N}
 \sum_{n_x}\sum_{n_y}
 \sum_{n_{z}*} \frac{C_{ij}^{(6)}g(\beta {r}_{ij,{\bf n}})}{{r_{ij,{\bf n}}}^6} \\[0.5ex]
-V_{rec} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
+V_{\mathrm{rec}} &=& \frac{{\pi}^{\frac{3}{2}} \beta^{3}}{2V} \sum_{m_x}\sum_{m_y}\sum_{m_{z}*}
 f(\pi |{\mathbf m}|/\beta) \times \sum_{i,j}^{N} C_{ij}^{(6)} {\mathrm{exp}}\left[-2\pi i {\bf m}\cdot({\bf r_i}-{\bf r_j})\right] \\[0.5ex]
 V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C_{ii}^{(6)},
 \end{eqnarray}
@@ -2794,21 +2796,6 @@ select we recommend \gromosv{96} for united-atom setups and OPLS-AA/L for
 all-atom parameters. That said, we describe the available options in
 some detail.
 
-\subsection{GROMOS87\index{GROMOS87 force field}}
-The \gromosv{87} suite of programs and corresponding force
-field~\cite{biomos} formed the basis for the development of {\gromacs}
-in the early 1990s.  The original GROMOS87 force field is not
-available in {\gromacs}. In previous versions ($<$ 3.3.2) there used
-to be the so-called ``{\gromacs} force field,'' which was based on
-\gromosv{87}~\cite{biomos}\index{GROMOS87}, with a small modification
-concerning the interaction between water oxygens and carbon
-atoms~\cite{Buuren93b,Mark94}, as well as 10 extra atom
-types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}.
-
-Since version 5.0 this force field has been ``deprecated''. Should 
-you have a justifiable reason to use this force field please 
-use eariler versions of {\gromacs}.
-
 \subsubsection{All-hydrogen force field}
 The \gromosv{87}-based all-hydrogen force field is almost identical to the
 normal \gromosv{87} force field, since the extra hydrogens have no
@@ -2885,7 +2872,7 @@ of the blocks. {\bf Note} that all {\gromacs} programs can read compressed
 
 \subsection{AMBER\index{AMBER force field}}
 
-As of version 4.5, {\gromacs} provides native support for the following AMBER force fields:
+{\gromacs} provides native support for the following AMBER force fields:
 
 \begin{itemize}
 \item AMBER94~\cite{Cornell1995}
@@ -2899,9 +2886,11 @@ As of version 4.5, {\gromacs} provides native support for the following AMBER fo
 
 \subsection{CHARMM\index{CHARMM force field}}
 
-As of version 4.5, {\gromacs} supports the CHARMM27 force field for proteins~\cite{mackerell04, mackerell98}, lipids~\cite{feller00} and nucleic acids~\cite{foloppe00}. The protein parameters (and to some extent the lipid and nucleic acid parameters) were thoroughly tested -- both by comparing potential energies between the port and the standard parameter set in the CHARMM molecular simulation package, as well by how the protein force field behaves together with {\gromacs}-specific techniques such as virtual sites (enabling long time steps) and a fast implicit solvent recently implemented~\cite{Larsson10} -- and the details and results are presented in the paper by Bjelkmar et al.~\cite{Bjelkmar10}. The nucleic acid parameters, as well as the ones for HEME, were converted and tested by Michel Cuendet.
+{\gromacs} supports the CHARMM force field for proteins~\cite{mackerell04, mackerell98}, lipids~\cite{feller00} and nucleic acids~\cite{foloppe00,Mac2000}. The protein parameters (and to some extent the lipid and nucleic acid parameters) were thoroughly tested -- both by comparing potential energies between the port and the standard parameter set in the CHARMM molecular simulation package, as well by how the protein force field behaves together with {\gromacs}-specific techniques such as virtual sites (enabling long time steps) and a fast implicit solvent recently implemented~\cite{Larsson10} -- and the details and results are presented in the paper by Bjelkmar et al.~\cite{Bjelkmar10}. The nucleic acid parameters, as well as the ones for HEME, were converted and tested by Michel Cuendet.
 
 When selecting the CHARMM force field in {\tt \normindex{pdb2gmx}} the default option is to use \normindex{CMAP} (for torsional correction map). To exclude CMAP, use {\tt -nocmap}. The basic form of the CMAP term implemented in {\gromacs} is a function of the $\phi$ and $\psi$ backbone torsion angles. This term is defined in the {\tt .rtp} file by a {\tt [ cmap ]} statement at the end of each residue supporting CMAP. The following five atom names define the two torsional angles. Atoms 1-4 define $\phi$, and atoms 2-5 define $\psi$. The corresponding atom types are then matched to the correct CMAP type in the {\tt cmap.itp} file that contains the correction maps.
+
+A port of the CHARMM36 force field for use with GROMACS is also available at \url{http://mackerell.umaryland.edu/charmm_ff.shtml#gromacs}.
 
 \subsection{Coarse-grained force-fields}
 \index{force-field, coarse-grained}
