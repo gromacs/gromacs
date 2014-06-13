@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -569,25 +569,6 @@ to the maximum accuracy.
 %In \figref{as_implementation}) the assembler implementation is given. 
 It is clear that only one iteration extra (in double 
 precision) is needed for a double-precision result.
-
-\section{Modifying GROMACS}
-The following files have to be edited in case you want to add a bonded
-potential of any type.
-\begin{enumerate}
-\item {\tt include/bondf.h}
-\item {\tt include/types/idef.h}
-\item {\tt include/types/nrnb.h}
-\item {\tt include/types/enums.h}
-\item {\tt include/grompp.h}
-\item {\tt src/kernel/topdirs.c}
-\item {\tt src/gmxlib/tpxio.c}
-\item {\tt src/gmxlib/bondfree.c}
-\item {\tt src/gmxlib/ifunc.c}
-\item {\tt src/gmxlib/nrnb.c}
-\item {\tt src/kernel/convparm.c}
-\item {\tt src/kernel/topdirs.c}
-\item {\tt src/kernel/topio.c}
-\end{enumerate}
 
 % LocalWords:  Virial virial triclinic intra mol mshift shiftvec sqrt SPC lj yf
 % LocalWords:  coul Fortran SGI AMD Raphson IEEE taylor epsr accy ieee yx fpdef
