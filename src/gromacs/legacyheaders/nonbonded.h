@@ -73,7 +73,9 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 
 void
 do_nonbonded(t_forcerec *fr,
-             rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *md, t_blocka *excl,
+             rvec x[], rvec f_shortrange[], rvec f_longrange[], 
+             rvec A[], real phi[],
+             t_mdatoms *md, t_blocka *excl,
              gmx_grppairener_t *grppener,
              t_nrnb *nrnb, real *lambda, real dvdlambda[],
              int nls, int eNL, int flags);

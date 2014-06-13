@@ -62,6 +62,12 @@ class GromacsInABox
         //! Force arrays
         rvec *f_, *f_global_;
         
+        //! Electric field
+        rvec *A_;
+        
+        //! Electrostatic potential
+        real *phi_;
+        
         //! Output stuff
         output_env_t oenv_;
 
@@ -249,12 +255,16 @@ class MMSlave
          * \param[in]  fplog Log file for (debug) output. May be NULL
          * \param[in]  x   the atomic coordinates for the whole system (MM+QM)
          * \param[out] f   the forces on all atoms
+         * \param[out] A   electric field on all atoms
+         * \param[out] phi electric potential on all atoms
          * \param[out] energy the total MM energy
          * \return TRUE if successful
          */
         bool calcEnergy(FILE       *fplog,
                         const rvec *x,
                         rvec       *f,
+                        rvec       *A,
+                        real       *phi,
                         double     *energy);
 };
 

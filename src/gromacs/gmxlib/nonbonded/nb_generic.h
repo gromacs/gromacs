@@ -43,6 +43,8 @@ void
 gmx_nb_generic_kernel(t_nblist *                nlist,
                       rvec *                    x,
                       rvec *                    f,
+                      rvec *                    A,
+                      real *                    phi,
                       t_forcerec *              fr,
                       t_mdatoms *               mdatoms,
                       nb_kernel_data_t *        kernel_data,

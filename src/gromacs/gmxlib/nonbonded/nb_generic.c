@@ -52,6 +52,8 @@ void
 gmx_nb_generic_kernel(t_nblist *                nlist,
                       rvec *                    xx,
                       rvec *                    ff,
+                      rvec *                    AA,
+                      real *                    phi,
                       t_forcerec *              fr,
                       t_mdatoms *               mdatoms,
                       nb_kernel_data_t *        kernel_data,
@@ -71,7 +73,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          rinvsix;
     real          vvdwtot;
     real          vvdw_rep, vvdw_disp;
-    real          ix, iy, iz, fix, fiy, fiz;
+    real          ix, iy, iz, fix, fiy, fiz, Aix, Aiy, Aiz, phii, qjr, qjr3, qir, qir3;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
     real          c6, c12, cexp1, cexp2, br;
@@ -87,6 +89,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real *        VFtab;
     real *        x;
     real *        f;
+    real *        A;
     int           ewitab;
     real          ewtabscale, eweps, sh_ewald, ewrt, ewtabhalfspace;
     real *        ewtab;
@@ -99,6 +102,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
     x                   = xx[0];
     f                   = ff[0];
+    if (NULL != AA)
+    {
+        A                   = AA[0];
+    }
     ielec               = nlist->ielec;
     ivdw                = nlist->ivdw;
 
@@ -218,7 +225,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             fvdw             = 0;
             velec            = 0;
             vvdw             = 0;
-
+            
             if (bExactCutoff && rsq > rcutoff2)
             {
                 continue;
@@ -237,8 +244,22 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             /* Coulomb interaction. ielec==0 means no interaction */
             if (ielec != GMX_NBKERNEL_ELEC_NONE)
             {
+                if (NULL != AA)
+                {
+                    qjr              = facel*charge[jnr]*rinv;
+                    qjr3             = qjr*rinvsq;
+                    qir              = facel*charge[ii]*rinv;
+                    qir3             = qir*rinvsq;
+                    phi[ii]         += qjr;
+                    phi[jnr]        += qir;
+                    A[ii3+XX]       += qjr3*dx;
+                    A[ii3+YY]       += qjr3*dy;
+                    A[ii3+ZZ]       += qjr3*dz;
+                    A[j3+XX]        -= qir3*dx;
+                    A[j3+YY]        -= qir3*dy;
+                    A[j3+ZZ]        -= qir3*dz;
+                }
                 qq               = iq*charge[jnr];
-
                 switch (ielec)
                 {
                     case GMX_NBKERNEL_ELEC_NONE:
@@ -412,7 +433,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             } /* end VdW interactions */
 
             fscal            = felec+fvdw;
-
             tx               = fscal*dx;
             ty               = fscal*dy;
             tz               = fscal*dz;

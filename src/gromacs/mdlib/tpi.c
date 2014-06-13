@@ -614,7 +614,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                 do_force(fplog, cr, inputrec,
                          step, nrnb, wcycle, top, &top_global->groups,
                          state->box, state->x, &state->hist,
-                         f, force_vir, mdatoms, enerd, fcd,
+                         f, NULL, NULL, force_vir, mdatoms, enerd, fcd,
                          state->lambda,
                          NULL, fr, NULL, mu_tot, t, NULL, NULL, FALSE,
                          GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |

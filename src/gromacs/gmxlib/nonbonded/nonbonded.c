@@ -305,7 +305,9 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
 }
 
 void do_nonbonded(t_forcerec *fr,
-                  rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *mdatoms, t_blocka *excl,
+                  rvec x[], rvec f_shortrange[], rvec f_longrange[], 
+                  rvec A[], real phi[],
+                  t_mdatoms *mdatoms, t_blocka *excl,
                   gmx_grppairener_t *grppener,
                   t_nrnb *nrnb, real *lambda, real *dvdl,
                   int nls, int eNL, int flags)
@@ -408,7 +410,7 @@ void do_nonbonded(t_forcerec *fr,
                         /* We don't need the non-perturbed interactions */
                         continue;
                     }
-                    (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+                    (*kernelptr)(&(nlist[i]), x, f, A, phi, fr, mdatoms, &kernel_data, nrnb);
                 }
             }
         }

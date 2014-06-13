@@ -62,7 +62,13 @@ int main(int argc, char *argv[])
         if (bOK)
         {
             printf("The energy is %lf\n", e0);
-            x[0][0] += 0.01;
+            for(i=0; (i<3); i++)
+            {
+                printf("f[%d] = %10g  %10g  %10g\n", i, f[i][XX], f[i][YY], f[i][ZZ]);
+                printf("A[%d] = %10g  %10g  %10g\n", i, A[i][XX], A[i][YY], A[i][ZZ]);
+                printf("phi[%d] = %10g\n", i, phi[i]);
+            }
+            x[0][0] += 0.001;
             bOK = mmslave_calc_energy(gms, stdout, (const rvec *)x, f, A, phi, &e1);
         }
         else
@@ -73,6 +79,12 @@ int main(int argc, char *argv[])
         if (bOK)
         {
             printf("The energy is %lf\n", e1);
+            for(i=0; (i<3); i++)
+            {
+                printf("f[%d] = %10g  %10g  %10g\n", i, f[i][XX], f[i][YY], f[i][ZZ]);
+                printf("A[%d] = %10g  %10g  %10g\n", i, A[i][XX], A[i][YY], A[i][ZZ]);
+                printf("phi[%d] = %10g\n", i, phi[i]);
+            }
         }
     }
     else

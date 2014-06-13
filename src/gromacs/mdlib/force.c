@@ -151,6 +151,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        rvec       x[],      history_t  *hist,
                        rvec       f[],
                        rvec       f_longrange[],
+                       rvec       A[],
+                       real       phi[],
                        gmx_enerdata_t *enerd,
                        t_fcdata   *fcd,
                        gmx_localtop_t *top,
@@ -276,7 +278,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         }
 
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(fr, x, f, f_longrange, md, excl,
+        do_nonbonded(fr, x, f, f_longrange, A, phi, md, excl,
                      &enerd->grpp, nrnb,
                      lambda, dvdl_nb, -1, -1, donb_flags);
 
@@ -292,7 +294,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
                 reset_foreign_enerdata(enerd);
-                do_nonbonded(fr, x, f, f_longrange, md, excl,
+                do_nonbonded(fr, x, f, f_longrange, NULL, NULL, md, excl,
                              &(enerd->foreign_grpp), nrnb,
                              lam_i, dvdl_dum, -1, -1,
                              (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);

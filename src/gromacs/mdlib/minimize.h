@@ -54,6 +54,8 @@ extern "C" {
 typedef struct {
     t_state  s;
     rvec    *f;
+    rvec    *A;
+    real    *phi;
     real     epot;
     real     fnorm;
     real     fmax;

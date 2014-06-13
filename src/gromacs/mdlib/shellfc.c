@@ -1062,7 +1062,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
     do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, groups,
              state->box, state->x, &state->hist,
-             force[Min], force_vir, md, enerd, fcd,
+             force[Min], NULL, NULL, force_vir, md, enerd, fcd,
              state->lambda, graph,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
@@ -1164,7 +1164,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         /* Try the new positions */
         do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
                  top, groups, state->box, pos[Try], &state->hist,
-                 force[Try], force_vir,
+                 force[Try], NULL, NULL, force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
                  force_flags);

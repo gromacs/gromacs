@@ -1098,7 +1098,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
+                     f, NULL, NULL, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);

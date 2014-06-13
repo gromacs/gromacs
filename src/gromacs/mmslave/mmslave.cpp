@@ -315,6 +315,8 @@ bool MMSlave::getGroupID(atom_id id, int *groupID)
 bool MMSlave::calcEnergy(FILE       *fplog,
                          const rvec *x,
                          rvec       *f,
+                         rvec       *A,
+                         real       *phi,
                          double     *energy)
 {
     clear_mat(giab_->vir_);
@@ -328,8 +330,15 @@ bool MMSlave::calcEnergy(FILE       *fplog,
     }
     // Make sure the coordinates are in the state too!
     giab_->ems_->s.x = (rvec *)x;
-    giab_->ems_->f = (rvec *)f;
-    evaluate_energy(NULL,
+    giab_->ems_->f   = (rvec *)f;
+    giab_->ems_->A   = (rvec *)A;
+    giab_->ems_->phi = (real *)phi;
+    for(int i = 0; (i<nAtoms()); i++)
+    {
+        clear_rvec(A[i]);
+        phi[i] = 0;
+    }
+    evaluate_energy(fplog,
                     (t_commrec *)cr_,
                     &mtop_,
                     giab_->ems_,
@@ -494,7 +503,7 @@ int mmslave_calc_energy(gmx_mmslave_t gms,
                         real          phi[],
                         double       *energy)
 {
-    if (gms->mms->calcEnergy(fplog, x, f, energy))
+    if (gms->mms->calcEnergy(fplog, x, f, A, phi, energy))
     {
         return 1;
     }
