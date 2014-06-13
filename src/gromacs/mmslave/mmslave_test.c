@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/mmslave.h"
 
 int main(int argc, char *argv[])
