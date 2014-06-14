@@ -71,6 +71,7 @@ typedef struct trxframe
     int             step;      /* MD step number                   */
     gmx_bool        bTime;
     real            time;      /* time of the frame                */
+    real            __time;    /* internal time - should not be changed outside of trxio.c */
     gmx_bool        bLambda;
     gmx_bool        bFepState; /* does it contain fep_state?       */
     real            lambda;    /* free energy perturbation lambda  */
