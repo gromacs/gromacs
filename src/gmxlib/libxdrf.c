@@ -1466,7 +1466,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
 
     if (bSeekForwardOnly)
     {
-        low = gmx_ftell(fp);
+        low = gmx_ftell(fp)-header_size;
     }
     if (gmx_fseek(fp, 0, SEEK_END))
     {
