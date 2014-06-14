@@ -70,7 +70,10 @@ typedef struct trxframe
     gmx_bool        bStep;
     int             step;      /* MD step number                   */
     gmx_bool        bTime;
-    real            time;      /* time of the frame                */
+    real            time;      /* time of the frame - this is used
+                                * internally while seeking frames, so
+                                * make a copy of the frame if you need
+                                * to modify the time stamp of a frame. */
     gmx_bool        bLambda;
     gmx_bool        bFepState; /* does it contain fep_state?       */
     real            lambda;    /* free energy perturbation lambda  */
