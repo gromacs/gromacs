@@ -2287,7 +2287,7 @@ real posres(int nbonds,
             vtot       += 0.5*kk*dx[m]*dx[m];
             *dvdlambda +=
                 0.5*(pr->posres.fcB[m] - pr->posres.fcA[m])*dx[m]*dx[m]
-                -fm*dpdl[m];
+                + fm*dpdl[m];
 
             /* Here we correct for the pbc_dx which included rdist */
             if (bForceValid)
