@@ -5,7 +5,7 @@
 # include <time.h>
 # include <math.h>
 # include <omp.h>
-# include "tng_io.h"
+#include "../../include/tng_io.h"
 
 int main ();
 void compute ( int np, int nd, double pos[], double vel[],
