@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 2.8)
 
 project(TNG_IO)
 set(PROJECT_VERSION "1.5")
+set(API_VERSION "5")
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/version.h.in
+                ${CMAKE_BINARY_DIR}/include/version.h )
+include_directories(${CMAKE_BINARY_DIR}/include)
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall")
@@ -47,5 +52,8 @@ if(TNG_BUILD_DOCUMENTATION)
                                         SOURCES ${PROJECT_BINARY_DIR}/Doxyfile)
   # IF you do NOT want the documentation to be generated EVERY time you build the project
   # then leave out the 'ALL' keyword from the above command.
+
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Documentation/
+      DESTINATION share/tng/doc)
 endif()
 
