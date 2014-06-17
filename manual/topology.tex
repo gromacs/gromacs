@@ -737,7 +737,9 @@ number of all angles needs to be specified.
 bond, preferably on heavy atoms. When the {\tt [~dihedrals~]} field is used,
 no other dihedrals will be generated for the bonds corresponding to the
 specified  dihedrals. It is possible to put more than one dihedral
-function on a rotatable bond. 
+function on a rotatable bond. In the case of CHARMM27 FF {\tt pdb2gmx}
+can add correction maps to the dihedrals using the default {\tt -cmap} option.
+Please refer to \ssecref{charmmff} for more information.
 
 {\tt pdb2gmx} sets the number of exclusions to 3, which
 means that interactions between atoms connected by at most 3 bonds are
