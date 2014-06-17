@@ -1775,6 +1775,15 @@ static void pick_nbnxn_kernel(FILE                *fp,
                 lookup_nbnxn_kernel_name(*kernel_type),
                 nbnxn_kernel_pairlist_simple(*kernel_type) ? NBNXN_CPU_CLUSTER_I_SIZE : NBNXN_GPU_CLUSTER_SIZE,
                 nbnxn_kernel_to_cj_size(*kernel_type));
+
+        if (nbnxnk4x4_PlainC == *kernel_type ||
+            nbnxnk8x8x8_PlainC == *kernel_type)
+        {
+            md_print_warn(cr, fp,
+                          "WARNING: This simulation used the slow %s kernel. This should\n"
+                          "not happen during routine usage on supported platforms.\n\n",
+                          lookup_nbnxn_kernel_name(*kernel_type));
+        }
     }
 }
 

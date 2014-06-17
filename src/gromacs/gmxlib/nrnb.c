@@ -425,6 +425,15 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
         fprintf(out, " %-32s %16s %15.3f  %6.1f\n",
                 "Total", "", *mflop, tfrac);
         fprintf(out, "%s\n\n", myline);
+
+        if (nrnb->n[eNR_NBKERNEL_GENERIC] > 0)
+        {
+            fprintf(out,
+                    "WARNING: This simulation used the slow generic C kernel. This is fine\n"
+                    "if you are comparing different implementations or MD software. Routine\n"
+                    "simulations should use a different non-bonded setup for much better\n"
+                    "performance.\n\n");
+        }
     }
 }
 
