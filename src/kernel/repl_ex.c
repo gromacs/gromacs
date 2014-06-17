@@ -877,7 +877,7 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
         dpV = (beta[ap]*re->pres[ap]-beta[bp]*re->pres[bp])*(Vol[b]-Vol[a])/PRESFAC;
         if (bPrint)
         {
-            fprintf(fplog, "  dpV = %10.3e  d = %10.3e\nb", dpV, delta + dpV);
+            fprintf(fplog, "  dpV = %10.3e  d = %10.3e\n", dpV, delta + dpV);
         }
         delta += dpV;
     }
