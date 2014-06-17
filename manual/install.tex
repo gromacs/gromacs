@@ -388,34 +388,16 @@ processes. To run {\gromacs} in parallel over multiple nodes in a cluster
 of a supercomputer, you need to configure and compile {\gromacs} with an external
 MPI library. All supercomputers are shipped with MPI libraries optimized for 
 that particular platform, and if you are using a cluster of workstations
-there are several good free MPI implementations;
-Open MPI is usually a good choice. Once you have an MPI library
-installed it's trivial to compile {\gromacs} with MPI support: Just pass
-the option {\tt -DGMX_MPI=on} to {\tt cmake} and (re-)compile. Please see
-{\wwwpage} for more detailed instructions.
-Note that in addition to MPI parallelization, {\gromacs} supports
+there are several good free MPI implementations; OpenMPI is usually a good choice.
+Note that MPI and threaded-MPI support are mutually incompatible.
+
+In addition to MPI parallelization, {\gromacs} supports also
 thread-parallelization through \normindex{OpenMP}. MPI and OpenMP parallelization
-can be combined, which results in, so called, hybrid parallelization.
-See {\wwwpage} for details on use and performance of the parallelization
-schemes.
+can be combined, which results in, so called, hybrid parallelization. It can offer
+better performance and scaling in some cases.
 
-For communications over multiple nodes connected by a network,
-there is a program usually called {\tt mpirun} with which you can start 
-the parallel processes. A typical command line could look like:
-{\tt mpirun -np 10 mdrun_mpi -s topol -v}
-
-With the implementation of threading available by default in {\gromacs} version 4.5, 
-if you have a single machine with multiple processors you don't have to
-use the {\tt mpirun} command, or compile with MPI. Instead, you can
-allow {\gromacs} to determine the number of threads automatically, or use the {\tt mdrun} option {\tt -nt}:
-{\tt mdrun -nt 8 -s topol.tpr}
-
-Check your local manuals (or online manual) for exact details
-of your MPI implementation.
-
-If you are interested in programming MPI yourself, you can find
-manuals and reference literature on the internet.
-
+See {\wwwpage} for details on the use and performance of the different
+parallelization schemes.
 
 \section{Running {\gromacs} on \normindex{GPUs}}
 As of version 4.6, {\gromacs} has native GPU support through CUDA.
