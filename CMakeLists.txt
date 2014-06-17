@@ -1195,14 +1195,18 @@ else(GMX_DEFAULT_SUFFIX)
 endif(GMX_DEFAULT_SUFFIX)
 set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
-##################################################################
-# Shared library settings - Darwin uses INSTALL_NAME_DIR instead!
-##################################################################
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+################################################################
+# Shared library settings
+################################################################
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (CMAKE_VERSION VERSION_GREATER 2.8.11)))
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    set(CMAKE_MACOSX_RPATH 1)
+else()
+    # We are on Darwin/OSX, and cmake cannot handle proper RPATHs
+    set(CMAKE_INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 endif()
 
 #COPYING file: Only necessary for binary distributions.

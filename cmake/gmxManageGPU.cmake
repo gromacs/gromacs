@@ -70,6 +70,22 @@ if(GMX_GPU OR GMX_GPU_AUTO)
     else()
         find_package(CUDA 3.2 ${FIND_CUDA_QUIETLY})
     endif()
+    # Cmake 2.8.12 (and CMake 3.0) introduced a new bug where the cuda
+    # library dir is added twice as an rpath on APPLE, which in turn causes
+    # the install_name_tool to wreck the binaries when it tries to remove this
+    # path. Since this is set inside the cuda module, we remove the extra rpath
+    # added in the library string - an rpath is not a library anyway, and at
+    # least for Gromacs this works on all CMake versions. This should be
+    # reasonably future-proof, since newer versions of CMake appear to handle
+    # the rpath automatically based on the provided library path, meaning
+    # the explicit rpath specification is no longer needed.
+    if(APPLE AND (CMAKE_VERSION VERSION_GREATER 2.8.11))
+        foreach(elem ${CUDA_LIBRARIES})
+            if(elem MATCHES "-Wl,.*")
+                list(REMOVE_ITEM CUDA_LIBRARIES ${elem})
+            endif()
+        endforeach(elem)
+    endif()
 endif()
 
 # Depending on the current vale of GMX_GPU and GMX_GPU_AUTO:

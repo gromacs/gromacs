@@ -67,7 +67,7 @@ if(GMX_BUILD_OWN_FFTW)
     # disabling GMX_BUILD_OWN_FFTW changes dependencies correctly.
     add_dependencies(md gmxfftw)
 endif()
-set_target_properties(md PROPERTIES OUTPUT_NAME "${MD_PREFIX}md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
+set_target_properties(md PROPERTIES OUTPUT_NAME "${MD_PREFIX}md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION}
     COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 install(TARGETS md DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
