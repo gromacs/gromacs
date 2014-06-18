@@ -1,0 +1,1151 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements gmx::analysismodules::RnaAnalysis.
+ *
+ * \author Nina Fischer <nina.fischer@icm.uu.se>
+ * \author Anders Gärdenäs <anders.gardenas@gmail.com>
+ * \author Jonas Ditz <jonas.ditz@icm.uu.se>
+ * \ingroup module_trajectoryanalysis
+ */
+#include "gmxpre.h"
+
+#include "rnaAnalysis.h"
+
+#include "config.h"
+
+#include <assert.h>
+
+#include <cmath>
+
+#include <algorithm>
+#include <list>
+#include <sstream>
+#include <vector>
+
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/options.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/selection/nbsearch.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+
+#include "basepairdb.h"
+
+namespace gmx
+{
+
+namespace analysismodules
+{
+
+typedef std::vector<BasePair *>::iterator BasePairPtrIterator;
+
+//! Info about a base pair, base1 and base2 is the index of ResInfo
+class PairInfo
+{
+    public:
+        PairInfo(unsigned int        base1,
+                 unsigned int        base2,
+                 real                RMSD,
+                 BasePairPtrIterator bpi) : base1_(base1), base2_(base2), RMSD_(RMSD), bpi_(bpi) {}
+
+        unsigned int base1() const { return base1_; }
+
+        unsigned int base2() const { return base2_; }
+
+        real RMSD() const { return RMSD_; }
+
+        BasePairPtrIterator bpi() const { return bpi_; }
+
+        void setRMSD(real RMSD) { RMSD_ = RMSD; }
+
+        void setBPI(BasePairPtrIterator bpi) { bpi_ = bpi; }
+    private:
+        //! Base index 1 in the structure
+        int                 base1_;
+        //! Base index 2 in the structure
+        int                 base2_;
+        //! The best RMSD
+        real                RMSD_;
+        //! Pointer to entrance in the template data base
+        BasePairPtrIterator bpi_;
+};
+
+// Holds the frame coordinates
+struct frame
+{
+    rvec * vec;
+};
+
+/*! \brief
+ * Class used to analyze RNA structures and trajectories.
+ *
+ * Inherits TrajectoryAnalysisModule and all functions from there.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class RnaAnalysis : public TrajectoryAnalysisModule
+{
+    public:
+
+        //! Constructor
+        RnaAnalysis();
+
+        //! Destructor
+        virtual ~RnaAnalysis();
+
+        // Set the options and setting
+        virtual void initOptions(IOptionsContainer          *options,
+                                 TrajectoryAnalysisSettings *settings);
+
+        // First routine called by the analysis frame work
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        // Call for each frame of the trajectory
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        // Last routine called by the analysis frame work
+        virtual void finishAnalysis(int /* nframes*/);
+
+        // Routine to write output, that is additional over the built-in
+        virtual void writeOutput();
+
+    private:
+        // Check if it is a valid atom to save and get the atom type
+        bool isValid(const char * name);
+
+        unsigned int  findSameAtom(int i, const char * name);
+
+        //! Read the template data base
+        void readTemplates();
+
+        //! Read the topology
+        void readTopology(const TopologyInformation &top);
+
+        bool analyzeBasePair(std::vector<BasePair *>::iterator bpi,
+                             unsigned int                      base1,
+                             unsigned int                      base2,
+                             t_pbc                            *pbc,
+                             Selection                         sel,
+                             bool                              bRMSD,
+                             real                             *RMSD,
+                             rvec                             *vec,
+                             int                               vecSize);
+
+        void printBasePair(const PairInfo &tempPair);
+
+        bool analyzeBasePair(BasePairPtrIterator bpi,
+                             unsigned int        base1,
+                             unsigned int        base2,
+                             t_pbc              *pbc,
+                             Selection           sel,
+                             real               *RMSD,
+                             rvec               *vec,
+                             int                 vecSize);
+        Selection                           sel_;
+        AnalysisData                        data_;
+        AnalysisDataAverageModulePointer    adata_;
+        AnalysisNeighborhood                nb_;
+
+        gmx_atomprop_t                      atomprop_;
+        // Copy and assign disallowed by base.
+        // A list list of a found pairs
+        std::list < std::list < PairInfo> > found;
+        std::list <frame>                   coords;
+        //! Our storage of residue information
+        std::vector<ResInfo *>              nucleotideInfo_;
+
+        std::vector<BasePair *>             templateDB_;
+        std::string                         DB;
+        std::string                         outPath;
+        std::string                         rnaAnalysis;
+        std::string                         rnaLogFile;
+        FILE                               *rnaLog;
+
+        // Boolean options
+        bool                               hydrogenRmsd_;
+        bool                               sugarRmsd_;
+        bool                               phosphateRmsd_;
+        bool                               printAllBasePairs_;
+        bool                               statistic;
+        bool                               oneBPList;
+        bool                               Xpm;
+
+        double                             extraOffset;
+        double                             addRMSD_;
+        double                             bondDist_;
+        bool                               datailedInfo_;
+        t_atoms                          * iAtoms;
+        int                                offsetAtom;
+};
+
+// Constructor
+RnaAnalysis::RnaAnalysis() : adata_(new AnalysisDataAverageModule())
+{
+    data_.setColumnCount(0, 1);
+    // Tell the analysis framework that this component exists
+    registerAnalysisDataset(&data_, "rnaAnalysis");
+
+    offsetAtom         = 0;
+    hydrogenRmsd_      = true;
+    sugarRmsd_         = true;
+    phosphateRmsd_     = true;
+    printAllBasePairs_ = false;
+    statistic          = false;
+    oneBPList          = true;
+    Xpm                = false;
+    extraOffset        = 0.0;
+    addRMSD_           = 0.0;
+    datailedInfo_      = false;
+    iAtoms             = NULL;
+    bondDist_          = 0.0;
+    atomprop_          = gmx_atomprop_init();
+    rnaLog             = NULL;
+}
+
+// Destructor
+RnaAnalysis::~RnaAnalysis()
+{
+    // Destroy C structures where there is no automatic memory release
+    // C++ takes care of memory in classes (hopefully)
+    gmx_atomprop_destroy(atomprop_);
+}
+
+void
+RnaAnalysis::initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings)
+{
+    static const char *const desc[] = {
+        "Please note that we are still working on improving this tool!\n",
+        "Reads and analyzes an RNA structure (-s [<.gro/..>]) or an MD simulation trajectory (-f [<.xtc/.trr/..>] -s [<.gro/..>])",
+        "to detect all bases that are in contact (e.g., form base pairs).\n\n",
+        "This is can be done in two ways:\n",
+        "1. Check if hydrogen bonds between two RNA bases in the structure match a certain distance criteria (-templateDB hbonds).\n",
+        "2. compare RNA structure bases to a certain base pair template database (-templateDB bps).\n\n",
+        "The data is displayed on the terminal as raw data. More information about",
+        "hydrogen bond distances and RMSD to template structures can be displayed(-moreInfo true).\n",
+        "The data can also printed to an xpm file can be coverted to an eps file displaying a matrix",
+        "describing all base pairs (-matrix true).\n",
+        "If you want, you can also store all detected base pairs to pdb files (-pdbFile yes),",
+        "you can also specify the directory in which the pdb files are stored (-outPath <string>)."
+
+    };
+
+    // Add the descriptive text (program help text) to the options
+    settings->setHelpText(desc);
+
+    // Add option for optional output file
+    options->addOption(FileNameOption("g").filetype(eftGenericData).outputFile()
+                           .store(&rnaLogFile).defaultBasename("result")
+                           .description("log file" ).required());
+
+    // Add option for optional output file
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
+                           .store(&rnaAnalysis).defaultBasename("result")
+                           .description("output file" ));
+
+    // Add option for selecting a subset of atoms
+    options->addOption(SelectionOption("select").valueCount(1)
+                           .store(&sel_).defaultSelectionText("all").onlyAtoms()
+                           .description("Use default (all); select which atoms should be used for analysis"));
+
+    // Control input settings
+    settings->setFlags(TrajectoryAnalysisSettings::efRequireTop |
+                       TrajectoryAnalysisSettings::efNoUserPBC);
+    settings->setPBC(true);
+
+    // Template databases in which base pairs are stored
+    options->addOption(StringOption("templateDB").store(&DB).defaultValue("bps")
+                           .description("define the template DB you want to use (currently just bps available)"));
+
+    // Print all results about RNA base pairs during analysis
+    options->addOption(BooleanOption("printAllBasePairs").store(&printAllBasePairs_).defaultValue(false)
+                           .description("print all possible base pairs during analysis"));
+
+    // Include hydrogen atoms in RMSD calculation
+    options->addOption(BooleanOption("hydro").store(&hydrogenRmsd_).defaultValue(true)
+                           .description("include the hydrogen atoms of the nucleotide in RMSD calculations"));
+
+    // Include  phosphate group atoms in RMSD calculation
+    options->addOption(BooleanOption("phos").store(&phosphateRmsd_).defaultValue(true)
+                           .description("include the phosphate atoms of the nucleotide in RMSD calculation"));
+
+    // Include ONLY base atoms of nucleotides in RMSD calculations
+    options->addOption(BooleanOption("sugar").store(&sugarRmsd_).defaultValue(true)
+                           .description("include the sugar atoms of the nucleotide in RMSD calculation"));
+
+    // Distance of hydrogen bonds
+    options->addOption(DoubleOption("bondDist").store(&bondDist_).defaultValue(0.3)
+                           .description("distance between hydrogen bond donor and acceptor atom"));
+
+    // Maximum RMSD for between identified base pair and template base pair
+    options->addOption(DoubleOption("addRMSD").store(&addRMSD_).defaultValue(0.0)
+                           .description("increase the maximum RMSD (cut-off value) by offset for identifying base pairs (default = 0.0)"));
+
+    // More information about output data
+    options->addOption(BooleanOption("detailedInfo").store(&datailedInfo_).defaultValue(false)
+                           .description("details of H-bond distances and RMSD values between identified and template base pairs"));
+
+
+    // Extra offset used when looking for base pairs in close proximity
+    options->addOption(DoubleOption("addOffset").store(&extraOffset).defaultValue(0.5)
+                           .description("increase distance by offset when searching for atoms within a certain range"));
+
+    // Matrix output file
+    options->addOption(BooleanOption("matrix").store(&Xpm).defaultValue(false)
+                           .description("matrix xpm output file is printed, one file for each frame of the trajectory (so far only for templateDB bps)"));
+
+    // Saves coordinates of base pairs in PDB files
+    options->addOption(BooleanOption("pdbFiles").store(&statistic).defaultValue(false)
+                           .description("save coordinates of all identified RNA base pairs in PDB files"));
+
+    // Output path to directory in which PDB files are stored
+    options->addOption(StringOption("outPath").store(&outPath).defaultValue("")
+                           .description("output path to directory which already exists (default current directory)"));
+
+}
+
+void RnaAnalysis::readTemplates()
+{
+    // Store all file names of RNA base pair templates within input directory
+    // in vector pdbTemplates
+    std::string dbName = "RNA-" + DB + ".pdb";
+    std::string str1   = "amber99sb-ildn.ff/" + dbName;
+
+    // Set path and load file pointer
+    real      maxDist = 0;
+
+    // Initialize RNA template data base to compare given RNA structure to
+    BasePair   *bp = NULL;
+    TextReader  fp(gmxlibfn(str1.c_str()));
+    std::string line;
+    while (fp.readLine(&line))
+    {
+        if (NULL == bp)
+        {
+            bp = new BasePair(hydrogenRmsd_, sugarRmsd_, phosphateRmsd_);
+        }
+        std::vector<std::string> elements = splitString(line);
+        if  (elements.size() == 0)
+        {
+            continue;
+        }
+        int         nElem    = 0;
+        std::string pdbType  = elements[nElem++];
+
+        if (pdbType.compare("MODEL") == 0)
+        {
+            continue;
+        }
+        else if ((pdbType.compare("REMARK") == 0) && (elements.size() >= 3))
+        {
+            bp->setNucleotides(elements[nElem++]);
+            if ((DB.compare("bps") == 0) && (elements.size() >= 5))
+            {
+                bp->setBondTypes(elements[nElem++]);
+                bp->setIsomerism(elements[nElem++]);
+                bp->setTemplateRMSD(std::strtod(elements[nElem++].c_str(), NULL));
+            }
+        }
+        else if ((pdbType.compare("CRYST1") == 0) && (elements.size() >= 7))
+        {
+            matrix box;
+            int    ePBC;
+            read_cryst1(line.c_str(), &ePBC, box);
+            bp->setPBC(ePBC, box);
+        }
+        else if ( (pdbType.compare("ATOM") == 0) &&
+                  (elements.size() >= 8) )
+        {
+            unsigned int anum  = std::atoi(elements[nElem++].c_str());
+            std::string  aname = elements[nElem++];
+            std::string  rname = elements[nElem++];
+            unsigned int rnum  = std::atoi(elements[nElem++].c_str());
+            rvec         x;
+            // Convert coordinates from Ångström to nanometer
+            x[XX]            = 0.1*std::strtod(elements[nElem++].c_str(), NULL);
+            x[YY]            = 0.1*std::strtod(elements[nElem++].c_str(), NULL);
+            x[ZZ]            = 0.1*std::strtod(elements[nElem++].c_str(), NULL);
+            real        m;
+            if (gmx_atomprop_query(atomprop_, epropMass, "???",
+                                   aname.c_str(), &m))
+            {
+                bp->addBasePairAtom(x, anum, aname, rname, rnum, m);
+            }
+            else
+            {
+                GMX_THROW(InvalidInputError(line));
+            }
+
+        }
+        else if ((pdbType.compare("CONECT") == 0) &&
+                 (elements.size() >= 3))
+        {
+            int ai = std::atoi(elements[nElem++].c_str());
+            int aj = std::atoi(elements[nElem++].c_str());
+            bp->addBondAtoms(ai, aj);
+        }
+        else if (pdbType.compare("ENDMDL") == 0)
+        {
+            // Assign the center of mass to origin of all atoms
+            // in three dimensions.
+            bp->resetToOrigin();
+
+            // Set the distance between atoms
+            bp->setAtomDist(offsetAtom);
+            if (bp->maximumDistance() > maxDist)
+            {
+                maxDist = bp->maximumDistance();
+            }
+            templateDB_.push_back(bp);
+            bp           = NULL;
+        }
+        else
+        {
+            char buf[256];
+            snprintf(buf, sizeof(buf), "Unknown pdbType %s", pdbType.c_str());
+            GMX_THROW(InvalidInputError(buf));
+        }
+    }
+    fp.close();
+    if (NULL != bp)
+    {
+        delete bp;
+    }
+    fprintf(rnaLog, "There are %u RNA base pair types in template database %s.\n",
+            static_cast<unsigned int>(templateDB_.size()),
+            dbName.c_str());
+    fprintf(rnaLog, "Will use %g nm for neighborsearching\n",
+            maxDist+extraOffset);
+
+    // Initiate the neighborsearching code
+    nb_.setCutoff(maxDist + extraOffset);
+    // TODO: Did not work before, but we don't know why....
+    nb_.setMode(AnalysisNeighborhood::eSearchMode_Grid);
+}
+
+void RnaAnalysis::readTopology(const TopologyInformation &top)
+{
+    // Initialize variables
+    iAtoms = &(top.topology()->atoms);
+    std::vector<int>     rnaRes;
+    const char          *grpnames;
+
+    // Set up the residue type
+    gmx_residuetype_t *rt;
+    gmx_residuetype_init(&rt);
+    GMX_RELEASE_ASSERT((rt != NULL), "Problems setting up the residuetypes");
+
+    // Get all the RNA residues
+    for (int i = 0; i < iAtoms->nres; i++)
+    {
+        gmx_residuetype_get_type(rt, *iAtoms->resinfo[i].name, &grpnames);
+        if (strcmp("RNA", grpnames) == 0)
+        {
+            rnaRes.push_back(i);
+        }
+    }
+
+    // Set all the values of the nucleotide
+    int       cAtom = 0;
+    bool      taken = false;
+
+    for (unsigned int i = 0; i < rnaRes.size(); i++)
+    {
+        ResInfo *ri = NULL;
+
+        for (; cAtom < iAtoms->nr; )
+        {
+            if (taken && (rnaRes[i] != iAtoms->atom[cAtom].resind))
+            {
+                // New nucleotide
+                taken = false;
+                break;
+            }
+            // Test if the current atom is within the right nucleotide
+            if (rnaRes[i] == iAtoms->atom[cAtom].resind)
+            {
+                if (!taken)
+                {
+                    taken = true;
+                    ri    = new ResInfo(*iAtoms->resinfo[rnaRes[i]].name[0],
+                                        iAtoms->resinfo[rnaRes[i]].nr,
+                                        cAtom);
+                }
+                // Add an atom.
+                // TODO: make sure the order of atoms in the input is the same as the template
+                ri->addResInfoAtom(*iAtoms->atomname[cAtom],
+                                   !isValid(*iAtoms->atomname[cAtom]));
+                cAtom++;
+            }
+        }
+        if (NULL != ri)
+        {
+            nucleotideInfo_.push_back(ri);
+            if (NULL != debug)
+            {
+                fprintf(debug, "Just pushed a residue %c%d with %u atoms.\n",
+                        ri->residueType(), ri->residueNumber(), ri->nAtoms());
+            }
+        }
+    }
+    fprintf(rnaLog, "There are %u RNA bases in input file.\n",
+            static_cast<unsigned int>(rnaRes.size()));
+
+    gmx_residuetype_destroy(rt);
+}
+
+void RnaAnalysis::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                               const TopologyInformation        &top)
+{
+    // Open log file
+    rnaLog = gmx_fio_fopen(rnaLogFile.c_str(), "w");
+
+    // Add the module that will contain the averaging and the time series
+    // for our calculation
+    data_.addModule(adata_);
+    // Add a module for plotting the data automatically at the end of
+    // the calculation. With this in place you only have to add data
+    // points to the data etc.
+    AnalysisDataPlotModulePointer plotm_(new AnalysisDataPlotModule());
+    plotm_->setSettings(settings.plotSettings());
+    plotm_->setFileName(rnaAnalysis);
+    plotm_->setTitle("RNA Analysis");
+    plotm_->setXAxisIsTime();
+    plotm_->setYLabel("RNA Analysis (%)");
+    plotm_->appendLegend("RNA Analysis");
+    data_.addModule(plotm_);
+
+    readTopology(top);
+
+    readTemplates();
+}
+
+static bool validateResInfo(ResInfo *ri)
+{
+    GMX_RELEASE_ASSERT((ri->residueType() != Thymine), "Thymine not supported!");
+    if (NULL != debug)
+    {
+        fprintf(debug, "residueType %c, nAtoms %u\n", ri->residueType(), ri->nAtoms());
+    }
+    return (((ri->residueType() == Adenine)  && (ri->nAtoms() >= 30)) ||
+            ((ri->residueType() == Uracil)   && (ri->nAtoms() >= 28)) ||
+            ((ri->residueType() == Guanine)  && (ri->nAtoms() >= 31)) ||
+            ((ri->residueType() == Cytosine) && (ri->nAtoms() >= 29)));
+}
+
+void RnaAnalysis::printBasePair(const PairInfo &tempPair)
+{
+    fprintf(rnaLog, "base pair %c%i - %c%i",
+            nucleotideInfo_[tempPair.base1()]->residueType(),
+            nucleotideInfo_[tempPair.base1()]->residueNumber(),
+            nucleotideInfo_[tempPair.base2()]->residueType(),
+            nucleotideInfo_[tempPair.base2()]->residueNumber());
+
+    BasePairPtrIterator bpi = tempPair.bpi();
+    if (DB == "bps")
+    {
+        fprintf(rnaLog, "\t\t%s %s",
+                (*bpi)->bondName().c_str(),
+                isomerismName((*bpi)->isomerismType()));
+    }
+    if (datailedInfo_)
+    {
+        fprintf(rnaLog, "\nRMSD to template: %f\n", tempPair.RMSD());
+
+        for  (unsigned int con = 0; con < (*bpi)->nrBondAtoms(); con++)
+        {
+            int atomId1 = findSameAtom(tempPair.base1(), (*bpi)->bondIndex(con, 0));
+            int atomId2 = findSameAtom(tempPair.base2(), (*bpi)->bondIndex(con, 1));
+
+            atomId1 = nucleotideInfo_[tempPair.base1()]->atomStart() + atomId1;
+            atomId2 = nucleotideInfo_[tempPair.base2()]->atomStart() + atomId2;
+
+            // Get atom coordinates when Hbond exists and the calculate the distance
+            ConstArrayRef<rvec> x           = sel_.coordinates();
+            real                currentDist = sqrt(distance2(x[atomId1], x[atomId2]));
+
+            if (currentDist <= bondDist_)
+            {
+                fprintf(rnaLog, "bond distance %s-%s: %f\n",
+                        (*bpi)->bondIndex(con, 0),
+                        (*bpi)->bondIndex(con, 1), currentDist);
+            }
+        }
+    }
+    fprintf(rnaLog, "\n");
+}
+
+bool RnaAnalysis::analyzeBasePair(BasePairPtrIterator bpi,
+                                  unsigned int        base1,
+                                  unsigned int        base2,
+                                  t_pbc              *pbc,
+                                  Selection           sel,
+                                  real               *RMSD,
+                                  rvec               *vec,
+                                  int                 vecSize)
+{
+    // reset the coordinates to the origin if needed
+    reset_x_ndim(3, vecSize, NULL, vecSize, NULL, vec, (*bpi)->atomMass());
+    bool bond = (*bpi)->isHBond(nucleotideInfo_[base1],
+                                nucleotideInfo_[base2],
+                                pbc, bondDist_, sel);
+    *RMSD = (*bpi)->computeRootMeanSquareDeviation(vec, vecSize);
+    if (NULL != debug)
+    {
+        fprintf(debug, "template: %s; RMSD = %g\n",
+                (*bpi)->templateName().c_str(), *RMSD);
+    }
+    return bond;
+}
+
+static int fillVector(ResInfo            *ri1,
+                      ResInfo            *ri2,
+                      ConstArrayRef<rvec> src,
+                      rvec               *dest)
+{
+    int index = 0;
+    for (unsigned int i = 0; i < ri1->nAtoms(); i++)
+    {
+        if (!ri1->invalid(i))
+        {
+            copy_rvec(src[i + ri1->atomStart()], dest[index++]);
+        }
+    }
+    for (unsigned int i = 0; i < ri2->nAtoms(); i++)
+    {
+        if (!ri2->invalid(i))
+        {
+            copy_rvec(src[i + ri2->atomStart()], dest[index++]);
+        }
+    }
+    return index;
+}
+
+void RnaAnalysis::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                               TrajectoryAnalysisModuleData *pdata)
+{
+    std::list<PairInfo> pairs;
+    rvec                vec[200];
+    rvec                vec_swap[200];
+    AnalysisDataHandle  dh    = pdata->dataHandle(data_);
+    const Selection    &sel   = pdata->parallelSelection(sel_);
+
+    // Saves all the coordinates (only done when making statistic, stats needs to be true!)
+    if (statistic)
+    {
+        int   stop;
+        frame frTemp;
+        frTemp.vec = new rvec[iAtoms->nr];
+        for (unsigned int r = 0; r < nucleotideInfo_.size(); r++)
+        {
+            stop = nucleotideInfo_[r]->atomStart() + nucleotideInfo_[r]->nAtoms();
+            for (int i = nucleotideInfo_[r]->atomStart(); i < stop; i++)
+            {
+                copy_rvec(sel.coordinates()[i], frTemp.vec[i]);
+            }
+        }
+        coords.push_back(frTemp);
+    }
+
+    GMX_RELEASE_ASSERT(NULL != pbc, "You have no periodic boundary conditions");
+
+    // Analysis framework magic
+    dh.startFrame(frnr, fr.time);
+
+    // Set the default coordinates to search from
+    rvec * repVec = new rvec[nucleotideInfo_.size()];
+    int    i      = 0;
+    for (std::vector<ResInfo *>::iterator ri = nucleotideInfo_.begin();
+         (ri < nucleotideInfo_.end()); ++ri, ++i)
+    {
+        copy_rvec(sel.coordinates()[(*ri)->atomStart()+offsetAtom], repVec[i]);
+    }
+
+    AnalysisNeighborhoodPositions pos(repVec, nucleotideInfo_.size());
+    // Use neighborsearching tools
+    AnalysisNeighborhoodSearch    nbsearch = nb_.initSearch(pbc, pos);
+    // Find the first reference position within the cutoff.
+    AnalysisNeighborhoodPair      pair;
+
+    for (unsigned int base1 = 0; base1 < nucleotideInfo_.size(); base1++)
+    {
+        // Set the mode to be grid mode
+        AnalysisNeighborhoodPairSearch pairSearch = nbsearch.startPairSearch(repVec[base1]);
+
+        // Start the search
+        while (pairSearch.findNextPair(&pair))
+        {
+            unsigned int base2 = pair.refIndex();
+            if (base2 <= base1)
+            {
+                continue;
+            }
+
+            PairInfo     tempPair(base1, base2, 1000.0, templateDB_.end());
+
+            // Concatenate the two arrays and set values
+            // Exclude atoms with atom types which should not be used during analysis
+            // (e.g. hydrogen atoms)
+            unsigned int dimerSize      = fillVector(nucleotideInfo_[base1],
+                                                     nucleotideInfo_[base2],
+                                                     sel.coordinates(), vec);
+            unsigned int dimerSize_Swap = fillVector(nucleotideInfo_[base2],
+                                                     nucleotideInfo_[base1],
+                                                     sel.coordinates(), vec_swap);
+            GMX_RELEASE_ASSERT((dimerSize == dimerSize_Swap),
+                               "Inconsistency filling vectors in two differen orders");
+            // Loops through the base pair template database
+            for (BasePairPtrIterator bpi = templateDB_.begin();
+                 (bpi < templateDB_.end()); ++bpi)
+            {
+                // Check if there are missing atoms in nucleobase:
+                // if there are missing atoms, base won't be used.
+                if (!validateResInfo(nucleotideInfo_[base1]) ||
+                    !validateResInfo(nucleotideInfo_[base2]) )
+                {
+                    continue;
+                }
+                // Now check whether we have nucleotides matching the template
+                BasePairComparison bpc =
+                    (*bpi)->checkTemplate(nucleotideInfo_[base1]->residueType(),
+                                          nucleotideInfo_[base2]->residueType());
+                if (BasePairComparison_MisMatch == bpc)
+                {
+                    continue;
+                }
+                bool bond_Match = false;
+                real RMSD_Match = 1000;
+                if ((bpc == BasePairComparison_Match) ||
+                    (bpc == BasePairComparison_Both))
+                {
+                    // Test normal base pair
+                    bond_Match = analyzeBasePair(bpi, base1, base2, pbc,
+                                                 sel, &RMSD_Match,
+                                                 vec, dimerSize);
+                }
+                bool bond_Swap = false;
+                real RMSD_Swap = 1000;
+                if ((bpc == BasePairComparison_Swap) ||
+                    (bpc == BasePairComparison_Both))
+                {
+                    // Test swapped base pair
+                    bond_Swap = analyzeBasePair(bpi, base2, base1, pbc,
+                                                sel, &RMSD_Swap,
+                                                vec_swap, dimerSize);
+                }
+                real RMSD = std::min(RMSD_Match, RMSD_Swap);
+                bool bond = bond_Swap || bond_Match;
+                if (bond && (RMSD < tempPair.RMSD()))
+                {
+                    tempPair.setBPI(bpi);
+                    tempPair.setRMSD(RMSD);
+
+                    // Prints out list of base pairs every time the criteria is fullfilled
+                    // Could be more than once for one single base pair
+                    if (printAllBasePairs_)
+                    {
+                        printBasePair(tempPair);
+                    }
+                }
+            }       // Loop over templates
+
+            // Only true if a templated base pair is found that
+            // matches RMSD and hydrogen bond distance criterion
+            // for one of the templates.
+            if (tempPair.bpi() < templateDB_.end())
+            {
+                // Prints out base pair list once (with the template that matches the base pair the best)
+                if (oneBPList)
+                {
+                    printBasePair(tempPair);
+                }
+                // Save the current pair
+                pairs.push_back(tempPair);
+
+            } // end if
+
+        }     // while search for pairs
+
+    }         // end for each residue in PDB structure
+
+    fprintf(rnaLog, "\nFound %" GMX_PRId64 " RNA base pairs that match the given criterion.\n"
+            "Double, triple, etc. count might be possible for one single base pair.\n",
+            (gmx_int64_t) pairs.size());
+    found.push_back(pairs);
+    nbsearch.reset();
+    // Magic
+    dh.finishFrame();
+
+    delete [] repVec;
+}
+
+
+void
+RnaAnalysis::finishAnalysis(int /* nframes*/)
+{
+    if (NULL != rnaLog)
+    {
+        gmx_fio_fclose(rnaLog);
+    }
+}
+
+void
+RnaAnalysis::writeOutput()
+{
+    if ((Xpm && (DB == "bps")) || statistic)
+    {
+        // Set up the default colour
+        int   adjustment;
+        int   atomId[200];
+        t_rgb rlo;
+        t_rgb rhi;
+        rhi.r = 1.0, rhi.g = 0.0, rhi.b = 1.0;
+        rlo.r = 0.0, rlo.g = 0.0, rlo.b = 0.0;
+        real * axis = new real[nucleotideInfo_.size()];
+
+        // Set up axes for colour map, both axis are the same length
+        for (unsigned int i = 0; i < nucleotideInfo_.size(); i++)
+        {
+            axis[i] = nucleotideInfo_[i]->residueNumber();
+        }
+
+        // Strings
+        char    titel[]  = "RNA Analysis";
+        char    legend[] = "legend";
+        char    label[]  = "residues";
+        int     nlevels  = 15;
+        real  **matrix;
+        matrix = new real*[nucleotideInfo_.size()];
+
+        for (unsigned int x = 0; x < nucleotideInfo_.size(); x++)
+        {
+            matrix[x] = new real[nucleotideInfo_.size()];
+            for (unsigned int y = 0; y < nucleotideInfo_.size(); y++)
+            {
+                matrix[x][y] = 0;
+            }
+        }
+
+        /* Open files for storing all detected RNA base pairs */
+        std::vector<FILE *>        pdbStatistic;
+        std::vector<unsigned int>  model_nr;
+
+        if (statistic)
+        {
+            for (std::vector<BasePair *>::iterator bpi = templateDB_.begin();
+                 (bpi < templateDB_.end()); ++bpi)
+            {
+                char buf[256];
+
+                // Final outpath depends on template
+                if (outPath.size() > 0)
+                {
+                    char temp[256];
+                    strcpy (temp, outPath.c_str());
+                    strcat (temp, "/");
+
+                    if (DB == "bps")
+                    {
+                        snprintf(buf, sizeof(buf), "%s%c%c_%s_%s.pdb",
+                                 temp,
+                                 (*bpi)->nucleotideType(0),
+                                 (*bpi)->nucleotideType(1),
+                                 (*bpi)->bondName().c_str(),
+                                 isomerismName((*bpi)->isomerismType()));
+                    }
+                    else
+                    {
+                        snprintf(buf, sizeof(buf), "%s%c%c_temp.pdb",
+                                 temp,
+                                 (*bpi)->nucleotideType(0),
+                                 (*bpi)->nucleotideType(1));
+                    }
+                }
+                else
+                {
+                    if (DB == "bps")
+                    {
+                        snprintf(buf, sizeof(buf), "%c%c_%s_%s.pdb",
+                                 (*bpi)->nucleotideType(0),
+                                 (*bpi)->nucleotideType(1),
+                                 (*bpi)->bondName().c_str(),
+                                 isomerismName((*bpi)->isomerismType()));
+                    }
+                    else
+                    {
+                        snprintf(buf, sizeof(buf), "%c%c_temp.pdb",
+                                 (*bpi)->nucleotideType(0),
+                                 (*bpi)->nucleotideType(1));
+                    }
+                }
+                pdbStatistic.push_back(gmx_fio_fopen(buf, "a+"));
+                model_nr.push_back(1);
+            }
+        }
+
+
+        // Statistic list
+        std::list<frame>::const_iterator frVec = coords.begin();
+
+        // Set up list pointers
+        std::list<PairInfo>::const_iterator               posI;
+        std::list<PairInfo>::const_iterator               posEnd;
+        std::list <std::list <PairInfo> >::const_iterator frameI;
+        std::list <std::list <PairInfo> >::const_iterator frameEnd = found.end();
+
+        int ii = 0;
+        // Start running through the whole trajectory
+        for (frameI = found.begin(); frameI != frameEnd; ++frameI)
+        {
+            // Calculate the current marix
+            posEnd = frameI->end();
+            for (posI = frameI->begin(); posI != posEnd; ++posI)
+            {
+                BasePairPtrIterator bpi       = posI->bpi();
+                unsigned int        pairIndex = bpi-templateDB_.begin();
+                // Saves the positions
+                if (statistic)
+                {
+                    adjustment = 0;
+                    unsigned int dimerSize = (nucleotideInfo_[posI->base1()]->nAtoms() +
+                                              nucleotideInfo_[posI->base2()]->nAtoms());
+                    // Concatenate the two arrays and set values to them
+                    for (unsigned int i = 0; i < dimerSize; i++)
+                    {
+                        // Exclude invalid atom types ( hydrogen etc)
+                        if (nucleotideInfo_[posI->base1()]->nAtoms() > i)
+                        {
+                            if (nucleotideInfo_[posI->base1()]->invalid(i))
+                            {
+                                adjustment++;
+                                continue;
+                            }
+                            // Sets the first part of the array
+                            atomId[(i - adjustment)] = i + nucleotideInfo_[posI->base1()]->atomStart();
+                        }
+                        else
+                        {
+                            if (nucleotideInfo_[posI->base2()]->invalid(i - nucleotideInfo_[posI->base1()]->nAtoms()))
+                            {
+                                adjustment++;
+                                continue;
+                            }
+                            // Sets the second part of the array
+                            atomId[(i - adjustment)] = i +nucleotideInfo_[posI->base2()]->atomStart() - nucleotideInfo_[posI->base1()]->nAtoms();
+                        }
+                    }
+                    dimerSize = dimerSize - adjustment;
+
+                    // Write a pdb file
+                    write_pdbfile_indexed(pdbStatistic[pairIndex], " ", iAtoms,
+                                          frVec->vec, (*bpi)->getEpbc(),
+                                          *(*bpi)->box(),
+                                          'A',
+                                          model_nr[pairIndex],
+                                          dimerSize, atomId, NULL, false);
+                    model_nr[pairIndex]++;
+                }
+                if (Xpm && (DB == "bps"))
+                {
+                    // Get the index of the bond
+                    matrix[posI->base2()][posI->base1()] = (*bpi)->bondPairIndex() +1;
+                    // Only got 16 colours
+                    if (matrix[posI->base2()][posI->base1()] > 16)
+                    {
+                        matrix[posI->base2()][posI->base1()] = 17;
+                    }
+                    // Isomeri colour either 0 or 1
+                    matrix[posI->base1()][posI->base2()] = static_cast<int>((*bpi)->isomerismType()) * 10;
+                }
+
+            }
+            // Print the current matrix
+            if (Xpm && (DB == "bps"))
+            {
+                FILE             * file;
+                char               temp[256] = "";
+
+                std::ostringstream ss;
+                ss << ii;
+                std::string        s = ss.str();
+                char const       * c = s.c_str();
+                // Open a file to write to
+                if (outPath != "")
+                {
+                    strcpy (temp, outPath.c_str());
+                    strcat (temp, "/");
+                    strcat (temp, c);
+                    strcat (temp, "_Matrix.xpm");
+                }
+                else
+                {
+                    strcat (temp, c);
+                    strcat (temp, "_Matrix.xpm");
+                }
+                file = gmx_fio_fopen(temp, "w");
+                GMX_RELEASE_ASSERT((file != NULL), "Could not create an .xpm file");
+
+                write_xpm_split(file, 0, titel, legend,
+                                label, label, nucleotideInfo_.size(), nucleotideInfo_.size(),
+                                axis, axis, matrix, 0.0, 16.0, &nlevels, rlo, rhi, 0.0, 16.0, &nlevels, true, rlo, rhi);
+
+                // Reset the matix
+                for (posI = frameI->begin(); posI != posEnd; ++posI)
+
+                {
+                    matrix[posI->base2()][posI->base1()] = 0.0;
+                    matrix[posI->base1()][posI->base2()] = 0.0;
+                }
+
+                ii++;
+                gmx_fio_fclose(file);
+
+            }
+            if (statistic)
+            {
+                // We dont need the current frame anymore
+                delete [] frVec->vec;
+                ++frVec;
+            }
+
+
+        }
+
+        // Close files and release memory
+        if (statistic)
+        {
+            for (unsigned int i = 0; i < templateDB_.size(); i++)
+            {
+                gmx_fio_fclose(pdbStatistic[i]);
+            }
+        }
+
+        delete [] axis;
+        for (unsigned int i = 0; i < nucleotideInfo_.size(); i++)
+        {
+            delete [] matrix[i];
+        }
+        delete [] matrix;
+
+    }
+    if (Xpm && (DB != "bps"))
+    {
+        printf("\nCalculation of the matrix is only available if the templateDB flag is set to \"bps\"");
+    }
+}
+
+// find atom with the same name
+unsigned int RnaAnalysis::findSameAtom(int i, const char* name)
+{
+    for (unsigned int x = 0; (x < nucleotideInfo_[i]->nAtoms()); x++)
+    {
+        if (nucleotideInfo_[i]->atomName(x).compare(name) == 0)
+        {
+            return x;
+        }
+    }
+    char buf[256];
+    snprintf(buf, sizeof(buf), "Can not find atom %s", name);
+    GMX_THROW(APIError(buf));
+}
+
+// Return true if its a valid atom, needs name as input
+bool RnaAnalysis::isValid(const char * name)
+{
+    // Check for atom types we should ignore
+    if ( (!phosphateRmsd_ && strcmp(name, "P") == 0) ||
+         (!hydrogenRmsd_  && strchr(name, 'H') != NULL) ||
+         (!sugarRmsd_     && strchr(name, '\'') != NULL) )
+    {
+        return false;
+    }
+
+    bool set = false;
+    for (unsigned int i = 0; i < strlen(name); i++)
+    {
+        set = set || isalpha(name[i]);
+    }
+
+    if (!set)
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "%s does not seem to be an atom\n", name);
+        GMX_THROW(APIError(buf));
+    }
+    return set;
+}
+
+const char RnaAnalysisInfo::name[]             = "rnaAnalysis";
+const char RnaAnalysisInfo::shortDescription[] =
+    "Analyze RNA PDB structures and trajectories";
+
+TrajectoryAnalysisModulePointer RnaAnalysisInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new RnaAnalysis);
+}
+
+} // namespace analysismodules
+
+} // namespace gmx
