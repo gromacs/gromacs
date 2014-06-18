@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,7 +92,10 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box);
  * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
-void write_pdbfile_indexed(FILE *out, const char *title, const t_atoms *atoms,
+void read_cryst1(const char *line, int *ePBC, matrix box);
+/* Read the CRYST1 line in a pdb file and convert it to a gromacs box */
+
+void write_pdbfile_indexed(FILE *out, const char *title, const struct t_atoms *atoms,
                            const rvec x[], int ePBC, const matrix box, char chain,
                            int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains);
