@@ -92,7 +92,10 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box);
  * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
-void write_pdbfile_indexed(FILE *out, const char *title, const t_atoms *atoms,
+void read_cryst1(const char *line, int *ePBC, matrix box);
+/* Read the CRYST1 line in a pdb file and convert it to a gromacs box */
+
+void write_pdbfile_indexed(FILE *out, const char *title, const struct t_atoms *atoms,
                            const rvec x[], int ePBC, const matrix box, char chain,
                            int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains);
