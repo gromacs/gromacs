@@ -732,14 +732,18 @@ real aniso_pol(int nbonds,
     /* The coordinate frame defined by the local geometry is converted
      * to Cartesian space to apply forces along x, y, and z */
     /* Mapping
-              Z1
-             /
-        X---Y-(S)    
-             \
-              Z2
+              Z1                        LP1
+             /                         /
+         X--Y-S    e.g. carbonyl   C==O--DO    
+             \                         \
+              Z2                        LP2
      */
-    int  i, m, aS, aX, aY, aZ1, aZ2, type, type0;
-    rvec dyz1, dyz2, dz1z2, dxy, dys, nW, kk, dx, kdx, proj;
+    int  i, m, aS, aX, aY, aZ1, aZ2, type, type0, ki;
+    ivec dt;
+    /* TODO: changing these names - check!!! */
+    /* water_pol dOD = dyx here */
+    /* water_pol dDS = dxs here */
+    rvec dyz1, dyz2, dz1z2, dyx, dxs, nW, kk, dx, kdx, proj;
 #ifdef DEBUG
     rvec df;
 #endif
@@ -791,11 +795,11 @@ real aniso_pol(int nbonds,
             r_11   = 1.0/sqrt(distance2(x[aX], x[aY]));
 
             /* Compute vectors describing the local molecular frame */
-            rvec_sub(x[aZ1], x[aY], dyz1);
-            rvec_sub(x[aZ2], x[aY], dyz2);
-            rvec_sub(x[aZ2], x[aZ1], dz1z2);
-            rvec_sub(x[aY], x[aX], dxy);
-            rvec_sub(x[aS], x[aY], dys);
+            pbc_rvec_sub(pbc, x[aZ1], x[aY], dyz1);
+            pbc_rvec_sub(pbc, x[aZ2], x[aY], dyz2);
+            pbc_rvec_sub(pbc, x[aZ2], x[aZ1], dz1z2);
+            pbc_rvec_sub(pbc, x[aX], x[aY], dyx);
+            ki = pbc_rvec_sub(pbc, x[aS], x[aX], dxs);
             cprod(dyz1, dyz2, nW);
 
             /* Compute inverse length of normal vector */
@@ -803,19 +807,19 @@ real aniso_pol(int nbonds,
             /* This is for precision, but does not make a big difference,
              * it can go later.
              */
-            r_11 = gmx_invsqrt(iprod(dxy, dxy));
+            r_11 = gmx_invsqrt(iprod(dyx, dyx));
 
             /* Normalize the vectors in the local molecular frame */
             svmul(r_nW, nW, nW);
             svmul(r_22, dz1z2, dz1z2);
-            svmul(r_11, dxy, dxy);
+            svmul(r_11, dyx, dyx);
 
             /* Compute displacement of shell along components of the vector */
-            dx[ZZ] = iprod(dys, dxy);
-            /* Compute projection on the XY plane: dDS - dx[ZZ]*dxy */
+            dx[ZZ] = iprod(dxs, dyx);
+            /* Compute projection on the XY plane: dDS - dx[ZZ]*dyx */
             for (m = 0; (m < DIM); m++)
             {
-                proj[m] = dys[m]-dx[ZZ]*dxy[m];
+                proj[m] = dxs[m]-dx[ZZ]*dyx[m];
             }
 
             dx[XX] = iprod(proj, nW);
@@ -829,16 +833,16 @@ real aniso_pol(int nbonds,
             if (debug)
             {
                 fprintf(debug, "ANISOPOL: dx2=%10g  dy2=%10g  dz2=%10g  sum=%10g  dDS^2=%10g\n",
-                        sqr(dx[XX]), sqr(dx[YY]), sqr(dx[ZZ]), iprod(dx, dx), iprod(dys, dys));
+                        sqr(dx[XX]), sqr(dx[YY]), sqr(dx[ZZ]), iprod(dx, dx), iprod(dxs, dxs));
                 fprintf(debug, "ANISOPOL: dz1z2=(%10g,%10g,%10g)\n", dz1z2[XX], dz1z2[YY], dz1z2[ZZ]);
-                fprintf(debug, "ANISOPOL: dxy=(%10g,%10g,%10g), 1/r_11 = %10g\n",
-                        dxy[XX], dxy[YY], dxy[ZZ], 1/r_11);
+                fprintf(debug, "ANISOPOL: dyx=(%10g,%10g,%10g), 1/r_11 = %10g\n",
+                        dyx[XX], dyx[YY], dyx[ZZ], 1/r_11);
                 fprintf(debug, "ANISOPOL: nW =(%10g,%10g,%10g), 1/r_nW = %10g\n",
                         nW[XX], nW[YY], nW[ZZ], 1/r_nW);
                 fprintf(debug, "ANISOPOL: dx  =%10g, dy  =%10g, dz  =%10g\n",
                         dx[XX], dx[YY], dx[ZZ]);
-                fprintf(debug, "ANISOPOL: dysx=%10g, dysy=%10g, dysz=%10g\n",
-                        dys[XX], dys[YY], dys[ZZ]);
+                fprintf(debug, "ANISOPOL: dxsx=%10g, dxsy=%10g, dxsz=%10g\n",
+                        dxs[XX], dxs[YY], dxs[ZZ]);
             }
 #endif
             /* Now compute the forces and energy */
@@ -846,18 +850,27 @@ real aniso_pol(int nbonds,
             kdx[YY] = kk[YY]*dx[YY];
             kdx[ZZ] = kk[ZZ]*dx[ZZ];
             vtot   += iprod(dx, kdx);
+
+            if (g)
+            {
+                ivec_sub(SHIFT_IVEC(g, aS), SHIFT_IVEC(g, aX), dt);
+                ki = IVEC2IS(dt);
+            }
+
             for (m = 0; (m < DIM); m++)
             {
                 /* This is a tensor operation but written out for speed */
                 tx        = nW[m]*kdx[XX];
                 ty        = dz1z2[m]*kdx[YY];
-                tz        = dxy[m]*kdx[ZZ];
+                tz        = dyx[m]*kdx[ZZ];
                 fij       = -tx-ty-tz;
 #ifdef DEBUG
                 df[m] = fij;
 #endif
-                f[aS][m] += fij;
-                f[aY][m] -= fij;
+                f[aS][m]           += fij;
+                f[aX][m]           -= fij;
+                fshift[ki][m]      += fij;
+                fshift[CENTRAL][m] -= fij;
             }
 #ifdef DEBUG
             if (debug)
@@ -883,7 +896,8 @@ real water_pol(int nbonds,
      * a shell connected to a dummy with spring constant that differ in the
      * three spatial dimensions in the molecular frame.
      */
-    int  i, m, aO, aH1, aH2, aD, aS, type, type0;
+    int  i, m, aO, aH1, aH2, aD, aS, type, type0, ki;
+    ivec dt;
     rvec dOH1, dOH2, dHH, dOD, dDS, nW, kk, dx, kdx, proj;
 #ifdef DEBUG
     rvec df;
@@ -926,11 +940,12 @@ real water_pol(int nbonds,
             aS   = forceatoms[i+5];
 
             /* Compute vectors describing the water frame */
-            rvec_sub(x[aH1], x[aO], dOH1);
-            rvec_sub(x[aH2], x[aO], dOH2);
-            rvec_sub(x[aH2], x[aH1], dHH);
-            rvec_sub(x[aD], x[aO], dOD);
-            rvec_sub(x[aS], x[aD], dDS);
+            pbc_rvec_sub(pbc, x[aH1], x[aO], dOH1);
+            pbc_rvec_sub(pbc, x[aH2], x[aO], dOH2);
+            pbc_rvec_sub(pbc, x[aH2], x[aH1], dHH);
+            pbc_rvec_sub(pbc, x[aD], x[aO], dOD);
+            pbc_rvec_sub(pbc, x[aS], x[aD], dDS);
+            ki = pbc_rvec_sub(pbc, x[aS], x[aD], dDS);
             cprod(dOH1, dOH2, nW);
 
             /* Compute inverse length of normal vector
@@ -985,6 +1000,13 @@ real water_pol(int nbonds,
             kdx[YY] = kk[YY]*dx[YY];
             kdx[ZZ] = kk[ZZ]*dx[ZZ];
             vtot   += iprod(dx, kdx);
+
+            if (g)
+            {
+                ivec_sub(SHIFT_IVEC(g, aS), SHIFT_IVEC(g, aD), dt);
+                ki = IVEC2IS(dt);
+            }
+
             for (m = 0; (m < DIM); m++)
             {
                 /* This is a tensor operation but written out for speed */
@@ -995,8 +1017,10 @@ real water_pol(int nbonds,
 #ifdef DEBUG
                 df[m] = fij;
 #endif
-                f[aS][m] += fij;
-                f[aD][m] -= fij;
+                f[aS][m]           += fij;
+                f[aD][m]           -= fij;
+                fshift[ki][m]      += fij;
+                fshift[CENTRAL][m] -= fij;
             }
 #ifdef DEBUG
             if (debug)
