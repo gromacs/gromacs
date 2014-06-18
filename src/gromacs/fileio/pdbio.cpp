@@ -170,7 +170,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box)
     }
 }
 
-static void read_cryst1(char *line, int *ePBC, matrix box)
+void read_cryst1(const char *line, int *ePBC, matrix box)
 {
 #define SG_SIZE 11
     char   sa[12], sb[12], sc[12], sg[SG_SIZE+1], ident;
