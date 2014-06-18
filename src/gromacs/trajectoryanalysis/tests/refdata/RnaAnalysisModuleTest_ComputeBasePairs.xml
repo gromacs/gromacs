@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">rnaAnalysis</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="rnaAnalysis">
+      <DataFrame Name="Frame0">
+        <Real Name="X">1</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-g">
+      <String Name="Contents"><![CDATA[
+There are 41 RNA bases in input file.
+There are 450 RNA base pair types in template database RNA-bps.pdb.
+Will use 2.34938 nm for neighborsearching
+base pair G68 - C108		cis WW-2
+base pair G69 - C107		cis WW-2
+base pair C70 - G106		cis WW-2
+base pair C71 - G105		cis WW-2
+base pair G72 - A104		trans SH-1
+base pair A73 - U103		trans HW-2
+base pair U74 - G102		trans HW-1
+base pair G75 - A101		cis WW-2a
+base pair G76 - G100		trans WH-2
+base pair U77 - A99		trans WH-2
+base pair A78 - G98		trans HS-1
+base pair G79 - C97		cis WW-2
+base pair U80 - G96		cis WW-3
+base pair G81 - U95		cis WW-1
+base pair U82 - A94		cis WW-2
+base pair G83 - C93		cis WW-2
+base pair G84 - C92		cis WW-2
+base pair G85 - C91		cis WW-2
+base pair G86 - C90		cis WW-2
+
+
+Found 19 RNA base pairs that match the given criterion.
+Double, triple, etc. count might be possible for one single base pair.
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
