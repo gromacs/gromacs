@@ -41,6 +41,7 @@ gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
                   freevolume.cpp
                   pairdist.cpp
                   rdf.cpp
+  	  	  rnaAnalysis.cpp
                   sasa.cpp
                   select.cpp
                   surfacearea.cpp
