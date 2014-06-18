@@ -250,13 +250,17 @@ void make_pull_groups(t_pull *pull, char **pgnames, t_blocka *grps, char **gname
     {
         gmx_fatal(FARGS, "All entries in pull_dim are N");
     }
-
+    
     for (g = 0; g < pull->ngrp+1; g++)
     {
         pgrp = &pull->grp[g];
         if (g == 0 && strcmp(pgnames[g], "") == 0)
         {
             pgrp->nat = 0;
+        }
+        else if (g != 0 && strcmp(pgnames[g], "") == 0)
+        {
+            gmx_fatal(FARGS, "Group pull_group%d required by grompp was undefined\n",g);
         }
         else
         {
