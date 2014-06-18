@@ -108,11 +108,7 @@ int gmx_node_rank(void)
 #endif
 }
 
-#if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
-#include <spi/include/kernel/location.h>
-#endif
-
-int gmx_physicalnode_id_hash(void)
+static int mpi_hostname_hash(void)
 {
     int hash_int;
 
@@ -146,23 +142,12 @@ int gmx_physicalnode_id_hash(void)
     return hash_int;
 }
 
-int gmx_hostname_num()
-{
-#ifndef GMX_MPI
-    return 0;
-#else
-#ifdef GMX_THREAD_MPI
-    /* thread-MPI currently puts the thread number in the process name,
-     * we might want to change this, as this is inconsistent with what
-     * most MPI implementations would do when running on a single node.
-     */
-    return 0;
-#else
-    int  resultlen, hostnum, i, j;
-    char mpi_hostname[MPI_MAX_PROCESSOR_NAME], hostnum_str[MPI_MAX_PROCESSOR_NAME];
+#if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
+#include <spi/include/kernel/location.h>
 
-    MPI_Get_processor_name(mpi_hostname, &resultlen);
-#ifdef GMX_TARGET_BGQ
+static int bgq_nodenum(void)
+{
+    int           hostnum;
     Personality_t personality;
     Kernel_GetPersonality(&personality, sizeof(personality));
     /* Each MPI rank has a unique coordinate in a 6-dimensional space
@@ -183,38 +168,9 @@ int gmx_hostname_num()
     hostnum += personality.Network_Config.Dcoord;
     hostnum *= personality.Network_Config.Enodes;
     hostnum += personality.Network_Config.Ecoord;
-#else
-    /* This procedure can only differentiate nodes with host names
-     * that end on unique numbers.
-     */
-    i = 0;
-    j = 0;
-    /* Only parse the host name up to the first dot */
-    while (i < resultlen && mpi_hostname[i] != '.')
-    {
-        if (std::isdigit(mpi_hostname[i]))
-        {
-            hostnum_str[j++] = mpi_hostname[i];
-        }
-        i++;
-    }
-    hostnum_str[j] = '\0';
-    if (j == 0)
-    {
-        hostnum = 0;
-    }
-    else
-    {
-        /* Use only the last 9 decimals, so we don't overflow an int */
-        hostnum = std::strtol(hostnum_str + std::max(0, j-9), NULL, 10);
-    }
-#endif
 
     if (debug)
     {
-        std::fprintf(debug, "In gmx_hostname_num: hostname '%s', hostnum %d\n",
-                     mpi_hostname, hostnum);
-#ifdef GMX_TARGET_BGQ
         std::fprintf(debug,
                      "Torus ID A: %d / %d B: %d / %d C: %d / %d D: %d / %d E: %d / %d\n"
                      "Node ID T: %d / %d core: %d / %d hardware thread: %d / %d\n",
@@ -234,11 +190,39 @@ int gmx_hostname_num()
                      64,
                      Kernel_ProcessorThreadID(),
                      4);
-#endif
     }
     return hostnum;
+}
+#endif
+
+int gmx_physicalnode_id_hash(void)
+{
+    int hash;
+
+#ifndef GMX_MPI
+    hash = 0;
+#else
+#ifdef GMX_THREAD_MPI
+    /* thread-MPI currently puts the thread number in the process name,
+     * we might want to change this, as this is inconsistent with what
+     * most MPI implementations would do when running on a single node.
+     */
+    hash = 0;
+#else
+#ifdef GMX_TARGET_BGQ
+    hash = bgq_nodenum();
+#else
+    hash = mpi_hostname_hash();
 #endif
 #endif
+#endif
+
+    if (debug)
+    {
+        fprintf(debug, "In gmx_physicalnode_id_hash: hash %d\n", hash);
+    }
+
+    return hash;
 }
 
 #ifdef GMX_LIB_MPI

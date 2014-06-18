@@ -139,7 +139,7 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 {
     gmx_nodecomm_t *nc;
-    int             n, rank, hostnum, ng, ni;
+    int             n, rank, nodehash, ng, ni;
 
     /* Many MPI implementations do not optimize MPI_Allreduce
      * (and probably also other global communication calls)
@@ -160,7 +160,7 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     MPI_Comm_size(cr->mpi_comm_mygroup, &n);
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
 
-    hostnum = gmx_hostname_num();
+    nodehash = gmx_physicalnode_id_hash();
 
     if (debug)
     {
@@ -169,7 +169,7 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 
 
     /* The intra-node communicator, split on node number */
-    MPI_Comm_split(cr->mpi_comm_mygroup, hostnum, rank, &nc->comm_intra);
+    MPI_Comm_split(cr->mpi_comm_mygroup, nodehash, rank, &nc->comm_intra);
     MPI_Comm_rank(nc->comm_intra, &nc->rank_intra);
     if (debug)
     {
@@ -229,25 +229,25 @@ void gmx_init_intranode_counters(t_commrec *cr)
     /* thread-MPI is not initialized when not running in parallel */
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
     int nrank_world, rank_world;
-    int i, mynum, *num, *num_s, *num_pp, *num_pp_s;
+    int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
 
     MPI_Comm_size(MPI_COMM_WORLD, &nrank_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
 
-    /* Get the node number from the hostname to identify the nodes */
-    mynum = gmx_hostname_num();
+    /* Get a (hopefully unique) hash that identifies our physical node */
+    myhash = gmx_physicalnode_id_hash();
 
     /* We can't rely on MPI_IN_PLACE, so we need send and receive buffers */
-    snew(num,   nrank_world);
-    snew(num_s, nrank_world);
-    snew(num_pp,   nrank_world);
-    snew(num_pp_s, nrank_world);
+    snew(hash,   nrank_world);
+    snew(hash_s, nrank_world);
+    snew(hash_pp,   nrank_world);
+    snew(hash_pp_s, nrank_world);
 
-    num_s[rank_world]    = mynum;
-    num_pp_s[rank_world] = (cr->duty & DUTY_PP) ? mynum : -1;
+    hash_s[rank_world]    = myhash;
+    hash_pp_s[rank_world] = (cr->duty & DUTY_PP) ? myhash : -1;
 
-    MPI_Allreduce(num_s,    num,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(num_pp_s, num_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(hash_s,    hash,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(hash_pp_s, hash_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     nrank_intranode    = 0;
     rank_intranode     = 0;
@@ -255,7 +255,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
     rank_pp_intranode  = 0;
     for (i = 0; i < nrank_world; i++)
     {
-        if (num[i] == mynum)
+        if (hash[i] == myhash)
         {
             nrank_intranode++;
             if (i < rank_world)
@@ -263,7 +263,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
                 rank_intranode++;
             }
         }
-        if (num_pp[i] == mynum)
+        if (hash_pp[i] == myhash)
         {
             nrank_pp_intranode++;
             if ((cr->duty & DUTY_PP) && i < rank_world)
@@ -272,10 +272,10 @@ void gmx_init_intranode_counters(t_commrec *cr)
             }
         }
     }
-    sfree(num);
-    sfree(num_s);
-    sfree(num_pp);
-    sfree(num_pp_s);
+    sfree(hash);
+    sfree(hash_s);
+    sfree(hash_pp);
+    sfree(hash_pp_s);
 #else
     /* Serial or thread-MPI code: we run within a single physical node */
     nrank_intranode    = cr->nnodes;

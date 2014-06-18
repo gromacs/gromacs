@@ -239,7 +239,8 @@ gmx_set_thread_affinity(FILE                *fplog,
          */
         MPI_Comm comm_intra;
 
-        MPI_Comm_split(MPI_COMM_WORLD, gmx_hostname_num(), cr->rank_intranode,
+        MPI_Comm_split(MPI_COMM_WORLD,
+                       gmx_physicalnode_id_hash(), cr->rank_intranode,
                        &comm_intra);
         MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
         /* MPI_Scan is inclusive, but here we need exclusive */
