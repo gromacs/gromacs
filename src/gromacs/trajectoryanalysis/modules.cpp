@@ -53,6 +53,7 @@
 #include "modules/rdf.h"
 #include "modules/sasa.h"
 #include "modules/select.h"
+#include "modules/rnaAnalysis.h"
 
 namespace gmx
 {
@@ -96,6 +97,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<RdfInfo>(manager, group);
     registerModule<SasaInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);
+    registerModule<RnaAnalysisInfo>(manager, group);
 }
 //! \endcond
 
