@@ -108,7 +108,7 @@ static int *select_it(int nre, char *nm[], int *nset)
     int      *set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
     {
         bVerbose = FALSE;
     }
@@ -178,7 +178,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
     const char *fm2   = "%3d  %-34s";
     char      **newnm = NULL;
 
-    if ((getenv("VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
     {
         bVerbose = FALSE;
     }

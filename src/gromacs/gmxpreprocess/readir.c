@@ -1072,7 +1072,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         ir->epsilon_r  = 1.0;
     }
 
-    if (getenv("GALACTIC_DYNAMICS") == NULL)
+    if (getenv("GMX_DO_GALACTIC_DYNAMICS") == NULL)
     {
         sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
         CHECK(ir->epsilon_r < 0);

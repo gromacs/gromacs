@@ -80,8 +80,8 @@ int main(int argc,char *argv[])
     "calling the 'total' program. If you do not have the total program,",
     "get it. do_shift assumes that the total executable is in",
     "[TT]/home/mdgroup/total/total[tt]. If that is not the case, then you should",
-    "set an environment variable [BB]TOTAL[bb] as in: [PAR]",
-    "[TT]setenv TOTAL /usr/local/bin/total[tt][PAR]",
+    "set an environment variable [BB]GMX_TOTAL[bb] as in: [PAR]",
+    "[TT]setenv GMX_TOTAL /usr/local/bin/total[tt][PAR]",
     "where the right hand side should point to the total executable.[PAR]",
     "Output is printed in files [TT]shift.out[tt] where t is the time of the frame.[PAR]",
     "The program also needs an input file called [BB]random.dat[bb] which",
@@ -141,7 +141,7 @@ int main(int argc,char *argv[])
   gmx_tmpnam(tmpfile);
   fprintf(stderr,"pdbfile = %s\ntmpfile = %s\n",pdbfile,tmpfile);
   
-  if ((dptr=getenv("TOTAL")) == NULL)
+  if ((dptr=getenv("GMX_TOTAL")) == NULL)
     dptr="/home/mdgroup/total/total";
   sprintf(total,"%s > /dev/null",dptr);
   fprintf(stderr,"total cmd='%s'\n",total);

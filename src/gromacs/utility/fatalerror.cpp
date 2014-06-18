@@ -91,7 +91,7 @@ void _where(const char *file, int line)
         if (bFirst) /* we repeat the check in the locked section because things
                        might have changed */
         {
-            if ((temp = getenv("WHERE")) != NULL)
+            if ((temp = getenv("GMX_PRINT_DEBUG_LINES")) != NULL)
             {
                 nskip = strtol(temp, NULL, 10);
             }

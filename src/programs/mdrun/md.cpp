@@ -190,7 +190,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_shellfc_t     shellfc;
     int               count, nconverged = 0;
     double            tcount                 = 0;
-    gmx_bool          bConverged             = TRUE, bOK, bSumEkinhOld, bExchanged, bNeedRepartition;
+    gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
@@ -461,15 +461,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         set_constraints(constr, top, ir, mdatoms, cr);
     }
 
-    if (repl_ex_nst > 0)
-    {
-        /* We need to be sure replica exchange can only occur
-         * when the energies are current */
-        check_nst_param(fplog, cr, "nstcalcenergy", ir->nstcalcenergy,
-                        "repl_ex_nst", &repl_ex_nst);
-        /* This check needs to happen before inter-simulation
-         * signals are initialized, too */
-    }
     if (repl_ex_nst > 0 && MASTER(cr))
     {
         repl_ex = init_replica_exchange(fplog, cr->ms, state_global, ir,
@@ -725,6 +716,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     bInitStep        = bFirstStep && (bStateFromTPX || bVV);
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bSumEkinhOld     = FALSE;
+    bDoReplEx        = FALSE;
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
 
@@ -783,6 +775,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
                             && (ir->bExpanded) && (step > 0) && (!bStartingFromCpt));
         }
+
+        bDoReplEx = ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
+                     do_per_step(step, repl_ex_nst));
 
         if (bSimAnn)
         {
@@ -1013,7 +1008,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
 
-        if (do_ene || do_log)
+        if (do_ene || do_log || bDoReplEx)
         {
             bCalcVir  = TRUE;
             bCalcEner = TRUE;
@@ -1804,8 +1799,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         /* Replica exchange */
         bExchanged = FALSE;
-        if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-            do_per_step(step, repl_ex_nst))
+        if (bDoReplEx)
         {
             bExchanged = replica_exchange(fplog, cr, repl_ex,
                                           state_global, enerd,
