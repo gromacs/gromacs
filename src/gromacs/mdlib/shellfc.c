@@ -96,7 +96,6 @@ typedef struct gmx_shellfc {
 
 
 /* copied from bondfree.c, needed by hardwall */
-/* TODO: should hard wall function simply be moved to bondfree.c? */
 static int hardwall_pbc_rvec_sub(t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
     if (pbc)
@@ -982,8 +981,6 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * limit and the velocities along the bond vector are scaled 
  * down according to the Drude temperature set in the .mdp file
  */
-/* TODO: need to change rvec_sub() for pbc_rvec_sub() somehow.
- * Need t_pbc in here somehow... */
 void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[])
 {
 
@@ -1247,9 +1244,6 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                     fprintf(debug, "HARDWALL: New force f[ia]: %f %f %f\n", f[ia][0], f[ia][1], f[ia][2]);
                     fprintf(debug, "HARDWALL: New force f[ib]: %f %f %f\n", f[ib][0], f[ib][1], f[ib][2]);
                 }
-
-                /* TODO? NAMD and CHARMM have more code here related to the virial corrections */
-                /* mdrun should take care of this */
 
             } /* end of hard wall conditions */
 
