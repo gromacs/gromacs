@@ -102,7 +102,7 @@ V_{LJ}(\rvij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {\rij}\right)^{12}
 
 In constructing the parameter matrix for the non-bonded LJ-parameters,
 two types of \normindex{combination rule}s can be used within {\gromacs},
-only geometric averages (type 1 in the input section of the force field file):
+only geometric averages (type 1 in the input section of the force-field file):
 \beq
 \begin{array}{rcl}
 C_{ij}^{(6)}    &=& \left({C_{ii}^{(6)} \, C_{jj}^{(6)}}\right)^{1/2}    \\
@@ -178,7 +178,7 @@ The force derived from this potential is:
 \ve{F}_i(\rvij) = f \frac{q_i q_j}{\epsr\rij^2}\rnorm
 \eeq
 
-A plain Coulomb interaction should only be used without cut-off or when all pairs fall within the cut-off, since there is an abrupt, large change in the force at the cut-off. In case you do want to use a cut-off, the potential can be shifted by a constant to make the potential the integral of the force. With the group cut-off scheme, this shift is only applied to non-excluded pairs. With the Verlet cut-off scheme, the shift is also applied to excluded pairs and self interactions, which makes the potential equivalent to a reaction-field with $\epsrf=1$ (see below).
+A plain Coulomb interaction should only be used without cut-off or when all pairs fall within the cut-off, since there is an abrupt, large change in the force at the cut-off. In case you do want to use a cut-off, the potential can be shifted by a constant to make the potential the integral of the force. With the group cut-off scheme, this shift is only applied to non-excluded pairs. With the Verlet cut-off scheme, the shift is also applied to excluded pairs and self interactions, which makes the potential equivalent to a reaction field with $\epsrf=1$ (see below).
 
 In {\gromacs} the  relative \swapindex{dielectric}{constant} 
 \normindex{$\epsr$}
@@ -2877,7 +2877,7 @@ When selecting the CHARMM force field in {\tt \normindex{pdb2gmx}} the default o
 
 A port of the CHARMM36 force field for use with GROMACS is also available at \url{http://mackerell.umaryland.edu/charmm_ff.shtml#gromacs}.
 
-\subsection{Coarse-grained force-fields}
+\subsection{Coarse-grained force fields}
 \index{force-field, coarse-grained}
 \label{sec:cg-forcefields}
 Coarse-graining is a systematic way of reducing the number of degrees of freedom representing a system of interest. To achieve this, typically whole groups of atoms are represented by single beads and the coarse-grained force fields describes their effective interactions. Depending on the choice of parameterization, the functional form of such an interaction can be complicated and often tabulated potentials are used.
@@ -2887,7 +2887,7 @@ Coarse-grained models are designed to reproduce certain properties of a referenc
 \item Conserving free energies
 \begin{itemize}
 \item Simplex method
-\item MARTINI force-field (see next section)
+\item MARTINI force field (see next section)
 \end{itemize}
 \item Conserving distributions (like the radial distribution function), so-called structure-based coarse-graining
 \begin{itemize}
