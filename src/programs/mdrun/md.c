@@ -322,7 +322,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     debug_gmx();
 
     /* Check for polarizable models and flexible constraints */
-    shellfc = init_shell_flexcon(fplog, ir, fr->cutoff_scheme == ecutsVERLET,
+    shellfc = init_shell_flexcon(fplog, ir,
                                  top_global, n_flexible_constraints(constr),
                                  (ir->bContinuation ||
                                   (DOMAINDECOMP(cr) && !MASTER(cr))) ?
@@ -1083,7 +1083,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
 
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ1);
+                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ1);
 
             }
 
@@ -1138,7 +1138,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         }
 
                         veta_save = state->veta;
-                        trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ0);
+                        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ0);
                         vetanew     = state->veta;
                         state->veta = veta_save;
                     }
@@ -1218,7 +1218,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         {
                             fprintf(debug, "MD: step = %d, calling trotter ettTSEQ2\n", (int)step);
                         }
-                        trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ2);
+                        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ2);
 
                         if (debug)
                         {
@@ -1498,7 +1498,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         fprintf(debug, "MD: step = %d, calling trotter ettTSEQ3\n", (int)step);
                     }
 
-                    trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ3);
+                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ3);
                     /* We can only do Berendsen coupling after we have summed
                      * the kinetic energy or virial. Since the happens
                      * in global_state after update, we should only do it at
@@ -1561,7 +1561,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         fprintf(debug, "MD: step = %d, calling trotter ettTSEQ4\n", (int)step);
                     }
-                    trotter_update(fplog, ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, nrnb, &MassQ, trotter_seq, ettTSEQ4);
+                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
 
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf, state->x, 0, state->natoms);

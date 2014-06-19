@@ -605,8 +605,8 @@ static void nosehoover_KE(t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_eki
  * of atom-Drude pairs.  Scaling is done with respect to the COM of the pair and
  * along the bond between the two. 
  */
-static void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state, 
-                                      t_extmass *MassQ, t_vcm *vcm, t_nrnb *nrnb, gmx_ekindata_t *ekind, 
+static void drude_tstat_for_particles(t_inputrec *ir, t_mdatoms *md, t_state *state, 
+                                      t_extmass *MassQ, t_vcm *vcm, gmx_ekindata_t *ekind, 
                                       double scalefac[], int seqno)
 {
 
@@ -907,8 +907,8 @@ static void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md
 /* CHARMM function PropagateTFB
  * Updates thermostat associated with barostat
  */
-static void drude_tstat_for_barostat(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state,
-                                     t_extmass *MassQ, t_vcm *vcm, t_nrnb *nrnb, gmx_ekindata_t *ekind, int seqno)
+static void drude_tstat_for_barostat(t_inputrec *ir, t_mdatoms *md, t_state *state,
+                                     t_extmass *MassQ, t_vcm *vcm, gmx_ekindata_t *ekind, int seqno)
 {
     int             i, j, n, g;
     int             nc;                     /* time steps for thermostat */
@@ -1518,9 +1518,9 @@ void destroy_bufstate(t_state *state)
     sfree(state);
 }
 
-void trotter_update(FILE *fplog, t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
+void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state,
-                    tensor vir, t_mdatoms *md, t_vcm *vcm, t_nrnb *nrnb,
+                    tensor vir, t_mdatoms *md, t_vcm *vcm,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
 {
 
@@ -1614,7 +1614,7 @@ void trotter_update(FILE *fplog, t_inputrec *ir, gmx_int64_t step, gmx_ekindata_
                     {
                         fprintf(debug, "TROTTER: Calling Drude tstat for barostat\n");
                     }
-                    drude_tstat_for_barostat(fplog, ir, md, state, MassQ, vcm, nrnb, ekind, trotter_seq[i]);
+                    drude_tstat_for_barostat(ir, md, state, MassQ, vcm, ekind, trotter_seq[i]);
                 }
                 else
                 {
@@ -1634,7 +1634,7 @@ void trotter_update(FILE *fplog, t_inputrec *ir, gmx_int64_t step, gmx_ekindata_
                     {
                         fprintf(debug, "TROTTER: Calling Drude tstat for particles\n");
                     }
-                    drude_tstat_for_particles(fplog, ir, md, state, MassQ, vcm, nrnb, ekind, scalefac, trotter_seq[i]); 
+                    drude_tstat_for_particles(ir, md, state, MassQ, vcm, ekind, scalefac, trotter_seq[i]); 
                 }
                 else
                 {

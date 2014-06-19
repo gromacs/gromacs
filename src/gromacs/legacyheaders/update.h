@@ -184,9 +184,9 @@ t_state *init_bufstate(const t_state *template_state);
 
 void destroy_bufstate(t_state *state);
 
-void trotter_update(FILE *fplog, t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
+void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
-                    t_vcm *vcm, t_nrnb *nrnb, t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
+                    t_vcm *vcm, t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
 int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
 
@@ -240,15 +240,6 @@ void berendsen_pscale(t_inputrec *ir, matrix mu,
 void correct_ekin(FILE *log, int start, int end, rvec v[],
                   rvec vcm, real mass[], real tmass, tensor ekin);
 /* Correct ekin for vcm */
-
-
-void drude_tstat_for_particles(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state, t_extmass *MassQ, 
-                               t_vcm *vcm, t_nrnb *nrnb, gmx_ekindata_t *ekind, double scalefac[]);
-/* special scaling for Drudes */
-
-void nosehoover_KE(FILE *fplog, t_inputrec *ir, t_mdatoms *md, t_state *state, gmx_ekindata_t *ekind,
-                   t_vcm *vcm, t_nrnb *nrnb);
-/* calculates KE for Nose-Hoover based on relative motion */
 
 #ifdef __cplusplus
 }
