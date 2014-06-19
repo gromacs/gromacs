@@ -406,12 +406,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
             tj[STATE_A]      = ntiA+2*typeA[jnr];
             tj[STATE_B]      = ntiB+2*typeB[jnr];
 
-            if (bEwaldLJ)
-            {
-                c6grid[STATE_A] = nbfp_grid[tj[STATE_A]];
-                c6grid[STATE_B] = nbfp_grid[tj[STATE_B]];
-            }
-
             if (nlist->excl_fep == NULL || nlist->excl_fep[k])
             {
                 c6[STATE_A]      = nbfp[tj[STATE_A]];
@@ -810,6 +804,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
                 for (i = 0; i < NSTATES; i++)
                 {
+                    c6grid[i]   = nbfp_grid[tj[i]];
                     vvtot      += LFV[i]*c6grid[i]*VV*(1.0/6.0);
                     Fscal      += LFV[i]*c6grid[i]*FF*(1.0/6.0);
                     dvdl_vdw   += (DLF[i]*c6grid[i])*VV*(1.0/6.0);
