@@ -747,6 +747,12 @@ int gmx_mindist(int argc, char *argv[])
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");
         }
     }
+
+    if (ePBC == epbcXY)
+    {
+        gmx_fatal(FARGS, "g_mindist is currently broken with pbc=XY boundary conditions.\n");
+    }
+
     get_index(top ? &(top->atoms) : NULL, ndxfnm, ng, gnx, index, grpname);
 
     if (bMat && (ng == 1))

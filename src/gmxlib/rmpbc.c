@@ -112,7 +112,7 @@ gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef, int ePBC, int natoms,
 
     gpbc->natoms_init = natoms;
 
-    /* This sets pbc when we now it,
+    /* This sets pbc when we know it,
      * otherwise we guess it from the instantaneous box in the trajectory.
      */
     gpbc->ePBC = ePBC;
