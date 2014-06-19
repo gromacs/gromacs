@@ -57,6 +57,7 @@
 #include "mtop_util.h"
 #include "chargegroup.h"
 #include "macros.h"
+#include "pbc.h"
 
 typedef struct {
     int     nnucl;
@@ -93,6 +94,21 @@ typedef struct gmx_shellfc {
     int         adir_nalloc;    /* Work space for init_adir                 */
 } t_gmx_shellfc;
 
+
+/* copied from bondfree.c, needed by hardwall */
+/* TODO: should hard wall function simply be moved to bondfree.c? */
+static int hardwall_pbc_rvec_sub(t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
+{
+    if (pbc)
+    {
+        return pbc_dx_aiuc(pbc, xi, xj, dx);
+    }
+    else
+    {
+        rvec_sub(xi, xj, dx);
+        return CENTRAL;
+    }
+}
 
 static void pr_shell(FILE *fplog, int ns, t_shell s[])
 {
@@ -229,7 +245,6 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
 }
 
 gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
-                                 gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x)
 {
@@ -281,11 +296,6 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
     {
         /* We're not doing shells or flexible constraints */
         return NULL;
-    }
-
-    if (bCutoffSchemeIsVerlet)
-    {
-        gmx_fatal(FARGS, "The shell code does not work with the Verlet cut-off scheme.\n");
     }
 
     snew(shfc, 1);
@@ -571,8 +581,14 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
         {
             if (fplog)
             {
-                fprintf(fplog, "\nNOTE: there all shells that are connected to particles outside their own charge group, will not predict shells positions during the run\n\n");
+                fprintf(fplog, "\nNOTE: there are shells that are connected to particles outside their own charge group, will not predict shells positions during the run\n\n");
             }
+            /* Prediction improves performance, so we should implement either:
+             * 1. communication for the atoms needed for prediction
+             * 2. prediction using the velocities of the shells; currently the
+             *    shell velocities are zeroed, it's a bit tricky to keep
+             *    track of the shell displacements and thus the velocity.
+             */
             shfc->bPredict = FALSE;
         }
     }
@@ -966,6 +982,8 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * limit and the velocities along the bond vector are scaled 
  * down according to the Drude temperature set in the .mdp file
  */
+/* TODO: need to change rvec_sub() for pbc_rvec_sub() somehow.
+ * Need t_pbc in here somehow... */
 void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[])
 {
 
@@ -996,6 +1014,9 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
     rvec    vb2, vp2;               /* Bond and particle velocities for Drude */ 
     rvec    diff_vr12;
     rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
+    t_pbc   pbc;
+
+    set_pbc(&pbc, ir->ePBC, state->box);
 
     const real kbt = BOLTZ * ir->drude->drude_t;
     max_t = 2.0 * ir->delta_t;
@@ -1048,7 +1069,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
             copy_rvec(state->v[ib], vinitb);
 
             /* get vector between atom b (Drude) and a (heavy atom) */
-            rvec_sub(xb, xa, vecab);
+            hardwall_pbc_rvec_sub(&pbc, xb, xa, vecab);
 
             if (debug)
             {
@@ -1099,7 +1120,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 /* scale velocity of heavy atom */
                 dprod_vr1 = iprod(va, vecab);
                 svmul(dprod_vr1, vecab, vb1);
-                rvec_sub(va, vb1, vp1);
+                hardwall_pbc_rvec_sub(&pbc, va, vb1, vp1);
 
                 if (debug)
                 {
@@ -1110,7 +1131,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 /* scale velocity of drude */
                 dprod_vr2 = iprod(vb, vecab);
                 svmul(dprod_vr2, vecab, vb2);
-                rvec_sub(vb, vb2, vp2);
+                hardwall_pbc_rvec_sub(&pbc, vb, vb2, vp2);
 
                 if (debug)
                 {
@@ -1212,12 +1233,12 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
 
                 /* Update force on heavy atom */
-                rvec_sub(vnewa, vinita, dva);
+                hardwall_pbc_rvec_sub(&pbc, vnewa, vinita, dva);
                 fac = ma*(1.0/(dt*0.5));
                 svmul(fac, dva, f[ia]);
 
                 /* Update force on Drude */
-                rvec_sub(vnewb, vinitb, dvb);
+                hardwall_pbc_rvec_sub(&pbc, vnewb, vinitb, dvb);
                 fac = mb*(1.0/(dt*0.5));
                 svmul(fac, dvb, f[ib]);
 
@@ -1328,17 +1349,25 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        cg0 = 0;
-        cg1 = top->cgs.nr;
-        put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
-                                 &(top->cgs), state->x, fr->cg_cm);
+        if (inputrec->cutoff_scheme == ecutsVERLET)
+        {
+            put_atoms_in_box_omp(fr->ePBC, state->box, md->homenr, state->x);
+        }
+        else
+        {
+            cg0 = 0;
+            cg1 = top->cgs.nr;
+            put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
+                                     &(top->cgs), state->x, fr->cg_cm);
+        }
+
         if (graph)
         {
             mk_mshift(fplog, graph, fr->ePBC, state->box, state->x);
         }
     }
 
-    /* After this all coordinate arrays will contain whole molecules */
+    /* After this all coordinate arrays will contain whole charge groups */
     if (graph)
     {
         shift_self(graph, state->box, state->x);
