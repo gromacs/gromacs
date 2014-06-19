@@ -1652,14 +1652,14 @@ the difference between the normal and the lateral pressure
 \eea
 where $L_z$ is the height of the box and $n$ is the number of surfaces.
 The pressure in the z-direction is corrected by scaling the height of
-the box with $\mu_z$
+the box with $\mu_zz$
 \beq
 \Delta P_{zz} = \frac{\Delta t}{\tau_p} \{ P_{0zz} - P_{zz}(t) \}
 \eeq
 \beq
 \mu_{zz} = 1 + \beta_{zz} \Delta P_{zz}
 \eeq
-This is similar to normal pressure coupling, except that the power
+This is similar to normal pressure coupling, except that the factor
 of $1/3$ is missing. 
 The pressure correction in the $z$-direction is then used to get the
 correct convergence for the surface tension to the reference value $\gamma_0$.
@@ -1674,7 +1674,7 @@ The value of $\beta_{zz}$ is more critical than with normal pressure
 coupling. Normally an incorrect compressibility will just scale $\tau_p$,
 but with surface tension coupling it affects the convergence of the surface
 tension. 
-When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_z$ is also set
+When $\beta_{zz}$ is set to zero (constant box height), $\Delta P_zz$ is also set
 to zero, which is necessary for obtaining the correct surface tension. 
 
 \subsubsection{MTTK pressure control algorithms}
