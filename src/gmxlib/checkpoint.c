@@ -1738,7 +1738,9 @@ static void check_match(FILE *fplog,
     {
         fprintf(stderr,
                 "Gromacs binary or parallel settings not identical to previous run.\n"
-                "Continuation is exact, but is not guaranteed to be binary identical%s.\n\n",
+                "Continuation is exact, but is not guaranteed to be binary identical,\n"
+                "and is not advisable in the cases of version mismatch. Consider also\n"
+                "using the -noappend option%s.\n\n",
                 fplog ? ",\n see the log file for details" : "");
 
         if (fplog)
