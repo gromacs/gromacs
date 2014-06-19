@@ -1704,6 +1704,14 @@ static void check_match(FILE *fplog,
     mm = FALSE;
 
     check_string(fplog, "Version", VERSION, version, &mm);
+    if (mm)
+    {
+        fprintf(stderr,
+                "The current Gromacs version is not identical to the one which generated\n"
+                "the checkpoint file. Continuation is not advisable if the major versions\n"
+                "are different. Also, consider using the -noappend option%s.\n\n",
+                fplog ? ",\n see the log file for details" : "");
+    }
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
     check_string(fplog, "Build user", BUILD_USER, buser, &mm);
     check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
