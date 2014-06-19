@@ -1256,7 +1256,7 @@ virtualized as well, {\ie} hydrogens in the aromatic residues are treated
 differently depending on the treatment of the aromatic residues.
 
 Parameters for the virtual site constructions for the hydrogen atoms are
-inferred from the force field parameters ({\em vis}. bond lengths and
+inferred from the force-field parameters ({\em vis}. bond lengths and
 angles) directly by {\tt \normindex{grompp}} while processing the
 topology file.  The constructions for the aromatic residues are based
 on the bond lengths and angles for the geometry as described in the
@@ -1678,7 +1678,7 @@ double sums is the total electrostatic interaction between the QM
 electrons and the MM atoms. The total electrostatic interaction of the
 QM nuclei with the MM atoms is given by the second double sum. Bonded
 interactions between QM and MM atoms are described at the MM level by
-the appropriate force field terms. Chemical bonds that connect the two
+the appropriate force-field terms. Chemical bonds that connect the two
 subsystems are capped by a hydrogen atom to complete the valence of
 the QM region. The force on this atom, which is present in the QM
 region only, is distributed over the two atoms of the bond. The cap
@@ -1719,7 +1719,7 @@ To make use of the QM/MM functionality in {\gromacs}, one needs to:
 At the bond that connects the QM and MM subsystems, a link atoms is
 introduced.  In {\gromacs} the link atom has special atomtype, called
 LA. This atomtype is treated as a hydrogen atom in the QM calculation,
-and as a virtual site in the force field calculation. The link atoms, if
+and as a virtual site in the force-field calculation. The link atoms, if
 any, are part of the system, but have no interaction with any other
 atom, except that the QM force working on it is distributed over the
 two atoms of the bond. In the topology, the link atom (LA), therefore,
