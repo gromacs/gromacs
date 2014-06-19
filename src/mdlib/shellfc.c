@@ -1001,6 +1001,10 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         force[i] = shfc->f[i];
     }
 
+    /* With particle decomposition this code only works
+     * when all particles involved with each shell are in the same cg.
+     */
+
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
     {
         /* This is the only time where the coordinates are used
@@ -1013,8 +1017,15 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         }
         else
         {
-            cg0 = 0;
-            cg1 = top->cgs.nr;
+            if (PARTDECOMP(cr))
+            {
+                pd_cg_range(cr, &cg0, &cg1);
+            }
+            else
+            {
+                cg0 = 0;
+                cg1 = top->cgs.nr;
+            }
             put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
                                      &(top->cgs), state->x, fr->cg_cm);
         }
