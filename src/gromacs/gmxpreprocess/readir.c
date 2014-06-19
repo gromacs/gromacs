@@ -942,19 +942,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         ir->opts.nhchainlength = 0;
     }
 
-    /* TODO: as of 6/6/2014, Drude does not support multiple NH chains.
-     * Code infrastructure is largely in place, but there is a tricky bug
-     * somewhere that I have not yet found - jal */
-    if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
-    {
-        if (ir->opts.nhchainlength > 1)
-        {
-            sprintf(warn_buf, "Drude simulations do not support multiple Nose-Hoover chains (currently %d), resetting to 1.\n", ir->opts.nhchainlength);
-            ir->opts.nhchainlength = 1;
-            warning_note(wi, warn_buf);
-        }
-    }
-
     if (ir->eI == eiVVAK)
     {
         sprintf(err_buf, "%s implemented primarily for validation, and requires nsttcouple = 1 and nstpcouple = 1.",
