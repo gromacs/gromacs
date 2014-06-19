@@ -1010,7 +1010,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
 
     if (bRead) /* we need to allocate space for dfhist if we are reading */
     {
-        init_df_history(&state->dfhist,state->dfhist.nlambda);
+        init_df_history(&state->dfhist, state->dfhist.nlambda);
     }
 
     /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */
@@ -1699,11 +1699,26 @@ static void check_match(FILE *fplog,
                         ivec dd_nc, ivec dd_nc_f)
 {
     int      npp;
-    gmx_bool mm;
-
-    mm = FALSE;
+    gmx_bool mm                 = FALSE;
+    gmx_bool patchlevel_differs = FALSE;
+    gmx_bool version_differs    = FALSE;
 
     check_string(fplog, "Version", VERSION, version, &mm);
+    patchlevel_differs = mm;
+
+    if (patchlevel_differs)
+    {
+        /* Gromacs should be able to continue from checkpoints between
+         * different patch level versions, but we do not guarantee
+         * compatibility between different major/minor versions - check this.
+         */
+        int   gmx_major, gmx_minor;
+        int   cpt_major, cpt_minor;
+        sscanf(VERSION, "%d.%d", &gmx_major, &gmx_minor);
+        sscanf(version, "%d.%d", &cpt_major, &cpt_minor);
+        version_differs = (gmx_major != cpt_major || gmx_minor != cpt_minor);
+    }
+
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
     check_string(fplog, "Build user", BUILD_USER, buser, &mm);
     check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
@@ -1736,16 +1751,43 @@ static void check_match(FILE *fplog,
 
     if (mm)
     {
-        fprintf(stderr,
-                "Gromacs binary or parallel settings not identical to previous run.\n"
-                "Continuation is exact, but is not guaranteed to be binary identical%s.\n\n",
-                fplog ? ",\n see the log file for details" : "");
-
-        if (fplog)
+        if (version_differs)
         {
-            fprintf(fplog,
-                    "Gromacs binary or parallel settings not identical to previous run.\n"
-                    "Continuation is exact, but is not guaranteed to be binary identical.\n\n");
+            /* Somebody is trying to use a checkpoint from an earlier Gromacs version */
+            fprintf(stderr,
+                    "The current Gromacs major & minor version are not identical to those that\n"
+                    "generated the checkpoint file. In principle Gromacs does not support\n"
+                    "continuation from checkpoints between different versions, so we advice\n"
+                    "against this. If you still want to try your luck we recommend that you use\n"
+                    "the -noappend flag to keep your output files from the two versions separate.\n"
+                    "This might also work around errors where the output fields in the energy\n"
+                    "file have changed between the different major & minor versions.\n%s\n",
+                    fplog ? "See the log file for details.\n" : "");
+            if (fplog)
+            {
+                fprintf(stderr,
+                        "The current Gromacs major & minor version are not identical to those that\n"
+                        "generated the checkpoint file. In principle Gromacs does not support\n"
+                        "continuation from checkpoints between different versions, so we advice\n"
+                        "against this. If you still want to try your luck we recommend that you use\n"
+                        "the -noappend flag to keep your output files from the two versions separate.\n"
+                        "This might also work around errors where the output fields in the energy\n"
+                        "file have changed between the different major & minor versions.\n\n");
+            }
+        }
+        else
+        {
+            /* Major & minor versions match at least, but something is different. */
+            fprintf(stderr,
+                    "Gromacs patchlevel, binary or parallel settings differ from previous run.\n"
+                    "Continuation is exact, but not guaranteed to be binary identical%s.\n\n",
+                    fplog ? ",\nsee the log file for details" : "");
+            if (fplog)
+            {
+                fprintf(fplog,
+                        "Gromacs patchlevel, binary or parallel settings differ from previous run.\n"
+                        "Continuation is exact, but not guaranteed to be binary identical.\n\n");
+            }
         }
     }
 }
