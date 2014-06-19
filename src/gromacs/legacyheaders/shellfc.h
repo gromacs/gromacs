@@ -49,7 +49,6 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
 gmx_shellfc_t init_shell_flexcon(FILE *fplog, t_inputrec *ir,
-                                 gmx_bool bCutoffSchemeIsVerlet,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x);
 
