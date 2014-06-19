@@ -7,6 +7,9 @@ if(UNIX)
   target_link_libraries(tng_compress m)
 endif()
 
+# Use GNUInstallDirst to set paths on multiarch systems
+include(GNUInstallDirs)
+
 install(TARGETS tng_compress
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
