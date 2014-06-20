@@ -1007,7 +1007,11 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        if (inputrec->cutoff_scheme == ecutsVERLET)
+        if (PARTDECOMP(cr))
+        {
+            pd_cg_range(cr, &cg0, &cg1);
+        }
+        else if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             put_atoms_in_box_omp(fr->ePBC, state->box, md->homenr, state->x);
         }
