@@ -118,7 +118,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         /* we read the number of cpus and environment from the environment
          * if set.
          */
-        buf = getenv("NCPUS");
+        buf = getenv("GMX_QM_GAUSSIAN_NCPUS");
         if (buf)
         {
             sscanf(buf, "%d", &qm->nQMcpus);
@@ -128,7 +128,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             qm->nQMcpus = 1;
         }
         fprintf(stderr, "number of CPUs for gaussian = %d\n", qm->nQMcpus);
-        buf = getenv("MEM");
+        buf = getenv("GMX_QM_GAUSSIAN_MEMORY");
         if (buf)
         {
             sscanf(buf, "%d", &qm->QMmem);
@@ -138,7 +138,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             qm->QMmem = 50000000;
         }
         fprintf(stderr, "memory for gaussian = %d\n", qm->QMmem);
-        buf = getenv("ACC");
+        buf = getenv("GMX_QM_ACCURACY");
         if (buf)
         {
             sscanf(buf, "%d", &qm->accuracy);
@@ -149,7 +149,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         }
         fprintf(stderr, "accuracy in l510 = %d\n", qm->accuracy);
 
-        buf = getenv("CPMCSCF");
+        buf = getenv("GMX_QM_CPMCSCF");
         if (buf)
         {
             sscanf(buf, "%d", &i);
@@ -167,7 +167,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         {
             fprintf(stderr, "NOT using cp-mcscf in l1003\n");
         }
-        buf = getenv("SASTEP");
+        buf = getenv("GMX_QM_SA_STEP");
         if (buf)
         {
             sscanf(buf, "%d", &qm->SAstep);
@@ -202,7 +202,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             fclose(out);
         }
         /* gaussian settings on the system */
-        buf = getenv("GAUSS_DIR");
+        buf = getenv("GMX_QM_GAUSS_DIR");
         fprintf(stderr, "%s", buf);
 
         if (buf)
@@ -211,26 +211,26 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         }
         else
         {
-            gmx_fatal(FARGS, "no $GAUSS_DIR, check gaussian manual\n");
+            gmx_fatal(FARGS, "no $GMX_QM_GAUSS_DIR, check gaussian manual\n");
         }
 
-        buf = getenv("GAUSS_EXE");
+        buf = getenv("GMX_QM_GAUSS_EXE");
         if (buf)
         {
             qm->gauss_exe = strdup(buf);
         }
         else
         {
-            gmx_fatal(FARGS, "no $GAUSS_EXE, check gaussian manual\n");
+            gmx_fatal(FARGS, "no $GMX_QM_GAUSS_EXE set, check gaussian manual\n");
         }
-        buf = getenv("DEVEL_DIR");
+        buf = getenv("GMX_QM_MODIFIED_LINKS_DIR");
         if (buf)
         {
             qm->devel_dir = strdup (buf);
         }
         else
         {
-            gmx_fatal(FARGS, "no $DEVEL_DIR, this is were the modified links reside.\n");
+            gmx_fatal(FARGS, "no $GMX_QM_MODIFIED_LINKS_DIR, this is were the modified links reside.\n");
         }
 
         /*  if(fr->bRF){*/
@@ -1112,7 +1112,7 @@ real call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     if (!step)
     {
         snew(buf, 20);
-        buf = getenv("STATE");
+        buf = getenv("GMX_QM_GROUND_STATE");
         if (buf)
         {
             sscanf(buf, "%d", &state);

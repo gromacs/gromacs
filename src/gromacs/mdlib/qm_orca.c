@@ -72,7 +72,7 @@ void init_orca(t_QMrec *qm)
     snew(buf, 200);
 
     /* ORCA settings on the system */
-    buf = getenv("BASENAME");
+    buf = getenv("GMX_QM_ORCA_BASENAME");
     if (buf)
     {
         snew(qm->orca_basename, 200);
@@ -80,12 +80,12 @@ void init_orca(t_QMrec *qm)
     }
     else
     {
-        gmx_fatal(FARGS, "$BASENAME not set\n");
+        gmx_fatal(FARGS, "$GMX_QM_ORCA_BASENAME is not set\n");
     }
 
     /* ORCA directory on the system */
     snew(buf, 200);
-    buf = getenv("ORCA_PATH");
+    buf = getenv("GMX_ORCA_PATH");
 
     if (buf)
     {
@@ -94,7 +94,7 @@ void init_orca(t_QMrec *qm)
     }
     else
     {
-        gmx_fatal(FARGS, "$ORCA_PATH not set, check manual\n");
+        gmx_fatal(FARGS, "$GMX_ORCA_PATH not set, check manual\n");
     }
 
     fprintf(stderr, "Setting ORCA path to: %s...\n", qm->orca_dir);

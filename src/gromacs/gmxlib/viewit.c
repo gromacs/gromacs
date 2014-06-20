@@ -95,7 +95,7 @@ void do_view(const output_env_t oenv, const char *fn, const char *opts)
                 case efXVG:
                     if (!(cmd = getenv(env)) )
                     {
-                        if (getenv("XMGR") )
+                        if (getenv("GMX_USE_XMGR") )
                         {
                             cmd = "xmgr";
                         }

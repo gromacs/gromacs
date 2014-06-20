@@ -103,7 +103,8 @@ set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PR
 mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
-include(gmxBuildTypeThreadSanitizer)
+include(gmxBuildTypeTSAN)
+include(gmxBuildTypeASAN)
 include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)

@@ -495,7 +495,7 @@ FILE *gmx_ffopen(const char *file, const char *mode)
         /* Check whether we should be using buffering (default) or not
          * (for debugging)
          */
-        if (bUnbuffered || ((bufsize = getenv("LOG_BUFS")) != NULL))
+        if (bUnbuffered || ((bufsize = getenv("GMX_LOG_BUFFER")) != NULL))
         {
             /* Check whether to use completely unbuffered */
             if (bUnbuffered)
