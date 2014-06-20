@@ -1,0 +1,10 @@
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: Berk Hess <hess@kth.se>
+Code-Review+2: David van der Spoel <davidvanderspoel@gmail.com>
+Code-Review+2: Erik Lindahl <erik@kth.se>
+Verified+2: Jenkins Buildbot
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Fri, 20 Jun 2014 10:04:56 +0200
+Reviewed-on: https://gerrit.gromacs.org/3549
+Project: gromacs
+Branch: refs/heads/release-5-0
