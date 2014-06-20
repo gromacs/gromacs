@@ -904,6 +904,15 @@ int gmx_traj(int argc, char *argv[])
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
 
+    if (bOV && fr.bV == FALSE)
+    {
+        gmx_fatal(FARGS, "Cannot write velocities since your input trajectory does not contain velocities.");
+    }
+    if (bOF && fr.bF == FALSE)
+    {
+        gmx_fatal(FARGS, "Cannot write forces since your input trajectory does not contain forces.");
+    }
+
     if (bCV || bCF)
     {
         snew(sumx, fr.natoms);
