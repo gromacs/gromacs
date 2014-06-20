@@ -904,6 +904,12 @@ int gmx_traj(int argc, char *argv[])
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
 
+
+    if ((bOV || bOF) && fn2ftp(ftp2fn(efTRX, NFILE, fnm)) == efXTC)
+    {
+        gmx_fatal(FARGS, "Cannot extract velocities or forces since your input XTC file does not contain them.");
+    }
+
     if (bCV || bCF)
     {
         snew(sumx, fr.natoms);
