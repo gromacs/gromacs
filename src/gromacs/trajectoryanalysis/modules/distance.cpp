@@ -367,9 +367,9 @@ Distance::writeOutput()
         printf("%s:\n", sel->name());
         printf("  Number of samples:  %d\n",
                summaryStatsModule_->sampleCount(index, 0));
-        printf("  Average distance:   %-6.3f nm\n",
+        printf("  Average distance:   %-8.5f nm\n",
                summaryStatsModule_->average(index, 0));
-        printf("  Standard deviation: %-6.3f nm\n",
+        printf("  Standard deviation: %-8.5f nm\n",
                summaryStatsModule_->standardDeviation(index, 0));
     }
 }
