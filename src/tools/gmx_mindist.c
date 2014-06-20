@@ -58,9 +58,11 @@
 #include "rmpbc.h"
 #include "xtcio.h"
 #include "gmx_ana.h"
+#include "names.h"
 
 
-static void periodic_dist(matrix box, rvec x[], int n, atom_id index[],
+static void periodic_dist(int ePBC,
+                          matrix box, rvec x[], int n, atom_id index[],
                           real *rmin, real *rmax, int *min_ind)
 {
 #define NSHIFT 26
@@ -68,7 +70,17 @@ static void periodic_dist(matrix box, rvec x[], int n, atom_id index[],
     real sqr_box, r2min, r2max, r2;
     rvec shift[NSHIFT], d0, d;
 
-    sqr_box = sqr(min(norm(box[XX]), min(norm(box[YY]), norm(box[ZZ]))));
+    if (!(ePBC == epbcXYZ || ePBC == epbcXY))
+    {
+        gmx_fatal(FARGS, "pbc = %s is not supported by g_mindist",
+                  epbc_names[ePBC]);
+    }
+
+    sqr_box = min(norm2(box[XX]), norm2(box[YY]));
+    if (ePBC == epbcXYZ)
+    {
+        sqr_box = min(sqr_box, norm2(box[ZZ]));
+    }
 
     s = 0;
     for (sz = -1; sz <= 1; sz++)
@@ -77,7 +89,8 @@ static void periodic_dist(matrix box, rvec x[], int n, atom_id index[],
         {
             for (sx = -1; sx <= 1; sx++)
             {
-                if (sx != 0 || sy != 0 || sz != 0)
+                if (!(sx == 0 && sy == 0 && sz == 0) &&
+                    !(ePBC == epbcXY && sz != 0))
                 {
                     for (i = 0; i < DIM; i++)
                     {
@@ -164,7 +177,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
             gmx_rmpbc(gpbc, natoms, box, x);
         }
 
-        periodic_dist(box, x, n, index, &rmin, &rmax, ind_min);
+        periodic_dist(ePBC, box, x, n, index, &rmin, &rmax, ind_min);
         if (rmin < rmint)
         {
             rmint    = rmin;
