@@ -949,10 +949,10 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
     int i, j;
 
     read_posres  (mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
-    if (strcmp(fnA, fnB) != 0)
-    {
-        read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
-    }
+    /* It is safer to simply read the b-state posres rather than trying
+     * to be smart and copy the positions.
+     */
+    read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
 }
 
 static void set_wall_atomtype(gpp_atomtype_t at, t_gromppopts *opts,
