@@ -166,11 +166,7 @@ int gmx_node_rank(void)
 #endif
 }
 
-#if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
-#include <spi/include/kernel/location.h>
-#endif
-
-int gmx_physicalnode_id_hash(void)
+static int mpi_hostname_hash(void)
 {
     int hash_int;
 
@@ -204,24 +200,12 @@ int gmx_physicalnode_id_hash(void)
     return hash_int;
 }
 
-/* TODO: this function should be fully replaced by gmx_physicalnode_id_hash */
-int gmx_hostname_num()
-{
-#ifndef GMX_MPI
-    return 0;
-#else
-#ifdef GMX_THREAD_MPI
-    /* thread-MPI currently puts the thread number in the process name,
-     * we might want to change this, as this is inconsistent with what
-     * most MPI implementations would do when running on a single node.
-     */
-    return 0;
-#else
-    int  resultlen, hostnum, i, j;
-    char mpi_hostname[MPI_MAX_PROCESSOR_NAME], hostnum_str[MPI_MAX_PROCESSOR_NAME];
+#if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
+#include <spi/include/kernel/location.h>
 
-    MPI_Get_processor_name(mpi_hostname, &resultlen);
-#ifdef GMX_TARGET_BGQ
+static int bgq_nodenum(void)
+{
+    int           hostnum;
     Personality_t personality;
     Kernel_GetPersonality(&personality, sizeof(personality));
     /* Each MPI rank has a unique coordinate in a 6-dimensional space
@@ -242,38 +226,9 @@ int gmx_hostname_num()
     hostnum += personality.Network_Config.Dcoord;
     hostnum *= personality.Network_Config.Enodes;
     hostnum += personality.Network_Config.Ecoord;
-#else
-    /* This procedure can only differentiate nodes with host names
-     * that end on unique numbers.
-     */
-    i = 0;
-    j = 0;
-    /* Only parse the host name up to the first dot */
-    while (i < resultlen && mpi_hostname[i] != '.')
-    {
-        if (isdigit(mpi_hostname[i]))
-        {
-            hostnum_str[j++] = mpi_hostname[i];
-        }
-        i++;
-    }
-    hostnum_str[j] = '\0';
-    if (j == 0)
-    {
-        hostnum = 0;
-    }
-    else
-    {
-        /* Use only the last 9 decimals, so we don't overflow an int */
-        hostnum = strtol(hostnum_str + max(0, j-9), NULL, 10);
-    }
-#endif
 
     if (debug)
     {
-        fprintf(debug, "In gmx_hostname_num: hostname '%s', hostnum %d\n",
-                mpi_hostname, hostnum);
-#ifdef GMX_TARGET_BGQ
         fprintf(debug,
                 "Torus ID A: %d / %d B: %d / %d C: %d / %d D: %d / %d E: %d / %d\nNode ID T: %d / %d core: %d / %d hardware thread: %d / %d\n",
                 personality.Network_Config.Acoord,
@@ -292,17 +247,45 @@ int gmx_hostname_num()
                 64,
                 Kernel_ProcessorThreadID(),
                 4);
-#endif
     }
     return hostnum;
+}
+#endif
+
+int gmx_physicalnode_id_hash(void)
+{
+    int hash;
+
+#ifndef GMX_MPI
+    hash = 0;
+#else
+#ifdef GMX_THREAD_MPI
+    /* thread-MPI currently puts the thread number in the process name,
+     * we might want to change this, as this is inconsistent with what
+     * most MPI implementations would do when running on a single node.
+     */
+    hash = 0;
+#else
+#ifdef GMX_TARGET_BGQ
+    hash = bgq_nodenum();
+#else
+    hash = mpi_hostname_hash();
 #endif
 #endif
+#endif
+
+    if (debug)
+    {
+        fprintf(debug, "In gmx_physicalnode_id_hash: hash %d\n", hash);
+    }
+
+    return hash;
 }
 
 void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 {
     gmx_nodecomm_t *nc;
-    int             n, rank, hostnum, ng, ni;
+    int             n, rank, nodehash, ng, ni;
 
     /* Many MPI implementations do not optimize MPI_Allreduce
      * (and probably also other global communication calls)
@@ -323,7 +306,7 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     MPI_Comm_size(cr->mpi_comm_mygroup, &n);
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
 
-    hostnum = gmx_hostname_num();
+    nodehash = gmx_physicalnode_id_hash();
 
     if (debug)
     {
@@ -332,7 +315,7 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 
 
     /* The intra-node communicator, split on node number */
-    MPI_Comm_split(cr->mpi_comm_mygroup, hostnum, rank, &nc->comm_intra);
+    MPI_Comm_split(cr->mpi_comm_mygroup, nodehash, rank, &nc->comm_intra);
     MPI_Comm_rank(nc->comm_intra, &nc->rank_intra);
     if (debug)
     {
@@ -392,25 +375,25 @@ void gmx_init_intranode_counters(t_commrec *cr)
     /* thread-MPI is not initialized when not running in parallel */
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
     int nrank_world, rank_world;
-    int i, mynum, *num, *num_s, *num_pp, *num_pp_s;
+    int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
 
     MPI_Comm_size(MPI_COMM_WORLD, &nrank_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
 
-    /* Get the node number from the hostname to identify the nodes */
-    mynum = gmx_hostname_num();
+    /* Get a (hopefully unique) hash that identifies our physical node */
+    myhash = gmx_physicalnode_id_hash();
 
     /* We can't rely on MPI_IN_PLACE, so we need send and receive buffers */
-    snew(num,   nrank_world);
-    snew(num_s, nrank_world);
-    snew(num_pp,   nrank_world);
-    snew(num_pp_s, nrank_world);
+    snew(hash,   nrank_world);
+    snew(hash_s, nrank_world);
+    snew(hash_pp,   nrank_world);
+    snew(hash_pp_s, nrank_world);
 
-    num_s[rank_world]    = mynum;
-    num_pp_s[rank_world] = (cr->duty & DUTY_PP) ? mynum : -1;
+    hash_s[rank_world]    = myhash;
+    hash_pp_s[rank_world] = (cr->duty & DUTY_PP) ? myhash : -1;
 
-    MPI_Allreduce(num_s,    num,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(num_pp_s, num_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(hash_s,    hash,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(hash_pp_s, hash_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     nrank_intranode    = 0;
     rank_intranode     = 0;
@@ -418,7 +401,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
     rank_pp_intranode  = 0;
     for (i = 0; i < nrank_world; i++)
     {
-        if (num[i] == mynum)
+        if (hash[i] == myhash)
         {
             nrank_intranode++;
             if (i < rank_world)
@@ -426,7 +409,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
                 rank_intranode++;
             }
         }
-        if (num_pp[i] == mynum)
+        if (hash_pp[i] == myhash)
         {
             nrank_pp_intranode++;
             if ((cr->duty & DUTY_PP) && i < rank_world)
@@ -435,10 +418,10 @@ void gmx_init_intranode_counters(t_commrec *cr)
             }
         }
     }
-    sfree(num);
-    sfree(num_s);
-    sfree(num_pp);
-    sfree(num_pp_s);
+    sfree(hash);
+    sfree(hash_s);
+    sfree(hash_pp);
+    sfree(hash_pp_s);
 #else
     /* Serial or thread-MPI code: we run within a single physical node */
     nrank_intranode    = cr->nnodes;

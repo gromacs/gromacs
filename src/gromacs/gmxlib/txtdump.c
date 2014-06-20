@@ -269,7 +269,7 @@ void pr_rvecs(FILE *fp, int indent, const char *title, rvec vec[], int n)
     const char *format;
     int         i, j;
 
-    if (getenv("LONGFORMAT") != NULL)
+    if (getenv("GMX_PRINT_LONGFORMAT") != NULL)
     {
         format = flong;
     }
@@ -306,7 +306,7 @@ void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, rvec vec[], int n,
     const char *format;
     int         i, j;
 
-    if (getenv("LONGFORMAT") != NULL)
+    if (getenv("GMX_PRINT_LONGFORMAT") != NULL)
     {
         format = flong;
     }
@@ -374,7 +374,7 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, 
     const char *flong  = "%15.8e";
     const char *format;
 
-    if (getenv("LONGFORMAT") != NULL)
+    if (getenv("GMX_PRINT_LONGFORMAT") != NULL)
     {
         format = flong;
     }

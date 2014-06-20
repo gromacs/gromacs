@@ -1071,7 +1071,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         ir->epsilon_r  = 1.0;
     }
 
-    if (getenv("GALACTIC_DYNAMICS") == NULL)
+    if (getenv("GMX_DO_GALACTIC_DYNAMICS") == NULL)
     {
         sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
         CHECK(ir->epsilon_r < 0);
@@ -1137,7 +1137,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         if (ir->rcoulomb_switch/ir->rcoulomb < 0.9499)
         {
             real percentage  = 100*(ir->rcoulomb-ir->rcoulomb_switch)/ir->rcoulomb;
-            sprintf(warn_buf, "The switching range for should be 5%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate electrostatic energies, energy conservation will be good regardless, since ewald_rtol = %g.",
+            sprintf(warn_buf, "The switching range should be 5%% or less (currently %.2f%% using a switching range of %4f-%4f) for accurate electrostatic energies, energy conservation will be good regardless, since ewald_rtol = %g.",
                     percentage, ir->rcoulomb_switch, ir->rcoulomb, ir->ewald_rtol);
             warning(wi, warn_buf);
         }

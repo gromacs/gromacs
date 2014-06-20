@@ -322,7 +322,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     title = strdup(argv[0]);
 
     /* First check environment */
-    fontname = getenv("GMXFONT");
+    fontname = getenv("GMX_FONT");
     display  = getenv("DISPLAY");
 
     snew(ARGV, *argc);

@@ -38,11 +38,12 @@
 
 #include "typedefs.h"
 
+#include "gromacs/mdlib/nbnxn_simd.h"
+
 #ifdef {0}
 
-{1}
-#include "gromacs/simd/macros.h"
-#include "gromacs/simd/vector_operations.h"
+{1}#include "gromacs/simd/vector_operations.h"
+
 {2}
 #define GMX_SIMD_J_UNROLL_SIZE {3}
 #include "{4}"

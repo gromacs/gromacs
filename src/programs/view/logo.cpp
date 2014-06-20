@@ -199,7 +199,7 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
     logo->bQuitOnClick = bQuitOnClick;
     InitWin(&logo->wd, 0, 0, 360, 270, 1, "GROMACS");
     bg = LIGHTGREY;
-    if ((newcol = getenv("LOGO")) != NULL)
+    if ((newcol = getenv("GMX_LOGO_COLOR")) != NULL)
     {
         GetNamedColor(x11, newcol, &bg);
     }

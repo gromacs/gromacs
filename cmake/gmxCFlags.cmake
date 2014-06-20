@@ -110,6 +110,8 @@ MACRO(gmx_c_flags)
         # Since 4.8 on by default. For previous version disabling is a no-op. Only disabling for Release because with assert
         # the warnings are OK.
         GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
+        # Since gcc 4.8 strict - false postives with old gmx_fatal. TODO: Remove in master
+        GMX_TEST_CFLAG(CFLAGS_WARN_UNINIT "-Wno-maybe-uninitialized" GMXC_CFLAGS)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"

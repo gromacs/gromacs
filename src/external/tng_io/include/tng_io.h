@@ -1,9 +1,7 @@
 /* This code is part of the tng binary trajectory format.
  *
- *                      VERSION 1.5
- *
  * Written by Magnus Lundborg
- * Copyright (c) 2012-2013, The GROMACS development team.
+ * Copyright (c) 2012-2014, The GROMACS development team.
  * Check out http://www.gromacs.org for more information.
  *
  *
@@ -343,10 +341,6 @@ typedef unsigned __int64 uint64_t;
 #endif /* USE_WINDOWS */
 #endif /* DECLSPECDLLEXPORT */
 
-
-/** The version of this TNG build */
-#define TNG_VERSION 5 /* TNG_VERSION 4 => Api version 1.5 */
-
 /** Flag to indicate frame dependent data. */
 #define TNG_FRAME_DEPENDENT 1
 /** Flag to indicate particle dependent data. */
@@ -419,6 +413,7 @@ typedef enum {TNG_NON_TRAJECTORY_BLOCK, TNG_TRAJECTORY_BLOCK} tng_block_type;
 #define TNG_TRAJ_B_FACTORS              0x0000000010000006LL
 #define TNG_TRAJ_ANISOTROPIC_B_FACTORS  0x0000000010000007LL
 #define TNG_TRAJ_OCCUPANCY              0x0000000010000008LL
+#define TNG_TRAJ_GENERAL_COMMENTS       0x0000000010000009LL
 /** @} */
 
 
