@@ -331,7 +331,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
                    : exvgNONE);
             output_env_t                  oenv;
-            output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0, 0);
+            output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
             boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
                                   impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),

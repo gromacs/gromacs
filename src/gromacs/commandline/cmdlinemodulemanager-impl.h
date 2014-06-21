@@ -180,6 +180,9 @@ class CommandLineCommonOptionsHolder
             return bQuiet_ && !bVersion_;
         }
 
+        //! Returns the debug level.
+        int debugLevel() const { return debugLevel_; }
+
         //! Returns the file to which startup information should be printed.
         FILE *startupInfoFile() const { return (bVersion_ ? stdout : stderr); }
 
@@ -192,6 +195,7 @@ class CommandLineCommonOptionsHolder
         bool                         bQuiet_;
         bool                         bVersion_;
         bool                         bCopyright_;
+        int                          debugLevel_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineCommonOptionsHolder);
 };

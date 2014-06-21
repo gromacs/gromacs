@@ -59,6 +59,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -146,7 +147,7 @@ class CMainCommandLineModule : public CommandLineModuleInterface
 
 CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
     : options_(NULL, NULL), bHelp_(false), bHidden_(false),
-      bQuiet_(false), bVersion_(false), bCopyright_(true)
+      bQuiet_(false), bVersion_(false), bCopyright_(true), debugLevel_(0)
 {
     binaryInfoSettings_.copyright(true);
 }
@@ -168,6 +169,10 @@ void CommandLineCommonOptionsHolder::initOptions()
                            .description("Print extended version information and quit"));
     options_.addOption(BooleanOption("copyright").store(&bCopyright_)
                            .description("Print copyright information on startup"));
+    options_.addOption(IntegerOption("debug").store(&debugLevel_)
+                           .hidden().defaultValueIfSet(1)
+                           .description("Write file with debug information, "
+                                        "1: short (default), 2: also x and f"));
 }
 
 bool CommandLineCommonOptionsHolder::finishOptions()
@@ -510,7 +515,7 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
     CommandLineModuleInterface    *module;
-    const bool                     bMaster = (!gmx_mpi_initialized() || gmx_node_rank() == 0);
+    const bool                     bMaster = (gmx_node_rank() == 0);
     bool                           bQuiet  = impl_->bQuiet_ || !bMaster;
     CommandLineCommonOptionsHolder optionsHolder;
     try
@@ -539,6 +544,19 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     if (module == NULL)
     {
         return 0;
+    }
+    /* Open the debug file */
+    if (optionsHolder.debugLevel() > 0)
+    {
+        std::string filename(impl_->programContext_.programName());
+        if (gmx_node_num() > 1)
+        {
+            filename.append(formatString("%d", gmx_node_rank()));
+        }
+        filename.append(".debug");
+
+        fprintf(stderr, "Will write debug log file: %s\n", filename.c_str());
+        gmx_init_debug(optionsHolder.debugLevel(), filename.c_str());
     }
     int rc = module->run(argc, argv);
     if (!bQuiet)

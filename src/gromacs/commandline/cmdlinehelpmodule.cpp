@@ -134,15 +134,15 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
          *
          * Does not throw.
          */
-        explicit RootHelpTopic(const std::string &binaryName)
-            : binaryName_(binaryName)
+        explicit RootHelpTopic(const CommandLineHelpModuleImpl &helpModule)
+            : helpModule_(helpModule)
         {
         }
 
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
-        std::string                 binaryName_;
+        const CommandLineHelpModuleImpl  &helpModule_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
@@ -158,11 +158,10 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
     }
     {
         CommandLineCommonOptionsHolder optionsHolder;
-        CommandLineHelpContext         cmdlineContext(context);
+        CommandLineHelpContext         cmdlineContext(*helpModule_.context_);
+        cmdlineContext.setModuleDisplayName(helpModule_.binaryName_);
         optionsHolder.initOptions();
-        cmdlineContext.setModuleDisplayName(binaryName_);
         // TODO: Add <command> [<args>] into the synopsis.
-        // TODO: Propagate the -hidden option here.
         CommandLineHelpWriter(*optionsHolder.options())
             .writeHelp(cmdlineContext);
     }
@@ -718,7 +717,7 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : rootTopic_(new RootHelpTopic(binaryName)), programContext_(programContext),
+    : rootTopic_(new RootHelpTopic(*this)), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false),
       outputOverride_(NULL)

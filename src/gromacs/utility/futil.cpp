@@ -87,15 +87,15 @@ typedef struct t_pstack {
 } t_pstack;
 
 static t_pstack    *pstack      = NULL;
-static gmx_bool     bUnbuffered = FALSE;
+static bool         bUnbuffered = false;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
 static tMPI_Thread_mutex_t pstack_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-void no_buffers(void)
+void gmx_disable_file_buffering(void)
 {
-    bUnbuffered = TRUE;
+    bUnbuffered = true;
 }
 
 void push_ps(FILE *fp)

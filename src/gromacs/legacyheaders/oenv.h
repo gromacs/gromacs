@@ -80,9 +80,6 @@ void output_env_done(output_env_t oenv);
 int output_env_get_verbosity(const output_env_t oenv);
 /* return the verbosity */
 
-int output_env_get_debug_level(const output_env_t oenv);
-/* return the debug level */
-
 const char *output_env_get_time_unit(const output_env_t oenv);
 /* return time unit (e.g. ps or ns) */
 
@@ -130,7 +127,7 @@ class ProgramContextInterface;
 void output_env_init(output_env_t *oenvp,
                      const gmx::ProgramContextInterface &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
-                     int verbosity, int debug_level);
+                     int verbosity);
 /* initialize an output_env structure, setting the command line,
    the default time value a gmx_boolean view that is set to TRUE when the
    user requests direct viewing of graphs,
