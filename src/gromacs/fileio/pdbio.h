@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,26 +49,40 @@ extern "C" {
 
 typedef struct gmx_conect_t *gmx_conect;
 
-/* THE pdb format (for ATOM/HETATOM lines) */
-const char* get_pdbformat(void);
-const char* get_pdbformat4(void);
-
 /* Enumerated type for pdb records. The other entries are ignored
  * when reading a pdb file
  */
-enum {
+enum PDB_record {
     epdbATOM,   epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
     epdbMODEL,  epdbENDMDL, epdbTER,    epdbHEADER, epdbTITLE, epdbREMARK,
     epdbCONECT, epdbNR
 };
 
+/* Write a PDB line with an ATOM or HETATM record directly to a file pointer.
+ *
+ * Returns the number of characters printed.
+ */
+int
+gmx_fprintf_pdb_atomline(FILE *            fp,
+                         enum PDB_record   record,
+                         int               atom_seq_number,
+                         const char *      atom_name,
+                         char              alternate_location,
+                         const char *      res_name,
+                         char              chain_id,
+                         int               res_seq_number,
+                         char              res_insertion_code,
+                         real              x,
+                         real              y,
+                         real              z,
+                         real              occupancy,
+                         real              b_factor,
+                         const char *      element);
+
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum {
     U11, U22, U33, U12, U13, U23
 };
-
-void set_pdb_wide_format(gmx_bool bSet);
-/* If bSet, use wider format for occupancy and bfactor */
 
 void pdb_use_ter(gmx_bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE).

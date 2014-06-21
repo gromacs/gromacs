@@ -1097,13 +1097,12 @@ static int copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid, 
     {
 #ifdef DEBUG_PME
         FILE *fp, *fp2;
-        char  fn[STRLEN], format[STRLEN];
+        char  fn[STRLEN];
         real  val;
         sprintf(fn, "pmegrid%d.pdb", pme->nodeid);
         fp = gmx_ffopen(fn, "w");
         sprintf(fn, "pmegrid%d.txt", pme->nodeid);
         fp2 = gmx_ffopen(fn, "w");
-        sprintf(format, "%s%s\n", pdbformat, "%6.2f%6.2f");
 #endif
 
         for (ix = 0; ix < local_fft_ndata[XX]; ix++)
@@ -1119,8 +1118,8 @@ static int copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid, 
                     val = 100*pmegrid[pmeidx];
                     if (pmegrid[pmeidx] != 0)
                     {
-                        fprintf(fp, format, "ATOM", pmeidx, "CA", "GLY", ' ', pmeidx, ' ',
-                                5.0*ix, 5.0*iy, 5.0*iz, 1.0, val);
+                        gmx_fprintf_pdb_atomline(fp, epdbATOM, pmeidx, "CA", ' ', "GLY", ' ', pmeidx, ' ',
+                                                 5.0*ix, 5.0*iy, 5.0*iz, 1.0, val, "");
                     }
                     if (pmegrid[pmeidx] != 0)
                     {
