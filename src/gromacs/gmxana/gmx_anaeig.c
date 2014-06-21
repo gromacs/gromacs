@@ -685,7 +685,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         rvec       *x;
         real       *b = NULL;
         matrix      box;
-        char       *resnm, *atnm, pdbform[STRLEN];
+        char       *resnm, *atnm;
         gmx_bool    bPDB, b4D;
         FILE       *out;
 
@@ -746,9 +746,6 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         }
         if ( ( b4D || bSplit ) && bPDB)
         {
-            strcpy(pdbform, get_pdbformat());
-            strcat(pdbform, "%8.4f%8.4f\n");
-
             out = gmx_ffopen(threedplotfile, "w");
             fprintf(out, "HEADER    %s\n", str);
             if (b4D)
@@ -763,8 +760,8 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                     fprintf(out, "TER\n");
                     j = 0;
                 }
-                fprintf(out, pdbform, "ATOM", i+1, "C", "PRJ", ' ', j+1,
-                        10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i]);
+                gmx_fprintf_pdb_atomline(out, epdbATOM, i+1, "C", ' ', "PRJ", ' ', j+1, ' ',
+                                         10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i], "");
                 if (j > 0)
                 {
                     fprintf(out, "CONECT%5d%5d\n", i, i+1);
