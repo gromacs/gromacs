@@ -2381,10 +2381,11 @@ static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead,
     gmx_fio_ndo_int(fio, block->a, block->nra);
 }
 
-static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
+static void do_atom(t_fileio *fio, gmx_atomprop_t aps, t_atom *atom, int ngrp, gmx_bool bRead,
                     int file_version, gmx_groups_t *groups, int atnr)
 {
     int i, myngrp;
+    char * p_elem;
 
     gmx_fio_do_real(fio, atom->m);
     gmx_fio_do_real(fio, atom->q);
@@ -2397,6 +2398,19 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
     if (file_version >= 52)
     {
         gmx_fio_do_int(fio, atom->atomnumber);
+        if (bRead)
+        {
+            p_elem = gmx_atomprop_element(aps, atom->atomnumber);
+            if(p_elem != NULL)
+            {
+                strncpy(atom->elem, p_elem, 3);
+                atom->elem[3] = '\0';
+            }
+            else
+            {
+                sprintf(atom->elem,"");
+            }
+        }
     }
     else if (bRead)
     {
@@ -2516,7 +2530,7 @@ static void do_resinfo(t_fileio *fio, int n, t_resinfo *ri, gmx_bool bRead,
     }
 }
 
-static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *symtab,
+static void do_atoms(t_fileio *fio, gmx_atomprop_t aps, t_atoms *atoms, gmx_bool bRead, t_symtab *symtab,
                      int file_version,
                      gmx_groups_t *groups)
 {
@@ -2548,7 +2562,7 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     }
     for (i = 0; (i < atoms->nr); i++)
     {
-        do_atom(fio, &atoms->atom[i], egcNR, bRead, file_version, groups, i);
+        do_atom(fio, aps, &atoms->atom[i], egcNR, bRead, file_version, groups, i);
     }
     do_strstr(fio, atoms->nr, atoms->atomname, bRead, symtab);
     if (bRead && (file_version <= 20))
@@ -2771,7 +2785,7 @@ void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
+static void do_moltype(t_fileio *fio, gmx_atomprop_t aps, gmx_moltype_t *molt, gmx_bool bRead,
                        t_symtab *symtab, int file_version,
                        gmx_groups_t *groups)
 {
@@ -2782,7 +2796,7 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
         do_symstr(fio, &(molt->name), bRead, symtab);
     }
 
-    do_atoms(fio, &molt->atoms, bRead, symtab, file_version, groups);
+    do_atoms(fio, aps, &molt->atoms, bRead, symtab, file_version, groups);
 
     if (bRead && gmx_debug_at)
     {
@@ -2982,8 +2996,11 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
-    int      mt, mb, i;
-    t_blocka dumb;
+    int            mt, mb, i;
+    t_blocka       dumb;
+    gmx_atomprop_t aps;
+
+    aps = gmx_atomprop_init();
 
     if (bRead)
     {
@@ -3017,7 +3034,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     }
     for (mt = 0; mt < mtop->nmoltype; mt++)
     {
-        do_moltype(fio, &mtop->moltype[mt], bRead, &mtop->symtab, file_version,
+        do_moltype(fio, aps, &mtop->moltype[mt], bRead, &mtop->symtab, file_version,
                    &mtop->groups);
     }
 
@@ -3121,6 +3138,8 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     {
         close_symtab(&(mtop->symtab));
     }
+
+    gmx_atomprop_destroy(aps);
 }
 
 /* If TopOnlyOK is TRUE then we can read even future versions
