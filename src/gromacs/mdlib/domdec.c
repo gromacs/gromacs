@@ -1925,7 +1925,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
                               gmx_domdec_t *dd, matrix box, gmx_ddbox_t *ddbox)
 {
     rvec   grid_s[2], *grid_r = NULL, cx, r;
-    char   fname[STRLEN], format[STRLEN], buf[22];
+    char   fname[STRLEN], buf[22];
     FILE  *out;
     int    a, i, d, z, y, x;
     matrix tric;
@@ -1965,7 +1965,6 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
             }
         }
         sprintf(fname, "%s_%s.pdb", fn, gmx_step_str(step, buf));
-        sprintf(format, "%s%s\n", get_pdbformat(), "%6.2f%6.2f");
         out = gmx_fio_fopen(fname, "w");
         gmx_write_pdb_box(out, dd->bScrewPBC ? epbcSCREW : epbcXYZ, box);
         a = 1;
@@ -1986,8 +1985,9 @@ static void write_dd_grid_pdb(const char *fn, gmx_int64_t step,
                         cx[YY] = grid_r[i*2+y][YY];
                         cx[ZZ] = grid_r[i*2+z][ZZ];
                         mvmul(tric, cx, r);
-                        fprintf(out, format, "ATOM", a++, "CA", "GLY", ' ', 1+i,
-                                ' ', 10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol);
+                        gmx_fprintf_pdb_atomline(out, FALSE,
+                                                 "ATOM", a++, "CA", ' ', "GLY", ' ', i+1, ' ',
+                                                 10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol, "");
                     }
                 }
             }
@@ -2014,7 +2014,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
                   gmx_mtop_t *mtop, t_commrec *cr,
                   int natoms, rvec x[], matrix box)
 {
-    char          fname[STRLEN], format[STRLEN], format4[STRLEN], buf[22];
+    char          fname[STRLEN], buf[22];
     FILE         *out;
     int           i, ii, resnr, c;
     char         *atomname, *resname;
@@ -2028,9 +2028,6 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
     }
 
     sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), cr->sim_nodeid);
-
-    sprintf(format, "%s%s\n", get_pdbformat(), "%6.2f%6.2f");
-    sprintf(format4, "%s%s\n", get_pdbformat4(), "%6.2f%6.2f");
 
     out = gmx_fio_fopen(fname, "w");
 
@@ -2057,10 +2054,9 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
         {
             b = dd->comm->zones.n + 1;
         }
-        fprintf(out, strlen(atomname) < 4 ? format : format4,
-                "ATOM", (ii+1)%100000,
-                atomname, resname, ' ', resnr%10000, ' ',
-                10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, b);
+        gmx_fprintf_pdb_atomline(out, FALSE,
+                                 "ATOM", ii+1, atomname, ' ', resname, ' ', resnr, ' ',
+                                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, b, "");
     }
     fprintf(out, "TER\n");
 
