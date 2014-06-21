@@ -41,8 +41,6 @@
 #include <config.h>
 #endif
 
-#include <cctype>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -65,7 +63,6 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/common.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -493,7 +490,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     try
     {
-        int                        nicelevel = 0, debug_level = 0;
+        int                        nicelevel = 0;
         double                     tbegin    = 0.0, tend = 0.0, tdelta = 0.0;
         bool                       bView     = false;
         int                        xvgFormat = 0;
@@ -504,10 +501,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
         options.addManager(&fileOptManager);
         options.setDescription(gmx::ConstArrayRef<const char *>(desc, ndesc));
-        options.addOption(
-                gmx::IntegerOption("debug").store(&debug_level).hidden()
-                    .description("Write file with debug information, "
-                                 "1: short, 2: also x and f"));
 
         options.addOption(
                 gmx::IntegerOption("nice").store(&nicelevel)
@@ -596,27 +589,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         /* set program name, command line, and default values for output options */
         output_env_init(oenv, gmx::getProgramContext(),
                         (time_unit_t)(timeUnitManager.timeUnit() + 1), bView,
-                        (xvg_format_t)(xvgFormat + 1), 0, debug_level);
-
-        /* Open the debug file */
-        if (debug_level > 0)
-        {
-            char buf[256];
-
-            if (gmx_mpi_initialized())
-            {
-                sprintf(buf, "%s%d.debug", output_env_get_short_program_name(*oenv),
-                        gmx_node_rank());
-            }
-            else
-            {
-                sprintf(buf, "%s.debug", output_env_get_short_program_name(*oenv));
-            }
-
-            init_debug(debug_level, buf);
-            fprintf(stderr, "Opening debug file %s (src code file %s, line %d)\n",
-                    buf, __FILE__, __LINE__);
-        }
+                        (xvg_format_t)(xvgFormat + 1), 0);
 
         /* Set the nice level */
 #ifdef HAVE_UNISTD_H

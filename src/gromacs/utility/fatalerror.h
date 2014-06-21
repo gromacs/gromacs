@@ -75,11 +75,58 @@ extern "C" {
 #endif
 #endif
 
+/*! \brief
+ * Debug log file.
+ *
+ * Functions can write to this file for debug info.
+ * Before writing to it, it should be checked whether the file is not NULL:
+ * \code
+   if (debug)
+   {
+       fprintf(debug, "%s", "Debug text");
+   }
+   \endcode
+ */
+extern FILE    *debug;
+/** Whether extra debugging is enabled. */
+extern gmx_bool gmx_debug_at;
+
+/*! \brief
+ * Initializes debugging variables.
+ *
+ * This function is not threadsafe.  It should be called as part of
+ * initializing \Gromacs, before any other thread accesses the library.
+ * For command line programs, gmx::CommandLineModuleManager takes care
+ * of this if the user requests debugging.
+ */
+void gmx_init_debug(const int dbglevel, const char *dbgfile);
+
+/** Returns TRUE when the program was started in debug mode */
+gmx_bool bDebugMode(void);
+
 /** Implementation for where(). */
 void
 _where(const char *file, int line);
 /** Prints filename and line to stdlog. */
 #define where() _where(__FILE__, __LINE__)
+
+/** Sets the log file for printing error messages. */
+void
+gmx_fatal_set_log_file(FILE *fp);
+
+/*! \brief
+ * Sets an error handler for gmx_fatal() and other fatal error routines.
+ *
+ * The default handler prints the message.
+ * \Gromacs will terminate the program after the error handler returns.
+ * To make gmx_fatal_collective() work, the error handler should not terminate
+ * the program, as it cannot know what is the desired way of termination.
+ * The string passed to the handler may be a multi-line string.
+ *
+ * \see gmx_fatal()
+ */
+void
+set_gmx_error_handler(void (*func)(const char *msg));
 
 /*! \brief
  * Low-level fatal error reporting routine for collective MPI errors.
@@ -123,56 +170,6 @@ gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...) GMX
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
 
-/** Sets the log file for printing error messages. */
-void
-gmx_fatal_set_log_file(FILE *fp);
-
-/*! \brief
- * Debug log file.
- *
- * Functions can write to this file for debug info.
- * Before writing to it, it should be checked whether the file is not NULL:
- * \code
-   if (debug)
-   {
-       fprintf(debug, "%s", "Debug text");
-   }
-   \endcode
- */
-extern FILE    *debug;
-/** Whether extra debugging is enabled. */
-extern gmx_bool gmx_debug_at;
-
-/** Initializes debugging variables */
-void init_debug(const int dbglevel, const char *dbgfile);
-
-/** Returns TRUE when the program was started in debug mode */
-gmx_bool bDebugMode(void);
-
-/*! \brief
- * Implementation for range_check() and range_check_mesg().
- *
- * \p warn_str can be NULL.
- */
-void _range_check(int n, int n_min, int n_max, const char *warn_str,
-                  const char *var,
-                  const char *file, int line);
-
-/*! \brief
- * Checks that a variable is within a range.
- *
- * If \p n is not in range [n_min, n_max), a fatal error is raised.
- * \p n_min is inclusive, but \p n_max is not.
- */
-#define range_check_mesg(n, n_min, n_max, str) _range_check(n, n_min, n_max, str,#n, __FILE__, __LINE__)
-
-/*! \brief
- * Checks that a variable is within a range.
- *
- * This works as range_check_mesg(), but with a default error message.
- */
-#define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL,#n, __FILE__, __LINE__)
-
 /*! \brief
  * Returns error message corresponding to a string key.
  *
@@ -212,18 +209,28 @@ void _gmx_error(const char *key, const char *msg, const char *file, int line) GM
 /*! \} */
 
 /*! \brief
- * Sets an error handler for gmx_fatal() and other fatal error routines.
+ * Implementation for range_check() and range_check_mesg().
  *
- * The default handler prints the message.
- * \Gromacs will terminate the program after the error handler returns.
- * To make gmx_fatal_collective() work, the error handler should not terminate
- * the program, as it cannot know what is the desired way of termination.
- * The string passed to the handler may be a multi-line string.
- *
- * \see gmx_fatal()
+ * \p warn_str can be NULL.
  */
-void
-set_gmx_error_handler(void (*func)(const char *msg));
+void _range_check(int n, int n_min, int n_max, const char *warn_str,
+                  const char *var,
+                  const char *file, int line);
+
+/*! \brief
+ * Checks that a variable is within a range.
+ *
+ * If \p n is not in range [n_min, n_max), a fatal error is raised.
+ * \p n_min is inclusive, but \p n_max is not.
+ */
+#define range_check_mesg(n, n_min, n_max, str) _range_check(n, n_min, n_max, str,#n, __FILE__, __LINE__)
+
+/*! \brief
+ * Checks that a variable is within a range.
+ *
+ * This works as range_check_mesg(), but with a default error message.
+ */
+#define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL,#n, __FILE__, __LINE__)
 
 /*! \brief
  * Prints a warning message to stderr.

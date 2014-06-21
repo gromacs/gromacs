@@ -93,11 +93,12 @@ extern "C" {
 typedef gmx_int64_t    gmx_off_t;
 
 /*! \brief
- * Turn off buffering of files (which is default) for debugging purposes.
+ * Turn off buffering for output files (which is default) for debugging
+ * purposes.
  *
  * This only has effect on files opened with gmx_ffopen().
  */
-void no_buffers(void);
+void gmx_disable_file_buffering(void);
 
 /*! \brief
  * Check whether a path exists.
