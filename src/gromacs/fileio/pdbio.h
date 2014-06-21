@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,9 +49,30 @@ extern "C" {
 
 typedef struct gmx_conect_t *gmx_conect;
 
-/* THE pdb format (for ATOM/HETATOM lines) */
-const char* get_pdbformat(void);
-const char* get_pdbformat4(void);
+/* Write a PDB line with an ATOM or HETATM record. At most size characters
+ * are written to the output_buffer string you provide. The wide format
+ * option enables a non-standard format that is used e.g. for the Mead program
+ * to calculate electrostatics, which requires higher coordinate precision.
+ *
+ * Returns the number of characters printed.
+ */
+int
+gmx_fprintf_pdb_atomline(FILE *        fp,
+                         gmx_bool      bWideFormat,
+                         const char *  record,
+                         int           atom_seq_number,
+                         const char *  atom_name,
+                         char          alternate_location,
+                         const char *  res_name,
+                         char          chain_id,
+                         int           res_seq_number,
+                         char          res_insertion_code,
+                         real          x,
+                         real          y,
+                         real          z,
+                         real          occupancy,
+                         real          b_factor,
+                         const char *  element);
 
 /* Enumerated type for pdb records. The other entries are ignored
  * when reading a pdb file
