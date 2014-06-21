@@ -35,7 +35,7 @@
 
 /* The source code in this file should be thread-safe.
    Please keep it that way. */
-
+#include "checkpoint.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -65,12 +65,9 @@
 #include "names.h"
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
 #include "txtdump.h"
 #include "gromacs/math/vec.h"
 #include "network.h"
-#include "checkpoint.h"
-#include "gromacs/utility/cstringutil.h"
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/utility/futil.h"
@@ -79,7 +76,9 @@
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "buildinfo.h"
 
@@ -170,7 +169,6 @@ gmx_wintruncate(const char *filename, __int64 size)
     return 0;
 #else
     FILE *fp;
-    int   rc;
 
     fp = fopen(filename, "rb+");
 
@@ -535,8 +533,6 @@ static int do_cpte_n_reals(XDR *xd, int cptp, int ecpt, int sflags,
 static int do_cpte_real(XDR *xd, int cptp, int ecpt, int sflags,
                         real *r, FILE *list)
 {
-    int n;
-
     return do_cpte_reals_low(xd, cptp, ecpt, sflags, 1, NULL, &r, list, ecprREAL);
 }
 
@@ -546,7 +542,7 @@ static int do_cpte_ints(XDR *xd, int cptp, int ecpt, int sflags,
     bool_t res = 0;
     int    dtc = xdr_datatype_int;
     int   *vp, *va = NULL;
-    int    nf, dt, i;
+    int    nf, dt;
 
     nf  = n;
     res = xdr_int(xd, &nf);
@@ -613,7 +609,7 @@ static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
     bool_t  res = 0;
     int     dtc = xdr_datatype_double;
     double *vp, *va = NULL;
-    int     nf, dt, i;
+    int     nf, dt;
 
     nf  = n;
     res = xdr_int(xd, &nf);
@@ -678,8 +674,6 @@ static int do_cpte_double(XDR *xd, int cptp, int ecpt, int sflags,
 static int do_cpte_rvecs(XDR *xd, int cptp, int ecpt, int sflags,
                          int n, rvec **v, FILE *list)
 {
-    int n3;
-
     return do_cpte_reals_low(xd, cptp, ecpt, sflags,
                              n*DIM, NULL, (real **)v, list, ecprRVEC);
 }
@@ -688,7 +682,7 @@ static int do_cpte_matrix(XDR *xd, int cptp, int ecpt, int sflags,
                           matrix v, FILE *list)
 {
     real *vr;
-    real  ret;
+    int   ret;
 
     vr  = (real *)&(v[0][0]);
     ret = do_cpte_reals_low(xd, cptp, ecpt, sflags,
@@ -707,8 +701,7 @@ static int do_cpte_nmatrix(XDR *xd, int cptp, int ecpt, int sflags,
                            int n, real **v, FILE *list)
 {
     int   i;
-    real *vr;
-    real  ret, reti;
+    int   ret, reti;
     char  name[CPTSTRLEN];
 
     ret = 0;
@@ -718,16 +711,15 @@ static int do_cpte_nmatrix(XDR *xd, int cptp, int ecpt, int sflags,
     }
     for (i = 0; i < n; i++)
     {
-        vr   = v[i];
         reti = do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, &(v[i]), NULL, ecprREAL);
         if (list && reti == 0)
         {
             sprintf(name, "%s[%d]", st_names(cptp, ecpt), i);
             pr_reals(list, 0, name, v[i], n);
         }
-        if (reti == 0)
+        if (reti != 0)
         {
-            ret = 0;
+            ret = reti;
         }
     }
     return ret;
@@ -821,7 +813,6 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     bool_t res = 0;
     int    magic;
     int    idum = 0;
-    int    i;
     char  *fhost;
 
     if (bRead)
@@ -1346,7 +1337,7 @@ static int do_cpt_df_hist(XDR *xd, int fflags, df_history_t *dfhist, FILE *list)
 static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
                           edsamstate_t *EDstate, FILE *list)
 {
-    int  i, j;
+    int  i;
     int  ret = 0;
     char buf[STRLEN];
 
@@ -1408,7 +1399,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
                         gmx_file_position_t **p_outputfiles, int *nfiles,
                         FILE *list, int file_version)
 {
-    int                  i, j;
+    int                  i;
     gmx_off_t            offset;
     gmx_off_t            mask = 0xFFFFFFFFL;
     int                  offset_high, offset_low;
@@ -1512,12 +1503,12 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     char                *fntemp; /* the temporary checkpoint file name */
     time_t               now;
     char                 timebuf[STRLEN];
-    int                  nppnodes, npmenodes, flag_64bit;
+    int                  nppnodes, npmenodes;
     char                 buf[1024], suffix[5+STEPSTRSIZE], sbuf[STEPSTRSIZE];
     gmx_file_position_t *outputfiles;
     int                  noutputfiles;
     char                *ftime;
-    int                  flags_eks, flags_enh, flags_dfh, i;
+    int                  flags_eks, flags_enh, flags_dfh;
     t_fileio            *ret;
 
     if (DOMAINDECOMP(cr))
@@ -1846,8 +1837,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     int                  file_version;
     char                *version, *btime, *buser, *bhost, *fprog, *ftime;
     int                  double_prec;
-    char                 filename[STRLEN], buf[STEPSTRSIZE];
-    int                  nppnodes, eIntegrator_f, nppnodes_f, npmenodes_f;
+    char                 buf[STEPSTRSIZE];
+    int                  eIntegrator_f, nppnodes_f, npmenodes_f;
     ivec                 dd_nc_f;
     int                  natoms, ngtc, nnhpres, nhchainlength, nlambda, fflags, flags_eks, flags_enh, flags_dfh;
     int                  d;
@@ -1954,7 +1945,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (!PAR(cr))
     {
-        nppnodes      = 1;
         cr->npmenodes = 0;
     }
     else if (cr->nnodes == nppnodes_f + npmenodes_f)
@@ -1963,7 +1953,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         {
             cr->npmenodes = npmenodes_f;
         }
-        nppnodes = cr->nnodes - cr->npmenodes;
+        int nppnodes = cr->nnodes - cr->npmenodes;
         if (nppnodes == nppnodes_f)
         {
             for (d = 0; d < DIM; d++)
@@ -1974,11 +1964,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                 }
             }
         }
-    }
-    else
-    {
-        /* The number of PP nodes has not been set yet */
-        nppnodes = -1;
     }
 
     if (fflags != state->flags)
@@ -2428,8 +2413,6 @@ void list_checkpoint(const char *fn, FILE *out)
     ivec                 dd_nc;
     t_state              state;
     int                  flags_eks, flags_enh, flags_dfh;
-    int                  indent;
-    int                  i, j;
     int                  ret;
     gmx_file_position_t *outputfiles;
     int                  nfiles;
