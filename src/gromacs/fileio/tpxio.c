@@ -2381,10 +2381,52 @@ static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead,
     gmx_fio_ndo_int(fio, block->a, block->nra);
 }
 
+/* This is a primitive routine to make it possible to translate atomic numbers
+ * to element names when reading TPR files, without making the Gromacs library
+ * directory a dependency on mdrun (which is the case if we need elements.dat).
+ */
+static const char *
+atomicnumber_to_element(int atomicnumber)
+{
+    const char * p;
+
+    /* This does not have to be complete, so we only include elements likely
+     * to occur in PDB files.
+     */
+    switch (atomicnumber)
+    {
+        case 1:  p = "H";  break;
+        case 5:  p = "B";  break;
+        case 6:  p = "C";  break;
+        case 7:  p = "N";  break;
+        case 8:  p = "O";  break;
+        case 9:  p = "F";  break;
+        case 11: p = "Na"; break;
+        case 12: p = "Mg"; break;
+        case 15: p = "P";  break;
+        case 16: p = "S";  break;
+        case 17: p = "Cl"; break;
+        case 18: p = "Ar"; break;
+        case 19: p = "K";  break;
+        case 20: p = "Ca"; break;
+        case 25: p = "Mn"; break;
+        case 26: p = "Fe"; break;
+        case 28: p = "Ni"; break;
+        case 29: p = "Cu"; break;
+        case 30: p = "Zn"; break;
+        case 35: p = "Br"; break;
+        case 47: p = "Ag"; break;
+        default: p = "";   break;
+    }
+    return p;
+}
+
+
 static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
                     int file_version, gmx_groups_t *groups, int atnr)
 {
-    int i, myngrp;
+    int    i, myngrp;
+    char * p_elem;
 
     gmx_fio_do_real(fio, atom->m);
     gmx_fio_do_real(fio, atom->q);
@@ -2397,6 +2439,15 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
     if (file_version >= 52)
     {
         gmx_fio_do_int(fio, atom->atomnumber);
+        if (bRead)
+        {
+            /* Set element string from atomic number if present.
+             * This routine returns an empty string if the name is not found.
+             */
+            strncpy(atom->elem, atomicnumber_to_element(atom->atomnumber), 4);
+            /* avoid warnings about potentially unterminated string */
+            atom->elem[3] = '\0';
+        }
     }
     else if (bRead)
     {
@@ -2982,8 +3033,8 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
-    int      mt, mb, i;
-    t_blocka dumb;
+    int            mt, mb, i;
+    t_blocka       dumb;
 
     if (bRead)
     {
