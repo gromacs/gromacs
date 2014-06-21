@@ -1250,13 +1250,14 @@ int gmx_trjconv(int argc, char *argv[])
         if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB))
         {
             /* get memory for stuff to go in .pdb file */
-            init_t_atoms(&useatoms, atoms->nr, FALSE);
+            init_t_atoms(&useatoms, atoms->nr, TRUE);
             sfree(useatoms.resinfo);
             useatoms.resinfo = atoms->resinfo;
             for (i = 0; (i < nout); i++)
             {
                 useatoms.atomname[i] = atoms->atomname[index[i]];
                 useatoms.atom[i]     = atoms->atom[index[i]];
+                useatoms.pdbinfo[i]  = atoms->pdbinfo[index[i]];
                 useatoms.nres        = max(useatoms.nres, useatoms.atom[i].resind+1);
             }
             useatoms.nr = nout;
