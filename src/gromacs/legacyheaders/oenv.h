@@ -107,14 +107,10 @@ gmx_bool output_env_get_view(const output_env_t oenv);
 xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
 /* Returns enum (see above) for xvg output formatting */
 
-const char *output_env_get_program_name(const output_env_t oenv);
-/* return the program name */
-
-const char *output_env_get_cmd_line(const output_env_t oenv);
-/* return the command line */
-
-const char *output_env_get_short_program_name(const output_env_t oenv);
-/* get the short version (without path component) of the program name */
+/*! \brief
+ * Returns display name for the currently running program.
+ */
+const char *output_env_get_program_display_name(const output_env_t oenv);
 
 #ifdef __cplusplus
 }
@@ -132,6 +128,13 @@ void output_env_init(output_env_t *oenvp,
    the default time value a gmx_boolean view that is set to TRUE when the
    user requests direct viewing of graphs,
    the graph formatting type, the verbosity, and debug level */
+
+/*! \brief
+ * Returns gmx::ProgramContextInterface from an output_env structure.
+ */
+const gmx::ProgramContextInterface &
+output_env_get_program_context(const output_env_t oenv);
+
 #endif
 
 #endif

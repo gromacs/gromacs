@@ -47,7 +47,7 @@
 #endif
 
 #include "typedefs.h"
-#include "copyrite.h"
+#include "oenv.h"
 #include "force.h"
 #include "mdrun.h"
 #include "md_logging.h"
@@ -1319,7 +1319,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   "but %s was not started through mpirun/mpiexec or only one process was requested through mpirun/mpiexec"
 #endif
 #endif
-                  , ShortProgram()
+                  , output_env_get_program_display_name(oenv)
                   );
     }
 

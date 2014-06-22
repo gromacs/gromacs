@@ -42,12 +42,9 @@
 #include <sys/time.h>
 #endif
 
-#include "gromacs/commandline/pargs.h"
 #include "typedefs.h"
 #include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/utility/cstringutil.h"
 #include "readinp.h"
@@ -61,7 +58,10 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/math/utilities.h"
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in
@@ -2356,7 +2356,8 @@ int gmx_tune_pme(int argc, char *argv[])
     sep_line(fp);
     fprintf(fp, "\n      P E R F O R M A N C E   R E S U L T S\n");
     sep_line(fp);
-    fprintf(fp, "%s for Gromacs %s\n", ShortProgram(), GromacsVersion());
+    fprintf(fp, "%s for Gromacs %s\n", output_env_get_program_display_name(oenv),
+            gmx_version());
     if (!bThreads)
     {
         fprintf(fp, "Number of nodes         : %d\n", nnodes);
