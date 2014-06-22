@@ -753,7 +753,6 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_int(fp, "inputrec->cutoff_scheme", -1, ir1->cutoff_scheme, ir2->cutoff_scheme);
     cmp_int(fp, "inputrec->ns_type", -1, ir1->ns_type, ir2->ns_type);
     cmp_int(fp, "inputrec->nstlist", -1, ir1->nstlist, ir2->nstlist);
-    cmp_int(fp, "inputrec->ndelta", -1, ir1->ndelta, ir2->ndelta);
     cmp_int(fp, "inputrec->nstcomm", -1, ir1->nstcomm, ir2->nstcomm);
     cmp_int(fp, "inputrec->comm_mode", -1, ir1->comm_mode, ir2->comm_mode);
     cmp_int(fp, "inputrec->nstlog", -1, ir1->nstlog, ir2->nstlog);

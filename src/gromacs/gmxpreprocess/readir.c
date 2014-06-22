@@ -1866,8 +1866,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nstlist", ir->nstlist,    10);
     CTYPE ("ns algorithm (simple or grid)");
     EETYPE("ns-type",     ir->ns_type,    ens_names);
-    /* set ndelta to the optimal value of 2 */
-    ir->ndelta = 2;
     CTYPE ("Periodic boundary conditions: xyz, no, xy");
     EETYPE("pbc",         ir->ePBC,       epbc_names);
     EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);

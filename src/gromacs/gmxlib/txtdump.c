@@ -448,11 +448,11 @@ void pr_qm_opts(FILE *fp, int indent, const char *title, t_grpopts *opts)
         pr_ivec(fp, indent, "QMbasis", opts->QMbasis, opts->ngQM, FALSE);
         pr_ivec(fp, indent, "QMcharge", opts->QMcharge, opts->ngQM, FALSE);
         pr_ivec(fp, indent, "QMmult", opts->QMmult, opts->ngQM, FALSE);
-        pr_bvec(fp, indent, "bSH", opts->bSH, opts->ngQM, FALSE);
+        pr_bvec(fp, indent, "SH", opts->bSH, opts->ngQM, FALSE);
         pr_ivec(fp, indent, "CASorbitals", opts->CASorbitals, opts->ngQM, FALSE);
         pr_ivec(fp, indent, "CASelectrons", opts->CASelectrons, opts->ngQM, FALSE);
         pr_rvec(fp, indent, "SAon", opts->SAon, opts->ngQM, FALSE);
-        pr_rvec(fp, indent, "SAon", opts->SAon, opts->ngQM, FALSE);
+        pr_rvec(fp, indent, "SAoff", opts->SAoff, opts->ngQM, FALSE);
         pr_ivec(fp, indent, "SAsteps", opts->SAsteps, opts->ngQM, FALSE);
         pr_bvec(fp, indent, "bOPT", opts->bOPT, opts->ngQM, FALSE);
         pr_bvec(fp, indent, "bTS", opts->bTS, opts->ngQM, FALSE);
@@ -494,14 +494,14 @@ static void pr_grp_opts(FILE *out, int indent, const char *title, t_grpopts *opt
     fprintf(out, "\n");
 
     /* Pretty-print the simulated annealing info */
-    fprintf(out, "anneal%s", bMDPformat ? " = " : ":");
+    fprintf(out, "annealing%s", bMDPformat ? " = " : ":");
     for (i = 0; (i < opts->ngtc); i++)
     {
         fprintf(out, "  %10s", EANNEAL(opts->annealing[i]));
     }
     fprintf(out, "\n");
 
-    fprintf(out, "ann-npoints%s", bMDPformat ? " = " : ":");
+    fprintf(out, "annealing-npoints%s", bMDPformat ? " = " : ":");
     for (i = 0; (i < opts->ngtc); i++)
     {
         fprintf(out, "  %10d", opts->anneal_npoints[i]);
@@ -512,13 +512,13 @@ static void pr_grp_opts(FILE *out, int indent, const char *title, t_grpopts *opt
     {
         if (opts->anneal_npoints[i] > 0)
         {
-            fprintf(out, "ann. times [%d]:\t", i);
+            fprintf(out, "annealing-time [%d]:\t", i);
             for (j = 0; (j < opts->anneal_npoints[i]); j++)
             {
                 fprintf(out, "  %10.1f", opts->anneal_time[i][j]);
             }
             fprintf(out, "\n");
-            fprintf(out, "ann. temps [%d]:\t", i);
+            fprintf(out, "annealing-temp [%d]:\t", i);
             for (j = 0; (j < opts->anneal_npoints[i]); j++)
             {
                 fprintf(out, "  %10.1f", opts->anneal_temp[i][j]);
@@ -644,9 +644,9 @@ static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
 
 static void pr_simtempvals(FILE *fp, int indent, t_simtemp *simtemp, int n_lambda)
 {
-    PR("simtemp_low", simtemp->simtemp_low);
-    PR("simtemp_high", simtemp->simtemp_high);
     PS("simulated-tempering-scaling", ESIMTEMP(simtemp->eSimTempScale));
+    PR("sim-temp-low", simtemp->simtemp_low);
+    PR("sim-temp-high", simtemp->simtemp_high);
     pr_rvec(fp, indent, "simulated tempering temperatures", simtemp->temperatures, n_lambda, TRUE);
 }
 
@@ -654,21 +654,8 @@ static void pr_expandedvals(FILE *fp, int indent, t_expanded *expand, int n_lamb
 {
 
     PI("nstexpanded", expand->nstexpanded);
-    PS("lambda-stats", elamstats_names[expand->elamstats]);
-    PS("lambda-mc-move", elmcmove_names[expand->elmcmove]);
-    PI("lmc-repeats", expand->lmc_repeats);
-    PI("lmc-gibbsdelta", expand->gibbsdeltalam);
-    PI("lmc-nstart", expand->lmc_forced_nstart);
-    PS("symmetrized-transition-matrix", EBOOL(expand->bSymmetrizedTMatrix));
-    PI("nst-transition-matrix", expand->nstTij);
-    PI("mininum-var-min", expand->minvarmin); /*default is reasonable */
-    PI("weight-c-range", expand->c_range);    /* default is just C=0 */
-    PR("wl-scale", expand->wl_scale);
-    PR("init-wl-delta", expand->init_wl_delta);
-    PR("wl-ratio", expand->wl_ratio);
-    PS("bWLoneovert", EBOOL(expand->bWLoneovert));
-    PI("lmc-seed", expand->lmc_seed);
-    PR("mc-temperature", expand->mc_temp);
+    PS("lmc-stats", elamstats_names[expand->elamstats]);
+    PS("lmc-move", elmcmove_names[expand->elmcmove]);
     PS("lmc-weights-equil", elmceq_names[expand->elmceq]);
     if (expand->elmceq == elmceqNUMATLAM)
     {
@@ -690,6 +677,19 @@ static void pr_expandedvals(FILE *fp, int indent, t_expanded *expand, int n_lamb
     {
         PR("weight-equil-count-ratio", expand->equil_ratio);
     }
+    PI("lmc-seed", expand->lmc_seed);
+    PR("mc-temperature", expand->mc_temp);
+    PI("lmc-repeats", expand->lmc_repeats);
+    PI("lmc-gibbsdelta", expand->gibbsdeltalam);
+    PI("lmc-forced-nstart", expand->lmc_forced_nstart);
+    PS("symmetrized-transition-matrix", EBOOL(expand->bSymmetrizedTMatrix));
+    PI("nst-transition-matrix", expand->nstTij);
+    PI("mininum-var-min", expand->minvarmin); /*default is reasonable */
+    PI("weight-c-range", expand->c_range);    /* default is just C=0 */
+    PR("wl-scale", expand->wl_scale);
+    PR("wl-ratio", expand->wl_ratio);
+    PR("init-wl-delta", expand->init_wl_delta);
+    PS("wl-oneovert", EBOOL(expand->bWLoneovert));
 
     pr_indent(fp, indent);
     pr_rvec(fp, indent, "init-lambda-weights", expand->init_lambda_weights, n_lambda, TRUE);
@@ -700,10 +700,11 @@ static void pr_fepvals(FILE *fp, int indent, t_lambda *fep, gmx_bool bMDPformat)
 {
     int i, j;
 
-    PI("nstdhdl", fep->nstdhdl);
-    PI("init-lambda-state", fep->init_fep_state);
     PR("init-lambda", fep->init_lambda);
+    PI("init-lambda-state", fep->init_fep_state);
     PR("delta-lambda", fep->delta_lambda);
+    PI("nstdhdl", fep->nstdhdl);
+
     if (!bMDPformat)
     {
         PI("n-lambdas", fep->n_lambda);
@@ -737,18 +738,17 @@ static void pr_fepvals(FILE *fp, int indent, t_lambda *fep, gmx_bool bMDPformat)
         }
     }
     PI("calc-lambda-neighbors", fep->lambda_neighbors);
-
+    PS("dhdl-print-energy", EBOOL(fep->bPrintEnergy));
     PR("sc-alpha", fep->sc_alpha);
-    PS("bScCoul", EBOOL(fep->bScCoul));
-    PS("bScPrintEnergy", EBOOL(fep->bPrintEnergy));
     PI("sc-power", fep->sc_power);
     PR("sc-r-power", fep->sc_r_power);
     PR("sc-sigma", fep->sc_sigma);
     PR("sc-sigma-min", fep->sc_sigma_min);
-    PS("separate-dhdl-file", SEPDHDLFILETYPE(fep->separate_dhdl_file));
-    PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
+    PS("sc-coul", EBOOL(fep->bScCoul));
     PI("dh-hist-size", fep->dh_hist_size);
     PD("dh-hist-spacing", fep->dh_hist_spacing);
+    PS("separate-dhdl-file", SEPDHDLFILETYPE(fep->separate_dhdl_file));
+    PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
 };
 
 static void pr_pull(FILE *fp, int indent, t_pull *pull)
@@ -760,15 +760,15 @@ static void pr_pull(FILE *fp, int indent, t_pull *pull)
     PR("pull-r1", pull->cyl_r1);
     PR("pull-r0", pull->cyl_r0);
     PR("pull-constr-tol", pull->constr_tol);
-    PS("pull-bPrintRef", EBOOL(pull->bPrintRef));
+    PS("pull-print-reference", EBOOL(pull->bPrintRef));
     PI("pull-nstxout", pull->nstxout);
     PI("pull-nstfout", pull->nstfout);
-    PI("pull-ngroup", pull->ngroup);
+    PI("pull-ngroups", pull->ngroup);
     for (g = 0; g < pull->ngroup; g++)
     {
         pr_pull_group(fp, indent, g, &pull->group[g]);
     }
-    PI("pull-ncoord", pull->ncoord);
+    PI("pull-ncoords", pull->ncoord);
     for (g = 0; g < pull->ncoord; g++)
     {
         pr_pull_coord(fp, indent, g, &pull->coord[g]);
@@ -778,31 +778,31 @@ static void pr_pull(FILE *fp, int indent, t_pull *pull)
 static void pr_rotgrp(FILE *fp, int indent, int g, t_rotgrp *rotg)
 {
     pr_indent(fp, indent);
-    fprintf(fp, "rotation_group %d:\n", g);
+    fprintf(fp, "rot-group %d:\n", g);
     indent += 2;
-    PS("type", EROTGEOM(rotg->eType));
-    PS("massw", EBOOL(rotg->bMassW));
+    PS("rot-type", EROTGEOM(rotg->eType));
+    PS("rot-massw", EBOOL(rotg->bMassW));
     pr_ivec_block(fp, indent, "atom", rotg->ind, rotg->nat, TRUE);
-    pr_rvecs(fp, indent, "x_ref", rotg->x_ref, rotg->nat);
-    pr_rvec(fp, indent, "vec", rotg->vec, DIM, TRUE);
-    pr_rvec(fp, indent, "pivot", rotg->pivot, DIM, TRUE);
-    PR("rate", rotg->rate);
-    PR("k", rotg->k);
-    PR("slab_dist", rotg->slab_dist);
-    PR("min_gaussian", rotg->min_gaussian);
-    PR("epsilon", rotg->eps);
-    PS("fit_method", EROTFIT(rotg->eFittype));
-    PI("potfitangle_nstep", rotg->PotAngle_nstep);
-    PR("potfitangle_step", rotg->PotAngle_step);
+    pr_rvecs(fp, indent, "x-ref", rotg->x_ref, rotg->nat);
+    pr_rvec(fp, indent, "rot-vec", rotg->vec, DIM, TRUE);
+    pr_rvec(fp, indent, "rot-pivot", rotg->pivot, DIM, TRUE);
+    PR("rot-rate", rotg->rate);
+    PR("rot-k", rotg->k);
+    PR("rot-slab-dist", rotg->slab_dist);
+    PR("rot-min-gauss", rotg->min_gaussian);
+    PR("rot-eps", rotg->eps);
+    PS("rot-fit-method", EROTFIT(rotg->eFittype));
+    PI("rot_potfit_nstep", rotg->PotAngle_nstep);
+    PR("rot_potfit_step", rotg->PotAngle_step);
 }
 
 static void pr_rot(FILE *fp, int indent, t_rot *rot)
 {
     int g;
 
-    PI("rot_nstrout", rot->nstrout);
-    PI("rot_nstsout", rot->nstsout);
-    PI("rot_ngrp", rot->ngrp);
+    PI("rot-nstrout", rot->nstrout);
+    PI("rot-nstsout", rot->nstsout);
+    PI("rot-ngroups", rot->ngrp);
     for (g = 0; g < rot->ngrp; g++)
     {
         pr_rotgrp(fp, indent, g, &rot->grp[g]);
@@ -816,37 +816,37 @@ static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
     char str[STRLEN];
 
 
-    PI("frequency", swap->nstswap);
+    PI("swap-frequency", swap->nstswap);
     for (j = 0; j < 2; j++)
     {
-        sprintf(str, "nanions%c", j+'A');
-        PI(str, swap->nanions[j]);
-        sprintf(str, "ncations%c", j+'A');
-        PI(str, swap->ncations[j]);
-    }
-    PI("coupling_steps", swap->nAverage);
-    PR("threshold", swap->threshold);
-    for (j = 0; j < 2; j++)
-    {
-        sprintf(str, "splitgroup%d_massw", j);
+        sprintf(str, "massw_split%d", j);
         PS(str, EBOOL(swap->massw_split[j]));
         sprintf(str, "split atoms group %d", j);
         pr_ivec_block(fp, indent, str, swap->ind_split[j], swap->nat_split[j], TRUE);
     }
     pr_ivec_block(fp, indent, "swap atoms", swap->ind, swap->nat, TRUE);
     pr_ivec_block(fp, indent, "solvent atoms", swap->ind_sol, swap->nat_sol, TRUE);
-    PR("cyl0_radius", swap->cyl0r);
-    PR("cyl0_upper", swap->cyl0u);
-    PR("cyl0_lower", swap->cyl0l);
-    PR("cyl1_radius", swap->cyl1r);
-    PR("cyl1_upper", swap->cyl1u);
-    PR("cyl1_lower", swap->cyl1l);
+    PR("cyl0-r", swap->cyl0r);
+    PR("cyl0-up", swap->cyl0u);
+    PR("cyl0-down", swap->cyl0l);
+    PR("cyl1-r", swap->cyl1r);
+    PR("cyl1-up", swap->cyl1u);
+    PR("cyl1-down", swap->cyl1l);
+    PI("coupl-steps", swap->nAverage);
+    for (j = 0; j < 2; j++)
+    {
+        sprintf(str, "anions%c", j+'A');
+        PI(str, swap->nanions[j]);
+        sprintf(str, "cations%c", j+'A');
+        PI(str, swap->ncations[j]);
+    }
+    PR("threshold", swap->threshold);
 }
 
 
 static void pr_imd(FILE *fp, int indent, t_IMD *imd)
 {
-    PI("IMD_atoms", imd->nat);
+    PI("IMD-atoms", imd->nat);
     pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
 }
 
@@ -863,84 +863,60 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         {
             indent = pr_title(fp, indent, title);
         }
-        /* This strings do not all have a direct correspondence to
-           .mdp entries, but we should follow the same convention of
-           using hyphens in the names users read and write. */
+        /* Try to make this list appear in the same order as the
+         * options are written in the default mdout.mdp, and with
+         * the same user-exposed names to facilitate debugging.
+         */
         PS("integrator", EI(ir->eI));
+        PR("tinit", ir->init_t);
+        PR("dt", ir->delta_t);
         PSTEP("nsteps", ir->nsteps);
         PSTEP("init-step", ir->init_step);
-        PS("cutoff-scheme", ECUTSCHEME(ir->cutoff_scheme));
-        PS("ns-type", ENS(ir->ns_type));
-        PI("nstlist", ir->nstlist);
-        PI("ndelta", ir->ndelta);
-        PI("nstcomm", ir->nstcomm);
+        PI("simulation-part", ir->simulation_part);
         PS("comm-mode", ECOM(ir->comm_mode));
-        PI("nstlog", ir->nstlog);
+        PI("nstcomm", ir->nstcomm);
+
+        /* Langevin dynamics */
+        PR("bd-fric", ir->bd_fric);
+        PSTEP("ld-seed", ir->ld_seed);
+
+        /* Energy minimization */
+        PR("emtol", ir->em_tol);
+        PR("emstep", ir->em_stepsize);
+        PI("niter", ir->niter);
+        PR("fcstep", ir->fc_stepsize);
+        PI("nstcgsteep", ir->nstcgsteep);
+        PI("nbfgscorr", ir->nbfgscorr);
+
+        /* Test particle insertion */
+        PR("rtpi", ir->rtpi);
+
+        /* Output control */
         PI("nstxout", ir->nstxout);
         PI("nstvout", ir->nstvout);
         PI("nstfout", ir->nstfout);
+        PI("nstlog", ir->nstlog);
         PI("nstcalcenergy", ir->nstcalcenergy);
         PI("nstenergy", ir->nstenergy);
         PI("nstxout-compressed", ir->nstxout_compressed);
-        PR("init-t", ir->init_t);
-        PR("delta-t", ir->delta_t);
+        PR("compressed-x-precision", ir->x_compression_precision);
 
-        PR("x-compression-precision", ir->x_compression_precision);
-        PR("fourierspacing", ir->fourier_spacing);
-        PI("nkx", ir->nkx);
-        PI("nky", ir->nky);
-        PI("nkz", ir->nkz);
-        PI("pme-order", ir->pme_order);
-        PR("ewald-rtol", ir->ewald_rtol);
-        PR("ewald-rtol-lj", ir->ewald_rtol_lj);
-        PR("ewald-geometry", ir->ewald_geometry);
-        PR("epsilon-surface", ir->epsilon_surface);
-        PS("lj-pme-comb-rule", ELJPMECOMBNAMES(ir->ljpme_combination_rule));
-        PS("ePBC", EPBC(ir->ePBC));
-        PS("bPeriodicMols", EBOOL(ir->bPeriodicMols));
-        PS("bContinuation", EBOOL(ir->bContinuation));
-        PS("bShakeSOR", EBOOL(ir->bShakeSOR));
-        PS("etc", ETCOUPLTYPE(ir->etc));
-        PS("bPrintNHChains", EBOOL(ir->bPrintNHChains));
-        PI("nsttcouple", ir->nsttcouple);
-        PS("epc", EPCOUPLTYPE(ir->epc));
-        PS("epctype", EPCOUPLTYPETYPE(ir->epct));
-        PI("nstpcouple", ir->nstpcouple);
-        PR("tau-p", ir->tau_p);
-        pr_matrix(fp, indent, "ref-p", ir->ref_p, bMDPformat);
-        pr_matrix(fp, indent, "compress", ir->compress, bMDPformat);
-        PS("refcoord-scaling", EREFSCALINGTYPE(ir->refcoord_scaling));
-        if (bMDPformat)
-        {
-            fprintf(fp, "posres-com  = %g %g %g\n", ir->posres_com[XX],
-                    ir->posres_com[YY], ir->posres_com[ZZ]);
-        }
-        else
-        {
-            pr_rvec(fp, indent, "posres-com", ir->posres_com, DIM, TRUE);
-        }
-        if (bMDPformat)
-        {
-            fprintf(fp, "posres-comB = %g %g %g\n", ir->posres_comB[XX],
-                    ir->posres_comB[YY], ir->posres_comB[ZZ]);
-        }
-        else
-        {
-            pr_rvec(fp, indent, "posres-comB", ir->posres_comB, DIM, TRUE);
-        }
+        /* Neighborsearching parameters */
+        PS("cutoff-scheme", ECUTSCHEME(ir->cutoff_scheme));
+        PI("nstlist", ir->nstlist);
+        PS("ns-type", ENS(ir->ns_type));
+        PS("pbc", EPBC(ir->ePBC));
+        PS("periodic-molecules", EBOOL(ir->bPeriodicMols));
         PR("verlet-buffer-tolerance", ir->verletbuf_tol);
         PR("rlist", ir->rlist);
         PR("rlistlong", ir->rlistlong);
         PR("nstcalclr", ir->nstcalclr);
-        PR("rtpi", ir->rtpi);
+
+        /* Options for electrostatics and VdW */
         PS("coulombtype", EELTYPE(ir->coulombtype));
         PS("coulomb-modifier", INTMODIFIER(ir->coulomb_modifier));
         PR("rcoulomb-switch", ir->rcoulomb_switch);
         PR("rcoulomb", ir->rcoulomb);
-        PS("vdwtype", EVDWTYPE(ir->vdwtype));
-        PS("vdw-modifier", INTMODIFIER(ir->vdw_modifier));
-        PR("rvdw-switch", ir->rvdw_switch);
-        PR("rvdw", ir->rvdw);
         if (ir->epsilon_r != 0)
         {
             PR("epsilon-r", ir->epsilon_r);
@@ -957,12 +933,32 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         {
             PS("epsilon-rf", infbuf);
         }
-        PR("tabext", ir->tabext);
+        PS("vdw-type", EVDWTYPE(ir->vdwtype));
+        PS("vdw-modifier", INTMODIFIER(ir->vdw_modifier));
+        PR("rvdw-switch", ir->rvdw_switch);
+        PR("rvdw", ir->rvdw);
+        PS("DispCorr", EDISPCORR(ir->eDispCorr));
+        PR("table-extension", ir->tabext);
+
+        PR("fourierspacing", ir->fourier_spacing);
+        PI("fourier-nx", ir->nkx);
+        PI("fourier-ny", ir->nky);
+        PI("fourier-nz", ir->nkz);
+        PI("pme-order", ir->pme_order);
+        PR("ewald-rtol", ir->ewald_rtol);
+        PR("ewald-rtol-lj", ir->ewald_rtol_lj);
+        PS("lj-pme-comb-rule", ELJPMECOMBNAMES(ir->ljpme_combination_rule));
+        PR("ewald-geometry", ir->ewald_geometry);
+        PR("epsilon-surface", ir->epsilon_surface);
+
+        /* Implicit solvent */
         PS("implicit-solvent", EIMPLICITSOL(ir->implicit_solvent));
+
+        /* Generalized born electrostatics */
         PS("gb-algorithm", EGBALGORITHM(ir->gb_algorithm));
-        PR("gb-epsilon-solvent", ir->gb_epsilon_solvent);
         PI("nstgbradii", ir->nstgbradii);
         PR("rgbradii", ir->rgbradii);
+        PR("gb-epsilon-solvent", ir->gb_epsilon_solvent);
         PR("gb-saltconc", ir->gb_saltconc);
         PR("gb-obc-alpha", ir->gb_obc_alpha);
         PR("gb-obc-beta", ir->gb_obc_beta);
@@ -970,12 +966,97 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PR("gb-dielectric-offset", ir->gb_dielectric_offset);
         PS("sa-algorithm", ESAALGORITHM(ir->gb_algorithm));
         PR("sa-surface-tension", ir->sa_surface_tension);
-        PS("DispCorr", EDISPCORR(ir->eDispCorr));
-        PS("bSimTemp", EBOOL(ir->bSimTemp));
-        if (ir->bSimTemp)
+
+        /* Options for weak coupling algorithms */
+        PS("tcoupl", ETCOUPLTYPE(ir->etc));
+        PI("nsttcouple", ir->nsttcouple);
+        PI("nh-chain-length", ir->opts.nhchainlength);
+        PS("print-nose-hoover-chain-variables", EBOOL(ir->bPrintNHChains));
+
+        PS("pcoupl", EPCOUPLTYPE(ir->epc));
+        PS("pcoupltype", EPCOUPLTYPETYPE(ir->epct));
+        PI("nstpcouple", ir->nstpcouple);
+        PR("tau-p", ir->tau_p);
+        pr_matrix(fp, indent, "compressibility", ir->compress, bMDPformat);
+        pr_matrix(fp, indent, "ref-p", ir->ref_p, bMDPformat);
+        PS("refcoord-scaling", EREFSCALINGTYPE(ir->refcoord_scaling));
+
+        if (bMDPformat)
         {
-            pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda);
+            fprintf(fp, "posres-com  = %g %g %g\n", ir->posres_com[XX],
+                    ir->posres_com[YY], ir->posres_com[ZZ]);
+            fprintf(fp, "posres-comB = %g %g %g\n", ir->posres_comB[XX],
+                    ir->posres_comB[YY], ir->posres_comB[ZZ]);
         }
+        else
+        {
+            pr_rvec(fp, indent, "posres-com", ir->posres_com, DIM, TRUE);
+            pr_rvec(fp, indent, "posres-comB", ir->posres_comB, DIM, TRUE);
+        }
+
+        /* QMMM */
+        PS("QMMM", EBOOL(ir->bQMMM));
+        PI("QMconstraints", ir->QMconstraints);
+        PI("QMMMscheme", ir->QMMMscheme);
+        PR("MMChargeScaleFactor", ir->scalefactor);
+        pr_qm_opts(fp, indent, "qm-opts", &(ir->opts));
+
+        /* CONSTRAINT OPTIONS */
+        PS("constraint-algorithm", ECONSTRTYPE(ir->eConstrAlg));
+        PS("continuation", EBOOL(ir->bContinuation));
+
+        PS("Shake-SOR", EBOOL(ir->bShakeSOR));
+        PR("shake-tol", ir->shake_tol);
+        PI("lincs-order", ir->nProjOrder);
+        PI("lincs-iter", ir->nLincsIter);
+        PR("lincs-warnangle", ir->LincsWarnAngle);
+
+        /* Walls */
+        PI("nwall", ir->nwall);
+        PS("wall-type", EWALLTYPE(ir->wall_type));
+        PR("wall-r-linpot", ir->wall_r_linpot);
+        /* wall-atomtype */
+        PI("wall-atomtype[0]", ir->wall_atomtype[0]);
+        PI("wall-atomtype[1]", ir->wall_atomtype[1]);
+        /* wall-density */
+        PR("wall-density[0]", ir->wall_density[0]);
+        PR("wall-density[1]", ir->wall_density[1]);
+        PR("wall-ewald-zfac", ir->wall_ewald_zfac);
+
+        /* COM PULLING */
+        PS("pull", EPULLTYPE(ir->ePull));
+        if (ir->ePull != epullNO)
+        {
+            pr_pull(fp, indent, ir->pull);
+        }
+
+        /* ENFORCED ROTATION */
+        PS("rotation", EBOOL(ir->bRot));
+        if (ir->bRot)
+        {
+            pr_rot(fp, indent, ir->rot);
+        }
+
+        /* INTERACTIVE MD */
+        PS("interactiveMD", EBOOL(ir->bIMD));
+        if (ir->bIMD)
+        {
+            pr_imd(fp, indent, ir->imd);
+        }
+
+        /* NMR refinement stuff */
+        PS("disre", EDISRETYPE(ir->eDisre));
+        PS("disre-weighting", EDISREWEIGHTING(ir->eDisreWeighting));
+        PS("disre-mixed", EBOOL(ir->bDisreMixed));
+        PR("dr-fc", ir->dr_fc);
+        PR("dr-tau", ir->dr_tau);
+        PR("nstdisreout", ir->nstdisreout);
+
+        PR("orire-fc", ir->orires_fc);
+        PR("orire-tau", ir->orires_tau);
+        PR("nstorireout", ir->nstorireout);
+
+        /* FREE ENERGY VARIABLES */
         PS("free-energy", EFEPTYPE(ir->efep));
         if (ir->efep != efepNO || ir->bSimTemp)
         {
@@ -986,59 +1067,33 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
             pr_expandedvals(fp, indent, ir->expandedvals, ir->fepvals->n_lambda);
         }
 
-        PI("nwall", ir->nwall);
-        PS("wall-type", EWALLTYPE(ir->wall_type));
-        PI("wall-atomtype[0]", ir->wall_atomtype[0]);
-        PI("wall-atomtype[1]", ir->wall_atomtype[1]);
-        PR("wall-density[0]", ir->wall_density[0]);
-        PR("wall-density[1]", ir->wall_density[1]);
-        PR("wall-ewald-zfac", ir->wall_ewald_zfac);
-
-        PS("pull", EPULLTYPE(ir->ePull));
-        if (ir->ePull != epullNO)
-        {
-            pr_pull(fp, indent, ir->pull);
-        }
-
-        PS("rotation", EBOOL(ir->bRot));
-        if (ir->bRot)
-        {
-            pr_rot(fp, indent, ir->rot);
-        }
-
-        PS("interactiveMD", EBOOL(ir->bIMD));
-        if (ir->bIMD)
-        {
-            pr_imd(fp, indent, ir->imd);
-        }
-
-        PS("disre", EDISRETYPE(ir->eDisre));
-        PS("disre-weighting", EDISREWEIGHTING(ir->eDisreWeighting));
-        PS("disre-mixed", EBOOL(ir->bDisreMixed));
-        PR("dr-fc", ir->dr_fc);
-        PR("dr-tau", ir->dr_tau);
-        PR("nstdisreout", ir->nstdisreout);
-        PR("orires-fc", ir->orires_fc);
-        PR("orires-tau", ir->orires_tau);
-        PR("nstorireout", ir->nstorireout);
-
-        PR("em-stepsize", ir->em_stepsize);
-        PR("em-tol", ir->em_tol);
-        PI("niter", ir->niter);
-        PR("fc-stepsize", ir->fc_stepsize);
-        PI("nstcgsteep", ir->nstcgsteep);
-        PI("nbfgscorr", ir->nbfgscorr);
-
-        PS("ConstAlg", ECONSTRTYPE(ir->eConstrAlg));
-        PR("shake-tol", ir->shake_tol);
-        PI("lincs-order", ir->nProjOrder);
-        PR("lincs-warnangle", ir->LincsWarnAngle);
-        PI("lincs-iter", ir->nLincsIter);
-        PR("bd-fric", ir->bd_fric);
-        PSTEP("ld-seed", ir->ld_seed);
-        PR("cos-accel", ir->cos_accel);
+        /* NON-equilibrium MD stuff */
+        PR("cos-acceleration", ir->cos_accel);
         pr_matrix(fp, indent, "deform", ir->deform, bMDPformat);
 
+        /* SIMULATED TEMPERING */
+        PS("simulated-tempering", EBOOL(ir->bSimTemp));
+        if (ir->bSimTemp)
+        {
+            pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda);
+        }
+
+        /* ELECTRIC FIELDS */
+        pr_cosine(fp, indent, "E-x", &(ir->ex[XX]), bMDPformat);
+        pr_cosine(fp, indent, "E-xt", &(ir->et[XX]), bMDPformat);
+        pr_cosine(fp, indent, "E-y", &(ir->ex[YY]), bMDPformat);
+        pr_cosine(fp, indent, "E-yt", &(ir->et[YY]), bMDPformat);
+        pr_cosine(fp, indent, "E-z", &(ir->ex[ZZ]), bMDPformat);
+        pr_cosine(fp, indent, "E-zt", &(ir->et[ZZ]), bMDPformat);
+
+        /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
+        PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));
+        if (ir->eSwapCoords != eswapNO)
+        {
+            pr_swap(fp, indent, ir->swap);
+        }
+
+        /* AdResS PARAMETERS */
         PS("adress", EBOOL(ir->bAdress));
         if (ir->bAdress)
         {
@@ -1046,13 +1101,14 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
             PR("adress-const-wf", ir->adress->const_wf);
             PR("adress-ex-width", ir->adress->ex_width);
             PR("adress-hy-width", ir->adress->hy_width);
+            PR("adress-ex-forcecap", ir->adress->ex_forcecap);
             PS("adress-interface-correction", EADRESSICTYPE(ir->adress->icor));
             PS("adress-site", EADRESSSITETYPE(ir->adress->site));
-            PR("adress-ex-force-cap", ir->adress->ex_forcecap);
-            PS("adress-do-hybridpairs", EBOOL(ir->adress->do_hybridpairs));
-
             pr_rvec(fp, indent, "adress-reference-coords", ir->adress->refs, DIM, TRUE);
+            PS("adress-do-hybridpairs", EBOOL(ir->adress->do_hybridpairs));
         }
+
+        /* USER-DEFINED THINGIES */
         PI("userint1", ir->userint1);
         PI("userint2", ir->userint2);
         PI("userint3", ir->userint3);
@@ -1061,23 +1117,8 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PR("userreal2", ir->userreal2);
         PR("userreal3", ir->userreal3);
         PR("userreal4", ir->userreal4);
+
         pr_grp_opts(fp, indent, "grpopts", &(ir->opts), bMDPformat);
-        pr_cosine(fp, indent, "efield-x", &(ir->ex[XX]), bMDPformat);
-        pr_cosine(fp, indent, "efield-xt", &(ir->et[XX]), bMDPformat);
-        pr_cosine(fp, indent, "efield-y", &(ir->ex[YY]), bMDPformat);
-        pr_cosine(fp, indent, "efield-yt", &(ir->et[YY]), bMDPformat);
-        pr_cosine(fp, indent, "efield-z", &(ir->ex[ZZ]), bMDPformat);
-        pr_cosine(fp, indent, "efield-zt", &(ir->et[ZZ]), bMDPformat);
-        PS("eSwapCoords", ESWAPTYPE(ir->eSwapCoords));
-        if (ir->eSwapCoords != eswapNO)
-        {
-            pr_swap(fp, indent, ir->swap);
-        }
-        PS("bQMMM", EBOOL(ir->bQMMM));
-        PI("QMconstraints", ir->QMconstraints);
-        PI("QMMMscheme", ir->QMMMscheme);
-        PR("scalefactor", ir->scalefactor);
-        pr_qm_opts(fp, indent, "qm-opts", &(ir->opts));
     }
 }
 #undef PS

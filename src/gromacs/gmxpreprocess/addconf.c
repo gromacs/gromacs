@@ -260,7 +260,6 @@ static void do_nsgrid(FILE *fp, gmx_bool bVerbose,
     ir->vdw_modifier     = eintmodNONE;
     ir->coulombtype      = eelCUT;
     ir->vdwtype          = evdwCUT;
-    ir->ndelta           = 2;
     ir->ns_type          = ensGRID;
     snew(ir->opts.egp_flags, 1);
 

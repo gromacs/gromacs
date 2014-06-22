@@ -149,7 +149,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     RTYPE("pull-r1",          pull->cyl_r1, 1.0);
     CTYPE("Switch from r1 to r0 in case of dynamic reaction force");
     RTYPE("pull-r0",          pull->cyl_r0, 1.5);
-    RTYPE("pull_constr_tol",  pull->constr_tol, 1E-6);
+    RTYPE("pull-constr-tol",  pull->constr_tol, 1E-6);
     EETYPE("pull-start",      *bStart, yesno_names);
     EETYPE("pull-print-reference", pull->bPrintRef, yesno_names);
     ITYPE("pull-nstxout",     pull->nstxout, 10);

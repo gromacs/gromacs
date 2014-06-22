@@ -923,7 +923,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     gmx_fio_do_int(fio, ir->ns_type);
     gmx_fio_do_int(fio, ir->nstlist);
-    gmx_fio_do_int(fio, ir->ndelta);
+    gmx_fio_do_int(fio, idum); /* used to be ndelta; not used anymore */
     if (file_version < 41)
     {
         gmx_fio_do_int(fio, idum);
