@@ -552,6 +552,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->nsteps == 0 && !ir->bContinuation)
+    {
+        warning_note(wi, "If you want to achieve a single-point energy evaluation for a structure with nsteps = 0, enable unconstrained-start = yes.");
+    }
+
     /* LD STUFF */
     if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
         ir->bContinuation && ir->ld_seed != -1)
