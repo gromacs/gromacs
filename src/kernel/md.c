@@ -347,7 +347,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                  (ir->bContinuation ||
                                   (DOMAINDECOMP(cr) && !MASTER(cr))) ?
                                  NULL : state_global->x);
-
+    if (shellfc && ir->nstcalcenergy != 1)
+    {
+        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles.\nPlease make a new tpr file.", ir->nstcalcenergy);
+    }
     if (shellfc && ir->eI == eiNM)
     {
         /* Currently shells don't work with Normal Modes */
