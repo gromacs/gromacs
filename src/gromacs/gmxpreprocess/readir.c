@@ -552,6 +552,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->nsteps == 0 && !ir->bContinuation)
+    {
+        warning_note(wi, "For a correct single-point energy evaluation with nsteps = 0, use continuation = yes to avoid constraining the input coordinates.");
+    }
+
     /* LD STUFF */
     if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
         ir->bContinuation && ir->ld_seed != -1)
