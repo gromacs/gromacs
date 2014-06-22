@@ -193,30 +193,17 @@ xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
     return oenv->xvg_format;
 }
 
-const char *output_env_get_program_name(const output_env_t oenv)
+const char *output_env_get_program_display_name(const output_env_t oenv)
 {
     try
     {
-        return oenv->programContext.fullBinaryPath();
+        return oenv->programContext.displayName();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-const char *output_env_get_short_program_name(const output_env_t oenv)
+const gmx::ProgramContextInterface &
+output_env_get_program_context(const output_env_t oenv)
 {
-    try
-    {
-        // TODO: Use the display name once it doesn't break anything.
-        return oenv->programContext.programName();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-const char *output_env_get_cmd_line(const output_env_t oenv)
-{
-    try
-    {
-        return oenv->programContext.commandLine();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return oenv->programContext;
 }
