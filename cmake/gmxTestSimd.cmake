@@ -66,12 +66,12 @@ elseif(${GMX_SIMD} STREQUAL "SSE2")
 
     gmx_find_cflag_for_source(CFLAGS_SSE2 "C compiler SSE2 flag"
                               "#include<xmmintrin.h>
-                              int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return 0;}"
+                              int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return _mm_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-msse2" "/arch:SSE2" "-hgnu")
     gmx_find_cxxflag_for_source(CXXFLAGS_SSE2 "C++ compiler SSE2 flag"
                                 "#include<xmmintrin.h>
-                                int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return 0;}"
+                                int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return _mm_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
                                 "-msse2" "/arch:SSE2" "-hgnu")
 
@@ -87,12 +87,12 @@ elseif(${GMX_SIMD} STREQUAL "SSE4.1")
     # Note: MSVC enables SSE4.1 with the SSE2 flag, so we include that in testing.
     gmx_find_cflag_for_source(CFLAGS_SSE4_1 "C compiler SSE4.1 flag"
                               "#include<smmintrin.h>
-                              int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_dp_ps(x,x,0x77);return 0;}"
+                              int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_dp_ps(x,x,0x77);return _mm_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-msse4.1" "/arch:SSE4.1" "/arch:SSE2" "-hgnu")
     gmx_find_cxxflag_for_source(CXXFLAGS_SSE4_1 "C++ compiler SSE4.1 flag"
                                 "#include<smmintrin.h>
-                                int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_dp_ps(x,x,0x77);return 0;}"
+                                int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_dp_ps(x,x,0x77);return _mm_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
                                 "-msse4.1" "/arch:SSE4.1" "/arch:SSE2" "-hgnu")
 
@@ -144,14 +144,14 @@ elseif(${GMX_SIMD} STREQUAL "AVX_128_FMA")
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
-int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return 0;}"
+int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return _mm_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-mfma4" "-hgnu")
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128_FMA "C++ compiler AVX (128 bit) FMA4 flag"
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
-int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return 0;}"
+int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return _mm_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
                                 "-mfma4" "-hgnu")
 
@@ -165,14 +165,14 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return 0;}"
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
-int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return 0;}"
+int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return _mm_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-mxop")
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128_XOP "C++ compiler AVX (128 bit) XOP flag"
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
-int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return 0;}"
+int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return _mm_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
                                 "-mxop")
 
@@ -207,12 +207,12 @@ elseif(${GMX_SIMD} STREQUAL "AVX_256")
 
     gmx_find_cflag_for_source(CFLAGS_AVX "C compiler AVX (256 bit) flag"
                               "#include<immintrin.h>
-                              int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return 0;}"
+                              int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return _mm256_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-mavx" "/arch:AVX" "-hgnu")
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX "C++ compiler AVX (256 bit) flag"
                                 "#include<immintrin.h>
-                                int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return 0;}"
+                                int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return _mm256_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
                                 "-mavx" "/arch:AVX" "-hgnu")
 
@@ -231,12 +231,12 @@ elseif(${GMX_SIMD} STREQUAL "AVX2_256")
 
     gmx_find_cflag_for_source(CFLAGS_AVX2 "C compiler AVX2 flag"
                               "#include<immintrin.h>
-                              int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_fmadd_ps(x,x,x);return 0;}"
+                              int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_fmadd_ps(x,x,x);return _mm256_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX2 "C++ compiler AVX2 flag"
                                 "#include<immintrin.h>
-                                int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_fmadd_ps(x,x,x);return 0;}"
+                                int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_fmadd_ps(x,x,x);return _mm256_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
                                 "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
 
