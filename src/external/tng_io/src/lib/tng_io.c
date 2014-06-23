@@ -25,7 +25,7 @@
 #include "../../include/tng_io.h"
 #include "../../include/md5.h"
 #include "../../include/compression/tng_compress.h"
-#include "../include/version.h"
+#include "tng_version.h"
 
 
 struct tng_bond {
@@ -7848,6 +7848,52 @@ static tng_function_status tng_atom_destroy(tng_atom_t atom)
         free(atom->atom_type);
         atom->atom_type = 0;
     }
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version_major
+                (const tng_trajectory_t tng_data,
+                 int *version)
+{
+    (void)tng_data;
+
+    *version = TNG_VERSION_MAJOR;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version_minor
+                (const tng_trajectory_t tng_data,
+                 int *version)
+{
+    (void)tng_data;
+
+    *version = TNG_VERSION_MINOR;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version_patchlevel
+                (const tng_trajectory_t tng_data,
+                 int *patch_level)
+{
+    (void)tng_data;
+
+    *patch_level = TNG_VERSION_PATCHLEVEL;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version
+                (const tng_trajectory_t tng_data,
+                 char *version,
+                 const int max_len)
+{
+    (void)tng_data;
+    TNG_ASSERT(version, "TNG library: version must not be a NULL pointer");
+
+    TNG_SNPRINTF(version, max_len, "%s", TNG_VERSION);
 
     return(TNG_SUCCESS);
 }
