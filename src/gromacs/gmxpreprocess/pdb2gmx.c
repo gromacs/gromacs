@@ -1714,7 +1714,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     printf("There are %d chains and %d blocks of water and "
            "%d residues with %d atoms\n",
            nch-nwaterchain, nwaterchain,
-           pdba_all.resinfo[pdba_all.atom[natom-1].resind].nr, natom);
+           pdba_all.nres, natom);
 
     printf("\n  %5s  %4s %6s\n", "chain", "#res", "#atoms");
     for (i = 0; (i < nch); i++)

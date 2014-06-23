@@ -147,6 +147,7 @@ void rename_atoms(const char *xlfile, const char *ffdir,
     char        **f;
     char          c, *rnm, atombuf[32], *ptr0, *ptr1;
     gmx_bool      bReorderedNum, bRenamed, bMatch;
+    gmx_bool      bStartTerm, bEndTerm;
 
     nxlate = 0;
     xlatom = NULL;
@@ -172,6 +173,10 @@ void rename_atoms(const char *xlfile, const char *ffdir,
     for (a = 0; (a < atoms->nr); a++)
     {
         resind = atoms->atom[a].resind;
+
+        bStartTerm = (resind == 0) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind-1].chainnum;
+        bEndTerm   = (resind >= atoms->nres-1) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind+1].chainnum;
+
         if (bResname)
         {
             rnm = *(atoms->resinfo[resind].name);
@@ -205,6 +210,10 @@ void rename_atoms(const char *xlfile, const char *ffdir,
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
+                          (gmx_strcasecmp("protein-nterm", xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_protein(rt, rnm) && bStartTerm) ||
+                          (gmx_strcasecmp("protein-cterm", xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_protein(rt, rnm) && bEndTerm) ||
                           (gmx_strcasecmp("protein", xlatom[i].res) == 0 &&
                            gmx_residuetype_is_protein(rt, rnm)) ||
                           (gmx_strcasecmp("DNA", xlatom[i].res) == 0 &&
