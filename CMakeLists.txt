@@ -907,15 +907,16 @@ set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has alread
 #######################
 ## uninstall target
 #######################
-    CONFIGURE_FILE(
-                   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
-                   IMMEDIATE @ONLY)
+CONFIGURE_FILE(   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+                  "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+                  IMMEDIATE @ONLY)
 ###########################
 ADD_CUSTOM_TARGET(uninstall
                   "${CMAKE_COMMAND}" -P
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
+set_directory_properties(PROPERTIES
+            ADDITIONAL_MAKE_CLEAN_FILES "install_manifest.txt")
 
 ########################################################################
 # Manual                                                               #
