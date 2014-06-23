@@ -1,0 +1,16 @@
+#ifndef VERSION_CONFIG_H
+#define VERSION_CONFIG_H
+
+/* define the API version (integer) */
+#define TNG_API_VERSION @TNG_API_VERSION@
+
+/* define the major and minor versions
+   of the library */
+#define TNG_VERSION_MAJOR @TNG_MAJOR_VERSION@
+#define TNG_VERSION_MINOR @TNG_MINOR_VERSION@
+/* define the patchlevel of the library */
+#define TNG_VERSION_PATCHLEVEL @TNG_VERSION_PATCH_LEVEL@
+/* define the full version of the library (string) */
+#define TNG_VERSION "@TNG_IO_VERSION@"
+
+#endif
