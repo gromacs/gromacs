@@ -17,7 +17,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../../include/tng_io.h"
+#include "tng/tng_io.h"
 
 int main(int argc, char **argv)
 {
