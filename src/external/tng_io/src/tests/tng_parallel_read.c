@@ -13,7 +13,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../../include/tng_io.h"
+#include "tng/tng_io.h"
 
 
 /* N.B. this code is for testing parallel reading of trajectory frame sets. The

@@ -70,6 +70,8 @@ if(HAVE_INTTYPES_H)
   set_property(SOURCE tngio_for_tools.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
 endif()
 
+include_directories(${GMX_TNG_INCLUDE_DIRS})
+
 if (BUILD_TESTING)
      add_subdirectory(tests)
 endif()
