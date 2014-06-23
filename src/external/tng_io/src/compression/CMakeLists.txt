@@ -7,6 +7,8 @@ if(UNIX)
   target_link_libraries(tng_compress m)
 endif()
 
+set_target_properties(tng_compress PROPERTIES VERSION 1.0.0 SOVERSION 1)
+
 # Use GNUInstallDirst to set paths on multiarch systems
 include(GNUInstallDirs)
 
