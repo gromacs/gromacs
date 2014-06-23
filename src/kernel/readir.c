@@ -161,7 +161,7 @@ static void check_nst(const char *desc_nst, int nst,
     {
         /* Round up to the next multiple of nst */
         *p = ((*p)/nst + 1)*nst;
-        sprintf(buf, "%s should be a multiple of %s, changing %s to %d\n",
+        sprintf(buf, "%s should be a multiple of %s when using a twin range cut-off, changing %s to %d\n",
                 desc_p, desc_nst, desc_p, *p);
         warning(wi, buf);
     }
