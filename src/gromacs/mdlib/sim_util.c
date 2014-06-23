@@ -2262,11 +2262,12 @@ integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 {
-    double eners[2], virs[2], enersum, virsum, y0, f, g, h;
-    double r0, r1, r, rc3, rc9, ea, eb, ec, pa, pb, pc, pd;
-    double invscale, invscale2, invscale3;
-    int    ri0, ri1, ri, i, offstart, offset;
-    real   scale, *vdwtab, tabfactor, tmp;
+    double   eners[2], virs[2], enersum, virsum, y0, f, g, h;
+    double   r0, r1, r, rc3, rc9, ea, eb, ec, pa, pb, pc, pd;
+    double   invscale, invscale2, invscale3;
+    int      ri0, ri1, ri, i, offstart, offset;
+    real     scale, *vdwtab, tabfactor, tmp;
+    gmx_bool bSwitch, bShift;
 
     fr->enershiftsix    = 0;
     fr->enershifttwelve = 0;
@@ -2275,6 +2276,12 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
     fr->virdiffsix      = 0;
     fr->virdifftwelve   = 0;
 
+    bSwitch = (fr->vdwtype == evdwSWITCH) ||
+        (fr->vdw_modifier == eintmodPOTSWITCH) ||
+        (fr->vdw_modifier == eintmodFORCESWITCH);
+    bShift  = (fr->vdwtype == evdwSHIFT) ||
+        (fr->vdw_modifier == eintmodPOTSHIFT);
+
     if (eDispCorr != edispcNO)
     {
         for (i = 0; i < 2; i++)
@@ -2282,29 +2289,41 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if (fr->vdwtype == evdwSWITCH || fr->vdwtype == evdwSHIFT ||
-            fr->vdw_modifier == eintmodPOTSWITCH ||
-            fr->vdw_modifier == eintmodFORCESWITCH)
+        if (bSwitch || bShift)
         {
-            if (fr->rvdw_switch == 0)
+            if (bSwitch && fr->rvdw_switch == 0)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
                           "for vdw-type = %s", evdw_names[fr->vdwtype]);
             }
 
-            scale  = fr->nblists[0].table_elec_vdw.scale;
+            scale  = fr->nblists[0].table_vdw.scale;
             vdwtab = fr->nblists[0].table_vdw.data;
 
             /* Round the cut-offs to exact table values for precision */
             ri0  = floor(fr->rvdw_switch*scale);
             ri1  = ceil(fr->rvdw*scale);
+
+            /* The code below has some support for handling force-switching, i.e.
+             * when the force (instead of potential) is switched over a limited
+             * region. This leads to a constant shift in the potential inside the
+             * switching region, which we can handle by adding a constant energy
+             * term in the force-switch case just like when we do potential-shift.
+             *
+             * For now this is not enabled, but to keep the functionality in the
+             * code we check separately for switch and shift. When we do force-switch
+             * the shifting point is rvdw_switch, while it is the cutoff when we
+             * have a classical potential-shift.
+             */
+            ri0  = (bShift) ? ri1 : ri0;
+
             r0   = ri0/scale;
             r1   = ri1/scale;
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
-            if (fr->vdwtype == evdwSHIFT ||
+            if (bShift ||
                 fr->vdw_modifier == eintmodFORCESWITCH)
             {
                 /* Determine the constant energy shift below rvdw_switch.
@@ -2314,6 +2333,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                 fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
                 fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
             }
+
             /* Add the constant part from 0 to rvdw_switch.
              * This integration from 0 to rvdw_switch overcounts the number
              * of interactions by 1, as it also counts the self interaction.
@@ -2375,10 +2395,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                       evdw_names[fr->vdwtype]);
         }
 
-        /* TODO: remove this code once we have group LJ-PME kernels
-         * that calculate the exact, full LJ param C6/r^6 within the cut-off,
-         * as the current nbnxn kernels do.
-         */
+        /* When we deprecate the group kernels the code below can go too */
         if (fr->vdwtype == evdwPME && fr->cutoff_scheme == ecutsGROUP)
         {
             /* Calculate self-interaction coefficient (assuming that
