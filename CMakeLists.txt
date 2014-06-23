@@ -99,7 +99,8 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
     set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
 
-set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix gets appended to CMAKE_INSTALL_PREFIX. For cpack it sets the root folder of the archive.")
+# TODO document this in the install guide
+set(GMX_INSTALL_PREFIX "" CACHE STRING "Prefix that gets prepended to GROMACS internal relative install paths. Intended for use in making GROMACS packages")
 mark_as_advanced(GMX_INSTALL_PREFIX)
 
 include(gmxBuildTypeReference)
@@ -783,12 +784,16 @@ set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 # Use GNUInstallDirst to set paths on multiarch systems
 include(GNUInstallDirs)
 
+# TODO Document the intended uses cases of these cache variables
+# in a section of the installation guide.
 set(GMX_LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING
     "Library installation directory (default: ${CMAKE_INSTALL_LIBDIR})")
 set(GMX_DATA_INSTALL_DIR gromacs CACHE STRING
     "Data installation directory under share/ (default: gromacs)")
 mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
 
+# These variables are used internally to permit the installation
+# to be flexible about paths, and still work correctly
 set(LIB_INSTALL_DIR  ${GMX_INSTALL_PREFIX}${GMX_LIB_INSTALL_DIR})
 set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
 set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/${GMX_DATA_INSTALL_DIR})
