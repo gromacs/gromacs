@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if(GMX_USE_TNG)
+    include_directories(${GMX_TNG_INCLUDE_DIRS})
     gmx_add_unit_test(FileIOTests fileio-test
         tngio.cpp)
 endif()

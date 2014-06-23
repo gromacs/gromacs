@@ -61,6 +61,8 @@ set(FILEIO_PUBLIC_HEADERS
     )
 gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
 
+include_directories(${GMX_TNG_INCLUDE_DIRS})
+
 # These files include tng_io.h from the TNG library. That header needs to know
 # whether inttypes.h exists or not.
 include(CheckIncludeFiles)
