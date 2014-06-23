@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 2.8.8)
 
 project(TNG_IO)
-set(PROJECT_VERSION "1.5")
-set(API_VERSION "5")
+set(PROJECT_VERSION "1.6")
+set(MAJOR_VERSION "1")
+set(MINOR_VERSION "6")
+set(VERSION_PATCH_LEVEL "0")
+set(TNG_IO_VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${VERSION_PATCH_LEVEL})
+set(API_VERSION "6")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/version.h.in
-                ${CMAKE_BINARY_DIR}/include/version.h )
-include_directories(${CMAKE_BINARY_DIR}/include)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/tng/version.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/include/tng/version.h )
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall")
@@ -14,8 +18,8 @@ elseif(WIN32 AND NOT CYGWIN)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /W2")
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
 option(BUILD_SHARED_LIBS "Enable shared libraries" ON)
 
@@ -33,7 +37,8 @@ check_include_file(inttypes.h   HAVE_INTTYPES_H)
 
 add_subdirectory(src)
 
-install(FILES include/tng_io.h include/tng_io_fwd.h DESTINATION include/)
+install(FILES include/tng/tng_io.h include/tng/tng_io_fwd.h ${CMAKE_CURRENT_BINARY_DIR}/include/tng/version.h
+        DESTINATION include/tng)
 
 #-- Add an Option to toggle the generation of the API documentation
 option(TNG_BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)
