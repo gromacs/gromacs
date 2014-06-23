@@ -196,6 +196,33 @@ static gmx_bool contains_char(t_rbonded *s, char c)
     return bRet;
 }
 
+gmx_bool rbonded_atoms_exist_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
+{
+    int      i, k;
+    gmx_bool matchFound = FALSE;
+    gmx_bool atomsMatch;
+
+    for (i = 0; i < nlist && !matchFound; i++)
+    {
+        atomsMatch = TRUE;
+        for (k = 0; k < natoms && atomsMatch; k++)
+        {
+            atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[k]);
+        }
+        /* Try reverse if forward match did not work */
+        if (!atomsMatch)
+        {
+            atomsMatch = TRUE;
+            for (k = 0; k < natoms && atomsMatch; k++)
+            {
+                atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[natoms-1-k]);
+            }
+        }
+        matchFound = atomsMatch;
+    }
+    return matchFound;
+}
+
 gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool bPlus)
 {
     int      i, j;
@@ -210,20 +237,26 @@ gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool
             srenew(d[i].b, d[i].nb + s[i].nb);
             for (j = 0; j < s[i].nb; j++)
             {
-                if (!(bMin && contains_char(&s[i].b[j], '-'))
-                    && !(bPlus && contains_char(&s[i].b[j], '+')))
+                /* Check if this bonded string already exists before adding.
+                 * We are merging from the main rtp to the hackblocks, so this
+                 * will mean the hackblocks overwrite the man rtp, as intended.
+                 */
+                if (!rbonded_atoms_exist_in_list(&s[i].b[j], d[i].b, d[i].nb, btsNiatoms[i]))
                 {
-                    copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
-                    d[i].nb++;
-                }
-                else if (i == ebtsBONDS)
-                {
-                    bBondsRemoved = TRUE;
+                    if (!(bMin && contains_char(&s[i].b[j], '-'))
+                        && !(bPlus && contains_char(&s[i].b[j], '+')))
+                    {
+                        copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
+                        d[i].nb++;
+                    }
+                    else if (i == ebtsBONDS)
+                    {
+                        bBondsRemoved = TRUE;
+                    }
                 }
             }
         }
     }
-
     return bBondsRemoved;
 }
 
