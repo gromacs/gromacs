@@ -4,8 +4,6 @@ add_definitions(-DTNG_COMPRESS_FILES_DIR="${CMAKE_BINARY_DIR}/test_tng_compress_
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/test_tng_compress_files)
 
-include_directories(${CMAKE_BINARY_DIR}/include/)
-
 set(number 0)
 set(numtests 78)
 
@@ -14,7 +12,7 @@ while( number LESS ${numtests})
 math( EXPR number "${number} + 1" )
 
 add_executable(test_tng_compress_gen${number} testsuite.c)
-target_link_libraries(test_tng_compress_gen${number} tng_compress)
+target_link_libraries(test_tng_compress_gen${number} tng_io)
 if(UNIX)
 target_link_libraries(test_tng_compress_gen${number} m)
 endif()
@@ -25,7 +23,7 @@ add_dependencies(test_tng_compress_gen${number} test${number}.h)
 set_property(TARGET test_tng_compress_gen${number} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/compression_tests)
 
 add_executable(test_tng_compress_read${number} testsuite.c)
-target_link_libraries(test_tng_compress_read${number} tng_compress)
+target_link_libraries(test_tng_compress_read${number} tng_io)
 if(UNIX)
 target_link_libraries(test_tng_compress_read${number} m)
 endif()

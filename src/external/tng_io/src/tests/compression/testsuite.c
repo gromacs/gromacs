@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "../../../include/compression/tng_compress.h"
+#include "compression/tng_compress.h"
 #include TESTPARAM
 
 #ifdef TEST_FLOAT
