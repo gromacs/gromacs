@@ -61,13 +61,11 @@ set(FILEIO_PUBLIC_HEADERS
     )
 gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
 
-# These files include tng_io.h from the TNG library. That header needs to know
-# whether inttypes.h exists or not.
-include(CheckIncludeFiles)
-check_include_file(inttypes.h   HAVE_INTTYPES_H)
-if(HAVE_INTTYPES_H)
-  set_property(SOURCE tngio.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
-  set_property(SOURCE tngio_for_tools.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
+if (GMX_USE_TNG AND TNG_IO_DEFINITIONS)
+    set_property(SOURCE tngio.cpp
+                 APPEND PROPERTY COMPILE_DEFINITIONS ${TNG_IO_DEFINITIONS})
+    set_property(SOURCE tngio_for_tools.cpp
+                 APPEND PROPERTY COMPILE_DEFINITIONS ${TNG_IO_DEFINITIONS})
 endif()
 
 if (BUILD_TESTING)
