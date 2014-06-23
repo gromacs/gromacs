@@ -153,6 +153,8 @@ else()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
+include_directories(${GMX_TNG_INCLUDE_DIRS})
+
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${GMX_TNG_LIBRARIES}
