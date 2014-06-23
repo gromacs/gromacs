@@ -35,6 +35,8 @@
 file(GLOB TOOLS_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOOLS_SOURCES} PARENT_SCOPE)
 
+include_directories(${GMX_TNG_INCLUDE_DIRS})
+
 set(TOOLS_PUBLIC_HEADERS
     )
 gmx_install_headers(tools ${TOOLS_PUBLIC_HEADERS})

@@ -34,6 +34,8 @@
 
 file(GLOB GMXANA_SOURCES *.c *.cpp)
 
+include_directories(${GMX_TNG_INCLUDE_DIRS})
+
 set(GMXANA_PUBLIC_HEADERS
     gstat.h
     )
