@@ -1,12 +1,7 @@
 cmake_minimum_required(VERSION 2.8.8)
 
 project(TNG_IO)
-set(PROJECT_VERSION "1.5")
-set(API_VERSION "5")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/version.h.in
-                ${CMAKE_BINARY_DIR}/include/version.h )
-include_directories(${CMAKE_BINARY_DIR}/include)
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall")
@@ -31,9 +26,47 @@ option(TNG_BUILD_WITH_ZLIB "Build TNG with zlib compression" ${ZLIB_FOUND})
 include(CheckIncludeFile)
 check_include_file(inttypes.h   HAVE_INTTYPES_H)
 
-add_subdirectory(src)
+include(BuildTNG.cmake)
+tng_get_source_list(TNG_SOURCES TNG_COMPILE_DEFS)
 
-install(FILES include/tng_io.h include/tng_io_fwd.h DESTINATION include/)
+tng_set_source_properties(WITH_ZLIB ${ZLIB_FOUND})
+
+if (ZLIB_FOUND)
+  list(APPEND EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
+endif()
+
+if (UNIX)
+  list(APPEND EXTRA_LIBRARIES m)
+endif()
+
+add_library(tng_io ${TNG_SOURCES})
+
+target_link_libraries(tng_io ${EXTRA_LIBRARIES})
+
+set_target_properties(tng_io PROPERTIES VERSION ${TNG_IO_VERSION} SOVERSION ${MAJOR_VERSION})
+
+# Create the tng_ioConfig.cmake and tng_ioConfigVersion.cmake files for the install tree
+set(CONF_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
+configure_file(              src/lib/tng_io-config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/tng_io-config.cmake" @ONLY)
+configure_file(              src/lib/tng_io-configVersion.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/tng_io-configVersion.cmake" @ONLY)
+
+# Use GNUInstallDirst to set paths on multiarch systems
+include(GNUInstallDirs)
+
+# Install the tng_ioConfig.cmake and tng_ioConfigVersion.cmake
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/tng_io-config.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/tng_io-configVersion.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/tng_io")
+
+install(TARGETS tng_io
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(FILES include/tng/tng_io.h include/tng/tng_io_fwd.h ${CMAKE_CURRENT_BINARY_DIR}/include/tng/version.h
+        DESTINATION include/tng)
 
 #-- Add an Option to toggle the generation of the API documentation
 option(TNG_BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)
@@ -56,4 +89,6 @@ if(TNG_BUILD_DOCUMENTATION)
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Documentation/
       DESTINATION share/tng/doc)
 endif()
+
+add_subdirectory(src)
 
