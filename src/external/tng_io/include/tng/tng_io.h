@@ -21,9 +21,9 @@
  * Each block can contain MD5 hashes to verify data integrity and the file
  * can be signed by the user to ensure that the origin is correct.
  *
- * This is version 1.4 of the TNG API. The intention is that this version of
- * the API and ABI should be stable, but it is still possible that future
- * changes might make that impossible, in which case that will be clarified.
+ * The intention is that the API and ABI should be stable, but it is
+ * still possible that future changes might make that impossible, in which
+ * case that will be clarified.
  *
  * The API and all examples are released without any warranties. Use them at
  * your own risk.
@@ -75,6 +75,16 @@
  * See git log for full revision history.
  *
  * Revisions
+ *
+ * v. 1.6 - Fourth stable release of the API.
+ *
+ *        - Removed OpenMP option when building.
+ *        - Functionality for migrating data blocks.
+ *        - Improved handling of molecules.
+ *        - Improved installation of TNG documentation.
+ *        - Enhancements to CMake usage.
+ *        - Required CMake version raised to 2.8.8.
+ *        - Bugs fixed.
  *
  * v. 1.5 - Third stable release of the API.
  *
@@ -173,7 +183,7 @@
  * \code
  * #include <stdlib.h>
  * #include <stdio.h>
- * #include "tng_io.h"
+ * #include "tng/tng_io.h"
  *
  * int main(int argc, char **argv)
  * {
@@ -529,6 +539,59 @@ extern "C"
  *  instead.
  *  @{
  */
+
+/**
+ * @brief Get the major version of the TNG library.
+ * @param tng_data is a trajectory data container, it does not have
+ * to be initialized beforehand.
+ * @param version is pointing to a value set to the major version of
+ * the library.
+ * @return TNG_SUCCESS (0) if successful.
+ */
+tng_function_status DECLSPECDLLEXPORT tng_version_major
+                (const tng_trajectory_t tng_data,
+                 int *version);
+
+/**
+ * @brief Get the minor version of the TNG library.
+ * @param tng_data is a trajectory data container, it does not have
+ * to be initialized beforehand.
+ * @param version is pointing to a value set to the minor version of
+ * the library.
+ * @return TNG_SUCCESS (0) if successful.
+ */
+tng_function_status DECLSPECDLLEXPORT tng_version_minor
+                (const tng_trajectory_t tng_data,
+                 int *version);
+
+/**
+ * @brief Get the patch level of the TNG library.
+ * @param tng_data is a trajectory data container, it does not have
+ * to be initialized beforehand.
+ * @param patch_level is the string to fill with the full version,
+ * memory must be allocated before.
+ * @return TNG_SUCCESS (0) if successful.
+ */
+tng_function_status DECLSPECDLLEXPORT tng_version_patchlevel
+                (const tng_trajectory_t tng_data,
+                 int *patch_level);
+
+/**
+ * @brief Get the full version string of the TNG library.
+ * @param tng_data is a trajectory data container, it does not have
+ * to be initialized beforehand.
+ * @param version is pointing to a value set to the major version of
+ * the library.
+ * @param max_len maximum char length of the string, i.e. how much memory has
+ * been reserved for version. This includes \0 terminating character.
+ * @pre \code version != 0 \endcode The pointer to the name string
+ * must not be a NULL pointer.
+ * @return TNG_SUCCESS (0) if successful.
+ */
+tng_function_status DECLSPECDLLEXPORT tng_version
+                (const tng_trajectory_t tng_data,
+                 char *version,
+                 const int max_len);
 
 /**
  * @brief Setup a trajectory data container.
@@ -4677,7 +4740,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_frame_current_compression_get
                 (tng_trajectory_t tng_data,
                  const int64_t block_id,
                  int64_t *codec_id,
-                 float *factor);
+                 double  *factor);
 
 /** @brief High-level function for determining the next frame with data and what
  * data blocks have data for that frame. The search can be limited to certain

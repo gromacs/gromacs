@@ -22,10 +22,10 @@
 #include <zlib.h>
 #endif
 
-#include "../../include/tng_io.h"
-#include "../../include/md5.h"
-#include "../../include/compression/tng_compress.h"
-#include "../include/version.h"
+#include "tng/tng_io.h"
+#include "tng/md5.h"
+#include "compression/tng_compress.h"
+#include "tng/version.h"
 
 
 struct tng_bond {
@@ -7848,6 +7848,52 @@ static tng_function_status tng_atom_destroy(tng_atom_t atom)
         free(atom->atom_type);
         atom->atom_type = 0;
     }
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version_major
+                (const tng_trajectory_t tng_data,
+                 int *version)
+{
+    (void)tng_data;
+
+    *version = TNG_VERSION_MAJOR;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version_minor
+                (const tng_trajectory_t tng_data,
+                 int *version)
+{
+    (void)tng_data;
+
+    *version = TNG_VERSION_MINOR;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version_patchlevel
+                (const tng_trajectory_t tng_data,
+                 int *patch_level)
+{
+    (void)tng_data;
+
+    *patch_level = TNG_VERSION_PATCHLEVEL;
+
+    return(TNG_SUCCESS);
+}
+
+tng_function_status DECLSPECDLLEXPORT tng_version
+                (const tng_trajectory_t tng_data,
+                 char *version,
+                 const int max_len)
+{
+    (void)tng_data;
+    TNG_ASSERT(version, "TNG library: version must not be a NULL pointer");
+
+    TNG_SNPRINTF(version, max_len, "%s", TNG_VERSION);
 
     return(TNG_SUCCESS);
 }
@@ -18889,7 +18935,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_frame_current_compression_get
                 (tng_trajectory_t tng_data,
                  const int64_t block_id,
                  int64_t *codec_id,
-                 float *factor)
+                 double *factor)
 {
     tng_trajectory_frame_set_t frame_set;
     tng_particle_data_t p_data = 0;
@@ -18986,12 +19032,12 @@ tng_function_status DECLSPECDLLEXPORT tng_util_frame_current_compression_get
     if(block_type == TNG_PARTICLE_BLOCK_DATA)
     {
         *codec_id = p_data->codec_id;
-        *factor   = (float)p_data->compression_multiplier;
+        *factor   = p_data->compression_multiplier;
     }
     else if(block_type == TNG_NON_PARTICLE_BLOCK_DATA)
     {
         *codec_id = np_data->codec_id;
-        *factor   = (float)np_data->compression_multiplier;
+        *factor   = np_data->compression_multiplier;
     }
     return(TNG_SUCCESS);
 }
