@@ -45,6 +45,45 @@ function (gmx_install_headers DESTINATION)
     endif()
 endfunction ()
 
+if(GMX_USE_TNG)
+    option(GMX_EXTERNAL_TNG "Use external TNG instead of compiling the version shipped with GROMACS."
+           OFF)
+    # Detect TNG if GMX_EXTERNAL_TNG is explicitly ON
+    if(GMX_EXTERNAL_TNG)
+        find_package(TNG_IO 1.6.0)
+        if(NOT TNG_IO_FOUND)
+            message(FATAL_ERROR
+                "TNG >= 1.6.0 not found. "
+                "You can set GMX_EXTERNAL_TNG=OFF to compile TNG.")
+        endif()
+        include_directories(${TNG_IO_INCLUDE_DIRS})
+    endif()
+    if(NOT GMX_EXTERNAL_TNG)
+        # TNG wants zlib if it is available
+        find_package(ZLIB QUIET)
+        include(gmxTestZLib)
+        gmx_test_zlib(HAVE_ZLIB)
+
+        set(TNG_BUILD_WITH_ZLIB ${HAVE_ZLIB} CACHE BOOL  "Build TNG with zlib compression")
+        set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
+        set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
+        set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
+        set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
+        set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
+        add_subdirectory(../external/tng_io tng_io)
+
+        set(TNG_IO_LIBRARIES tng_io)
+        include_directories(../external/tng_io/include)
+
+        mark_as_advanced(TNG_BUILD_FORTRAN)
+        mark_as_advanced(TNG_BUILD_EXAMPLES)
+        mark_as_advanced(TNG_BUILD_COMPRESSION_TESTS)
+        mark_as_advanced(TNG_BUILD_DOCUMENTATION)
+        mark_as_advanced(TNG_BUILD_TEST)
+        mark_as_advanced(TNG_EXAMPLE_FILES_DIR)
+    endif()
+endif()
+
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(gmxpreprocess)
@@ -155,7 +194,7 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${GMX_TNG_LIBRARIES}
+                      ${TNG_IO_LIBRARIES}
                       ${EXTRAE_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}
