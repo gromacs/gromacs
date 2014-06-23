@@ -5,7 +5,7 @@ main()
   unsigned int level = 0;
 
   /* Test gcc inline asm for x86 */
-#if defined (__x86_64__) || defined (_M_X64)
+#if defined (__LP64__) || defined (_M_X64)
     __asm__("push %%rbx       \n\t"
             "cpuid            \n\t"
             "movl %%ebx, %1   \n\t"
