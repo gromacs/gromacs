@@ -44,7 +44,7 @@
 #include "trx.h"
 
 #ifdef GMX_USE_TNG
-#include "../../external/tng_io/include/tng_io.h"
+#include "tng/tng_io.h"
 #endif
 
 #include "gromacs/legacyheaders/types/atoms.h"
@@ -171,6 +171,9 @@ void gmx_prepare_tng_writing(const char              *filename,
     GMX_UNUSED_VALUE(input);
     GMX_UNUSED_VALUE(output);
     GMX_UNUSED_VALUE(nAtoms);
+    GMX_UNUSED_VALUE(mtop);
+    GMX_UNUSED_VALUE(index);
+    GMX_UNUSED_VALUE(indexGroupName);
 #endif
 }
 
@@ -201,6 +204,7 @@ void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
 #else
     GMX_UNUSED_VALUE(output);
     GMX_UNUSED_VALUE(frame);
+    GMX_UNUSED_VALUE(natoms);
 #endif
 }
 
@@ -427,7 +431,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
     void                   *values        = NULL;
     double                  frameTime     = -1.0;
     int                     size, blockDependency;
-    float                   prec;
+    double                  prec;
     const int               defaultNumIds = 5;
     static gmx_int64_t      fallbackRequestedIds[defaultNumIds] =
     {
@@ -617,6 +621,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
     GMX_UNUSED_VALUE(input);
     GMX_UNUSED_VALUE(fr);
     GMX_UNUSED_VALUE(requestedIds);
+    GMX_UNUSED_VALUE(numRequestedIds);
     return FALSE;
 #endif
 }
@@ -778,7 +783,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     gmx_int64_t         codecId;
     int                 blockDependency;
     void               *data = 0;
-    float               localPrec;
+    double              localPrec;
 
     stat = tng_data_block_name_get(input, blockId, name, maxLen);
     if (stat != TNG_SUCCESS)
