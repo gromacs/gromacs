@@ -1724,10 +1724,10 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
-    if (plist->ncmap > 0)
+    if (plist[F_CMAP].ncmap > 0)
     {
-        init_cmap_grid(&sys->ffparams.cmap_grid, plist->nc, plist->grid_spacing);
-        setup_cmap(plist->grid_spacing, plist->nc, plist->cmap, &sys->ffparams.cmap_grid);
+        init_cmap_grid(&sys->ffparams.cmap_grid, plist[F_CMAP].nc, plist[F_CMAP].grid_spacing);
+        setup_cmap(plist[F_CMAP].grid_spacing, plist[F_CMAP].nc, plist[F_CMAP].cmap, &sys->ffparams.cmap_grid);
     }
 
     set_wall_atomtype(atype, opts, ir, wi);
