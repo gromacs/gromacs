@@ -44,6 +44,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "vec.h"
 #include "macros.h"
+#include "names.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
@@ -176,7 +177,8 @@ static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
     {
         d->a[i] = safe_strdup(s->a[i]);
     }
-    d->s = safe_strdup(s->s);
+    d->s     = safe_strdup(s->s);
+    d->match = s->match;
 }
 
 static gmx_bool contains_char(t_rbonded *s, char c)
@@ -395,7 +397,7 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
                     }
                     fprintf(out, " %s]", SS(hb[i].rb[j].b[k].s));
                 }
-                fprintf(out, "\n");
+                fprintf(out, " Entry matched: %s\n", yesno_names[hb[i].rb[j].b[k].match]);
             }
         }
         fprintf(out, "\n");
