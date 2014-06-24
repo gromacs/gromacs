@@ -2596,7 +2596,7 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
                     }
                     fprintf(stderr, "\n");
 
-                    gmx_fatal(FARGS, "File appending requested, but only %d of the %d output files are present", nexist, nfiles);
+                    gmx_fatal(FARGS, "File appending requested, but %d of the %d output files are not present or are named differently", nfiles-nexist, nfiles);
                 }
             }
 

@@ -802,16 +802,18 @@ set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 # Binary and library suffix options
 include(gmxManageSuffixes)
 
-##################################################################
+################################################################
 # Shared library settings
-##################################################################
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+################################################################
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (CMAKE_VERSION VERSION_GREATER 2.8.11)))
     if(GMX_LIB_INSTALL_DIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     endif()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    set(CMAKE_MACOSX_RPATH 1)
 else()
+    # We are on Darwin/OSX, and cmake cannot handle proper RPATHs
     if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) #rpath supported for >10.4
         set(CMAKE_INSTALL_NAME_DIR "@rpath")
         set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} "-Wl,-rpath,@executable_path/../${GMX_LIB_INSTALL_DIR}")
