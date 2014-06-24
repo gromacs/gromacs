@@ -161,7 +161,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
             }
             else
             {
-                lamfac = 0;
+                lamfac = lambda;
                 type   = md->typeB;
             }
         }

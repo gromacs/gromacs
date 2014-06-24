@@ -166,7 +166,7 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
                                  real                                 *table_v,
                                  real                                 *table_fdv0,
                                  int                                   ntab,
-                                 real                                  dx,
+                                 double                                dx,
                                  real                                  beta,
                                  real_space_grid_contribution_computer v_lr)
 {
