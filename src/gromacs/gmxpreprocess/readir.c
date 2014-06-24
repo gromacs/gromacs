@@ -1128,6 +1128,19 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
     }
 
+    if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT)
+    {
+        sprintf(err_buf,
+                "Explicit switch/shift coulomb interactions cannot be used in combination with a secondary coulomb-modifier.");
+        CHECK( ir->coulomb_modifier != eintmodNONE);
+    }
+    if (ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
+    {
+        sprintf(err_buf,
+                "Explicit switch/shift vdw interactions cannot be used in combination with a secondary vdw-modifier.");
+        CHECK( ir->vdw_modifier != eintmodNONE);
+    }
+
     if (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT ||
         ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
     {
