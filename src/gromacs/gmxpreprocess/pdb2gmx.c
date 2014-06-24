@@ -1128,7 +1128,10 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "Note that a [TT].pdb[tt] file is nothing more than a file format, and it",
         "need not necessarily contain a protein structure. Every kind of",
         "molecule for which there is support in the database can be converted.",
-        "If there is no support in the database, you can add it yourself.[PAR]",
+        "If there is no support in the database, you can add it yourself.",
+        "Note that [THISMODULE] may not work as expected in some exotic cases",
+        "e.g. for molecular species where angles are defined but not the bonds",
+        "between the constituent atoms.[PAR]",
 
         "The program has limited intelligence, it reads a number of database",
         "files, that allow it to make special bonds (Cys-Cys, Heme-His, etc.),",
