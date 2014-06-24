@@ -95,6 +95,10 @@ endif()
 # provide backward compatibility of software written against the Gromacs API.
 set(API_VERSION ${NUM_VERSION})
 
+if (NOT "${CMAKE_INSTALL_PREFIX}" MATCHES "^/")
+    message(FATAL_ERROR "Please provide an absolute path for the installation directory.")
+endif()
+
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
     set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
