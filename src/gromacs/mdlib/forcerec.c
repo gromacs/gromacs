@@ -2714,6 +2714,15 @@ void init_forcerec(FILE              *fp,
             }
         }
 
+        if (fr->nbkernel_elec_modifier == eintmodFORCESWITCH)
+        {
+            fr->bcoultab = TRUE;
+        }
+        if (fr->nbkernel_vdw_modifier == eintmodFORCESWITCH)
+        {
+            fr->bvdwtab = TRUE;
+        }
+
         if (getenv("GMX_REQUIRE_TABLES"))
         {
             fr->bvdwtab  = TRUE;

@@ -2267,7 +2267,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
     double   invscale, invscale2, invscale3;
     int      ri0, ri1, ri, i, offstart, offset;
     real     scale, *vdwtab, tabfactor, tmp;
-    gmx_bool bSwitch, bShift;
 
     fr->enershiftsix    = 0;
     fr->enershifttwelve = 0;
@@ -2276,12 +2275,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
     fr->virdiffsix      = 0;
     fr->virdifftwelve   = 0;
 
-    bSwitch = (fr->vdwtype == evdwSWITCH) ||
-        (fr->vdw_modifier == eintmodPOTSWITCH) ||
-        (fr->vdw_modifier == eintmodFORCESWITCH);
-    bShift  = (fr->vdwtype == evdwSHIFT) ||
-        (fr->vdw_modifier == eintmodPOTSHIFT);
-
     if (eDispCorr != edispcNO)
     {
         for (i = 0; i < 2; i++)
@@ -2289,9 +2282,15 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if (bSwitch || bShift)
+        if ((fr->vdw_modifier == eintmodPOTSHIFT) ||
+            (fr->vdw_modifier == eintmodPOTSWITCH) ||
+            (fr->vdw_modifier == eintmodFORCESWITCH) ||
+            (fr->vdwtype == evdwSHIFT) ||
+            (fr->vdwtype == evdwSWITCH))
         {
-            if (bSwitch && fr->rvdw_switch == 0)
+            if (((fr->vdw_modifier == eintmodPOTSWITCH) ||
+                 (fr->vdw_modifier == eintmodFORCESWITCH) ||
+                 (fr->vdwtype == evdwSWITCH)) && fr->rvdw_switch == 0)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
@@ -2316,17 +2315,28 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * the shifting point is rvdw_switch, while it is the cutoff when we
              * have a classical potential-shift.
              */
-            ri0  = (bShift) ? ri1 : ri0;
+
+            /* For a pure potential-shift the potential has a constant shift
+             * all the way out to the cutoff, and that is it. For other forms
+             * we need to calculate the constant shift up to the point where we
+             * start modifying the potential.
+             */
+            ri0  = (fr->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
 
             r0   = ri0/scale;
             r1   = ri1/scale;
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
-            if (bShift ||
-                fr->vdw_modifier == eintmodFORCESWITCH)
+            if ((fr->vdw_modifier == eintmodPOTSHIFT) ||
+                (fr->vdw_modifier == eintmodFORCESWITCH) ||
+                (fr->vdwtype == evdwSHIFT))
             {
                 /* Determine the constant energy shift below rvdw_switch.
+                 * This is not necessary for pure switch functions since the
+                 * potential will be unmodified in that case. However, both the
+                 * shift and force-switch forms will modify the potential inside rvdw-switch.
+                 *
                  * Table has a scale factor since we have scaled it down to compensate
                  * for scaling-up c6/c12 with the derivative factors to save flops in analytical kernels.
                  */
@@ -2341,6 +2351,11 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              */
             eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
             eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
+
+            /* Calculate the contribution in the range [r0,r1] where we
+             * modify the potential. For a pure potential-shift modifier we will
+             * have ri0==ri1, and there will not be any contribution here.
+             */
             for (i = 0; i < 2; i++)
             {
                 enersum = 0;
@@ -2350,7 +2365,14 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                 virs[i]  -= virsum;
             }
 
-            /* now add the correction for rvdw_switch to infinity */
+            /* Alright: Above we compensated by REMOVING the parts outside r0
+             * corresponding to the ideal VdW 1/r6 and /r12 potentials.
+             *
+             * Regardless of whether r0 is the point where we start switching,
+             * or the cutoff where we calculated the constant shift, we include
+             * all the parts we are missing out to infinity from r0 by
+             * calculating the analytical dispersion correction.
+             */
             eners[0] += -4.0*M_PI/(3.0*rc3);
             eners[1] +=  4.0*M_PI/(9.0*rc9);
             virs[0]  +=  8.0*M_PI/rc3;
