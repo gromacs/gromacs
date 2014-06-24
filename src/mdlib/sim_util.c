@@ -627,7 +627,7 @@ static void do_nb_verlet(t_forcerec *fr,
     int                        nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     char                      *env;
     nonbonded_verlet_group_t  *nbvg;
-    gmx_bool                  bCUDA;
+    gmx_bool                   bCUDA;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -2144,7 +2144,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
     double   invscale, invscale2, invscale3;
     int      ri0, ri1, ri, i, offstart, offset;
     real     scale, *vdwtab, tabfactor, tmp;
-    gmx_bool bSwitch, bShift;
 
     fr->enershiftsix    = 0;
     fr->enershifttwelve = 0;
@@ -2153,9 +2152,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
     fr->virdiffsix      = 0;
     fr->virdifftwelve   = 0;
 
-    bSwitch = (fr->vdwtype == evdwSWITCH) || (fr->vdw_modifier == eintmodPOTSWITCH);
-    bShift  = (fr->vdwtype == evdwSHIFT)  || (fr->vdw_modifier == eintmodPOTSHIFT);
-
     if (eDispCorr != edispcNO)
     {
         for (i = 0; i < 2; i++)
@@ -2163,9 +2159,13 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if (bSwitch || bShift)
+        if ((fr->vdw_modifier == eintmodPOTSHIFT) ||
+            (fr->vdw_modifier == eintmodPOTSWITCH) ||
+            (fr->vdwtype == evdwSHIFT) ||
+            (fr->vdwtype == evdwSWITCH))
         {
-            if (bSwitch && fr->rvdw_switch == 0)
+            if (((fr->vdw_modifier == eintmodPOTSWITCH) ||
+                 (fr->vdwtype == evdwSWITCH)) && fr->rvdw_switch == 0)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
@@ -2190,14 +2190,14 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * the shifting point is rvdw_switch, while it is the cutoff when we
              * have a classical potential-shift.
              */
-            ri0  = (bShift) ? ri1 : ri0;
+            ri0  = (fr->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
 
             r0   = ri0/scale;
             r1   = ri1/scale;
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
-            if (bShift)
+            if (fr->vdwtype == evdwSHIFT)
             {
                 /* Determine the constant energy shift below rvdw_switch.
                  * Table has a scale factor since we have scaled it down to compensate
@@ -2205,6 +2205,11 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                  */
                 fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
                 fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
+            }
+            else if (fr->vdw_modifier == eintmodPOTSHIFT)
+            {
+                fr->enershiftsix    = (real)(-1.0/(rc3*rc3));
+                fr->enershifttwelve = (real)( 1.0/(rc9*rc3));
             }
 
             /* Add the constant part from 0 to rvdw_switch.
