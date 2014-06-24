@@ -1439,10 +1439,11 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
 }
 
 #define NUM_CMAP_ATOMS 5
-static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuetype_t rt)
+static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
 {
     int         residx, i, j, k;
     const char *ptr;
+    const char *pname;
     t_resinfo  *resinfo = atoms->resinfo;
     int         nres    = atoms->nres;
     gmx_bool    bAddCMAP;
@@ -1458,11 +1459,14 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
         ptr = "check";
     }
 
-    fprintf(stderr, "Making cmap torsions...");
+    fprintf(stderr, "Making cmap torsions...\n");
     i = 0;
-    /* End loop at nres-1, since the very last residue does not have a +N atom, and
-     * therefore we get a valgrind invalid 4 byte read error with atom am */
-    for (residx = 0; residx < nres-1; residx++)
+    /* Most cmap entries use the N atom from the next residue, so the last
+     * residue should not have its CMAP entry in that case, but for things like
+     * dipeptides we sometimes define a complete CMAP entry inside a residue,
+     * and in this case we need to process everything through the last residue.
+     */
+    for (residx = 0; residx < nres; residx++)
     {
         /* Add CMAP terms from the list of CMAP interactions */
         for (j = 0; j < restp[residx].rb[ebtsCMAP].nb; j++)
@@ -1473,7 +1477,21 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
              * from residues labelled as protein. */
             for (k = 0; k < NUM_CMAP_ATOMS && bAddCMAP; k++)
             {
-                cmap_atomid[k] = search_atom(restp[residx].rb[ebtsCMAP].b[j].a[k],
+                /* Assign the pointer to the name of the next reference atom.
+                 * This can use -/+ labels to refer to previous/next residue.
+                 */
+                pname = restp[residx].rb[ebtsCMAP].b[j].a[k];
+                /* Skip this CMAP entry if it refers to residues before the
+                 * first or after the last residue.
+                 */
+                if (((strchr(pname, '-') != NULL) && (residx == 0)) ||
+                    ((strchr(pname, '+') != NULL) && (residx == nres-1)))
+                {
+                    bAddCMAP = FALSE;
+                    break;
+                }
+
+                cmap_atomid[k] = search_atom(pname,
                                              i, atoms, ptr, TRUE);
                 bAddCMAP = bAddCMAP && (cmap_atomid[k] != NO_ATID);
                 if (!bAddCMAP)
@@ -1496,7 +1514,17 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
                     bAddCMAP = bAddCMAP &&
                         cmap_chainnum == resinfo[this_residue_index].chainnum;
                 }
-                bAddCMAP = bAddCMAP && gmx_residuetype_is_protein(rt, *(resinfo[this_residue_index].name));
+                /* Here we used to check that the residuetype was protein and
+                 * disable bAddCMAP if that was not the case. However, some
+                 * special residues (say, alanine dipeptides) might not adhere
+                 * to standard naming, and if we start calling them normal
+                 * protein residues the user will be bugged to select termini.
+                 *
+                 * Instead, I believe that the right course of action is to
+                 * keep the CMAP interaction if it is present in the RTP file
+                 * and we correctly identified all atoms (which is the case
+                 * if we got here).
+                 */
             }
 
             if (bAddCMAP)
@@ -1513,7 +1541,6 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
             }
         }
     }
-
     /* Start the next residue */
 }
 
@@ -1618,7 +1645,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* Make CMAP */
     if (TRUE == bCmap)
     {
-        gen_cmap(&(plist[F_CMAP]), restp, atoms, rt);
+        gen_cmap(&(plist[F_CMAP]), restp, atoms);
         if (plist[F_CMAP].nr > 0)
         {
             fprintf(stderr, "There are %4d cmap torsion pairs\n",
