@@ -735,22 +735,7 @@ void write_top(FILE *out, char *pr, char *molname,
     }
 }
 
-static atom_id search_res_atom(const char *type, int resind,
-                               t_atoms *atoms,
-                               const char *bondtype, gmx_bool bAllowMissing)
-{
-    int i;
 
-    for (i = 0; (i < atoms->nr); i++)
-    {
-        if (atoms->atom[i].resind == resind)
-        {
-            return search_atom(type, i, atoms, bondtype, bAllowMissing);
-        }
-    }
-
-    return NO_ATID;
-}
 
 static void do_ssbonds(t_params *ps, t_atoms *atoms,
                        int nssbonds, t_ssbond *ssbonds, gmx_bool bAllowMissing)
@@ -816,6 +801,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
             {
                 dist2 = distance2(x[ai], x[aj]);
                 if (dist2 > long_bond_dist2)
+
                 {
                     fprintf(stderr, "Warning: Long Bond (%d-%d = %g nm)\n",
                             ai+1, aj+1, sqrt(dist2));
