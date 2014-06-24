@@ -50,6 +50,26 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  C     LPT1
+  C     LPT2
+  DC    LPT1
+  DC    LPT2
+  C     LPT3
+  C     LPT4
+  DC    LPT3
+  DC    LPT4
+  CA    LPT1
+  CA    LPT2
+  DCA   LPT1
+  DCA   LPT2
+  CA    LPT3
+  CA    LPT4
+  DCA   LPT3
+  DCA   LPT4
+  CA    DOT1
+  DCA   DOT1
+  CA    DOT2
+  DCA   DOT2
 [ impropers ]
  C  OT1  OT2  CA
 [ thole_polarization ]
@@ -147,6 +167,28 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  HT2   LPT3
+  HT2   LPT4
+  C     LPT1
+  C     LPT2
+  DC    LPT1
+  DC    LPT2
+  C     LPT3
+  C     LPT4
+  DC    LPT3
+  DC    LPT4
+  CA    LPT1
+  CA    LPT2
+  DCA   LPT1
+  DCA   LPT2
+  CA    LPT3
+  CA    LPT4
+  DCA   LPT3
+  DCA   LPT4
+  CA    DOT1
+  DCA   DOT1
+  CA    DOT2
+  DCA   DOT2
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.7080
@@ -239,6 +281,26 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  C     LPT1
+  C     LPT2
+  DC    LPT1
+  DC    LPT2
+  C     LPT3
+  C     LPT4
+  DC    LPT3
+  DC    LPT4
+  CA    LPT1
+  CA    LPT2
+  DCA   LPT1
+  DCA   LPT2
+  CA    LPT3
+  CA    LPT4
+  DCA   LPT3
+  DCA   LPT4
+  CA    DOT1
+  DCA   DOT1
+  CA    DOT2
+  DCA   DOT2
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.8990
@@ -330,6 +392,28 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  HT2   LPT3
+  HT2   LPT4
+  C     LPT1
+  C     LPT2
+  DC    LPT1
+  DC    LPT2
+  C     LPT3
+  C     LPT4
+  DC    LPT3
+  DC    LPT4
+  CA    LPT1
+  CA    LPT2
+  DCA   LPT1
+  DCA   LPT2
+  CA    LPT3
+  CA    LPT4
+  DCA   LPT3
+  DCA   LPT4
+  CA    DOT1
+  DCA   DOT1
+  CA    DOT2
+  DCA   DOT2
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.7080
@@ -429,6 +513,26 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  C     LPT1
+  C     LPT2
+  DC    LPT1
+  DC    LPT2
+  C     LPT3
+  C     LPT4
+  DC    LPT3
+  DC    LPT4
+  CA    LPT1
+  CA    LPT2
+  DCA   LPT1
+  DCA   LPT2
+  CA    LPT3
+  CA    LPT4
+  DCA   LPT3
+  DCA   LPT4
+  CA    DOT1
+  DCA   DOT1
+  CA    DOT2
+  DCA   DOT2
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N    CA  2.60  0.7540  0.4320
@@ -549,6 +653,26 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  C     LPT1
+  C     LPT2
+  DC    LPT1
+  DC    LPT2
+  C     LPT3
+  C     LPT4
+  DC    LPT3
+  DC    LPT4
+  CA    LPT1
+  CA    LPT2
+  DCA   LPT1
+  DCA   LPT2
+  CA    LPT3
+  CA    LPT4
+  DCA   LPT3
+  DCA   LPT4
+  CA    DOT1
+  DCA   DOT1
+  CA    DOT2
+  DCA   DOT2
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.8990
@@ -632,6 +756,28 @@
   OT2   LPT3
   OT2   LPT4
   LPT3  LPT4
+  HT2   LPT3
+  HT2   LPT4
+  C     LPT1
+  C     LPT2
+  DC    LPT1
+  DC    LPT2
+  C     LPT3
+  C     LPT4
+  DC    LPT3
+  DC    LPT4
+  CA    LPT1
+  CA    LPT2
+  DCA   LPT1
+  DCA   LPT2
+  CA    LPT3
+  CA    LPT4
+  DCA   LPT3
+  DCA   LPT4
+  CA    DOT1
+  DCA   DOT1
+  CA    DOT2
+  DCA   DOT2
 [ thole_polarization ]
  ; ai    aj  a      alpha_i  alpha_j
     N     C  2.60  0.2500  0.7080
@@ -667,135 +813,6 @@
   DOT1    OT1     C  LPT1  LPT2 0.00069680 0.00121940 0.00108380 
   DOT2    OT2     C  LPT3  LPT4 0.00081080 0.00121620 0.00097300 
 
-; amidated C-terminus for polypeptide
-; HTC1 is trans to O
-; HTC2 is cis to O
-[ CT2 ]
-[ replace ]
- N    N     ND2A2   13.6070  2.03629
- DN   DN    D        0.4000 -2.41829
- HN   HN    HDP1A    1.0080  0.27200
- CA   CA    CD31C   11.6110  1.86928
- DCA  DCA   D        0.4000 -1.70028
- C    C     CD2O1A  11.6110  2.90936
- DC   DC    D        0.4000 -2.18336
- O    O     OD2C1A  15.5994  1.66751
- DO   DO    D        0.4000 -1.63251
- LPOA LPOA  LP       0.0000 -0.41100
- LPOB LPOB  LP       0.0000 -0.26400
-[ add ]
- 1  2   NT  C   CA  N
-    ND2A1           13.6070  1.49189   -1
- 2  3   HTC NT  C   CA
-    HDP1A            1.0080  0.37400   -1
- 1  14  DNT NT
-    D                0.4000 -2.27389   -1
-[ replace ]
- HTC1 HT1    HDP1A   1.0080  0.30300
- HTC2 HT2    HDP1A   1.0080  0.35100
-[ impropers ]
- C  NT  CA  O
- C  CA  NT  O
- NT C   HT1 HT2
- NT C   HT2 HT1
-[ thole_polarization ]
- ; ai    aj  a      alpha_i  alpha_j
-    C    NT  2.60   1.0950   1.1320
-   DC    NT  2.60   1.0950   1.1320
-    C   DNT  2.60   1.0950   1.1320
-   DC   DNT  2.60   1.0950   1.1320
-   CA    NT  2.60   1.1300   1.1320
-  DCA    NT  2.60   1.1300   1.1320
-   CA   DNT  2.60   1.1300   1.1320
-  DCA   DNT  2.60   1.1300   1.1320
-   NT     O  2.60   1.1320   1.2270
-  DNT     O  2.60   1.1320   1.2270
-   NT    DO  2.60   1.1320   1.2270
-  DNT    DO  2.60   1.1320   1.2270
-
-; amidated C-terminus for glycine
-[ CT2G ]
-[ replace ]
- N    N     ND2A2   13.6070  2.03629
- DN   DN    D        0.4000 -2.41829
- HN   HN    HDP1A    1.0080  0.27200
- CA   CA    CD32C   11.6110  1.79028
- DCA  DCA   D        0.4000 -1.70028
- C    C     CD2O1A  11.6110  3.00536
- DC   DC    D        0.4000 -2.18336
- O    O     OD2C1A  15.5994  1.66751
- DO   DO    D        0.4000 -1.63251
- LPOA LPOA  LP       0.0000 -0.41100
- LPOB LPOB  LP       0.0000 -0.26400
-[ add ]
- 1  2   NT  C   CA  N
-    ND2A1           13.6070  1.49189   -1
- 2  3   HTC NT  C   CA
-    HDP1A            1.0080  0.37400   -1
- 1  14  DNT NT
-    D                0.4000 -2.27389   -1
-[ replace ]
- HTC1  HT1    HDP1A   1.0080  0.30300
- HTC2  HT2    HDP1A   1.0080  0.35100
-[ impropers ]
- C  NT  CA  O
- C  CA  NT  O
- NT C   HT1 HT2
- NT C   HT2 HT1
-[ thole_polarization ]
- ; ai    aj  a      alpha_i  alpha_j
-    C    NT  2.60   1.0950   1.1320
-   DC    NT  2.60   1.0950   1.1320
-    C   DNT  2.60   1.0950   1.1320
-   DC   DNT  2.60   1.0950   1.1320
-   CA    NT  2.60   1.1300   1.1320
-  DCA    NT  2.60   1.1300   1.1320
-   CA   DNT  2.60   1.1300   1.1320
-  DCA   DNT  2.60   1.1300   1.1320
-   NT     O  2.60   1.1320   1.2270
-  DNT     O  2.60   1.1320   1.2270
-   NT    DO  2.60   1.1320   1.2270
-  DNT    DO  2.60   1.1320   1.2270
-
-; amidated C-terminus for single amino acid
-[ CT2S ]
-[ replace ]
- C    C     CD2O1A  11.6110  2.95136
- DC   DC    D        0.4000 -2.18336
- O    O     OD2C1A  15.5994  1.66751
- DO   DO    D        0.4000 -1.63251
- LPOA LPOA  LP       0.0000 -0.41100
- LPOB LPOB  LP       0.0000 -0.26400
-[ add ]
- 1  2   NT  C   CA  N
-    ND2A1           13.6070  1.49189   -1
- 2  3   HTC NT  C   CA
-    HDP1A            1.0080  0.37400   -1
- 1  14  DNT NT
-    D                0.4000 -2.27389   -1
-[ replace ]
- HTC1  HT1    HDP1A   1.0080  0.30300
- HTC2  HT2    HDP1A   1.0080  0.35100
-[ impropers ]
- C  NT  CA  O
- C  CA  NT  O
- NT C   HT1 HT2
- NT C   HT2 HT1
-[ thole_polarization ]
- ; ai    aj  a      alpha_i  alpha_j
-    C    NT  2.60   1.0950   1.1320
-   DC    NT  2.60   1.0950   1.1320
-    C   DNT  2.60   1.0950   1.1320
-   DC   DNT  2.60   1.0950   1.1320
-   CA    NT  2.60   1.1300   1.1320
-  DCA    NT  2.60   1.1300   1.1320
-   CA   DNT  2.60   1.1300   1.1320
-  DCA   DNT  2.60   1.1300   1.1320
-   NT     O  2.60   1.1320   1.2270
-  DNT     O  2.60   1.1320   1.2270
-   NT    DO  2.60   1.1320   1.2270
-  DNT    DO  2.60   1.1320   1.2270
-
 
 [ 3TER ]
 [ replace ]
@@ -820,3 +837,15 @@
   ; site from              func    a      b      c 
     LP3A  O3'   C3'   H3T   4     -0.095 -0.005 -2.513418287
     LP3B  O3'   C3'   H3T   4     -0.095 -0.005  2.513418287
+[ exclusions ]
+  O3'    LP3A
+  O3'    LP3B
+  DO3'   LP3A
+  DO3'   LP3B
+  C3'    LP3A
+  C3'    LP3B
+  DC3'   LP3A
+  DC3'   LP3B
+  H3T    LP3A
+  H3T    LP3B
+  

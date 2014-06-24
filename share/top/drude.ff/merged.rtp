@@ -114,6 +114,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -301,11 +326,51 @@
   OY     LPY1
   OY     LPY2
   LPY1   LPY2
+  CY     LPY1
+  CY     LPY2
+  DCY    LPY1
+  DCY    LPY2
+  CAY    LPY1
+  CAY    LPY2
+  DCAY   LPY1
+  DCAY   LPY2
+  N      LPY1
+  N      LPY2
+  DN     LPY1
+  DN     LPY2
+  HN     LPY1
+  HN     LPY2
   DO     LPOA
   DO     LPOB
   O      LPOA
   O      LPOB
   LPOA   LPOB
+  C      LPOA
+  C      LPOB
+  DC     LPOA
+  DC     LPOB
+  CA     LPOA
+  CA     LPOB
+  DCA    LPOA
+  DCA    LPOB
+  HA     LPOA
+  HA     LPOB
+  CA     LPY1
+  CA     LPY2
+  DCA    LPY1
+  DCA    LPY2
+  HA     LPY1
+  HA     LPY2
+  NT     LPOA
+  NT     LPOB
+  DNT    LPOA
+  DNT    LPOB
+  HNT    LPOA
+  HNT    LPOB
+  CAT    LPOA
+  CAT    LPOB
+  DCAT   LPOA
+  DCAT   LPOB
   DCAY	 DCY 
   DCY 	 DN  
   DN  	 DCA 
@@ -527,6 +592,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -704,11 +794,52 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DOD1  LPDA
   DOD1  LPDB
   OD1   LPDA
   OD1   LPDB
   LPDA  LPDB
+  CG    LPDA
+  CG    LPDB
+  DCG   LPDA
+  DCG   LPDB
+  CB    LPDA
+  CB    LPDB
+  DCB   LPDA
+  DCB   LPDB
+  ND2   LPDA
+  ND2   LPDB
+  DND2  LPDA
+  DND2  LPDB
+  HD21  LPDA
+  HD21  LPDB
+  HD22  LPDA
+  HD22  LPDB
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -1045,6 +1176,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DOD1  LP1A
   DOD1  LP1B
   OD1   LP1A
@@ -1053,6 +1209,26 @@
   DOD2  LP2A
   DOD2  LP2B
   LP2A  LP2B
+  CG    LP1A
+  CG    LP1B
+  DCG   LP1A
+  DCG   LP1B
+  CG    LP2A
+  CG    LP2B
+  DCG   LP2A
+  DCG   LP2B
+  LP1A  LP1B
+  LP1A  LP2B
+  LP2A  LP1B
+  LP2A  LP2B
+  CB    LP1A
+  CB    LP1B
+  DCB   LP1A
+  DCB   LP1B
+  CB    LP2A
+  CB    LP2B
+  DCB   LP2A
+  DCB   LP2B
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -1351,11 +1527,50 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DSG   LPGA
   DSG   LPGB
   SG    LPGA
   SG    LPGB
   LPGA  LPGB
+  HG1   LPGA
+  HG1   LPGB
+  CB    LPGA
+  CB    LPGB
+  DCB   LPGA
+  DCB   LPGB
+  HB1   LPGA
+  HB1   LPGB
+  HB2   LPGA
+  HB2   LPGB
+  CA    LPGA
+  CA    LPGB
+  DCA   LPGA
+  DCA   LPGB
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -1553,11 +1768,52 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DOE1  LPEA
   DOE1  LPEB
   OE1   LPEA
   OE1   LPEB
   LPEA  LPEB
+  CD    LPEA
+  CD    LPEB
+  DCD   LPEA
+  DCD   LPEB
+  CG    LPEA
+  CG    LPEB
+  DCG   LPEA
+  DCG   LPEB
+  NE2   LPEA
+  NE2   LPEB
+  DNE2  LPEA
+  DNE2  LPEB
+  HE21  LPEA
+  HE21  LPEB
+  HE22  LPEA
+  HE22  LPEB
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -1928,6 +2184,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DOE1  LP1A
   DOE1  LP1B
   OE1   LP1A
@@ -1935,7 +2216,29 @@
   LP1A  LP1B
   DOE2  LP2A
   DOE2  LP2B
+  OE2   LP2A
+  OE2   LP2B
   LP2A  LP2B
+  CD    LP1A
+  CD    LP1B
+  DCD   LP1A
+  DCD   LP1B
+  CD    LP2A
+  CD    LP2B
+  DCD   LP2A
+  DCD   LP2B
+  LP1A  LP2A
+  LP1A  LP2B
+  LP1B  LP2A
+  LP1B  LP2B
+  CG    LP1A
+  CG    LP1B
+  DCG   LP1A
+  DCG   LP1B
+  CG    LP2A
+  CG    LP2B
+  DCG   LP2A
+  DCG   LP2B
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -2046,6 +2349,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -2260,8 +2588,44 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DNE2  LPE2
   NE2   LPE2
+  CE1   LPE2
+  DCE1  LPE2
+  HE1   LPE2
+  CD2   LPE2
+  DCD2  LPE2
+  HD2   LPE2
+  CG    LPE2
+  DCG   LPE2
+  ND1   LPE2
+  DND1  LPE2
+  HD1   LPE2
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -2482,8 +2846,48 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DND1  LPD1
   ND1   LPD1
+  CG    LPD1
+  DCG   LPD1
+  CE1   LPD1
+  DCE1  LPD1
+  HE1   LPD1
+  CB    LPD1
+  DCB   LPD1
+  HB1   LPD1
+  HB2   LPD1
+  NE2   LPD1
+  DNE2  LPD1
+  HE2   LPD1
+  CD2   LPD1
+  DCD2  LPD1
+  HD2   LPD1
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -2705,6 +3109,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -2895,6 +3324,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -3071,6 +3525,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -3268,6 +3747,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -3449,11 +3953,58 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DSD   LP1A
   DSD   LP1B
   SD    LP1A
   SD    LP1B
   LP1A  LP1B
+  CG    LP1A
+  CG    LP1B
+  DCG   LP1A
+  DCG   LP1B
+  HG1   LP1A
+  HG1   LP1B
+  HG2   LP1A
+  HG2   LP1B
+  CE    LP1A
+  CE    LP1B
+  DCE   LP1A
+  DCE   LP1B
+  HE1   LP1A
+  HE1   LP1B
+  HE2   LP1A
+  HE2   LP1B
+  HE3   LP1A
+  HE3   LP1B
+  CB    LP1A
+  CB    LP1B
+  DCB   LP1A
+  DCB   LP1B
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -3692,6 +4243,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -3873,6 +4449,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -4019,11 +4620,50 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DOG   LPGA
   DOG   LPGB
   OG    LPGA
   OG    LPGB
   LPGA  LPGB
+  HG1   LPGA
+  HG1   LPGB
+  CB    LPGA
+  CB    LPGB
+  DCB   LPGA
+  DCB   LPGB
+  HB1   LPGA
+  HB1   LPGB
+  HB2   LPGA
+  HB2   LPGB
+  CA    LPGA
+  CA    LPGB
+  DCA   LPGA
+  DCA   LPGB
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -4229,11 +4869,60 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DOG1  LPGA
   DOG1  LPGB
   OG1   LPGA
   OG1   LPGB
   LPGA  LPGB
+  HG1   LPGA
+  HG1   LPGB
+  CB    LPGA
+  CB    LPGB
+  DCB   LPGA 
+  DCB   LPGB
+  HB1   LPGA
+  HB1   LPGB
+  HB2   LPGA
+  HB2   LPGB
+  CG2   LPGA
+  CG2   LPGB
+  DCG2  LPGA
+  DCG2  LPGB
+  HG21  LPGA
+  HG21  LPGB
+  HG22  LPGA
+  HG22  LPGB
+  HG23  LPGA
+  HG23  LPGB
+  CA    LPGA
+  CA    LPGB
+  DCA   LPGA
+  DCA   LPGB
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -4516,6 +5205,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -4776,11 +5490,54 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DOH   LP1A
   DOH   LP1B
   OH    LP1A
   OH    LP1B
   LP1A  LP1B
+  HH    LP1A
+  HH    LP1B
+  CZ    LP1A
+  CZ    LP1B
+  DCZ   LP1A
+  DCZ   LP1B
+  CE1   LP1A
+  CE1   LP1B
+  DCE1  LP1A
+  DCE1  LP1B
+  HE1   LP1A
+  HE1   LP1B
+  CE2   LP1A
+  CE2   LP1B
+  DCE2  LP1A
+  DCE2  LP1B
+  HE2   LP1A
+  HE2   LP1B
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
@@ -4957,6 +5714,31 @@
   O     LPOA
   O     LPOB
   LPOA  LPOB
+  C     LPOA
+  C     LPOB
+  DC    LPOA
+  DC    LPOB
+  CA    LPOA
+  CA    LPOB
+  DCA   LPOA
+  DCA   LPOB
+  DCA   DC
+  DN    DCA
+  DN    DC
+  +N    LPOA
+  +N    LPOB
+  +DN   LPOA
+  +DN   LPOB
+  +N    DC
+  +DN   DC
+  +CA   LPOA
+  +CA   LPOB
+  +DCA  LPOA
+  +DCA  LPOB
+  +CA   C
+  +CA   DC
+  +DCA  C
+  +DCA  DC
   DN  	 DCA 
   DCA 	 DC  
   DC  	 +DN 
