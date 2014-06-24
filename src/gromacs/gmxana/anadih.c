@@ -419,7 +419,8 @@ void mk_chi_lookup (int **lookup, int maxchi,
     int i, j, Dih, Chi;
 
     j = 0;
-    for (Dih = 0; (Dih < NONCHI+maxchi); Dih++)
+    /* NONCHI points to chi1, therefore we have to start counting there. */
+    for (Dih = NONCHI; (Dih < NONCHI+maxchi); Dih++)
     {
         for (i = 0; (i < nlist); i++)
         {
@@ -570,9 +571,12 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
                 sprintf(histitle, "cumulative rotamer distribution for %s", dlist[i].name);
                 fprintf(stderr, "  and %s  ", hisfile);
                 fp = xvgropen(hisfile, histitle, "number", "", oenv);
-                fprintf(fp, "@ xaxis tick on\n");
-                fprintf(fp, "@ xaxis tick major 1\n");
-                fprintf(fp, "@ type xy\n");
+                if (output_env_get_print_xvgr_codes(oenv))
+                {
+                    fprintf(fp, "@ xaxis tick on\n");
+                    fprintf(fp, "@ xaxis tick major 1\n");
+                    fprintf(fp, "@ type xy\n");
+                }
                 for (k = 0; (k < nbin); k++)
                 {
                     if (bNormalize)
@@ -584,7 +588,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
                         fprintf(fp, "%5d  %10d\n", k, chi_prhist[k]);
                     }
                 }
-                fprintf(fp, "&\n");
+                fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
                 gmx_ffclose(fp);
             }
 
