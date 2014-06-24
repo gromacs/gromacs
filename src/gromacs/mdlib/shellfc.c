@@ -981,7 +981,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * limit and the velocities along the bond vector are scaled 
  * down according to the Drude temperature set in the .mdp file
  */
-void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[])
+void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[], tensor force_vir)
 {
 
     if (debug)
@@ -989,7 +989,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
         fprintf(debug, "HARDWALL: Entering hard wall function...\n");
     }
 
-    int     i;
+    int     i, m, n;
     atom_id ia, ib;                 /* heavy atom and drude, respectively */
     real    ma, mb, mtot;           /* masses of drude and heavy atom, and their sum */
     real    dt, max_t;
@@ -1000,6 +1000,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
     real    dr;                     /* difference between rab and rwall */
     real    dr_a, dr_b;             
     real    dprod_vr1, dprod_vr2;   
+    real    tmp_dprod_vr1, tmp_dprod_vr2;
     real    vbcom;                  /* velocity of the COM of the drude-heavy atom bond */
     real    vbond;                  /* relative velocity between drude and heavy atom */
     rvec    vecab, tmpvecab;        /* vector between drude and heavy atom */
@@ -1089,7 +1090,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 if (rab > (2.0*rwall))
                 {
                     gmx_fatal(FARGS, "Drude atom %d is too far (r = %f) from its heavy atom %d.\n"
-                        "Cannot apply hardwall.\n", ib, rab, ia);
+                        "Cannot apply hardwall.\n", (ib+1), rab, (ia+1));
                 }
 
                 /* scale distance between drude and heavy atom */
@@ -1117,7 +1118,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 /* scale velocity of heavy atom */
                 dprod_vr1 = iprod(va, vecab);
                 svmul(dprod_vr1, vecab, vb1);
-                hardwall_pbc_rvec_sub(&pbc, va, vb1, vp1);
+                rvec_sub(va, vb1, vp1);
 
                 if (debug)
                 {
@@ -1128,7 +1129,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 /* scale velocity of drude */
                 dprod_vr2 = iprod(vb, vecab);
                 svmul(dprod_vr2, vecab, vb2);
-                hardwall_pbc_rvec_sub(&pbc, vb, vb2, vp2);
+                rvec_sub(vb, vb2, vp2);
 
                 if (debug)
                 {
@@ -1156,7 +1157,7 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 }
                 else
                 {
-                    dt = dr / abs(dprod_vr1 - dprod_vr2); 
+                    dt = dr / fabs(dprod_vr1 - dprod_vr2); 
                     /* sanity check */
                     if (dt > max_t)
                     {
@@ -1173,17 +1174,19 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 }
 
                 /* reflect the velocity along the bond vector, scale down */
-                dprod_vr1 = ((-1.0)*dprod_vr1*vbond*mb) / (abs(dprod_vr1)*mtot);
-                dprod_vr2 = ((-1.0)*dprod_vr2*vbond*ma) / (abs(dprod_vr2)*mtot);
+                tmp_dprod_vr1 = ((-1.0)*dprod_vr1*vbond*mb) / (fabs(dprod_vr1)*mtot);
+                tmp_dprod_vr2 = ((-1.0)*dprod_vr2*vbond*ma) / (fabs(dprod_vr2)*mtot);
 
                 if (debug)
                 {
-                    fprintf(debug, "HARDWALL: dprod_vr1 after reflect: %f\n", dprod_vr1);
-                    fprintf(debug, "HARDWALL: dprod_vr2 after reflect: %f\n", dprod_vr2);
+                    fprintf(debug, "HARDWALL: numerator for reflect = %f\n", ((-1.0)*dprod_vr1*vbond*mb));
+                    fprintf(debug, "HARDWALL: denominator for reflect = %f\n", (fabs(dprod_vr1)*mtot));
+                    fprintf(debug, "HARDWALL: tmp_dprod_vr1 after reflect: %f\n", tmp_dprod_vr1);
+                    fprintf(debug, "HARDWALL: tmp_dprod_vr2 after reflect: %f\n", tmp_dprod_vr2);
                 }
 
-                dr_a = (dr*mb)/mtot + (dt*dprod_vr1); 
-                dr_b = (-1.0*dr*ma)/mtot + (dt*dprod_vr2); 
+                dr_a = (dr*mb)/mtot + (dt*tmp_dprod_vr1); 
+                dr_b = (-1.0*dr*ma)/mtot + (dt*tmp_dprod_vr2); 
 
                 /* correct the positions */
                 svmul(dr_a, vecab, tmpvecab);
@@ -1195,11 +1198,11 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 clear_rvec(tmpvecab);
  
                 /* correct the velocities */
-                dprod_vr1 += vbcom;
-                dprod_vr2 += vbcom;
+                tmp_dprod_vr1 += vbcom;
+                tmp_dprod_vr2 += vbcom;
             
-                svmul(dprod_vr1, vecab, vb1); 
-                svmul(dprod_vr2, vecab, vb2);
+                svmul(tmp_dprod_vr1, vecab, vb1); 
+                svmul(tmp_dprod_vr2, vecab, vb2);
 
                 rvec_inc(va, vb1);
                 rvec_inc(vb, vb2);
@@ -1230,14 +1233,32 @@ void apply_drude_hardwall(t_inputrec *ir, t_mdatoms *md, t_state *state, rvec f[
                 /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
 
                 /* Update force on heavy atom */
-                hardwall_pbc_rvec_sub(&pbc, vnewa, vinita, dva);
+                rvec_sub(vnewa, vinita, dva);
                 fac = ma*(1.0/(dt*0.5));
                 svmul(fac, dva, f[ia]);
 
+                /* Update virial related to heavy atom motion */
+                for (m=0; m<DIM; m++)
+                {
+                    for (n=0; n<DIM; n++)
+                    {
+                        force_vir[m][n] += state->x[ia][m]*f[ia][n];
+                    }
+                }
+
                 /* Update force on Drude */
-                hardwall_pbc_rvec_sub(&pbc, vnewb, vinitb, dvb);
+                rvec_sub(vnewb, vinitb, dvb);
                 fac = mb*(1.0/(dt*0.5));
                 svmul(fac, dvb, f[ib]);
+
+                /* Update virial related to Drude motion */
+                for (m=0; m<DIM; m++)
+                {
+                    for (n=0; n<DIM; n++)
+                    {
+                        force_vir[m][n] += state->x[ib][m]*f[ib][n];
+                    }
+                }
 
                 if (debug)
                 {
@@ -1632,7 +1653,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         /* Step 3. Apply hard wall, if requested, to make sure the Drude hasn't gone too far */
         if (inputrec->drude->bHardWall)
         {
-            apply_drude_hardwall(inputrec, md, state, f);
+            apply_drude_hardwall(inputrec, md, state, f, force_vir);
         }
 
         /* At this point, Drude positions have been updated and then 
